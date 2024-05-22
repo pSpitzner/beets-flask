@@ -1,0 +1,47 @@
+
+<div class="beets-header d-flex justify-content-start align-items-center flex-wrap">
+
+    <!-- checkbox -->
+    <div class="form-check m-0 order-0">
+        <input
+            class="form-check-input beets-selection"
+            type="checkbox"
+            id="checkbox-beets-{{ tag.id }}"
+            data-beets-id="{{ tag.id }}"
+            {% if tags_to_show|length < 2 %}
+            disabled
+            checked
+            {% endif %}
+
+        />
+    </div>
+
+    <!-- title -->
+    <div class="noselect ms-2 me-3 order-1">{{ tag.heading }}</div>
+
+    <!-- maybe we want to add a line break on small screens? -->
+    <!-- <div class="d-block d-md-none w-100 order-2"></div> -->
+
+    <!-- status icons -->
+    <div class="status-icon order-3" role="status" title = {{ tag.status }}>
+        {% with status=tag.status %}
+            {% include 'tag/status.html' %}
+        {% endwith %}
+
+    </div>
+
+    <!-- similarity score -->
+    <div class="order-4 ms-2">
+        {{ tag.similarity_span | safe}}
+    </div>
+
+    <!-- time stamps -->
+    <!-- <div class="time-stamp order-md-4 order-3 ms-md-auto ms-2rem me-3 me-md-0">{{ tag.updated_at.strftime('%y-%m-%d %H:%M') }}</div> -->
+    <div class="label-sm order-5 d-none d-md-inline ms-md-auto">{{ tag.updated_at.strftime('%y-%m-%d %H:%M') }}</div>
+</div>
+<div class="collapse show collapse-group-{{ gr.id }}">
+    <div class="beets-log">{{ tag.preview | safe}}</div>
+</div>
+
+
+

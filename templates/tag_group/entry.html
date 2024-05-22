@@ -1,0 +1,60 @@
+{% for gr in tag_groups %}
+{% set tags_to_show = gr.tags|selectattr('status', '!=', 'cleared')|list %}
+<div class="container rounded tag-group my-card mb-3">
+    <div class="row tag-group-header py-2">
+        <div class="col-6 ps-3 d-flex justify-content-start align-items-center">
+            <!-- icons -->
+            <!-- three dots to expand -->
+            {% if tags_to_show|length > 0 %}
+            <div
+                title="show details"
+                class="collapse-toggle me-3"
+                role="button"
+                data-bs-target=".collapse-group-{{ gr.id }}"
+                data-bs-toggle="collapse"
+                aria-expanded="false"
+                aria-controls=".collapse-group-{{ gr.id }}"
+            >
+                <i class="bi-three-dots rotate-on-expand"></i>
+            </div>
+            {% else %}
+            <div class="collapse-toggle disabled" aria-expanded="false">
+                <i class="bi-three-dots disabled"></i>
+            </div>
+            {% endif %}
+
+            <!-- group title -->
+            <div><strong>{{ gr.id }}</strong></div>
+        </div>
+
+        <div class="col-3 my-1 d-flex align-items-center">
+            <!-- status -->
+            <!-- 'download_progress.html' -->
+        </div>
+
+        <div class="col-3 my-1 d-flex align-items-center">
+            <!-- start date -->
+            <span class="label-sm ms-auto"
+                >{{ gr.updated_at.strftime('%y-%m-%d %H:%M') }}</span
+            >
+        </div>
+    </div>
+
+    <div class="row" id="tag_group_{{ gr.id }}">
+        <!-- beets tags -->
+
+        {% for tag in tags_to_show %}
+        <div class="col-12 beets-tag
+            {{ 'opacity-50' if tag.status in ['tagging', 'importing', 'pending'] else '' }}"
+            >
+            {% include 'tag/entry.html' %}
+        </div>
+        {% endfor %}
+
+        {% include 'tag_group/buttons.html' %}
+    </div>
+</div>
+
+{% endfor %}
+
+{% include 'tag/buttons.html' %}

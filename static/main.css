@@ -1,0 +1,347 @@
+
+:root {
+    --main-bg-gray: #272B2F;
+    --dark-gray: #202528;
+    --fg-gray: #818689;
+    --fg-green: #A4BF8C;
+    --fg-yellow: #EBCB8C;
+    --fg-red: #C0626B;
+    --fg-blue: #7EA2BF;
+    --fg-magenta: #B48EAD;
+    --fg-cyan: #8FBCBB;
+}
+
+#terminal_stdout {
+    height: 300px;
+    font-family: monospace;
+    white-space: pre;
+    font-size: 0.75rem;
+    overflow-y: scroll;
+    overflow-x: scroll;
+    padding: 1rem;
+}
+
+.section-header:before {
+    content: "";
+    position: absolute;
+    inset: 0 0 0 -9999px;
+    border-left: 9999px solid var(--bs-secondary-bg);
+    box-shadow: 9999px 0 0 var(--bs-secondary-bg);
+}
+.section-header {
+    font-size: 1.8rem;
+    position: relative;
+    background: var(--bs-secondary-bg);
+    padding: .5rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-start;
+    gap: 1rem;
+}
+
+
+#inbox_container {
+    font-size: 0.8rem;
+    display: flex;
+    flex-direction: column;
+}
+
+#inbox_container .tree-item {
+    padding-left: 1rem;
+    margin-left: 0.3rem;
+    border-left: var(--bs-border-width) solid var(--bs-border-color);
+}
+
+#inbox_container .directory {
+    padding-top: 0.5rem;
+}
+
+#inbox_container .tree-item.root-dir {
+    padding: 0rem;
+    border-left: None;
+}
+
+#inbox_container .tree-line {
+    display: flex;
+    align-items: center;
+    flex: 1.5;
+}
+
+#inbox_container .file-path {
+    font-family: monospace;
+    white-space: pre;
+}
+
+#inbox_container .file {
+    color:var(--fg-gray);
+}
+
+#inbox_container .tree {
+    font-size: 1.0rem;
+    line-height: 0.95rem;
+}
+
+/* #inbox_container .collapse-toggle .rotate-on-expand::before { */
+    /* font-size: 0.7rem !important; */
+/* } */
+
+/* the bootstrap icon gets added via a ::before */
+.collapse-toggle .rotate-on-expand::before {
+    /* font-size: 1.0rem; */
+    transition: transform 0.3s ease;
+}
+
+.collapse-toggle[aria-expanded="true"] .rotate-on-expand::before {
+    transform: rotate(90deg);
+}
+
+
+.my-card {
+    border: var(--bs-border-width) solid var(--bs-border-color);
+    background-color: var(--main-bg-gray);
+    /* margin-bottom: 0.75rem; */
+}
+
+.disabled {
+    color: #444 !important;
+    cursor: default;
+}
+
+.noselect {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.beets-tag {
+    border-top: var(--bs-border-width) solid var(--bs-border-color);
+    padding-left: 1.0rem;
+    padding-right: 0.75rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+.beets-tag:first-of-type {
+    border-top: none;
+}
+
+
+.beets-log {
+    position: relative;
+    border-left: var(--bs-border-width) solid var(--bs-border-color);
+    padding-left: 1.5rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    margin-left: 0.5rem;
+    font-family: monospace;
+    font-size: 0.7rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: pre;
+}
+
+.beets-button-group-outer {
+    border-top: var(--bs-border-width) solid var(--bs-border-color);
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+    position: sticky;
+    bottom: 0;
+    background-color: var(--main-bg-gray);
+    border-bottom-right-radius: var(--bs-border-radius) !important;
+    border-bottom-left-radius: var(--bs-border-radius) !important;
+    /* z-index: 2; */
+}
+
+.beets-button-group {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: flex-start;
+}
+
+.tag-group-header {
+    position: sticky;
+    top: 0;
+    background-color: var(--main-bg-gray);
+    border-top-right-radius: var(--bs-border-radius) !important;
+    border-top-left-radius: var(--bs-border-radius) !important;
+    border-bottom: var(--bs-border-width) solid var(--bs-border-color);
+    z-index: 1;
+}
+
+[data-checked="true"] .uncheck-icon,
+[data-checked="false"] .check-icon {
+    display: none;
+}
+
+.bg-none {
+    background-color: #00000000;
+}
+
+.floating-button {
+    position: absolute;
+    bottom: 0.2rem;
+    right: 0.2rem;
+}
+
+.spinner-grow {
+    animation: spinner-grow 1.5s ease-in infinite;
+}
+.status-icon {
+    /* line-height: 0.8rem; */
+    font-size: 0.8rem;
+    --bs-spinner-width: 0.8rem;
+    --bs-spinner-height: 0.8rem;
+}
+.tag-status-icons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: center;
+}
+.tag-status-icons .spinner-grow,
+.tag-status-icons .spinner-border {
+    font-size: 0.5rem; /* set spinner width */
+    --bs-spinner-width: 0.8rem;
+    --bs-spinner-height: 0.8rem;
+}
+
+.progress-label {
+    position: absolute;
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+    top: -1;
+    left: 0;
+    width: calc(100% - 1rem);
+    /* text-align: center; */
+    height: 100%;
+}
+
+.label-sm {
+    /* match progress bar label style */
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.ms-2rem {
+    margin-left: 2rem;
+}
+
+.fg-green {
+    color: var(--fg-green) !important;
+}
+.fg-yellow {
+    color: var(--fg-yellow) !important;
+}
+.fg-red {
+    color: var(--fg-red) !important;
+}
+.fg-blue {
+    color: var(--fg-blue) !important;
+
+}
+.fg-magenta {
+    color: var(--fg-magenta) !important;
+}
+.fg-cyan {
+    color: var(--fg-cyan) !important;
+}
+.fg-gray {
+    color: var(--fg-gray) !important;
+}
+.fg-border-clr {
+    color: var(--bs-border-color) !important;
+}
+
+.bg-green {
+    background-color: var(--fg-green) !important;
+}
+.bg-yellow {
+    background-color: var(--fg-yellow) !important;
+}
+.bg-red {
+    background-color: var(--fg-red) !important;
+}
+.bg-blue {
+    background-color: var(--fg-blue) !important;
+}
+.bg-magenta {
+    background-color: var(--fg-magenta) !important;
+}
+.bg-cyan {
+    background-color: var(--fg-cyan) !important;
+}
+.bg-dark-gray {
+    --bs-bg-opacity: 1;
+    background-color: var(--dark-gray) !important;
+}
+.similarity-badge {
+    background-color: #212529;
+    border-radius: 0.3rem;
+    border: var(--bs-border-width) solid var(--bs-border-color);
+    font-size: 0.7rem;
+    font-weight: bolder;
+    padding: 0.1rem 0.3rem;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    font-family: monospace;
+    white-space: pre;
+}
+
+.tooltip.beets-tooltip {
+    /* copied bs defaults, so we can overwrite */
+    --bs-tooltip-max-width: calc(100vw - 2rem);
+    --bs-tooltip-zindex: 1080;
+    --bs-tooltip-padding-x: 0.5rem;
+    --bs-tooltip-padding-y: 0.25rem;
+    --bs-tooltip-margin: ;
+    --bs-tooltip-font-size: 0.875rem;
+    --bs-tooltip-color: inherit;
+    --bs-tooltip-bg: var(--dark-gray);
+    --bs-tooltip-border-radius: var(--bs-border-radius);
+    --bs-tooltip-opacity: 1.0;
+    --bs-tooltip-arrow-width: 1.0rem;
+    --bs-tooltip-arrow-height: 0.5rem;
+    font-family: var(--bs-font-sans-serif);
+    font-style: normal;
+    font-weight: 400;
+    line-height: 1.5;
+    text-align: left;
+    text-align: start;
+    text-shadow: none;
+    text-transform: none;
+    letter-spacing: normal;
+    word-break: normal;
+    white-space: normal;
+    word-spacing: normal;
+    line-break: auto;
+    font-size: var(--bs-tooltip-font-size);
+    word-wrap: break-word;
+}
+
+.tooltip-inner.beets-tooltip-inner {
+    max-width: var(--bs-tooltip-max-width);
+    padding: var(--bs-tooltip-padding-y) var(--bs-tooltip-padding-x);
+    color: var(--bs-tooltip-color);
+    background-color: var(--bs-tooltip-bg);
+    border-radius: var(--bs-tooltip-border-radius);
+    border: var(--bs-border-width) solid var(--bs-border-color);
+    text-align: left;
+    font-family: monospace;
+    font-size: 0.7rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: pre;
+    /* hide everything in the background */
+    box-shadow:
+            0 0 0 500vw rgba(0, 0, 0, 0.2),
+            0 4px 8px 0 rgba(0, 0, 0, 0.4),
+            0 6px 20px 0 rgba(0, 0, 0, 1);
+}

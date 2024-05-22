@@ -1,0 +1,4 @@
+.conda/
+venv/
+.venv/
+.git

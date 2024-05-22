@@ -1,0 +1,26 @@
+<div>
+    <div class="fs-6" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi-folder-plus"></i>
+    </div>
+    <ul class="dropdown-menu" aria-labelledby="dropdown-menu-{{ selector }}">
+        <li>
+            <div
+                class="dropdown-item"
+                role="button"
+                onclick="post('/task_for_paths',  {path: '{{ folder }}', task: 'preview', })"
+            >
+                (Re-)Tag
+            </div>
+        </li>
+
+        <li>
+            <div
+                class="dropdown-item"
+                role="button"
+                onclick="navigator.clipboard.writeText('{{ folder }}')"
+            >
+                Copy Path
+            </div>
+        </li>
+    </ul>
+</div>

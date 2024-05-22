@@ -1,0 +1,85 @@
+
+{% if tags_to_show|length > 0 %}
+<div class="col-12 beets-button-group-outer">
+    <div class="beets-button-group">
+
+        <!-- select all -->
+        <button
+            type="button"
+            id="check-all-button"
+            title="(de)select all"
+            data-checked="false"
+            class="btn btn-sm btn-secondary"
+            onclick="checkAdjacentBoxes(this)"
+            {% if tags_to_show|length < 2 %}
+            disabled
+            {% endif %}
+        >
+            <span class="me-auto">
+                <i class="bi-square uncheck-icon"></i>
+                <i class="bi-check-square-fill check-icon"></i>
+            </span>
+        </button>
+
+        <!-- import -->
+        <button
+            type="button"
+            class="btn btn-sm btn-secondary text-nowrap"
+            title="Import selected"
+            onclick="beetSelected(this, 'Import')"
+        >
+            <span class="me-auto me-2">
+                <i class="bi-database-add"></i>
+            </span>
+            <span class="d-none d-md-inline">
+                Import selected
+            </span>
+        </button>
+
+        <!-- re-tag -->
+        <button
+            type="button"
+            class="btn btn-sm btn-secondary text-nowrap"
+            title="Tag selected"
+            onclick="beetSelected(this, 'Preview')"
+        >
+            <span class="me-auto me-2">
+                <i class="bi-tag"></i>
+            </span>
+            <span class="d-none d-md-inline">
+                Tag selected
+            </span>
+        </button>
+
+        <!-- clear -->
+        <!-- create a ready to use string-version of all beets-tags that are done -->
+        <!-- prettier-ignore -->
+        {% set imported_ids = gr.tags
+            |selectattr("status", "equalto","imported")
+            |map(attribute="id")
+            |join("', '")
+        %}
+        <div class="btn-group ms-auto">
+            <button
+                type="button"
+                class="btn btn-sm btn-danger text-nowrap"
+                onclick="post('/clear_beets', { ids: ['{{ imported_ids }}'] })"
+            >
+                <span class="me-1">
+                    <i class="bi-trash3"></i>
+                </span>
+                imported
+            </button>
+
+            <button
+                type="button"
+                class="btn btn-sm btn-danger"
+                onclick="beetSelected(this, 'clear')"
+            >
+                selected
+            </button>
+
+        </div>
+    </div>
+</div>
+{% endif %}

@@ -1,0 +1,16 @@
+{% if status in ["tagged"] %}
+<i class="bi-check-circle"></i>
+{% elif status in ["imported"] %}
+<i class="bi-check-circle-fill"></i>
+{% elif status in ["unmatched"] %}
+<i class="bi-question-circle"></i>
+{% elif status in ["pending"] %}
+<!-- <div class="spinner-grow spinner-grow-sm"></div> -->
+<div class="spinner-border spinner-border-sm disabled slow"></div>
+{% elif status in ["tagging", "importing"] %}
+<div class="spinner-border spinner-border-sm"> </div>
+{% elif status in ["failed"] %}
+<i class="bi-exclamation-circle"></i>
+{% else %}
+<i class="bi-circle disabled"></i>
+{% endif %}

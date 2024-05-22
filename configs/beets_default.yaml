@@ -1,0 +1,36 @@
+# minimal config that assumes that your music sits in `/music/imported`
+
+directory: /music/imported
+# library: /home/user/.config/beets/library.db # default location
+
+import:
+    # for our gui it makes sense to keep files around (copy) and
+    # only clear occasionally by hand (we have a button for that)
+    move: no
+    copy: yes
+    write: yes
+    log: /music/last_beets_imports.log
+    quiet_fallback: skip
+    detail: yes # `yes` is needed for our previews to work.
+
+ui:
+    color: yes
+
+replace:
+    '[\\]':         ''
+    '[_]':          '-'
+    '[/]':          '-'
+    '^\.+':         ''
+    '[\x00-\x1f]':  ''
+    '[<>:"\?\*\|]': ''
+    '\.$':          ''
+    '\s+$':         ''
+    '^\s+':         ''
+    '^-':           ''
+    '’':            ''
+    '′':            ''
+    '″':            ''
+    '‐':            '-'
+
+threaded: yes
+asciify_paths: yes

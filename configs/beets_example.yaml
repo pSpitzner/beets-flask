@@ -1,0 +1,172 @@
+# opinionated config that assumes that your music sits in `/music/imported`
+
+plugins: [
+    info,
+    the,
+    fetchart,
+    embedart,
+    ftintitle,
+    lastgenre,
+    missing,
+    albumtypes,
+    scrub,
+    zero,
+    mbsync,
+    duplicates,
+    convert,
+    fromfilename,
+    inline,
+    edit,
+    spotify, # needs authentication https://docs.beets.io/en/latest/plugins/spotify.html
+]
+
+directory: /music/imported
+# library: /home/user/.config/beets/library.db # default location
+
+import:
+    move: no
+    copy: yes
+    write: yes
+    log: /music/last_beets_imports.log
+    quiet_fallback: skip
+    detail: yes
+
+ui:
+    color: yes
+
+replace:
+    '[\\]':         ''
+    '[_]':          '-'
+    '[/]':          '-'
+    '^\.+':         ''
+    '[\x00-\x1f]':  ''
+    '[<>:"\?\*\|]': ''
+    '\.$':          ''
+    '\s+$':         ''
+    '^\s+':         ''
+    '^-':           ''
+    '’':            ''
+    '′':            ''
+    '″':            ''
+    '‐':            '-'
+
+per_disc_numbering: no
+threaded: yes
+asciify_paths: yes
+
+albumtypes:
+    types:
+        - ep: 'EP'
+        - single: 'Single'
+        - soundtrack: 'OST'
+        - live: 'Live'
+        - compilation: 'Compilation'
+        - remix: 'Remix'
+    ignore_va: compilation # list of (album)types that should not be output for Various Artists albums
+    bracket: '[]'
+
+item_fields:
+    disc_and_track: u'%02i-%02i' % (disc, track) if disctotal > 1 else u'%02i' % (track)
+
+paths:
+    default: >
+        "%the{$albumartist}/
+        $album/
+        %ifdef{ignoretrackorder,$title [$bitrate],$disc_and_track $title [$bitrate]}"
+    # soundtracks are usually compilations, so put this rule first.
+    albumtype:soundtrack: >
+        "Soundtracks/
+        $album/
+        %ifdef{ignoretrackorder,$title [$bitrate],$disc_and_track $title [$bitrate]}"
+    comp: >
+        "Various Artists/
+        $album/
+        %ifdef{ignoretrackorder,$title [$bitrate],$disc_and_track $title [$bitrate]}"
+    # singleton rule might not be respected if the compilation-flag is set
+    # we can set a special field for tricky cases via e.g. `--set homegrown=1 --set ingoretrackorder=1`
+    singleton: >
+        "%the{$artist}/
+        misc/$title [$bitrate]"
+
+fetchart:
+    midwidth: 500
+    enforce_ratio: 10px # yes|no or tolerance around 1:1 ratio
+    sources: coverart filesystem itunes amazon spotify albumart fanarttv
+
+embedart:
+    auto: yes
+    ifempty: yes # whether to avoid embedding album art for files that already have art embedded.
+    remove_art_file: yes
+
+ftintitle:
+    auto: yes
+    format: (feat. {0})
+
+lastgenre: # get genres from last fm
+    auto: yes
+    count: 4
+    prefer_specific: yes # Sort genres by the most to least specific, rather than most to least popular.
+    force: yes # By default, beets will always fetch new genres, even if the files already have one
+    source: track # album|track
+    separator: '; '
+    fallback: ''
+
+# for the list command
+format_item: $albumartist - $album - $title [$format, $bitrate] - $artist
+
+missing: # finds and lists, for every album in your collection, which or how many tracks are missing
+  format: $albumartist - $album - $title - $artist
+  count: yes
+  total: no
+
+
+scrub:
+    auto: no # `yes` removes traktor cue points etc!
+
+zero:
+    fields: comments
+    auto: yes
+
+va_name: 'Various Artists' # 'Various Artists' is the default name for the albumartist on musicbrainz
+
+# A directory is considered empty (and removed after import) if it only contains files whose names match the glob patterns
+clutter: [
+    "Thumbs.DB",
+    ".DS_Store",
+    "*.pdf",
+    "*.png",
+    "*.jpg",
+]
+
+
+match:
+    #.1 = 90% similarity required. automatically matches above the threshold.
+    #even at the chosen threshold, can be unintuitive and not automatically select the choice that meets the threshold.
+    #There is a GitHub issue for this that I can't find.
+    strong_rec_thresh: 0.1 # autotagger tolerance [0, 1], default 0.04
+    #see https://beets.readthedocs.io/en/v1.4.3/reference/config.html#preferred
+    ignored_media: ['Data CD', 'DVD', 'DVD-Video', 'Blu-ray', 'HD-DVD', 'VCD', 'SVCD', 'UMD', 'VHS']
+    preferred:
+        media: ['CD', 'Digital Media|File', 'Digital Media']
+        countries: ['US', 'GB|UK', "DE"]
+    distance_weights:
+        # source: 2.0
+        # artist: 3.0
+        # album: 3.0
+        # media: 1.0
+        # mediums: 1.0
+        # year: 1.0
+        # country: 0.5
+        # label: 0.5
+        # catalognum: 0.5
+        # albumdisambig: 0.5
+        # album_id: 5.0
+        # tracks: 2.0
+        # missing_tracks: 0.9
+        missing_tracks: 0.2 # If your prefer not being so picky about missing tracks.
+        # unmatched_tracks: 0.6
+        # track_title: 3.0
+        # track_artist: 2.0
+        # track_index: 1.0
+        # track_length: 2.0
+        # track_id: 5.0

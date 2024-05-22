@@ -1,0 +1,55 @@
+
+<!-- status icon -->
+<div class="">
+    {% if dl.progress_text in ["downloaded"] %}
+    <span><i class="bi-check2-square"></i></span>
+    {% elif dl.progress_text in ["tagged"] %}
+    <span><i class="bi-check-circle"></i></span>
+    {% elif dl.progress_text in ["partly imported"] %}
+    <!-- <span><i class="bi-patch-check"></i></span> -->
+    <span><i class="bi-check-circle"></i></span>
+    {% elif dl.progress_text in ["imported", "cleared"] %}
+    <span><i class="bi-check-circle-fill"></i></span>
+    {% elif dl.progress_text in ["pending"] %}
+    <span class="spinner-grow spinner-grow-sm disabled" role="status"></span>
+    {% elif dl.progress_text in ["downloading", "tagging", "importing"] %}
+    <span class="spinner-border spinner-border-sm" role="status"> </span>
+    {% else %}
+    <span><i class="bi-exclamation-circle"></i></span>
+    {% endif %}
+</div>
+
+<!-- progress -->
+<div class="flex-grow-1 position-relative ms-2">
+    <div
+    {% if dl.progress_text in ["downloading"] %}
+        class="progress"
+    {% else %}
+        class="progress bg-none"
+    {% endif %}
+    >
+        <!-- prettier-ignore -->
+        <div
+        {% if dl.progress_text in ["downloading"] %}
+        class="progress-bar"
+        {% elif dl.progress_text in ["failed"] %}
+        class="progress-bar bg-danger"
+        {% elif dl.progress_text in ["tagging", "importing"] %}
+        class="progress-bar progress-bar-striped progress-bar-animated"
+        {% else %}
+        class="progress-bar bg-none"
+        {% endif %}
+        role="progressbar"
+        aria-valuenow="{{dl.finished_tracks}}"
+        aria-valuemin="0"
+        aria-valuemax="{{dl.total_tracks}}"
+        style='width: {{
+            (dl.finished_tracks / dl.total_tracks * 100) | round(2)
+            if dl.total_tracks > 0 else 0 }}%'
+        >
+        </div>
+        <label class="progress-label">
+            {{dl.progress_text }}{{dl.progress_text_extra|safe}}
+        </label>
+    </div> <!-- progress -->
+</div> <!-- progress-wrapper -->
