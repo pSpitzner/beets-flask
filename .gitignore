@@ -1,8 +1,10 @@
+.conda/*
 local_data/*
 beets_flask/beets/*
 tinker.ipynb
 static/bootstrap/*
 static/bootstrap-icons/*
+docker-compose-custom.yaml
 
 *.code-workspace
 *.rdb
