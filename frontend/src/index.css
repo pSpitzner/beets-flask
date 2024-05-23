@@ -1,0 +1,24 @@
+@layer tw_base, radix_themes, tw_components_and_utilities;
+@import "@radix-ui/themes/styles.css" layer(radix_themes);
+
+@layer tw_base {
+    @tailwind base;
+}
+
+@layer tw_components_and_utilities {
+    @tailwind components;
+    @tailwind utilities;
+}
+
+#app {
+    background: radial-gradient(ellipse, black 50%, rgb(51, 0, 15) 100%),
+        url("./assets/background.png");
+    background-blend-mode: difference;
+    background-position: center center;
+    background-size: cover;
+    overflow: hidden;
+}
+
+.radix-themes {
+    backdrop-filter: blur(2px) hue-rotate(190deg);
+}
