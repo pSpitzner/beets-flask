@@ -140,7 +140,7 @@ def refresh_all_folders(
 # ------------------------------------------------------------------------------------ #
 
 
-def get_inbox_dict(use_cache: bool = True):
+def get_inbox_dict(use_cache: bool = True) -> dict:
     global _cache
     with _cache_lock:
         if use_cache and "inbox" in _cache:
@@ -153,7 +153,21 @@ def get_inbox_dict(use_cache: bool = True):
     return inbox
 
 
-def path_to_dict(root_dir, relative_to="/"):
+def path_to_dict(root_dir, relative_to="/") -> dict:
+    """
+    Generate our nested dict structure for the specified path.
+
+    # Args:
+    - root_dir (str): The root directory to start from.
+    - relative_to (str): The path to be stripped from the full path.
+
+    # Returns:
+    - dict: The nested dict structure.
+    """
+
+    if not os.path.isdir(root_dir):
+        raise FileNotFoundError(f"Path `{root_dir}` does not exist or is no directory.")
+
     files = glob.glob(root_dir + "/**/*", recursive=True)
     files = sorted(files, key=lambda s: s.lower())
     album_folders = album_folders_from_track_paths(files)
@@ -179,7 +193,12 @@ def path_to_dict(root_dir, relative_to="/"):
     return folder_structure
 
 
-def tree(folder_structure):
+def tree(folder_structure) -> str:
+    """Simple tree-like string representation of our nested dict structure that reflects file paths.
+
+    # Args:
+        folder_structure (dict): The nested dict structure.
+    """
 
     def _tree(d, prefix=""):
         contents = [name for name in d.keys() if not name.startswith("__")]
@@ -221,8 +240,8 @@ def album_folders_from_track_paths(track_paths: list):
     )
 
 
-def all_album_folders():
-    files = sorted(glob.glob(inbox_dir + "/**/*", recursive=True))
+def all_album_folders(root_dir: str = inbox_dir):
+    files = sorted(glob.glob(root_dir + "/**/*", recursive=True))
     return album_folders_from_track_paths(files)
 
 

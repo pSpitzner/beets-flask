@@ -3,12 +3,11 @@
 Tasks are beet tasks that are created by the user or automatically by the system.
 """
 
-from flask import Blueprint
+from flask import Blueprint, request
 from sqlalchemy import select
 
-from ...models.tag_group import TagGroup
-from ...models import Tag
-from ...db_engine import db_session
+from beets_flask.models import Tag, TagGroup
+from beets_flask.db_engine import db_session
 
 tag_bp = Blueprint("tag", __name__, url_prefix="/tag")
 
@@ -22,16 +21,16 @@ def get_all():
     return [tag.to_dict() for tag in tags]
 
 
-@tag_bp.route("/<tag_id>", methods=["GET"])
-def get_tag(tag_id):
+@tag_bp.route("/id/<tag_id>", methods=["GET"])
+def get_tag_by_id(tag_id: str):
     """Get a task by its id"""
 
     tag = Tag.get_by(Tag.id == tag_id)
     return tag.to_dict()
 
 
-@tag_bp.route("/<tag_id>", methods=["DELETE"])
-def delete_tag(tag_id):
+@tag_bp.route("/id/<tag_id>", methods=["DELETE"])
+def delete_tag_by_id(tag_id: str):
     """Delete a tag by its id"""
 
     tag = Tag.get_by(Tag.id == tag_id)
@@ -41,11 +40,43 @@ def delete_tag(tag_id):
     return {"message": "Tag deleted"}
 
 
-@tag_bp.route("/add", methods=["GET"])
+@tag_bp.route("/folder/<folder>", methods=["GET"])
+def get_tag_by_folder(folder: str):
+    """Get a tag by its folder"""
+
+    tag = Tag.get_by(Tag.album_folder == "/" + folder)
+    return tag.to_dict()
+
+
+@tag_bp.route("/folder/<folder>", methods=["DELETE"])
+def delete_tag_by_folder(folder: str):
+    """Delete a tag by its folder"""
+
+    tag = Tag.get_by(Tag.album_folder == "/" + folder)
+    db_session().delete(tag)
+    db_session().commit()
+
+    return {"message": "Tag deleted"}
+
+
+@tag_bp.route("/add", methods=["POST"])
 def add_tag():
-    """Test adding a tag"""
-    tag = Tag(album_folder="test", kind="album")
+    """
+    Add a tag. You need to specify the folder of the album,
+    and it has to be a valid album folder.
+    """
+
+    data = request.get_json()
+    folder = data.get("folder")
+    kind = data.get("kind")
+
+    tag = Tag(album_folder=folder, kind=kind)
     db_session().add(tag)
     db_session().commit()
+
+    # now we would also need to submit the job to queue.
+    # I am thinking that we should make the enqueuing part
+    # of the tag class! then we would just call tag.enqueue()
+    # and depending on `kind` push it into the right queue.
 
     return tag.to_dict()

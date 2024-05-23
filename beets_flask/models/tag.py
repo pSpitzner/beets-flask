@@ -17,6 +17,8 @@ from .tag_group import TagGroup
 class Tag(Base):
     __tablename__ = "tag"
 
+    # we might consider to use folders as ids:
+    # for now we want to allow only one tag per folder.
     id: Mapped[str] = mapped_column(primary_key=True)
     album_folder: Mapped[Optional[str]]
 
