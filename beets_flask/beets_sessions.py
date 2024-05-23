@@ -8,7 +8,7 @@ from copy import copy
 from collections import namedtuple
 
 from . import utility as ut
-log = ut.log
+from .logger import log
 
 from beets import config, plugins, importer, IncludeLazyConfig
 from beets.ui import _open_library, print_, colorize, UserError
