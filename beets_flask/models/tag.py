@@ -5,14 +5,13 @@ import glob
 import os
 from uuid import uuid4 as uuid
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.orm.session import make_transient
 
 from .base import Base
 
-if TYPE_CHECKING:
-    from .tag_group import TagGroup
+from .tag_group import TagGroup
 
 
 class Tag(Base):
@@ -25,7 +24,7 @@ class Tag(Base):
     kind: Mapped[str]
 
     _group_id: Mapped[str] = mapped_column(ForeignKey("tag_group.id"))
-    tag_group: Mapped[TagGroup] = relationship("TagGroup", back_populates="tags")
+    tag_group: Mapped[TagGroup] = relationship(back_populates="tag_ids")
 
     distance: Mapped[Optional[float]]
     match_url: Mapped[Optional[str]]
@@ -59,7 +58,7 @@ class Tag(Base):
         self.id = str(id) if id is not None else str(uuid())
         self.created_at = datetime.now()
         self.updated_at = datetime.now()
-        # self.group_id = group_id or "Unsorted"
+        self._group_id = group_id or "Unsorted"
         self.distance = distance
         self.match_url = match_url
         self.status = status or "pending"

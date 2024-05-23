@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.orm.session import make_transient
 from uuid import uuid4 as uuid
@@ -15,7 +15,7 @@ class TagGroup(Base):
     __tablename__ = "tag_group"
 
     id: Mapped[str] = mapped_column(primary_key=True)
-    tag_ids: Mapped[Tag] = relationship("Tag", backref="tag_group", lazy=True)
+    tag_ids: Mapped[List[Tag]] = relationship(back_populates="tag_group")
 
     def __init__(self, id=None):
         self.id = str(id) if id is not None else str(uuid())

@@ -42,9 +42,7 @@ def init():
 
 
 def tag_for_folder(path: str) -> Tag:
-    stmt = select(Tag).where(Tag.album_folder == path)
-
-    tag = db_session().execute(stmt).scalars().first()
+    tag = Tag.get_by(Tag.album_folder == path)
 
     if tag is None:
         raise ValueError(f"No tag found for {path}")
