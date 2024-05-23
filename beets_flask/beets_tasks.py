@@ -8,17 +8,16 @@ from . import disk
 from . import utility as ut
 from . import beets_tags
 from .beets_sessions import PreviewSession, MatchedImportSession
-
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
+from .redis import rq
+from .logger import log
+from .db_engine import db_session
 
 # ------------------------------------------------------------------------------------ #
 #                                      Beets tasks                                     #
 # ------------------------------------------------------------------------------------ #
 
 
-@ut.with_app_context
-@ut.rq.job(timeout=600)
+@rq.job(timeout=600)
 def preview_task(
     id: str, callback_url: str | None = None, update_meta: bool = True
 ) -> str | None:
@@ -34,8 +33,7 @@ def preview_task(
     """
     log.debug(f"Preview task on {id}")
 
-    Session = sessionmaker(bind=ut.db.engine)
-    session = Session()
+    session = db_session()
 
     bt = beets_tags.Tag.query.filter_by(id=id).first()
     bt.task = "preview"
@@ -88,8 +86,7 @@ def preview_task(
     return match_url
 
 
-@ut.with_app_context
-@ut.rq.job(timeout=600)
+@rq.job(timeout=600)
 def import_task(
     id: str, match_url: str | None = None, callback_url: str | None = None
 ) -> str | None:
@@ -161,7 +158,6 @@ def import_task(
     return album_folder
 
 
-@ut.with_app_context
 def _get_or_gen_match_url(id: str) -> str | None:
     bt = beets_tags.Tag.query.filter_by(id=id).first()
 
@@ -179,7 +175,6 @@ def _get_or_gen_match_url(id: str) -> str | None:
     return preview_task(id, update_meta=False)
 
 
-@ut.with_app_context
 def beets_task(beet_ids: list[str], extra_args) -> dict:
     """Our basic beets interface. Expects a list of existing task ids.
     Below we have thin wrappers for common workflows.
@@ -202,7 +197,7 @@ def beets_task(beet_ids: list[str], extra_args) -> dict:
         raise ValueError(f"Invalid task: {task}")
 
     bts: list[beets_tags.Tag] = beets_tags.Tag.query.filter(
-        beets_tags.Tag.id.in_(beet_ids) # type: ignore
+        beets_tags.Tag.id.in_(beet_ids)  # type: ignore
     ).all()
 
     if len(bts) == 0:
@@ -226,9 +221,9 @@ def beets_task(beet_ids: list[str], extra_args) -> dict:
     for bt in bts:
         log.info(f"Queuing {bt.task} '{bt.album_folder}' (tag id: {bt.id})")
         if str(bt.task).lower() == "preview":
-            ut.rq.get_queue("preview").enqueue(preview_task, bt.id, callback_url)
+            rq.get_queue("preview").enqueue(preview_task, bt.id, callback_url)
         elif str(bt.task).lower() == "import":
-            ut.rq.get_queue("import").enqueue(import_task, bt.id, callback_url)
+            rq.get_queue("import").enqueue(import_task, bt.id, callback_url)
         else:
             log.debug(f"Invalid task {bt.task}")
 
@@ -238,7 +233,6 @@ def beets_task(beet_ids: list[str], extra_args) -> dict:
     }
 
 
-@ut.with_app_context
 def task_for_id(ids: list[str] | str, extra_args={}) -> dict:
     log.debug(f"task for id: {ids=}")
     if isinstance(ids, str):
@@ -247,7 +241,6 @@ def task_for_id(ids: list[str] | str, extra_args={}) -> dict:
     return beets_task(ids, extra_args)
 
 
-@ut.with_app_context
 def task_for_paths(paths: list[str] | str, extra_args={}) -> dict:
     log.debug(f"task for paths: {paths=}")
     if isinstance(paths, str):
@@ -276,7 +269,6 @@ def task_for_paths(paths: list[str] | str, extra_args={}) -> dict:
     return beets_task(ids, extra_args)
 
 
-@ut.with_app_context
 def task_for_group(group_id: str, extra_args={}) -> dict:
     log.debug(f"task for group: {group_id=}")
 

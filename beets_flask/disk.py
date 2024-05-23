@@ -12,7 +12,8 @@ from . import beets_tags
 from . import beets_tasks
 from . import utility as ut
 
-log = ut.log
+from .logger import log
+
 inbox_dir = os.environ.get("INBOX", "/music/inbox")
 _cache = cachetools.TTLCache(maxsize=100, ttl=900)
 _cache_lock = threading.Lock()
@@ -36,7 +37,9 @@ def init():
         observer.schedule(handler, path=inbox_dir, recursive=True)
         observer.start()
     except FileNotFoundError:
-        log.error(f"Could not find inbox directory ({inbox_dir}). Check your INBOX env var.")
+        log.error(
+            f"Could not find inbox directory ({inbox_dir}). Check your INBOX env var."
+        )
         return
 
     # run this in its own thread to not block the webserver.
