@@ -8,6 +8,7 @@ frontend_bp = Blueprint("frontend", __name__)
 @frontend_bp.route("/", defaults={"path": "index.html"})
 @frontend_bp.route("/<path:path>")
 def reverse_proxy(path):
+
     # not include assets
     if (
         not "assets" in path
@@ -22,5 +23,5 @@ def reverse_proxy(path):
     if "logo.png" in path:
         path = path[path.index("logo.png") :]
 
-    r = send_from_directory("./frontend/dist/", path)
+    r = send_from_directory("../frontend/dist/", path)
     return r
