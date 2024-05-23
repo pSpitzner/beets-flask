@@ -1,15 +1,18 @@
 from __future__ import annotations
+from typing import Optional, TYPE_CHECKING
 from datetime import datetime
 import glob
 import os
-from typing import Optional
 from uuid import uuid4 as uuid
 
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.orm.session import make_transient
 
 from .base import Base
+
+if TYPE_CHECKING:
+    from .tag_group import TagGroup
 
 
 class Tag(Base):
@@ -21,8 +24,8 @@ class Tag(Base):
     status: Mapped[str]
     kind: Mapped[str]
 
-    # _group_id: Mapped[str] = mapped_column(ForeignKey("tag_group.id"))
-    # tag_group: Mapped[TagGroup] = relationship("TagGroup", back_populates="tags")
+    _group_id: Mapped[str] = mapped_column(ForeignKey("tag_group.id"))
+    tag_group: Mapped[TagGroup] = relationship("TagGroup", back_populates="tags")
 
     distance: Mapped[Optional[float]]
     match_url: Mapped[Optional[str]]

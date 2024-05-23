@@ -1,22 +1,26 @@
 from __future__ import annotations
-
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from typing import TYPE_CHECKING
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.orm.session import make_transient
-
+from uuid import uuid4 as uuid
 
 from .base import Base
+
+
+if TYPE_CHECKING:
+    from .tag import Tag
 
 
 class TagGroup(Base):
     __tablename__ = "tag_group"
 
     id: Mapped[str] = mapped_column(primary_key=True)
-    tag_ids = ut.db.relationship("Tag", backref="tag_group", lazy=True)
+    tag_ids: Mapped[Tag] = relationship("Tag", backref="tag_group", lazy=True)
 
     def __init__(self, id=None):
         self.id = str(id) if id is not None else str(uuid())
 
+    """
     def commit(self):
         Session = sessionmaker(bind=ut.db.engine)
         session = Session()
@@ -28,6 +32,7 @@ class TagGroup(Base):
             log.error(e)
         finally:
             session.close()
+    """
 
     def to_dict(self):
         return {"id": self.id, "tag_ids": [t.id for t in self.tag_ids]}  # type: ignore
