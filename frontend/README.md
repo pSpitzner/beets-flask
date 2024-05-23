@@ -6,6 +6,11 @@ TODO:
 - [ ] Add correct dist folder to host by flask
 - [ ] Port templates from flask to react
 
+
+Notes:
+Im not super happy with the radix ui theme components. They are not as customizable as I would like. I might switch to another design system. Also they ship a huge amount of css. We might be better of to just use the radix primitives and build our own components. let's talk about this!
+
+
 ## Install
 
 ```bash
