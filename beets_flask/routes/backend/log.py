@@ -1,4 +1,4 @@
-from flask import Blueprint
+from flask import Blueprint, current_app
 from flask_sse import sse
 
 log_bp = Blueprint("log", __name__, url_prefix="/log")
@@ -21,4 +21,5 @@ def update_log(type: str, msg: str = "Data updated"):
     Returns:
     None
     """
-    sse.publish({"message": msg}, type=type)
+    with current_app.app_context():
+        sse.publish({"message": msg}, type=type)
