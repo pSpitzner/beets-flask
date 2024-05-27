@@ -1,5 +1,7 @@
 from flask import Blueprint, jsonify
 
+from werkzeug.exceptions import HTTPException
+
 error_bp = Blueprint("error", __name__)
 
 
@@ -31,6 +33,28 @@ def handle_crawler_exception(error: InvalidUsage):
         jsonify({"error": "Bad request", "message": error.message}),
         error.status_code,
     )
+
+
+@error_bp.app_errorhandler(FileNotFoundError)
+def handle_file_not_found(error):
+    return jsonify({"error": "File not found", "message": str(error)}), 404
+
+
+@error_bp.app_errorhandler(HTTPException)
+def handle_exception(e):
+    """Return JSON instead of HTML for HTTP errors."""
+    # start with the correct headers and status code from the error
+    response = e.get_response()
+    # replace the body with JSON
+    response.data = jsonify(
+        {
+            "code": e.code,
+            "name": e.name,
+            "description": e.description,
+        }
+    )
+    response.content_type = "application/json"
+    return response
 
 
 # ---------------------------------------------------------------------------- #

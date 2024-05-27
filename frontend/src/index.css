@@ -10,6 +10,7 @@
     @tailwind utilities;
 }
 
+/**
 #app {
     background: radial-gradient(ellipse, black 50%, rgb(51, 0, 15) 100%),
         url("./assets/background.png");
@@ -18,7 +19,7 @@
     background-size: cover;
     overflow: hidden;
 }
-
+*/
 .radix-themes {
     backdrop-filter: blur(2px) hue-rotate(190deg);
 }
