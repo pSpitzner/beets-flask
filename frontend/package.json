@@ -21,7 +21,6 @@
         "react-dom": "^18.2.0"
     },
     "devDependencies": {
-        "@tanstack/eslint-plugin-query": "^5.35.6",
         "@tanstack/router-devtools": "^1.34.4",
         "@tanstack/router-vite-plugin": "^1.34.1",
         "@types/react": "^18.2.66",
@@ -34,6 +33,7 @@
         "eslint-plugin-react": "^7.34.1",
         "eslint-plugin-react-hooks": "^4.6.0",
         "eslint-plugin-react-refresh": "^0.4.6",
+        "@tanstack/eslint-plugin-query": "^5.35.6",
         "postcss": "^8.4.38",
         "radix-themes-tw": "^0.2.3",
         "tailwindcss": "^3.4.3",

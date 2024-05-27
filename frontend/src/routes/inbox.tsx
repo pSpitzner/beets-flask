@@ -1,37 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import {
-    useQuery,
-    useMutation,
-    useQueryClient,
-    QueryClient,
-    QueryClientProvider,
-} from "@tanstack/react-query";
-
-// Create a client
-const queryClient = new QueryClient();
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { inboxQueryOptions } from "../lib/queryOptions";
 
 export const Route = createFileRoute("/inbox")({
-    component: () => (
-        <QueryClientProvider client={queryClient}>
-            <Inbox />
-        </QueryClientProvider>
-    ),
+    loader: (opts) => opts.context.queryClient.ensureQueryData(inboxQueryOptions()),
+    component: () => <Inbox />,
 });
 
 export function Inbox() {
-    const QueryClient = useQueryClient();
-
-    const query = useQuery({
-        queryKey: ["inbox"],
-        queryFn: async () => {
-            const response = await fetch("/api_v1/inbox");
-            if (!response.ok) {
-                throw new Error("Network response was not ok");
-            }
-            return response.json();
-        },
-    });
+    const query = useSuspenseQuery(inboxQueryOptions());
 
     console.log(query.data);
 
