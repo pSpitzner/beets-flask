@@ -14,6 +14,7 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as ScheduleImport } from './routes/schedule'
+import { Route as InboxImport } from './routes/inbox'
 
 // Create Virtual Routes
 
@@ -32,6 +33,11 @@ const ScheduleRoute = ScheduleImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const InboxRoute = InboxImport.update({
+  path: '/inbox',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const IndexLazyRoute = IndexLazyImport.update({
   path: '/',
   getParentRoute: () => rootRoute,
@@ -46,6 +52,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexLazyImport
+      parentRoute: typeof rootRoute
+    }
+    '/inbox': {
+      id: '/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof InboxImport
       parentRoute: typeof rootRoute
     }
     '/schedule': {
@@ -69,8 +82,37 @@ declare module '@tanstack/react-router' {
 
 export const routeTree = rootRoute.addChildren({
   IndexLazyRoute,
+  InboxRoute,
   ScheduleRoute,
   AboutLazyRoute,
 })
 
 /* prettier-ignore-end */
+
+/* ROUTE_MANIFEST_START
+{
+  "routes": {
+    "__root__": {
+      "filePath": "__root.tsx",
+      "children": [
+        "/",
+        "/inbox",
+        "/schedule",
+        "/about"
+      ]
+    },
+    "/": {
+      "filePath": "index.lazy.tsx"
+    },
+    "/inbox": {
+      "filePath": "inbox.tsx"
+    },
+    "/schedule": {
+      "filePath": "schedule.tsx"
+    },
+    "/about": {
+      "filePath": "about.lazy.tsx"
+    }
+  }
+}
+ROUTE_MANIFEST_END */

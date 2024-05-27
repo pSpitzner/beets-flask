@@ -4,22 +4,26 @@
     "version": "0.0.0",
     "type": "module",
     "scripts": {
-        "dev": "vite",
+        "dev": "vite --host",
         "build": "tsc && vite build",
+        "build:watch": "vite build --watch",
         "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
         "preview": "vite preview",
         "build:dev": "tsc && vite build --mode development --watch"
     },
     "dependencies": {
         "@radix-ui/themes": "^3.0.5",
-        "@tanstack/react-router": "^1.33.6",
+        "@tanstack/react-query": "^5.40.0",
+        "@tanstack/react-router": "^1.34.3",
+        "@tanstack/router-cli": "^1.33.12",
         "lucide-react": "^0.379.0",
         "react": "^18.2.0",
         "react-dom": "^18.2.0"
     },
     "devDependencies": {
-        "@tanstack/router-devtools": "^1.33.6",
-        "@tanstack/router-vite-plugin": "^1.32.17",
+        "@tanstack/eslint-plugin-query": "^5.35.6",
+        "@tanstack/router-devtools": "^1.34.4",
+        "@tanstack/router-vite-plugin": "^1.34.1",
         "@types/react": "^18.2.66",
         "@types/react-dom": "^18.2.22",
         "@typescript-eslint/eslint-plugin": "^7.2.0",

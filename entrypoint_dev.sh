@@ -3,7 +3,16 @@
 whoami
 id
 pwd
-redis-server --daemonize yes 
+
+cd /repo/frontend
+npm install
+# npm run build:dev &
+# npm run dev &
+npm run build:watch &
+
+cd /repo
+
+redis-server --daemonize yes
 
 # Check if configs exist and copy if they dont
 if [ ! -f /home/beetle/.config/beets/config.yaml ]; then
