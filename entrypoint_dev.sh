@@ -7,8 +7,8 @@ pwd
 cd /repo/frontend
 npm install
 # npm run build:dev &
-# npm run dev &
-npm run build:watch &
+npm run dev &
+# npm run build:watch &
 
 cd /repo
 
@@ -38,6 +38,7 @@ rm /repo/log/for_web.log
 
 #export FLASK_APP="main.py"
 export FLASK_ENV=development
+
 export FLASK_DEBUG=1
 python main.py
 # tail -f /dev/null

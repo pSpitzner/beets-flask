@@ -21,10 +21,10 @@ function RootComponent() {
         <>
             <Theme
                 appearance="dark"
-                panelBackground="translucent"
-                hasBackground={false}
+                // panelBackground="translucent"
+                hasBackground={true}
                 grayColor="mauve"
-                radius="full"
+                radius="small"
                 accentColor="mint"
             >
                 <RouteTransition />

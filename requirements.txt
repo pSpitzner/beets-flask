@@ -10,6 +10,7 @@ Flask_SSE==1.0.0
 rq==1.16.1
 flask-rq2==18.3
 Flask-SQLAlchemy==3.1.1
+flask-cors==4.0.1
 python-dotenv==1.0.1
 humanize==4.9.0
 cachetools==5.3.3

@@ -13,7 +13,8 @@ services:
         image: beets-flask
         restart: unless-stopped
         ports:
-            - "5001:5001"
+            - "5001:5001" # production and backend
+            - "5173:5173" # for vite dev server
         environment:
             LOG_LEVEL_SERVER: DEBUG # container console
             LOG_LEVEL_WEB: DEBUG # web interface console
