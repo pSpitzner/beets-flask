@@ -18,15 +18,9 @@ import { Route as InboxImport } from './routes/inbox'
 
 // Create Virtual Routes
 
-const AboutLazyImport = createFileRoute('/about')()
 const IndexLazyImport = createFileRoute('/')()
 
 // Create/Update Routes
-
-const AboutLazyRoute = AboutLazyImport.update({
-  path: '/about',
-  getParentRoute: () => rootRoute,
-} as any).lazy(() => import('./routes/about.lazy').then((d) => d.Route))
 
 const ScheduleRoute = ScheduleImport.update({
   path: '/schedule',
@@ -68,13 +62,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ScheduleImport
       parentRoute: typeof rootRoute
     }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutLazyImport
-      parentRoute: typeof rootRoute
-    }
   }
 }
 
@@ -84,7 +71,6 @@ export const routeTree = rootRoute.addChildren({
   IndexLazyRoute,
   InboxRoute,
   ScheduleRoute,
-  AboutLazyRoute,
 })
 
 /* prettier-ignore-end */
@@ -97,8 +83,7 @@ export const routeTree = rootRoute.addChildren({
       "children": [
         "/",
         "/inbox",
-        "/schedule",
-        "/about"
+        "/schedule"
       ]
     },
     "/": {
@@ -109,9 +94,6 @@ export const routeTree = rootRoute.addChildren({
     },
     "/schedule": {
       "filePath": "schedule.tsx"
-    },
-    "/about": {
-      "filePath": "about.lazy.tsx"
     }
   }
 }

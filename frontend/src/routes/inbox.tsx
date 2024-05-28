@@ -2,11 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { inboxQueryOptions } from "../lib/queryOptions";
-import { Flex, Text, Button } from "@radix-ui/themes";
+
 import { FsPath } from "../lib/inbox";
 
 export const Route = createFileRoute("/inbox")({
     loader: (opts) => opts.context.queryClient.ensureQueryData(inboxQueryOptions()),
+
     component: () => <Inbox />,
 });
 
@@ -14,12 +15,9 @@ export function Inbox() {
     const query = useSuspenseQuery(inboxQueryOptions());
 
     console.log(query.data);
-
     return (
         <div>
-            <Flex>
-                <FolderView fp={query.data} />
-            </Flex>
+            <FolderView fp={query.data} />
         </div>
     );
 }
@@ -42,13 +40,13 @@ export function FolderView({
 }: {
     fp: FsPath;
     label?: string;
-    mergeLabels?: Boolean;
+    mergeLabels?: boolean;
 }): JSX.Element {
     if (fp.type === "file") {
         return FileView({ fp: fp });
     }
 
-    let subViews: JSX.Element[] = [];
+    const subViews: JSX.Element[] = [];
 
     // first, check if we can merge a sub-path.
     for (const name of Object.keys(fp.children)) {
@@ -74,7 +72,7 @@ export function FolderView({
 
     return (
         <div key={fp.full_path} className="ml-4">
-            <Text>{label}</Text>
+            <span>{label}</span>
             {subViews}
         </div>
     );
@@ -87,7 +85,7 @@ export function FileView({ fp: fp }: { fp: FsPath }): JSX.Element {
     const fileName = fp.full_path.split("/").pop();
     return (
         <div key={fp.full_path} className="ml-4">
-            <Text>{fileName}</Text>
+            <span>{fileName}</span>
         </div>
     );
 }
@@ -95,7 +93,7 @@ export function FileView({ fp: fp }: { fp: FsPath }): JSX.Element {
 function mergeSubFolderNames(
     parent: FsPath,
     name: string,
-    merged: string = ""
+    merged = ""
 ): [FsPath, string, string] {
     const me = parent.children[name];
     const numChildren = Object.keys(me.children).length;
