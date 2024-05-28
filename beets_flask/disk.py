@@ -172,23 +172,26 @@ def path_to_dict(root_dir, relative_to="/") -> dict:
     files = sorted(files, key=lambda s: s.lower())
     album_folders = album_folders_from_track_paths(files)
     folder_structure = {
-        "__type": "file" if os.path.isfile(root_dir) else "directory",
-        "__is_album": root_dir in album_folders,
-        "__full_path": root_dir,
+        "type": "directory",
+        "is_album": relative_to in album_folders,
+        "full_path": relative_to,
+        "children": {}
     }
     for file in files:
-        path_components = [p for p in file.lstrip(relative_to).split("/") if p]
+        f = file[len(relative_to):] if file.startswith(relative_to) else file
+        path_components = [p for p in f.split("/") if p]
         current_dict = folder_structure
         current_path = relative_to
         for component in path_components:
             current_path = os.path.join(current_path, component)
-            if component not in current_dict:
-                current_dict[component] = {
-                    "__type": "file" if os.path.isfile(file) else "directory",
-                    "__is_album": current_path in album_folders,
-                    "__full_path": current_path,
+            if component not in current_dict["children"]:
+                current_dict["children"][component] = {
+                    "type": "file" if os.path.isfile(file) else "directory",
+                    "is_album": current_path in album_folders,
+                    "full_path": current_path,
+                    "children": {}
                 }
-            current_dict = current_dict[component]
+            current_dict = current_dict["children"][component]
 
     return folder_structure
 
@@ -201,7 +204,7 @@ def tree(folder_structure) -> str:
     """
 
     def _tree(d, prefix=""):
-        contents = [name for name in d.keys() if not name.startswith("__")]
+        contents = d["children"].keys()
         pointers = ["├── "] * (len(contents) - 1) + ["└── "]
         for pointer, name in zip(pointers, contents):
             yield prefix + pointer + name
