@@ -13,3 +13,17 @@
     overflow: hidden;
 }
 */
+
+/* https://lucide.dev/guide/advanced/global-styling*/
+
+@layer components {
+    .table-info {
+        border-collapse: separate;
+        border-spacing: 20px 4px;
+    }
+}
+
+.lucide {
+    color: currentColor;
+    stroke-width: 2px;
+}
