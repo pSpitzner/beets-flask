@@ -1,3 +1,5 @@
+import { queryOptions } from "@tanstack/react-query";
+
 // these guys can be infinetely nested and represent a file path on disk.
 export interface FsPath {
     full_path: string;
@@ -6,11 +8,8 @@ export interface FsPath {
     children: Record<string, FsPath>;
 }
 
-const apiPrefix = import.meta.env.MODE === "development" ? "http://0.0.0.0:5001" : "";
-
 export async function fetchInbox(): Promise<FsPath> {
-    console.log(`fetchInbox from ${apiPrefix}`);
-    const response = await fetch(`${apiPrefix}/api_v1/inbox`);
+    const response = await fetch(`/inbox`);
     if (!response.ok) {
         throw new Error("Network response was not ok");
     }
@@ -20,8 +19,15 @@ export async function fetchInbox(): Promise<FsPath> {
         throw new Error("Failed to parse response as JSON in fetchInbox()");
     }
 }
-export async function fetchFsPath(folderPath:string): Promise<FsPath> {
-    const response = await fetch(`${apiPrefix}/api_v1/inbox/[ath/${folderPath}`);
+
+export const inboxQueryOptions = () =>
+    queryOptions({
+        queryKey: ["inbox"],
+        queryFn: () => fetchInbox(),
+    });
+
+export async function fetchFsPath(folderPath: string): Promise<FsPath> {
+    const response = await fetch(`/inbox/path/${folderPath}`);
     if (!response.ok) {
         throw new Error("Network response was not ok");
     }
@@ -31,3 +37,9 @@ export async function fetchFsPath(folderPath:string): Promise<FsPath> {
         throw new Error("Failed to parse response as JSON in fetchFsPath()");
     }
 }
+
+export const fsPathQueryOptions = (path: string) =>
+    queryOptions({
+        queryKey: ["inbox", "path", path],
+        queryFn: () => fetchFsPath(path),
+    });

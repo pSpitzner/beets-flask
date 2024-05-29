@@ -2,7 +2,7 @@ import IconButton from "@mui/material/IconButton";
 import { UseMutationOptions, useMutation } from "@tanstack/react-query";
 import { CheckIcon } from "lucide-react";
 import ErrorDialog from "./dialogs";
-import { ButtonProps, CircularProgress } from "@mui/material";
+import { Button, ButtonProps, CircularProgress } from "@mui/material";
 import { forwardRef } from "react";
 
 /**
@@ -72,3 +72,70 @@ export const IconButtonWithMutation = forwardRef(function IconButtonWithMutation
         </div>
     );
 });
+
+export const IconTextButtonWithMutation = forwardRef(
+    function IconTextButtonWithMutation(
+        {
+            mutationOption,
+            icon,
+            text,
+            ...props
+        }: {
+            mutationOption?: UseMutationOptions;
+            icon: React.ReactNode;
+            text: React.ReactNode;
+        } & ButtonProps,
+        ref: React.Ref<HTMLDivElement>
+    ) {
+        const { isSuccess, isPending, mutate, isError, error, reset } = useMutation(
+            mutationOption ?? {
+                mutationFn: async () => {
+                    return new Promise((resolve, reject) => {
+                        setTimeout(() => {
+                            Math.random() > 0.5
+                                ? reject(new Error("Random error occurred."))
+                                : resolve("success");
+                        }, 1000);
+                    });
+                },
+            }
+        );
+
+        return (
+            <div className="relative w-100" ref={ref}>
+                <Button
+                    {...props}
+                    onClick={() => {
+                        if (isSuccess) {
+                            reset();
+                        } else {
+                            mutate();
+                        }
+                    }}
+                    variant="text"
+                    sx={{
+                        width: "100%",
+                    }}
+                >
+                    {isSuccess ? <CheckIcon /> : icon}
+                    <span>{text}</span>
+                </Button>
+                {isPending ? (
+                    <CircularProgress
+                        color={props.color}
+                        sx={{
+                            position: "absolute",
+                            top: "0",
+                            left: "0",
+                            padding: "2px",
+                            zIndex: 1,
+                        }}
+                    />
+                ) : null}
+                {isError && (
+                    <ErrorDialog open={isError} error={error} onClose={reset} />
+                )}
+            </div>
+        );
+    }
+);

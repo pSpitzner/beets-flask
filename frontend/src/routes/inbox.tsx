@@ -1,13 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
-import "./inbox.scss";
 
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { inboxQueryOptions } from "../lib/queryOptions";
-import { FsPath } from "../lib/inbox";
-import * as Collapsible from "@radix-ui/react-collapsible";
-import { TriangleRightIcon } from "@radix-ui/react-icons";
+import {
+    UseMutationOptions,
+    useMutation,
+    useSuspenseQuery,
+} from "@tanstack/react-query";
+import { FsPath, inboxQueryOptions } from "../lib/inbox";
 import { StatusIcon } from "../components/common/statusIcon";
 import { SimilarityBadge } from "../components/common/similarityBadge";
+
+import styles from "./inbox.module.scss";
+import { ChevronRight, Icon } from "lucide-react";
+import { Settings2 } from "lucide-react";
+
+import * as Collapsible from "@radix-ui/react-collapsible";
+import { Button, Checkbox, IconButton } from "@mui/material";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+
+import { useState, MouseEvent } from "react";
+import ErrorDialog from "@/components/common/dialogs";
+import { IconTextButtonWithMutation } from "@/components/common/buttons";
 
 export const Route = createFileRoute("/inbox")({
     loader: (opts) => opts.context.queryClient.ensureQueryData(inboxQueryOptions()),
@@ -19,7 +32,7 @@ export function Inbox() {
 
     return (
         <div>
-            <div className="InboxView">
+            <div className={styles.inboxView}>
                 <FolderView fp={query.data} />
             </div>
         </div>
@@ -45,7 +58,7 @@ export function FolderView({
 }: {
     fp: FsPath;
     label?: string;
-    mergeLabels?: Boolean;
+    mergeLabels?: boolean;
     level?: number;
 }): JSX.Element {
     if (fp.type === "file") {
@@ -84,28 +97,32 @@ export function FolderView({
         // this takes care of the root folder
         return <>{subViews}</>;
     }
-
     return (
-        <div className={subViews.length > 0 ? "InboxFolder" : "InboxFolder Empty"}>
+        <div className={styles.folder} data-empty={subViews.length < 1}>
             <Collapsible.Root defaultOpen>
-                <div key={fp.full_path} className="InboxFolderHeader">
-                    {subViews.length > 0 ? (
-                        <Collapsible.Trigger className="InboxFolderCollapseTrigger">
-                            <TriangleRightIcon />
-                        </Collapsible.Trigger>
-                    ) : (
-                        <TriangleRightIcon />
+                <div key={fp.full_path} className={styles.header}>
+                    <Collapsible.Trigger
+                        asChild
+                        className={styles.trigger}
+                        disabled={subViews.length < 1}
+                    >
+                        <ChevronRight />
+                    </Collapsible.Trigger>
+
+                    {fp.is_album && (
+                        <div className="flex flex-row items-center justify-center gap-2 mx-1">
+                            <Checkbox className="p-0 "></Checkbox>
+                            <StatusIcon status="unknown" />
+                            <SimilarityBadge dist={null} />
+                            <ActionMenu fp={fp} />
+                        </div>
                     )}
 
-                    {fp.is_album && <StatusIcon status="unknown" className="me-2" />}
-                    {fp.is_album && <SimilarityBadge dist={null} className="me-2" />}
                     <div>{label}</div>
                 </div>
-                {subViews.length > 0 && (
-                    <Collapsible.Content className="CollapsibleContent">
-                        <div className="InboxFolderContent">{subViews}</div>
-                    </Collapsible.Content>
-                )}
+                <Collapsible.Content className={styles.content}>
+                    {subViews}
+                </Collapsible.Content>
             </Collapsible.Root>
         </div>
     );
@@ -117,8 +134,91 @@ export function FileView({ fp: fp }: { fp: FsPath }): JSX.Element {
     }
     const fileName = fp.full_path.split("/").pop();
     return (
-        <div key={fp.full_path} className="InboxFile">
+        <div key={fp.full_path} className={styles.file}>
             <div>{fileName}</div>
+        </div>
+    );
+}
+
+export default function ActionMenu({ fp }: { fp: FsPath }) {
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const open = Boolean(anchorEl);
+    const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
+    const handleClose = () => {
+        setAnchorEl(null);
+    };
+
+    const retagOptions: UseMutationOptions = {
+        mutationFn: async () => {
+            return await fetch(`/tag/add`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    folder: fp.full_path,
+                    kind: "preview",
+                }),
+            });
+        },
+        onSuccess: () => {
+            handleClose();
+        },
+        onError: (error: Error) => {
+            console.error(error);
+        },
+    };
+
+    return (
+        <div>
+            <IconButton
+                id="basic-button"
+                aria-controls={open ? "basic-menu" : undefined}
+                aria-haspopup="true"
+                aria-expanded={open ? "true" : undefined}
+                className="p-0 m-0"
+                onClick={handleClick}
+            >
+                <Settings2 />
+            </IconButton>
+
+            <Menu
+                id="basic-menu"
+                anchorEl={anchorEl}
+                open={open}
+                onClose={handleClose}
+                MenuListProps={{
+                    "aria-labelledby": "basic-button",
+                }}
+            >
+                <MenuItem sx={{ padding: 0 }}>
+                    <IconTextButtonWithMutation
+                        icon={<ChevronRight />}
+                        text="(Re-)Tag"
+                        color="inherit"
+                        mutationOption={retagOptions}
+                    />
+                </MenuItem>
+                <MenuItem
+                    onClick={() => {
+                        handleClose();
+                    }}
+                >
+                    Import
+                </MenuItem>
+                <MenuItem
+                    onClick={() => {
+                        handleClose();
+                        navigator.clipboard
+                            .writeText(fp.full_path)
+                            .catch(console.error);
+                    }}
+                >
+                    Copy Path
+                </MenuItem>
+            </Menu>
         </div>
     );
 }

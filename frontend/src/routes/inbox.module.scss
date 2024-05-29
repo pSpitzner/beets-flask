@@ -1,0 +1,85 @@
+// these can probably go into a general css
+$border-width: 1px;
+$border-color: #495057;
+
+@keyframes slideDown {
+    from {
+        height: 0px;
+    }
+
+    to {
+        height: var(--radix-collapsible-content-height);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        height: var(--radix-collapsible-content-height);
+    }
+
+    to {
+        height: 0px;
+    }
+}
+
+// inbox
+.inboxView {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+}
+
+.header {
+    display: flex;
+    flex-direction: row;
+    justify-content: begin;
+    align-items: center;
+    padding-block: 0.15rem;
+}
+
+.trigger {
+    transition: transform 150ms ease-in-out;
+    margin-right: 0.3rem;
+
+    &[data-state="open"] {
+        transform: rotate(90deg);
+    }
+}
+
+.content {
+    margin-left: 0.7rem;
+    margin-bottom: 0.2rem;
+    padding-left: 1rem;
+    border-left: $border-width solid $border-color;
+    overflow: hidden;
+    &[data-state="open"] {
+        animation: slideDown 150ms ease-out;
+    }
+    &[data-state="closed"] {
+        animation: slideUp 150ms ease-out;
+    }
+}
+
+.folder {
+    font-family: monospace;
+    font-size: 0.7rem;
+    white-space: pre;
+
+    &[data-empty="true"] {
+        color: #999;
+    }
+
+    svg {
+        display: flex;
+        height: 1rem;
+    }
+}
+
+.file {
+    margin-left: 0.45rem;
+    font-family: monospace;
+    font-size: 0.7rem;
+    white-space: pre;
+    color: #999;
+}

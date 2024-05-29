@@ -1,27 +1,29 @@
-import {
-    CircleIcon,
-    QuestionMarkCircledIcon,
-    CheckCircledIcon,
-} from "@radix-ui/react-icons";
+import { CircleCheck, CircleDashed, CircleHelp } from "lucide-react";
 
-export function StatusIcon({ status, className }: { status: string, className?: string}) {
+export function StatusIcon({
+    status,
+    className,
+}: {
+    status: string;
+    className?: string;
+}) {
     switch (status) {
         case "imported":
             return (
                 <div title={status} className={className}>
-                    <CheckCircledIcon />
+                    <CircleCheck />
                 </div>
             );
         case "unmatched":
             return (
                 <div title={status} className={className}>
-                    <QuestionMarkCircledIcon />
+                    <CircleHelp />
                 </div>
             );
         default:
             return (
                 <div title={status} className={className}>
-                    <CircleIcon />
+                    <CircleDashed size={10} />
                 </div>
             );
     }

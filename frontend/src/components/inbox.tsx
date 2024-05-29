@@ -24,13 +24,10 @@ export function InboxOverview() {
         >
             <CardContent className="flex flex-row space-x-4 justify-center relative overflow-visible">
                 <div
-                    className="absolute top-0 right-0 flex flex-row space-x-1 overflow-visible
-                justify-center items-center p-1
+                    className="absolute top-0 right-0 flex flex-row space-x-1 overflow-visible justify-center items-center p-1
                 "
                 >
-                    <label className="text-xs p-1" color="primary.main">
-                        Last scan: 2 days ago
-                    </label>
+                    <label className="text-xs p-1">Last scan: 2 days ago</label>
                     <Link to="/schedule">
                         <Tooltip title="Schedule inbox scans">
                             <IconButton>
