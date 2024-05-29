@@ -210,7 +210,7 @@ def beets_task(beet_ids: list[str], extra_args) -> dict:
             bt.group_id = group_id
 
     for bt in bts:
-        bt.task = task
+        bt.kind = task
         bt.status = "pending"
         bt.track_paths = bt.eligible_track_paths()
         bt.updated_at = datetime.datetime.now()
@@ -219,13 +219,13 @@ def beets_task(beet_ids: list[str], extra_args) -> dict:
     ut.update_client_view("tags")
 
     for bt in bts:
-        log.info(f"Queuing {bt.task} '{bt.album_folder}' (tag id: {bt.id})")
-        if str(bt.task).lower() == "preview":
+        log.info(f"Queuing {bt.kind} '{bt.album_folder}' (tag id: {bt.id})")
+        if str(bt.kind).lower() == "preview":
             rq.get_queue("preview").enqueue(preview_task, bt.id, callback_url)
-        elif str(bt.task).lower() == "import":
+        elif str(bt.kind).lower() == "import":
             rq.get_queue("import").enqueue(import_task, bt.id, callback_url)
         else:
-            log.debug(f"Invalid task {bt.task}")
+            log.debug(f"Invalid task {bt.kind}")
 
     return {
         "groupIds": [bt.group_id for bt in bts],

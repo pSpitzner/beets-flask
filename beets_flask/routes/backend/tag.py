@@ -3,11 +3,12 @@
 Tasks are beet tasks that are created by the user or automatically by the system.
 """
 
-from flask import Blueprint, request
+from flask import Blueprint, request, jsonify
 from sqlalchemy import select
 
 from beets_flask.models import Tag, TagGroup
 from beets_flask.db_engine import db_session
+from beets_flask.routes.backend.errors import InvalidUsage
 
 tag_bp = Blueprint("tag", __name__, url_prefix="/tag")
 
@@ -70,13 +71,22 @@ def add_tag():
     folder = data.get("folder")
     kind = data.get("kind")
 
-    tag = Tag(album_folder=folder, kind=kind)
-    db_session().add(tag)
-    db_session().commit()
+    if not folder or not kind:
+        raise InvalidUsage("You need to specify the folder and kind of the tag")
+
+    # Get or add the tag
+    try:
+        tag = Tag.get_by(Tag.album_folder == folder)
+    except ValueError:
+        tag = Tag(album_folder=folder, kind=kind)
+
+    tag.kind = kind
+    tag.commit()
+    tag.enqueue()
 
     # now we would also need to submit the job to queue.
     # I am thinking that we should make the enqueuing part
     # of the tag class! then we would just call tag.enqueue()
     # and depending on `kind` push it into the right queue.
 
-    return tag.to_dict()
+    return jsonify(tag.to_dict(), 200)

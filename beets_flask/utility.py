@@ -195,7 +195,7 @@ def html_for_distance(dist):
 
 # audio formats supported by beets
 # https://github.com/beetbox/beets/discussions/3964
-audio_extensions = (
+AUDIO_EXTENSIONS = (
     ".mp3",
     ".aac",
     ".alac",

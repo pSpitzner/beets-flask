@@ -175,10 +175,10 @@ def path_to_dict(root_dir, relative_to="/") -> dict:
         "type": "directory",
         "is_album": relative_to in album_folders,
         "full_path": relative_to,
-        "children": {}
+        "children": {},
     }
     for file in files:
-        f = file[len(relative_to):] if file.startswith(relative_to) else file
+        f = file[len(relative_to) :] if file.startswith(relative_to) else file
         path_components = [p for p in f.split("/") if p]
         current_dict = folder_structure
         current_path = relative_to
@@ -189,7 +189,7 @@ def path_to_dict(root_dir, relative_to="/") -> dict:
                     "type": "file" if os.path.isfile(file) else "directory",
                     "is_album": current_path in album_folders,
                     "full_path": current_path,
-                    "children": {}
+                    "children": {},
                 }
             current_dict = current_dict["children"][component]
 
@@ -235,7 +235,7 @@ def album_folders_from_track_paths(track_paths: list):
             album_folders.append(os.path.dirname(os.path.abspath(path)))
         elif os.path.isdir(path):
             for file in os.listdir(path):
-                if file.lower().endswith(ut.audio_extensions):
+                if file.lower().endswith(ut.AUDIO_EXTENSIONS):
                     album_folders.append(os.path.abspath(path))
                     break
     return sorted(
