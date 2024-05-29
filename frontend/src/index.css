@@ -19,7 +19,7 @@
 @layer components {
     .table-info {
         border-collapse: separate;
-        border-spacing: 20px 4px;
+        border-spacing: 18px 4px;
     }
 }
 

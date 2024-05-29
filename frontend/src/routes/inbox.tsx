@@ -7,14 +7,12 @@ import { FsPath } from "../lib/inbox";
 
 export const Route = createFileRoute("/inbox")({
     loader: (opts) => opts.context.queryClient.ensureQueryData(inboxQueryOptions()),
-
     component: () => <Inbox />,
 });
 
 export function Inbox() {
     const query = useSuspenseQuery(inboxQueryOptions());
 
-    console.log(query.data);
     return (
         <div>
             <FolderView fp={query.data} />

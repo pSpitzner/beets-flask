@@ -1,9 +1,15 @@
-import { FileScan, Inbox, Recycle, Trash2 } from "lucide-react";
+import { FileScan, FolderClock, Inbox, Recycle, Trash2 } from "lucide-react";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
-import { Button, CardActions, Divider } from "@mui/material";
+import CardActions from "@mui/material/CardActions";
+import Divider from "@mui/material/Divider";
+import Tooltip from "@mui/material/Tooltip";
+import IconButton from "@mui/material/IconButton";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
+import { IconButtonWithMutation } from "./common/buttons";
+import { Link } from "@tanstack/react-router";
+
 export function InboxOverview() {
     return (
         <Card
@@ -13,12 +19,26 @@ export function InboxOverview() {
                 textAlign: "center",
                 boxShadow:
                     "0 2px 4px -2px rgba(0,0,0,0.24), 0 4px 24px -2px rgba(0, 0, 0, 0.2)",
+                overflow: "visible",
             }}
         >
-            <CardContent className="flex flex-row space-x-4 justify-center relative">
-                <label className="absolute top-0 right-0 text-xs p-1 text-main">
-                    Last scan: 2 days ago
-                </label>
+            <CardContent className="flex flex-row space-x-4 justify-center relative overflow-visible">
+                <div
+                    className="absolute top-0 right-0 flex flex-row space-x-1 overflow-visible
+                justify-center items-center p-1
+                "
+                >
+                    <label className="text-xs p-1" color="primary.main">
+                        Last scan: 2 days ago
+                    </label>
+                    <Link to="/schedule">
+                        <Tooltip title="Schedule inbox scans">
+                            <IconButton>
+                                <FolderClock size="1rem" strokeWidth={1} />
+                            </IconButton>
+                        </Tooltip>
+                    </Link>
+                </div>
                 <div>
                     <Avatar
                         sx={{
@@ -55,7 +75,7 @@ export function InboxOverview() {
                         /my/mount/point
                     </Box>
                 </div>
-                <div className="flex flex-col justify-center items-center pt-4">
+                <div className="flex flex-col justify-end">
                     <table className="table-info text-gray-100 text-sm">
                         <thead>
                             <tr>
@@ -89,17 +109,23 @@ export function InboxOverview() {
             <Divider />
             <CardActions className="flex justify-between items-center space-x-4 w-100">
                 <div>
-                    <Button color="error">
-                        <Trash2 size="1.5em" />
-                    </Button>
+                    <Tooltip title="Delete all files in the inbox">
+                        <IconButtonWithMutation color="error">
+                            <Trash2 size="1em" />
+                        </IconButtonWithMutation>
+                    </Tooltip>
                 </div>
                 <div className="flex flex-row space-x-4">
-                    <Button color="warning">
-                        <Recycle size="1.5em" />
-                    </Button>
-                    <Button>
-                        <FileScan size="1.5em" />
-                    </Button>
+                    <Tooltip title="Delete all already tagged files in the inbox">
+                        <IconButtonWithMutation color="warning">
+                            <Recycle size="1em" />
+                        </IconButtonWithMutation>
+                    </Tooltip>
+                    <Tooltip title="Scan the inbox folder for new files">
+                        <IconButtonWithMutation color="primary">
+                            <FileScan size="1em" />
+                        </IconButtonWithMutation>
+                    </Tooltip>
                 </div>
             </CardActions>
         </Card>
