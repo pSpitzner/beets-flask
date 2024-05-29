@@ -1,9 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
+import "./inbox.scss";
 
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { inboxQueryOptions } from "../lib/queryOptions";
-import { Flex, Text, Button } from "@radix-ui/themes";
 import { FsPath } from "../lib/inbox";
+import * as Collapsible from "@radix-ui/react-collapsible";
+import { TriangleRightIcon } from "@radix-ui/react-icons";
+import { StatusIcon } from "../components/common/statusIcon";
+import { SimilarityBadge } from "../components/common/similarityBadge";
 
 export const Route = createFileRoute("/inbox")({
     loader: (opts) => opts.context.queryClient.ensureQueryData(inboxQueryOptions()),
@@ -17,9 +21,9 @@ export function Inbox() {
 
     return (
         <div>
-            <Flex>
+            <div className="InboxView">
                 <FolderView fp={query.data} />
-            </Flex>
+            </div>
         </div>
     );
 }
@@ -39,10 +43,12 @@ export function FolderView({
     fp,
     label,
     mergeLabels = true,
+    level = 0,
 }: {
     fp: FsPath;
     label?: string;
     mergeLabels?: Boolean;
+    level?: number;
 }): JSX.Element {
     if (fp.type === "file") {
         return FileView({ fp: fp });
@@ -64,7 +70,11 @@ export function FolderView({
             } else {
                 const [subFp, subName, mergedNname] = mergeSubFolderNames(fp, name);
                 subViews.push(
-                    FolderView({ fp: subFp.children[subName], label: mergedNname })
+                    FolderView({
+                        fp: subFp.children[subName],
+                        label: mergedNname,
+                        level: level + 1,
+                    })
                 );
             }
         } else {
@@ -72,10 +82,33 @@ export function FolderView({
         }
     }
 
+    if (level === 0) {
+        // this takes care of the root folder
+        return <>{subViews}</>;
+    }
+
     return (
-        <div key={fp.full_path} className="ml-4">
-            <Text>{label}</Text>
-            {subViews}
+        <div className={subViews.length > 0 ? "InboxFolder" : "InboxFolder Empty"}>
+            <Collapsible.Root defaultOpen>
+                <div key={fp.full_path} className="InboxFolderHeader">
+                    {subViews.length > 0 ? (
+                        <Collapsible.Trigger className="InboxFolderCollapseTrigger">
+                            <TriangleRightIcon />
+                        </Collapsible.Trigger>
+                    ) : (
+                        <TriangleRightIcon />
+                    )}
+
+                    {fp.is_album && <StatusIcon status="unknown" className="me-2" />}
+                    {fp.is_album && <SimilarityBadge dist={null} className="me-2" />}
+                    <div>{label}</div>
+                </div>
+                {subViews.length > 0 && (
+                    <Collapsible.Content className="CollapsibleContent">
+                        <div className="InboxFolderContent">{subViews}</div>
+                    </Collapsible.Content>
+                )}
+            </Collapsible.Root>
         </div>
     );
 }
@@ -86,8 +119,8 @@ export function FileView({ fp: fp }: { fp: FsPath }): JSX.Element {
     }
     const fileName = fp.full_path.split("/").pop();
     return (
-        <div key={fp.full_path} className="ml-4">
-            <Text>{fileName}</Text>
+        <div key={fp.full_path} className="InboxFile">
+            <div>{fileName}</div>
         </div>
     );
 }

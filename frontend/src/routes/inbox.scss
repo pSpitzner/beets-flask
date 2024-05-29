@@ -1,0 +1,85 @@
+
+
+// these can probably go into a general css
+$border-width: 1px;
+$border-color: #495057;
+
+.CollapsibleContent {
+  overflow: hidden;
+
+  &[data-state='open'] {
+    animation: slideDown 150ms ease-out;
+  }
+
+  &[data-state='closed'] {
+    animation: slideUp 150ms ease-out;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    height: 0;
+  }
+
+  to {
+    height: var(--radix-collapsible-content-height);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    height: var(--radix-collapsible-content-height);
+  }
+
+  to {
+    height: 0;
+  }
+}
+
+
+// inbox
+.InboxView {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.InboxFolderHeader {
+    display: flex;
+    flex-direction: row;
+    justify-content: begin;
+    align-items: center;
+}
+
+.InboxFolderCollapseTrigger {
+    margin-right: 0.3rem;
+    transition: transform 150ms ease-in-out;
+
+    &[data-state="open"] {
+      transform: rotate(90deg);
+    }
+}
+
+.InboxFolderContent {
+  margin-left : 0.45rem;
+  padding-left: 1rem;
+  border-left: $border-width solid $border-color;
+}
+
+.InboxFolder {
+  font-family: monospace;
+  font-size: 0.7rem;
+  white-space: pre;
+  &.Empty {
+    color: #999;
+  }
+}
+
+.InboxFile {
+  margin-left: 0.45rem;
+  font-family: monospace;
+  font-size: 0.7rem;
+  white-space: pre;
+  color: #999;
+}
