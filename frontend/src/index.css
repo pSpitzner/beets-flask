@@ -1,14 +1,7 @@
-@layer tw_base, radix_themes, tw_components_and_utilities;
-@import "@radix-ui/themes/styles.css" layer(radix_themes);
+@tailwind base;
 
-@layer tw_base {
-    @tailwind base;
-}
-
-@layer tw_components_and_utilities {
-    @tailwind components;
-    @tailwind utilities;
-}
+@tailwind components;
+@tailwind utilities;
 
 /**
 #app {
@@ -20,6 +13,17 @@
     overflow: hidden;
 }
 */
-.radix-themes {
-    backdrop-filter: blur(2px) hue-rotate(190deg);
+
+/* https://lucide.dev/guide/advanced/global-styling*/
+
+@layer components {
+    .table-info {
+        border-collapse: separate;
+        border-spacing: 18px 4px;
+    }
+}
+
+.lucide {
+    color: currentColor;
+    stroke-width: 2px;
 }

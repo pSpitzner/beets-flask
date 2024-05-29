@@ -3,11 +3,10 @@ import ReactDOM from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-// Global styles
-import "./index.css";
-
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
+import ThemeProvider from "./theme";
+import CircularProgress from "@mui/material/CircularProgress";
 
 // Create a new query client instance
 const queryClient = new QueryClient();
@@ -19,6 +18,17 @@ const router = createRouter({
         queryClient,
     },
     defaultPreload: "intent",
+    defaultPendingComponent: () => (
+        <div className="flex flex-col h-screen w-screen justify-center items-center">
+            <div className="flex flex-col space-y-4 justify-center items-center">
+                <CircularProgress />
+                <p className="text-lg">
+                    Hang tight! We&apos;re tuning our server to tag your tunes.
+                </p>
+            </div>
+        </div>
+    ),
+
     // Since we're using React Query, we don't want loader calls to ever be stale
     // This will ensure that the loader is always called when the route is preloaded or visited
     defaultPreloadStaleTime: 0,
@@ -33,9 +43,11 @@ declare module "@tanstack/react-router" {
 
 function App() {
     return (
-        <QueryClientProvider client={queryClient}>
-            <RouterProvider router={router} />
-        </QueryClientProvider>
+        <ThemeProvider>
+            <QueryClientProvider client={queryClient}>
+                <RouterProvider router={router} />
+            </QueryClientProvider>
+        </ThemeProvider>
     );
 }
 

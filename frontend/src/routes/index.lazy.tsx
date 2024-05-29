@@ -1,6 +1,4 @@
 import { createLazyFileRoute } from "@tanstack/react-router";
-import { Heading, Container, Section } from "@radix-ui/themes";
-
 import { InboxOverview } from "../components/inbox";
 
 export const Route = createLazyFileRoute("/")({
@@ -15,11 +13,13 @@ export const Route = createLazyFileRoute("/")({
  */
 function Index() {
     return (
-        <Container className="p-2">
-            <Heading>Music library</Heading>
-            <Section>
-                <InboxOverview />
-            </Section>
-        </Container>
+        <div>
+            <h1>Index</h1>
+            <div className="flex flex-col space-y-4 flex-shrink-1 justify-center items-center">
+                <div className="flex flex-row space-x-4">
+                    <InboxOverview />
+                </div>
+            </div>
+        </div>
     );
 }

@@ -17,8 +17,6 @@ export const Route = createFileRoute("/inbox")({
 export function Inbox() {
     const query = useSuspenseQuery(inboxQueryOptions());
 
-    console.log(query.data);
-
     return (
         <div>
             <div className="InboxView">
@@ -54,7 +52,7 @@ export function FolderView({
         return FileView({ fp: fp });
     }
 
-    let subViews: JSX.Element[] = [];
+    const subViews: JSX.Element[] = [];
 
     // first, check if we can merge a sub-path.
     for (const name of Object.keys(fp.children)) {
@@ -128,7 +126,7 @@ export function FileView({ fp: fp }: { fp: FsPath }): JSX.Element {
 function mergeSubFolderNames(
     parent: FsPath,
     name: string,
-    merged: string = ""
+    merged = ""
 ): [FsPath, string, string] {
     const me = parent.children[name];
     const numChildren = Object.keys(me.children).length;
