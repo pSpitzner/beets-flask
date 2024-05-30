@@ -16,7 +16,7 @@ def get_all():
 
     use_cache = bool(request.args.get("use_cache", False))
     inbox = get_inbox_dict(use_cache=use_cache)
-    log.debug(f"returning inbox {inbox=}")
+    # log.debug(f"returning inbox {inbox=}")
 
     return inbox
 

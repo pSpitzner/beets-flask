@@ -1,3 +1,4 @@
+import json
 from flask import Blueprint, jsonify
 
 from werkzeug.exceptions import HTTPException
@@ -46,7 +47,7 @@ def handle_exception(e):
     # start with the correct headers and status code from the error
     response = e.get_response()
     # replace the body with JSON
-    response.data = jsonify(
+    response.data = json.dumps(
         {
             "code": e.code,
             "name": e.name,

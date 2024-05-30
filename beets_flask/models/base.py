@@ -1,19 +1,32 @@
 from __future__ import annotations
 from typing import Self
 from sqlalchemy import select
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, Session
+from beets_flask.utility import log
 
 
 class Base(DeclarativeBase):
     __abstract__ = True
 
     @classmethod
-    def get_by(cls, *whereclause) -> Self:
-        from ..db_engine import db_session
+    def get_by(cls, *whereclause, session: Session | None = None) -> Self:
 
-        stmt = select(cls).where(*whereclause)
-        item = db_session().execute(stmt).scalars().first()
+        close_after = False
+        if session is None:
+            log.debug("No session provided, you will not be able to make changes to the database.")
+            close_after = True
+            from beets_flask.db_engine import db_session_factory
+            session = db_session_factory()
 
-        if item is None:
-            raise ValueError(f"No item found for {whereclause} in {cls.__name__}")
-        return item
+        try:
+            stmt = select(cls).where(*whereclause)
+            item = session.execute(stmt).scalars().first()
+            if item is None:
+                raise ValueError(f"No item found for {whereclause} in {cls.__name__}")
+            return item
+        except:
+            raise
+        finally:
+            if close_after:
+                session.close()
+
