@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from beets_flask.disk import get_inbox_dict, path_to_dict
 from beets_flask.logger import log
+from beets_flask.utility import AUDIO_EXTENSIONS
 
 inbox_bp = Blueprint("inbox", __name__, url_prefix="/inbox")
 
@@ -58,7 +59,7 @@ def compute_stats(folder=None):
     # TODO: add all audio files
     with os.scandir(folder) as it:
         for entry in it:
-            if entry.is_file() and entry.name.endswith((".mp3", ".flac")):
+            if entry.is_file() and entry.name.endswith(AUDIO_EXTENSIONS):
                 count += 1
                 size_bytes += entry.stat().st_size
 
