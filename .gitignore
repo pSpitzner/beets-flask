@@ -6,6 +6,7 @@ static/bootstrap/*
 static/bootstrap-icons/*
 docker-compose-custom.yaml
 
+frontend/routeTree.gen.ts
 *.code-workspace
 *.rdb
 

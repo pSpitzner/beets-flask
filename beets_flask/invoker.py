@@ -72,6 +72,8 @@ class TagInvoker:
             bt.preview = bs.preview
             bt.distance = bs.match_dist
             bt.match_url = bs.match_url
+            bt.match_album = bs.match_album
+            bt.match_artist = bs.match_artist
             bt.num_tracks = bs.match_num_tracks
             bt.status = (
                 "tagged"
@@ -153,6 +155,8 @@ class TagInvoker:
             bt.preview = bs.preview
             bt.distance = bs.match_dist
             bt.match_url = bs.match_url
+            bt.match_album = bs.match_album
+            bt.match_artist = bs.match_artist
             bt.num_tracks = bs.match_num_tracks
             bt.track_paths_after = bs.track_paths_after_import
             bt.status = "imported" if bs.status == "ok" else "failed"

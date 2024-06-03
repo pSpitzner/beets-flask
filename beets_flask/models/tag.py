@@ -13,10 +13,10 @@ from sqlalchemy.orm.session import make_transient
 from .base import Base
 from .tag_group import TagGroup
 
-from ..utility import log, AUDIO_EXTENSIONS
-from ..beets_sessions import PreviewSession, MatchedImportSession
+from beets_flask.utility import log, AUDIO_EXTENSIONS
+from beets_flask.beets_sessions import PreviewSession, MatchedImportSession
 
-from ..redis import rq
+from beets_flask.redis import rq
 
 
 class Tag(Base):
@@ -31,10 +31,12 @@ class Tag(Base):
     kind: Mapped[str]
 
     _group_id: Mapped[str] = mapped_column(ForeignKey("tag_group.id"))
-    tag_group: Mapped[TagGroup] = relationship(back_populates="tag_ids")
+    _tag_group: Mapped[TagGroup] = relationship(back_populates="tag_ids")
 
     distance: Mapped[Optional[float]]
     match_url: Mapped[Optional[str]]
+    match_album: Mapped[Optional[str]]
+    match_artist: Mapped[Optional[str]]
     preview: Mapped[Optional[str]]
     num_tracks: Mapped[Optional[int]]
 
@@ -65,7 +67,7 @@ class Tag(Base):
         self.id = str(id) if id is not None else str(uuid())
         self.created_at = datetime.now()
         self.updated_at = datetime.now()
-        self._group_id = group_id or "Unsorted"
+        self.group_id = group_id or "Unsorted"
         self.distance = distance
         self.match_url = match_url
         self.status = status or "pending"
@@ -119,27 +121,40 @@ class Tag(Base):
         return files
 
     @property
+    def group(self):
+        # this is just convenience. we mainly use group_id
+        return self._tag_group
+
+    @property
     def group_id(self):
         return self._group_id
 
-    # @group_id.setter
-    # def group_id(self, id):
-    #     tag_group = TagGroup.query.get(id)
-    #     if tag_group is None:
-    #         tag_group = TagGroup(id=id)
-    #         tag_group.commit()
-    #     self._group_id = tag_group.id
+
+    @group_id.setter
+    def group_id(self, group_id):
+        from beets_flask.db_engine import db_session
+        with db_session() as session:
+            tag_group = session.query(TagGroup).filter_by(id=group_id).first()
+            if not tag_group:
+                tag_group = TagGroup(id=group_id)
+                session.add(tag_group)
+                session.commit()
+
+            self._group_id = group_id
+            self._tag_group = tag_group
 
     @property
-    def album_title(self):
+    def album_folder_basename(self):
         return os.path.basename(str(self.album_folder))
+
 
     def to_dict(self):
         data = {c.name: getattr(self, c.name) for c in self.__table__.columns}  # type: ignore
-        data.pop("_track_paths_before")
-        data.pop("_track_paths_after")
         data["track_paths_after"] = self.track_paths_after
         data["track_paths_before"] = self.track_paths_before
+        data["group_id"] = self.group_id
+        data["album_folder_basename"] = self.album_folder_basename
+
         return data
 
     def make_transient(self):

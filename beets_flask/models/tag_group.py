@@ -14,8 +14,9 @@ if TYPE_CHECKING:
 class TagGroup(Base):
     __tablename__ = "tag_group"
 
+    # for now, group ids are just their name
     id: Mapped[str] = mapped_column(primary_key=True)
-    tag_ids: Mapped[List[Tag]] = relationship(back_populates="tag_group")
+    tag_ids: Mapped[List[Tag]] = relationship(back_populates="_tag_group")
 
     def __init__(self, id=None):
         self.id = str(id) if id is not None else str(uuid())

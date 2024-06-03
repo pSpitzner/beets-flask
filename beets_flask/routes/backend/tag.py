@@ -1,6 +1,7 @@
-""" Task related API endpoints
+"""
+Tag related API endpoints
 
-Tasks are beet tasks that are created by the user or automatically by the system.
+Tags are our database represenation of a look-up or import performed by beets. can be created by the user or automatically by the system.
 """
 
 from flask import Blueprint, request, jsonify, current_app
@@ -43,18 +44,17 @@ def delete_tag_by_id(tag_id: str):
     return {"message": "Tag deleted"}
 
 
-@tag_bp.route("/folder/<path:folder>", methods=["GET"])
-def get_tag_by_folder(folder: str):
-    """Get a tag by its folder"""
-    log.warning(f"Tag by folder {folder}")
+@tag_bp.route("/path/<path:folder>", methods=["GET"])
+def get_tag_by_folder_path(folder: str):
+    """Get a tag by itsits folder path on disk"""
     with db_session() as session:
         tag = Tag.get_by(Tag.album_folder == "/" + folder, session=session)
         return tag.to_dict()
 
 
-@tag_bp.route("/folder/<path:folder>", methods=["DELETE"])
-def delete_tag_by_folder(folder: str):
-    """Delete a tag by its folder"""
+@tag_bp.route("/path/<path:folder>", methods=["DELETE"])
+def delete_tag_by_folder_path(folder: str):
+    """Delete a tag by its folder path on disk"""
     with db_session() as session:
         tag = Tag.get_by(Tag.album_folder == "/" + folder, session=session)
         session.delete(tag)
