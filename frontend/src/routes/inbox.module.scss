@@ -45,6 +45,10 @@ $border-color: #495057;
     &[data-state="open"] {
         transform: rotate(90deg);
     }
+
+    &:hover {
+        cursor: pointer;
+    }
 }
 
 .content {

@@ -1,25 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import {
-    UseMutationOptions,
-    useMutation,
-    useSuspenseQuery,
-} from "@tanstack/react-query";
+import { UseMutationOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { FsPath, inboxQueryOptions } from "../lib/inbox";
 import { StatusIcon } from "../components/common/statusIcon";
 import { SimilarityBadge } from "../components/common/similarityBadge";
 
 import styles from "./inbox.module.scss";
-import { ChevronRight, Icon } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { Settings2 } from "lucide-react";
 
 import * as Collapsible from "@radix-ui/react-collapsible";
-import { Button, Checkbox, IconButton } from "@mui/material";
+import { Checkbox, IconButton } from "@mui/material";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 
 import { useState, MouseEvent } from "react";
-import ErrorDialog from "@/components/common/dialogs";
 import { IconTextButtonWithMutation } from "@/components/common/buttons";
 
 export const Route = createFileRoute("/inbox")({
@@ -31,10 +26,8 @@ export function Inbox() {
     const query = useSuspenseQuery(inboxQueryOptions());
 
     return (
-        <div>
-            <div className={styles.inboxView}>
-                <FolderView fp={query.data} />
-            </div>
+        <div className={styles.inboxView}>
+            <FolderView fp={query.data} />
         </div>
     );
 }
@@ -61,50 +54,55 @@ export function FolderView({
     mergeLabels?: boolean;
     level?: number;
 }): JSX.Element {
-    if (fp.type === "file") {
-        return FileView({ fp: fp });
-    }
-
-    const subViews: JSX.Element[] = [];
-
-    // first, check if we can merge a sub-path.
-    for (const name of Object.keys(fp.children)) {
-        if (fp.children[name].type == "directory") {
-            if (!mergeLabels) {
-                subViews.push(
-                    FolderView({
-                        fp: fp.children[name],
-                        label: name,
-                        mergeLabels: false,
-                    })
-                );
+    /** The subviews for each child of the folder.
+     */
+    const numChildren = Object.keys(fp.children).length;
+    const SubViews = () => {
+        return Object.keys(fp.children).map((name) => {
+            const child = fp.children[name];
+            if (child.type === "directory") {
+                if (!mergeLabels) {
+                    return (
+                        <FolderView
+                            key={name}
+                            fp={child}
+                            label={name}
+                            mergeLabels={false}
+                        />
+                    );
+                } else {
+                    const [subFp, subName, mergedName] = mergeSubFolderNames(fp, name);
+                    return (
+                        <FolderView
+                            key={mergedName}
+                            fp={subFp.children[subName]}
+                            label={mergedName}
+                            level={level + 1}
+                        />
+                    );
+                }
             } else {
-                const [subFp, subName, mergedNname] = mergeSubFolderNames(fp, name);
-                subViews.push(
-                    FolderView({
-                        fp: subFp.children[subName],
-                        label: mergedNname,
-                        level: level + 1,
-                    })
-                );
+                return <FileView key={child.full_path} fp={child} />;
             }
-        } else {
-            subViews.push(FileView({ fp: fp.children[name] }));
-        }
+        });
+    };
+
+    if (fp.type === "file") {
+        return <FileView fp={fp} />;
     }
 
     if (level === 0) {
         // this takes care of the root folder
-        return <>{subViews}</>;
+        return <SubViews />;
     }
     return (
-        <div className={styles.folder} data-empty={subViews.length < 1}>
+        <div className={styles.folder} data-empty={numChildren < 1}>
             <Collapsible.Root defaultOpen>
                 <div key={fp.full_path} className={styles.header}>
                     <Collapsible.Trigger
                         asChild
                         className={styles.trigger}
-                        disabled={subViews.length < 1}
+                        disabled={numChildren < 1}
                     >
                         <ChevronRight />
                     </Collapsible.Trigger>
@@ -118,10 +116,10 @@ export function FolderView({
                         </div>
                     )}
 
-                    <div>{label}</div>
+                    <span>{label}</span>
                 </div>
                 <Collapsible.Content className={styles.content}>
-                    {subViews}
+                    <SubViews />
                 </Collapsible.Content>
             </Collapsible.Root>
         </div>
