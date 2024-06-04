@@ -10,7 +10,7 @@ import Box from "@mui/material/Box";
 import { IconButtonWithMutation } from "./common/buttons";
 import { Link } from "@tanstack/react-router";
 
-export function InboxOverview() {
+export function InboxStatsOverview() {
     return (
         <Card
             sx={{
