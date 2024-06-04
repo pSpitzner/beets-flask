@@ -1,5 +1,5 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router";
-import { InboxOverview } from "../components/inbox";
+import { InboxStatsOverview } from "@/components/inboxStats";
 
 export const Route = createFileRoute("/_frontpage")({
     component: Index,
@@ -16,7 +16,7 @@ function Index() {
         <div>
             <Outlet />
             <div className="flex flex-row space-x-4">
-                <InboxOverview />
+                <InboxStatsOverview />
             </div>
         </div>
     );
