@@ -65,3 +65,11 @@ def setup_db(app: Flask) -> None:
     @app.teardown_appcontext
     def shutdown_session(exception=None) -> None:
         db_session_factory.remove()
+
+
+def reset_database():
+    from beets_flask.models import Tag, TagGroup
+    with db_session() as session:
+        session.query(TagGroup).delete()
+        session.query(Tag).delete()
+        session.commit()

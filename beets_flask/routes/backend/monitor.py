@@ -62,3 +62,19 @@ def get_worker_status():
         }
 
     return {"workers": ret_dict}
+
+
+@monitor_bp.route("/debugResetDb", methods=["GET"])
+def reset_database():
+    """
+    Reset the sql database.
+
+    Returns:
+        dict: A dictionary containing the status of the reset operation.
+
+    """
+    from beets_flask.db_engine import reset_database
+
+    reset_database()
+
+    return {"status": "success"}
