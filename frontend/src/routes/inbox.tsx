@@ -150,7 +150,7 @@ export default function ActionMenu({ fp }: { fp: FsPath }) {
 
     const retagOptions: UseMutationOptions = {
         mutationFn: async () => {
-            return await fetch(`/tag/add`, {
+            const response = await fetch(`/tag/add`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -160,6 +160,11 @@ export default function ActionMenu({ fp }: { fp: FsPath }) {
                     kind: "preview",
                 }),
             });
+            if (!response.ok) {
+                // log error code and message
+                const error_message = await response.text();
+                throw new Error(`Failed to add tag: ${error_message}`);
+            }
         },
         onSuccess: () => {
             handleClose();

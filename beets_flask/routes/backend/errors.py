@@ -58,6 +58,11 @@ def handle_exception(e):
     return response
 
 
+@error_bp.app_errorhandler(Exception)
+def handle_generic_error(error):
+    return jsonify({"error": "Internal server error", "message": str(error)}), 500
+
+
 # ---------------------------------------------------------------------------- #
 #                            Test the error handling                           #
 # ---------------------------------------------------------------------------- #
