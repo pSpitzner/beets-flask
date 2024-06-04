@@ -26,6 +26,14 @@ export const Route = createFileRoute("/tagGroup")({
 export function TagGroupOverview() {
     const query = useSuspenseQuery(tagGroupAllQueryOptions());
 
+    if (query.data.length === 0) {
+        return (
+            <div className="flex items-center justify-center">
+                <div>No tags yet</div>
+            </div>
+        );
+    }
+
     return (
         <div>
             {query.data.map((tg) => (

@@ -85,7 +85,6 @@ def add_tag():
         tag.kind = kind
         session.commit()
 
-        ti = TagInvoker(tag.id)
-        ti.enqueue()
+        TagInvoker.enqueue(tag.id, session=session)
 
         return jsonify(tag.to_dict(), 200)

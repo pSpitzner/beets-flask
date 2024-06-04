@@ -162,8 +162,10 @@ export default function ActionMenu({ fp }: { fp: FsPath }) {
             });
             if (!response.ok) {
                 // log error code and message
-                const error_message = await response.text();
-                throw new Error(`Failed to add tag: ${error_message}`);
+                const j = await response.json();
+                let msg = j.error || response.statusText;
+                msg += j.trace ? `\n${j.trace}` : "";
+                throw new Error(`Failed to add tag: ${msg}`);
             }
         },
         onSuccess: () => {
