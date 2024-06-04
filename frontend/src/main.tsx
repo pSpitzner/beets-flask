@@ -10,7 +10,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import "@/lib/fetch";
 
 // Create a new query client instance
-const queryClient = new QueryClient({});
+export const queryClient = new QueryClient({});
 
 // Create a new router instance
 const router = createRouter({

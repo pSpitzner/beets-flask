@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { UseMutationOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { FsPath, inboxQueryOptions } from "../lib/inbox";
-import { StatusIcon } from "../components/common/statusIcon";
-import { SimilarityBadge, SimilarityBadgeWithHover } from "../components/common/similarityBadge";
+import { FsPath, inboxQueryOptions } from "@/lib/inbox";
+import { TagStatusIcon } from "@/components/common/statusIcon";
+import { SimilarityBadgeWithHover } from "@/components/common/similarityBadge";
 
 import styles from "./inbox.module.scss";
 import { ChevronRight } from "lucide-react";
@@ -16,6 +16,8 @@ import MenuItem from "@mui/material/MenuItem";
 
 import { useState, MouseEvent } from "react";
 import { IconTextButtonWithMutation } from "@/components/common/buttons";
+import { queryClient } from "@/main";
+import { TagI } from "@/lib/tag";
 
 export const Route = createFileRoute("/inbox")({
     loader: (opts) => opts.context.queryClient.ensureQueryData(inboxQueryOptions()),
@@ -110,7 +112,7 @@ export function FolderView({
                     {fp.is_album && (
                         <div className="flex flex-row items-center justify-center gap-2 mx-1">
                             <Checkbox className="p-0 "></Checkbox>
-                            <StatusIcon status="unknown" />
+                            <TagStatusIcon tagPath={fp.full_path} />
                             <SimilarityBadgeWithHover tagPath={fp.full_path} />
                             <ActionMenu fp={fp} />
                         </div>
@@ -150,7 +152,7 @@ export default function ActionMenu({ fp }: { fp: FsPath }) {
 
     const retagOptions: UseMutationOptions = {
         mutationFn: async () => {
-            const response = await fetch(`/tag/add`, {
+            await fetch(`/tag/add`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -160,16 +162,12 @@ export default function ActionMenu({ fp }: { fp: FsPath }) {
                     kind: "preview",
                 }),
             });
-            if (!response.ok) {
-                // log error code and message
-                const j = await response.json();
-                let msg = j.error || response.statusText;
-                msg += j.trace ? `\n${j.trace}` : "";
-                throw new Error(`Failed to add tag: ${msg}`);
-            }
         },
-        onSuccess: () => {
+        onSuccess: async () => {
             handleClose();
+            await queryClient.setQueryData(["tag", fp.full_path], (old: TagI) => {
+                return { ...old, status: "pending" };
+            });
         },
         onError: (error: Error) => {
             console.error(error);

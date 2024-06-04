@@ -2,8 +2,7 @@ import Tab, { tabClasses } from "@mui/material/Tab";
 import Tabs, { tabsClasses } from "@mui/material/Tabs";
 import { styled } from "@mui/material/styles";
 import { Home, Inbox, Tag } from "lucide-react";
-import { useState } from "react";
-import { createLink } from "@tanstack/react-router";
+import { createLink, useRouterState } from "@tanstack/react-router";
 
 /**
  * Custom styled component for a tab item.
@@ -52,12 +51,12 @@ const TabItem = createLink(
  * indicates the active tab.
  */
 export default function NavTabs() {
-    const [tabIndex, setTabIndex] = useState(0);
+    // TODO:
+    const location = useRouterState({ select: (s) => s.location })
     return (
         <Tabs
             textColor="inherit"
-            value={tabIndex}
-            onChange={(_, index: number) => setTabIndex(index)}
+            value={location.pathname}
             sx={{
                 boxShadow: "inset 0 1px 0 0 #efefef",
                 overflow: "visible",
@@ -72,10 +71,11 @@ export default function NavTabs() {
                 },
             }}
         >
-            <TabItem disableRipple label={"Home"} icon={<Home />} to="/" />
-            <TabItem disableRipple label={"Inbox"} icon={<Inbox />} to="/inbox" />
-            <TabItem disableRipple label={"Tags"} icon={<Tag />} to="/tagGroup" />
-            <TabItem disableRipple label={"Other"} />
+            <TabItem value={"/"} disableRipple
+                 label={"Home"} icon={<Home />} to="/"/>
+            <TabItem value={"/inbox"} disableRipple label={"Inbox"} icon={<Inbox />} to="/inbox" />
+            <TabItem value={"/tagGroup"} disableRipple label={"Tags"} icon={<Tag />} to="/tagGroup" />
+            <TabItem value={"/other"} disableRipple label={"Other"} />
         </Tabs>
     );
 }

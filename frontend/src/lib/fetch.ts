@@ -18,5 +18,28 @@ window.fetch = async (
     }
 
     console.log("fetching", apiPrefix + input);
-    return originalFetch(apiPrefix + input, init);
+    const response = await originalFetch(apiPrefix + input, init);
+    if (!response.ok) {
+        const data = await response.json() as ErrorData;
+        throw new APIError(data);
+    }
+    return response;
+
 };
+
+
+interface ErrorData {
+    error:string, //name
+    messages:string,
+    trace?:string
+}
+
+export class APIError extends Error {
+    trace?: string;
+
+    constructor(public data: ErrorData) {
+        super(data.messages);
+        this.name = data.error;
+        this.trace = data.trace ?? undefined;
+    }
+}

@@ -10,8 +10,8 @@ from sqlalchemy import select
 from beets_flask.models import Tag, TagGroup
 from beets_flask.db_engine import db_session, with_db_session, Session
 from beets_flask.routes.backend.errors import InvalidUsage
-from beets_flask.invoker import TagInvoker
 from beets_flask.utility import log
+import beets_flask.invoker as invoker
 
 tag_bp = Blueprint("tag", __name__, url_prefix="/tag")
 
@@ -29,46 +29,33 @@ def get_all():
 def get_tag_by_id(tag_id: str):
     """Get a task by its id"""
     with db_session() as session:
-        try:
-            tag = Tag.get_by(Tag.id == tag_id, session=session)
-        except ValueError:
-            return {"message": "Tag not found"}, 404
-        return tag.to_dict()
+        tag = Tag.get_by(Tag.id == tag_id, session=session)
+        return tag.to_dict() if tag else {}
 
 
 @tag_bp.route("/id/<tag_id>", methods=["DELETE"])
 def delete_tag_by_id(tag_id: str):
     """Delete a tag by its id"""
     with db_session() as session:
-        try:
-            tag = Tag.get_by(Tag.id == tag_id, session=session)
-        except ValueError:
-            return {"message": "Tag not found"}, 404
+        tag = Tag.get_by(Tag.id == tag_id, session=session)
         session.delete(tag)
         session.commit()
-
-    return {"message": "Tag deleted"}
+        return {"message": "Tag deleted"}
 
 
 @tag_bp.route("/path/<path:folder>", methods=["GET"])
 def get_tag_by_folder_path(folder: str):
     """Get a tag by itsits folder path on disk"""
     with db_session() as session:
-        try:
-            tag = Tag.get_by(Tag.album_folder == "/" + folder, session=session)
-        except ValueError:
-            return {"message": "Tag not found"}, 404
-        return tag.to_dict()
+        tag = Tag.get_by(Tag.album_folder == "/" + folder, session=session)
+        return tag.to_dict() if tag else {}
 
 
 @tag_bp.route("/path/<path:folder>", methods=["DELETE"])
 def delete_tag_by_folder_path(folder: str):
     """Delete a tag by its folder path on disk"""
     with db_session() as session:
-        try:
-            tag = Tag.get_by(Tag.album_folder == "/" + folder, session=session)
-        except ValueError:
-            return {"message": "Tag not found"}, 404
+        tag = Tag.get_by(Tag.album_folder == "/" + folder, session=session)
         session.delete(tag)
         session.commit()
         return {"message": "Tag deleted"}
@@ -88,15 +75,14 @@ def add_tag():
         if not folder or not kind:
             raise InvalidUsage("You need to specify the folder and kind of the tag")
 
-        try:
-            tag = Tag.get_by(Tag.album_folder == folder, session=session)
-        except ValueError:
-            tag = Tag(album_folder=folder, kind=kind)
-            session.merge(tag)
+        tag = Tag.get_by(Tag.album_folder == folder, session=session) or Tag(
+            album_folder=folder, kind=kind
+        )
+        session.merge(tag)
 
         tag.kind = kind
         session.commit()
 
-        TagInvoker.enqueue(tag.id, session=session)
+        invoker.enqueue(tag.id, session=session)
 
         return jsonify(tag.to_dict(), 200)

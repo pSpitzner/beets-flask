@@ -9,7 +9,7 @@ class Base(DeclarativeBase):
     __abstract__ = True
 
     @classmethod
-    def get_by(cls, *whereclause, session: Session | None = None) -> Self:
+    def get_by(cls, *whereclause, session: Session | None = None) -> Self | None:
 
         close_after = False
         if session is None:
@@ -21,8 +21,6 @@ class Base(DeclarativeBase):
         try:
             stmt = select(cls).where(*whereclause)
             item = session.execute(stmt).scalars().first()
-            if item is None:
-                raise ValueError(f"No item found for {whereclause} in {cls.__name__}")
             return item
         except:
             raise

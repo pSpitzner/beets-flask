@@ -19,26 +19,40 @@ export interface TagI {
     num_tracks?: number;
 }
 
-export async function fetchTagById(tagId: string): Promise<TagI> {
+// empty return if the tag is not in the database
+type TagResponse = TagI | Record<string, never>;
+
+export async function fetchTagById(tagId: string): Promise<TagResponse> {
     const response = await fetch(`/tag/id/${tagId}`);
     if (!response.ok) {
         throw new Error("Network response was not ok");
     }
     try {
-        return (await response.json()) as TagI;
+        return (await response.json()) as TagResponse;
     } catch (e) {
         throw new Error("Failed to parse response as JSON in fetchTagById()");
     }
 }
 
-export const tagIdQueryOptions = (tagId: string) => {
+export const tagQueryOptions = (tagId?: string, tagPath?:string) => {
+    if (!tagId && !tagPath) {
+        throw new Error("tagId or tagPath must be specified in tagIdQueryOptions()");
+    }
+
     return queryOptions({
-        queryKey: ["tag", "id", tagId],
-        queryFn: () => fetchTagById(tagId),
+        queryKey: ["tag", tagId ?? tagPath],
+        queryFn: () =>{
+            if (tagId) {
+                return fetchTagById(tagId);
+            }
+            else {
+                return fetchTagByPath(tagPath!);
+            }
+        }
     });
 };
 
-export async function fetchTagByPath(folderPath: string): Promise<TagI> {
+export async function fetchTagByPath(folderPath: string): Promise<TagResponse> {
     if (folderPath.startsWith("/")) folderPath = folderPath.slice(1);
     const response = await fetch(`/tag/path/${folderPath}`, {
         method: "GET",

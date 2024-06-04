@@ -19,6 +19,18 @@ const darkTheme = createTheme({
             main: "#C07351",
         },
     },
+    components: {
+        MuiTooltip: {
+            styleOverrides: {
+                tooltip: {
+                    backgroundColor: "#21252933",
+                    borderRadius: "0.3rem",
+                    backdropFilter: "blur(10px)",
+                    padding: "0.5rem",
+                },
+            },
+        },
+    },
 });
 
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {

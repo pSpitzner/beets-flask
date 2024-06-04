@@ -1,17 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import {
-    UseMutationOptions,
-    useMutation,
-    useSuspenseQuery,
-} from "@tanstack/react-query";
-import { TagI, TagGroupI } from "../lib/tag";
-import { fetchTagById, fetchAllTagGroups, fetchTagGroupById } from "../lib/tag";
-import {
-    tagIdQueryOptions,
-    tagGroupAllQueryOptions,
-    tagGroupIdQueryOptions,
-} from "../lib/tag";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { TagGroupI } from "@/lib/tag";
+import { tagGroupAllQueryOptions } from "@/lib/tag";
 
 import styles from "./inbox.module.scss";
 
@@ -36,8 +27,8 @@ export function TagGroupOverview() {
 
     return (
         <div>
-            {query.data.map((tg) => (
-                <TagGroupView tg={tg} />
+            {query.data.map((tg, i) => (
+                <TagGroupView key={i} tg={tg} />
             ))}
         </div>
     );
@@ -57,8 +48,8 @@ export function TagGroupView({ tg }: { tg: TagGroupI }) {
         <div>
             <div className={styles.tagGroupView}>
                 {tg.id}
-                {tg.tag_ids.map((tagId) => (
-                    <TagView tagId={tagId} />
+                {tg.tag_ids.map((tagId, i) => (
+                    <TagView key={i} tagId={tagId} />
                 ))}
             </div>
         </div>

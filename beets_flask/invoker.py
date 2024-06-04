@@ -1,205 +1,205 @@
+"""
+This module is the glue between three concepts:
+- the BeetSessions (interacting with beets, implementing core functions)
+- the Tags (our sql database model, grabbed by the gui to display everything static)
+- the Redis Queue (to run the tasks in the background)
+"""
+
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
 from datetime import datetime
 import requests
-import os
 
-from beets_flask.models import Tag, TagGroup
+from beets_flask.models import Tag
 from beets_flask.redis import rq
 from beets_flask.beets_sessions import PreviewSession, MatchedImportSession
-from beets_flask.utility import log, AUDIO_EXTENSIONS
+from beets_flask.utility import log
 from beets_flask.db_engine import (
     db_session,
-    with_db_session,
-    db_session_factory,
     Session,
 )
+from beets_flask.routes.backend.errors import InvalidUsage
 
 
-class TagInvoker:
+def enqueue(tagId: str, session: Session | None = None):
     """
-    This class is the glue between three concepts:
-    - the BeetSessions (interacting with beets, implementing core functions)
-    - the Tags (our sql database model, grabbed by the gui to display everything static)
-    - the Redis Queue (to run the tasks in the background)
+    Delegate the tag to a redis worker, depending on its kind.
+    """
 
-    TODO: PS 24-06-04
-    Lets talk about this. With instance-based invoker we get problems with redis. if we have only static methods, we could just make this a module with functions and be done?
+    tag = Tag.get_by(Tag.id == tagId, session=session)
+
+    if tag is None:
+        raise InvalidUsage(f"Tag {tagId} not found in database")
+
+    kind = tag.kind
+    if kind == "preview":
+        rq.get_queue("preview").enqueue(runPreview, tagId)
+    elif kind == "import":
+        rq.get_queue("import").enqueue(runImport, tagId)
+    else:
+        raise ValueError(f"Unknown kind {kind}")
+
+
+@rq.job(timeout=600)
+def runPreview(tagId:str, callback_url: str | None = None) -> str | None:
+    """
+    Run a PreviewSession on an existing tag.
 
     Args:
-        tagId (str): the tag id to delegate to a worker. Needs to be in the database (and committed).
+        callback_url (str, optional): called on success/failure. Defaults to None.
+
+    Returns:
+        str: the match url, if we found one, else None.
     """
-
-    @staticmethod
-    def enqueue(tagId: str, session: Session | None = None):
-        """
-        Delegate the tag to a redis worker, depending on its kind.
-        """
-
-        kind = Tag.get_by(Tag.id == tagId, session=session).kind
-
-        if kind == "preview":
-            rq.get_queue("preview").enqueue(TagInvoker.runPreview, tagId)
-        elif kind == "import":
-            rq.get_queue("import").enqueue(TagInvoker.runImport, tagId)
-        else:
-            raise ValueError(f"Unknown kind {kind}")
-
-    # these need to be static methods, as they are delegated to the rq workers
-    # and we do not want to rely on the invoker instance.
-    @staticmethod
-    @rq.job(timeout=600)
-    def runPreview(tagId:str, callback_url: str | None = None) -> str | None:
-        """
-        Run a PreviewSession on an existing tag.
-
-        Args:
-            callback_url (str, optional): called on success/failure. Defaults to None.
-
-        Returns:
-            str: the match url, if we found one, else None.
-        """
-        with db_session() as session:
-            log.debug(f"Preview task on {tagId}")
-            bt = Tag.get_by(Tag.id == tagId, session=session)
-            session.merge(bt)
-            bt.kind = "preview"
-            bt.status = "tagging"
-            bt.updated_at = datetime.now()
-            session.commit()
-
-            try:
-                bs = PreviewSession(path=bt.album_folder)
-                bs.run_and_capture_output()
-
-                log.debug(bs.preview)
-
-                bt.preview = bs.preview
-                bt.distance = bs.match_dist
-                bt.match_url = bs.match_url
-                bt.match_album = bs.match_album
-                bt.match_artist = bs.match_artist
-                bt.num_tracks = bs.match_num_tracks
-                bt.status = (
-                    "tagged"
-                    if (bt.match_url is not None and bs.status == "ok")
-                    else "unmatched"
-                )
-            except Exception as e:
-                log.debug(e)
-                bt.status = "failed"
-                if callback_url:
-                    requests.post(
-                        callback_url,
-                        json={"status": "beets preview failed", "tag": bt.to_dict()},
-                    )
-                return None
-            finally:
-                bt.updated_at = datetime.now()
-                session.commit()
-                # ut.update_client_view("tags")
-
-            if callback_url:
-                requests.post(
-                    callback_url,
-                    json={"status": "beets preview done", "tag": bt.to_dict()},
-                )
-
-            # cleanup_status()
-
-            log.debug(f"preview done. {bt.status=}, {bt.match_url=}")
-
-            return bt.match_url
-
-    @staticmethod
-    @rq.job(timeout=600)
-    def runImport(
-        tagId : str, match_url: str | None = None, callback_url: str | None = None
-    ) -> list[str]:
-        """
-        Run an ImportSession for our tag.
-        Relies on a preview to have been generated before.
-        If it was not, we do it here (blocking the import thread).
-        We do not import if no match is found according to your beets config.
-
-        Args:
-            callback_url (str | None, optional): called on status change. Defaults to None.
-
-        Returns:
-            The folder all imported files share in common. Empty list if nothing was imported.
-        """
-        with db_session() as session:
-            log.debug(f"Import task on {tagId}")
-
-            bt = Tag.get_by(Tag.id == id)
-            session.merge(bt)
-            bt.kind = "import"
-            bt.updated_at = datetime.now()
-            session.commit()
-
-            match_url = match_url or TagInvoker._get_or_gen_match_url(tagId, session)
-            if not match_url:
-                if callback_url:
-                    requests.post(
-                        callback_url,
-                        json={
-                            "status": "beets import failed: no match url found.",
-                            "tag": bt.to_dict(),
-                        },
-                    )
-                return []
-
-            try:
-                bs = MatchedImportSession(path=bt.album_folder, match_url=match_url)
-                bs.run_and_capture_output()
-
-                bt.preview = bs.preview
-                bt.distance = bs.match_dist
-                bt.match_url = bs.match_url
-                bt.match_album = bs.match_album
-                bt.match_artist = bs.match_artist
-                bt.num_tracks = bs.match_num_tracks
-                bt.track_paths_after = bs.track_paths_after_import
-                bt.status = "imported" if bs.status == "ok" else "failed"
-            except Exception as e:
-                log.debug(e)
-                bt.track_paths_after = []
-                bt.status = "failed"
-                if callback_url:
-                    requests.post(
-                        callback_url,
-                        json={"status": "beets import failed", "tag": bt.to_dict()},
-                    )
-                return []
-            finally:
-                bt.updated_at = datetime.now()
-                session.commit()
-                # ut.update_client_view("tags")
-
-            if callback_url:
-                requests.post(
-                    callback_url,
-                    json={"status": "beets preview done", "tag": bt.to_dict()},
-                )
-
-            # cleanup_status()
-            return bt.track_paths_after
-
-    @staticmethod
-    def _get_or_gen_match_url(tagId, session: Session) -> str | None:
+    with db_session() as session:
+        log.debug(f"Preview task on {tagId}")
         bt = Tag.get_by(Tag.id == tagId, session=session)
 
-        if bt.match_url is not None:
-            log.debug(f"Match url already exists for {bt.album_folder}: {bt.match_url}")
-            return bt.match_url
-        if bt.distance is None:
-            log.debug(f"No unique match for {bt.album_folder}: {bt.match_url}")
-            # preview task was run but no match found.
-            return None
+        if bt is None:
+            raise InvalidUsage(f"Tag {tagId} not found in database")
 
-        log.debug(
-            f"Running preview task to get match url for {bt.album_folder}: {bt.match_url}"
-        )
-        bs = PreviewSession(path=bt.album_folder)
-        bs.run_and_capture_output()
-        return bs.match_url
+        session.merge(bt)
+        bt.kind = "preview"
+        bt.status = "tagging"
+        bt.updated_at = datetime.now()
+        session.commit()
+
+        try:
+            bs = PreviewSession(path=bt.album_folder)
+            bs.run_and_capture_output()
+
+            log.debug(bs.preview)
+
+            bt.preview = bs.preview
+            bt.distance = bs.match_dist
+            bt.match_url = bs.match_url
+            bt.match_album = bs.match_album
+            bt.match_artist = bs.match_artist
+            bt.num_tracks = bs.match_num_tracks
+            bt.status = (
+                "tagged"
+                if (bt.match_url is not None and bs.status == "ok")
+                else "unmatched"
+            )
+        except Exception as e:
+            log.debug(e)
+            bt.status = "failed"
+            if callback_url:
+                requests.post(
+                    callback_url,
+                    json={"status": "beets preview failed", "tag": bt.to_dict()},
+                )
+            return None
+        finally:
+            bt.updated_at = datetime.now()
+            session.commit()
+            # ut.update_client_view("tags")
+
+        if callback_url:
+            requests.post(
+                callback_url,
+                json={"status": "beets preview done", "tag": bt.to_dict()},
+            )
+
+        # cleanup_status()
+
+        log.debug(f"preview done. {bt.status=}, {bt.match_url=}")
+
+        return bt.match_url
+
+@rq.job(timeout=600)
+def runImport(
+    tagId : str, match_url: str | None = None, callback_url: str | None = None
+) -> list[str]:
+    """
+    Run an ImportSession for our tag.
+    Relies on a preview to have been generated before.
+    If it was not, we do it here (blocking the import thread).
+    We do not import if no match is found according to your beets config.
+
+    Args:
+        callback_url (str | None, optional): called on status change. Defaults to None.
+
+    Returns:
+        The folder all imported files share in common. Empty list if nothing was imported.
+    """
+    with db_session() as session:
+        log.debug(f"Import task on {tagId}")
+
+        bt = Tag.get_by(Tag.id == id)
+
+        if bt is None:
+            raise InvalidUsage(f"Tag {tagId} not found in database")
+
+        session.merge(bt)
+        bt.kind = "import"
+        bt.updated_at = datetime.now()
+        session.commit()
+
+        match_url = match_url or _get_or_gen_match_url(tagId, session)
+        if not match_url:
+            if callback_url:
+                requests.post(
+                    callback_url,
+                    json={
+                        "status": "beets import failed: no match url found.",
+                        "tag": bt.to_dict(),
+                    },
+                )
+            return []
+
+        try:
+            bs = MatchedImportSession(path=bt.album_folder, match_url=match_url)
+            bs.run_and_capture_output()
+
+            bt.preview = bs.preview
+            bt.distance = bs.match_dist
+            bt.match_url = bs.match_url
+            bt.match_album = bs.match_album
+            bt.match_artist = bs.match_artist
+            bt.num_tracks = bs.match_num_tracks
+            bt.track_paths_after = bs.track_paths_after_import
+            bt.status = "imported" if bs.status == "ok" else "failed"
+        except Exception as e:
+            log.debug(e)
+            bt.track_paths_after = []
+            bt.status = "failed"
+            if callback_url:
+                requests.post(
+                    callback_url,
+                    json={"status": "beets import failed", "tag": bt.to_dict()},
+                )
+            return []
+        finally:
+            bt.updated_at = datetime.now()
+            session.commit()
+            # ut.update_client_view("tags")
+
+        if callback_url:
+            requests.post(
+                callback_url,
+                json={"status": "beets preview done", "tag": bt.to_dict()},
+            )
+
+        # cleanup_status()
+        return bt.track_paths_after
+
+def _get_or_gen_match_url(tagId, session: Session) -> str | None:
+    bt = Tag.get_by(Tag.id == tagId, session=session)
+
+    if bt is None:
+        raise InvalidUsage(f"Tag {tagId} not found in database")
+
+    if bt.match_url is not None:
+        log.debug(f"Match url already exists for {bt.album_folder}: {bt.match_url}")
+        return bt.match_url
+    if bt.distance is None:
+        log.debug(f"No unique match for {bt.album_folder}: {bt.match_url}")
+        # preview task was run but no match found.
+        return None
+
+    log.debug(
+        f"Running preview task to get match url for {bt.album_folder}: {bt.match_url}"
+    )
+    bs = PreviewSession(path=bt.album_folder)
+    bs.run_and_capture_output()
+    return bs.match_url
