@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { UseMutationOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { FsPath, inboxQueryOptions } from "../lib/inbox";
 import { StatusIcon } from "../components/common/statusIcon";
-import { SimilarityBadge } from "../components/common/similarityBadge";
+import { SimilarityBadge, SimilarityBadgeWithHover } from "../components/common/similarityBadge";
 
 import styles from "./inbox.module.scss";
 import { ChevronRight } from "lucide-react";
@@ -111,7 +111,7 @@ export function FolderView({
                         <div className="flex flex-row items-center justify-center gap-2 mx-1">
                             <Checkbox className="p-0 "></Checkbox>
                             <StatusIcon status="unknown" />
-                            <SimilarityBadge dist={null} />
+                            <SimilarityBadgeWithHover tagPath={fp.full_path} />
                             <ActionMenu fp={fp} />
                         </div>
                     )}

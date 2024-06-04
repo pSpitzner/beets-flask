@@ -39,7 +39,14 @@ export const tagIdQueryOptions = (tagId: string) => {
 };
 
 export async function fetchTagByPath(folderPath: string): Promise<TagI> {
-    const response = await fetch(`/tag/path/${folderPath}`);
+    if (folderPath.startsWith("/")) folderPath = folderPath.slice(1);
+    const response = await fetch(`/tag/path/${folderPath}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        },
+    }
+    );
     if (!response.ok) {
         throw new Error("Network response was not ok");
     }

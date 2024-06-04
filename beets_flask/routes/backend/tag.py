@@ -29,7 +29,10 @@ def get_all():
 def get_tag_by_id(tag_id: str):
     """Get a task by its id"""
     with db_session() as session:
-        tag = Tag.get_by(Tag.id == tag_id, session=session)
+        try:
+            tag = Tag.get_by(Tag.id == tag_id, session=session)
+        except ValueError:
+            return {"message": "Tag not found"}, 404
         return tag.to_dict()
 
 
@@ -37,7 +40,10 @@ def get_tag_by_id(tag_id: str):
 def delete_tag_by_id(tag_id: str):
     """Delete a tag by its id"""
     with db_session() as session:
-        tag = Tag.get_by(Tag.id == tag_id, session=session)
+        try:
+            tag = Tag.get_by(Tag.id == tag_id, session=session)
+        except ValueError:
+            return {"message": "Tag not found"}, 404
         session.delete(tag)
         session.commit()
 
@@ -48,7 +54,10 @@ def delete_tag_by_id(tag_id: str):
 def get_tag_by_folder_path(folder: str):
     """Get a tag by itsits folder path on disk"""
     with db_session() as session:
-        tag = Tag.get_by(Tag.album_folder == "/" + folder, session=session)
+        try:
+            tag = Tag.get_by(Tag.album_folder == "/" + folder, session=session)
+        except ValueError:
+            return {"message": "Tag not found"}, 404
         return tag.to_dict()
 
 
@@ -56,7 +65,10 @@ def get_tag_by_folder_path(folder: str):
 def delete_tag_by_folder_path(folder: str):
     """Delete a tag by its folder path on disk"""
     with db_session() as session:
-        tag = Tag.get_by(Tag.album_folder == "/" + folder, session=session)
+        try:
+            tag = Tag.get_by(Tag.album_folder == "/" + folder, session=session)
+        except ValueError:
+            return {"message": "Tag not found"}, 404
         session.delete(tag)
         session.commit()
         return {"message": "Tag deleted"}

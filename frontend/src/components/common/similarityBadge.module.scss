@@ -26,3 +26,11 @@
         color: #C0626B;
     }
 }
+
+.HoverContent {
+    Background-color: #21252933;
+    border-radius: 0.3rem;
+    backdrop-filter: blur(10px);
+    padding: 1rem;
+    z-index: 2;
+}

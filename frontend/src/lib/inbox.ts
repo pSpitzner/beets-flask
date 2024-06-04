@@ -27,6 +27,7 @@ export const inboxQueryOptions = () =>
     });
 
 export async function fetchFsPath(folderPath: string): Promise<FsPath> {
+    if (folderPath.startsWith("/")) folderPath = folderPath.slice(1);
     const response = await fetch(`/inbox/path/${folderPath}`);
     if (!response.ok) {
         throw new Error("Network response was not ok");
