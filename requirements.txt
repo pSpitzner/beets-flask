@@ -15,7 +15,8 @@ python-dotenv==1.0.1
 humanize==4.9.0
 cachetools==5.3.3
 watchdog[watchmedo]==4.0.0
-waitress==2.1.2
+gevent
+gunicorn
 # beets dependencies
 jellyfish==0.10 # current version does not compile on arm64
 # beets==1.6.0

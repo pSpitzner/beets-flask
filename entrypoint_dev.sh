@@ -5,7 +5,7 @@ id
 pwd
 
 cd /repo/frontend
-npm install
+#npm install
 # npm run build:dev &
 npm run dev &
 # npm run build:watch &
@@ -40,7 +40,8 @@ rm /repo/frontend/vite.config.ts.timestamp-*.mjs
 export FLASK_ENV=development
 export FLASK_DEBUG=1
 # waitress does not restart automatically, and for me watchmedo did not work -> use tail -f and manually (re)start the server via docker exec
-waitress-serve --call --port=5001 'main:create_app'
+# We need to start at least 2 workers to have the preview worker and the import worker
+gunicorn 'main:create_app()' --bind 0.0.0.0:5001 --workers 4 --reload --capture-output --enable-stdio-inheritance --timeout 300 --worker-class gevent
 # watchmedo auto-restart -d . -p '*.py' -- waitress-serve --call --port=5001 'main:create_app'
-# python main.py
-# tail -f /dev/null
+#python main.py
+tail -f /dev/null
