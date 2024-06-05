@@ -1,16 +1,15 @@
 // thin wrapper around fetch so that we can use the vite dev server with our backend
 
+import { createContext } from "react";
+
 const originalFetch = window.fetch;
+const apiPrefix =
+    import.meta.env.MODE === "development" ? "http://0.0.0.0:5001/api_v1" : "/api_v1";
 
 window.fetch = async (
     input: RequestInfo | URL,
     init?: RequestInit
 ): Promise<Response> => {
-    const apiPrefix =
-        import.meta.env.MODE === "development"
-            ? "http://0.0.0.0:5001/api_v1"
-            : "/api_v1";
-
     if (input instanceof URL) {
         input = input.pathname;
     } else if (!(typeof input === "string")) {
@@ -20,18 +19,16 @@ window.fetch = async (
     console.log("fetching", apiPrefix + input);
     const response = await originalFetch(apiPrefix + input, init);
     if (!response.ok) {
-        const data = await response.json() as ErrorData;
+        const data = (await response.json()) as ErrorData;
         throw new APIError(data);
     }
     return response;
-
 };
 
-
 interface ErrorData {
-    error:string, //name
-    messages:string,
-    trace?:string
+    error: string; //name
+    messages: string;
+    trace?: string;
 }
 
 export class APIError extends Error {
@@ -43,3 +40,17 @@ export class APIError extends Error {
         this.trace = data.trace ?? undefined;
     }
 }
+
+export interface SseInvalidationI {
+    queryKey: string[];
+    attributes?: "all" | Record<string, string>;
+}
+
+class SseSource extends EventSource {
+    constructor() {
+        super(apiPrefix + "/sse/stream");
+    }
+}
+
+export const sseSource = new SseSource();
+export const sseContext = createContext(sseSource);

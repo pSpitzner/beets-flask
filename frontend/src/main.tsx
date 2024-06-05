@@ -3,6 +3,9 @@ import ReactDOM from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+// sse session context
+import { sseSource, sseContext  } from "@/lib/fetch";
+
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
 import ThemeProvider from "./theme";
@@ -43,12 +46,15 @@ declare module "@tanstack/react-router" {
 }
 
 function App() {
+
     return (
-        <ThemeProvider>
-            <QueryClientProvider client={queryClient}>
-                <RouterProvider router={router} />
-            </QueryClientProvider>
-        </ThemeProvider>
+        <sseContext.Provider value={sseSource}>
+            <ThemeProvider>
+                <QueryClientProvider client={queryClient}>
+                    <RouterProvider router={router} />
+                </QueryClientProvider>
+            </ThemeProvider>
+        </sseContext.Provider>
     );
 }
 

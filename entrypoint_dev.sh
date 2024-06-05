@@ -35,10 +35,12 @@ redis-cli FLUSHALL
 
 mkdir -p /repo/log
 rm /repo/log/for_web.log
+rm /repo/frontend/vite.config.ts.timestamp-*.mjs
 
-#export FLASK_APP="main.py"
 export FLASK_ENV=development
-
 export FLASK_DEBUG=1
-python main.py
+# waitress does not restart automatically, and for me watchmedo did not work -> use tail -f and manually (re)start the server via docker exec
+waitress-serve --call --port=5001 'main:create_app'
+# watchmedo auto-restart -d . -p '*.py' -- waitress-serve --call --port=5001 'main:create_app'
+# python main.py
 # tail -f /dev/null

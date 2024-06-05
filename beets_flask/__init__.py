@@ -1,6 +1,7 @@
 import os
 
 from flask import Flask
+from flask_cors import CORS
 from .redis import rq
 
 from .db_engine import setup_db
@@ -12,6 +13,13 @@ def create_app():
 
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
+
+    # CORS needed for Dev so vite can talk to the backend
+    CORS(app)
+
+    # Setting this is important otherwise your raised
+    # exception will just generate a regular exception
+    app.config["PROPAGATE_EXCEPTIONS"] = True
 
     # sqlite
     setup_db(app)
@@ -30,5 +38,15 @@ def create_app():
     app.register_blueprint(frontend_bp)
 
     log.info("App created")
+    def print_routes():
+        log.debug(f"Flask Blueprnit Routes:")
+        for blueprint_name, blueprint in app.blueprints.items():
+            for rule in app.url_map.iter_rules():
+                if rule.endpoint.startswith(blueprint_name):
+                    log.debug(f"  Blueprint: {blueprint_name}")
+                    log.debug(f"    URL rule: {rule}")
+                    log.debug(f"      Methods: {rule.methods}")
+                    log.debug(f"      Function: {rule.endpoint}")
+    # print_routes()
 
     return app

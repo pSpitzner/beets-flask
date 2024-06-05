@@ -18,6 +18,7 @@ from beets_flask.db_engine import (
     Session,
 )
 from beets_flask.routes.backend.errors import InvalidUsage
+from beets_flask.routes.backend.sse import update_client_view
 
 
 def enqueue(tagId: str, session: Session | None = None):
@@ -62,6 +63,11 @@ def runPreview(tagId:str, callback_url: str | None = None) -> str | None:
         bt.status = "tagging"
         bt.updated_at = datetime.now()
         session.commit()
+        update_client_view(
+            type="tag",
+            query_key=["tag", bt.album_folder],
+            attributes = {"status": bt.status},
+        )
 
         try:
             bs = PreviewSession(path=bt.album_folder)
