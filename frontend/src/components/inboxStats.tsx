@@ -28,13 +28,15 @@ export function InboxStatsOverview() {
                 "
                 >
                     <label className="text-xs p-1">Last scan: 2 days ago</label>
-                    <Link to="/schedule">
-                        <Tooltip title="Schedule inbox scans">
-                            <IconButton>
-                                <FolderClock size="1rem" strokeWidth={1} />
-                            </IconButton>
-                        </Tooltip>
-                    </Link>
+                    <Tooltip title="Schedule inbox scans">
+                        <div>
+                            <Link to="/schedule">
+                                <IconButton>
+                                    <FolderClock size="1rem" strokeWidth={1} />
+                                </IconButton>
+                            </Link>
+                        </div>
+                    </Tooltip>
                 </div>
                 <div>
                     <Avatar
@@ -105,23 +107,27 @@ export function InboxStatsOverview() {
             </CardContent>
             <Divider />
             <CardActions className="flex justify-between items-center space-x-4 w-100">
-                <div>
-                    <Tooltip title="Delete all files in the inbox">
+                <Tooltip title="Delete all files in the inbox">
+                    <div>
                         <IconButtonWithMutation color="error">
                             <Trash2 size="1em" />
                         </IconButtonWithMutation>
-                    </Tooltip>
-                </div>
+                    </div>
+                </Tooltip>
                 <div className="flex flex-row space-x-4">
                     <Tooltip title="Delete all already tagged files in the inbox">
-                        <IconButtonWithMutation color="warning">
-                            <Recycle size="1em" />
-                        </IconButtonWithMutation>
+                        <div>
+                            <IconButtonWithMutation color="warning">
+                                <Recycle size="1em" />
+                            </IconButtonWithMutation>
+                        </div>
                     </Tooltip>
                     <Tooltip title="Scan the inbox folder for new files">
-                        <IconButtonWithMutation color="primary">
-                            <FileScan size="1em" />
-                        </IconButtonWithMutation>
+                        <div>
+                            <IconButtonWithMutation color="primary">
+                                <FileScan size="1em" />
+                            </IconButtonWithMutation>
+                        </div>
                     </Tooltip>
                 </div>
             </CardActions>
