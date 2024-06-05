@@ -174,6 +174,31 @@ export default function ActionMenu({ fp }: { fp: FsPath }) {
         },
     };
 
+
+    const importOptions: UseMutationOptions = {
+        mutationFn: async () => {
+            await fetch(`/tag/add`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    folder: fp.full_path,
+                    kind: "import",
+                }),
+            });
+        },
+        onSuccess: async () => {
+            handleClose();
+            await queryClient.setQueryData(["tag", fp.full_path], (old: TagI) => {
+                return { ...old, status: "pending" };
+            });
+        },
+        onError: (error: Error) => {
+            console.error(error);
+        },
+    };
+
     return (
         <div>
             <IconButton
@@ -204,12 +229,13 @@ export default function ActionMenu({ fp }: { fp: FsPath }) {
                         mutationOption={retagOptions}
                     />
                 </MenuItem>
-                <MenuItem
-                    onClick={() => {
-                        handleClose();
-                    }}
-                >
-                    Import
+                <MenuItem sx={{ padding: 0 }}>
+                    <IconTextButtonWithMutation
+                        icon={<ChevronRight />}
+                        text="Import"
+                        color="inherit"
+                        mutationOption={importOptions}
+                    />
                 </MenuItem>
                 <MenuItem
                     onClick={() => {

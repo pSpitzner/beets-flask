@@ -43,7 +43,10 @@ export class APIError extends Error {
 
 export interface SseInvalidationI {
     queryKey: string[];
-    attributes?: "all" | Record<string, string>;
+    attributes: "all" | Record<string, string>;
+    message?: string;
+    tagId?: string;
+    tagPath?: string;
 }
 
 class SseSource extends EventSource {

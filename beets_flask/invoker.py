@@ -41,7 +41,7 @@ def enqueue(tagId: str, session: Session | None = None):
 
 
 @rq.job(timeout=600)
-def runPreview(tagId:str, callback_url: str | None = None) -> str | None:
+def runPreview(tagId: str, callback_url: str | None = None) -> str | None:
     """
     Run a PreviewSession on an existing tag.
 
@@ -65,8 +65,14 @@ def runPreview(tagId:str, callback_url: str | None = None) -> str | None:
         session.commit()
         update_client_view(
             type="tag",
+            tagPath=bt.album_folder,
             query_key=["tag", bt.album_folder],
-            attributes = {"status": bt.status},
+            attributes={
+                "kind": bt.kind,
+                "status": bt.status,
+                "updated_at": bt.updated_at.isoformat(),
+            },
+            message="Tagging started",
         )
 
         try:
@@ -98,7 +104,13 @@ def runPreview(tagId:str, callback_url: str | None = None) -> str | None:
         finally:
             bt.updated_at = datetime.now()
             session.commit()
-            # ut.update_client_view("tags")
+            update_client_view(
+                type="tag",
+                tagPath=bt.album_folder,
+                query_key=["tag", bt.album_folder],
+                attributes="all",
+                message=f"Tagging finished with status: {bt.status}",
+            )
 
         if callback_url:
             requests.post(
@@ -106,15 +118,14 @@ def runPreview(tagId:str, callback_url: str | None = None) -> str | None:
                 json={"status": "beets preview done", "tag": bt.to_dict()},
             )
 
-        # cleanup_status()
-
         log.debug(f"preview done. {bt.status=}, {bt.match_url=}")
 
         return bt.match_url
 
+
 @rq.job(timeout=600)
 def runImport(
-    tagId : str, match_url: str | None = None, callback_url: str | None = None
+    tagId: str, match_url: str | None = None, callback_url: str | None = None
 ) -> list[str]:
     """
     Run an ImportSession for our tag.
@@ -131,15 +142,26 @@ def runImport(
     with db_session() as session:
         log.debug(f"Import task on {tagId}")
 
-        bt = Tag.get_by(Tag.id == id)
+        bt = Tag.get_by(Tag.id == tagId)
 
         if bt is None:
             raise InvalidUsage(f"Tag {tagId} not found in database")
 
-        session.merge(bt)
         bt.kind = "import"
         bt.updated_at = datetime.now()
+        session.merge(bt)
         session.commit()
+        update_client_view(
+            type="tag",
+            tagPath=bt.album_folder,
+            query_key=["tag", bt.album_folder],
+            attributes={
+                "kind": bt.kind,
+                "status": bt.status,
+                "updated_at": bt.updated_at.isoformat(),
+            },
+            message="Importing started",
+        )
 
         match_url = match_url or _get_or_gen_match_url(tagId, session)
         if not match_url:
@@ -165,6 +187,8 @@ def runImport(
             bt.num_tracks = bs.match_num_tracks
             bt.track_paths_after = bs.track_paths_after_import
             bt.status = "imported" if bs.status == "ok" else "failed"
+            log.debug(bs.preview)
+            log.debug(bs.status)
         except Exception as e:
             log.debug(e)
             bt.track_paths_after = []
@@ -177,8 +201,16 @@ def runImport(
             return []
         finally:
             bt.updated_at = datetime.now()
+            session.merge(bt)
             session.commit()
-            # ut.update_client_view("tags")
+            log.debug(bt.status)
+            update_client_view(
+                type="tag",
+                tagPath=bt.album_folder,
+                query_key=["tag", bt.album_folder],
+                attributes="all",
+                message=f"Importing finished with status: {bt.status}",
+            )
 
         if callback_url:
             requests.post(
@@ -188,6 +220,7 @@ def runImport(
 
         # cleanup_status()
         return bt.track_paths_after
+
 
 def _get_or_gen_match_url(tagId, session: Session) -> str | None:
     bt = Tag.get_by(Tag.id == tagId, session=session)

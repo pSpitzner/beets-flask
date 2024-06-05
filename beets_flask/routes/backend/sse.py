@@ -15,7 +15,9 @@ def update_client_view(
     type: Literal["tag", "inbox"],
     query_key: list[str],
     attributes: dict[str, object] | Literal["all"] = "all",
-    msg: str = "Data updated",
+    message: str = "Data updated",
+    tagId: str | None = None,
+    tagPath: str | None = None,
 ):
 
     payload = {
@@ -23,9 +25,14 @@ def update_client_view(
         "body": {
             "queryKey": query_key,
             "attributes": attributes,
-            "message": msg,
+            "message": message,
         }
     }
+    if tagId:
+        payload["body"]["tagId"] = tagId
+    if tagPath:
+        payload["body"]["tagPath"] = tagPath
+
     log.debug(f"update_client_view: {payload}")
     response = requests.post("http://localhost:5001/api_v1/sse/publish", json=payload)
     if response.status_code != 200:

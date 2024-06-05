@@ -27,9 +27,9 @@ export function SimilarityBadgeWithHover({
         return <SimilarityBadge dist={undefined} className={className} />;
     }
 
-    if (!data.preview) {
+    if (!data?.preview) {
         // without preview, hover makes no sense
-        return <SimilarityBadge dist={data.distance} className={className} />;
+        return <SimilarityBadge dist={data?.distance} className={className} />;
     }
 
     return (

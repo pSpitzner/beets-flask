@@ -1,9 +1,10 @@
-import { CircleCheck, CircleDashed, CircleHelp } from "lucide-react";
+import { CircleCheck, CircleCheckBig, CircleDashed, CircleHelp, TriangleAlert } from "lucide-react";
 import { Tooltip } from "@mui/material";
 import { tagQueryOptions } from "@/lib/tag";
 import { useQuery } from "@tanstack/react-query";
 import { useContext, useEffect } from "react";
-import { sseContext } from "@/lib/fetch";
+import { SseInvalidationI, sseContext } from "@/lib/fetch";
+import { queryClient } from "@/main";
 
 export function TagStatusIcon({
     tagId,
@@ -20,15 +21,27 @@ export function TagStatusIcon({
     // subscribe to SSE for invalidation
     const sseSource = useContext(sseContext);
     useEffect(() => {
-        const messageHandler = (event: MessageEvent) => {
-            console.log("messageHandler", event);
+        const handler = (event: MessageEvent) => {
+            const newData = JSON.parse(event.data as string) as SseInvalidationI;
+
+            if (newData.tagPath !== tagPath) {
+                return;
+            }
+
+            console.log(`SSE event for ${tagPath}`, newData);
+
+            if (newData.attributes === "all") {
+                void queryClient.invalidateQueries({ queryKey: newData.queryKey });
+            } else {
+                queryClient.setQueryData(newData.queryKey, newData.attributes);
+            }
         };
-        sseSource.addEventListener("tag", messageHandler);
+        sseSource.addEventListener("tag", handler);
 
         return () => {
-            sseSource.removeEventListener("tag", messageHandler);
+            sseSource.removeEventListener("tag", handler);
         };
-    }, [sseSource]);
+    }, [sseSource, tagId, tagPath]);
 
     return <StatusIcon status={status} className={className} />;
 }
@@ -43,10 +56,13 @@ export function StatusIcon({
     let icon = <CircleDashed size={12} />;
 
     if (["matched", "tagged"].includes(status.toLocaleLowerCase())) {
-        console.log("matched/tagged");
         icon = <CircleCheck size={12} />;
+    } else if (status.toLocaleLowerCase() === "imported") {
+        icon = <CircleCheckBig size={12} />;
     } else if (status.toLocaleLowerCase() === "unmatched") {
         icon = <CircleHelp size={12} />;
+    } else if (status.toLocaleLowerCase() === "failed") {
+        icon = <TriangleAlert size={12} />;
     }
 
     return (
