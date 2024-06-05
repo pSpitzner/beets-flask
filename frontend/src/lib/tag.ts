@@ -34,21 +34,21 @@ export async function fetchTagById(tagId: string): Promise<TagResponse> {
     }
 }
 
-export const tagQueryOptions = (tagId?: string, tagPath?:string) => {
+export const tagQueryOptions = (tagId?: string, tagPath?: string) => {
     if (!tagId && !tagPath) {
         throw new Error("tagId or tagPath must be specified in tagIdQueryOptions()");
     }
 
     return queryOptions({
+        // invalidation -> tag
         queryKey: ["tag", tagId ?? tagPath],
-        queryFn: () =>{
+        queryFn: () => {
             if (tagId) {
                 return fetchTagById(tagId);
-            }
-            else {
+            } else {
                 return fetchTagByPath(tagPath!);
             }
-        }
+        },
     });
 };
 
@@ -59,8 +59,7 @@ export async function fetchTagByPath(folderPath: string): Promise<TagResponse> {
         headers: {
             "Content-Type": "application/json",
         },
-    }
-    );
+    });
     if (!response.ok) {
         throw new Error("Network response was not ok");
     }

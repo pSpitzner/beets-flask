@@ -65,8 +65,8 @@ def runPreview(tagId: str, callback_url: str | None = None) -> str | None:
         session.commit()
         update_client_view(
             type="tag",
+            tagId=bt.id,
             tagPath=bt.album_folder,
-            query_key=["tag", bt.album_folder],
             attributes={
                 "kind": bt.kind,
                 "status": bt.status,
@@ -107,7 +107,7 @@ def runPreview(tagId: str, callback_url: str | None = None) -> str | None:
             update_client_view(
                 type="tag",
                 tagPath=bt.album_folder,
-                query_key=["tag", bt.album_folder],
+                tagId=bt.id,
                 attributes="all",
                 message=f"Tagging finished with status: {bt.status}",
             )
@@ -153,8 +153,8 @@ def runImport(
         session.commit()
         update_client_view(
             type="tag",
+            tagId=bt.id,
             tagPath=bt.album_folder,
-            query_key=["tag", bt.album_folder],
             attributes={
                 "kind": bt.kind,
                 "status": bt.status,
@@ -206,8 +206,8 @@ def runImport(
             log.debug(bt.status)
             update_client_view(
                 type="tag",
+                tagId=bt.id,
                 tagPath=bt.album_folder,
-                query_key=["tag", bt.album_folder],
                 attributes="all",
                 message=f"Importing finished with status: {bt.status}",
             )

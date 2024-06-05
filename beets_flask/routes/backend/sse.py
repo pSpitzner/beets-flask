@@ -1,19 +1,22 @@
-from flask import Blueprint, current_app, request
+from flask import Blueprint, Response, current_app, request, jsonify
 from flask_sse import sse
+from flask_cors import cross_origin
 from typing import Literal
 import json
 import requests
 from beets_flask.utility import log
 
 sse_bp = Blueprint("sse", __name__, url_prefix="/sse")
+
+
 sse_bp.register_blueprint(sse, url_prefix="/stream")
 
 # print full details of the blueprint
 log.debug(f"{sse_bp.subdomain=}")
 
+
 def update_client_view(
     type: Literal["tag", "inbox"],
-    query_key: list[str],
     attributes: dict[str, object] | Literal["all"] = "all",
     message: str = "Data updated",
     tagId: str | None = None,
@@ -21,17 +24,14 @@ def update_client_view(
 ):
 
     payload = {
-        "type" : type,
+        "type": type,
         "body": {
-            "queryKey": query_key,
+            "tagId": tagId,
+            "tagPath": tagPath,
             "attributes": attributes,
             "message": message,
-        }
+        },
     }
-    if tagId:
-        payload["body"]["tagId"] = tagId
-    if tagPath:
-        payload["body"]["tagPath"] = tagPath
 
     log.debug(f"update_client_view: {payload}")
     response = requests.post("http://localhost:5001/api_v1/sse/publish", json=payload)
@@ -46,4 +46,4 @@ def publish():
         type: Literal["tag", "inbox"] = data.get("type")
         body: str = data.get("body")
         sse.publish(json.dumps(body), type=type)
-        return {"message": "Message sent"}
+        return {"message": "Message sent"}, 200

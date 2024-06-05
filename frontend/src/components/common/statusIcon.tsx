@@ -1,10 +1,13 @@
-import { CircleCheck, CircleCheckBig, CircleDashed, CircleHelp, TriangleAlert } from "lucide-react";
+import {
+    CircleCheck,
+    CircleCheckBig,
+    CircleDashed,
+    CircleHelp,
+    TriangleAlert,
+} from "lucide-react";
 import { Tooltip } from "@mui/material";
 import { tagQueryOptions } from "@/lib/tag";
 import { useQuery } from "@tanstack/react-query";
-import { useContext, useEffect } from "react";
-import { SseInvalidationI, sseContext } from "@/lib/fetch";
-import { queryClient } from "@/main";
 
 export function TagStatusIcon({
     tagId,
@@ -17,31 +20,6 @@ export function TagStatusIcon({
 }) {
     const { data } = useQuery(tagQueryOptions(tagId, tagPath));
     const status = data?.status ?? "frontend waiting";
-
-    // subscribe to SSE for invalidation
-    const sseSource = useContext(sseContext);
-    useEffect(() => {
-        const handler = (event: MessageEvent) => {
-            const newData = JSON.parse(event.data as string) as SseInvalidationI;
-
-            if (newData.tagPath !== tagPath) {
-                return;
-            }
-
-            console.log(`SSE event for ${tagPath}`, newData);
-
-            if (newData.attributes === "all") {
-                void queryClient.invalidateQueries({ queryKey: newData.queryKey });
-            } else {
-                queryClient.setQueryData(newData.queryKey, newData.attributes);
-            }
-        };
-        sseSource.addEventListener("tag", handler);
-
-        return () => {
-            sseSource.removeEventListener("tag", handler);
-        };
-    }, [sseSource, tagId, tagPath]);
 
     return <StatusIcon status={status} className={className} />;
 }

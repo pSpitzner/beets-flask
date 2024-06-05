@@ -8,6 +8,7 @@ import { tagQueryOptions } from "@/lib/tag";
 
 import * as HoverCard from "@radix-ui/react-hover-card";
 import { TagPreview } from "./tagView";
+import { useEffect } from "react";
 
 export function SimilarityBadgeWithHover({
     tagId,
@@ -23,9 +24,16 @@ export function SimilarityBadgeWithHover({
         tagQueryOptions(tagId, tagPath)
     );
 
+    useEffect(() => {
+        console.log(data?.distance);
+    }, [data?.distance]);
+
+    /**
+     * 
     if (isLoading || isPending || isError) {
         return <SimilarityBadge dist={undefined} className={className} />;
     }
+    */
 
     if (!data?.preview) {
         // without preview, hover makes no sense
@@ -57,7 +65,7 @@ export function SimilarityBadge({
     dist?: number;
     className?: string;
 }) {
-    if (!dist) {
+    if (dist == undefined) {
         return (
             <span className={`${className} ${styles.SimilarityBadge} ${styles.tbd}`}>
                 tbd

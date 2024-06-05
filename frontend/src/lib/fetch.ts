@@ -1,7 +1,5 @@
 // thin wrapper around fetch so that we can use the vite dev server with our backend
 
-import { createContext } from "react";
-
 const originalFetch = window.fetch;
 const apiPrefix =
     import.meta.env.MODE === "development" ? "http://0.0.0.0:5001/api_v1" : "/api_v1";
@@ -42,18 +40,14 @@ export class APIError extends Error {
 }
 
 export interface SseInvalidationI {
-    queryKey: string[];
-    attributes: "all" | Record<string, string>;
+    attributes: Record<string, string> | "all";
     message?: string;
     tagId?: string;
     tagPath?: string;
 }
 
-class SseSource extends EventSource {
+export class SseSource extends EventSource {
     constructor() {
-        super(apiPrefix + "/sse/stream");
+        super(apiPrefix + "/sse/stream", { withCredentials: false });
     }
 }
-
-export const sseSource = new SseSource();
-export const sseContext = createContext(sseSource);
