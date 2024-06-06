@@ -17,12 +17,13 @@ fi
 
 for i in $(seq 1 $NUM_WORKERS_PREVIEW)
 do
-  rq worker preview --log-format "Preview worker $i: %(message)s" &
+  # also for tests redirect to /dev/null, otherwise, test printout gets scrambled
+  rq worker preview --log-format "Preview worker $i: %(message)s" > /dev/null &
 done
 
 for i in $(seq 1 $NUM_WORKERS_IMPORT)
 do
-  rq worker import --log-format "Import worker $i: %(message)s" &
+  rq worker import --log-format "Import worker $i: %(message)s" > /dev/null &
 done
 
 redis-cli FLUSHALL

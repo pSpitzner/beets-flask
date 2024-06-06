@@ -29,6 +29,8 @@ class Tag(Base):
 
     status: Mapped[str]
     kind: Mapped[str]
+    _valid_statuses = ["dummy", "pending", "tagging", "failed", "unmatched"]
+    _valid_kind = ["preview", "import"]
 
     _group_id: Mapped[str] = mapped_column(ForeignKey("tag_group.id"))
     _tag_group: Mapped[TagGroup] = relationship(back_populates="tag_ids")

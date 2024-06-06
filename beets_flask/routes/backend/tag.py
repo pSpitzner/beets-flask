@@ -85,4 +85,4 @@ def add_tag():
 
         invoker.enqueue(tag.id, session=session)
 
-        return jsonify(tag.to_dict(), 200)
+        return jsonify(tag.to_dict())
