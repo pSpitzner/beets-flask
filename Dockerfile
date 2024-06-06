@@ -45,6 +45,19 @@ RUN chmod +x ./entrypoint_dev.sh
 USER beetle
 ENTRYPOINT ["./entrypoint_dev.sh"]
 
+FROM deps as test
+
+WORKDIR /repo
+COPY --from=deps /repo /repo
+COPY entrypoint_test.sh .
+RUN mkdir -p /music/inbox
+RUN chown -R beetle:beetle /music/inbox
+RUN chown -R beetle:beetle /repo
+RUN chmod +x ./entrypoint_test.sh
+USER beetle
+ENTRYPOINT ["./entrypoint_test.sh"]
+
+
 FROM deps as prod
 
 WORKDIR /repo

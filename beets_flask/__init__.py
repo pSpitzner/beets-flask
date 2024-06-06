@@ -38,15 +38,5 @@ def create_app():
     app.register_blueprint(frontend_bp)
 
     log.info("App created")
-    def print_routes():
-        log.debug(f"Flask Blueprnit Routes:")
-        for blueprint_name, blueprint in app.blueprints.items():
-            for rule in app.url_map.iter_rules():
-                if rule.endpoint.startswith(blueprint_name):
-                    log.debug(f"  Blueprint: {blueprint_name}")
-                    log.debug(f"    URL rule: {rule}")
-                    log.debug(f"      Methods: {rule.methods}")
-                    log.debug(f"      Function: {rule.endpoint}")
-    # print_routes()
 
     return app
