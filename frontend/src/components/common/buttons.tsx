@@ -102,10 +102,12 @@ export const IconTextButtonWithMutation = forwardRef(
         );
 
         return (
-            <div className="relative w-100" ref={ref}>
+            // PS 24-06-06 tailwind css did not seem to work, w-full had no effect for me.
+            <div style={{ width: "100%" }} ref={ref}>
                 <Button
                     {...props}
-                    onClick={() => {
+                    onClick={(event: React.MouseEvent) => {
+                        event.stopPropagation();
                         if (isSuccess) {
                             reset();
                         } else {
@@ -118,7 +120,7 @@ export const IconTextButtonWithMutation = forwardRef(
                     }}
                 >
                     {isSuccess ? <CheckIcon /> : icon}
-                    <span>{text}</span>
+                    <span style={{ marginLeft: "0.5rem" }}>{text}</span>
                 </Button>
                 {isPending ? (
                     <CircularProgress

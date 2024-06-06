@@ -31,11 +31,28 @@ $border-color: #495057;
 }
 
 .header {
-    display: flex;
+    display: inline-flex;
     flex-direction: row;
     justify-content: begin;
     align-items: center;
     padding-block: 0.15rem;
+    padding-right: 0.5rem;
+    border-radius: 0.3rem;
+    &[data-selected="true"] {
+        background-color: #6F7B8533;
+    }
+    &:hover {
+        background-color: #6F7B8555;
+    }
+}
+
+.contextMenuHeaderWrapper {
+    display: inline-flex;
+}
+
+.label {
+    cursor: pointer;
+    user-select: none;
 }
 
 .trigger {

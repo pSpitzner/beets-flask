@@ -24,16 +24,9 @@ export function SimilarityBadgeWithHover({
         tagQueryOptions(tagId, tagPath)
     );
 
-    useEffect(() => {
-        console.log(data?.distance);
-    }, [data?.distance]);
-
-    /**
-     * 
     if (isLoading || isPending || isError) {
         return <SimilarityBadge dist={undefined} className={className} />;
     }
-    */
 
     if (!data?.preview) {
         // without preview, hover makes no sense

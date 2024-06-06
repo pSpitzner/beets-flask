@@ -6,11 +6,10 @@ import { TagStatusIcon } from "@/components/common/statusIcon";
 import { SimilarityBadgeWithHover } from "@/components/common/similarityBadge";
 
 import styles from "./inbox.module.scss";
-import { ChevronRight } from "lucide-react";
-import { Settings2 } from "lucide-react";
+import { ChevronRight, Settings2, Tag, HardDriveDownload, Clipboard } from "lucide-react";
 
 import * as Collapsible from "@radix-ui/react-collapsible";
-import { Checkbox, IconButton } from "@mui/material";
+import { IconButton } from "@mui/material";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 
@@ -56,6 +55,14 @@ export function FolderView({
     mergeLabels?: boolean;
     level?: number;
 }): JSX.Element {
+    // selecting rows
+    const [isSelected, setIsSelected] = useState(false);
+    const handleSelect = () => {
+        if (fp.is_album) {
+            setIsSelected(!isSelected);
+        }
+    };
+
     /** The subviews for each child of the folder.
      */
     const numChildren = Object.keys(fp.children).length;
@@ -100,26 +107,38 @@ export function FolderView({
     return (
         <div className={styles.folder} data-empty={numChildren < 1}>
             <Collapsible.Root defaultOpen>
-                <div key={fp.full_path} className={styles.header}>
-                    <Collapsible.Trigger
-                        asChild
-                        className={styles.trigger}
-                        disabled={numChildren < 1}
-                    >
-                        <ChevronRight />
-                    </Collapsible.Trigger>
+                <ContextMenu
+                    className={styles.contextMenuHeaderWrapper}
+                    innerContent={
+                        <div
+                            key={fp.full_path}
+                            className={styles.header}
+                            data-selected={isSelected}
+                            onClick={handleSelect}
+                        >
+                            <Collapsible.Trigger
+                                asChild
+                                className={styles.trigger}
+                                disabled={numChildren < 1}
+                            >
+                                <ChevronRight />
+                            </Collapsible.Trigger>
 
-                    {fp.is_album && (
-                        <div className="flex flex-row items-center justify-center gap-2 mx-1">
-                            <Checkbox className="p-0 "></Checkbox>
-                            <TagStatusIcon tagPath={fp.full_path} />
-                            <SimilarityBadgeWithHover tagPath={fp.full_path} />
-                            <ActionMenu fp={fp} />
+                            {fp.is_album && (
+                                <div className="flex flex-row items-center justify-center gap-2 mx-1">
+                                    <TagStatusIcon tagPath={fp.full_path} />
+                                    <SimilarityBadgeWithHover tagPath={fp.full_path} />
+                                    {/* <ActionMenu fp={fp} /> */}
+                                </div>
+                            )}
+
+                            <span className={styles.label}>
+                                <span>{label}</span>
+                            </span>
                         </div>
-                    )}
-
-                    <span>{label}</span>
-                </div>
+                    }
+                    fp={fp}
+                />
                 <Collapsible.Content className={styles.content}>
                     <SubViews />
                 </Collapsible.Content>
@@ -140,6 +159,134 @@ export function FileView({ fp: fp }: { fp: FsPath }): JSX.Element {
     );
 }
 
+export function ContextMenu({
+    innerContent,
+    fp,
+    className,
+}: {
+    innerContent: JSX.Element;
+    fp: FsPath;
+    className?: string;
+}) {
+    const [contextMenu, setContextMenu] = useState<{
+        mouseX: number;
+        mouseY: number;
+    } | null>(null);
+
+    const handleContextMenu = (event: React.MouseEvent) => {
+        event.preventDefault();
+        setContextMenu(
+            contextMenu === null
+                ? {
+                      mouseX: event.clientX + 2,
+                      mouseY: event.clientY - 6,
+                  }
+                : null
+        );
+    };
+
+    const handleClose = () => {
+        setContextMenu(null);
+    };
+
+    const retagOptions: UseMutationOptions = {
+        mutationFn: async () => {
+            await fetch(`/tag/add`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    folder: fp.full_path,
+                    kind: "preview",
+                }),
+            });
+        },
+        onSuccess: async () => {
+            handleClose();
+            await queryClient.setQueryData(["tag", fp.full_path], (old: TagI) => {
+                return { ...old, status: "pending" };
+            });
+        },
+        onError: (error: Error) => {
+            console.error(error);
+        },
+    };
+
+    const importOptions: UseMutationOptions = {
+        mutationFn: async () => {
+            await fetch(`/tag/add`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    folder: fp.full_path,
+                    kind: "import",
+                }),
+            });
+        },
+        onSuccess: async () => {
+            handleClose();
+            await queryClient.setQueryData(["tag", fp.full_path], (old: TagI) => {
+                return { ...old, status: "pending" };
+            });
+        },
+        onError: (error: Error) => {
+            console.error(error);
+        },
+    };
+
+    return (
+        <div onContextMenu={handleContextMenu} className={className}>
+            {innerContent}
+            <Menu
+                open={contextMenu !== null}
+                onClose={handleClose}
+                anchorReference="anchorPosition"
+                anchorPosition={
+                    contextMenu !== null
+                        ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
+                        : undefined
+                }
+                MenuListProps={{
+                    "aria-labelledby": "basic-button",
+                }}
+            >
+                <MenuItem sx={{ padding: 0 }}>
+                    <IconTextButtonWithMutation
+                        icon={<Tag size={12} />}
+                        text="(Re-)Tag"
+                        color="inherit"
+                        mutationOption={retagOptions}
+                    />
+                </MenuItem>
+                <MenuItem sx={{ padding: 0 }}>
+                    <IconTextButtonWithMutation
+                        icon={<HardDriveDownload size={12} />}
+                        text="Import"
+                        color="inherit"
+                        mutationOption={importOptions}
+                    />
+                </MenuItem>
+                <MenuItem
+                    onClick={(event: React.MouseEvent) => {
+                        event.stopPropagation();
+                        handleClose();
+                        navigator.clipboard
+                            .writeText(fp.full_path)
+                            .catch(console.error);
+                    }}
+                >
+                    <Clipboard size={12} />
+                    Copy Path
+                </MenuItem>
+            </Menu>
+        </div>
+    );
+}
+
+// lets see if we can replace this with rightclick menu
 export default function ActionMenu({ fp }: { fp: FsPath }) {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
@@ -173,7 +320,6 @@ export default function ActionMenu({ fp }: { fp: FsPath }) {
             console.error(error);
         },
     };
-
 
     const importOptions: UseMutationOptions = {
         mutationFn: async () => {

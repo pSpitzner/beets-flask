@@ -8,6 +8,7 @@ import {
 import { Tooltip } from "@mui/material";
 import { tagQueryOptions } from "@/lib/tag";
 import { useQuery } from "@tanstack/react-query";
+import styles from "./statusIcon.module.scss";
 
 export function TagStatusIcon({
     tagId,
@@ -41,6 +42,24 @@ export function StatusIcon({
         icon = <CircleHelp size={12} />;
     } else if (status.toLocaleLowerCase() === "failed") {
         icon = <TriangleAlert size={12} />;
+    } else if (["tagging", "importing"].includes(status.toLocaleLowerCase())) {
+        icon = (
+            // could not make the mui spinner smaller, so used custom css.
+            // the extra divs are needed.
+            <div className={styles.spinner}>
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+        );
+    } else if (status.toLocaleLowerCase() === "pending") {
+        icon = (
+            <div className={styles.ripple}>
+                <div></div>
+                <div></div>
+            </div>
+        );
     }
 
     return (

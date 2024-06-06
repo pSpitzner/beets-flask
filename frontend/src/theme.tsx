@@ -30,6 +30,17 @@ const darkTheme = createTheme({
                 },
             },
         },
+        MuiMenu: {
+            styleOverrides: {
+                paper: {
+                    backgroundColor: "#21252933",
+                    borderRadius: "0.3rem",
+                    backdropFilter: "blur(10px)",
+                    padding: "0.0rem",
+                    backgroundImage: "none",
+                },
+            },
+        },
     },
 });
 
