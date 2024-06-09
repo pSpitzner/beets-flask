@@ -7,8 +7,8 @@ import styles from "./similarityBadge.module.scss";
 import { tagQueryOptions } from "@/lib/tag";
 
 import * as HoverCard from "@radix-ui/react-hover-card";
+
 import { TagPreview } from "./tagView";
-import { useEffect } from "react";
 
 export function SimilarityBadgeWithHover({
     tagId,

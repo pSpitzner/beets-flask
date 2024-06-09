@@ -6,7 +6,13 @@ import { TagStatusIcon } from "@/components/common/statusIcon";
 import { SimilarityBadgeWithHover } from "@/components/common/similarityBadge";
 
 import styles from "./inbox.module.scss";
-import { ChevronRight, Settings2, Tag, HardDriveDownload, Clipboard } from "lucide-react";
+import {
+    ChevronRight,
+    Settings2,
+    Tag,
+    HardDriveDownload,
+    Clipboard,
+} from "lucide-react";
 
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { IconButton } from "@mui/material";
@@ -51,7 +57,7 @@ export function FolderView({
     level = 0,
 }: {
     fp: FsPath;
-    label?: string;
+    label?: string | JSX.Element;
     mergeLabels?: boolean;
     level?: number;
 }): JSX.Element {
@@ -81,11 +87,22 @@ export function FolderView({
                     );
                 } else {
                     const [subFp, subName, mergedName] = mergeSubFolderNames(fp, name);
+                    // enable line wrapping
+                    const mergedNameJsx = (
+                        <>
+                            {mergedName.split(" / ").map((part, i, arr) => (
+                                <span key={i}>
+                                    {part}
+                                    {i < arr.length - 1 && " / "}
+                                </span>
+                            ))}
+                        </>
+                    );
                     return (
                         <FolderView
                             key={mergedName}
                             fp={subFp.children[subName]}
-                            label={mergedName}
+                            label={mergedNameJsx}
                             level={level + 1}
                         />
                     );
@@ -120,12 +137,13 @@ export function FolderView({
                                 asChild
                                 className={styles.trigger}
                                 disabled={numChildren < 1}
+                                onClick={(e) => e.stopPropagation()}
                             >
                                 <ChevronRight />
                             </Collapsible.Trigger>
 
                             {fp.is_album && (
-                                <div className="flex flex-row items-center justify-center gap-2 mx-1">
+                                <div className={styles.albumIcons}>
                                     <TagStatusIcon tagPath={fp.full_path} />
                                     <SimilarityBadgeWithHover tagPath={fp.full_path} />
                                     {/* <ActionMenu fp={fp} /> */}
@@ -133,7 +151,7 @@ export function FolderView({
                             )}
 
                             <span className={styles.label}>
-                                <span>{label}</span>
+                                {label}
                             </span>
                         </div>
                     }

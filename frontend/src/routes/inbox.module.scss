@@ -28,13 +28,39 @@ $border-color: #495057;
     flex-direction: column;
     height: 100%;
     width: 100%;
+    overflow: wrap;
+
+    margin: 0 auto;
+    @media (min-width: 576px) {
+        max-width: 540px;
+    }
+
+    @media (min-width: 768px) {
+        max-width: 720px;
+    }
+
+    @media (min-width: 992px) {
+        max-width: 960px;
+    }
+
+    @media (min-width: 1200px) {
+        max-width: 1140px;
+    }
+}
+
+// wraps the header
+.contextMenuHeaderWrapper {
+    cursor: pointer;
+    display: inline-flex;
+    width: auto;
 }
 
 .header {
     display: inline-flex;
     flex-direction: row;
+    align-items: flex-start;
     justify-content: begin;
-    align-items: center;
+    width: auto;
     padding-block: 0.15rem;
     padding-right: 0.5rem;
     border-radius: 0.3rem;
@@ -46,16 +72,26 @@ $border-color: #495057;
     }
 }
 
-.contextMenuHeaderWrapper {
-    display: inline-flex;
-}
-
 .label {
-    cursor: pointer;
+    // TODO: when line-wrapping of the content occurs, the label extends
+    // full-width of the parent (flex) container, instead of having the
+    // width of the largest child. Visible on hover.
+    max-width: 100%;
+    width: auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
     user-select: none;
+
+    span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: pre-wrap;
+    }
 }
 
 .trigger {
+    flex-shrink: 0;
     transition: transform 150ms ease-in-out;
     margin-right: 0.3rem;
 
@@ -66,6 +102,17 @@ $border-color: #495057;
     &:hover {
         cursor: pointer;
     }
+}
+
+.albumIcons {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-left: 0.7rem;
+    margin-right: 0.5rem;
 }
 
 .content {
@@ -83,9 +130,12 @@ $border-color: #495057;
 }
 
 .folder {
+    margin: 0 auto;
+    text-overflow: ellipsis;
     font-family: monospace;
     font-size: 0.7rem;
     white-space: pre;
+    max-width: 100%;
 
     &[data-empty="true"] {
         color: #999;
