@@ -27,10 +27,10 @@ $border-color: #495057;
     display: flex;
     flex-direction: column;
     height: 100%;
-    width: 100%;
+    width: auto;
     overflow: wrap;
-
     margin: 0 auto;
+
     @media (min-width: 576px) {
         max-width: 540px;
     }
@@ -42,13 +42,27 @@ $border-color: #495057;
     @media (min-width: 992px) {
         max-width: 960px;
     }
+}
 
-    @media (min-width: 1200px) {
-        max-width: 1140px;
+
+.folder {
+    text-overflow: ellipsis;
+    font-family: monospace;
+    font-size: 0.7rem;
+    white-space: pre;
+    max-width: 100%;
+    width: auto;
+
+    &[data-empty="true"] {
+        color: #999;
+    }
+
+    svg {
+        display: flex;
+        height: 1rem;
     }
 }
 
-// wraps the header
 .contextMenuHeaderWrapper {
     cursor: pointer;
     display: inline-flex;
@@ -126,24 +140,6 @@ $border-color: #495057;
     }
     &[data-state="closed"] {
         animation: slideUp 150ms ease-out;
-    }
-}
-
-.folder {
-    margin: 0 auto;
-    text-overflow: ellipsis;
-    font-family: monospace;
-    font-size: 0.7rem;
-    white-space: pre;
-    max-width: 100%;
-
-    &[data-empty="true"] {
-        color: #999;
-    }
-
-    svg {
-        display: flex;
-        height: 1rem;
     }
 }
 

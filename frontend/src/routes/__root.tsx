@@ -14,7 +14,7 @@ export const Route = createRootRouteWithContext<{
 
 function RootComponent() {
     return (
-        <main className="flex flex-col h-screen w-screen">
+        <main className="flex flex-col w-screen">
             <NavTabs />
             <Container maxWidth="lg" className="mt-2">
                 <Outlet />
