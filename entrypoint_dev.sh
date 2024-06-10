@@ -40,6 +40,6 @@ rm /repo/frontend/vite.config.ts.timestamp-*.mjs >/dev/null 2>&1
 export FLASK_ENV=development
 export FLASK_DEBUG=1
 
-gunicorn 'main:create_app()' --bind 0.0.0.0:5001 --workers 4 --reload --capture-output --enable-stdio-inheritance --timeout 300 --worker-class gevent
+gunicorn 'main:create_app()' --bind 0.0.0.0:5001 --workers 8 --reload --capture-output --enable-stdio-inheritance --timeout 300 --worker-class gevent
 
 # tail -f /dev/null

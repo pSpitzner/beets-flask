@@ -491,8 +491,8 @@ def album_items(album_id):
 def all_artists():
     with g.lib.transaction() as tx:
         rows = tx.query("SELECT DISTINCT albumartist FROM albums")
-    all_artists = [row[0] for row in rows]
-    return jsonify(artist_names=all_artists)
+    all_artists = [{"name": row[0]} for row in rows]
+    return jsonify(all_artists)
 
 
 @library_bp.route("/artist/<string:artist_name>")

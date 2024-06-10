@@ -1,34 +1,34 @@
 import { queryOptions } from "@tanstack/react-query";
 
-interface MinimalArtist {
+export interface MinimalArtist {
     // backend: /artist
     // beets has no ids for artists?
     name: string;
 }
 
-interface Artist extends MinimalArtist {
+export interface Artist extends MinimalArtist {
     // backend: /artist/[aristName]?minimal
     albums: MinimalAlbum[];
 }
 
-interface MinimalAlbum {
+export interface MinimalAlbum {
     // backend: /album/[id1,id2,id3...]
     id: number;
     name: string;
 }
 
-interface Album extends MinimalAlbum {
+export interface Album extends MinimalAlbum {
     // backend: /album/albumId/items or /artist/[aristName]?minimal&expand
     items: MinimalItem[];
 }
 
-interface MinimalItem {
+export interface MinimalItem {
     // items are essnetially tracks
     id: number;
     name: string;
 }
 
-interface Item extends MinimalItem {
+export interface Item extends MinimalItem {
     album?: string;
     album_id?: number;
     artist?: string;
@@ -53,6 +53,12 @@ export async function fetchArtists(): Promise<MinimalArtist[]> {
     const response = await fetch(`/library/artist/`);
     return await response.json() as MinimalArtist[];
 }
+
+export const artistsQueryOptions = () =>
+    queryOptions({
+        queryKey: ["artists"],
+        queryFn: () => fetchArtists(),
+    });
 
 export async function fetchArtist(
     name: string,
