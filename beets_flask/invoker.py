@@ -242,3 +242,23 @@ def _get_or_gen_match_url(tagId, session: Session) -> str | None:
     bs = PreviewSession(path=bt.album_folder)
     bs.run_and_capture_output()
     return bs.match_url
+
+
+def tag_status(
+    id: str | None = None, path: str | None = None, session: Session | None = None
+):
+    """
+    Get the status of a tag by its id or path
+    """
+
+    with db_session(session) as s:
+        bt = None
+        if id is not None:
+            bt = Tag.get_by(Tag.id == id, session=s)
+        elif path is not None:
+            bt = Tag.get_by(Tag.album_folder == path, session=s)
+
+        if bt is None:
+            raise InvalidUsage(f"Tag not found in database")
+
+        return bt.status

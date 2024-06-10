@@ -8,8 +8,7 @@ from watchdog.observers import Observer
 from watchdog.observers.polling import PollingObserver
 from watchdog.events import FileSystemEventHandler, FileSystemEvent, FileMovedEvent
 
-from . import beets_tags
-from . import beets_tasks
+from . import invoker
 from . import utility as ut
 
 from .logger import log
@@ -112,13 +111,14 @@ def refresh_folder(album_folder: str):
 
     log.debug(f"refreshing {album_folder} ...")
 
-    status = beets_tags.tag_status(album_folder)
+    status = invoker.tag_status(path = album_folder)
     if status in ["pending", "tagging", "importing", "imported", "cleared"]:
         log.debug(f"folder {album_folder} is {status}. skipping")
         return
     else:
         log.debug(f"tagging folder {album_folder}")
-        beets_tasks.task_for_paths([album_folder], {"task": "preview"})
+        raise NotImplementedError("refresh_folder is not implemented yet")
+        # beets_tasks.task_for_paths([album_folder], {"task": "preview"})
 
 
 def refresh_all_folders(
@@ -126,10 +126,10 @@ def refresh_all_folders(
 ):
     log.debug(f"Refreshing all folders {with_status=}")
     for f in all_album_folders():
-        status = beets_tags.tag_status(f)
+        status = invoker.tag_status(f)
         if status in with_status:
             log.debug(f"tagging folder {f} with status {status}")
-            beets_tasks.task_for_paths([f], {"task": "preview"})
+            raise NotImplementedError("refresh_folder is not implemented yet")
         else:
             log.debug(f"folder {f} is {status}. skipping")
             continue
