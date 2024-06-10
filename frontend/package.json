@@ -25,7 +25,8 @@
         "lucide-react": "^0.379.0",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
-        "sass": "^1.77.2"
+        "sass": "^1.77.2",
+        "socket.io-client": "^4.7.5"
     },
     "devDependencies": {
         "@tanstack/eslint-plugin-query": "^5.35.6",
