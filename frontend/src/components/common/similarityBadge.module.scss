@@ -1,0 +1,36 @@
+.SimilarityBadge {
+    background-color: #212529;
+    border-radius: 0.3rem;
+    border: var(--bs-border-width) solid var(--bs-border-color);
+    font-size: 0.7rem;
+    font-weight: bolder;
+    padding: 0.1rem 0.3rem;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    font-family: monospace;
+    white-space: pre;
+    &.tbd {
+        color: #495057;
+    }
+    &.strong {
+        color: #A4BF8C;
+    }
+    &.medium {
+        color: #EBCB8C;
+    }
+    & .weak {
+        color: #C0626B;
+    }
+}
+
+.HoverContent {
+    Background-color: #21252933;
+    border-radius: 0.3rem;
+    backdrop-filter: blur(10px);
+    padding: 1rem;
+    z-index: 2;
+}

@@ -8,11 +8,11 @@ from watchdog.observers import Observer
 from watchdog.observers.polling import PollingObserver
 from watchdog.events import FileSystemEventHandler, FileSystemEvent, FileMovedEvent
 
-from . import beets_tags
-from . import beets_tasks
+from . import invoker
 from . import utility as ut
 
-log = ut.log
+from .logger import log
+
 inbox_dir = os.environ.get("INBOX", "/music/inbox")
 _cache = cachetools.TTLCache(maxsize=100, ttl=900)
 _cache_lock = threading.Lock()
@@ -36,7 +36,9 @@ def init():
         observer.schedule(handler, path=inbox_dir, recursive=True)
         observer.start()
     except FileNotFoundError:
-        log.error(f"Could not find inbox directory ({inbox_dir}). Check your INBOX env var.")
+        log.error(
+            f"Could not find inbox directory ({inbox_dir}). Check your INBOX env var."
+        )
         return
 
     # run this in its own thread to not block the webserver.
@@ -109,13 +111,14 @@ def refresh_folder(album_folder: str):
 
     log.debug(f"refreshing {album_folder} ...")
 
-    status = beets_tags.tag_status(album_folder)
+    status = invoker.tag_status(path = album_folder)
     if status in ["pending", "tagging", "importing", "imported", "cleared"]:
         log.debug(f"folder {album_folder} is {status}. skipping")
         return
     else:
         log.debug(f"tagging folder {album_folder}")
-        beets_tasks.task_for_paths([album_folder], {"task": "preview"})
+        raise NotImplementedError("refresh_folder is not implemented yet")
+        # beets_tasks.task_for_paths([album_folder], {"task": "preview"})
 
 
 def refresh_all_folders(
@@ -123,10 +126,10 @@ def refresh_all_folders(
 ):
     log.debug(f"Refreshing all folders {with_status=}")
     for f in all_album_folders():
-        status = beets_tags.tag_status(f)
+        status = invoker.tag_status(f)
         if status in with_status:
             log.debug(f"tagging folder {f} with status {status}")
-            beets_tasks.task_for_paths([f], {"task": "preview"})
+            raise NotImplementedError("refresh_folder is not implemented yet")
         else:
             log.debug(f"folder {f} is {status}. skipping")
             continue
@@ -137,7 +140,7 @@ def refresh_all_folders(
 # ------------------------------------------------------------------------------------ #
 
 
-def get_inbox_dict(use_cache: bool = True):
+def get_inbox_dict(use_cache: bool = True) -> dict:
     global _cache
     with _cache_lock:
         if use_cache and "inbox" in _cache:
@@ -150,36 +153,58 @@ def get_inbox_dict(use_cache: bool = True):
     return inbox
 
 
-def path_to_dict(root_dir, relative_to="/"):
+def path_to_dict(root_dir, relative_to="/") -> dict:
+    """
+    Generate our nested dict structure for the specified path.
+
+    # Args:
+    - root_dir (str): The root directory to start from.
+    - relative_to (str): The path to be stripped from the full path.
+
+    # Returns:
+    - dict: The nested dict structure.
+    """
+
+    if not os.path.isdir(root_dir):
+        raise FileNotFoundError(f"Path `{root_dir}` does not exist or is no directory.")
+
     files = glob.glob(root_dir + "/**/*", recursive=True)
     files = sorted(files, key=lambda s: s.lower())
     album_folders = album_folders_from_track_paths(files)
     folder_structure = {
-        "__type": "file" if os.path.isfile(root_dir) else "directory",
-        "__is_album": root_dir in album_folders,
-        "__full_path": root_dir,
+        "type": "directory",
+        "is_album": relative_to in album_folders,
+        "full_path": relative_to,
+        "children": {},
     }
     for file in files:
-        path_components = [p for p in file.lstrip(relative_to).split("/") if p]
+        f = file[len(relative_to) :] if file.startswith(relative_to) else file
+        path_components = [p for p in f.split("/") if p]
         current_dict = folder_structure
         current_path = relative_to
         for component in path_components:
             current_path = os.path.join(current_path, component)
-            if component not in current_dict:
-                current_dict[component] = {
-                    "__type": "file" if os.path.isfile(file) else "directory",
-                    "__is_album": current_path in album_folders,
-                    "__full_path": current_path,
+            if component not in current_dict["children"]:
+                current_dict["children"][component] = {
+                    "type": "file" if os.path.isfile(file) else "directory",
+                    "is_album": current_path in album_folders,
+                    "full_path": current_path,
+                    "children": {},
                 }
-            current_dict = current_dict[component]
+            current_dict = current_dict["children"][component]
 
     return folder_structure
 
 
-def tree(folder_structure):
+def tree(folder_structure) -> str:
+    """Simple tree-like string representation of our nested dict structure that reflects file paths.
+
+    # Args:
+        folder_structure (dict): The nested dict structure.
+    """
 
     def _tree(d, prefix=""):
-        contents = [name for name in d.keys() if not name.startswith("__")]
+        contents = d["children"].keys()
         pointers = ["├── "] * (len(contents) - 1) + ["└── "]
         for pointer, name in zip(pointers, contents):
             yield prefix + pointer + name
@@ -210,7 +235,7 @@ def album_folders_from_track_paths(track_paths: list):
             album_folders.append(os.path.dirname(os.path.abspath(path)))
         elif os.path.isdir(path):
             for file in os.listdir(path):
-                if file.lower().endswith(ut.audio_extensions):
+                if file.lower().endswith(ut.AUDIO_EXTENSIONS):
                     album_folders.append(os.path.abspath(path))
                     break
     return sorted(
@@ -218,8 +243,8 @@ def album_folders_from_track_paths(track_paths: list):
     )
 
 
-def all_album_folders():
-    files = sorted(glob.glob(inbox_dir + "/**/*", recursive=True))
+def all_album_folders(root_dir: str = inbox_dir):
+    files = sorted(glob.glob(root_dir + "/**/*", recursive=True))
     return album_folders_from_track_paths(files)
 
 

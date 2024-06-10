@@ -1,0 +1,20 @@
+.tagView {
+    margin-bottom: 0.5rem;
+}
+
+.tagHeading {
+    font-weight: 600;
+}
+
+.tagContent {
+    white-space: pre;
+    font-family: monospace;
+    font-size: 0.7rem;
+}
+
+// to get the color codes working, you will need the ansi css classes form our main.css
+.tagPreview {
+    white-space: pre;
+    font-family: monospace;
+    font-size: 0.7rem;
+}

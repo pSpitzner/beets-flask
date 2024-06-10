@@ -2,9 +2,8 @@ import os
 import re
 import sys
 import io
-import logging
 from functools import wraps
-from flask import Flask
+from flask import Flask, current_app
 from flask_rq2 import RQ
 from rq import Worker
 from flask_sse import sse
@@ -12,38 +11,17 @@ from logging.handlers import RotatingFileHandler
 from flask_sqlalchemy import SQLAlchemy
 from math import floor
 
+from .logger import log
+
 # ------------------------------------------------------------------------------------ #
 #                                    init flask app                                    #
 # ------------------------------------------------------------------------------------ #
 
 
-def create_app():
-    app = Flask("beets-flask", template_folder="templates", static_folder="static")
-
-    # sqlite
-    app.config["SQLALCHEMY_DATABASE_URI"] = (
-        "sqlite://///home/beetle/beets-flask-sqlite.db?timeout=5"
-    )
-    db = SQLAlchemy()
-    db.init_app(app)
-    # db.create_all() has to be called after models are known.
-
-    # redis, workers
-    rq = RQ()
-    rq.init_app(app)
-
-    # we want to update the download table only when needed.
-    # redis connection also needed for sse
-    app.config["REDIS_URL"] = "redis://localhost"
-    app.register_blueprint(sse, url_prefix="/stream")
-
-    return app, db, rq
-
-
 def with_app_context(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        with app.app_context():
+        with current_app.app_context():
             return f(*args, **kwargs)
 
     return wrapper
@@ -67,51 +45,6 @@ def get_running_jobs():
 # ------------------------------------------------------------------------------------ #
 #                                        Logging                                       #
 # ------------------------------------------------------------------------------------ #
-
-
-def init_logging():
-
-    global log_file_for_web
-    log_file_for_web = os.environ.get("LOG_FILE_WEB", "./log/for_web.log")
-
-    logging.basicConfig(
-        format="%(levelname)-8s %(name)s %(funcName)s : %(message)s"
-    )
-    logging.getLogger("werkzeug").setLevel(logging.WARNING)
-
-    # grab everything, handlers below have their own levels
-    log = logging.getLogger("beets-flask")
-    log.setLevel(logging.DEBUG)
-
-    # keep a log file that the web interface can load
-    fh = RotatingFileHandler(
-        log_file_for_web,
-        maxBytes=int(0.3 * 1024 * 1024),
-        backupCount=3,
-    )
-    fh.setFormatter(logging.Formatter("%(message)s"))
-    fh.setLevel(os.getenv("LOG_LEVEL_WEB", logging.DEBUG))
-    log.addHandler(fh)
-
-    # we also want to update the client-side view everytime we log sth.
-    class ClientUpdateHandler(logging.Handler):
-        def emit(self, record):
-            update_client_view("logs", ansi_to_html(self.format(record)))
-
-    ch = ClientUpdateHandler()
-    ch.setFormatter(logging.Formatter("%(message)s"))
-    ch.setLevel(os.getenv("LOG_LEVEL_WEB", logging.DEBUG))
-    log.addHandler(ch)
-
-    # for the server we use streaming handler
-    sh = logging.StreamHandler()
-    sh.setFormatter(logging.Formatter("%(levelname)-8s %(name)s %(funcName)s : %(message)s"))
-    sh.setLevel(os.getenv("LOG_LEVEL_SERVER", logging.DEBUG))
-    log.addHandler(sh)
-
-    log.debug("Logging initialized")
-
-    return log
 
 
 def capture_stdout_stderr(func, *args, **kwargs):
@@ -262,7 +195,7 @@ def html_for_distance(dist):
 
 # audio formats supported by beets
 # https://github.com/beetbox/beets/discussions/3964
-audio_extensions = (
+AUDIO_EXTENSIONS = (
     ".mp3",
     ".aac",
     ".alac",
@@ -285,12 +218,3 @@ class DummyObject:
 
     def __getattr__(self, name):
         return None
-
-
-# ------------------------------------------------------------------------------------ #
-#                                         init                                         #
-# ------------------------------------------------------------------------------------ #
-
-app, db, rq = create_app()
-log_file_for_web = None
-log = init_logging()

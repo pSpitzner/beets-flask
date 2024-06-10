@@ -6,6 +6,10 @@ static/bootstrap/*
 static/bootstrap-icons/*
 docker-compose-custom.yaml
 
+
+**/package-lock.json
+**/vite.config.ts.timestamp-*.mjs
+**/routeTree.gen.ts
 *.code-workspace
 *.rdb
 
@@ -25,7 +29,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -169,3 +172,5 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+node_modules/
+.pnpm-store/

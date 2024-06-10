@@ -8,7 +8,7 @@ from copy import copy
 from collections import namedtuple
 
 from . import utility as ut
-log = ut.log
+from .logger import log
 
 from beets import config, plugins, importer, IncludeLazyConfig
 from beets.ui import _open_library, print_, colorize, UserError
@@ -50,6 +50,8 @@ class BaseSession(importer.ImportSession):
     # some attributes we need to create a beetsTag instance for our database
     status: str = "ok"
     match_url: str | None
+    match_album: str | None
+    match_artist: str | None
     match_dist: float | None
     match_num_tracks: int = 0
     candidate_urls: list[str]
@@ -192,6 +194,8 @@ class PreviewSession(BaseSession):
         self.match_num_tracks = (
             len(match.info.tracks) if hasattr(match.info, "tracks") else 0
         )
+        self.match_artist = getattr(match.info, "artist", None)
+        self.match_album = getattr(match.info, "album", None)
 
         self.candidate_urls = []
         self.candidate_dists = []
@@ -281,6 +285,8 @@ class MatchedImportSession(BaseSession):
         self.match_num_tracks = (
             len(match.info.tracks) if hasattr(match.info, "tracks") else 0
         )
+        self.match_artist = getattr(match.info, "artist", None)
+        self.match_album = getattr(match.info, "album", None)
 
         self.candidate_urls = [self.match_url] if self.match_url else []
         self.candidate_dists = [self.match_dist] if self.match_dist else []
