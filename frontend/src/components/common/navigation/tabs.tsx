@@ -1,7 +1,7 @@
 import Tab, { tabClasses } from "@mui/material/Tab";
 import Tabs, { tabsClasses } from "@mui/material/Tabs";
 import { styled } from "@mui/material/styles";
-import { Home, Inbox, Tag } from "lucide-react";
+import { Home, Inbox, Tag, Library } from "lucide-react";
 import { createLink, useRouterState } from "@tanstack/react-router";
 
 /**
@@ -75,7 +75,7 @@ export default function NavTabs() {
                  label={"Home"} icon={<Home />} to="/"/>
             <TabItem value={"/inbox"} disableRipple label={"Inbox"} icon={<Inbox />} to="/inbox" />
             <TabItem value={"/tagGroup"} disableRipple label={"Tags"} icon={<Tag />} to="/tagGroup" />
-            <TabItem value={"/other"} disableRipple label={"Other"} />
+            <TabItem value={"/library"} disableRipple label={"Library"} icon={<Library />} />
         </Tabs>
     );
 }

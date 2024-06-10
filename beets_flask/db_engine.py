@@ -10,9 +10,11 @@ engine : Engine = create_engine("sqlite://///home/beetle/beets-flask-sqlite.db?t
 db_session_factory = scoped_session(sessionmaker(bind=engine))
 
 @contextmanager
-def db_session():
+def db_session(session: Session | None = None):
     """
-    Provide a db session as context, making sure sessions are closed at the end.
+    Use a db session as context, making sure sessions are closed at the end.
+    If an existing session is provided, it will not be closed at the end.
+    This allows to wrap multiple `with db_session()` blocks around each other without closing the outer session.
 
     Example:
     ```
@@ -20,9 +22,17 @@ def db_session():
         tag.foo = "bar"
         session.merge(tag)
         return tag.to_dict()
+
+    existingSession = db_session_factory()
+    with db_session(session) as s:
+        tag.foo = "bar"
+        s.merge(tag)
+        return tag.to_dict()
     ```
     """
-    session = db_session_factory()
+    is_outermost = session is None
+    if is_outermost:
+        session = db_session_factory()
     try:
         yield session
         session.commit()
@@ -30,7 +40,8 @@ def db_session():
         session.rollback()
         raise
     finally:
-        session.close()
+        if is_outermost:
+            session.close()
 
 
 def with_db_session(func):

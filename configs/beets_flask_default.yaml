@@ -1,0 +1,5 @@
+
+library:
+    include_paths: yes
+    readonly: yes
+    jsonify_prettyprint_regular: no
