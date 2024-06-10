@@ -1,8 +1,8 @@
 // thin wrapper around fetch so that we can use the vite dev server with our backend
 
 const originalFetch = window.fetch;
-const apiPrefix =
-    import.meta.env.MODE === "development" ? "http://0.0.0.0:5001/api_v1" : "/api_v1";
+const devMode = import.meta.env.MODE === "development";
+const apiPrefix = devMode ? "http://0.0.0.0:5001/api_v1" : "/api_v1";
 
 window.fetch = async (
     input: RequestInfo | URL,
@@ -20,6 +20,16 @@ window.fetch = async (
         const data = (await response.json()) as ErrorData;
         throw new APIError(data);
     }
+
+    if (devMode && response.headers.get("Content-Type") == "application/json") {
+        try {
+            const data = await response.clone().json();
+            console.log("JSON parse successful", data);
+        } catch (e) {
+            throw new Error("Failed to parse response as JSON in fetch()");
+        }
+    }
+
     return response;
 };
 

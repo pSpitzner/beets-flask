@@ -20,7 +20,17 @@ import base64
 import json
 import os
 
-from flask import Blueprint, Response, request, jsonify, current_app, abort, make_response, send_file, g
+from flask import (
+    Blueprint,
+    Response,
+    request,
+    jsonify,
+    current_app,
+    abort,
+    make_response,
+    send_file,
+    g,
+)
 from unidecode import unidecode
 from werkzeug.routing import BaseConverter, PathConverter
 
@@ -29,28 +39,40 @@ from beets import ui, util
 from beets import config as beets_config
 from beets.ui import _open_library
 from beets_flask.config import config
+from beets_flask.logger import log
 
 library_bp = Blueprint("library", __name__, url_prefix="/library")
+
 
 # ------------------------------------------------------------------------------------ #
 #                                        Helper                                        #
 # ------------------------------------------------------------------------------------ #
 
 
-def _rep(obj, expand=False):
+def _rep(obj, expand=False, minimal=False):
     """Get a flat -- i.e., JSON-ish -- representation of a beets Item or
     Album object. For Albums, `expand` dictates whether tracks are
     included.
     """
     out = dict(obj)
 
-    if isinstance(obj, beets.library.Item):
-        if config["library"]["include_paths"].get(bool):
-            out["path"] = util.displayable_path(out["path"])
-        else:
-            del out["path"]
+    # For out client side, we want to have a consistent name for each kind of item.
+    # for tracks its the title, for albums album name...
+    out["name"] = (
+        out.get("title", None) or out.get("album", None) or out.get("artist", None)
+    )
 
-        # Filter all bytes attributes and convert them to strings.
+    if minimal:
+        out = {k: v for k, v in out.items() if k in ["id", "name"]}
+
+    if isinstance(obj, beets.library.Item):
+
+        if not minimal:
+            if config["library"]["include_paths"].get(bool):
+                out["path"] = util.displayable_path(out["path"])
+            else:
+                del out["path"]
+
         for key, value in out.items():
             if isinstance(out[key], bytes):
                 out[key] = base64.b64encode(value).decode("ascii")
@@ -65,16 +87,18 @@ def _rep(obj, expand=False):
         return out
 
     elif isinstance(obj, beets.library.Album):
-        if config["library"]["include_paths"].get(bool):
-            out["artpath"] = util.displayable_path(out["artpath"])
-        else:
-            del out["artpath"]
+        if not minimal:
+            if config["library"]["include_paths"].get(bool):
+                out["artpath"] = util.displayable_path(out["artpath"])
+            else:
+                del out["artpath"]
+
         if expand:
-            out["items"] = [_rep(item) for item in obj.items()]
+            out["items"] = [_rep(item, expand=expand, minimal=minimal) for item in obj.items()]
         return out
 
 
-def json_generator(items, root, expand=False):
+def json_generator(items, root, expand=False, minimal=False):
     """Generator that dumps list of beets Items or Albums as JSON
 
     :param root:  root key for JSON
@@ -90,14 +114,24 @@ def json_generator(items, root, expand=False):
             first = False
         else:
             yield ","
-        yield json.dumps(_rep(item, expand=expand))
+        yield json.dumps(_rep(item, expand=expand, minimal=minimal))
     yield "]}"
 
 
 def is_expand():
-    """Returns whether the current request is for an expanded response."""
+    """
+    Returns whether the current request is for an expanded response.
+
+    """
 
     return request.args.get("expand") is not None
+
+
+def is_minimal():
+    """
+    Normal requests have full info, minimal ones only have item ids and names.
+    """
+    return request.args.get("minimal") is not None
 
 
 def is_delete():
@@ -148,10 +182,17 @@ def resource(name, patchable=False):
 
             elif get_method() == "GET":
                 if len(entities) == 1:
-                    return jsonify(_rep(entities[0], expand=is_expand()))
+                    return jsonify(
+                        _rep(entities[0], expand=is_expand(), minimal=is_minimal())
+                    )
                 elif entities:
                     return Response(
-                        json_generator(entities, root=name),
+                        json_generator(
+                            entities,
+                            root=name,
+                            expand=is_expand(),
+                            minimal=is_minimal(),
+                        ),
                         mimetype="application/json",
                     )
                 else:
@@ -198,7 +239,12 @@ def resource_query(name, patchable=False):
 
             elif get_method() == "GET":
                 return Response(
-                    json_generator(entities, root="results", expand=is_expand()),
+                    json_generator(
+                        entities,
+                        root="results",
+                        expand=is_expand(),
+                        minimal=is_minimal(),
+                    ),
                     mimetype="application/json",
                 )
 
@@ -220,7 +266,9 @@ def resource_list(name):
     def make_responder(list_all):
         def responder():
             return Response(
-                json_generator(list_all(), root=name, expand=is_expand()),
+                json_generator(
+                    list_all(), root=name, expand=is_expand(), minimal=is_minimal()
+                ),
                 mimetype="application/json",
             )
 
@@ -283,6 +331,7 @@ def add_converters(state):
     state.app.url_map.converters["query"] = QueryConverter
     state.app.url_map.converters["everything"] = EverythingConverter
 
+
 library_bp.record_once(add_converters)
 
 
@@ -295,7 +344,7 @@ library_bp.record_once(add_converters)
 def before_request():
     # we will need to see if keeping the db open from each thread is what we want,
     # the importer may want to write.
-    if not hasattr(g, 'lib') or g.lib is None:
+    if not hasattr(g, "lib") or g.lib is None:
         g.lib = _open_library(beets_config)
 
 
@@ -314,7 +363,11 @@ def get_item(id):
 @library_bp.route("/item/query/")
 @resource_list("items")
 def all_items():
-    return g.lib.items()
+    items = g.lib.items()
+    if is_expand():
+        return items
+    else:
+        return items
 
 
 @library_bp.route("/item/<int:item_id>/file")
@@ -347,9 +400,7 @@ def item_file(item_id):
     else:
         safe_filename = unicode_base_filename
 
-    response = send_file(
-        item_path, as_attachment=True, download_name=safe_filename
-    )
+    response = send_file(item_path, as_attachment=True, download_name=safe_filename)
     return response
 
 
@@ -373,9 +424,7 @@ def item_at_path(path):
 def item_unique_field_values(key):
     sort_key = request.args.get("sort_key", key)
     try:
-        values = _get_unique_table_field_values(
-            beets.library.Item, key, sort_key
-        )
+        values = _get_unique_table_field_values(beets.library.Item, key, sort_key)
     except KeyError:
         return abort(404)
     return jsonify(values=values)
@@ -418,16 +467,23 @@ def album_art(album_id):
 def album_unique_field_values(key):
     sort_key = request.args.get("sort_key", key)
     try:
-        values = _get_unique_table_field_values(
-            beets.library.Album, key, sort_key
-        )
+        values = _get_unique_table_field_values(beets.library.Album, key, sort_key)
     except KeyError:
         return abort(404)
     return jsonify(values=values)
 
 
+@library_bp.route("/album/<int:album_id>/items")
+def album_items(album_id):
+    album = g.lib.get_album(album_id)
+    if album:
+        return jsonify(items=[_rep(item) for item in album.items()])
+    else:
+        return abort(404)
+
+
 # ------------------------------------------------------------------------------------ #
-#                                        Artists                                       #
+#                        Hierachical API: artist > album > track                       #
 # ------------------------------------------------------------------------------------ #
 
 
@@ -437,6 +493,18 @@ def all_artists():
         rows = tx.query("SELECT DISTINCT albumartist FROM albums")
     all_artists = [row[0] for row in rows]
     return jsonify(artist_names=all_artists)
+
+
+@library_bp.route("/artist/<string:artist_name>")
+def albums_by_artist(artist_name):
+    albums = g.lib.albums()
+    return jsonify(
+        albums=[
+            _rep(album, expand=is_expand(), minimal=is_minimal())
+            for album in albums
+            if album.albumartist == artist_name
+        ]
+    )
 
 
 # ------------------------------------------------------------------------------------ #

@@ -24,14 +24,7 @@ type TagResponse = TagI | Record<string, never>;
 
 export async function fetchTagById(tagId: string): Promise<TagResponse> {
     const response = await fetch(`/tag/id/${tagId}`);
-    if (!response.ok) {
-        throw new Error("Network response was not ok");
-    }
-    try {
-        return (await response.json()) as TagResponse;
-    } catch (e) {
-        throw new Error("Failed to parse response as JSON in fetchTagById()");
-    }
+    return (await response.json()) as TagResponse;
 }
 
 export const tagQueryOptions = (tagId?: string, tagPath?: string) => {
@@ -60,14 +53,7 @@ export async function fetchTagByPath(folderPath: string): Promise<TagResponse> {
             "Content-Type": "application/json",
         },
     });
-    if (!response.ok) {
-        throw new Error("Network response was not ok");
-    }
-    try {
-        return (await response.json()) as TagI;
-    } catch (e) {
-        throw new Error("Failed to parse response as JSON in fetchTagByPath()");
-    }
+    return (await response.json()) as TagI;
 }
 
 export const tagPathQueryOptions = (path: string) => {
@@ -84,14 +70,7 @@ export interface TagGroupI {
 
 export async function fetchTagGroupById(tagGroupId: string): Promise<TagGroupI> {
     const response = await fetch(`/tagGroup/id/${tagGroupId}`);
-    if (!response.ok) {
-        throw new Error("Network response was not ok");
-    }
-    try {
-        return (await response.json()) as TagGroupI;
-    } catch (e) {
-        throw new Error("Failed to parse response as JSON in fetchTagGroupById()");
-    }
+    return (await response.json()) as TagGroupI;
 }
 
 export const tagGroupIdQueryOptions = (tagGroupId: string) => {
@@ -103,14 +82,7 @@ export const tagGroupIdQueryOptions = (tagGroupId: string) => {
 
 export async function fetchAllTagGroups(): Promise<TagGroupI[]> {
     const response = await fetch(`/tagGroup`);
-    if (!response.ok) {
-        throw new Error("Network response was not ok");
-    }
-    try {
-        return (await response.json()) as TagGroupI[];
-    } catch (e) {
-        throw new Error("Failed to parse response as JSON in fetchTagAllGroups()");
-    }
+    return (await response.json()) as TagGroupI[];
 }
 
 export const tagGroupAllQueryOptions = () => {

@@ -10,14 +10,7 @@ export interface FsPath {
 
 export async function fetchInbox(): Promise<FsPath> {
     const response = await fetch(`/inbox`);
-    if (!response.ok) {
-        throw new Error("Network response was not ok");
-    }
-    try {
-        return (await response.json()) as FsPath;
-    } catch (e) {
-        throw new Error("Failed to parse response as JSON in fetchInbox()");
-    }
+    return (await response.json()) as FsPath;
 }
 
 export const inboxQueryOptions = () =>
@@ -29,14 +22,7 @@ export const inboxQueryOptions = () =>
 export async function fetchFsPath(folderPath: string): Promise<FsPath> {
     if (folderPath.startsWith("/")) folderPath = folderPath.slice(1);
     const response = await fetch(`/inbox/path/${folderPath}`);
-    if (!response.ok) {
-        throw new Error("Network response was not ok");
-    }
-    try {
-        return (await response.json()) as FsPath;
-    } catch (e) {
-        throw new Error("Failed to parse response as JSON in fetchFsPath()");
-    }
+    return (await response.json()) as FsPath;
 }
 
 export const fsPathQueryOptions = (path: string) =>

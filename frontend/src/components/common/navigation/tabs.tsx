@@ -75,7 +75,7 @@ export default function NavTabs() {
                  label={"Home"} icon={<Home />} to="/"/>
             <TabItem value={"/inbox"} disableRipple label={"Inbox"} icon={<Inbox />} to="/inbox" />
             <TabItem value={"/tagGroup"} disableRipple label={"Tags"} icon={<Tag />} to="/tagGroup" />
-            <TabItem value={"/library"} disableRipple label={"Library"} icon={<Library />} />
+            <TabItem value={"/library"} disableRipple label={"Library"} icon={<Library />} to="/library" activeOptions={{exact: false}}/>
         </Tabs>
     );
 }
