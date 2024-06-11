@@ -5,8 +5,10 @@ https://github.com/cs01/pyxtermjs
 Note: With flask_socketio we could not work around invalid session errors.
 """
 
+import errno
 import os
 import pty
+import signal
 import subprocess
 import struct
 import fcntl
@@ -49,8 +51,18 @@ def read_and_forward_pty_output():
             timeout_sec = 0
             (data_ready, _, _) = select.select([config["fd"]], [], [], timeout_sec)
             if data_ready:
-                output = os.read(config["fd"], max_read_bytes).decode(errors="ignore")
-                sio.emit("ptyOutput", {"output": output}, namespace="/terminal")
+                try:
+                    output = os.read(config["fd"], max_read_bytes).decode(errors="ignore")
+                    sio.emit("ptyOutput", {"output": output}, namespace="/terminal")
+                except OSError as e:
+                    if e.errno == errno.EBADF:
+                        log.debug("Terminal has been closed.")
+                        os.kill(config["pid"], signal.SIGKILL)
+                        config["fd"] = None
+                        config["pid"] = None
+                        break
+                    else:
+                        raise
 
 
 @sio.on("ptyInput", namespace="/terminal")
@@ -90,18 +102,12 @@ def connect(sid, environ):
         # store child fd and pid
         config["fd"] = fd
         config["child_pid"] = child_pid
-        set_winsize(fd, 50, 50)
+        set_winsize(fd, 20, 50)
         cmd = " ".join(shlex.quote(c) for c in config["cmd"])
         # logging/print statements must go after this because... I have no idea why
         # but if they come before the background task never starts
         sio.start_background_task(target=read_and_forward_pty_output)
-
-        log.debug(f"{sid} child pid is " + str(child_pid))
-        log.debug(
-            f"{sid} starting background task with command `{cmd}` to continously read "
-            "and forward pty output to client"
-        )
-        log.info("task started")
+        log.debug(f"{sid} child pid is {child_pid}, starting background task with command `{cmd}`")
 
 
 @sio.on("*", namespace="/terminal")
