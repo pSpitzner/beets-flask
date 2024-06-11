@@ -2,7 +2,7 @@
     position: fixed;
     bottom: 0;
     width: 100%;
-    height: 240px;
+    height: auto;
     display: flex;
     flex-direction: column;
     z-index: 3;
@@ -28,21 +28,26 @@
     z-index: -1;
 }
 
-.terminalContent {
+.terminalOuterContainer {
     flex: 1;
     flex-direction: column;
     padding: 4px;
     border-top: 2px solid;
     border-color: var(--mui-palette-primary-dark);
     width: 100%;
-    height: 100%;
+    height: auto;
     flex-grow: 1;
     background-color: black;
     color: var(--mui-palette-primary-main);
     font-family: monospace;
     font-size: 0.8rem;
     padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
     padding-inline: 1rem;
+}
+
+.xTermBindingContainer {
+    height: 400px;
 }
 
 .terminalCollapseButton {

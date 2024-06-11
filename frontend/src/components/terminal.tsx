@@ -4,6 +4,7 @@ import { ChevronDown, Terminal as TerminalIcon } from "lucide-react";
 
 import "node_modules/@xterm/xterm/css/xterm.css";
 import { Terminal as xTerminal } from "@xterm/xterm";
+import { FitAddon as xTermFitAddon } from "@xterm/addon-fit";
 import styles from "./terminal.module.scss";
 import { useSocket } from "@/lib/socket";
 import { Socket } from "socket.io-client";
@@ -35,7 +36,7 @@ const SlideIn = ({ children }: { children: React.ReactNode }) => {
                                 <ChevronDown size={14} />
                             </IconButton>
                         </div>
-                        <div className={styles.terminalContent}>{children}</div>
+                        <div className={styles.terminalOuterContainer}>{children}</div>
                     </div>
                 </Slide>
                 <Button
@@ -101,14 +102,21 @@ function XTermBinding() {
 
         gui.attachCustomKeyEventHandler(customKeyEventHandler);
 
+        const fitAddon = new xTermFitAddon();
+        gui.loadAddon(fitAddon);
         gui.open(ref.current);
+        console.log("fitting terminal");
+        fitAddon.fit();
+        gui.onResize(({ cols, rows }) => {
+            console.log(`Terminal was resized to ${cols} cols and ${rows} rows.`);
+        });
 
         return () => {
             gui.dispose();
         };
     }, [gui]);
 
-    return <div ref={ref}></div>;
+    return <div ref={ref} className={styles.xTermBindingContainer}></div>;
 }
 
 export interface TerminalContextI {
@@ -139,6 +147,7 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
             const term = new xTerminal({
                 cursorBlink: true,
                 macOptionIsMeta: true,
+                rows:12,
             });
             setGui(term);
         }
