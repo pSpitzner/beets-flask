@@ -1,10 +1,10 @@
 """
 SocketIO for terminal emulation. Adapted from the excellent tutorial by cs01:
 https://github.com/cs01/pyxtermjs
+
+Note: With flask_socketio we could not work around invalid session errors.
 """
 
-from time import sleep
-from flask import Blueprint, current_app, app
 import os
 import pty
 import subprocess
@@ -12,21 +12,28 @@ import struct
 import fcntl
 import termios
 import select
-import asyncio
 import shlex
 
-from beets_flask.logger import log
 import socketio
 
-sio = socketio.Server(
-    async_mode="eventlet", logger=True, engineio_logger=True, cors_allowed_origins="*"
-)
+from beets_flask.logger import log
 
 
-config=dict()
+config = dict()
 config["child_pid"] = None
 config["fd"] = None
 config["cmd"] = ["/bin/bash"]
+
+sio = socketio.Server(
+    async_mode="eventlet",
+    logger=False,
+    engineio_logger=False,
+    cors_allowed_origins="*",
+)
+
+def register_socketio(app):
+    app.wsgi_app = socketio.WSGIApp(sio, app.wsgi_app)
+
 
 def set_winsize(fd, row, col, xpix=0, ypix=0):
     log.debug("setting window size with termios")
@@ -66,7 +73,7 @@ def resize(sid, data):
 @sio.on("connect", namespace="/terminal")
 def connect(sid, environ):
     """new client connected"""
-    log.info(f"{sid} new client connected")
+    log.debug(f"{sid} new client connected")
     if config["child_pid"]:
         # already started child process, don't start another
         return
@@ -89,8 +96,8 @@ def connect(sid, environ):
         # but if they come before the background task never starts
         sio.start_background_task(target=read_and_forward_pty_output)
 
-        log.info(f"{sid} child pid is " + str(child_pid))
-        log.info(
+        log.debug(f"{sid} child pid is " + str(child_pid))
+        log.debug(
             f"{sid} starting background task with command `{cmd}` to continously read "
             "and forward pty output to client"
         )
@@ -99,4 +106,4 @@ def connect(sid, environ):
 
 @sio.on("*", namespace="/terminal")
 def any_event(event, sid, data):
-    log.info(f"sid {sid} undhandled event {event} with data {data}")
+    log.debug(f"sid {sid} undhandled event {event} with data {data}")

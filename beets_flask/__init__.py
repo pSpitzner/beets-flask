@@ -1,10 +1,8 @@
 import os
 
-from flask import Flask, g
+from flask import Flask
 from flask_cors import CORS
-from flask_socketio import SocketIO
 from .redis import rq
-
 from .db_engine import setup_db
 
 from .logger import log
@@ -30,21 +28,21 @@ def create_app():
 
     # redis, workers
     rq.init_app(app)
-    # we want to update the download table only when needed.
+    # we want to update the tag table only when needed.
     # redis connection also needed for sse
     app.config["REDIS_URL"] = "redis://localhost"
 
     # Register blueprints
-    from .routes.backend import backend_bp, sio, socketio
+    from .routes.backend import backend_bp
     from .routes.frontend import frontend_bp
 
     app.register_blueprint(backend_bp)
     app.register_blueprint(frontend_bp)
 
-    app.wsgi_app = socketio.WSGIApp(sio, app.wsgi_app)
-
+    # Register socketio
+    from .routes.terminal import register_socketio
+    register_socketio(app)
 
     log.info("App created")
-    # socketio.run(app, port=5001, host="0.0.0.0")
 
     return app
