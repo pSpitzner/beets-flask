@@ -1,33 +1,33 @@
-import React, { useState } from "react";
+import React, { createContext, useEffect, useRef, useState } from "react";
 import { Slide, Button, Box, Portal, IconButton } from "@mui/material";
 import { ChevronDown, Terminal as TerminalIcon } from "lucide-react";
 
-const SlideIn = ({ children }: { children: React.ReactNode }) => {
-    const [isVisible, setIsVisible] = useState(false);
+import "node_modules/@xterm/xterm/css/xterm.css"
+import {Terminal as xTerminal} from "@xterm/xterm"
+import styles from "./terminal.module.scss";
+import { socket, useSocket } from "@/lib/socket";
 
-    const toggleSlide = () => {
-        setIsVisible(!isVisible);
-    };
+const SlideIn = ({ children }: { children: React.ReactNode }) => {
+
+    const { open, toggle } = useTerminalContext();
+
+    useEffect(() => {
+        if (open) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "auto";
+        }
+    }, [open]);
 
     return (
         <Portal container={document.getElementById("app")}>
-            <Box sx={{ position: "fixed", bottom: 0, width: "100%" }}>
-                <Slide direction="up" in={isVisible}>
+            <Box className={styles.slideIn}>
+                <Slide direction="up" in={open}>
                     <Box
-                        sx={{
-                            position: "fixed",
-                            width: "100vw",
-                            boxShadow: 3,
-                            bottom: 0,
-                            zIndex: 1000,
-                            display: "flex",
-                            flexDirection: "column",
-                            minHeight: "10vh",
-                        }}
                     >
                         <div className="flex justify-end gap-4 flex-row w-100 mr-4">
                             <IconButton
-                                onClick={toggleSlide}
+                                onClick={toggle}
                                 color="primary"
                                 size="small"
                                 sx={{
@@ -67,7 +67,7 @@ const SlideIn = ({ children }: { children: React.ReactNode }) => {
                 <Button
                     variant="outlined"
                     color="primary"
-                    onClick={toggleSlide}
+                    onClick={toggle}
                     sx={{
                         position: "absolute",
                         bottom: 0,
@@ -77,6 +77,7 @@ const SlideIn = ({ children }: { children: React.ReactNode }) => {
                         fontSize: "0.8rem",
                         fontFamily: "monospace",
                         padding: "0.2rem 0.5rem",
+                        zIndex: -1,
                     }}
                     startIcon={<TerminalIcon size={14} className="ml-2" />}
                 >
@@ -88,5 +89,121 @@ const SlideIn = ({ children }: { children: React.ReactNode }) => {
 };
 
 export function Terminal() {
-    return <SlideIn>Content goes here!</SlideIn>;
+    return <SlideIn><XTermBinding/></SlideIn>;
+}
+
+
+function XTermBinding(){
+
+    const {socket, isConnected} = useSocket();
+
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!ref.current || !isConnected) return;
+
+        const term = new xTerminal({
+            cursorBlink: true,
+        macOptionIsMeta: true,
+        });
+
+        // Handle copy and paste events
+        function customKeyEventHandler(e : KeyboardEvent) {
+            if (e.type !== "keydown") {
+            return true;
+            }
+            if (e.ctrlKey && e.shiftKey) {
+            const key = e.key.toLowerCase();
+            if (key === "v") {
+                // ctrl+shift+v: paste whatever is in the clipboard
+                navigator.clipboard.readText().then((toPaste) => {
+                term.write(toPaste);
+                });
+                return false;
+            } else if (key === "c" || key === "x") {
+                // ctrl+shift+x: copy whatever is highlighted to clipboard
+
+                // 'x' is used as an alternate to 'c' because ctrl+c is taken
+                // by the terminal (SIGINT) and ctrl+shift+c is taken by the browser
+                // (open devtools).
+                // I'm not aware of ctrl+shift+x being used by anything in the terminal
+                // or browser
+                const toCopy = term.getSelection();
+                navigator.clipboard.writeText(toCopy);
+                term.focus();
+                return false;
+            }
+            }
+            return true;
+        }
+
+        term.attachCustomKeyEventHandler(customKeyEventHandler);
+
+        term.open(ref.current);
+        term.write("Hello from \x1B[1;3;31mxterm.js\x1B[0m $ ");
+
+        /** Attatch handler for input
+         */
+        term.onData((data) => {
+            console.log("browser terminal received new data:", data);
+            socket.emit("ptyInput", { input: data });
+        });
+
+        function onOutput(data: {output:string}) {
+            console.log("browser terminal received new output:", data)
+            term.write(data.output);
+        }
+        socket.on("ptyOutput", onOutput);
+
+        return () => {
+            term.dispose();
+            socket.off("ptyOutput", onOutput);
+        }
+    }, [isConnected]);
+
+
+    return <div ref={ref}></div>
+}
+
+
+
+
+
+export interface TerminalContextI {
+    open: boolean;
+    toggle: () => void;
+    onInput: (input: string) => void;
+    output: string[];
+}
+
+const TerminalContext = createContext<TerminalContextI>({
+    open: false,
+    toggle: () => {},
+    onInput: () => {},
+    output: [],
+});
+
+export function TerminalContextProvider({children}: {children: React.ReactNode}){
+    const [open, setOpen] = useState(false);
+    const [output, setOutput] = useState<string[]>([]);
+
+    const terminalState : TerminalContextI = {
+        open,
+        toggle: () => setOpen(!open),
+        onInput: (input: string) => {
+            console.log(input);
+        },
+        output,
+    };
+
+    return (
+        <TerminalContext.Provider value={terminalState}>
+            {children}
+        </TerminalContext.Provider>
+    );
+}
+
+
+export function useTerminalContext(){
+    return React.useContext(TerminalContext);
 }

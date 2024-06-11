@@ -40,12 +40,16 @@ rm /repo/frontend/vite.config.ts.timestamp-*.mjs >/dev/null 2>&1
 export FLASK_ENV=development
 export FLASK_DEBUG=1
 
+
+# This is the startup commands grave. Mind the ghosts
 # gunicorn 'main:create_app()' --bind 0.0.0.0:5001 --workers 8 --reload --capture-output --enable-stdio-inheritance --timeout 300 -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker
 
-gunicorn 'main:create_app()' --bind 0.0.0.0:5001 --workers 8 --reload --capture-output --enable-stdio-inheritance --timeout 300 -k eventlet
+# gunicorn 'main:create_app()' --bind 0.0.0.0:5001 --workers 8 --reload --capture-output --enable-stdio-inheritance --timeout 300 -k eventlet
 
 # gunicorn -w 1 --threads 1000 'main:create_app()' --bind 0.0.0.0:5001 -k eventlet
 # uwsgi --gevent 1000 --http 0.0.0.0:5001 --http-websockets --master --wsgi-file main.py --callable 'app'
+
+gunicorn --worker-class eventlet -w 1 --threads 32 --bind 0.0.0.0:5001 --reload 'main:create_app()'
 
 # python main.py
 
