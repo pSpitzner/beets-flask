@@ -1,16 +1,17 @@
-import React, { createContext, useEffect, useRef, useState } from "react";
+import React, { Dispatch, SetStateAction, createContext, useEffect, useRef, useState } from "react";
 import { Slide, Button, Box, Portal, IconButton } from "@mui/material";
 import { ChevronDown, Terminal as TerminalIcon } from "lucide-react";
 
-import "node_modules/@xterm/xterm/css/xterm.css"
-import {Terminal as xTerminal} from "@xterm/xterm"
+import "node_modules/@xterm/xterm/css/xterm.css";
+import { Terminal as xTerminal } from "@xterm/xterm";
 import styles from "./terminal.module.scss";
-import { socket, useSocket } from "@/lib/socket";
+import { useSocket } from "@/lib/socket";
+import { Socket } from "socket.io-client";
 
 const SlideIn = ({ children }: { children: React.ReactNode }) => {
-
     const { open, toggle } = useTerminalContext();
 
+    // prevent scrolling of main content when terminal is open
     useEffect(() => {
         if (open) {
             document.body.style.overflow = "hidden";
@@ -21,179 +22,157 @@ const SlideIn = ({ children }: { children: React.ReactNode }) => {
 
     return (
         <Portal container={document.getElementById("app")}>
-            <Box className={styles.slideIn}>
+            <div className={styles.slideIn}>
                 <Slide direction="up" in={open}>
-                    <Box
-                    >
-                        <div className="flex justify-end gap-4 flex-row w-100 mr-4">
+                    <div>
+                        <div className={styles.slideInHeader}>
                             <IconButton
                                 onClick={toggle}
                                 color="primary"
                                 size="small"
-                                sx={{
-                                    backgroundColor: "black",
-                                    color: "primary.dark",
-                                    borderColor: "primary.dark",
-                                    borderRadius: "0.5rem",
-                                    border: "2px solid",
-                                    borderBottomLeftRadius: "0rem",
-                                    borderBottomRightRadius: "0rem",
-                                    borderBottom: "0px",
-
-                                    ":hover": {
-                                        borderBottom: "0px",
-                                        borderColor: "primary.dark",
-                                    },
-                                }}
+                                className={styles.terminalCollapseButton}
                             >
                                 <ChevronDown size={14} />
                             </IconButton>
                         </div>
-                        <Box
-                            className="flex flex-col p-4 border-t-2w-100 h-100 flex-grow"
-                            sx={{
-                                borderTop: "2px solid",
-                                borderColor: "primary.dark",
-                                backgroundColor: "black",
-                                color: "primary.main",
-                                fontFamily: "monospace",
-                                fontSize: "0.8rem",
-                            }}
-                        >
-                            {children}
-                        </Box>
-                    </Box>
+                        <div className={styles.terminalContent}>{children}</div>
+                    </div>
                 </Slide>
                 <Button
                     variant="outlined"
                     color="primary"
                     onClick={toggle}
-                    sx={{
-                        position: "absolute",
-                        bottom: 0,
-                        right: 0,
-                        margin: "0.5rem",
-                        width: "100xp",
-                        fontSize: "0.8rem",
-                        fontFamily: "monospace",
-                        padding: "0.2rem 0.5rem",
-                        zIndex: -1,
-                    }}
+                    className={styles.terminalExpandButton}
                     startIcon={<TerminalIcon size={14} className="ml-2" />}
                 >
                     Terminal
                 </Button>
-            </Box>
+            </div>
         </Portal>
     );
 };
 
 export function Terminal() {
-    return <SlideIn><XTermBinding/></SlideIn>;
+    return (
+        <SlideIn>
+            <XTermBinding />
+        </SlideIn>
+    );
 }
 
-
-function XTermBinding(){
-
-    const {socket, isConnected} = useSocket();
-
+function XTermBinding() {
     const ref = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        if (!ref.current || !isConnected) return;
+    const { gui } = useTerminalContext();
 
-        const term = new xTerminal({
-            cursorBlink: true,
-        macOptionIsMeta: true,
-        });
+    useEffect(() => {
+        if (!ref.current || !gui) return;
 
         // Handle copy and paste events
-        function customKeyEventHandler(e : KeyboardEvent) {
-            if (e.type !== "keydown") {
-            return true;
-            }
+        function customKeyEventHandler(e: KeyboardEvent) {
+            if (!gui) return false;
+
+            if (e.type !== "keydown") return true;
+
             if (e.ctrlKey && e.shiftKey) {
-            const key = e.key.toLowerCase();
-            if (key === "v") {
-                // ctrl+shift+v: paste whatever is in the clipboard
-                navigator.clipboard.readText().then((toPaste) => {
-                term.write(toPaste);
-                });
-                return false;
-            } else if (key === "c" || key === "x") {
-                // ctrl+shift+x: copy whatever is highlighted to clipboard
+                const key = e.key.toLowerCase();
+                if (key === "v") {
+                    // ctrl+shift+v: paste whatever is in the clipboard
+                    navigator.clipboard.readText().then((toPaste) => {
+                        gui.write(toPaste);
+                    });
+                    return false;
+                } else if (key === "c" || key === "x") {
+                    // ctrl+shift+x: copy whatever is highlighted to clipboard
 
-                // 'x' is used as an alternate to 'c' because ctrl+c is taken
-                // by the terminal (SIGINT) and ctrl+shift+c is taken by the browser
-                // (open devtools).
-                // I'm not aware of ctrl+shift+x being used by anything in the terminal
-                // or browser
-                const toCopy = term.getSelection();
-                navigator.clipboard.writeText(toCopy);
-                term.focus();
-                return false;
-            }
+                    // 'x' is used as an alternate to 'c' because ctrl+c is taken
+                    // by the terminal (SIGINT) and ctrl+shift+c is taken by the browser
+                    // (open devtools).
+                    // I'm not aware of ctrl+shift+x being used by anything in the terminal
+                    // or browser
+                    const toCopy = gui.getSelection();
+                    navigator.clipboard.writeText(toCopy);
+                    gui.focus();
+                    return false;
+                }
             }
             return true;
         }
 
-        term.attachCustomKeyEventHandler(customKeyEventHandler);
+        gui.attachCustomKeyEventHandler(customKeyEventHandler);
 
-        term.open(ref.current);
-        term.write("Hello from \x1B[1;3;31mxterm.js\x1B[0m $ ");
-
-        /** Attatch handler for input
-         */
-        term.onData((data) => {
-            console.log("browser terminal received new data:", data);
-            socket.emit("ptyInput", { input: data });
-        });
-
-        function onOutput(data: {output:string}) {
-            console.log("browser terminal received new output:", data)
-            term.write(data.output);
-        }
-        socket.on("ptyOutput", onOutput);
+        gui.open(ref.current);
 
         return () => {
-            term.dispose();
-            socket.off("ptyOutput", onOutput);
-        }
-    }, [isConnected]);
+            gui.dispose();
+        };
+    }, [gui]);
 
-
-    return <div ref={ref}></div>
+    return <div ref={ref}></div>;
 }
-
-
-
-
 
 export interface TerminalContextI {
     open: boolean;
     toggle: () => void;
-    onInput: (input: string) => void;
-    output: string[];
+    setOpen: Dispatch<SetStateAction<boolean>>;
+    inputText: (input: string) => void;
+    socket?: Socket;
+    gui?: xTerminal;
 }
 
 const TerminalContext = createContext<TerminalContextI>({
     open: false,
     toggle: () => {},
-    onInput: () => {},
-    output: [],
+    setOpen: () => {},
+    inputText: () => {},
 });
 
-export function TerminalContextProvider({children}: {children: React.ReactNode}){
+export function TerminalContextProvider({ children }: { children: React.ReactNode }) {
     const [open, setOpen] = useState(false);
-    const [output, setOutput] = useState<string[]>([]);
+    const [gui, setGui] = useState<xTerminal>();
 
-    const terminalState : TerminalContextI = {
+    const { socket, isConnected } = useSocket();
+
+    useEffect(() => {
+        // Create gui on mount
+        if (!gui) {
+            const term = new xTerminal({
+                cursorBlink: true,
+                macOptionIsMeta: true,
+            });
+            setGui(term);
+        }
+    }, []);
+
+    // Attatch socketio handler
+    useEffect(() => {
+        if (!gui || !isConnected) return;
+
+        gui!.onData((data) => {
+            socket.emit("ptyInput", { input: data });
+        });
+
+        function onOutput(data: { output: string }) {
+            gui!.write(data.output);
+        }
+        socket.on("ptyOutput", onOutput);
+
+        return () => {
+            socket.off("ptyOutput", onOutput);
+        };
+    }, [isConnected, gui, socket]);
+
+    function inputText(t: string) {
+        socket.emit("ptyInput", { input: t });
+    }
+
+    const terminalState: TerminalContextI = {
         open,
         toggle: () => setOpen(!open),
-        onInput: (input: string) => {
-            console.log(input);
-        },
-        output,
+        setOpen,
+        inputText,
+        socket,
+        gui,
     };
 
     return (
@@ -203,7 +182,6 @@ export function TerminalContextProvider({children}: {children: React.ReactNode})
     );
 }
 
-
-export function useTerminalContext(){
+export function useTerminalContext() {
     return React.useContext(TerminalContext);
 }

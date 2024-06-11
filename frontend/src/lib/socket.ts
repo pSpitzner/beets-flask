@@ -1,3 +1,5 @@
+// we use a single socket, currently only needed for the terminal connection
+
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 

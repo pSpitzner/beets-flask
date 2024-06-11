@@ -151,9 +151,7 @@ export function FolderView({
                                 </div>
                             )}
 
-                            <span className={styles.label}>
-                                {label}
-                            </span>
+                            <span className={styles.label}>{label}</span>
                         </div>
                     }
                     fp={fp}
@@ -187,8 +185,11 @@ export function ContextMenu({
     fp: FsPath;
     className?: string;
 }) {
-
-    const {toggle : toggleTerminal} = useTerminalContext();
+    const {
+        setOpen: setTerminalOpen,
+        gui: terminalGui,
+        inputText: inputTerminalText,
+    } = useTerminalContext();
 
     const [contextMenu, setContextMenu] = useState<{
         mouseX: number;
@@ -307,15 +308,18 @@ export function ContextMenu({
                 <MenuItem
                     onClick={(event: MouseEvent) => {
                         event.stopPropagation();
-                        toggleTerminal();
+                        setTerminalOpen(true);
+                        // terminalGui?.write(`ls '${fp.full_path}'`);
+                        inputTerminalText(`ls '${fp.full_path}'`);
                         handleClose();
                     }}
-                >Terminal</MenuItem>
+                >
+                    Terminal
+                </MenuItem>
             </Menu>
         </div>
     );
 }
-
 
 function mergeSubFolderNames(
     parent: FsPath,
