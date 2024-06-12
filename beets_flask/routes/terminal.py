@@ -102,7 +102,7 @@ def connect(sid, environ):
         # store child fd and pid
         config["fd"] = fd
         config["child_pid"] = child_pid
-        set_winsize(fd, 20, 50)
+        set_winsize(fd, 20, 140)
         cmd = " ".join(shlex.quote(c) for c in config["cmd"])
         # logging/print statements must go after this because... I have no idea why
         # but if they come before the background task never starts

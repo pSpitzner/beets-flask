@@ -1,4 +1,11 @@
-import React, { Dispatch, SetStateAction, createContext, useEffect, useRef, useState } from "react";
+import React, {
+    Dispatch,
+    SetStateAction,
+    createContext,
+    useEffect,
+    useRef,
+    useState,
+} from "react";
 import { Slide, Button, Box, Portal, IconButton } from "@mui/material";
 import { ChevronDown, Terminal as TerminalIcon } from "lucide-react";
 
@@ -10,9 +17,10 @@ import { useSocket } from "@/lib/socket";
 import { Socket } from "socket.io-client";
 
 const SlideIn = ({ children }: { children: React.ReactNode }) => {
-    const { open, toggle } = useTerminalContext();
+    const { gui, open, toggle, setOpen } = useTerminalContext();
 
     // prevent scrolling of main content when terminal is open
+    // would be nicer to scroll depending on where the mouser cursor is, but that seems more difficult.
     useEffect(() => {
         if (open) {
             document.body.style.overflow = "hidden";
@@ -21,9 +29,28 @@ const SlideIn = ({ children }: { children: React.ReactNode }) => {
         }
     }, [open]);
 
+    // keyboard shortcut to toggle terminal
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.code === "Backquote" && e.ctrlKey) {
+                if (open) {
+                    setOpen(false);
+                } else {
+                    setOpen(true);
+                }
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [open, setOpen]);
+
     return (
         <Portal container={document.getElementById("app")}>
-            <div className={styles.slideIn}>
+            <div className={styles.slideIn} data-open={open}>
                 <Slide direction="up" in={open}>
                     <div>
                         <div className={styles.slideInHeader}>
@@ -39,16 +66,16 @@ const SlideIn = ({ children }: { children: React.ReactNode }) => {
                         <div className={styles.terminalOuterContainer}>{children}</div>
                     </div>
                 </Slide>
-                <Button
-                    variant="outlined"
-                    color="primary"
-                    onClick={toggle}
-                    className={styles.terminalExpandButton}
-                    startIcon={<TerminalIcon size={14} className="ml-2" />}
-                >
-                    Terminal
-                </Button>
             </div>
+            <Button
+                variant="outlined"
+                color="primary"
+                onClick={toggle}
+                className={styles.terminalExpandButton}
+                startIcon={<TerminalIcon size={14} />}
+            >
+                Terminal
+            </Button>
         </Portal>
     );
 };
@@ -63,14 +90,12 @@ export function Terminal() {
 
 function XTermBinding() {
     const ref = useRef<HTMLDivElement>(null);
-
     const { gui } = useTerminalContext();
 
     useEffect(() => {
         if (!ref.current || !gui) return;
 
-        // Handle copy and paste events
-        function customKeyEventHandler(e: KeyboardEvent) {
+        function copyPasteHandler(e: KeyboardEvent) {
             if (!gui) return false;
 
             if (e.type !== "keydown") return true;
@@ -100,19 +125,26 @@ function XTermBinding() {
             return true;
         }
 
-        gui.attachCustomKeyEventHandler(customKeyEventHandler);
+        gui.attachCustomKeyEventHandler(copyPasteHandler);
 
         const fitAddon = new xTermFitAddon();
         gui.loadAddon(fitAddon);
         gui.open(ref.current);
-        console.log("fitting terminal");
         fitAddon.fit();
+
         gui.onResize(({ cols, rows }) => {
             console.log(`Terminal was resized to ${cols} cols and ${rows} rows.`);
         });
 
+        const resizeObserver = new ResizeObserver(() => {
+            fitAddon.fit();
+        });
+
+        resizeObserver.observe(ref.current);
+
         return () => {
             gui.dispose();
+            if (ref.current) resizeObserver.unobserve(ref.current);
         };
     }, [gui]);
 
@@ -147,7 +179,8 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
             const term = new xTerminal({
                 cursorBlink: true,
                 macOptionIsMeta: true,
-                rows:12,
+                rows: 12,
+                cols: 80,
             });
             setGui(term);
         }
@@ -170,6 +203,13 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
             socket.off("ptyOutput", onOutput);
         };
     }, [isConnected, gui, socket]);
+
+    // make first responder directly after opening
+    useEffect(() => {
+        if (open && gui) {
+            gui.focus();
+        }
+    }, [open, gui]);
 
     function inputText(t: string) {
         socket.emit("ptyInput", { input: t });

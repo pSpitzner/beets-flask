@@ -5,8 +5,12 @@
     height: auto;
     display: flex;
     flex-direction: column;
-    z-index: 3;
+    z-index: -1;
+    &[data-open="true"] {
+        z-index: 3;
+    }
 }
+
 
 .slideInHeader {
     display: flex;
@@ -17,7 +21,7 @@
 }
 
 .terminalExpandButton {
-    position: absolute;
+    position: fixed;
     bottom: 0;
     right: 0;
     margin: 0.5rem;
@@ -25,7 +29,7 @@
     font-size: 0.8rem;
     font-family: monospace;
     padding: 0.2rem 0.5rem;
-    z-index: -1;
+    z-index: 2;
 }
 
 .terminalOuterContainer {
@@ -47,7 +51,10 @@
 }
 
 .xTermBindingContainer {
-    height: 400px;
+    // size that xterm is fitted to (better set explizitly)
+    height: 500px;
+    max-height: calc(100vh - 50px);
+    width: 100%;
 }
 
 .terminalCollapseButton {

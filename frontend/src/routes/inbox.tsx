@@ -309,8 +309,7 @@ export function ContextMenu({
                     onClick={(event: MouseEvent) => {
                         event.stopPropagation();
                         setTerminalOpen(true);
-                        // terminalGui?.write(`ls '${fp.full_path}'`);
-                        inputTerminalText(`ls '${fp.full_path}'`);
+                        inputTerminalText(`beet import -t '${fp.full_path}'`);
                         handleClose();
                     }}
                 >
