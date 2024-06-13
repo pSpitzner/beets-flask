@@ -9,6 +9,19 @@
     &[data-open="true"] {
         z-index: 3;
     }
+    // use animation to delay the z-index change (otherwise we can peak through on close)
+    &[data-open="false"] {
+        animation: closeSlideIn 1s forwards;
+    }
+}
+
+@keyframes closeSlideIn {
+    from {
+        z-index: 3;
+    }
+    to {
+        z-index: -1;
+    }
 }
 
 

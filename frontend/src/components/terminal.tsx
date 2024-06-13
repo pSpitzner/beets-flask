@@ -182,6 +182,7 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
                 rows: 12,
                 cols: 80,
             });
+            term.write("Connecting...");
             setGui(term);
         }
     }, []);
@@ -189,6 +190,8 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
     // Attatch socketio handler
     useEffect(() => {
         if (!gui || !isConnected) return;
+
+        gui.writeln("\rConnected!   ");
 
         gui!.onData((data) => {
             socket.emit("ptyInput", { input: data });
