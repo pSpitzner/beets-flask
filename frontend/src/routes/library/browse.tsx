@@ -1,8 +1,12 @@
 import { artistsQueryOptions } from "@/lib/library";
-import { Outlet, createFileRoute } from "@tanstack/react-router";
+
+const queryOptions = artistsQueryOptions(/* pass the required argument here */);
+import { Outlet, createFileRoute, useParams } from "@tanstack/react-router";
+
 
 import List from "@/components/common/list";
 import Box from "@mui/material/Box";
+import styles from "./browse/browse.module.scss";
 
 export const Route = createFileRoute("/library/browse")({
     loader: (opts) => opts.context.queryClient.ensureQueryData(artistsQueryOptions()),
@@ -11,31 +15,28 @@ export const Route = createFileRoute("/library/browse")({
 
 function AllArtists() {
     const artists = Route.useLoaderData();
+    // TODO: @sm how to do this with tanstack? we want to grab a subpath that is set when clicking the link? it works but typescript complains
+    const params = useParams({});
+    const selectedArtistName = params.artist;
 
     return (
         <>
-            <Box
-                height="80vh"
-                width="33%"
-                my={2}
-                display="flex"
-                alignItems="start"
-                gap={4}
-                p={2}
-                sx={{
-                    border: "1px solid grey",
-                    borderRadius: "0.3rem",
-                }}
-            >
-                <List.Wrapper>
-                    {artists.map((artist, i) => {
-                        return (
-                            <List.Item key={i} to={artist.name} label={artist.name} />
-                        );
-                    })}
-                </List.Wrapper>
-            </Box>
-            <Box>
+            <Box className={styles.columnBrowser}>
+                <Box className={styles.listBox}>
+                    <List>
+                        {artists.map((artist, i) => {
+                            return (
+                                <List.Item
+                                    key={i}
+                                    to={artist.name}
+                                    label={artist.name}
+                                    className={styles.listItem}
+                                    data-selected={artist.name === selectedArtistName}
+                                />
+                            );
+                        })}
+                    </List>
+                </Box>
                 <Outlet />
             </Box>
         </>

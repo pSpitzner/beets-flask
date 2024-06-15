@@ -1,61 +1,40 @@
 import { Link } from "@tanstack/react-router";
 
-import { ListItemText, List as MuiList } from '@mui/material';
-import ListItem, { ListItemProps } from '@mui/material/ListItem';
+import { ListItemText, List as MuiList } from "@mui/material";
+import ListItem, { ListItemProps } from "@mui/material/ListItem";
 
-import {ReactNode } from "react";
-import Box from "@mui/material/Box";
+import { ReactNode } from "react";
 
-import styles from "./list.module.scss";
-
-
-
-
-function Wrapper({children}:{children: ReactNode}){
-    return <Box className={styles.wrapper}>
-        <MuiList>
-            {children}
-        </MuiList>
-    </Box>
+interface WrapperProps {
+    children: ReactNode;
+    className?: string;
 }
 
+const Wrapper = ({ children, ...props }: WrapperProps) => (
+    <MuiList {...props}>{children}</MuiList>
+);
 
-export interface ItemProps extends ListItemProps{
-    label:string;
-    icon?:React.ReactNode;
-    to?:string;
+export interface ItemProps extends ListItemProps {
+    label: string;
+    icon?: React.ReactNode;
+    to?: string;
 }
 
-function Item({label, to, icon,...props}:ItemProps){
-
-    const it = <ListItem className={styles.item} {...props}>
-        {icon}
-        <ListItemText primary={label}/>
-    </ListItem>
+const Item = ({ label, to, icon, ...props }: ItemProps) => {
+    const it = (
+        <ListItem {...props}>
+            {icon}
+            <ListItemText primary={label} />
+        </ListItem>
+    );
 
     if (to) {
-        return <Link to={to}>
-            {it}
-        </Link>
+        return <Link to={to}>{it}</Link>;
     }
     return it;
-}
-
-const List = {
-    Wrapper,
-    Item,
 };
+
+const List = ({ children }: WrapperProps) => <Wrapper>{children}</Wrapper>;
+List.Item = Item;
+
 export default List;
-
-
-/**
- * import List from ...#efefef
- *
- * const data =
- *
- * return <List.Wrapper>
- * {data.map()=>{
- *  <List.Item to={data.}/>
- * }}
- *
- */

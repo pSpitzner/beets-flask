@@ -52,11 +52,13 @@ const TabItem = createLink(
  */
 export default function NavTabs() {
     // TODO:
-    const location = useRouterState({ select: (s) => s.location })
+    const location = useRouterState({ select: (s) => s.location });
+    const basePath = location.pathname.split("/")[1];
+    console.log(basePath);
     return (
         <Tabs
             textColor="inherit"
-            value={location.pathname}
+            value={"/" + basePath}
             sx={{
                 boxShadow: "inset 0 1px 0 0 #efefef",
                 overflow: "visible",
@@ -71,11 +73,35 @@ export default function NavTabs() {
                 },
             }}
         >
-            <TabItem value={"/"} disableRipple
-                 label={"Home"} icon={<Home />} to="/"/>
-            <TabItem value={"/inbox"} disableRipple label={"Inbox"} icon={<Inbox />} to="/inbox" />
-            <TabItem value={"/tagGroup"} disableRipple label={"Tags"} icon={<Tag />} to="/tagGroup" />
-            <TabItem value={"/library"} disableRipple label={"Library"} icon={<Library />} to="/library" activeOptions={{exact: false}}/>
+            <TabItem
+                value={"/"}
+                to="/"
+                label={"Home"}
+                icon={<Home />}
+                disableRipple
+                //
+            />
+            <TabItem
+                to="/inbox"
+                value={"/inbox"}
+                label={"Inbox"}
+                icon={<Inbox />}
+                disableRipple
+            />
+            <TabItem
+                to="/tagGroup"
+                value={"/tagGroup"}
+                label={"Tags"}
+                icon={<Tag />}
+                disableRipple
+            />
+            <TabItem
+                to="/library/browse"
+                value={"/library"}
+                label={"Library"}
+                icon={<Library />}
+                disableRipple
+            />
         </Tabs>
     );
 }
