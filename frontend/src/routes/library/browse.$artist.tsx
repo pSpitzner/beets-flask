@@ -11,7 +11,11 @@ export const Route = createFileRoute("/library/browse/$artist")({
     }),
     loader: (opts) =>
         opts.context.queryClient.ensureQueryData(
-            artistQueryOptions({name: opts.params.artist, minimal: true, expand: true})
+            artistQueryOptions({
+                name: opts.params.artist,
+                minimal: true,
+                expand: true,
+            })
         ),
     component: ArtistOverview,
 });
@@ -21,9 +25,7 @@ export const Route = createFileRoute("/library/browse/$artist")({
  */
 function ArtistOverview() {
     const artist = Route.useLoaderData();
-
-    const params = useParams({ from: "/library/browse/$artist/$albumId/$itemId" });
-    const selectedAlbumId = params.albumId;
+    const params = useParams({ strict: false }) as { albumId?: number };
 
     return (
         <>
@@ -36,7 +38,7 @@ function ArtistOverview() {
                                 to={album.id.toString()}
                                 label={album.name}
                                 className={styles.listItem}
-                                data-selected={album.id === selectedAlbumId}
+                                data-selected={album.id === params.albumId}
                             />
                         );
                     })}

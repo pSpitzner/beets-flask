@@ -25,8 +25,7 @@ export const Route = createFileRoute("/library/browse/$artist/$albumId")({
  */
 function AlbumOverview() {
     const album = Route.useLoaderData() as Album;
-    const params = useParams({ from: "/library/browse/$artist/$albumId/$itemId" });
-    const selectedItemId = params.itemId;
+    const params = useParams({ strict: false }) as { itemId?: number };
 
     return (
         <>
@@ -39,7 +38,7 @@ function AlbumOverview() {
                                 to={item.id.toString()}
                                 label={item.name}
                                 className={styles.listItem}
-                                data-selected={item.id === selectedItemId}
+                                data-selected={item.id === params.itemId}
                             />
                         );
                     })}

@@ -7,13 +7,19 @@
     // TODO: get navbar height and substract.
     height: calc(100vh - 110px);
     width: calc(25% - 4px);
-    margin-top: 2px;
     display: flex;
     align-items: start;
-    gap: 4px;
-    padding: 2px;
+    margin: 0;
+    gap: 0;
+    padding: 0;
     border: 1px solid grey;
     border-radius: 0.3rem;
+    overflow-y: auto;
+    // mui adds uls
+    & > ul {
+        padding: 0;
+        width: 100%;
+    }
 }
 
 .listItem {
