@@ -1,7 +1,7 @@
 
 import { itemQueryOptions } from "@/lib/library";
 import Box from "@mui/material/Box";
-import { createFileRoute, useParams } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import z from "zod";
 import styles from "./browse.module.scss";
 import { JSONPretty } from "@/components/json";

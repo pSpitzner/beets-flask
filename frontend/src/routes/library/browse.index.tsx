@@ -1,14 +1,12 @@
 import { artistsQueryOptions } from "@/lib/library";
-
-const queryOptions = artistsQueryOptions(/* pass the required argument here */);
 import { Outlet, createFileRoute, useParams } from "@tanstack/react-router";
 
 
 import List from "@/components/common/list";
 import Box from "@mui/material/Box";
-import styles from "./browse/browse.module.scss";
+import styles from "./browse.module.scss";
 
-export const Route = createFileRoute("/library/browse")({
+export const Route = createFileRoute("/library/browse/")({
     loader: (opts) => opts.context.queryClient.ensureQueryData(artistsQueryOptions()),
     component: () => <AllArtists />,
 });
@@ -16,7 +14,7 @@ export const Route = createFileRoute("/library/browse")({
 function AllArtists() {
     const artists = Route.useLoaderData();
     // TODO: @sm how to do this with tanstack? we want to grab a subpath that is set when clicking the link? it works but typescript complains
-    const params = useParams({});
+    const params = useParams({ from: "/library/browse/$artist/$albumId/$itemId" });
     const selectedArtistName = params.artist;
 
     return (

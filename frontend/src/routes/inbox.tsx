@@ -9,14 +9,12 @@ import { useTerminalContext } from "@/components/terminal";
 import styles from "./inbox.module.scss";
 import {
     ChevronRight,
-    Settings2,
     Tag,
     HardDriveDownload,
     Clipboard,
 } from "lucide-react";
 
 import * as Collapsible from "@radix-ui/react-collapsible";
-import { IconButton } from "@mui/material";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 
@@ -187,7 +185,6 @@ export function ContextMenu({
 }) {
     const {
         setOpen: setTerminalOpen,
-        gui: terminalGui,
         inputText: inputTerminalText,
     } = useTerminalContext();
 

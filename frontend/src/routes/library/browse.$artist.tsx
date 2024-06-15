@@ -22,7 +22,7 @@ export const Route = createFileRoute("/library/browse/$artist")({
 function ArtistOverview() {
     const artist = Route.useLoaderData();
 
-    const params = useParams({});
+    const params = useParams({ from: "/library/browse/$artist/$albumId/$itemId" });
     const selectedAlbumId = params.albumId;
 
     return (
