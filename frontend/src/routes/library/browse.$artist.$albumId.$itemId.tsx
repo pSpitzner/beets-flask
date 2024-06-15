@@ -4,7 +4,7 @@ import Box from "@mui/material/Box";
 import { createFileRoute } from "@tanstack/react-router";
 import z from "zod";
 import styles from "./browse.module.scss";
-import { JSONPretty } from "@/components/json";
+import ItemDetailsTableView from "@/components/common/itemDetailsTable";
 
 export const Route = createFileRoute("/library/browse/$artist/$albumId/$itemId")({
     parseParams: (params) => ({
@@ -28,9 +28,9 @@ function TrackView(){
 
     return (
         <>
-            <Box className={styles.listBox}>
-                <JSONPretty data={item} />
+            <Box className={styles.listBox + ' ' + styles.trackViewBox}>
+                <ItemDetailsTableView item={item} keys="basic" />
             </Box>
         </>
-    )
+    );
 }

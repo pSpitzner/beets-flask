@@ -20,12 +20,101 @@ export interface MinimalItem {
 }
 
 export interface Item extends MinimalItem {
-    album?: string;
-    album_id?: number;
-    artist?: string;
-    artist_sort?: string;
-    artist_ids?: number[];
-    isrc?: string;
+    [key: string]: any; // enable indexing item[key]
+
+    album?: string; // "In the City / Wasted"
+    album_id?: number; // 1
+    albumartist?: string; // "Basstripper"
+    albumartist_credit?: string; // "Basstripper"
+    albumartist_sort?: string; // "Basstripper"
+    albumartists?: string[]; // ["Basstripper"]
+    albumartists_credit?: string[]; // ["Basstripper"]
+    albumartists_sort?: string[]; // ["Basstripper"]
+    albumdisambig?: string; // ""
+    albumstatus?: string; // "Official"
+    albumtype?: string; // "single"
+    albumtypes?: string[]; // ["single"]
+    acoustid_fingerprint?: string; // ""
+    acoustid_id?: string; // ""
+    added?: number; // 1715716057.413927
+    arranger?: string; // ""
+    artist?: string; // "Basstripper"
+    artist_credit?: string; // "Basstripper"
+    artist_sort?: string; // "Basstripper"
+    artists?: string[]; // ["Basstripper"]
+    artists_credit?: string[]; // ["Basstripper"]
+    artists_ids?: number[]; // []
+    artists_sort?: string[]; // ["Basstripper"]
+    asin?: string; // ""
+    barcode?: string; // "197338612422"
+    bitrate?: number; // 1033095
+    bitrate_mode?: string; // ""
+    bpm?: number; // 0
+    catalognum?: string; // ""
+    channels?: number; // 2
+    comments?: string; // ""
+    comp?: number; // 0
+    composer?: string; // ""
+    composer_sort?: string; // ""
+    country?: string; // ""
+    data_source?: string; // "MusicBrainz"
+    day?: number; // 14
+    disc?: number; // 1
+    discogs_albumid?: number; // 0
+    discogs_artistid?: number; // 0
+    discogs_labelid?: number; // 0
+    disctitle?: string; // ""
+    disctotal?: number; // 1
+    encoder?: string; // ""
+    encoder_info?: string; // ""
+    encoder_settings?: string; // ""
+    format?: string; // "FLAC"
+    genre?: string; // ""
+    grouping?: string; // ""
+    initial_key?: string; // null
+    isrc?: string; // "US39N2308955"
+    label?: string; // "DnB Allstars Records"
+    language?: string; // ""
+    length?: number; // 156.34643990929706
+    lyricist?: string; // ""
+    lyrics?: string; // ""
+    mb_albumartistid?: string; // "82687fdf-84d6-49ac-bff2-de88cb42e5a2"
+    mb_albumartistids?: string[]; // ["82687fdf-84d6-49ac-bff2-de88cb42e5a2"]
+    mb_albumid?: string; // "3a76ece6-89ec-43c6-920f-ff955d2e4f9e"
+    mb_artistid?: string; // "82687fdf-84d6-49ac-bff2-de88cb42e5a2"
+    mb_artistids?: string[]; // ["82687fdf-84d6-49ac-bff2-de88cb42e5a2"]
+    mb_releasegroupid?: string; // "6e46e8cc-2546-45d1-a24c-23982cf36980"
+    mb_releasetrackid?: string; // "6886cc80-ccbe-4c92-a8b5-b066b39a666f"
+    mb_trackid?: string; // "ee846065-2f7d-4e87-ae3f-b925c75359c1"
+    mb_workid?: string; // ""
+    media?: string; // "Digital Media"
+    month?: number; // 7
+    mtime?: number; // 1715716092
+    original_day?: number; // 14
+    original_month?: number; // 7
+    original_year?: number; // 2023
+    path?: string; // "/music/imported/Basstripper/In the City - Wasted/01 In the City [1033kbps].flac"
+    // r128_album_gain?: null; // null
+    // r128_track_gain?: null; // null
+    release_group_title?: string; // "In the City / Wasted"
+    releasegroupdisambig?: string; // ""
+    remixer?: string; // ""
+    // rg_album_gain?: null; // null
+    // rg_album_peak?: null; // null
+    // rg_track_gain?: null; // null
+    // rg_track_peak?: null; // null
+    samplerate?: number; // 44100
+    script?: string; // "Latn"
+    size?: number; // 20487451
+    style?: string; // ""
+    title?: string; // "In the City"
+    track?: number; // 1
+    track_alt?: string; // "1"
+    trackdisambig?: string; // ""
+    tracktotal?: number; // 2
+    work?: string; // ""
+    work_disambig?: string; // ""
+    year?: number; // 2023
 }
 
 function _url_parse_minimal_expand(
