@@ -4,7 +4,7 @@ import { QueryClient } from "@tanstack/react-query";
 import "../index.css";
 import NavTabs from "@/components/common/navigation/tabs";
 import Container from "@mui/material/Container";
-import { Terminal } from "@/components/terminal";
+import { Terminal, TerminalContextProvider } from "@/components/terminal";
 
 export const Route = createRootRouteWithContext<{
     queryClient: QueryClient;
@@ -15,11 +15,14 @@ export const Route = createRootRouteWithContext<{
 function RootComponent() {
     return (
         <main className="flex flex-col w-screen">
+            <TerminalContextProvider>
+
             <NavTabs />
             <Container maxWidth="lg" className="mt-2">
                 <Outlet />
             </Container>
             <Terminal />
+            </TerminalContextProvider>
         </main>
     );
 }

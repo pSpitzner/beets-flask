@@ -4,6 +4,7 @@ import { UseMutationOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { FsPath, inboxQueryOptions } from "@/lib/inbox";
 import { TagStatusIcon } from "@/components/common/statusIcon";
 import { SimilarityBadgeWithHover } from "@/components/common/similarityBadge";
+import { useTerminalContext } from "@/components/terminal";
 
 import styles from "./inbox.module.scss";
 import {
@@ -150,9 +151,7 @@ export function FolderView({
                                 </div>
                             )}
 
-                            <span className={styles.label}>
-                                {label}
-                            </span>
+                            <span className={styles.label}>{label}</span>
                         </div>
                     }
                     fp={fp}
@@ -186,6 +185,12 @@ export function ContextMenu({
     fp: FsPath;
     className?: string;
 }) {
+    const {
+        setOpen: setTerminalOpen,
+        gui: terminalGui,
+        inputText: inputTerminalText,
+    } = useTerminalContext();
+
     const [contextMenu, setContextMenu] = useState<{
         mouseX: number;
         mouseY: number;
@@ -299,117 +304,16 @@ export function ContextMenu({
                     <Clipboard size={12} />
                     Copy Path
                 </MenuItem>
-            </Menu>
-        </div>
-    );
-}
 
-// lets see if we can replace this with rightclick menu
-export default function ActionMenu({ fp }: { fp: FsPath }) {
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const open = Boolean(anchorEl);
-    const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
-        setAnchorEl(event.currentTarget);
-    };
-    const handleClose = () => {
-        setAnchorEl(null);
-    };
-
-    const retagOptions: UseMutationOptions = {
-        mutationFn: async () => {
-            await fetch(`/tag/add`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    folder: fp.full_path,
-                    kind: "preview",
-                }),
-            });
-        },
-        onSuccess: async () => {
-            handleClose();
-            await queryClient.setQueryData(["tag", fp.full_path], (old: TagI) => {
-                return { ...old, status: "pending" };
-            });
-        },
-        onError: (error: Error) => {
-            console.error(error);
-        },
-    };
-
-    const importOptions: UseMutationOptions = {
-        mutationFn: async () => {
-            await fetch(`/tag/add`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    folder: fp.full_path,
-                    kind: "import",
-                }),
-            });
-        },
-        onSuccess: async () => {
-            handleClose();
-            await queryClient.setQueryData(["tag", fp.full_path], (old: TagI) => {
-                return { ...old, status: "pending" };
-            });
-        },
-        onError: (error: Error) => {
-            console.error(error);
-        },
-    };
-
-    return (
-        <div>
-            <IconButton
-                id="basic-button"
-                aria-controls={open ? "basic-menu" : undefined}
-                aria-haspopup="true"
-                aria-expanded={open ? "true" : undefined}
-                className="p-0 m-0"
-                onClick={handleClick}
-            >
-                <Settings2 />
-            </IconButton>
-
-            <Menu
-                id="basic-menu"
-                anchorEl={anchorEl}
-                open={open}
-                onClose={handleClose}
-                MenuListProps={{
-                    "aria-labelledby": "basic-button",
-                }}
-            >
-                <MenuItem sx={{ padding: 0 }}>
-                    <IconTextButtonWithMutation
-                        icon={<ChevronRight />}
-                        text="(Re-)Tag"
-                        color="inherit"
-                        mutationOption={retagOptions}
-                    />
-                </MenuItem>
-                <MenuItem sx={{ padding: 0 }}>
-                    <IconTextButtonWithMutation
-                        icon={<ChevronRight />}
-                        text="Import"
-                        color="inherit"
-                        mutationOption={importOptions}
-                    />
-                </MenuItem>
                 <MenuItem
-                    onClick={() => {
+                    onClick={(event: MouseEvent) => {
+                        event.stopPropagation();
+                        setTerminalOpen(true);
+                        inputTerminalText(`beet import -t '${fp.full_path}'`);
                         handleClose();
-                        navigator.clipboard
-                            .writeText(fp.full_path)
-                            .catch(console.error);
                     }}
                 >
-                    Copy Path
+                    Terminal
                 </MenuItem>
             </Menu>
         </div>

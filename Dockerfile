@@ -14,24 +14,10 @@ COPY requirements.txt .
 RUN --mount=type=cache,target=/var/cache/apk \
     apk --no-cache update
 RUN --mount=type=cache,target=/var/cache/apk \
-    apk --no-cache add imagemagick redis git bash keyfinder-cli npm
+    apk --no-cache add imagemagick redis git bash keyfinder-cli npm tmux
 RUN --mount=type=cache,target=/root/.cache/pip \
 pip3 install -r requirements.txt
 
-
-# Install bootstrap styles, cache with docker for offline dev
-VOLUME /repo/static
-RUN mkdir -p /repo/static/bootstrap
-RUN --mount=type=cache,target=/repo/static/bootstrap \
-    wget https://github.com/twbs/bootstrap/raw/v5.3.3/dist/css/bootstrap.min.css -O /repo/static/bootstrap/bootstrap.min.css
-RUN --mount=type=cache,target=/repo/static/bootstrap \
-    wget https://github.com/twbs/bootstrap/raw/v5.3.3/dist/js/bootstrap.bundle.min.js -O /repo/static/bootstrap/bootstrap.bundle.min.js
-RUN --mount=type=cache,target=/repo/static \
-    wget https://github.com/twbs/icons/releases/download/v1.11.3/bootstrap-icons-1.11.3.zip -O /repo/icons.zip && \
-    unzip -o /repo/icons.zip -d /repo/static/ && \
-    rm -rf /repo/static/bootstrap-icons && \
-    mv /repo/static/bootstrap-icons-1.11.3 /repo/static/bootstrap-icons && \
-    rm /repo/icons.zip
 
 FROM deps as dev
 

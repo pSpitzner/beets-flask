@@ -1,7 +1,7 @@
 import { artistsQueryOptions } from "@/lib/library";
 import { Outlet, createFileRoute } from "@tanstack/react-router";
 
-import List from "@/components/list/listItem";
+import List from "@/components/common/list";
 import Box from "@mui/material/Box";
 
 export const Route = createFileRoute("/library/browse")({

@@ -1,3 +1,5 @@
+// SSE stream is used to push updates of tag statuses from the server
+
 import { createContext, useContext, useEffect } from "react";
 import { SseInvalidationI, SseSource } from "@/lib/fetch";
 

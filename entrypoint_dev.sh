@@ -40,6 +40,8 @@ rm /repo/frontend/vite.config.ts.timestamp-*.mjs >/dev/null 2>&1
 export FLASK_ENV=development
 export FLASK_DEBUG=1
 
-gunicorn 'main:create_app()' --bind 0.0.0.0:5001 --workers 8 --reload --capture-output --enable-stdio-inheritance --timeout 300 --worker-class gevent
+
+# we need to run with one worker for socketio to work (but need at lesat threads for SSEs)
+gunicorn --worker-class eventlet -w 1 --threads 32 --bind 0.0.0.0:5001 --reload 'main:create_app()'
 
 # tail -f /dev/null
