@@ -17,7 +17,7 @@ export function LibraryStats() {
     return (
         <Card>
             <CardContent>
-                <LastTaggedInfo />
+                <LastAddedInfo />
                 <CardAvatar Icon={Library} title="Library"></CardAvatar>
                 <div className="h-full flex flex-col justify-end ">
                     <LibraryTable />
@@ -85,7 +85,7 @@ function LibraryTable() {
     );
 }
 
-function LastTaggedInfo() {
+function LastAddedInfo() {
     const { data, isLoading, isPending, isError } = useQuery(
         libraryStatsQueryOptions()
     );
@@ -99,7 +99,7 @@ function LastTaggedInfo() {
 
     return (
         <CardTopInfo>
-            Last tagged: <RelativeTime date={data.lastItemAdded} />
+            Last added: <RelativeTime date={data.lastItemAdded} />
         </CardTopInfo>
     );
 }

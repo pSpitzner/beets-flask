@@ -526,6 +526,7 @@ class Stats(TypedDict):
 
     size: int
     lastItemAdded: int  # UTC timestamp
+    lastItemModified: int  # UTC timestamp
 
 
 @library_bp.route("/stats")
@@ -537,6 +538,7 @@ def stats():
         unique_genres = tx.query("SELECT COUNT(DISTINCT genre) FROM albums")
         unique_labels = tx.query("SELECT COUNT(DISTINCT label) FROM albums")
         last_added = tx.query("SELECT MAX(added) FROM items")
+        last_modified = tx.query("SELECT MAX(mtime) FROM items")
 
     lib_path = cast(str, beets_config["directory"].get())
     lib_path = Path(lib_path)
@@ -549,6 +551,7 @@ def stats():
         "labels": unique_labels[0][0],
         "size": dir_size(lib_path),
         "lastItemAdded": round(last_added[0][0] * 1000),
+        "lastItemModified": round(last_modified[0][0] * 1000),
     }
 
     return jsonify(ret)
