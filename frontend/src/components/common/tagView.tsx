@@ -51,11 +51,17 @@ export function TagView({ tagId, tagPath }: { tagId?: string; tagPath?: string }
         tagQueryOptions(tagId, tagPath)
     );
 
-    if (isLoading || isPending) {
-        return <div>Loading...</div>;
-    }
-    if (isError) {
-        return <div>Error...</div>;
+
+    if (isLoading || isPending || isError) {
+        let inner = "";
+        if (isLoading) inner = "Loading...";
+        if (isPending) inner = "Pending...";
+        if (isError) inner = "Error...";
+        return (
+            <StyledAccordion disableGutters disabled>
+                <AccordionSummary>{inner}</AccordionSummary>
+            </StyledAccordion>
+        );
     }
 
     return (
@@ -78,32 +84,6 @@ export function TagView({ tagId, tagPath }: { tagId?: string; tagPath?: string }
                 <TagPreview tagId={tagId} tagPath={tagPath} />
             </AccordionDetails>
         </StyledAccordion>
-    );
-}
-
-export function TagViewOld({ tagId, tagPath }: { tagId?: string; tagPath?: string }) {
-    if (!tagId && !tagPath) {
-        throw new Error("TagView requires either a tagId or tagPath");
-    }
-
-    const { data, isLoading, isPending, isError } = useQuery(
-        tagQueryOptions(tagId, tagPath)
-    );
-
-    if (isLoading || isPending) {
-        return <div>Loading...</div>;
-    }
-    if (isError) {
-        return <div>Error...</div>;
-    }
-
-    return (
-        <div className={styles.tagView}>
-            <div className={styles.tagHeading}>{data.album_folder_basename}</div>
-            <div className={styles.tagContent}>
-                <TagPreview tagId={tagId} tagPath={tagPath} />
-            </div>
-        </div>
     );
 }
 

@@ -32,6 +32,9 @@ class Tag(Base):
     _valid_statuses = ["dummy", "pending", "tagging", "failed", "unmatched"]
     _valid_kind = ["preview", "import"]
 
+    # we could alternatively handle this by allowing multiple tag groups
+    archived: Mapped[bool] = mapped_column(default=False)
+
     _group_id: Mapped[str] = mapped_column(ForeignKey("tag_group.id"))
     _tag_group: Mapped[TagGroup] = relationship(back_populates="tag_ids")
 

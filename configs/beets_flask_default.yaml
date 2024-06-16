@@ -3,3 +3,6 @@ library:
     include_paths: yes
     readonly: yes
     jsonify_prettyprint_regular: no
+
+tags:
+    recent_days: 14 # Number of days to consider for the "recent" tag group
