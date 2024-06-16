@@ -88,7 +88,8 @@ class InboxHandler(FileSystemEventHandler):
         if os.path.basename(fullpath).startswith("."):
             return
 
-        get_inbox_dict(use_cache=False)
+        get_inbox_dict.cache.clear() # type: ignore
+        get_inbox_dict()
         ut.update_client_view("inbox")
 
         try:
@@ -138,16 +139,9 @@ def refresh_all_folders(
 # ------------------------------------------------------------------------------------ #
 
 
-def get_inbox_dict(use_cache: bool = True) -> dict:
-    global _cache
-    with _cache_lock:
-        if use_cache and "inbox" in _cache:
-            inbox = _cache["inbox"]
-        else:
-            log.debug("renewing cache for inbox dict")
-            inbox = path_to_dict(inbox_dir)
-            _cache["inbox"] = inbox
-
+@cached(cache=TTLCache(maxsize=1024, ttl=900), info=True)
+def get_inbox_dict() -> dict:
+    inbox = path_to_dict(inbox_dir)
     return inbox
 
 
