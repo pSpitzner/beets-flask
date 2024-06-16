@@ -194,6 +194,7 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
         gui.writeln("\rConnected!   ");
 
         gui!.onData((data) => {
+            console.log("data", data);
             socket.emit("ptyInput", { input: data });
         });
 

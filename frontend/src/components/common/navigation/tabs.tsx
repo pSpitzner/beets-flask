@@ -54,7 +54,6 @@ export default function NavTabs() {
     // TODO:
     const location = useRouterState({ select: (s) => s.location });
     const basePath = location.pathname.split("/")[1];
-    console.log(basePath);
     return (
         <Tabs
             textColor="inherit"

@@ -1,28 +1,23 @@
 import { FileScan, FolderClock, Inbox, Recycle, Trash2 } from "lucide-react";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import CardActions from "@mui/material/CardActions";
+import { Card, CardContent, CardActions } from "@/components/common/card";
 import Divider from "@mui/material/Divider";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
-import { IconButtonWithMutation } from "./common/buttons";
+import { IconButtonWithMutation } from "../common/buttons";
 import { Link } from "@tanstack/react-router";
+import { inboxStatsQueryOptions } from "@/lib/stats";
+import { useQuery } from "@tanstack/react-query";
 
 export function InboxStatsOverview() {
+    const { data, isLoading, isPending, isError, error } = useQuery(
+        inboxStatsQueryOptions()
+    );
+
     return (
-        <Card
-            sx={{
-                borderRadius: "12px",
-                minWidth: 256,
-                textAlign: "center",
-                boxShadow:
-                    "0 2px 4px -2px rgba(0,0,0,0.24), 0 4px 24px -2px rgba(0, 0, 0, 0.2)",
-                overflow: "visible",
-            }}
-        >
-            <CardContent className="flex flex-row space-x-4 justify-center relative overflow-visible">
+        <Card>
+            <CardContent>
                 <div
                     className="absolute top-0 right-0 flex flex-row space-x-1 overflow-visible justify-center items-center p-1
                 "
@@ -90,23 +85,23 @@ export function InboxStatsOverview() {
                         </thead>
                         <tbody>
                             <tr>
-                                <td>1000</td>
-                                <td>50</td>
-                                <td>1050</td>
+                                <td>?</td>
+                                <td>?</td>
+                                <td>{data?.nFiles}</td>
                                 <td>files</td>
                             </tr>
                             <tr>
-                                <td>10 </td>
-                                <td>0.5 </td>
-                                <td>10.5 </td>
-                                <td>gb</td>
+                                <td>?</td>
+                                <td>?</td>
+                                <td>{Math.round((data?.size ?? 0) / 1024 / 1024)} </td>
+                                <td>mb</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </CardContent>
             <Divider />
-            <CardActions className="flex justify-between items-center space-x-4 w-100">
+            <CardActions>
                 <Tooltip title="Delete all files in the inbox">
                     <div>
                         <IconButtonWithMutation color="error">

@@ -1,3 +1,4 @@
+from typing import TypedDict
 from flask import Blueprint, request, jsonify
 from beets_flask.disk import get_inbox_dict, path_to_dict
 from beets_flask.logger import log
@@ -53,14 +54,42 @@ def compute_stats(folder=None):
 
     folder = Path(folder)
 
-    count = 0
-    size_bytes = 0
+    ret_map: Stats = {
+        "nFiles": 0,
+        "size": 0,
+    }
 
-    # TODO: add all audio files
-    with os.scandir(folder) as it:
-        for entry in it:
-            if entry.is_file() and entry.name.endswith(AUDIO_EXTENSIONS):
-                count += 1
-                size_bytes += entry.stat().st_size
+    # Get filesize
+    for current_dir, _, files in os.walk(folder):
+        for file in files:
+            path = Path(os.path.join(current_dir, file))
+            print(path, flush=True)
+            parse_file(path, ret_map)
 
-    return jsonify({"nFiles": count, "size": size_bytes})
+    log.debug(f"returning stats {ret_map=}")
+
+    return jsonify(ret_map)
+
+
+class Stats(TypedDict):
+    nFiles: int
+    size: int
+
+
+def parse_file(path: Path, map: Stats):
+    """
+    Parse a file and return the stats dict
+
+    Parameters:
+    - path (Path): The path to the file
+    - map (Stats): The current stats dict
+    """
+    if path.suffix.lower() not in AUDIO_EXTENSIONS:
+        return
+
+    map["nFiles"] += 1
+    map["size"] += path.stat().st_size
+
+    # TODO: Check if imported and if tagged
+
+    return map

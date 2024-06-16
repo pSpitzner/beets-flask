@@ -28,7 +28,8 @@
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
         "sass": "^1.77.2",
-        "socket.io-client": "^4.7.5"
+        "socket.io-client": "^4.7.5",
+        "zod": "^3.23.8"
     },
     "devDependencies": {
         "@tanstack/eslint-plugin-query": "^5.35.6",
