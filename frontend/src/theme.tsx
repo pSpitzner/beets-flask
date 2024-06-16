@@ -27,6 +27,10 @@ const darkTheme = extendTheme({
             secondary: {
                 main: "#C07351",
             },
+            // TODO: hover color that works well with background of badges
+            action: {
+                hover: "#212529",
+            },
         },
         components: {
             MuiTooltip: {

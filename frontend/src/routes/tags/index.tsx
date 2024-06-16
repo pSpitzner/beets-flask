@@ -3,12 +3,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { TagGroupI } from "@/lib/tag";
 import { tagGroupAllQueryOptions } from "@/lib/tag";
+import TagGroupView from "@/components/common/tagGroupView";
 
-import styles from "./inbox.module.scss";
+import styles from "./tags.module.scss";
 
 import { TagView } from "@/components/common/tagView";
 
-export const Route = createFileRoute("/tagGroup")({
+export const Route = createFileRoute("/tags/")({
     loader: (opts) =>
         opts.context.queryClient.ensureQueryData(tagGroupAllQueryOptions()),
     component: () => <TagGroupOverview />,
@@ -16,8 +17,9 @@ export const Route = createFileRoute("/tagGroup")({
 
 export function TagGroupOverview() {
     const query = useSuspenseQuery(tagGroupAllQueryOptions());
+    const tagGroups = query.data;
 
-    if (query.data.length === 0) {
+    if (tagGroups.length === 0) {
         return (
             <div className="flex items-center justify-center">
                 <div>No tags yet</div>
@@ -26,11 +28,15 @@ export function TagGroupOverview() {
     }
 
     return (
-        <div>
-            {query.data.map((tg, i) => (
-                <TagGroupView key={i} tg={tg} />
+        <>
+            {tagGroups.map((group, i) => (
+                <TagGroupView key={i} title={group.id}>
+                    {group.tag_ids.map((tagId, i) => (
+                        <TagView key={i} tagId={tagId} />
+                    ))}
+                </TagGroupView>
             ))}
-        </div>
+        </>
     );
 }
 
@@ -43,7 +49,7 @@ export function TagGroupOverview() {
  *
  * @returns {JSX.Element} A JSX element representing the view for the tag group.
  */
-export function TagGroupView({ tg }: { tg: TagGroupI }) {
+export function TagGroupViewOld({ tg }: { tg: TagGroupI }) {
     return (
         <div>
             <div className={styles.tagGroupView}>

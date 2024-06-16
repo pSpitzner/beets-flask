@@ -22,11 +22,6 @@ export interface TagI {
 // empty return if the tag is not in the database
 type TagResponse = TagI | Record<string, never>;
 
-export async function fetchTagById(tagId: string): Promise<TagResponse> {
-    const response = await fetch(`/tag/id/${tagId}`);
-    return (await response.json()) as TagResponse;
-}
-
 export const tagQueryOptions = (tagId?: string, tagPath?: string) => {
     if (!tagId && !tagPath) {
         throw new Error("tagId or tagPath must be specified in tagIdQueryOptions()");
@@ -45,7 +40,19 @@ export const tagQueryOptions = (tagId?: string, tagPath?: string) => {
     });
 };
 
-export async function fetchTagByPath(folderPath: string): Promise<TagResponse> {
+async function fetchTagById(tagId: string): Promise<TagResponse> {
+    const response = await fetch(`/tag/id/${tagId}`);
+    return (await response.json()) as TagResponse;
+}
+
+export const tagPathQueryOptions = (path: string) => {
+    return queryOptions({
+        queryKey: ["tag", "path", path],
+        queryFn: () => fetchTagByPath(path),
+    });
+};
+
+async function fetchTagByPath(folderPath: string): Promise<TagResponse> {
     if (folderPath.startsWith("/")) folderPath = folderPath.slice(1);
     const response = await fetch(`/tag/path/${folderPath}`, {
         method: "GET",
@@ -56,21 +63,10 @@ export async function fetchTagByPath(folderPath: string): Promise<TagResponse> {
     return (await response.json()) as TagI;
 }
 
-export const tagPathQueryOptions = (path: string) => {
-    return queryOptions({
-        queryKey: ["tag", "path", path],
-        queryFn: () => fetchTagByPath(path),
-    });
-};
-
 export interface TagGroupI {
+    // id is just the group name
     id: string;
     tag_ids: string[];
-}
-
-export async function fetchTagGroupById(tagGroupId: string): Promise<TagGroupI> {
-    const response = await fetch(`/tagGroup/id/${tagGroupId}`);
-    return (await response.json()) as TagGroupI;
 }
 
 export const tagGroupIdQueryOptions = (tagGroupId: string) => {
@@ -80,9 +76,9 @@ export const tagGroupIdQueryOptions = (tagGroupId: string) => {
     });
 };
 
-export async function fetchAllTagGroups(): Promise<TagGroupI[]> {
-    const response = await fetch(`/tagGroup`);
-    return (await response.json()) as TagGroupI[];
+async function fetchTagGroupById(tagGroupId: string): Promise<TagGroupI> {
+    const response = await fetch(`/tagGroup/id/${tagGroupId}`);
+    return (await response.json()) as TagGroupI;
 }
 
 export const tagGroupAllQueryOptions = () => {
@@ -91,3 +87,8 @@ export const tagGroupAllQueryOptions = () => {
         queryFn: () => fetchAllTagGroups(),
     });
 };
+
+async function fetchAllTagGroups(): Promise<TagGroupI[]> {
+    const response = await fetch(`/tagGroup`);
+    return (await response.json()) as TagGroupI[];
+}

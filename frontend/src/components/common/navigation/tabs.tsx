@@ -88,8 +88,8 @@ export default function NavTabs() {
                 disableRipple
             />
             <TabItem
-                to="/tagGroup"
-                value={"/tagGroup"}
+                to="/tags"
+                value={"/tags"}
                 label={"Tags"}
                 icon={<Tag />}
                 disableRipple

@@ -1,8 +1,15 @@
-.SimilarityBadge {
+.SimilarityBadgeOuter {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.SimilarityBadgeInner {
     background-color: #212529;
     border-radius: 0.3rem;
     border: var(--bs-border-width) solid var(--bs-border-color);
     font-size: 0.7rem;
+    line-height: 1;
     font-weight: bolder;
     padding: 0.1rem 0.3rem;
     -webkit-touch-callout: none;
@@ -22,7 +29,7 @@
     &.medium {
         color: #EBCB8C;
     }
-    & .weak {
+    &.weak {
         color: #C0626B;
     }
 }
