@@ -20,16 +20,16 @@ function Index() {
         <div>
             <Outlet />
             <Grid container spacing={2} display="flex" justifyContent="center">
-                <Grid xs={12} sm={6} md={6} lg={4}>
+                <Grid xs={12} sm={8} md={8} lg={6}>
                     <InboxStatsOverview />
                 </Grid>
-                <Grid flexGrow={1} xs={12} sm={6} md={6} lg={4}>
-                    <TagsStatsOverview />
-                </Grid>
-                <Grid xs={12} sm={6} md={6} lg={4}>
+                <Grid xs={12} sm={8} md={8} lg={6}>
                     <LibraryStats />
                 </Grid>
-                <Grid xs={12} sm={6} md={6} lg={4}>
+                <Grid xs={12} sm={8} md={8} lg={6}>
+                    <TagsStatsOverview />
+                </Grid>
+                <Grid xs={12} sm={8} md={8} lg={6}>
                     <AddInbox />
                 </Grid>
             </Grid>

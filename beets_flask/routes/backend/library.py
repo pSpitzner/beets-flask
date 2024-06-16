@@ -19,6 +19,8 @@
 import base64
 import json
 import os
+from pathlib import Path
+from typing import TypedDict, cast
 
 from flask import (
     Blueprint,
@@ -39,6 +41,7 @@ from beets import ui, util
 from beets import config as beets_config
 from beets.ui import _open_library
 from beets_flask.config import config
+from beets_flask.disk import dir_size
 from beets_flask.logger import log
 
 library_bp = Blueprint("library", __name__, url_prefix="/library")
@@ -94,7 +97,9 @@ def _rep(obj, expand=False, minimal=False):
                 del out["artpath"]
 
         if expand:
-            out["items"] = [_rep(item, expand=expand, minimal=minimal) for item in obj.items()]
+            out["items"] = [
+                _rep(item, expand=expand, minimal=minimal) for item in obj.items()
+            ]
         return out
 
 
@@ -512,14 +517,38 @@ def albums_by_artist(artist_name):
 # ------------------------------------------------------------------------------------ #
 
 
+class Stats(TypedDict):
+    items: int  # Num Tracks and stuff / num Files
+    albums: int  # Num Albums
+    artists: int  # Num Artists
+    genres: int  # Num Genres
+    labels: int  # Num Labels
+
+    size: int
+    lastItemAdded: int  # UTC timestamp
+
+
 @library_bp.route("/stats")
 def stats():
     with g.lib.transaction() as tx:
         item_rows = tx.query("SELECT COUNT(*) FROM items")
         album_rows = tx.query("SELECT COUNT(*) FROM albums")
-    return jsonify(
-        {
-            "items": item_rows[0][0],
-            "albums": album_rows[0][0],
-        }
-    )
+        unique_artists = tx.query("SELECT COUNT(DISTINCT albumartist) FROM albums")
+        unique_genres = tx.query("SELECT COUNT(DISTINCT genre) FROM albums")
+        unique_labels = tx.query("SELECT COUNT(DISTINCT label) FROM albums")
+        last_added = tx.query("SELECT MAX(added) FROM items")
+
+    lib_path = cast(str, beets_config["directory"].get())
+    lib_path = Path(lib_path)
+
+    ret: Stats = {
+        "items": item_rows[0][0],
+        "albums": album_rows[0][0],
+        "artists": unique_artists[0][0],
+        "genres": unique_genres[0][0],
+        "labels": unique_labels[0][0],
+        "size": dir_size(lib_path),
+        "lastItemAdded": round(last_added[0][0] * 1000),
+    }
+
+    return jsonify(ret)

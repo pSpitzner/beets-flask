@@ -100,7 +100,7 @@ export function InboxStatsOverview() {
                     </table>
                 </div>
             </CardContent>
-            <Divider />
+            <Divider className="mt-auto" />
             <CardActions>
                 <Tooltip title="Delete all files in the inbox">
                     <div>

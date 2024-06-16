@@ -1,6 +1,6 @@
 import os
 import glob
-import cachetools
+from cachetools import cached, LRUCache, TTLCache
 import threading
 from time import time
 from pathlib import Path
@@ -14,8 +14,6 @@ from . import utility as ut
 from .logger import log
 
 inbox_dir = os.environ.get("INBOX", "/music/inbox")
-_cache = cachetools.TTLCache(maxsize=100, ttl=900)
-_cache_lock = threading.Lock()
 
 
 # ------------------------------------------------------------------------------------ #
@@ -111,7 +109,7 @@ def refresh_folder(album_folder: str):
 
     log.debug(f"refreshing {album_folder} ...")
 
-    status = invoker.tag_status(path = album_folder)
+    status = invoker.tag_status(path=album_folder)
     if status in ["pending", "tagging", "importing", "imported", "cleared"]:
         log.debug(f"folder {album_folder} is {status}. skipping")
         return
@@ -248,12 +246,7 @@ def all_album_folders(root_dir: str = inbox_dir):
     return album_folders_from_track_paths(files)
 
 
-def dir_size(dir: str, use_cache: bool = True):
-    global _cache
-    if use_cache and dir in _cache:
-        return _cache[dir]
-
-    size = sum(file.stat().st_size for file in Path(dir).rglob("*"))
-    _cache[dir] = size
-
-    return size
+# cache data for no longer than one minutes
+@cached(cache=TTLCache(maxsize=1024, ttl=60), info=True)
+def dir_size(path: Path):
+    return sum(file.stat().st_size for file in path.rglob("*"))
