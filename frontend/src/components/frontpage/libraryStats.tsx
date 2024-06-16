@@ -1,43 +1,25 @@
-import { Card, CardContent, CardActions } from "@/components/common/card";
+import {
+    Card,
+    CardContent,
+    CardActions,
+    CardAvatar,
+    CardTopInfo,
+} from "@/components/common/card";
 import { libraryStatsQueryOptions } from "@/lib/stats";
 import { JSONPretty } from "../json";
 import { useQuery } from "@tanstack/react-query";
-import { Avatar, Box, Divider, Tooltip } from "@mui/material";
+import { Divider, Tooltip } from "@mui/material";
 import { Library, Trash2 } from "lucide-react";
 import { IconButtonWithMutation } from "../common/buttons";
+import { RelativeTime } from "../common/time";
 
 export function LibraryStats() {
     return (
         <Card>
-            <CardContent className="flex flex-row justify-between">
-                <div className="flex flex-col space-x-1 overflow-visible justify-start items-center p-1">
-                    <Avatar
-                        sx={{
-                            width: 60,
-                            height: 60,
-                            margin: "auto",
-                            backgroundColor: "transparent",
-                            color: "primary.main",
-                        }}
-                        variant="rounded"
-                    >
-                        <Library size="100%" />
-                    </Avatar>
-                    <Box
-                        component="h3"
-                        sx={{
-                            fontSize: 18,
-                            fontWeight: "bold",
-                            letterSpacing: "0.5px",
-                            marginTop: 1,
-                            marginBottom: 0,
-                        }}
-                    >
-                        Library
-                    </Box>
-                </div>
-
-                <div className="flex flex-col justify-end">
+            <CardContent>
+                <LastTaggedInfo />
+                <CardAvatar Icon={Library} title="Library"></CardAvatar>
+                <div className="h-full flex flex-col justify-end ">
                     <LibraryTable />
                 </div>
             </CardContent>
@@ -74,18 +56,12 @@ function LibraryTable() {
                         <td>{data.items}</td>
                     </tr>
                     <tr>
-                        <th>Size</th>
-                        <td>{Math.round(data.size / 1024 / 1024)}mb</td>
+                        <th>Artists</th>
+                        <td>{data.artists}</td>
                     </tr>
                     <tr>
-                        <th>Last Item Added</th>
-                        <td>
-                            {data.lastItemAdded.getDate()}
-                            {"."}
-                            {data.lastItemAdded.getMonth()}
-                            {"."}
-                            {data.lastItemAdded.getFullYear()}
-                        </td>
+                        <th>Labels</th>
+                        <td>{data.labels}</td>
                     </tr>
                 </tbody>
             </table>
@@ -96,15 +72,34 @@ function LibraryTable() {
                         <td>{data.albums}</td>
                     </tr>
                     <tr>
-                        <th>Artists</th>
-                        <td>{data.artists}</td>
-                    </tr>
-                    <tr>
                         <th>Genres</th>
                         <td>{data.genres}</td>
+                    </tr>
+                    <tr>
+                        <th>Size</th>
+                        <td>{Math.round(data.size / 1024 / 1024)}mb</td>
                     </tr>
                 </tbody>
             </table>
         </div>
+    );
+}
+
+function LastTaggedInfo() {
+    const { data, isLoading, isPending, isError } = useQuery(
+        libraryStatsQueryOptions()
+    );
+
+    if (isPending || isLoading) {
+        return <div>Loading...</div>;
+    }
+    if (isError) {
+        return null;
+    }
+
+    return (
+        <CardTopInfo>
+            Last tagged: <RelativeTime date={data.lastItemAdded} />
+        </CardTopInfo>
     );
 }

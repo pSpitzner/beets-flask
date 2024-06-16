@@ -1,63 +1,26 @@
-import { FileScan, FolderClock, Inbox, Recycle, Trash2 } from "lucide-react";
-import { Card, CardContent, CardActions } from "@/components/common/card";
+import { FileScan, Inbox, Recycle, Trash2 } from "lucide-react";
+import {
+    Card,
+    CardContent,
+    CardActions,
+    CardAvatar,
+    CardTopInfo,
+} from "@/components/common/card";
 import Divider from "@mui/material/Divider";
 import Tooltip from "@mui/material/Tooltip";
-import IconButton from "@mui/material/IconButton";
-import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import { IconButtonWithMutation } from "../common/buttons";
-import { Link } from "@tanstack/react-router";
 import { inboxStatsQueryOptions } from "@/lib/stats";
 import { useQuery } from "@tanstack/react-query";
+import { RelativeTime } from "../common/time";
+import { JSONPretty } from "../json";
 
 export function InboxStatsOverview() {
-    const { data, isLoading, isPending, isError, error } = useQuery(
-        inboxStatsQueryOptions()
-    );
-
     return (
         <Card>
             <CardContent>
-                <div
-                    className="absolute top-0 right-0 flex flex-row space-x-1 overflow-visible justify-center items-center p-1
-                "
-                >
-                    <label className="text-xs p-1">Last scan: 2 days ago</label>
-                    <Tooltip title="Schedule inbox scans">
-                        <div>
-                            <Link to="/schedule">
-                                <IconButton>
-                                    <FolderClock size="1rem" strokeWidth={1} />
-                                </IconButton>
-                            </Link>
-                        </div>
-                    </Tooltip>
-                </div>
-                <div>
-                    <Avatar
-                        sx={{
-                            width: 60,
-                            height: 60,
-                            margin: "auto",
-                            backgroundColor: "transparent",
-                            color: "primary.main",
-                        }}
-                        variant="rounded"
-                    >
-                        <Inbox size="100%" />
-                    </Avatar>
-                    <Box
-                        component="h3"
-                        sx={{
-                            fontSize: 18,
-                            fontWeight: "bold",
-                            letterSpacing: "0.5px",
-                            marginTop: 1,
-                            marginBottom: 0,
-                        }}
-                    >
-                        Inbox
-                    </Box>
+                <LastScanned />
+                <CardAvatar Icon={Inbox} title="Inbox">
                     <Box
                         component="code"
                         sx={{
@@ -68,36 +31,10 @@ export function InboxStatsOverview() {
                     >
                         /my/mount/point
                     </Box>
-                </div>
-                <div className="flex flex-col justify-end">
-                    <table className="table-info text-gray-100 text-sm">
-                        <thead>
-                            <tr>
-                                <th>
-                                    <span>New</span>
-                                </th>
-                                <th>
-                                    <span>Tagged</span>
-                                </th>
-                                <th>Total</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>?</td>
-                                <td>?</td>
-                                <td>{data?.nFiles}</td>
-                                <td>files</td>
-                            </tr>
-                            <tr>
-                                <td>?</td>
-                                <td>?</td>
-                                <td>{Math.round((data?.size ?? 0) / 1024 / 1024)} </td>
-                                <td>mb</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                </CardAvatar>
+
+                <div className="h-full flex flex-col justify-end">
+                    <InboxTable />
                 </div>
             </CardContent>
             <Divider className="mt-auto" />
@@ -127,5 +64,68 @@ export function InboxStatsOverview() {
                 </div>
             </CardActions>
         </Card>
+    );
+}
+
+function InboxTable() {
+    const { data, isLoading, isPending, isError, error } = useQuery(
+        inboxStatsQueryOptions()
+    );
+
+    if (isError) {
+        return <JSONPretty json={error} />;
+    }
+    if (isPending || isLoading) {
+        return <div>Loading...</div>;
+    }
+
+    return (
+        <table className="table-info text-gray-100 text-sm">
+            <thead>
+                <tr>
+                    <th>
+                        <span>New</span>
+                    </th>
+                    <th>
+                        <span>Tagged</span>
+                    </th>
+                    <th>Total</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>?</td>
+                    <td>?</td>
+                    <td>{data?.nFiles}</td>
+                    <td>files</td>
+                </tr>
+                <tr>
+                    <td>?</td>
+                    <td>?</td>
+                    <td>{Math.round((data?.size ?? 0) / 1024 / 1024)} </td>
+                    <td>mb</td>
+                </tr>
+            </tbody>
+        </table>
+    );
+}
+
+function LastScanned() {
+    const { data, isLoading, isPending, isError } = useQuery(inboxStatsQueryOptions());
+
+    if (isPending || isLoading) {
+        return <div>Loading...</div>;
+    }
+    if (isError) {
+        return null;
+    }
+
+    return (
+        <CardTopInfo>
+            <label>
+                Last scanned: <RelativeTime date={new Date()} />
+            </label>
+        </CardTopInfo>
     );
 }

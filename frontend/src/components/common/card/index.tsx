@@ -1,7 +1,9 @@
-import { styled } from "@mui/material";
+import { Avatar, Box, styled } from "@mui/material";
 import MuiCard from "@mui/material/Card";
 import MuiCardContent from "@mui/material/CardContent";
 import MuiCardActions from "@mui/material/CardActions";
+import MuiCardHeader from "@mui/material/CardHeader";
+import React from "react";
 
 export const Card = styled(MuiCard)(() => ({
     borderRadius: "12px",
@@ -19,10 +21,13 @@ export const Card = styled(MuiCard)(() => ({
 export const CardContent = styled(MuiCardContent)(({ theme }) => ({
     display: "flex",
     flexDirection: "row",
-    justifyContent: "center",
+    justifyContent: "space-around",
+    alignItems: "flex-start",
     rowGap: theme.spacing(4),
     position: "relative",
     overflow: "visible",
+    height: "100%",
+    paddingTop: theme.spacing(2),
 }));
 
 export const CardActions = styled(MuiCardActions)(({ theme }) => ({
@@ -31,3 +36,51 @@ export const CardActions = styled(MuiCardActions)(({ theme }) => ({
     rowGap: theme.spacing(4),
     width: "100%",
 }));
+
+export function CardAvatar({
+    Icon,
+    title,
+    children,
+}: {
+    Icon: React.ElementType;
+    title: string;
+    children?: React.ReactNode;
+}) {
+    return (
+        <div>
+            <Avatar
+                sx={{
+                    width: 60,
+                    height: 60,
+                    margin: "auto",
+                    backgroundColor: "transparent",
+                    color: "primary.main",
+                }}
+                variant="rounded"
+            >
+                <Icon size="100%" />
+            </Avatar>
+            <Box
+                component="h3"
+                sx={{
+                    fontSize: 18,
+                    fontWeight: "bold",
+                    letterSpacing: "0.5px",
+                    marginTop: 1,
+                    marginBottom: 0,
+                }}
+            >
+                {title}
+            </Box>
+            {children}
+        </div>
+    );
+}
+
+export function CardTopInfo({ children }: { children?: React.ReactNode }) {
+    return (
+        <div className="absolute text-xs top-0 right-0 flex flex-row overflow-visible justify-center items-center p-2">
+            {children}
+        </div>
+    );
+}
