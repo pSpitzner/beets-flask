@@ -1,10 +1,13 @@
-
 import { itemQueryOptions } from "@/lib/library";
 import Box from "@mui/material/Box";
 import { createFileRoute } from "@tanstack/react-router";
 import z from "zod";
 import styles from "./browse.module.scss";
 import ItemDetailsTableView from "@/components/common/itemDetailsTable";
+import { useState } from "react";
+import { Bug as BugOn, BugOff } from "lucide-react";
+import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
 
 export const Route = createFileRoute("/library/browse/$artist/$albumId/$itemId")({
     parseParams: (params) => ({
@@ -13,23 +16,29 @@ export const Route = createFileRoute("/library/browse/$artist/$albumId/$itemId")
     loader: (opts) =>
         opts.context.queryClient.ensureQueryData(
             itemQueryOptions({
-              id: opts.params.itemId,
-              minimal: false,
-              expand: true,
-        })
+                id: opts.params.itemId,
+                minimal: false,
+                expand: true,
+            })
         ),
     component: TrackView,
 });
 
-function TrackView(){
-
+function TrackView() {
     const item = Route.useLoaderData();
-
+    const [detailed, setDetailed] = useState(false);
 
     return (
         <>
-            <Box className={styles.listBox + ' ' + styles.trackViewBox}>
-                <ItemDetailsTableView item={item} keys="basic" />
+            <Box className={styles.listBox + " " + styles.trackViewBox}>
+                <Tooltip title="Toggle Details" className="ml-auto mt-1">
+                    <IconButton color="primary" onClick={() => setDetailed(!detailed)}>
+                        {detailed && <BugOff size="1em" />}
+                        {!detailed && <BugOn size="1em" />}
+                    </IconButton>
+                </Tooltip>
+
+                <ItemDetailsTableView item={item} keys={detailed ? "all" : "basic"} />
             </Box>
         </>
     );
