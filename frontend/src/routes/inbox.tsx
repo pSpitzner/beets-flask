@@ -1,27 +1,15 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-
-import { UseMutationOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { FsPath, inboxQueryOptions } from "@/lib/inbox";
 import { TagStatusIcon } from "@/components/common/statusIcon";
 import { SimilarityBadgeWithHover } from "@/components/common/similarityBadge";
-import { useTerminalContext } from "@/components/terminal";
+import ContextMenu from "@/components/common/contextMenu";
 
 import styles from "./inbox.module.scss";
-import {
-    ChevronRight,
-    Tag,
-    HardDriveDownload,
-    Clipboard,
-} from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 import * as Collapsible from "@radix-ui/react-collapsible";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
-
-import { useState, MouseEvent } from "react";
-import { IconTextButtonWithMutation } from "@/components/common/buttons";
-import { queryClient } from "@/main";
-import { TagI } from "@/lib/tag";
 
 export const Route = createFileRoute("/inbox")({
     loader: (opts) => opts.context.queryClient.ensureQueryData(inboxQueryOptions()),
@@ -123,37 +111,33 @@ export function FolderView({
     return (
         <div className={styles.folder} data-empty={numChildren < 1}>
             <Collapsible.Root defaultOpen>
-                <ContextMenu
-                    className={styles.contextMenuHeaderWrapper}
-                    innerContent={
-                        <div
-                            key={fp.full_path}
-                            className={styles.header}
-                            data-selected={isSelected}
-                            onClick={handleSelect}
+                <ContextMenu className={styles.contextMenuHeaderWrapper} fp={fp}>
+                    <div
+                        key={fp.full_path}
+                        className={styles.header}
+                        data-selected={isSelected}
+                        onClick={handleSelect}
+                    >
+                        <Collapsible.Trigger
+                            asChild
+                            className={styles.trigger}
+                            disabled={numChildren < 1}
+                            onClick={(e) => e.stopPropagation()}
                         >
-                            <Collapsible.Trigger
-                                asChild
-                                className={styles.trigger}
-                                disabled={numChildren < 1}
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <ChevronRight />
-                            </Collapsible.Trigger>
+                            <ChevronRight />
+                        </Collapsible.Trigger>
 
-                            {fp.is_album && (
-                                <div className={styles.albumIcons}>
-                                    <TagStatusIcon tagPath={fp.full_path} />
-                                    <SimilarityBadgeWithHover tagPath={fp.full_path} />
-                                    {/* <ActionMenu fp={fp} /> */}
-                                </div>
-                            )}
+                        {fp.is_album && (
+                            <div className={styles.albumIcons}>
+                                <TagStatusIcon tagPath={fp.full_path} />
+                                <SimilarityBadgeWithHover tagPath={fp.full_path} />
+                                {/* <ActionMenu fp={fp} /> */}
+                            </div>
+                        )}
 
-                            <span className={styles.label}>{label}</span>
-                        </div>
-                    }
-                    fp={fp}
-                />
+                        <span className={styles.label}>{label}</span>
+                    </div>
+                </ContextMenu>
                 <Collapsible.Content className={styles.content}>
                     <SubViews />
                 </Collapsible.Content>
@@ -170,149 +154,6 @@ export function FileView({ fp: fp }: { fp: FsPath }): JSX.Element {
     return (
         <div key={fp.full_path} className={styles.file}>
             <div>{fileName}</div>
-        </div>
-    );
-}
-
-export function ContextMenu({
-    innerContent,
-    fp,
-    className,
-}: {
-    innerContent: JSX.Element;
-    fp: FsPath;
-    className?: string;
-}) {
-    const {
-        setOpen: setTerminalOpen,
-        inputText: inputTerminalText,
-    } = useTerminalContext();
-
-    const [contextMenu, setContextMenu] = useState<{
-        mouseX: number;
-        mouseY: number;
-    } | null>(null);
-
-    const handleContextMenu = (event: React.MouseEvent) => {
-        event.preventDefault();
-        setContextMenu(
-            contextMenu === null
-                ? {
-                      mouseX: event.clientX + 2,
-                      mouseY: event.clientY - 6,
-                  }
-                : null
-        );
-    };
-
-    const handleClose = () => {
-        setContextMenu(null);
-    };
-
-    const retagOptions: UseMutationOptions = {
-        mutationFn: async () => {
-            await fetch(`/tag/add`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    folder: fp.full_path,
-                    kind: "preview",
-                }),
-            });
-        },
-        onSuccess: async () => {
-            handleClose();
-            await queryClient.setQueryData(["tag", fp.full_path], (old: TagI) => {
-                return { ...old, status: "pending" };
-            });
-        },
-        onError: (error: Error) => {
-            console.error(error);
-        },
-    };
-
-    const importOptions: UseMutationOptions = {
-        mutationFn: async () => {
-            await fetch(`/tag/add`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    folder: fp.full_path,
-                    kind: "import",
-                }),
-            });
-        },
-        onSuccess: async () => {
-            handleClose();
-            await queryClient.setQueryData(["tag", fp.full_path], (old: TagI) => {
-                return { ...old, status: "pending" };
-            });
-        },
-        onError: (error: Error) => {
-            console.error(error);
-        },
-    };
-
-    return (
-        <div onContextMenu={handleContextMenu} className={className}>
-            {innerContent}
-            <Menu
-                open={contextMenu !== null}
-                onClose={handleClose}
-                anchorReference="anchorPosition"
-                anchorPosition={
-                    contextMenu !== null
-                        ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
-                        : undefined
-                }
-                MenuListProps={{
-                    "aria-labelledby": "basic-button",
-                }}
-            >
-                <MenuItem sx={{ padding: 0 }}>
-                    <IconTextButtonWithMutation
-                        icon={<Tag size={12} />}
-                        text="(Re-)Tag"
-                        color="inherit"
-                        mutationOption={retagOptions}
-                    />
-                </MenuItem>
-                <MenuItem sx={{ padding: 0 }}>
-                    <IconTextButtonWithMutation
-                        icon={<HardDriveDownload size={12} />}
-                        text="Import"
-                        color="inherit"
-                        mutationOption={importOptions}
-                    />
-                </MenuItem>
-                <MenuItem
-                    onClick={(event: React.MouseEvent) => {
-                        event.stopPropagation();
-                        handleClose();
-                        navigator.clipboard
-                            .writeText(fp.full_path)
-                            .catch(console.error);
-                    }}
-                >
-                    <Clipboard size={12} />
-                    Copy Path
-                </MenuItem>
-
-                <MenuItem
-                    onClick={(event: MouseEvent) => {
-                        event.stopPropagation();
-                        setTerminalOpen(true);
-                        inputTerminalText(`beet import -t '${fp.full_path}'`);
-                        handleClose();
-                    }}
-                >
-                    Terminal
-                </MenuItem>
-            </Menu>
         </div>
     );
 }
