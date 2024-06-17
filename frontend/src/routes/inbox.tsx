@@ -1,9 +1,9 @@
-import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { FsPath, inboxQueryOptions } from "@/lib/inbox";
 import { TagStatusIcon } from "@/components/common/statusIcon";
 import { SimilarityBadgeWithHover } from "@/components/common/similarityBadge";
+import { SelectionProvider, useSelection } from "@/components/context/useSelection";
 import ContextMenu from "@/components/common/contextMenu";
 
 import styles from "./inbox.module.scss";
@@ -20,9 +20,11 @@ export function Inbox() {
     const query = useSuspenseQuery(inboxQueryOptions());
 
     return (
-        <div className={styles.inboxView}>
-            <FolderView fp={query.data} />
-        </div>
+        <SelectionProvider>
+            <div className={styles.inboxView}>
+                <FolderView fp={query.data} />
+            </div>
+        </SelectionProvider>
     );
 }
 
@@ -44,17 +46,10 @@ export function FolderView({
     level = 0,
 }: {
     fp: FsPath;
-    label?: string | JSX.Element;
+    label?: string | React.ReactNode;
     mergeLabels?: boolean;
     level?: number;
-}): JSX.Element {
-    // selecting rows
-    const [isSelected, setIsSelected] = useState(false);
-    const handleSelect = () => {
-        if (fp.is_album) {
-            setIsSelected(!isSelected);
-        }
-    };
+}): React.ReactNode {
 
     /** The subviews for each child of the folder.
      */
@@ -112,31 +107,7 @@ export function FolderView({
         <div className={styles.folder} data-empty={numChildren < 1}>
             <Collapsible.Root defaultOpen>
                 <ContextMenu className={styles.contextMenuHeaderWrapper} fp={fp}>
-                    <div
-                        key={fp.full_path}
-                        className={styles.header}
-                        data-selected={isSelected}
-                        onClick={handleSelect}
-                    >
-                        <Collapsible.Trigger
-                            asChild
-                            className={styles.trigger}
-                            disabled={numChildren < 1}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <ChevronRight />
-                        </Collapsible.Trigger>
-
-                        {fp.is_album && (
-                            <div className={styles.albumIcons}>
-                                <TagStatusIcon tagPath={fp.full_path} />
-                                <SimilarityBadgeWithHover tagPath={fp.full_path} />
-                                {/* <ActionMenu fp={fp} /> */}
-                            </div>
-                        )}
-
-                        <span className={styles.label}>{label}</span>
-                    </div>
+                    <ContextMenuInner fp={fp} label={label} />
                 </ContextMenu>
                 <Collapsible.Content className={styles.content}>
                     <SubViews />
@@ -145,6 +116,52 @@ export function FolderView({
         </div>
     );
 }
+
+
+// actual content, wrapped by the context menu
+function ContextMenuInner({
+    fp,
+    label,
+}: {
+    fp: FsPath;
+    label?: React.ReactNode;
+}) {
+    const { isSelected, toggleSelection } = useSelection();
+    const handleSelect = () => {
+        if (fp.is_album) {
+            toggleSelection(fp.full_path);
+        }
+    };
+    const numChildren = Object.keys(fp.children).length;
+
+    return (
+        <div
+            key={fp.full_path}
+            className={styles.header}
+            data-selected={isSelected(fp.full_path)}
+            onClick={handleSelect}
+        >
+            <Collapsible.Trigger
+                asChild
+                className={styles.trigger}
+                disabled={numChildren < 1}
+                onClick={(e) => e.stopPropagation()}
+            >
+                <ChevronRight />
+            </Collapsible.Trigger>
+
+            {fp.is_album && (
+                <div className={styles.albumIcons}>
+                    <TagStatusIcon tagPath={fp.full_path} />
+                    <SimilarityBadgeWithHover tagPath={fp.full_path} />
+                </div>
+            )}
+
+            <span className={styles.label}>{label}</span>
+        </div>
+    );
+}
+
 
 export function FileView({ fp: fp }: { fp: FsPath }): JSX.Element {
     if (fp.type !== "file") {

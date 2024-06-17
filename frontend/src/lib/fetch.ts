@@ -14,7 +14,7 @@ window.fetch = async (
         input = input.url;
     }
 
-    console.log("fetching", apiPrefix + input);
+    // console.log("fetching", apiPrefix + input);
     const response = await originalFetch(apiPrefix + input, init);
     if (!response.ok) {
         const data = (await response.json()) as ErrorData;
@@ -23,8 +23,7 @@ window.fetch = async (
 
     if (devMode && response.headers.get("Content-Type") == "application/json") {
         try {
-            const data = await response.clone().json();
-            console.log("JSON parse successful", data);
+            await response.clone().json();
         } catch (e) {
             throw new Error("Failed to parse response as JSON in fetch()");
         }
