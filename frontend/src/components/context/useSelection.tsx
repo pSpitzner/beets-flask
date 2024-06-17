@@ -120,7 +120,7 @@ const SelectionProvider = ({ children }: { children: React.ReactNode }) => {
                 selectAll,
             }}
         >
-            {children}
+            <>{children}</>
         </SelectionContext.Provider>
     );
 };

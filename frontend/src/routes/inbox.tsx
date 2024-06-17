@@ -4,7 +4,7 @@ import { FsPath, inboxQueryOptions } from "@/lib/inbox";
 import { TagStatusIcon } from "@/components/common/statusIcon";
 import { SimilarityBadgeWithHover } from "@/components/common/similarityBadge";
 import { SelectionProvider, useSelection } from "@/components/context/useSelection";
-import ContextMenu from "@/components/common/contextMenu";
+import { ContextMenu, defaultActions } from "@/components/common/contextMenu";
 
 import styles from "./inbox.module.scss";
 import { ChevronRight } from "lucide-react";
@@ -103,13 +103,14 @@ export function FolderView({
         // this takes care of the root folder
         return <SubViews />;
     }
+
     return (
         <div className={styles.folder} data-empty={numChildren < 1}>
             <Collapsible.Root defaultOpen>
                 <ContextMenu
                     className={styles.contextMenuHeaderWrapper}
                     fp={fp}
-                    actions={[]}
+                    actions={defaultActions}
                 >
                     <LowestFolder fp={fp} label={label} />
                 </ContextMenu>

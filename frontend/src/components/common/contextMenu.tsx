@@ -12,6 +12,7 @@ import {
     useContext,
     useRef,
     useEffect,
+    cloneElement,
 } from "react";
 import { IconTextButtonWithMutation } from "@/components/common/buttons";
 import { queryClient } from "@/main";
@@ -54,14 +55,23 @@ const ContextMenuContext = createContext<ContextMenuContextI>({
 interface ContextMenuProps
     extends Omit<React.HTMLAttributes<HTMLDivElement>, "onContextMenu"> {
     children: React.ReactNode;
-    actions?: React.ReactNode;
+    actions?: React.ReactNode[];
     fp?: FsPath;
 }
 
-export default function ContextMenu({
+export const defaultActions = [
+    <SelectionSummary divider />,
+    <SelectAllAction />,
+    <RetagAction autoFocus />,
+    <ImportAction />,
+    <TerminalImportAction />,
+    <CopyPathAction />,
+];
+
+export function ContextMenu({
     children,
+    actions = defaultActions,
     fp,
-    actions,
     ...props
 }: ContextMenuProps) {
     const { addToSelection, removeFromSelection, selection } = useSelection();
@@ -120,16 +130,12 @@ export default function ContextMenu({
                 anchorReference="anchorPosition"
                 anchorPosition={position}
             >
-                {actions ? (
-                    <>
-                        <SelectionSummary divider />
-                        <SelectAllAction />
-                        <RetagAction autoFocus />
-                        <ImportAction />
-                        <TerminalImportAction />
-                        <CopyPathAction />
-                    </>
-                ) : null}
+
+                {actions.map((action, index) =>
+                    cloneElement(action as React.ReactElement, {
+                        key: (action as React.ReactElement).key || `action-${index}`,
+                    })
+                )}
             </Menu>
         </ContextMenuContext.Provider>
     );
@@ -149,7 +155,11 @@ function Trigger({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
     );
 }
 
-function SelectionSummary({ ...props }: { [key: string]: any }) {
+/* ---------------------------------------------------------------------------------- */
+/*                                       Actions                                      */
+/* ---------------------------------------------------------------------------------- */
+
+export function SelectionSummary({ ...props }: { [key: string]: any }) {
     const { numSelected } = useSelection();
     const N = useRef(numSelected());
 
@@ -166,7 +176,7 @@ function SelectionSummary({ ...props }: { [key: string]: any }) {
     );
 }
 
-function SelectAllAction({ ...props }: { [key: string]: any }) {
+export function SelectAllAction({ ...props }: { [key: string]: any }) {
     const { selectAll } = useSelection();
     const { closeMenu } = useContextMenu();
     return (
@@ -183,7 +193,7 @@ function SelectAllAction({ ...props }: { [key: string]: any }) {
     );
 }
 
-function RetagAction({ ...props }: { [key: string]: any }) {
+export function RetagAction({ ...props }: { [key: string]: any }) {
     const { closeMenu } = useContextMenu();
     const { getSelected } = useSelection();
     const retagOptions: UseMutationOptions = {
@@ -224,7 +234,7 @@ function RetagAction({ ...props }: { [key: string]: any }) {
     );
 }
 
-function ImportAction({ ...props }: { [key: string]: any }) {
+export function ImportAction({ ...props }: { [key: string]: any }) {
     const { closeMenu } = useContextMenu();
     const { getSelected } = useSelection();
     const importOptions: UseMutationOptions = {
@@ -265,7 +275,7 @@ function ImportAction({ ...props }: { [key: string]: any }) {
     );
 }
 
-function CopyPathAction({ ...props }: { [key: string]: any }) {
+export function CopyPathAction({ ...props }: { [key: string]: any }) {
     const { closeMenu } = useContextMenu();
     const { getSelected } = useSelection();
     const text = useRef("");
@@ -289,7 +299,7 @@ function CopyPathAction({ ...props }: { [key: string]: any }) {
     );
 }
 
-function TerminalImportAction({ ...props }: { [key: string]: any }) {
+export function TerminalImportAction({ ...props }: { [key: string]: any }) {
     const { closeMenu } = useContextMenu();
     const { setOpen, inputText } = useTerminalContext();
     const { getSelected } = useSelection();

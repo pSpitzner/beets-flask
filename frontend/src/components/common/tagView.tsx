@@ -13,9 +13,11 @@ import { Typography } from "@mui/material";
 import { Ellipsis } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSelection } from "@/components/context/useSelection";
+import { ContextMenu, defaultActions } from "./contextMenu";
 
 const StyledAccordion = styled(Accordion)(({ theme }) => ({
     borderTop: `1px solid ${theme.palette.divider}`,
+    borderRadius: 0,
     background: theme.palette.background.default,
     "&:before": {
         display: "none",
@@ -51,12 +53,11 @@ export function TagView({ tagId, tagPath }: { tagId?: string; tagPath?: string }
         throw new Error("TagView requires either a tagId or tagPath");
     }
     const identifier: string = tagId ?? tagPath!;
-
     const { data, isLoading, isPending, isError } = useQuery(
         tagQueryOptions(tagId, tagPath)
     );
     const { isSelected, toggleSelection, markSelectable } = useSelection();
-    const [expanded, setExpanded] = useState(false);
+    const [expanded, setExpanded] = useState<boolean>(false);
     const handleSelect = (event: React.MouseEvent) => {
         if (event.metaKey || event.ctrlKey) {
             toggleSelection(identifier);
@@ -89,27 +90,30 @@ export function TagView({ tagId, tagPath }: { tagId?: string; tagPath?: string }
     }
 
     return (
-        <StyledAccordion
-            disableGutters
-            data-selected={isSelected(identifier)}
-            expanded={expanded}
-            onClick={handleSelect}
-        >
-            <AccordionSummary
-                aria-controls="tag-content"
-                id="tag-header"
-                expandIcon={<Ellipsis size={"0.9rem"} />}
-                onClick={handleExpand}
+        <ContextMenu actions={defaultActions}>
+            <StyledAccordion
+                disableGutters
+                key="needed to prevent uncontrolled error"
+                className={styles.accordionOuter}
+                data-selected={isSelected(identifier)}
+                expanded={expanded}
+                onClick={handleSelect}
             >
-                <SimilarityBadge dist={data.distance} />
-                <Typography fontSize={"0.9rem"}>
-                    {data.album_folder_basename}
-                </Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-                <TagPreview tagId={tagId} tagPath={tagPath} />
-            </AccordionDetails>
-        </StyledAccordion>
+                <AccordionSummary
+                    aria-controls="tag-content"
+                    expandIcon={<Ellipsis size={"0.9rem"} />}
+                    onClick={handleExpand}
+                >
+                    <SimilarityBadge dist={data.distance} />
+                    <Typography fontSize={"0.9rem"}>
+                        {data.album_folder_basename}
+                    </Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                    <TagPreview tagId={tagId} tagPath={tagPath} />
+                </AccordionDetails>
+            </StyledAccordion>
+        </ContextMenu>
     );
 }
 
