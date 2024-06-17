@@ -64,25 +64,48 @@ def delete_tag_by_folder_path(folder: str):
 @tag_bp.route("/add", methods=["POST"])
 def add_tag():
     """
-    Add a tag. You need to specify the folder of the album,
+    Add one or multiple tags. You need to specify the folder of the album,
     and it has to be a valid album folder.
+
+    # Params
+    - `kind` (str): The kind of the tag
+    - `folders` (list): A list of folders to tag
+    - OR `folder` (str): Single folder to tag
+
     """
     with db_session() as session:
         data = request.get_json()
-        folder = data.get("folder")
         kind = data.get("kind")
+        folder = data.get("folder", None)
+        folders = data.get("folders", [])
 
-        if not folder or not kind:
-            raise InvalidUsage("You need to specify the folder and kind of the tag")
+        if folder is not None and len(folders) > 0:
+            raise InvalidUsage("You can't specify both `folder` and `folders`")
 
-        tag = Tag.get_by(Tag.album_folder == folder, session=session) or Tag(
-            album_folder=folder, kind=kind
+        if not (folders or folder) or not kind:
+            raise InvalidUsage(
+                "You need to specify at least a folder and kind of the tag"
+            )
+
+        if len(folders) == 0:
+            folders = [folder]
+
+        tags = []
+        for folder in folders:
+            tag = Tag.get_by(Tag.album_folder == folder, session=session) or Tag(
+                album_folder=folder, kind=kind
+            )
+            session.merge(tag)
+
+            tag.kind = kind
+            tags.append(tag)
+            session.commit()
+
+            invoker.enqueue(tag.id, session=session)
+
+        return jsonify(
+            {
+                "message": f"{len(tags)} tags added as kind: {kind}",
+                "tags": [tag.to_dict() for tag in tags],
+            }
         )
-        session.merge(tag)
-
-        tag.kind = kind
-        session.commit()
-
-        invoker.enqueue(tag.id, session=session)
-
-        return jsonify(tag.to_dict())
