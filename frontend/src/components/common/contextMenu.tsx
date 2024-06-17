@@ -13,6 +13,7 @@ import {
     useCallback,
     useRef,
     useEffect,
+    useMemo,
 } from "react";
 import { IconTextButtonWithMutation } from "@/components/common/buttons";
 import { queryClient } from "@/main";
@@ -50,7 +51,8 @@ export default function ContextMenu({
         useSelection();
     // we always want to include the currently clicked item in the selection,
     // and remember that we added it
-    const [addCurrent, setAddCurrent] = useState(false);
+    const addCurrent = useRef(false);
+    // const selected = useMemo(() => isSelected(fp?.full_path), [fp, isSelected]);
     const [contextMenu, setContextMenu] = useState<{
         mouseX: number;
         mouseY: number;
@@ -59,7 +61,7 @@ export default function ContextMenu({
     const handleContextMenu = useCallback(
         (event: React.MouseEvent) => {
             if (fp && !isSelected(fp.full_path)) {
-                setAddCurrent(true);
+                addCurrent.current = true;
                 addToSelection(fp.full_path);
             }
             event.preventDefault();
@@ -72,16 +74,16 @@ export default function ContextMenu({
                     : null
             );
         },
-        [fp, contextMenu, setContextMenu, addCurrent, addToSelection]
+        [fp, contextMenu, setContextMenu, addToSelection]
     );
 
     const handleClose = useCallback(() => {
-        // if (addCurrent) {
-        //     removeFromSelection(fp!.full_path);
-        //     setAddCurrent(false);
-        // }
+        if (addCurrent.current) {
+            removeFromSelection(fp!.full_path);
+            addCurrent.current = false;
+        }
         // @sm did not manage to make the temporary selection persistent.
-        clearSelection();
+        // clearSelection();
         setContextMenu(null);
     }, [fp, addCurrent, setContextMenu]);
 
@@ -103,6 +105,7 @@ export default function ContextMenu({
                     // }}
                 >
                     <SelectionSummary divider />
+                    <SelectAllAction />
                     <RetagAction autoFocus />
                     <ImportAction />
                     <TerminalImportAction />
@@ -128,6 +131,23 @@ function SelectionSummary({ ...props }: { [key: string]: any }) {
         // make this a non-clickable heading
         <MenuItem disabled className={styles.menuHeading} {...props}>
             <span>{N.current} selected</span>
+        </MenuItem>
+    );
+}
+
+function SelectAllAction({ ...props }: { [key: string]: any }) {
+    const { selectAll } = useSelection();
+    const { handleClose } = useContext(ClosingContext);
+    return (
+        <MenuItem
+            {...props}
+            className={styles.menuItem}
+            onClick={() => {
+                handleClose();
+                selectAll();
+            }}
+        >
+            <span>Select All</span>
         </MenuItem>
     );
 }

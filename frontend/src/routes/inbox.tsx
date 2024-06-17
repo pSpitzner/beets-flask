@@ -10,6 +10,7 @@ import styles from "./inbox.module.scss";
 import { ChevronRight } from "lucide-react";
 
 import * as Collapsible from "@radix-ui/react-collapsible";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/inbox")({
     loader: (opts) => opts.context.queryClient.ensureQueryData(inboxQueryOptions()),
@@ -107,7 +108,7 @@ export function FolderView({
         <div className={styles.folder} data-empty={numChildren < 1}>
             <Collapsible.Root defaultOpen>
                 <ContextMenu className={styles.contextMenuHeaderWrapper} fp={fp}>
-                    <ContextMenuInner fp={fp} label={label} />
+                    <LowestFolder fp={fp} label={label} />
                 </ContextMenu>
                 <Collapsible.Content className={styles.content}>
                     <SubViews />
@@ -119,20 +120,26 @@ export function FolderView({
 
 
 // actual content, wrapped by the context menu
-function ContextMenuInner({
+function LowestFolder({
     fp,
     label,
 }: {
     fp: FsPath;
     label?: React.ReactNode;
 }) {
-    const { isSelected, toggleSelection } = useSelection();
+    const { isSelected, toggleSelection, markSelectable } = useSelection();
     const handleSelect = () => {
         if (fp.is_album) {
             toggleSelection(fp.full_path);
         }
     };
     const numChildren = Object.keys(fp.children).length;
+
+    useEffect(() => {
+        if (fp.is_album && numChildren > 0) {
+            markSelectable(fp.full_path);
+        }
+    }, []);
 
     return (
         <div

@@ -13,6 +13,8 @@ type SelectionContextType = {
     isSelected: (item: string) => boolean;
     numSelected: () => number;
     getSelected: () => string[];
+    markSelectable: (item: string) => void;
+    selectAll: () => void;
 };
 
 const SelectionContext = createContext<SelectionContextType>({
@@ -25,6 +27,9 @@ const SelectionContext = createContext<SelectionContextType>({
     isSelected: () => false,
     numSelected: () => 0,
     getSelected: () => [],
+    markSelectable: () => {},
+    selectAll: () => {},
+
 });
 
 const SelectionProvider = ({ children }: { children: React.ReactNode }) => {
@@ -38,6 +43,25 @@ const SelectionProvider = ({ children }: { children: React.ReactNode }) => {
             return new Map(s);
         });
     }, []);
+
+    const markSelectable = useCallback((item: string) => {
+        setSelection((s) => {
+            if (!s.has(item)) {
+                s.set(item, false);
+                return new Map(s);
+            } else {
+                return s;
+            }
+        });
+    }, []);
+
+    const selectAll = useCallback(() => {
+        setSelection((s) => {
+            s.forEach((_, key) => s.set(key, true));
+            return new Map(s);
+        });
+    }, []);
+
 
     const removeFromSelection = useCallback((item: string) => {
         setSelection((s) => {
@@ -91,6 +115,8 @@ const SelectionProvider = ({ children }: { children: React.ReactNode }) => {
                 isSelected,
                 numSelected,
                 getSelected,
+                markSelectable,
+                selectAll,
             }}
         >
             {children}
