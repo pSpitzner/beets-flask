@@ -6,6 +6,9 @@ import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { ChevronDown } from "lucide-react";
 
+import { ContextMenu } from "./contextMenu";
+import { useSelection, SelectionProvider } from "@/components/context/useSelection";
+
 const StyledAccordion = styled(Accordion)(({ theme }) => ({
     border: `1px solid ${theme.palette.divider}`,
     background: theme.palette.background.default,
@@ -43,20 +46,6 @@ export default function TagGroupView({
     children: React.ReactNode;
     [key: string]: any;
 }) {
-    const renderTitle = (title: React.ReactNode | string, subtitle?: string) => {
-        if (typeof title === "string") {
-            return (
-                <div className="flex items-center gap-2">
-                    <Typography variant="h6">
-                        {title}
-                    </Typography>
-                    {subtitle && <Typography className="opacity-50">{subtitle}</Typography>}
-                </div>
-            );
-        } else {
-            return title;
-        }
-    };
     return (
         <StyledAccordion
             disableGutters
@@ -70,7 +59,25 @@ export default function TagGroupView({
             >
                 {renderTitle(title, subtitle)}
             </AccordionSummary>
-            <AccordionDetails>{children}</AccordionDetails>
+            <AccordionDetails>
+                <SelectionProvider>{children}</SelectionProvider>
+            </AccordionDetails>
         </StyledAccordion>
     );
+}
+
+function renderTitle(
+    title: React.ReactNode | string,
+    subtitle?: string
+): React.ReactNode {
+    if (typeof title === "string") {
+        return (
+            <div className="flex items-center gap-2">
+                <Typography variant="h6">{title}</Typography>
+                {subtitle && <Typography className="opacity-50">{subtitle}</Typography>}
+            </div>
+        );
+    } else {
+        return <span>{title}</span>;
+    }
 }

@@ -11,7 +11,8 @@ import { APIError } from "@/lib/fetch";
 import { SimilarityBadge } from "./similarityBadge";
 import { Typography } from "@mui/material";
 import { Ellipsis } from "lucide-react";
-
+import { useEffect, useState } from "react";
+import { useSelection } from "@/components/context/useSelection";
 
 const StyledAccordion = styled(Accordion)(({ theme }) => ({
     borderTop: `1px solid ${theme.palette.divider}`,
@@ -21,6 +22,9 @@ const StyledAccordion = styled(Accordion)(({ theme }) => ({
     },
     "&:hover": {
         background: theme.palette.action.hover,
+    },
+    '&[data-selected="true"]': {
+        background: theme.palette.action.selected,
     },
     "& .MuiAccordionSummary-root": {
         display: "flex",
@@ -46,11 +50,31 @@ export function TagView({ tagId, tagPath }: { tagId?: string; tagPath?: string }
     if (!tagId && !tagPath) {
         throw new Error("TagView requires either a tagId or tagPath");
     }
+    const identifier: string = tagId ?? tagPath!;
 
     const { data, isLoading, isPending, isError } = useQuery(
         tagQueryOptions(tagId, tagPath)
     );
+    const { isSelected, toggleSelection, markSelectable } = useSelection();
+    const [expanded, setExpanded] = useState(false);
+    const handleSelect = (event: React.MouseEvent) => {
+        if (event.metaKey || event.ctrlKey) {
+            toggleSelection(identifier);
+            event.stopPropagation();
+            event.preventDefault();
+        }
+    };
+    const handleExpand = (event: React.MouseEvent) => {
+        if (event.metaKey || event.ctrlKey) {
+            return;
+        } else {
+            setExpanded(!expanded);
+        }
+    }
 
+    useEffect(() => {
+        markSelectable(identifier);
+    }, []);
 
     if (isLoading || isPending || isError) {
         let inner = "";
@@ -65,15 +89,17 @@ export function TagView({ tagId, tagPath }: { tagId?: string; tagPath?: string }
     }
 
     return (
-        <StyledAccordion disableGutters>
+        <StyledAccordion
+            disableGutters
+            data-selected={isSelected(identifier)}
+            expanded={expanded}
+            onClick={handleSelect}
+        >
             <AccordionSummary
                 aria-controls="tag-content"
                 id="tag-header"
-                expandIcon={
-                <Ellipsis
-                    size={"0.9rem"}
-                />
-                }
+                expandIcon={<Ellipsis size={"0.9rem"} />}
+                onClick={handleExpand}
             >
                 <SimilarityBadge dist={data.distance} />
                 <Typography fontSize={"0.9rem"}>
