@@ -31,7 +31,7 @@ export function TagGroupOverview() {
 
     return (
         <>
-            <PredefinedTagGroup id="inbox" />
+            <PredefinedTagGroup id="inbox" defaultExpanded/>
             <PredefinedTagGroup id="recent" />
 
             {manualTagGroups.map((group, i) => {
@@ -54,7 +54,7 @@ export function TagGroupOverview() {
     );
 }
 
-function PredefinedTagGroup({ id }: { id: string }) {
+function PredefinedTagGroup({ id, ...props }: { id: string, [key: string]: any}) {
     const query = useSuspenseQuery(tagGroupIdQueryOptions(id));
     const group = query.data;
     const title = id.charAt(0).toUpperCase() + id.slice(1);
@@ -66,6 +66,7 @@ function PredefinedTagGroup({ id }: { id: string }) {
             title={title}
             subtitle={subtitle}
             disabled={group.tag_ids.length === 0}
+            {...props}
         >
             {group.tag_ids.map((tagId, i) => (
                 <TagView key={i} tagId={tagId} />
