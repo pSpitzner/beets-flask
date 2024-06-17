@@ -51,7 +51,6 @@ export function FolderView({
     mergeLabels?: boolean;
     level?: number;
 }): React.ReactNode {
-
     /** The subviews for each child of the folder.
      */
     const numChildren = Object.keys(fp.children).length;
@@ -107,7 +106,11 @@ export function FolderView({
     return (
         <div className={styles.folder} data-empty={numChildren < 1}>
             <Collapsible.Root defaultOpen>
-                <ContextMenu className={styles.contextMenuHeaderWrapper} fp={fp}>
+                <ContextMenu
+                    className={styles.contextMenuHeaderWrapper}
+                    fp={fp}
+                    actions={[]}
+                >
                     <LowestFolder fp={fp} label={label} />
                 </ContextMenu>
                 <Collapsible.Content className={styles.content}>
@@ -118,15 +121,8 @@ export function FolderView({
     );
 }
 
-
 // actual content, wrapped by the context menu
-function LowestFolder({
-    fp,
-    label,
-}: {
-    fp: FsPath;
-    label?: React.ReactNode;
-}) {
+function LowestFolder({ fp, label }: { fp: FsPath; label?: React.ReactNode }) {
     const { isSelected, toggleSelection, markSelectable } = useSelection();
     const handleSelect = () => {
         if (fp.is_album) {
@@ -136,6 +132,7 @@ function LowestFolder({
     const numChildren = Object.keys(fp.children).length;
 
     useEffect(() => {
+        // Register as selectable
         if (fp.is_album && numChildren > 0) {
             markSelectable(fp.full_path);
         }
@@ -168,7 +165,6 @@ function LowestFolder({
         </div>
     );
 }
-
 
 export function FileView({ fp: fp }: { fp: FsPath }): JSX.Element {
     if (fp.type !== "file") {

@@ -10,10 +10,8 @@ import {
     MouseEvent,
     createContext,
     useContext,
-    useCallback,
     useRef,
     useEffect,
-    useMemo,
 } from "react";
 import { IconTextButtonWithMutation } from "@/components/common/buttons";
 import { queryClient } from "@/main";
@@ -21,9 +19,23 @@ import { TagI } from "@/lib/tag";
 import { Tag, HardDriveDownload, Clipboard, Terminal } from "lucide-react";
 
 import { useTerminalContext } from "@/components/terminal";
-import { SelectionProvider, useSelection } from "@/components/context/useSelection";
+import { useSelection } from "@/components/context/useSelection";
 
 import styles from "./contextMenu.module.scss";
+
+interface ContextMenuContextI {
+    closeMenu: () => void;
+    openMenu: (event: MouseEvent) => void;
+    open: boolean;
+    position: { left: number; top: number } | undefined;
+}
+
+const ContextMenuContext = createContext<ContextMenuContextI>({
+    openMenu: () => {},
+    closeMenu: () => {},
+    open: false,
+    position: undefined,
+});
 
 /**
  * Context Menu that appears when right-clicking on a file or folder.
@@ -38,85 +50,104 @@ import styles from "./contextMenu.module.scss";
  *   </ContextMenu>
  * </SelectionProvider>
  */
+
+interface ContextMenuProps
+    extends Omit<React.HTMLAttributes<HTMLDivElement>, "onContextMenu"> {
+    children: React.ReactNode;
+    actions?: React.ReactNode;
+    fp?: FsPath;
+}
+
 export default function ContextMenu({
     children,
     fp,
-    className,
-}: {
-    children: React.ReactNode;
-    fp?: FsPath;
-    className?: string;
-}) {
-    const { addToSelection, removeFromSelection, isSelected, clearSelection } =
-        useSelection();
+    actions,
+    ...props
+}: ContextMenuProps) {
+    const { addToSelection, removeFromSelection, selection } = useSelection();
+
     // we always want to include the currently clicked item in the selection,
     // and remember that we added it
-    const addCurrent = useRef(false);
-    // const selected = useMemo(() => isSelected(fp?.full_path), [fp, isSelected]);
-    const [contextMenu, setContextMenu] = useState<{
-        mouseX: number;
-        mouseY: number;
-    } | null>(null);
+    const [position, setPosition] = useState<
+        | {
+              left: number;
+              top: number;
+          }
+        | undefined
+    >(undefined);
 
-    const handleContextMenu = useCallback(
-        (event: React.MouseEvent) => {
-            if (fp && !isSelected(fp.full_path)) {
-                addCurrent.current = true;
-                addToSelection(fp.full_path);
+    const prevState = useRef<undefined | boolean>();
+    const openMenu = (event: React.MouseEvent) => {
+        event.preventDefault();
+        if (fp && selection.has(fp.full_path)) {
+            prevState.current = selection.get(fp.full_path);
+            addToSelection(fp.full_path);
+        }
+        setPosition((prev?: { left: number; top: number }) =>
+            prev === undefined
+                ? {
+                      left: event.clientX + 2,
+                      top: event.clientY - 6,
+                  }
+                : undefined
+        );
+    };
+
+    const closeMenu = () => {
+        if (prevState.current !== undefined) {
+            if (fp) {
+                if (prevState.current) {
+                    addToSelection(fp.full_path);
+                } else {
+                    removeFromSelection(fp.full_path);
+                }
             }
-            event.preventDefault();
-            setContextMenu(
-                contextMenu === null
-                    ? {
-                          mouseX: event.clientX + 2,
-                          mouseY: event.clientY - 6,
-                      }
-                    : null
-            );
-        },
-        [fp, contextMenu, setContextMenu, addToSelection]
-    );
-
-    const handleClose = useCallback(() => {
-        if (addCurrent.current) {
-            removeFromSelection(fp!.full_path);
-            addCurrent.current = false;
+            prevState.current = undefined;
         }
         // @sm did not manage to make the temporary selection persistent.
         // clearSelection();
-        setContextMenu(null);
-    }, [fp, addCurrent, setContextMenu]);
+        setPosition(undefined);
+    };
 
     return (
-        <ClosingContext.Provider value={{ handleClose }}>
-            <div onContextMenu={handleContextMenu} className={className}>
-                {children}
-                <Menu
-                    open={contextMenu !== null}
-                    onClose={handleClose} // enables `esc` and outside clicks to close the menu
-                    anchorReference="anchorPosition"
-                    anchorPosition={
-                        contextMenu !== null
-                            ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
-                            : undefined
-                    }
-                    // MenuListProps={{
-                    //     "aria-labelledby": "basic-button",
-                    // }}
-                >
-                    <SelectionSummary divider />
-                    <SelectAllAction />
-                    <RetagAction autoFocus />
-                    <ImportAction />
-                    <TerminalImportAction />
-                    <CopyPathAction />
-                </Menu>
-            </div>
-        </ClosingContext.Provider>
+        <ContextMenuContext.Provider
+            value={{ closeMenu, openMenu, open: position !== undefined, position }}
+        >
+            <Trigger {...props}>{children}</Trigger>
+            <Menu
+                open={position !== undefined}
+                onClose={closeMenu} // enables `esc` and outside clicks to close the menu
+                anchorReference="anchorPosition"
+                anchorPosition={position}
+            >
+                {actions ? (
+                    <>
+                        <SelectionSummary divider />
+                        <SelectAllAction />
+                        <RetagAction autoFocus />
+                        <ImportAction />
+                        <TerminalImportAction />
+                        <CopyPathAction />
+                    </>
+                ) : null}
+            </Menu>
+        </ContextMenuContext.Provider>
     );
 }
 
-const ClosingContext = createContext({ handleClose: () => {} });
+function useContextMenu() {
+    return useContext(ContextMenuContext);
+}
+
+function Trigger({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+    const { openMenu } = useContextMenu();
+
+    return (
+        <div onContextMenu={openMenu} {...props}>
+            {children}
+        </div>
+    );
+}
 
 function SelectionSummary({ ...props }: { [key: string]: any }) {
     const { numSelected } = useSelection();
@@ -137,13 +168,13 @@ function SelectionSummary({ ...props }: { [key: string]: any }) {
 
 function SelectAllAction({ ...props }: { [key: string]: any }) {
     const { selectAll } = useSelection();
-    const { handleClose } = useContext(ClosingContext);
+    const { closeMenu } = useContextMenu();
     return (
         <MenuItem
             {...props}
             className={styles.menuItem}
             onClick={() => {
-                handleClose();
+                closeMenu();
                 selectAll();
             }}
         >
@@ -153,7 +184,7 @@ function SelectAllAction({ ...props }: { [key: string]: any }) {
 }
 
 function RetagAction({ ...props }: { [key: string]: any }) {
-    const { handleClose } = useContext(ClosingContext);
+    const { closeMenu } = useContextMenu();
     const { getSelected } = useSelection();
     const retagOptions: UseMutationOptions = {
         mutationFn: async () => {
@@ -169,7 +200,7 @@ function RetagAction({ ...props }: { [key: string]: any }) {
             });
         },
         onSuccess: async () => {
-            handleClose();
+            closeMenu();
             getSelected().forEach(async (fullPath: string) => {
                 await queryClient.setQueryData(["tag", fullPath], (old: TagI) => {
                     return { ...old, status: "pending" };
@@ -194,7 +225,7 @@ function RetagAction({ ...props }: { [key: string]: any }) {
 }
 
 function ImportAction({ ...props }: { [key: string]: any }) {
-    const { handleClose } = useContext(ClosingContext);
+    const { closeMenu } = useContextMenu();
     const { getSelected } = useSelection();
     const importOptions: UseMutationOptions = {
         mutationFn: async () => {
@@ -210,7 +241,7 @@ function ImportAction({ ...props }: { [key: string]: any }) {
             });
         },
         onSuccess: async () => {
-            handleClose();
+            closeMenu();
             getSelected().forEach(async (fullPath: string) => {
                 await queryClient.setQueryData(["tag", fullPath], (old: TagI) => {
                     return { ...old, status: "pending" };
@@ -235,7 +266,7 @@ function ImportAction({ ...props }: { [key: string]: any }) {
 }
 
 function CopyPathAction({ ...props }: { [key: string]: any }) {
-    const { handleClose } = useContext(ClosingContext);
+    const { closeMenu } = useContextMenu();
     const { getSelected } = useSelection();
     const text = useRef("");
 
@@ -248,7 +279,7 @@ function CopyPathAction({ ...props }: { [key: string]: any }) {
             {...props}
             className={styles.menuItem}
             onClick={() => {
-                handleClose();
+                closeMenu();
                 navigator.clipboard.writeText(text.current).catch(console.error);
             }}
         >
@@ -259,7 +290,7 @@ function CopyPathAction({ ...props }: { [key: string]: any }) {
 }
 
 function TerminalImportAction({ ...props }: { [key: string]: any }) {
-    const { handleClose } = useContext(ClosingContext);
+    const { closeMenu } = useContextMenu();
     const { setOpen, inputText } = useTerminalContext();
     const { getSelected } = useSelection();
     const text = useRef("");
@@ -272,7 +303,7 @@ function TerminalImportAction({ ...props }: { [key: string]: any }) {
         <MenuItem
             {...props}
             onClick={() => {
-                handleClose();
+                closeMenu();
                 setOpen(true);
                 inputText(`beet import -t ${text.current}`);
             }}
