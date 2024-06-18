@@ -67,7 +67,7 @@ def emit_output():
     try:
         # this approach to capture screen content keeps extra whitespaces, but we can
         # fix that client side.
-        current = pane.cmd("capture-pane", "-p", "-N", "-T").stdout
+        current = pane.cmd("capture-pane", "-p", "-N", "-T", "-e").stdout
         sio.emit("ptyOutput", {"output": current}, namespace="/terminal")
     except Exception as e:
         log.error(f"Error reading from pty: {e}")
@@ -84,7 +84,7 @@ def emit_output_continuously(sleep_seconds=0.1):
     while True:
         sio.sleep(sleep_seconds)  # type: ignore
         try:
-            current = pane.cmd("capture-pane", "-p", "-N", "-T").stdout
+            current = pane.cmd("capture-pane", "-p", "-N", "-T", "-e").stdout
             if current != prev:
                 sio.emit("ptyOutput", {"output": current}, namespace="/terminal")
                 emit_cursor_position()
