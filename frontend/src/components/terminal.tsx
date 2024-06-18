@@ -132,10 +132,6 @@ function XTermBinding() {
         gui.open(ref.current);
         fitAddon.fit();
 
-        gui.onResize(({ cols, rows }) => {
-            console.log(`Terminal was resized to ${cols} cols and ${rows} rows.`);
-        });
-
         const resizeObserver = new ResizeObserver(() => {
             fitAddon.fit();
         });
@@ -169,13 +165,13 @@ const TerminalContext = createContext<TerminalContextI>({
 
 export function TerminalContextProvider({ children }: { children: React.ReactNode }) {
     const [open, setOpen] = useState(false);
-    const [gui, setGui] = useState<xTerminal>();
+    const [term, setTerm] = useState<xTerminal>();
 
     const { socket, isConnected } = useSocket();
 
     useEffect(() => {
         // Create gui on mount
-        if (!gui) {
+        if (!term) {
             const term = new xTerminal({
                 cursorBlink: true,
                 macOptionIsMeta: true,
@@ -183,37 +179,60 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
                 cols: 80,
             });
             term.write("Connecting...");
-            setGui(term);
+            setTerm(term);
         }
     }, []);
 
     // Attatch socketio handler
     useEffect(() => {
-        if (!gui || !isConnected) return;
+        if (!term || !isConnected) return;
 
-        gui.writeln("\rConnected!   ");
+        term.writeln("\rConnected!   ");
 
-        gui!.onData((data) => {
-            console.log("data", data);
+        term!.onData((data) => {
+            if (data === "\x01") {
+                // prevent ctrl+a because it can detach tmux
+                return;
+            }
+            console.log("input", data);
             socket.emit("ptyInput", { input: data });
         });
 
-        function onOutput(data: { output: string }) {
-            gui!.write(data.output);
+        function onOutput(data: { output: Array<string> }) {
+            console.log("output", data);
+            // term!.clear(); seems to be preferred from the documentation,
+            // but it leaves the prompt on the first line in place - which we here do not want
+            // ideally we would directly access the buffer.
+            term!.reset();
+            data.output.forEach((line, index) => {
+                if (index < data.output.length - 1) {
+                    term!.writeln(line);
+                } else {
+                    // Workaround: strip all trailing whitespaces except for one
+                    // not a perfect fix (one wrong space remains when backspacing)
+                    const stripped_line = line.replace(/\s+$/, " ");
+                    term!.write(stripped_line);
+                }
+            });
         }
         socket.on("ptyOutput", onOutput);
+
+        term.onResize(({ cols, rows }) => {
+            console.log(`Terminal was resized to ${cols} cols and ${rows} rows.`);
+            socket.emit("ptyResize", { cols, rows: rows });
+        });
 
         return () => {
             socket.off("ptyOutput", onOutput);
         };
-    }, [isConnected, gui, socket]);
+    }, [isConnected, term, socket]);
 
     // make first responder directly after opening
     useEffect(() => {
-        if (open && gui) {
-            gui.focus();
+        if (open && term) {
+            term.focus();
         }
-    }, [open, gui]);
+    }, [open, term]);
 
     function inputText(t: string) {
         socket.emit("ptyInput", { input: t });
@@ -225,7 +244,7 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
         setOpen,
         inputText,
         socket,
-        gui,
+        gui: term,
     };
 
     return (

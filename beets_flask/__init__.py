@@ -40,7 +40,7 @@ def create_app():
     app.register_blueprint(frontend_bp)
 
     # Register socketio
-    from .routes.terminal import register_socketio
+    from .terminal import register_socketio
     register_socketio(app)
 
     log.info("App created")
