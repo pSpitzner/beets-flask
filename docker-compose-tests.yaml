@@ -2,6 +2,7 @@ version: '3'
 services:
   beets-flask-tests:
     container_name: beets-flask-tests
+    hostname: beets-container
     build:
       context: .
       dockerfile: Dockerfile

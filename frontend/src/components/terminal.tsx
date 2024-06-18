@@ -190,8 +190,8 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
         term.writeln("\rConnected!   ");
 
         term!.onData((data) => {
-            if (data === "\x01") {
-                // prevent ctrl+a because it can detach tmux
+            if (data === "\x01" || data === "\x04") {
+                // prevent ctrl+a because it can detach tmux, and ctrl+d because it can close the terminal
                 return;
             }
             console.log("input", data);
@@ -229,8 +229,12 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
             socket.emit("ptyResize", { cols, rows: rows });
         });
 
+        // request server update, to reflect current output
+        socket.emit("ptyResendOutput");
+
         return () => {
             socket.off("ptyOutput", onOutput);
+            socket.off("ptyCursorPosition", onCursorUpdate);
         };
     }, [isConnected, term, socket]);
 

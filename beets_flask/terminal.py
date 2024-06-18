@@ -133,6 +133,11 @@ def resize(sid, data):
     # we might want to resend the output:
     # sio.emit("ptyOutput", {"output": pane.capture_pane()}, namespace="/terminal")
 
+@sio.on("ptyResendOutput", namespace="/terminal")  # type: ignore
+def resend_output(sid):
+    """resend the output"""
+    log.debug(f"{sid} resend output")
+    emit_output()
 
 @sio.on("connect", namespace="/terminal")  # type: ignore
 def connect(sid, environ):
