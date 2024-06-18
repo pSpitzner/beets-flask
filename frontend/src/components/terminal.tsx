@@ -217,6 +217,13 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
         }
         socket.on("ptyOutput", onOutput);
 
+        function onCursorUpdate(data: { x: number; y: number } ) {
+            console.log("cursor", data);
+            // xterm uses 1-based indexing
+            term!.write(`\x1b[${data.y + 1};${data.x + 1}H`);
+        }
+        socket.on("ptyCursorPosition", onCursorUpdate);
+
         term.onResize(({ cols, rows }) => {
             console.log(`Terminal was resized to ${cols} cols and ${rows} rows.`);
             socket.emit("ptyResize", { cols, rows: rows });

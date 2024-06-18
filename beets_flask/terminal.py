@@ -63,16 +63,31 @@ def register_socketio(app):
     register_tmux()  # in the future we might want to allow restarting tmux from web interface
 
 
-def read_forward_continuously(sleep_seconds=0.1):
+def emit_output():
+    try:
+        # this approach to capture screen content keeps extra whitespaces, but we can
+        # fix that client side.
+        current = pane.cmd("capture-pane", "-p", "-N", "-T").stdout
+        sio.emit("ptyOutput", {"output": current}, namespace="/terminal")
+    except Exception as e:
+        log.error(f"Error reading from pty: {e}")
+        sio.emit(
+            "ptyOutput",
+            {"output": f"\nError reading from pty: {e}"},
+            namespace="/terminal",
+        )
+
+
+def emit_output_continuously(sleep_seconds=0.1):
+    # only emit if there was a change
     prev = []
     while True:
         sio.sleep(sleep_seconds)  # type: ignore
         try:
-            # this version keeps (too) many whitespaces, but we can
-            # fix that client side.
-            current = pane.cmd(*["capture-pane", "-p", "-N", "-T"]).stdout
+            current = pane.cmd("capture-pane", "-p", "-N", "-T").stdout
             if current != prev:
                 sio.emit("ptyOutput", {"output": current}, namespace="/terminal")
+                emit_cursor_position()
                 prev = current
         except Exception as e:
             log.error(f"Error reading from pty: {e}")
@@ -84,7 +99,21 @@ def read_forward_continuously(sleep_seconds=0.1):
             break
 
 
-sio.start_background_task(target=read_forward_continuously)
+sio.start_background_task(target=emit_output_continuously)
+
+
+def emit_cursor_position():
+    try:
+        cursor = pane.cmd("display-message", "-p", "#{cursor_x},#{cursor_y}").stdout
+        x, y = map(int, cursor[0].split(","))
+        sio.emit("ptyCursorPosition", {"x": x, "y": y}, namespace="/terminal")
+    except Exception as e:
+        log.error(f"Error reading cursor position: {e}")
+        sio.emit(
+            "cursorPosition",
+            {"cursor": f"\nError reading cursor position: {e}"},
+            namespace="/terminal",
+        )
 
 
 @sio.on("ptyInput", namespace="/terminal")  # type: ignore
@@ -93,6 +122,7 @@ def pty_input(sid, data):
     Write to the child pty.
     """
     pane.send_keys(data["input"], enter=False)
+    emit_cursor_position()
 
 
 @sio.on("ptyResize", namespace="/terminal")  # type: ignore
