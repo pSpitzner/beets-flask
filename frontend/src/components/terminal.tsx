@@ -17,7 +17,7 @@ import { useSocket } from "@/lib/socket";
 import { Socket } from "socket.io-client";
 
 const SlideIn = ({ children }: { children: React.ReactNode }) => {
-    const { gui, open, toggle, setOpen } = useTerminalContext();
+    const { open, toggle, setOpen } = useTerminalContext();
 
     // prevent scrolling of main content when terminal is open
     // would be nicer to scroll depending on where the mouser cursor is, but that seems more difficult.
@@ -90,13 +90,13 @@ export function Terminal() {
 
 function XTermBinding() {
     const ref = useRef<HTMLDivElement>(null);
-    const { gui } = useTerminalContext();
+    const { term } = useTerminalContext();
 
     useEffect(() => {
-        if (!ref.current || !gui) return;
+        if (!ref.current || !term) return;
 
         function copyPasteHandler(e: KeyboardEvent) {
-            if (!gui) return false;
+            if (!term) return false;
 
             if (e.type !== "keydown") return true;
 
@@ -105,7 +105,7 @@ function XTermBinding() {
                 if (key === "v") {
                     // ctrl+shift+v: paste whatever is in the clipboard
                     navigator.clipboard.readText().then((toPaste) => {
-                        gui.write(toPaste);
+                        term.write(toPaste);
                     });
                     return false;
                 } else if (key === "c" || key === "x") {
@@ -116,20 +116,20 @@ function XTermBinding() {
                     // (open devtools).
                     // I'm not aware of ctrl+shift+x being used by anything in the terminal
                     // or browser
-                    const toCopy = gui.getSelection();
+                    const toCopy = term.getSelection();
                     navigator.clipboard.writeText(toCopy);
-                    gui.focus();
+                    term.focus();
                     return false;
                 }
             }
             return true;
         }
 
-        gui.attachCustomKeyEventHandler(copyPasteHandler);
+        term.attachCustomKeyEventHandler(copyPasteHandler);
 
         const fitAddon = new xTermFitAddon();
-        gui.loadAddon(fitAddon);
-        gui.open(ref.current);
+        term.loadAddon(fitAddon);
+        term.open(ref.current);
         fitAddon.fit();
 
         const resizeObserver = new ResizeObserver(() => {
@@ -139,10 +139,10 @@ function XTermBinding() {
         resizeObserver.observe(ref.current);
 
         return () => {
-            gui.dispose();
+            term.dispose();
             if (ref.current) resizeObserver.unobserve(ref.current);
         };
-    }, [gui]);
+    }, [term]);
 
     return <div ref={ref} className={styles.xTermBindingContainer}></div>;
 }
@@ -153,8 +153,25 @@ export interface TerminalContextI {
     setOpen: Dispatch<SetStateAction<boolean>>;
     inputText: (input: string) => void;
     socket?: Socket;
-    gui?: xTerminal;
+    term?: xTerminal;
 }
+
+// match our style - this is somewhat redundant with index.css
+const xTermTheme = {
+    red: "#C0626B",
+    green: "#A4BF8C",
+    yellow: "#EBCB8C",
+    blue: "#7EA2BF",
+    magenta: "#B48EAD",
+    cyan: "#8FBCBB",
+    brightBlack: "#818689",
+    brightRed: "#D0737F",
+    brightGreen: "#B5D0A0",
+    brightYellow: "#F0D9A6",
+    brightBlue: "#8FB8D1",
+    brightMagenta: "#C79EC4",
+    brightCyan: "#A3CDCD",
+};
 
 const TerminalContext = createContext<TerminalContextI>({
     open: false,
@@ -173,6 +190,7 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
         // Create gui on mount
         if (!term) {
             const term = new xTerminal({
+                theme: xTermTheme,
                 cursorBlink: true,
                 macOptionIsMeta: true,
                 rows: 12,
@@ -229,7 +247,10 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
             socket.emit("ptyResize", { cols, rows: rows });
         });
 
-        // request server update, to reflect current output
+        // resize once on connect (after we fitted size on mount)
+        socket.emit("ptyResize", { cols: term.cols, rows: term.rows });
+
+        // request server update, so show whats actually on the pty when connecting
         socket.emit("ptyResendOutput");
 
         return () => {
@@ -255,7 +276,7 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
         setOpen,
         inputText,
         socket,
-        gui: term,
+        term,
     };
 
     return (
