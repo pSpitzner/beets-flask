@@ -109,7 +109,7 @@ export function FolderView({
             <Collapsible.Root defaultOpen>
                 <ContextMenu
                     className={styles.contextMenuHeaderWrapper}
-                    fp={fp}
+                    identifier={fp.full_path}
                     actions={defaultActions}
                 >
                     <LowestFolder fp={fp} label={label} />

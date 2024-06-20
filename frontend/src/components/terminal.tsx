@@ -152,6 +152,7 @@ export interface TerminalContextI {
     toggle: () => void;
     setOpen: Dispatch<SetStateAction<boolean>>;
     inputText: (input: string) => void;
+    clearInput: () => void;
     socket?: Socket;
     term?: xTerminal;
 }
@@ -178,6 +179,7 @@ const TerminalContext = createContext<TerminalContextI>({
     toggle: () => {},
     setOpen: () => {},
     inputText: () => {},
+    clearInput: () => {},
 });
 
 export function TerminalContextProvider({ children }: { children: React.ReactNode }) {
@@ -270,11 +272,16 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
         socket.emit("ptyInput", { input: t });
     }
 
+    function clearInput() {
+        socket.emit("ptyInput", { input: "\x15" });
+    }
+
     const terminalState: TerminalContextI = {
         open,
         toggle: () => setOpen(!open),
         setOpen,
         inputText,
+        clearInput,
         socket,
         term,
     };

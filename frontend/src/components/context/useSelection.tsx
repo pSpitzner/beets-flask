@@ -15,6 +15,7 @@ type SelectionContextType = {
     getSelected: () => string[];
     markSelectable: (item: string) => void;
     selectAll: () => void;
+    deselectAll: () => void;
 };
 
 const SelectionContext = createContext<SelectionContextType>({
@@ -29,6 +30,7 @@ const SelectionContext = createContext<SelectionContextType>({
     getSelected: () => [],
     markSelectable: () => {},
     selectAll: () => {},
+    deselectAll: () => {},
 });
 
 const SelectionProvider = ({ children }: { children: React.ReactNode }) => {
@@ -60,6 +62,13 @@ const SelectionProvider = ({ children }: { children: React.ReactNode }) => {
     const selectAll = useCallback(() => {
         setSelection((s) => {
             s.forEach((_, key) => s.set(key, true));
+            return new Map(s);
+        });
+    }, []);
+
+    const deselectAll = useCallback(() => {
+        setSelection((s) => {
+            s.forEach((_, key) => s.set(key, false));
             return new Map(s);
         });
     }, []);
@@ -121,6 +130,7 @@ const SelectionProvider = ({ children }: { children: React.ReactNode }) => {
                 getSelected,
                 markSelectable,
                 selectAll,
+                deselectAll,
             }}
         >
             <>{children}</>

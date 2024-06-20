@@ -76,7 +76,7 @@ export const TagView = forwardRef(
         const [expanded, setExpanded] = useState<boolean>(false);
         const handleSelect = (event: React.MouseEvent) => {
             if (event.metaKey || event.ctrlKey) {
-                toggleSelection(identifier);
+                if (data) toggleSelection(data.album_folder);
                 event.stopPropagation();
                 event.preventDefault();
             }
@@ -94,8 +94,8 @@ export const TagView = forwardRef(
         }, [registerSibling, ref]);
 
         useEffect(() => {
-            markSelectable(identifier);
-        }, [markSelectable, identifier]);
+            if (data?.album_folder) markSelectable(data?.album_folder);
+        }, [markSelectable, data?.album_folder]);
 
         // expose setExpanded to the outside
         useImperativeHandle(ref, () => ({
@@ -117,12 +117,19 @@ export const TagView = forwardRef(
         }
 
         return (
-            <ContextMenu actions={[<ExpandAllAction />, <CollapseAllAction />]}>
+            <ContextMenu
+                identifier={data.album_folder}
+                actions={[
+                    <ExpandAllAction />,
+                    <CollapseAllAction />,
+                    ...defaultActions,
+                ]}
+            >
                 <StyledAccordion
                     disableGutters
                     key={identifier}
                     className={styles.accordionOuter}
-                    data-selected={isSelected(identifier)}
+                    data-selected={isSelected(data.album_folder)}
                     expanded={expanded}
                     onClick={handleSelect}
                 >

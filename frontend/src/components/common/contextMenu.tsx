@@ -57,12 +57,13 @@ interface ContextMenuProps
     extends Omit<React.HTMLAttributes<HTMLDivElement>, "onContextMenu"> {
     children: React.ReactNode;
     actions?: React.ReactNode[];
-    fp?: FsPath;
+    identifier?: string;
 }
 
 export const defaultActions = [
     <SelectionSummary divider />,
     <SelectAllAction />,
+    <DeselectAllAction />,
     <RetagAction autoFocus />,
     <ImportAction />,
     <TerminalImportAction />,
@@ -72,13 +73,11 @@ export const defaultActions = [
 export function ContextMenu({
     children,
     actions = defaultActions,
-    fp,
+    identifier,
     ...props
 }: ContextMenuProps) {
     const { addToSelection, removeFromSelection, selection } = useSelection();
 
-    // we always want to include the currently clicked item in the selection,
-    // and remember that we added it
     const [position, setPosition] = useState<
         | {
               left: number;
@@ -90,9 +89,11 @@ export function ContextMenu({
     const prevState = useRef<undefined | boolean>();
     const openMenu = (event: React.MouseEvent) => {
         event.preventDefault();
-        if (fp && selection.has(fp.full_path)) {
-            prevState.current = selection.get(fp.full_path);
-            addToSelection(fp.full_path);
+        // we use the identifier to always include the currently clicked item in the
+        // selection, and remember that we added it.
+        if (identifier && selection.has(identifier)) {
+            prevState.current = selection.get(identifier);
+            addToSelection(identifier);
         }
         setPosition((prev?: { left: number; top: number }) =>
             prev === undefined
@@ -106,11 +107,11 @@ export function ContextMenu({
 
     const closeMenu = () => {
         if (prevState.current !== undefined) {
-            if (fp) {
+            if (identifier) {
                 if (prevState.current) {
-                    addToSelection(fp.full_path);
+                    addToSelection(identifier);
                 } else {
-                    removeFromSelection(fp.full_path);
+                    removeFromSelection(identifier);
                 }
             }
             prevState.current = undefined;
@@ -194,6 +195,23 @@ export function SelectAllAction({ ...props }: { [key: string]: any }) {
     );
 }
 
+export function DeselectAllAction({ ...props }: { [key: string]: any }) {
+    const { deselectAll } = useSelection();
+    const { closeMenu } = useContextMenu();
+    return (
+        <MenuItem
+            {...props}
+            className={styles.menuItem}
+            onClick={() => {
+                closeMenu();
+                deselectAll();
+            }}
+        >
+            <span>Deselect All</span>
+        </MenuItem>
+    );
+}
+
 // for accordions that can be expanded, like in the tags view
 export function ExpandAllAction({ ...props }: { [key: string]: any }) {
     const { siblings } = useSiblings();
@@ -233,6 +251,9 @@ export function CollapseAllAction({ ...props }: { [key: string]: any }) {
     );
 }
 
+/**
+ * Refresh or tag for the first time.
+ */
 export function RetagAction({ ...props }: { [key: string]: any }) {
     const { closeMenu } = useContextMenu();
     const { getSelected } = useSelection();
@@ -341,7 +362,7 @@ export function CopyPathAction({ ...props }: { [key: string]: any }) {
 
 export function TerminalImportAction({ ...props }: { [key: string]: any }) {
     const { closeMenu } = useContextMenu();
-    const { setOpen, inputText } = useTerminalContext();
+    const { setOpen, inputText, clearInput } = useTerminalContext();
     const { getSelected } = useSelection();
     const text = useRef("");
 
@@ -355,6 +376,7 @@ export function TerminalImportAction({ ...props }: { [key: string]: any }) {
             onClick={() => {
                 closeMenu();
                 setOpen(true);
+                clearInput();
                 inputText(`beet import -t ${text.current}`);
             }}
         >
