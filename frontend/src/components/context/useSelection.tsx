@@ -1,7 +1,7 @@
 // in various places we need to make a selection of tags available to lower components,
 // e.g. to action multiple tags at the same time via the context menu.
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 
 type SelectionContextType = {
     selection: Map<string, boolean>;
@@ -43,6 +43,9 @@ const SelectionProvider = ({ children }: { children: React.ReactNode }) => {
         });
     }, []);
 
+    // because we have a map, the selection can serve two purposes:
+    // 1. keeping an overview of what can be selected / actioned
+    // 2. toggeling selection on and off
     const markSelectable = useCallback((item: string) => {
         setSelection((s) => {
             if (!s.has(item)) {

@@ -11,9 +11,23 @@ import { APIError } from "@/lib/fetch";
 import { SimilarityBadge } from "./similarityBadge";
 import { Typography } from "@mui/material";
 import { Ellipsis } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+    createRef,
+    forwardRef,
+    useEffect,
+    useImperativeHandle,
+    useRef,
+    useState,
+} from "react";
 import { useSelection } from "@/components/context/useSelection";
-import { ContextMenu, defaultActions } from "./contextMenu";
+import {
+    CollapseAllAction,
+    ContextMenu,
+    ExpandAllAction,
+    SelectionSummary,
+    defaultActions,
+} from "./contextMenu";
+import { useSiblings } from "@/components/context/useSiblings";
 
 const StyledAccordion = styled(Accordion)(({ theme }) => ({
     borderTop: `1px solid ${theme.palette.divider}`,
@@ -48,74 +62,88 @@ const StyledAccordion = styled(Accordion)(({ theme }) => ({
     },
 }));
 
-export function TagView({ tagId, tagPath }: { tagId?: string; tagPath?: string }) {
-    if (!tagId && !tagPath) {
-        throw new Error("TagView requires either a tagId or tagPath");
-    }
-    const identifier: string = tagId ?? tagPath!;
-    const { data, isLoading, isPending, isError } = useQuery(
-        tagQueryOptions(tagId, tagPath)
-    );
-    const { isSelected, toggleSelection, markSelectable } = useSelection();
-    const [expanded, setExpanded] = useState<boolean>(false);
-    const handleSelect = (event: React.MouseEvent) => {
-        if (event.metaKey || event.ctrlKey) {
-            toggleSelection(identifier);
-            event.stopPropagation();
-            event.preventDefault();
+export const TagView = forwardRef(
+    ({ tagId, tagPath }: { tagId?: string; tagPath?: string }, ref) => {
+        if (!tagId && !tagPath) {
+            throw new Error("TagView requires either a tagId or tagPath");
         }
-    };
-    const handleExpand = (event: React.MouseEvent) => {
-        if (event.metaKey || event.ctrlKey) {
-            return;
-        } else {
-            setExpanded(!expanded);
+        const identifier: string = tagId ?? tagPath!;
+        const { data, isLoading, isPending, isError } = useQuery(
+            tagQueryOptions(tagId, tagPath)
+        );
+        const { isSelected, toggleSelection, markSelectable } = useSelection();
+        const { registerSibling } = useSiblings();
+        const [expanded, setExpanded] = useState<boolean>(false);
+        const handleSelect = (event: React.MouseEvent) => {
+            if (event.metaKey || event.ctrlKey) {
+                toggleSelection(identifier);
+                event.stopPropagation();
+                event.preventDefault();
+            }
+        };
+        const handleExpand = (event: React.MouseEvent) => {
+            if (event.metaKey || event.ctrlKey) {
+                return;
+            } else {
+                setExpanded(!expanded);
+            }
+        };
+
+        useEffect(() => {
+            registerSibling(ref as React.RefObject<any>);
+        }, [registerSibling, ref]);
+
+        useEffect(() => {
+            markSelectable(identifier);
+        }, [markSelectable, identifier]);
+
+        // expose setExpanded to the outside
+        useImperativeHandle(ref, () => ({
+            setExpanded: (state: boolean) => {
+                setExpanded(state);
+            },
+        }));
+
+        if (isLoading || isPending || isError) {
+            let inner = "";
+            if (isLoading) inner = "Loading...";
+            if (isPending) inner = "Pending...";
+            if (isError) inner = "Error...";
+            return (
+                <StyledAccordion disableGutters disabled>
+                    <AccordionSummary>{inner}</AccordionSummary>
+                </StyledAccordion>
+            );
         }
-    }
 
-    useEffect(() => {
-        markSelectable(identifier);
-    }, []);
-
-    if (isLoading || isPending || isError) {
-        let inner = "";
-        if (isLoading) inner = "Loading...";
-        if (isPending) inner = "Pending...";
-        if (isError) inner = "Error...";
         return (
-            <StyledAccordion disableGutters disabled>
-                <AccordionSummary>{inner}</AccordionSummary>
-            </StyledAccordion>
+            <ContextMenu actions={[<ExpandAllAction />, <CollapseAllAction />]}>
+                <StyledAccordion
+                    disableGutters
+                    key={identifier}
+                    className={styles.accordionOuter}
+                    data-selected={isSelected(identifier)}
+                    expanded={expanded}
+                    onClick={handleSelect}
+                >
+                    <AccordionSummary
+                        aria-controls="tag-content"
+                        expandIcon={<Ellipsis size={"0.9rem"} />}
+                        onClick={handleExpand}
+                    >
+                        <SimilarityBadge dist={data.distance} />
+                        <Typography fontSize={"0.9rem"}>
+                            {data.album_folder_basename}
+                        </Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                        <TagPreview tagId={tagId} tagPath={tagPath} />
+                    </AccordionDetails>
+                </StyledAccordion>
+            </ContextMenu>
         );
     }
-
-    return (
-        <ContextMenu actions={defaultActions}>
-            <StyledAccordion
-                disableGutters
-                key="needed to prevent uncontrolled error"
-                className={styles.accordionOuter}
-                data-selected={isSelected(identifier)}
-                expanded={expanded}
-                onClick={handleSelect}
-            >
-                <AccordionSummary
-                    aria-controls="tag-content"
-                    expandIcon={<Ellipsis size={"0.9rem"} />}
-                    onClick={handleExpand}
-                >
-                    <SimilarityBadge dist={data.distance} />
-                    <Typography fontSize={"0.9rem"}>
-                        {data.album_folder_basename}
-                    </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                    <TagPreview tagId={tagId} tagPath={tagPath} />
-                </AccordionDetails>
-            </StyledAccordion>
-        </ContextMenu>
-    );
-}
+);
 
 export const TagPreview = ({
     tagId,

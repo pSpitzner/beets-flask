@@ -7,7 +7,9 @@ import TagGroupView from "@/components/common/tagGroupView";
 import styles from "./tags.module.scss";
 
 import { TagView } from "@/components/common/tagView";
-import { Typography } from "@mui/material";
+import { Button, Typography } from "@mui/material";
+import { SiblingRefsProvider } from "@/components/context/useSiblings";
+import { createRef, useEffect, useMemo, useRef } from "react";
 
 export const Route = createFileRoute("/tags/")({
     loader: (opts) =>
@@ -31,46 +33,79 @@ export function TagGroupOverview() {
 
     return (
         <>
-            <PredefinedTagGroup id="inbox" defaultExpanded/>
-            <PredefinedTagGroup id="recent" />
+            <PredefinedTagGroup id="inbox" defaultExpanded />
+            {/* <PredefinedTagGroup id="recent" /> */}
 
+            {/* using ManualTagGroup2 - which we want - expand all does not work. i think the references are not created correctly to persist across renders */}
             {manualTagGroups.map((group, i) => {
-                const subtitle =
-                    group.tag_ids.length === 1
-                        ? "(1 tag)"
-                        : `(${group.tag_ids.length} tags)`;
-
-                return (
-                    <TagGroupView key={i} title={group.id} subtitle={subtitle}>
-                        {group.tag_ids.map((tagId, i) => (
-                            <TagView key={i} tagId={tagId} />
-                        ))}
-                    </TagGroupView>
-                );
+                return <ManualTagGroup key={i} id={group.id} tag_ids={group.tag_ids} />;
             })}
 
-            <PredefinedTagGroup id="archive" />
+            {/* <PredefinedTagGroup id="archive" /> */}
         </>
     );
 }
 
-function PredefinedTagGroup({ id, ...props }: { id: string, [key: string]: any}) {
-    const query = useSuspenseQuery(tagGroupIdQueryOptions(id));
-    const group = query.data;
-    const title = id.charAt(0).toUpperCase() + id.slice(1);
+function ManualTagGroup({id, tag_ids} : {id: string, tag_ids: string[]}) {
+    const tagRefs = useMemo(() => tag_ids.map(() => createRef()), []);
     const subtitle =
-        group.tag_ids.length === 1 ? "(1 tag)" : `(${group.tag_ids.length} tags)`;
+        tag_ids.length === 1 ? "(1 tag)" : `(${tag_ids.length} tags)`;
 
+    return (
+        <TagGroupView
+            key={id}
+            title={id}
+            subtitle={subtitle}
+            defaultExpanded
+        >
+            <SiblingRefsProvider>
+                {tag_ids.map((tagId, i) => (
+                    <TagView key={i} tagId={tagId} ref={tagRefs[i]} />
+                ))}
+            </SiblingRefsProvider>
+        </TagGroupView>
+    );
+}
+
+function ManualTagGroup2( {id, tag_ids} : { id: string; tag_ids: string[] }) {
+    const title = id;
+    const subtitle = tag_ids.length === 1 ? "(1 tag)" : `(${tag_ids.length} tags)`;
+
+    return <TagGroup tag_ids={tag_ids} title={title} subtitle={subtitle} />;
+}
+
+function TagGroup({
+    tag_ids,
+    title,
+    subtitle,
+    ...props
+}: {
+    tag_ids: string[];
+    title?: string;
+    subtitle?: string;
+    [key: string]: any;
+}) {
+    const tagRefs = useMemo(() => tag_ids.map(() => createRef()), []);
     return (
         <TagGroupView
             title={title}
             subtitle={subtitle}
-            disabled={group.tag_ids.length === 0}
+            disabled={tag_ids.length === 0}
             {...props}
         >
-            {group.tag_ids.map((tagId, i) => (
-                <TagView key={i} tagId={tagId} />
+            {tag_ids.map((tagId, i) => (
+                <TagView key={i} tagId={tagId} ref={tagRefs[i]} />
             ))}
         </TagGroupView>
     );
+}
+
+function PredefinedTagGroup({ id, ...props }: { id: string; [key: string]: any }) {
+    const query = useSuspenseQuery(tagGroupIdQueryOptions(id));
+    const group = query.data;
+    const tag_ids = group.tag_ids;
+    const title = id.charAt(0).toUpperCase() + id.slice(1);
+    const subtitle = tag_ids.length === 1 ? "(1 tag)" : `(${tag_ids.length} tags)`;
+
+    return <TagGroup tag_ids={tag_ids} title={title} subtitle={subtitle} {...props} />;
 }

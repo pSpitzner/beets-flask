@@ -23,6 +23,7 @@ import { useTerminalContext } from "@/components/terminal";
 import { useSelection } from "@/components/context/useSelection";
 
 import styles from "./contextMenu.module.scss";
+import { useSiblings } from "@/components/context/useSiblings";
 
 interface ContextMenuContextI {
     closeMenu: () => void;
@@ -189,6 +190,45 @@ export function SelectAllAction({ ...props }: { [key: string]: any }) {
             }}
         >
             <span>Select All</span>
+        </MenuItem>
+    );
+}
+
+// for accordions that can be expanded, like in the tags view
+export function ExpandAllAction({ ...props }: { [key: string]: any }) {
+    const { siblings } = useSiblings();
+    const { closeMenu } = useContextMenu();
+    const handleClick = () => {
+        siblings.forEach((sibling : React.RefObject<any>) => {
+            sibling.current.setExpanded(true);
+        });
+        closeMenu();
+    }
+
+    return (
+        <MenuItem
+            {...props}
+            className={styles.menuItem}
+            onClick={handleClick}
+        >
+            <span>Expand All</span>
+        </MenuItem>
+    );
+}
+
+export function CollapseAllAction({ ...props }: { [key: string]: any }) {
+    const { siblings } = useSiblings();
+    const { closeMenu } = useContextMenu();
+    const handleClick = () => {
+        siblings.forEach((sibling: React.RefObject<any>) => {
+            sibling.current.setExpanded(false);
+        });
+        closeMenu();
+    };
+
+    return (
+        <MenuItem {...props} className={styles.menuItem} onClick={handleClick}>
+            <span>Collapse All</span>
         </MenuItem>
     );
 }

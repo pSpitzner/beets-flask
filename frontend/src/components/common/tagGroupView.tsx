@@ -6,8 +6,7 @@ import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
 import { ChevronDown } from "lucide-react";
 
-import { ContextMenu } from "./contextMenu";
-import { useSelection, SelectionProvider } from "@/components/context/useSelection";
+import { SelectionProvider } from "@/components/context/useSelection";
 
 const StyledAccordion = styled(Accordion)(({ theme }) => ({
     border: `1px solid ${theme.palette.divider}`,
