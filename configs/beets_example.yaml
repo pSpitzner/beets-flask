@@ -1,5 +1,19 @@
 # opinionated config that assumes that your music sits in `/music/imported`
 
+gui:
+    library:
+        include_paths: yes
+        readonly: yes
+        jsonify_prettyprint_regular: no
+
+    tags:
+        recent_days: 14 # Number of days to consider for the "recent" tag group
+
+    inbox:
+        # keep in mind to volume-map these folders in your docker-compose.yml
+        folders:
+        - "Awesome inbox" : '/music/inbox'
+
 plugins: [
     info,
     the,

@@ -9,6 +9,9 @@ import { queryOptions } from "@tanstack/react-query";
 export interface InboxStats {
     nFiles: number;
     size: number;
+    inboxName: string;
+    mountPoint: string;
+    lastScanned: Date;
 }
 
 export const inboxStatsQueryOptions = () => {

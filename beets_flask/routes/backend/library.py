@@ -38,7 +38,6 @@ from werkzeug.routing import BaseConverter, PathConverter
 
 import beets.library
 from beets import ui, util
-from beets import config as beets_config
 from beets.ui import _open_library
 from beets_flask.config import config
 from beets_flask.disk import dir_size
@@ -71,7 +70,7 @@ def _rep(obj, expand=False, minimal=False):
     if isinstance(obj, beets.library.Item):
 
         if not minimal:
-            if config["library"]["include_paths"].get(bool):
+            if config["gui"]["library"]["include_paths"].get(bool):
                 out["path"] = util.displayable_path(out["path"])
             else:
                 del out["path"]
@@ -91,7 +90,7 @@ def _rep(obj, expand=False, minimal=False):
 
     elif isinstance(obj, beets.library.Album):
         if not minimal:
-            if config["library"]["include_paths"].get(bool):
+            if config["gui"]["library"]["include_paths"].get(bool):
                 out["artpath"] = util.displayable_path(out["artpath"])
             else:
                 del out["artpath"]
@@ -161,7 +160,7 @@ def resource(name, patchable=False):
             entities = [entity for entity in entities if entity]
 
             if get_method() == "DELETE":
-                if config["library"]["readonly"].get(bool):
+                if config["gui"]["library"]["readonly"].get(bool):
                     return abort(405)
 
                 for entity in entities:
@@ -170,7 +169,7 @@ def resource(name, patchable=False):
                 return make_response(jsonify({"deleted": True}), 200)
 
             elif get_method() == "PATCH" and patchable:
-                if config["library"]["readonly"].get(bool):
+                if config["gui"]["library"]["readonly"].get(bool):
                     return abort(405)
 
                 for entity in entities:
@@ -221,7 +220,7 @@ def resource_query(name, patchable=False):
             entities = query_func(queries)
 
             if get_method() == "DELETE":
-                if config["library"]["readonly"].get(bool):
+                if config["gui"]["library"]["readonly"].get(bool):
                     return abort(405)
 
                 for entity in entities:
@@ -230,7 +229,7 @@ def resource_query(name, patchable=False):
                 return make_response(jsonify({"deleted": True}), 200)
 
             elif get_method() == "PATCH" and patchable:
-                if config["library"]["readonly"].get(bool):
+                if config["gui"]["library"]["readonly"].get(bool):
                     return abort(405)
 
                 for entity in entities:
@@ -350,7 +349,7 @@ def before_request():
     # we will need to see if keeping the db open from each thread is what we want,
     # the importer may want to write.
     if not hasattr(g, "lib") or g.lib is None:
-        g.lib = _open_library(beets_config)
+        g.lib = _open_library(config)
 
 
 # ------------------------------------------------------------------------------------ #
@@ -540,7 +539,7 @@ def stats():
         last_added = tx.query("SELECT MAX(added) FROM items")
         last_modified = tx.query("SELECT MAX(mtime) FROM items")
 
-    lib_path = cast(str, beets_config["directory"].get())
+    lib_path = cast(str, config["directory"].get())
     lib_path = Path(lib_path)
 
     ret: Stats = {

@@ -16,11 +16,27 @@ import { RelativeTime } from "../common/time";
 import { JSONPretty } from "../json";
 
 export function InboxStatsOverview() {
+    const { data, isLoading, isPending, isError, error } = useQuery(
+        inboxStatsQueryOptions()
+    );
+
+    // use the subtitle for the mountpoint by default, or an error message
+    let title = data?.inboxName ?? "Inbox";
+    let subtitle = data?.mountPoint ?? "Mountpoint";
+    if (isError) {
+        title = "Error!";
+        subtitle = JSON.stringify(error);
+    }
+    if (isPending || isLoading) {
+        title = "Inbox";
+        subtitle = "Loading stats...";
+    }
+
     return (
         <Card>
             <CardContent>
                 <LastScanned />
-                <CardAvatar Icon={Inbox} title="Inbox">
+                <CardAvatar Icon={Inbox} title={title}>
                     <Box
                         component="code"
                         sx={{
@@ -29,7 +45,7 @@ export function InboxStatsOverview() {
                             marginBottom: "0.875em",
                         }}
                     >
-                        /my/mount/point
+                        {subtitle}
                     </Box>
                 </CardAvatar>
 

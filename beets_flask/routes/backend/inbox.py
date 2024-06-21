@@ -1,9 +1,14 @@
-from typing import TypedDict
+from typing import TypedDict, List, Tuple, Any
 from flask import Blueprint, request, jsonify
 from beets_flask.disk import get_inbox_dict, path_to_dict
 from beets_flask.logger import log
 from beets_flask.utility import AUDIO_EXTENSIONS
+from beets_flask.config import config
+import os
+from pathlib import Path
 
+inbox_dirs : List[Tuple[str, str]] = config["gui"]["inbox"]["folders"].as_pairs() # type: ignore
+inbox_dir = inbox_dirs[0]
 inbox_bp = Blueprint("inbox", __name__, url_prefix="/inbox")
 
 
@@ -32,11 +37,16 @@ def get_folder(folder):
     return path_to_dict("/" + folder, relative_to="/" + folder)
 
 
-import os
-from pathlib import Path
+# ------------------------------------------------------------------------------------ #
+#                                         Stats                                        #
+# ------------------------------------------------------------------------------------ #
 
-inbox_dir = os.environ.get("INBOX", "/music/inbox")
-
+class Stats(TypedDict):
+    nFiles: int
+    size: int
+    inboxName: str
+    mountPoint: str
+    lastScanned: str
 
 @inbox_bp.route("/stats", methods=["GET"])
 @inbox_bp.route("/stats/<path:folder>", methods=["GET"])
@@ -49,15 +59,18 @@ def compute_stats(folder=None):
 
     """
     if not folder:
-        folder = inbox_dir
+        folder = inbox_dir[1]
     else:
-        folder = os.path.join(inbox_dir, folder)
+        folder = os.path.join(inbox_dir[1], folder)
 
     folder = Path(folder)
 
     ret_map: Stats = {
         "nFiles": 0,
         "size": 0,
+        "inboxName": inbox_dir[0],
+        "mountPoint": str(folder),
+        "lastScanned": ""
     }
 
     # Get filesize
@@ -70,11 +83,6 @@ def compute_stats(folder=None):
     log.debug(f"returning stats {ret_map=}")
 
     return jsonify(ret_map)
-
-
-class Stats(TypedDict):
-    nFiles: int
-    size: int
 
 
 def parse_file(path: Path, map: Stats):
