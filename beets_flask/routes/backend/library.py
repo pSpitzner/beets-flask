@@ -20,7 +20,7 @@ import base64
 import json
 import os
 from pathlib import Path
-from typing import TypedDict, cast
+from typing import Optional, TypedDict, cast
 
 from flask import (
     Blueprint,
@@ -524,8 +524,8 @@ class Stats(TypedDict):
     labels: int  # Num Labels
 
     size: int
-    lastItemAdded: int  # UTC timestamp
-    lastItemModified: int  # UTC timestamp
+    lastItemAdded: Optional[int]  # UTC timestamp
+    lastItemModified: Optional[int]  # UTC timestamp
 
 
 @library_bp.route("/stats")
@@ -549,8 +549,14 @@ def stats():
         "genres": unique_genres[0][0],
         "labels": unique_labels[0][0],
         "size": dir_size(lib_path),
-        "lastItemAdded": round(last_added[0][0] * 1000),
-        "lastItemModified": round(last_modified[0][0] * 1000),
+        "lastItemAdded": (
+            round(last_added[0][0] * 1000) if last_added[0][0] is not None else None
+        ),
+        "lastItemModified": (
+            round(last_modified[0][0] * 1000)
+            if last_modified[0][0] is not None
+            else None
+        ),
     }
 
     return jsonify(ret)

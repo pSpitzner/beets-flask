@@ -31,8 +31,8 @@ export interface LibraryStats {
     genres: number;
     labels: number;
     size: number;
-    lastItemAdded: Date;
-    lastItemModified: Date;
+    lastItemAdded?: Date;
+    lastItemModified?: Date;
 }
 
 export const libraryStatsQueryOptions = () => {
@@ -43,8 +43,10 @@ export const libraryStatsQueryOptions = () => {
             const dat = (await response.json()) as LibraryStats;
 
             // convert lastItemAdded to Date
-            dat.lastItemAdded = new Date(dat.lastItemAdded);
-            dat.lastItemModified = new Date(dat.lastItemModified);
+            if (dat.lastItemAdded) dat.lastItemAdded = new Date(dat.lastItemAdded);
+            if (dat.lastItemModified)
+                dat.lastItemModified = new Date(dat.lastItemModified);
+
             return dat;
         },
     });

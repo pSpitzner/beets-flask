@@ -1,4 +1,6 @@
-export const RelativeTime = ({ date }: { date: Date }) => {
+export const RelativeTime = ({ date }: { date?: Date }) => {
+    if (!date) return "never";
+
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const seconds = Math.floor(diff / 1000);
