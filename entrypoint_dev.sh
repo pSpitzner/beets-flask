@@ -5,7 +5,7 @@ id
 pwd
 
 cd /repo/frontend
-npm install
+# npm install
 # npm run build:dev &
 npm run dev &
 # npm run build:watch &
