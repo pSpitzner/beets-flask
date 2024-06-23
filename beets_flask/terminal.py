@@ -28,23 +28,14 @@ import termios
 import select
 import shlex
 import libtmux
-import socketio
 from libtmux import Pane, Session, Window
 from beets_flask.logger import log
-
-
-sio: socketio.Server = socketio.Server(
-    async_mode="eventlet",
-    logger=False,
-    engineio_logger=False,
-    cors_allowed_origins="*",
-)
+from beets_flask.websocket import sio
 
 
 session: Session
 window: Window
 pane: Pane
-
 
 def register_tmux():
     global session, window, pane
@@ -56,12 +47,6 @@ def register_tmux():
         session = server.new_session(session_name="beets-socket-term")
     window = session.active_window  # type: ignore
     pane = window.active_pane or window.split_window(attach=True)
-
-
-def register_socketio(app):
-    app.wsgi_app = socketio.WSGIApp(sio, app.wsgi_app)
-    register_tmux()  # in the future we might want to allow restarting tmux from web interface
-
 
 def emit_output():
     try:
@@ -133,24 +118,26 @@ def resize(sid, data):
     # we might want to resend the output:
     # sio.emit("ptyOutput", {"output": pane.capture_pane()}, namespace="/terminal")
 
+
 @sio.on("ptyResendOutput", namespace="/terminal")  # type: ignore
 def resend_output(sid):
     """resend the output"""
     log.debug(f"{sid} resend output")
     emit_output()
 
+
 @sio.on("connect", namespace="/terminal")  # type: ignore
 def connect(sid, environ):
     """new client connected"""
-    log.debug(f"{sid} new client connected")
+    log.debug(f"TerminalSocket new client connected {sid}")
 
 
 @sio.on("disconnect", namespace="/terminal")  # type: ignore
 def disconnect(sid):
     """Handle client disconnect"""
-    log.debug(f"{sid} client disconnected")
+    log.debug(f"TerminalSocket client disconnected {sid}")
 
 
 @sio.on("*", namespace="/terminal")  # type: ignore
 def any_event(event, sid, data):
-    log.debug(f"sid {sid} undhandled event {event} with data {data}")
+    log.debug(f"TerminalSocket sid {sid} undhandled event {event} with data {data}")

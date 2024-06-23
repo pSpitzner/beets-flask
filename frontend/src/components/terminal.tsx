@@ -13,8 +13,25 @@ import "node_modules/@xterm/xterm/css/xterm.css";
 import { Terminal as xTerminal } from "@xterm/xterm";
 import { FitAddon as xTermFitAddon } from "@xterm/addon-fit";
 import styles from "./terminal.module.scss";
-import { useSocket } from "@/lib/socket";
+import { useTerminalSocket, useStatusSocket } from "@/lib/socket";
 import { Socket } from "socket.io-client";
+
+// match our style - this is somewhat redundant with index.css
+const xTermTheme = {
+    red: "#C0626B",
+    green: "#A4BF8C",
+    yellow: "#EBCB8C",
+    blue: "#7EA2BF",
+    magenta: "#B48EAD",
+    cyan: "#8FBCBB",
+    brightBlack: "#818689",
+    brightRed: "#D0737F",
+    brightGreen: "#B5D0A0",
+    brightYellow: "#F0D9A6",
+    brightBlue: "#8FB8D1",
+    brightMagenta: "#C79EC4",
+    brightCyan: "#A3CDCD",
+};
 
 const SlideIn = ({ children }: { children: React.ReactNode }) => {
     const { open, toggle, setOpen } = useTerminalContext();
@@ -157,23 +174,6 @@ export interface TerminalContextI {
     term?: xTerminal;
 }
 
-// match our style - this is somewhat redundant with index.css
-const xTermTheme = {
-    red: "#C0626B",
-    green: "#A4BF8C",
-    yellow: "#EBCB8C",
-    blue: "#7EA2BF",
-    magenta: "#B48EAD",
-    cyan: "#8FBCBB",
-    brightBlack: "#818689",
-    brightRed: "#D0737F",
-    brightGreen: "#B5D0A0",
-    brightYellow: "#F0D9A6",
-    brightBlue: "#8FB8D1",
-    brightMagenta: "#C79EC4",
-    brightCyan: "#A3CDCD",
-};
-
 const TerminalContext = createContext<TerminalContextI>({
     open: false,
     toggle: () => {},
@@ -186,7 +186,7 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
     const [open, setOpen] = useState(false);
     const [term, setTerm] = useState<xTerminal>();
 
-    const { socket, isConnected } = useSocket();
+    const { socket, isConnected } = useTerminalSocket();
 
     useEffect(() => {
         // Create gui on mount
@@ -214,12 +214,10 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
                 // prevent ctrl+a because it can detach tmux, and ctrl+d because it can close the terminal
                 return;
             }
-            console.log("input", data);
             socket.emit("ptyInput", { input: data });
         });
 
         function onOutput(data: { output: Array<string> }) {
-            console.log("output", data);
             // term!.clear(); seems to be preferred from the documentation,
             // but it leaves the prompt on the first line in place - which we here do not want
             // ideally we would directly access the buffer.
@@ -237,8 +235,7 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
         }
         socket.on("ptyOutput", onOutput);
 
-        function onCursorUpdate(data: { x: number; y: number } ) {
-            console.log("cursor", data);
+        function onCursorUpdate(data: { x: number; y: number }) {
             // xterm uses 1-based indexing
             term!.write(`\x1b[${data.y + 1};${data.x + 1}H`);
         }

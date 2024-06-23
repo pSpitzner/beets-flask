@@ -8,7 +8,7 @@ import { routeTree } from "./routeTree.gen";
 import ThemeProvider from "./theme";
 import CircularProgress from "@mui/material/CircularProgress";
 import "@/lib/fetch";
-import { SSEStreamProvider } from "./components/context/useSSEStream";
+import { StatusContextProvider } from "./lib/socket";
 
 // Create a new query client instance
 export const queryClient = new QueryClient({});
@@ -46,11 +46,11 @@ declare module "@tanstack/react-router" {
 function App() {
     return (
         <QueryClientProvider client={queryClient}>
-            <SSEStreamProvider client={queryClient}>
+            <StatusContextProvider client={queryClient}>
                 <ThemeProvider>
                     <RouterProvider router={router} />
                 </ThemeProvider>
-            </SSEStreamProvider>
+            </StatusContextProvider>
         </QueryClientProvider>
     );
 }

@@ -1,18 +1,17 @@
+"""
+Use this blueprint to send status updates to the client.
+We used to use SeverSideEvents but moved to websocket.
+"""
 from flask import Blueprint, Response, current_app, request, jsonify
 from flask_sse import sse
 from flask_cors import cross_origin
 from typing import Literal
 import json
 import requests
-from beets_flask.utility import log
+from beets_flask.logger import log
+from beets_flask.websocket import sio
 
 sse_bp = Blueprint("sse", __name__, url_prefix="/sse")
-
-
-sse_bp.register_blueprint(sse, url_prefix="/stream")
-
-# print full details of the blueprint
-log.debug(f"{sse_bp.subdomain=}")
 
 
 def update_client_view(
@@ -33,7 +32,6 @@ def update_client_view(
         },
     }
 
-    log.debug(f"update_client_view: {payload}")
     response = requests.post("http://localhost:5001/api_v1/sse/publish", json=payload)
     if response.status_code != 200:
         log.debug(f"Failed to update client view: {response.json()}")
@@ -45,5 +43,28 @@ def publish():
         data = request.get_json()
         type: Literal["tag", "inbox"] = data.get("type")
         body: str = data.get("body")
-        sse.publish(json.dumps(body), type=type)
+        log.debug(f"Sending status update: {type=} {body=}")
+        sio.emit(
+            type,
+            json.dumps(body),
+            namespace="/status"
+        )
+
         return {"message": "Message sent"}, 200
+
+
+@sio.on("connect", namespace="/status")  # type: ignore
+def connect(sid, environ):
+    """new client connected"""
+    log.debug(f"StatusSocket new client connected {sid}")
+
+
+@sio.on("disconnect", namespace="/status")  # type: ignore
+def disconnect(sid):
+    """Handle client disconnect"""
+    log.debug(f"StatusSocket client disconnected {sid}")
+
+
+@sio.on("*", namespace="/status")  # type: ignore
+def any_event(event, sid, data):
+    log.debug(f"StatusSocket sid {sid} undhandled event {event} with data {data}")

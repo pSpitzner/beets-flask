@@ -47,16 +47,3 @@ export class APIError extends Error {
         this.trace = data.trace ?? undefined;
     }
 }
-
-export interface SseInvalidationI {
-    attributes: Record<string, string> | "all";
-    message?: string;
-    tagId?: string;
-    tagPath?: string;
-}
-
-export class SseSource extends EventSource {
-    constructor() {
-        super(apiPrefix + "/sse/stream", { withCredentials: false });
-    }
-}

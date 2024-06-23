@@ -39,9 +39,12 @@ def create_app():
     app.register_blueprint(backend_bp)
     app.register_blueprint(frontend_bp)
 
-    # Register socketio
-    from .terminal import register_socketio
+    # Start websocket for realtime Terminal and status updates
+    from .websocket import register_socketio
     register_socketio(app)
+
+    from .terminal import register_tmux
+    register_tmux()
 
     log.info("App created")
 
