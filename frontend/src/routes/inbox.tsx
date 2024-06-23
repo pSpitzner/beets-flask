@@ -157,7 +157,10 @@ function LowestFolder({ fp, label }: { fp: FsPath; label?: React.ReactNode }) {
 
             {fp.is_album && (
                 <div className={styles.albumIcons}>
-                    <TagStatusIcon tagPath={fp.full_path} />
+                    <TagStatusIcon
+                        className={styles.albumIcon}
+                        tagPath={fp.full_path}
+                    />
                     <SimilarityBadgeWithHover tagPath={fp.full_path} />
                 </div>
             )}
