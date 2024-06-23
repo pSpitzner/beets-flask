@@ -113,37 +113,35 @@ const StatusContextProvider = ({
             setIsConnected(false);
         }
 
-        function handleAnyEvent(event: string, ...args: any[]) {
-            console.log(`Status Event: ${event}`, args);
+        function handleTagUpdate(data : StatusInvalidationI) {
+            console.log("Tag Update", data);
 
-            if (event === "tag") {
-                const data = args[0] as StatusInvalidationI;
-
-                if (data.attributes === "all") {
-                    if (data.tagId) client.invalidateQueries({ queryKey: ["tag", data.tagId] });
-                    if (data.tagPath) client.invalidateQueries({ queryKey: ["tag", data.tagPath] });
-                } else {
-                    const attrs = data.attributes;
-                    if (data.tagId)
-                        client.setQueryData(["tag", data.tagId], (old: TagI) => {
-                            return { ...old, ...attrs };
-                        });
-                    if (data.tagPath)
-                        client.setQueryData(["tag", data.tagPath], (old: TagI) => {
-                            return { ...old, ...attrs };
-                        });
-                }
+            if (data.attributes === "all") {
+                if (data.tagId)
+                    client.invalidateQueries({ queryKey: ["tag", data.tagId] });
+                if (data.tagPath)
+                    client.invalidateQueries({ queryKey: ["tag", data.tagPath] });
+            } else {
+                const attrs = data.attributes;
+                if (data.tagId)
+                    client.setQueryData(["tag", data.tagId], (old: TagI) => {
+                        return { ...old, ...attrs };
+                    });
+                if (data.tagPath)
+                    client.setQueryData(["tag", data.tagPath], (old: TagI) => {
+                        return { ...old, ...attrs };
+                    });
             }
         }
 
         statusSocket.on("connect", handleConnect);
         statusSocket.on("disconnect", handleDisconnect);
-        statusSocket.onAny(handleAnyEvent);
+        statusSocket.on("tag", handleTagUpdate);
 
         return () => {
             statusSocket.off("connect", handleConnect);
             statusSocket.off("disconnect", handleDisconnect);
-            statusSocket.offAny(handleAnyEvent);
+            statusSocket.off("tag", handleTagUpdate);
         };
     }, [client]);
 

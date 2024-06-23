@@ -45,13 +45,6 @@ async function fetchTagById(tagId: string): Promise<TagResponse> {
     return (await response.json()) as TagResponse;
 }
 
-export const tagPathQueryOptions = (path: string) => {
-    return queryOptions({
-        queryKey: ["tag", "path", path],
-        queryFn: () => fetchTagByPath(path),
-    });
-};
-
 async function fetchTagByPath(folderPath: string): Promise<TagResponse> {
     if (folderPath.startsWith("/")) folderPath = folderPath.slice(1);
     const response = await fetch(`/tag/path/${folderPath}`, {

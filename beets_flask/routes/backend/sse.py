@@ -42,11 +42,11 @@ def publish():
     with current_app.app_context():
         data = request.get_json()
         type: Literal["tag", "inbox"] = data.get("type")
-        body: str = data.get("body")
+        body: dict = data.get("body")
         log.debug(f"Sending status update: {type=} {body=}")
         sio.emit(
             type,
-            json.dumps(body),
+            body,
             namespace="/status"
         )
 
