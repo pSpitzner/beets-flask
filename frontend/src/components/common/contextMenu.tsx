@@ -269,12 +269,12 @@ export function RetagAction({ ...props }: { [key: string]: any }) {
             });
         },
         onSuccess: async () => {
-            closeMenu();
             getSelected().forEach(async (fullPath: string) => {
                 await queryClient.setQueryData(["tag", fullPath], (old: TagI) => {
                     return { ...old, status: "pending" };
                 });
             });
+            closeMenu();
         },
         onError: (error: Error) => {
             console.error(error);
