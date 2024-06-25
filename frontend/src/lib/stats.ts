@@ -11,7 +11,7 @@ export interface InboxStats {
     size: number;
     inboxName: string;
     mountPoint: string;
-    lastScanned: Date;
+    lastTagged?: Date;
 }
 
 export const inboxStatsQueryOptions = () => {
@@ -19,7 +19,7 @@ export const inboxStatsQueryOptions = () => {
         queryKey: ["inboxStats"],
         queryFn: async () => {
             const response = await fetch(`/inbox/stats`);
-            return (await response.json()) as InboxStats;
+            return (await response.json()) as InboxStats[];
         },
     });
 };

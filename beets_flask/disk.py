@@ -22,14 +22,14 @@ from beets_flask.config import config
 #                                   init and watchdog                                  #
 # ------------------------------------------------------------------------------------ #
 
-inboxes : List[OrderedDict] = []
+_inboxes : List[OrderedDict] = []
 
 def register_inboxes():
 
-    global inboxes
-    inboxes = config["gui"]["inbox"]["folders"].get()  # type: ignore
-    log.debug(config['gui'].flatten())
-    for i in inboxes:
+    global _inboxes
+    _inboxes = config["gui"]["inbox"]["folders"].get()  # type: ignore
+
+    for i in _inboxes:
         i["last_tagged"] = None
 
 
@@ -37,14 +37,14 @@ def register_inboxes():
         # only launch the observer on the main process
         return
 
-    num_watched_inboxes = len([i for i in inboxes if i["autotag"]])
+    num_watched_inboxes = len([i for i in _inboxes if i["autotag"]])
     if num_watched_inboxes == 0:
         return
 
     handler = InboxHandler()
     observer = PollingObserver(timeout=handler.poll_interval)
 
-    for inbox in inboxes:
+    for inbox in _inboxes:
         if not inbox["autotag"]:
             log.debug(f'Skipping observer for inbox {inbox["path"]}')
             continue
@@ -133,11 +133,7 @@ def retag_folder(path: str, kind: str | None = None):
     E.g. when files are added over time, we would want to reduce the number of missing tracks.
     """
 
-    inbox = None
-    for i in inboxes:
-        if i["path"] == path:
-            inbox = i
-            break
+    inbox = get_inbox_for_path(path)
 
     if inbox and kind is None:
         kind = inbox["kind"]
@@ -156,7 +152,7 @@ def retag_folder(path: str, kind: str | None = None):
         invoker.enqueue_tag_path(path, kind=kind)
 
     if inbox:
-        inbox["last_tagged"] = datetime.now()
+        inbox["last_tagged"] = datetime.now().isoformat()
 
 
 def retag_inbox(
@@ -168,11 +164,7 @@ def retag_inbox(
     Refresh an inbox folder, retagging all its subfolders
     """
 
-    inbox = None
-    for i in inboxes:
-        if i["path"] == inbox_dir:
-            inbox = i
-            break
+    inbox = get_inbox_for_path(inbox_dir)
 
     if inbox and kind is None:
         kind = inbox["kind"]
@@ -182,23 +174,46 @@ def retag_inbox(
 
     log.debug(f"Refreshing all folders in {inbox_dir} to {kind=} {with_status=}")
 
+    # first do the tags that dont have any info yet, or had problems.
+    todo_first = []
+    todo_second = []
     for f in all_album_folders(inbox_dir):
         status = invoker.tag_status(f)
-        if status in with_status:
-            log.debug(f"tagging folder {f} with status {status}")
-            retag_folder(f, kind=kind)
-        else:
-            log.debug(f"folder {f} is {status}. skipping")
+        if status is not None and status not in with_status:
+            log.debug(f"folder {f} has {status=}. skipping")
             continue
+        if status is None or status != "tagged":
+            todo_first.append(f)
+        else:
+            todo_second.append(f)
+        log.debug(f"tagging folder {f} with status {status}")
 
+    for f in todo_first + todo_second:
+        retag_folder(f, kind=kind)
+
+
+# ------------------------------------------------------------------------------------ #
+#                                        inboxes                                       #
+# ------------------------------------------------------------------------------------ #
+
+def get_inbox_for_path(path):
+    inbox = None
+    for i in _inboxes:
+        if path.startswith(i['path']):
+            inbox = i
+            break
+    return inbox
+
+def get_inbox_folders() -> List[str]:
+    return [i["path"] for i in _inboxes]
+
+def get_inboxes():
+    return _inboxes
 
 # ------------------------------------------------------------------------------------ #
 #                                   folder structure                                   #
 # ------------------------------------------------------------------------------------ #
 
-
-def get_inbox_folders() -> List[str]:
-    return [i["path"] for i in inboxes]
 
 
 @cached(cache=TTLCache(maxsize=1024, ttl=900), info=True)

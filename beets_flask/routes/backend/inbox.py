@@ -1,14 +1,12 @@
 from typing import TypedDict, List, Tuple, Any, OrderedDict
 from flask import Blueprint, request, jsonify
-from beets_flask.disk import get_inbox_folders, path_to_dict
+from beets_flask.disk import get_inbox_folders, path_to_dict, get_inboxes, get_inbox_for_path, retag_inbox
 from beets_flask.logger import log
 from beets_flask.utility import AUDIO_EXTENSIONS
 from beets_flask.config import config
 import os
 from pathlib import Path
 
-inboxes : List[OrderedDict] = config["gui"]["inbox"]["folders"].get() # type: ignore
-inbox_dir = inboxes[0]
 inbox_bp = Blueprint("inbox", __name__, url_prefix="/inbox")
 
 
@@ -38,6 +36,32 @@ def get_folder(folder):
     """
     return path_to_dict("/" + folder, relative_to="/" + folder)
 
+@inbox_bp.route("/autotag", methods=["POST"])
+def autotag_inbox_folder():
+    """
+    Trigger a tagging process on all subfolders of a given inbox folder.
+    """
+    data = request.get_json()
+    kind = data.get("kind")
+    folder = data.get("folder", None)
+
+    if not folder.startswith("/"):
+        folder = "/" + folder
+
+    data = request.get_json()
+    kind = data.get("kind", None)
+    folder = data.get("folder", None)
+
+    retag_inbox(inbox_dir=folder, kind=kind)
+
+    return jsonify(
+        {
+            "message": f"enqueued retagging {folder}",
+        }
+    )
+
+
+
 
 # ------------------------------------------------------------------------------------ #
 #                                         Stats                                        #
@@ -48,11 +72,28 @@ class Stats(TypedDict):
     size: int
     inboxName: str
     mountPoint: str
-    lastScanned: str
+    lastTagged: str
 
 @inbox_bp.route("/stats", methods=["GET"])
+def stats_for_all():
+    """
+    Get the stats for all inbox folders
+    """
+    folders = get_inbox_folders()
+    stats = [compute_stats(f) for f in folders]
+    return jsonify(stats)
+
 @inbox_bp.route("/stats/<path:folder>", methods=["GET"])
-def compute_stats(folder=None):
+def stats_for_folder(folder:str):
+    """
+    Get the stats for a specific inbox folder
+    """
+    if not folder.startswith("/"):
+        folder = "/" + folder
+    stats = compute_stats(folder)
+    return jsonify(stats)
+
+def compute_stats(folder:str):
     """
     Compute the stats for the inbox folder
 
@@ -60,31 +101,28 @@ def compute_stats(folder=None):
     folder: str (optional) - The folder to compute stats for
 
     """
-    if not folder:
-        folder = inbox_dir["path"]
-    else:
-        folder = os.path.join(inbox_dir["path"], folder)
+    inbox = get_inbox_for_path(folder)
+    if inbox is None:
+        return {"error": "Inbox not found", "status": 404}
 
-    folder = Path(folder)
 
     ret_map: Stats = {
         "nFiles": 0,
         "size": 0,
-        "inboxName": inbox_dir["name"],
-        "mountPoint": str(folder),
-        "lastScanned": ""
+        "inboxName": inbox["name"],
+        "mountPoint": inbox["path"],
+        "lastTagged":  inbox["last_tagged"]
     }
 
     # Get filesize
-    for current_dir, _, files in os.walk(folder):
+    for current_dir, _, files in os.walk(Path(folder)):
         for file in files:
             path = Path(os.path.join(current_dir, file))
             print(path, flush=True)
             parse_file(path, ret_map)
 
     log.debug(f"returning stats {ret_map=}")
-
-    return jsonify(ret_map)
+    return ret_map
 
 
 def parse_file(path: Path, map: Stats):

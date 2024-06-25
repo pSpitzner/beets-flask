@@ -61,7 +61,7 @@ export function SimilarityBadge({
     let simClass = styles.tbd; // Default class
     let simText = "tbd"; // Default text
 
-    if (dist !== undefined) {
+    if (dist !== undefined && dist !== null) {
         const simPercentage = `${Math.floor((1 - dist) * 100)}%`;
         simText = simPercentage;
 

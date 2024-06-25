@@ -10,7 +10,7 @@ import Divider from "@mui/material/Divider";
 import Tooltip from "@mui/material/Tooltip";
 import Box from "@mui/material/Box";
 import { IconButtonWithMutation } from "../common/buttons";
-import { inboxStatsQueryOptions } from "@/lib/stats";
+import { InboxStats, inboxStatsQueryOptions } from "@/lib/stats";
 import { useQuery } from "@tanstack/react-query";
 import { RelativeTime } from "../common/time";
 import { JSONPretty } from "../json";
@@ -20,23 +20,43 @@ export function InboxStatsOverview() {
         inboxStatsQueryOptions()
     );
 
-    // use the subtitle for the mountpoint by default, or an error message
-    let title = data?.inboxName ?? "Inbox";
-    let subtitle = data?.mountPoint ?? "Mountpoint";
     if (isError) {
-        title = "Error!";
-        subtitle = JSON.stringify(error);
+        return (
+            <Card>
+                <CardContent>Error: {error.message}</CardContent>
+            </Card>
+        );
     }
     if (isPending || isLoading) {
-        title = "Inbox";
-        subtitle = "Loading stats...";
+        return (
+            <Card>
+                <CardContent>Loading...</CardContent>
+            </Card>
+        );
     }
 
     return (
+        <>
+            {data.map((stats, i) => (
+                <InboxCardView key={i} stats={stats} />
+            ))}
+        </>
+    );
+}
+
+function InboxCardView({ stats }: { stats: InboxStats }) {
+    return (
         <Card>
             <CardContent>
-                <LastScanned />
-                <CardAvatar Icon={Inbox} title={title}>
+                {stats.lastTagged && (
+                    <CardTopInfo>
+                        <label>
+                            {/* Last tagged: <RelativeTime date={stats.lastTagged} /> */}
+                            Last tagged: <>{stats.lastTagged}</>
+                        </label>
+                    </CardTopInfo>
+                )}
+                <CardAvatar Icon={Inbox} title={stats.inboxName}>
                     <Box
                         component="code"
                         sx={{
@@ -45,12 +65,12 @@ export function InboxStatsOverview() {
                             marginBottom: "0.875em",
                         }}
                     >
-                        {subtitle}
+                        {stats.mountPoint}
                     </Box>
                 </CardAvatar>
 
                 <div className="h-full flex flex-col justify-end">
-                    <InboxTable />
+                    <InboxTable stats={stats} />
                 </div>
             </CardContent>
             <Divider className="mt-auto" />
@@ -83,18 +103,7 @@ export function InboxStatsOverview() {
     );
 }
 
-function InboxTable() {
-    const { data, isLoading, isPending, isError, error } = useQuery(
-        inboxStatsQueryOptions()
-    );
-
-    if (isError) {
-        return <JSONPretty json={error} />;
-    }
-    if (isPending || isLoading) {
-        return <div>Loading...</div>;
-    }
-
+function InboxTable({ stats }: { stats: InboxStats }) {
     return (
         <table className="table-info text-gray-100 text-sm">
             <thead>
@@ -113,13 +122,13 @@ function InboxTable() {
                 <tr>
                     <td>?</td>
                     <td>?</td>
-                    <td>{data?.nFiles}</td>
+                    <td>{stats?.nFiles}</td>
                     <td>files</td>
                 </tr>
                 <tr>
                     <td>?</td>
                     <td>?</td>
-                    <td>{Math.round((data?.size ?? 0) / 1024 / 1024)} </td>
+                    <td>{Math.round((stats?.size ?? 0) / 1024 / 1024)} </td>
                     <td>mb</td>
                 </tr>
             </tbody>
@@ -127,21 +136,3 @@ function InboxTable() {
     );
 }
 
-function LastScanned() {
-    const { data, isLoading, isPending, isError } = useQuery(inboxStatsQueryOptions());
-
-    if (isPending || isLoading) {
-        return <div>Loading...</div>;
-    }
-    if (isError) {
-        return null;
-    }
-
-    return (
-        <CardTopInfo>
-            <label>
-                Last scanned: <RelativeTime date={new Date()} />
-            </label>
-        </CardTopInfo>
-    );
-}
