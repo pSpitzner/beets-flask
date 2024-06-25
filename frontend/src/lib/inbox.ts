@@ -41,9 +41,9 @@ export const deleteInboxImportedMutation: UseMutationOptions = {
     mutationFn: async () => {},
 };
 
-export const retagInboxMutation: UseMutationOptions = {
+export const retagInboxNewMutation: UseMutationOptions<unknown, Error, string> = {
     mutationFn: async (inboxPath: string) => {
-        await fetch(`/inbox/autotag`, {
+        return await fetch(`/inbox/autotag`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -57,6 +57,18 @@ export const retagInboxMutation: UseMutationOptions = {
     },
 };
 
-export const retagInboxAllMutation: UseMutationOptions = {
-    mutationFn: async () => {},
+export const retagInboxAllMutation: UseMutationOptions<unknown, Error, string> = {
+    mutationFn: async (inboxPath: string) => {
+        return await fetch(`/inbox/autotag`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                folder: inboxPath,
+                kind: "preview",
+                with_status: ["unmatched", "failed", "tagged", "notag"],
+            }),
+        });
+    },
 };

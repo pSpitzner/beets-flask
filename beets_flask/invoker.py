@@ -32,13 +32,27 @@ def enqueue(id: str, session: Session | None = None):
         if tag is None:
             raise InvalidUsage(f"Tag {id} not found in database")
 
-        kind = tag.kind
-        if kind == "preview":
+        tag.status = "pending"
+        s.merge(tag)
+        s.commit()
+        update_client_view(
+            type="tag",
+            tagId=tag.id,
+            tagPath=tag.album_folder,
+            attributes={
+                "kind": tag.kind,
+                "status": tag.status,
+                "updated_at": tag.updated_at.isoformat(),
+            },
+            message="Tag enqueued",
+        )
+
+        if tag.kind == "preview":
             rq.get_queue("preview").enqueue(runPreview, id)
-        elif kind == "import":
+        elif tag.kind == "import":
             rq.get_queue("import").enqueue(runImport, id)
         else:
-            raise ValueError(f"Unknown kind {kind}")
+            raise ValueError(f"Unknown kind {tag.kind}")
 
 
 def enqueue_tag_path(path: str, kind: str, session: Session | None = None):

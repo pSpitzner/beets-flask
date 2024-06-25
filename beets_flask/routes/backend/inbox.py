@@ -93,7 +93,7 @@ class Stats(TypedDict):
     nFiles: int
     size: int
     inboxName: str
-    mountPoint: str
+    inboxPath: str
     lastTagged: str
 
 
@@ -134,7 +134,7 @@ def compute_stats(folder: str):
         "nFiles": 0,
         "size": 0,
         "inboxName": inbox["name"],
-        "mountPoint": inbox["path"],
+        "inboxPath": inbox["path"],
         "lastTagged": inbox["last_tagged"],
     }
 

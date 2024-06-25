@@ -10,7 +10,7 @@ export interface InboxStats {
     nFiles: number;
     size: number;
     inboxName: string;
-    mountPoint: string;
+    inboxPath: string;
     lastTagged?: Date;
 }
 
