@@ -1,14 +1,14 @@
-from typing import TypedDict, List, Tuple, Any
+from typing import TypedDict, List, Tuple, Any, OrderedDict
 from flask import Blueprint, request, jsonify
-from beets_flask.disk import get_inbox_dict, path_to_dict
+from beets_flask.disk import get_inbox_folders, path_to_dict
 from beets_flask.logger import log
 from beets_flask.utility import AUDIO_EXTENSIONS
 from beets_flask.config import config
 import os
 from pathlib import Path
 
-inbox_dirs : List[Tuple[str, str]] = config["gui"]["inbox"]["folders"].as_pairs() # type: ignore
-inbox_dir = inbox_dirs[0]
+inboxes : List[OrderedDict] = config["gui"]["inbox"]["folders"].get() # type: ignore
+inbox_dir = inboxes[0]
 inbox_bp = Blueprint("inbox", __name__, url_prefix="/inbox")
 
 
@@ -23,10 +23,12 @@ def get_all():
 
     use_cache = bool(request.args.get("use_cache", False))
     if not use_cache:
-        get_inbox_dict.cache.clear() # type: ignore
-    inbox = get_inbox_dict()
+        path_to_dict.cache.clear() # type: ignore
+    inboxes = []
+    for path in get_inbox_folders():
+        inboxes.append(path_to_dict(path))
 
-    return inbox
+    return inboxes
 
 
 @inbox_bp.route("/path/<path:folder>", methods=["GET"])
@@ -59,16 +61,16 @@ def compute_stats(folder=None):
 
     """
     if not folder:
-        folder = inbox_dir[1]
+        folder = inbox_dir["path"]
     else:
-        folder = os.path.join(inbox_dir[1], folder)
+        folder = os.path.join(inbox_dir["path"], folder)
 
     folder = Path(folder)
 
     ret_map: Stats = {
         "nFiles": 0,
         "size": 0,
-        "inboxName": inbox_dir[0],
+        "inboxName": inbox_dir["name"],
         "mountPoint": str(folder),
         "lastScanned": ""
     }

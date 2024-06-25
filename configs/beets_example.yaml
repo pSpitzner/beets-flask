@@ -12,7 +12,12 @@ gui:
     inbox:
         # keep in mind to volume-map these folders in your docker-compose.yml
         folders:
-        - "Awesome inbox" : '/music/inbox'
+            - name: 'Awesome inbox'
+              path : '/music/awesome'
+              autotag : no # no | "preview" | "import"
+            - name: 'Dummy inbox'
+              path : '/music/dummy'
+              autotag : no
 
 plugins: [
     info,

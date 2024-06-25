@@ -10,7 +10,7 @@ from flask import Blueprint, request, jsonify, current_app
 from sqlalchemy import select
 from datetime import datetime, timedelta
 
-from beets_flask.disk import get_inbox_dict
+from beets_flask.disk import path_to_dict, get_inbox_folders
 from beets_flask.models import Tag, TagGroup
 from beets_flask.db_engine import db_session, with_db_session, Session
 from beets_flask.routes.backend.errors import InvalidUsage
@@ -94,9 +94,6 @@ def get_archived_tags() -> list[str]:
 def get_inbox_tags() -> list[str]:
     """Get all tags that correspond to folders that are still in the inbox"""
 
-    get_inbox_dict.cache.clear()  # type: ignore
-    inbox = get_inbox_dict()
-
     def get_album_folders(d):
         if d["type"] == "directory":
             if d["is_album"]:
@@ -104,7 +101,13 @@ def get_inbox_tags() -> list[str]:
             for k, v in d["children"].items():
                 yield from get_album_folders(v)
 
-    album_folders = list(get_album_folders(inbox))
+    # should we reset the cache here?
+    # path_to_dict.cache.clear()  # type: ignore
+    inboxes = [path_to_dict(f) for f in get_inbox_folders()]
+
+    album_folders = []
+    for inbox in inboxes:
+        album_folders.extend(get_album_folders(inbox))
 
     with db_session() as session:
         stmt = select(Tag).where(Tag.album_folder.in_(album_folders))

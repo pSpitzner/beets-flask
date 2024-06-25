@@ -8,15 +8,15 @@ export interface FsPath {
     children: Record<string, FsPath>;
 }
 
-export async function fetchInbox(): Promise<FsPath> {
+export async function fetchInboxes(): Promise<FsPath[]> {
     const response = await fetch(`/inbox`);
-    return (await response.json()) as FsPath;
+    return (await response.json()) as [FsPath];
 }
 
 export const inboxQueryOptions = () =>
     queryOptions({
         queryKey: ["inbox"],
-        queryFn: () => fetchInbox(),
+        queryFn: () => fetchInboxes(),
     });
 
 export async function fetchFsPath(folderPath: string): Promise<FsPath> {

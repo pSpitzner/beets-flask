@@ -1,45 +1,66 @@
 import os
 import glob
+from typing import List, OrderedDict
 from cachetools import cached, LRUCache, TTLCache
 import threading
 from time import time
+from datetime import datetime
 from pathlib import Path
 from watchdog.observers import Observer
 from watchdog.observers.polling import PollingObserver
 from watchdog.events import FileSystemEventHandler, FileSystemEvent, FileMovedEvent
 
-from . import invoker
-from . import utility as ut
-
-from .logger import log
-
-inbox_dir = os.environ.get("INBOX", "/music/inbox")
+from beets_flask import invoker
+from beets_flask import utility as ut
+from beets_flask.db_engine import db_session
+from beets_flask.models.tag import Tag
+from beets_flask.logger import log
+from beets_flask.config import config
 
 
 # ------------------------------------------------------------------------------------ #
 #                                   init and watchdog                                  #
 # ------------------------------------------------------------------------------------ #
 
+inboxes : List[OrderedDict] = []
 
-def init():
+def register_inboxes():
+
+    global inboxes
+    inboxes = config["gui"]["inbox"]["folders"].get()  # type: ignore
+    log.debug(config['gui'].flatten())
+    for i in inboxes:
+        i["last_tagged"] = None
+
+
     if os.environ.get("RQ_WORKER_ID", None):
         # only launch the observer on the main process
         return
 
-    log.debug(f"Starting observer for {inbox_dir}")
-    try:
-        handler = InboxHandler()
-        # the polling observer worked more reliably for me than the default observer.
-        observer = PollingObserver(timeout=handler.poll_interval)
-        observer.schedule(handler, path=inbox_dir, recursive=True)
-        observer.start()
-    except FileNotFoundError:
-        log.error(
-            f"Could not find inbox directory ({inbox_dir}). Check your INBOX env var."
-        )
+    num_watched_inboxes = len([i for i in inboxes if i["autotag"]])
+    if num_watched_inboxes == 0:
         return
 
-    # run this in its own thread to not block the webserver.
+    handler = InboxHandler()
+    observer = PollingObserver(timeout=handler.poll_interval)
+
+    for inbox in inboxes:
+        if not inbox["autotag"]:
+            log.debug(f'Skipping observer for inbox {inbox["path"]}')
+            continue
+
+        log.debug(f'Starting observer for {inbox["path"]}')
+        try:
+            # the polling observer worked more reliably for me than the default observer.
+            observer.schedule(handler, path=inbox["path"], recursive=True)
+        except FileNotFoundError:
+            log.error(
+                f'Could not find inbox directory ({inbox["path"]}). Check your config!'
+            )
+            continue
+
+    observer.start()
+
     def try_to_import(observer, handler):
         try:
             while observer.is_alive():
@@ -76,7 +97,7 @@ class InboxHandler(FileSystemEventHandler):
                 elif timestamp <= limit:
                     self.debounce[path] = -1
                     log.info("Processing %s", path)
-                    refresh_folder(path)
+                    retag_folder(path)
 
     def on_any_event(self, event: FileSystemEvent):
         log.debug("got %r", event)
@@ -88,8 +109,8 @@ class InboxHandler(FileSystemEventHandler):
         if os.path.basename(fullpath).startswith("."):
             return
 
-        get_inbox_dict.cache.clear() # type: ignore
-        get_inbox_dict()
+        # trigger cache clear and gui update of inbox directories
+        path_to_dict.cache.clear()  # type: ignore
         ut.update_client_view("inbox")
 
         try:
@@ -103,32 +124,69 @@ class InboxHandler(FileSystemEventHandler):
             self.debounce[album_folder] = time()
 
 
-def refresh_folder(album_folder: str):
+def retag_folder(path: str, kind: str | None = None):
     """
-    For a single folder, we are fine with retagging a bit more eagerly. E.g. when files are added over time, we would want to reduce the number of missing tracks.
+    For a single folder, we are fine with retagging a bit eagerly.
+    Anything whose status is not in
+        ["pending", "tagging", "importing", "imported", "cleared"]
+    will get a new preview.
+    E.g. when files are added over time, we would want to reduce the number of missing tracks.
     """
 
-    log.debug(f"refreshing {album_folder} ...")
+    inbox = None
+    for i in inboxes:
+        if i["path"] == path:
+            inbox = i
+            break
 
-    status = invoker.tag_status(path=album_folder)
+    if inbox and kind is None:
+        kind = inbox["kind"]
+
+    if kind is None:
+        raise ValueError(f"Autotagging kind not found for path: {path}")
+
+    log.debug(f"retagging {path} with kind {kind} ...")
+
+    status = invoker.tag_status(path=path)
     if status in ["pending", "tagging", "importing", "imported", "cleared"]:
-        log.debug(f"folder {album_folder} is {status}. skipping")
+        log.debug(f"folder {path} is {status}. skipping")
         return
     else:
-        log.debug(f"tagging folder {album_folder}")
-        raise NotImplementedError("refresh_folder is not implemented yet")
-        # beets_tasks.task_for_paths([album_folder], {"task": "preview"})
+        log.debug(f"tagging folder {path}")
+        invoker.enqueue_tag_path(path, kind=kind)
+
+    if inbox:
+        inbox["last_tagged"] = datetime.now()
 
 
-def refresh_all_folders(
-    with_status: list[str] = ["unmatched", "failed", "tagged", "notag"]
+def retag_inbox(
+    inbox_dir: str,
+    with_status: list[str] = ["unmatched", "failed", "tagged", "notag"],
+    kind: str | None = None,
 ):
-    log.debug(f"Refreshing all folders {with_status=}")
-    for f in all_album_folders():
+    """
+    Refresh an inbox folder, retagging all its subfolders
+    """
+
+    inbox = None
+    for i in inboxes:
+        if i["path"] == inbox_dir:
+            inbox = i
+            break
+
+    if inbox and kind is None:
+        kind = inbox["kind"]
+
+    if kind is None:
+        raise ValueError(f"Autotagging kind not found for {inbox_dir=}")
+
+    log.debug(f"Refreshing all folders in {inbox_dir} to {kind=} {with_status=}")
+
+    for f in all_album_folders(inbox_dir):
         status = invoker.tag_status(f)
         if status in with_status:
             log.debug(f"tagging folder {f} with status {status}")
-            raise NotImplementedError("refresh_folder is not implemented yet")
+            retag_folder(f, kind=kind)
         else:
             log.debug(f"folder {f} is {status}. skipping")
             continue
@@ -139,15 +197,19 @@ def refresh_all_folders(
 # ------------------------------------------------------------------------------------ #
 
 
+def get_inbox_folders() -> List[str]:
+    return [i["path"] for i in inboxes]
+
+
 @cached(cache=TTLCache(maxsize=1024, ttl=900), info=True)
-def get_inbox_dict() -> dict:
-    inbox = path_to_dict(inbox_dir)
-    return inbox
-
-
 def path_to_dict(root_dir, relative_to="/") -> dict:
     """
     Generate our nested dict structure for the specified path.
+    Each level in the folder hierarchy is a dict with the following keys:
+        * "type": "directory" | "file"
+        * "is_album": bool
+        * "full_path": str
+        * "children": dict
 
     # Args:
     - root_dir (str): The root directory to start from.
@@ -235,7 +297,7 @@ def album_folders_from_track_paths(track_paths: list):
     )
 
 
-def all_album_folders(root_dir: str = inbox_dir):
+def all_album_folders(root_dir: str):
     files = sorted(glob.glob(root_dir + "/**/*", recursive=True))
     return album_folders_from_track_paths(files)
 

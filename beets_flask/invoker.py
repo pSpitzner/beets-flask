@@ -21,23 +21,39 @@ from beets_flask.routes.backend.errors import InvalidUsage
 from beets_flask.routes.backend.sse import update_client_view
 
 
-def enqueue(tagId: str, session: Session | None = None):
+def enqueue(id: str, session: Session | None = None):
     """
-    Delegate the tag to a redis worker, depending on its kind.
+    Delegate an existing tag to a redis worker, depending on its kind.
     """
 
-    tag = Tag.get_by(Tag.id == tagId, session=session)
+    with db_session(session) as s:
+        tag = Tag.get_by(Tag.id == id, session=s)
 
-    if tag is None:
-        raise InvalidUsage(f"Tag {tagId} not found in database")
+        if tag is None:
+            raise InvalidUsage(f"Tag {id} not found in database")
 
-    kind = tag.kind
-    if kind == "preview":
-        rq.get_queue("preview").enqueue(runPreview, tagId)
-    elif kind == "import":
-        rq.get_queue("import").enqueue(runImport, tagId)
-    else:
-        raise ValueError(f"Unknown kind {kind}")
+        kind = tag.kind
+        if kind == "preview":
+            rq.get_queue("preview").enqueue(runPreview, id)
+        elif kind == "import":
+            rq.get_queue("import").enqueue(runImport, id)
+        else:
+            raise ValueError(f"Unknown kind {kind}")
+
+
+def enqueue_tag_path(path: str, kind: str, session: Session | None = None):
+    """
+    For a given path that is taggable, update the existing tag or create a new one.
+    """
+
+    with db_session(session) as s:
+        tag = Tag.get_by(Tag.album_folder == path, session=s) or Tag(
+            album_folder=path, kind=kind
+        )
+        tag.kind = kind
+        s.merge(tag)
+        s.commit()
+        enqueue(tag.id, session=s)
 
 
 @rq.job(timeout=600)
@@ -248,7 +264,8 @@ def tag_status(
     id: str | None = None, path: str | None = None, session: Session | None = None
 ):
     """
-    Get the status of a tag by its id or path
+    Get the status of a tag by its id or path.
+    Returns None if the tag does not exist or the path was not tagged yet.
     """
 
     with db_session(session) as s:
@@ -259,6 +276,6 @@ def tag_status(
             bt = Tag.get_by(Tag.album_folder == path, session=s)
 
         if bt is None:
-            raise InvalidUsage(f"Tag not found in database")
+            return None
 
         return bt.status

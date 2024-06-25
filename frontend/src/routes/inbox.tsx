@@ -19,14 +19,23 @@ export const Route = createFileRoute("/inbox")({
 
 export function Inbox() {
     const query = useSuspenseQuery(inboxQueryOptions());
+    const inboxes = query.data;
 
-    return (
-        <SelectionProvider>
-            <div className={styles.inboxView}>
-                <FolderView fp={query.data} />
-            </div>
-        </SelectionProvider>
-    );
+    if (inboxes.length == 0) {
+        return <>
+        No inboxes found. Check your config!
+        </>
+    }
+
+    return inboxes.map((inboxFp, i) => {
+        return (
+            <SelectionProvider key={i}>
+                <div className={styles.inboxView}>
+                    <FolderView fp={inboxFp} />
+                </div>
+            </SelectionProvider>
+        );
+    });
 }
 
 /**

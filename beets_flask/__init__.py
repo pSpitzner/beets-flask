@@ -46,6 +46,9 @@ def create_app():
     from .terminal import register_tmux
     register_tmux()
 
+    from .disk import register_inboxes
+    register_inboxes()
+
     log.info("App created")
 
     return app
