@@ -22,7 +22,8 @@ from beets_flask.config import config
 #                                   init and watchdog                                  #
 # ------------------------------------------------------------------------------------ #
 
-_inboxes : List[OrderedDict] = []
+_inboxes: List[OrderedDict] = []
+
 
 def register_inboxes():
 
@@ -31,7 +32,6 @@ def register_inboxes():
 
     for i in _inboxes:
         i["last_tagged"] = None
-
 
     if os.environ.get("RQ_WORKER_ID", None):
         # only launch the observer on the main process
@@ -179,10 +179,10 @@ def retag_inbox(
     todo_second = []
     for f in all_album_folders(inbox_dir):
         status = invoker.tag_status(f)
-        if status is not None and status not in with_status:
+        if status not in with_status:
             log.debug(f"folder {f} has {status=}. skipping")
             continue
-        if status is None or status != "tagged":
+        if status == "notag":
             todo_first.append(f)
         else:
             todo_second.append(f)
@@ -196,24 +196,27 @@ def retag_inbox(
 #                                        inboxes                                       #
 # ------------------------------------------------------------------------------------ #
 
+
 def get_inbox_for_path(path):
     inbox = None
     for i in _inboxes:
-        if path.startswith(i['path']):
+        if path.startswith(i["path"]):
             inbox = i
             break
     return inbox
 
+
 def get_inbox_folders() -> List[str]:
     return [i["path"] for i in _inboxes]
+
 
 def get_inboxes():
     return _inboxes
 
+
 # ------------------------------------------------------------------------------------ #
 #                                   folder structure                                   #
 # ------------------------------------------------------------------------------------ #
-
 
 
 @cached(cache=TTLCache(maxsize=1024, ttl=900), info=True)

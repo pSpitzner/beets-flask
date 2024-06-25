@@ -19,7 +19,14 @@ export const inboxStatsQueryOptions = () => {
         queryKey: ["inboxStats"],
         queryFn: async () => {
             const response = await fetch(`/inbox/stats`);
-            return (await response.json()) as InboxStats[];
+
+            const res = (await response.json()) as InboxStats[];
+
+            for (const stat of res) {
+                if (stat.lastTagged) stat.lastTagged = new Date(stat.lastTagged);
+            }
+
+            return res;
         },
     });
 };

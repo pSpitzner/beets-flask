@@ -265,7 +265,7 @@ def tag_status(
 ):
     """
     Get the status of a tag by its id or path.
-    Returns None if the tag does not exist or the path was not tagged yet.
+    Returns "notag" if the tag does not exist or the path was not tagged yet.
     """
 
     with db_session(session) as s:
@@ -275,7 +275,7 @@ def tag_status(
         elif path is not None:
             bt = Tag.get_by(Tag.album_folder == path, session=s)
 
-        if bt is None:
-            return None
+        if bt is None or bt.status is None:
+            return "notag"
 
         return bt.status

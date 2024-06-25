@@ -1,4 +1,4 @@
-import { FileScan, Inbox, Recycle, Trash2 } from "lucide-react";
+import { FolderSync, Inbox, Recycle, Trash2 } from "lucide-react";
 import {
     Card,
     CardContent,
@@ -9,13 +9,14 @@ import {
 import Divider from "@mui/material/Divider";
 import Tooltip from "@mui/material/Tooltip";
 import Box from "@mui/material/Box";
-import { IconButtonWithMutation } from "../common/buttons";
+import { IconButtonWithMutation, IconButtonWithMutationAndFeedback } from "../common/buttons";
 import { InboxStats, inboxStatsQueryOptions } from "@/lib/stats";
 import { useQuery } from "@tanstack/react-query";
 import { RelativeTime } from "../common/time";
-import { JSONPretty } from "../json";
+import Grid from "@mui/material/Unstable_Grid2";
+import { deleteInboxImportedMutation, deleteInboxMutation, retagInboxAllMutation, retagInboxMutation } from "@/lib/inbox";
 
-export function InboxStatsOverview() {
+export function InboxStatsGridItems() {
     const { data, isLoading, isPending, isError, error } = useQuery(
         inboxStatsQueryOptions()
     );
@@ -38,7 +39,9 @@ export function InboxStatsOverview() {
     return (
         <>
             {data.map((stats, i) => (
-                <InboxCardView key={i} stats={stats} />
+                <Grid xs={12} sm={8} md={8} lg={6} key={i} >
+                    <InboxCardView stats={stats} />
+                </Grid>
             ))}
         </>
     );
@@ -51,7 +54,7 @@ function InboxCardView({ stats }: { stats: InboxStats }) {
                 {stats.lastTagged && (
                     <CardTopInfo>
                         <label>
-                            {/* Last tagged: <RelativeTime date={stats.lastTagged} /> */}
+                            Last tagged: <RelativeTime date={stats.lastTagged} />
                             Last tagged: <>{stats.lastTagged}</>
                         </label>
                     </CardTopInfo>
@@ -75,31 +78,33 @@ function InboxCardView({ stats }: { stats: InboxStats }) {
             </CardContent>
             <Divider className="mt-auto" />
             <CardActions>
-                <Tooltip title="Delete all files in the inbox">
-                    <div>
-                        <IconButtonWithMutation color="error">
-                            <Trash2 size="1em" />
-                        </IconButtonWithMutation>
-                    </div>
-                </Tooltip>
                 <div className="flex flex-row space-x-4">
-                    <Tooltip title="Delete all already tagged files in the inbox">
-                        <div>
-                            <IconButtonWithMutation color="warning">
-                                <Recycle size="1em" />
-                            </IconButtonWithMutation>
-                        </div>
-                    </Tooltip>
-                    <Tooltip title="Scan the inbox folder for new files">
-                        <div>
-                            <IconButtonWithMutation color="primary">
-                                <FileScan size="1em" />
-                            </IconButtonWithMutation>
-                        </div>
-                    </Tooltip>
+                    <IconButtonWithMutationAndFeedback mutationOption={deleteInboxMutation} mutateArgs={stats.inboxName}
+                        color="error" confirmTitle="Are you sure you want to delete all files?">
+                        <Tooltip title="Delete all files in the inbox">
+                            <Trash2 size="1em" />
+                        </Tooltip>
+                    </IconButtonWithMutationAndFeedback>
+                    <IconButtonWithMutation mutationOption={deleteInboxImportedMutation} mutateArgs={stats.inboxName} color="warning">
+                        <Tooltip title="Delete all already imported files in the inbox">
+                            <Recycle size="1em" />
+                        </Tooltip>
+                    </IconButtonWithMutation>
+                </div>
+                <div className="flex flex-row space-x-4">
+                    <IconButtonWithMutation mutationOption={retagInboxAllMutation} color="warning">
+                        <Tooltip title="Scan the inbox folder for new files">
+                            <FolderSync size="1em" />
+                        </Tooltip>
+                    </IconButtonWithMutation>
+                    <IconButtonWithMutation mutationOption={retagInboxMutation} color="primary">
+                        <Tooltip title="Scan the inbox folder for new files">
+                            <FolderSync size="1em" />
+                        </Tooltip>
+                    </IconButtonWithMutation>
                 </div>
             </CardActions>
-        </Card>
+        </Card >
     );
 }
 

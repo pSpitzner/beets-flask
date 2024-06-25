@@ -16,9 +16,11 @@ export function AddInbox() {
                 <IconButtonWithMutation
                     sx={{
                         color: "primary.muted",
+                        minHeight: "3rem",
+                        minWidth: "3rem"
                     }}
                 >
-                    <Plus size="3rem" strokeWidth={1} />
+                    <Plus strokeWidth={1} className="w-full h-full" />
                 </IconButtonWithMutation>
             </CardContent>
         </Card>

@@ -1,9 +1,14 @@
 import IconButton from "@mui/material/IconButton";
 import { UseMutationOptions, useMutation } from "@tanstack/react-query";
 import { CheckIcon } from "lucide-react";
-import ErrorDialog from "./dialogs";
+import { ConfirmDialog, ErrorDialog } from "./dialogs";
 import { Button, ButtonProps, CircularProgress } from "@mui/material";
-import { forwardRef } from "react";
+import { forwardRef, useState } from "react";
+
+
+
+
+
 
 /**
  * Renders an icon button with a mutation option.
@@ -21,12 +26,14 @@ import { forwardRef } from "react";
 export const IconButtonWithMutation = forwardRef(function IconButtonWithMutation(
     {
         mutationOption,
+        mutateArgs,
         children,
         ...props
     }: {
-        mutationOption?: UseMutationOptions;
+        mutationOption?: UseMutationOptions<unknown, Error, any, unknown>
+        mutateArgs?: any;
     } & ButtonProps,
-    ref: React.Ref<HTMLDivElement>
+    ref?: React.Ref<HTMLDivElement>
 ) {
     const { isSuccess, isPending, mutate, isError, error, reset } = useMutation(
         mutationOption ?? {
@@ -42,6 +49,8 @@ export const IconButtonWithMutation = forwardRef(function IconButtonWithMutation
         }
     );
 
+
+
     return (
         <div className="relative" ref={ref}>
             <IconButton
@@ -50,9 +59,60 @@ export const IconButtonWithMutation = forwardRef(function IconButtonWithMutation
                     if (isSuccess) {
                         reset();
                     } else {
-                        mutate();
+                        mutate(mutateArgs);
                     }
                 }}
+            >
+                {isSuccess ? <CheckIcon /> : children}
+            </IconButton>
+            {isPending ? (
+                <CircularProgress
+                    color={props.color}
+                    size={"100%"}
+                    sx={{
+                        position: "absolute",
+                        top: "0",
+                        left: "0",
+                        padding: "2px",
+                        zIndex: 1,
+                    }}
+                />
+            ) : null}
+            {<ErrorDialog open={isError} error={error} onClose={reset} />}
+        </div>
+    );
+});
+
+
+
+
+
+/** A Icon button which also requires a confirmation */
+export const IconButtonWithMutationAndFeedback = forwardRef(function IconButtonWithMutationAndFeedback(
+    {
+        mutationOption,
+        children,
+        confirmTitle,
+        mutateArgs,
+        ...props
+    }: {
+        mutationOption: UseMutationOptions<unknown, Error, any, unknown>
+        mutateArgs: any,
+        confirmTitle: string;
+    } & ButtonProps,
+    ref?: React.Ref<HTMLDivElement>
+) {
+
+    const { isSuccess, isPending, mutate, isError, error, reset } = useMutation(mutationOption);
+    const [show, setShow] = useState(false); // show confirm state
+
+
+    return (
+        <div className="relative" ref={ref}>
+            <IconButton
+                {...props}
+                onClick={() => setShow(true)
+                }
             >
                 {isSuccess ? <CheckIcon /> : children}
             </IconButton>
@@ -68,10 +128,27 @@ export const IconButtonWithMutation = forwardRef(function IconButtonWithMutation
                     }}
                 />
             ) : null}
-            {isError && <ErrorDialog open={isError} error={error} onClose={reset} />}
+            {<ErrorDialog open={isError} error={error} onClose={reset} />}
+            {<ConfirmDialog
+                title={confirmTitle}
+                open={show} onConfirm={() => {
+                    setShow(false);
+                    mutate(mutateArgs);
+                }} onCancel={() => {
+                    setShow(false);
+                }} />
+            }
         </div>
     );
 });
+
+
+
+
+
+
+
+
 
 export const IconTextButtonWithMutation = forwardRef(
     function IconTextButtonWithMutation(

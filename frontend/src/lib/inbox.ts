@@ -1,4 +1,4 @@
-import { queryOptions } from "@tanstack/react-query";
+import { UseMutationOptions, queryOptions } from "@tanstack/react-query";
 
 // these guys can be infinetely nested and represent a file path on disk.
 export interface FsPath {
@@ -30,3 +30,33 @@ export const fsPathQueryOptions = (path: string) =>
         queryKey: ["inbox", "path", path],
         queryFn: () => fetchFsPath(path),
     });
+
+export const deleteInboxMutation: UseMutationOptions<unknown, Error, string> = {
+    mutationFn: async (inboxPath: string) => {
+        return await fetch(`/inbox/path/${inboxPath}`, { method: "DELETE" });
+    },
+};
+
+export const deleteInboxImportedMutation: UseMutationOptions = {
+    mutationFn: async () => {},
+};
+
+export const retagInboxMutation: UseMutationOptions = {
+    mutationFn: async (inboxPath: string) => {
+        await fetch(`/inbox/autotag`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                folder: inboxPath,
+                kind: "preview",
+                with_status: ["notag"],
+            }),
+        });
+    },
+};
+
+export const retagInboxAllMutation: UseMutationOptions = {
+    mutationFn: async () => {},
+};
