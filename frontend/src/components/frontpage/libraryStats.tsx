@@ -25,11 +25,11 @@ export function LibraryStats() {
             </CardContent>
             <Divider className="mt-auto" />
             <CardActions>
-                <Tooltip title="Delete all files in the inbox">
-                    <IconButtonWithMutation color="error">
+                <IconButtonWithMutation color="error">
+                    <Tooltip title="Delete all files in the inbox">
                         <Trash2 size="1em" />
-                    </IconButtonWithMutation>
-                </Tooltip>
+                    </Tooltip>
+                </IconButtonWithMutation>
             </CardActions>
         </Card>
     );

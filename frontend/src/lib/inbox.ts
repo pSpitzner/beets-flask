@@ -41,7 +41,7 @@ export interface InboxStats {
 
 export const inboxStatsQueryOptions = () => {
     return queryOptions({
-        queryKey: ["inboxStats"],
+        queryKey: ["inbox", "stats"],
         queryFn: async () => {
             const response = await fetch(`/inbox/stats`);
 
