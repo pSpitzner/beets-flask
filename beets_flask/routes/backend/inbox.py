@@ -1,16 +1,18 @@
-from typing import TypedDict, List, Tuple, Any, OrderedDict
+from datetime import datetime
+from typing import Optional, TypedDict
 from flask import Blueprint, request, jsonify
+from beets_flask.db_engine import db_session
 from beets_flask.disk import (
     get_inbox_folders,
     path_to_dict,
-    get_inboxes,
     get_inbox_for_path,
     retag_inbox,
 )
-from beets_flask.logger import log
 from beets_flask.utility import AUDIO_EXTENSIONS
-from beets_flask.config import config
+from beets_flask.models import Tag
+
 import os
+
 from pathlib import Path
 
 inbox_bp = Blueprint("inbox", __name__, url_prefix="/inbox")
@@ -94,7 +96,14 @@ class Stats(TypedDict):
     size: int
     inboxName: str
     inboxPath: str
-    lastTagged: str
+
+    # UTC Timestamp (none if nothing tagged)
+    lastTagged: Optional[int]
+
+    # Number of files already tagged
+    nTagged: int
+    # Size of already tagged files
+    sizeTagged: int
 
 
 @inbox_bp.route("/stats", methods=["GET"])
@@ -133,29 +142,31 @@ def compute_stats(folder: str):
     ret_map: Stats = {
         "nFiles": 0,
         "size": 0,
+        "nTagged": 0,
+        "sizeTagged": 0,
         "inboxName": inbox["name"],
         "inboxPath": inbox["path"],
-        "lastTagged": inbox["last_tagged"],
+        "lastTagged": None,
     }
 
     # Get filesize
-    for current_dir, _, files in os.walk(Path(folder)):
-        for file in files:
-            path = Path(os.path.join(current_dir, file))
-            print(path, flush=True)
-            parse_file(path, ret_map)
+    with db_session() as session:
+        for current_dir, _, files in os.walk(Path(folder)):
+            for file in files:
+                path = Path(os.path.join(current_dir, file))
+                parse_file(path, ret_map, session)
 
-    log.debug(f"returning stats {ret_map=}")
     return ret_map
 
 
-def parse_file(path: Path, map: Stats):
+def parse_file(path: Path, map: Stats, session=None):
     """
     Parse a file and return the stats dict
 
     Parameters:
     - path (Path): The path to the file
     - map (Stats): The current stats dict
+    - session (Session): Optional a session for tagged lookup
     """
     if path.suffix.lower() not in AUDIO_EXTENSIONS:
         return
@@ -163,6 +174,17 @@ def parse_file(path: Path, map: Stats):
     map["nFiles"] += 1
     map["size"] += path.stat().st_size
 
-    # TODO: Check if imported and if tagged
+    # check if already tagged
+
+    if session:
+        tag = Tag.get_by(Tag.album_folder == f"{path.parent}", session=session)
+        if tag is not None:
+            map["nTagged"] += 1
+            map["sizeTagged"] += path.stat().st_size
+            map["lastTagged"] = int(
+                max(tag.created_at.timestamp() * 1000, map["lastTagged"])
+                if map["lastTagged"] is not None
+                else tag.created_at.timestamp() * 1000
+            )
 
     return map

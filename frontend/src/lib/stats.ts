@@ -6,31 +6,6 @@
 
 import { queryOptions } from "@tanstack/react-query";
 
-export interface InboxStats {
-    nFiles: number;
-    size: number;
-    inboxName: string;
-    inboxPath: string;
-    lastTagged?: Date;
-}
-
-export const inboxStatsQueryOptions = () => {
-    return queryOptions({
-        queryKey: ["inboxStats"],
-        queryFn: async () => {
-            const response = await fetch(`/inbox/stats`);
-
-            const res = (await response.json()) as InboxStats[];
-
-            for (const stat of res) {
-                if (stat.lastTagged) stat.lastTagged = new Date(stat.lastTagged);
-            }
-
-            return res;
-        },
-    });
-};
-
 export interface LibraryStats {
     items: number;
     albums: number;

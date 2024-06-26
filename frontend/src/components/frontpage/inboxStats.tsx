@@ -13,13 +13,14 @@ import {
     IconButtonWithMutation,
     IconButtonWithMutationAndFeedback,
 } from "../common/buttons";
-import { InboxStats, inboxStatsQueryOptions } from "@/lib/stats";
 import { useQuery } from "@tanstack/react-query";
 import { RelativeTime } from "../common/time";
 import Grid from "@mui/material/Unstable_Grid2";
 import {
+    InboxStats,
     deleteInboxImportedMutation,
     deleteInboxMutation,
+    inboxStatsQueryOptions,
     retagInboxAllMutation,
     retagInboxNewMutation,
 } from "@/lib/inbox";
@@ -63,7 +64,6 @@ function InboxCardView({ stats }: { stats: InboxStats }) {
                     <CardTopInfo>
                         <label>
                             Last tagged: <RelativeTime date={stats.lastTagged} />
-                            Last tagged: <>{stats.lastTagged}</>
                         </label>
                     </CardTopInfo>
                 )}
@@ -133,6 +133,16 @@ function InboxCardView({ stats }: { stats: InboxStats }) {
 }
 
 function InboxTable({ stats }: { stats: InboxStats }) {
+
+
+    const size = stats?.size ?? 0;
+    const sizeTagged = stats?.sizeTagged ?? 0;
+
+    const files = stats?.nFiles ?? 0;
+    const filesTagged = stats?.nTagged ?? 0;
+
+
+
     return (
         <table className="table-info text-gray-100 text-sm">
             <thead>
@@ -149,18 +159,30 @@ function InboxTable({ stats }: { stats: InboxStats }) {
             </thead>
             <tbody>
                 <tr>
-                    <td>?</td>
-                    <td>?</td>
-                    <td>{stats?.nFiles}</td>
+                    <td>{files - filesTagged}</td>
+                    <td>{filesTagged}</td>
+                    <td>{files}</td>
                     <td>files</td>
                 </tr>
                 <tr>
-                    <td>?</td>
-                    <td>?</td>
-                    <td>{Math.round((stats?.size ?? 0) / 1024 / 1024)} </td>
+                    <td>
+                        {
+                            _to_mb(size - sizeTagged)
+                        }
+                    </td>
+                    <td>{
+                        _to_mb(sizeTagged)
+                    }
+                    </td>
+                    <td>{_to_mb(size)} </td>
                     <td>mb</td>
                 </tr>
             </tbody>
         </table>
     );
+}
+
+
+function _to_mb(bytes: number) {
+    return Math.round(bytes / 1024 / 1024)
 }
