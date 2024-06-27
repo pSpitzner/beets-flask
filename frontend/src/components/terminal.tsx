@@ -201,7 +201,7 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
             term.write("Connecting...");
             setTerm(term);
         }
-    }, []);
+    }, [term]);
 
     // Attatch socketio handler
     useEffect(() => {
@@ -209,7 +209,8 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
 
         term.writeln("\rConnected!   ");
 
-        term!.onData((data) => {
+        const onInput = term.onData((data) => {
+            console.log("ptyInput", data);
             if (data === "\x01" || data === "\x04") {
                 // prevent ctrl+a because it can detach tmux, and ctrl+d because it can close the terminal
                 return;
@@ -221,6 +222,7 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
             // term!.clear(); seems to be preferred from the documentation,
             // but it leaves the prompt on the first line in place - which we here do not want
             // ideally we would directly access the buffer.
+            console.log("ptyOutput", data);
             term!.reset();
             data.output.forEach((line, index) => {
                 if (index < data.output.length - 1) {
@@ -241,7 +243,7 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
         }
         socket.on("ptyCursorPosition", onCursorUpdate);
 
-        term.onResize(({ cols, rows }) => {
+        const onResize = term.onResize(({ cols, rows }) => {
             console.log(`Terminal was resized to ${cols} cols and ${rows} rows.`);
             socket.emit("ptyResize", { cols, rows: rows });
         });
@@ -253,6 +255,8 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
         socket.emit("ptyResendOutput");
 
         return () => {
+            onResize.dispose();
+            onInput.dispose();
             socket.off("ptyOutput", onOutput);
             socket.off("ptyCursorPosition", onCursorUpdate);
         };

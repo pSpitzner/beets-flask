@@ -74,6 +74,7 @@ def emit_output_continuously(sleep_seconds=0.1):
                 sio.emit("ptyOutput", {"output": current}, namespace="/terminal")
                 emit_cursor_position()
                 prev = current
+                log.debug(f"emitting {current}")
         except Exception as e:
             log.error(f"Error reading from pty: {e}")
             sio.emit(
@@ -106,6 +107,7 @@ def pty_input(sid, data):
     """
     Write to the child pty.
     """
+    log.debug(f"{sid} input {data}")
     pane.send_keys(data["input"], enter=False)
     emit_cursor_position()
 

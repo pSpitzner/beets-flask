@@ -16,7 +16,7 @@ const TERMINAL_URL =
         : "/terminal";
 
 const termSocket = io(TERMINAL_URL, {
-    autoConnect: false,
+    autoConnect: true,
     transports: ["websocket"],
 });
 
@@ -29,7 +29,7 @@ export const useTerminalSocket = () => {
         return () => {
             termSocket.disconnect();
         };
-    }, []);
+    }, [termSocket]);
 
     useEffect(() => {
         function handleConnect() {
@@ -48,7 +48,7 @@ export const useTerminalSocket = () => {
             termSocket.off("connect", handleConnect);
             termSocket.off("disconnect", handleDisconnect);
         };
-    }, []);
+    }, [termSocket]);
 
     return { socket: termSocket, isConnected };
 };
