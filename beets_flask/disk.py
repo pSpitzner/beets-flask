@@ -76,6 +76,15 @@ def register_inboxes():
         target=try_to_import, args=(observer, handler), daemon=True
     ).start()
 
+    # user would expect autotagging inboxes to automatically scan on first launch,
+    # we touch to trigger debounce and give sql time to init.
+    for inbox in _inboxes:
+        if inbox["autotag"]:
+            album_folders = all_album_folders(inbox["path"])
+            for f in album_folders:
+                os.utime(f, None)
+
+
 
 class InboxHandler(FileSystemEventHandler):
 
@@ -98,7 +107,7 @@ class InboxHandler(FileSystemEventHandler):
                 elif timestamp <= limit:
                     self.debounce[path] = -1
                     log.info("Processing %s", path)
-                    retag_folder(path)
+                    retag_folder(path, with_status=["untagged"])
 
     def on_any_event(self, event: FileSystemEvent):
         log.debug("got %r", event)
@@ -125,32 +134,36 @@ class InboxHandler(FileSystemEventHandler):
             self.debounce[album_folder] = time()
 
 
-def retag_folder(path: str, kind: str | None = None):
+def retag_folder(path: str,
+                 kind: str | None = None,
+                 with_status : None | list[str] = None
+                 ):
     """
-    For a single folder, we are fine with retagging a bit eagerly.
-    Anything whose status is not in
-        ["pending", "tagging", "importing", "imported", "cleared"]
-    will get a new preview.
-    E.g. when files are added over time, we would want to reduce the number of missing tracks.
+    Retag a (taggable) folder.
+
+    # Args
+    path: str, full path to the folder
+    kind: str, 'preview' or 'import'
+    with_status: None or list of strings. If None (default), always retag, no matter what. If list of strings, only retag if the tag for the folder matches one of the supplied statuses.
     """
 
     inbox = get_inbox_for_path(path)
 
     if inbox and kind is None:
-        kind = inbox["kind"]
+        kind = inbox["autotag"]
 
-    if kind is None:
+    if not kind:
         raise ValueError(f"Autotagging kind not found for path: {path}")
 
-    log.debug(f"retagging {path} with kind {kind} ...")
+    log.debug(f"retagging {path} with {kind=} ...")
 
     status = invoker.tag_status(path=path)
-    if status in ["pending", "tagging", "importing", "imported", "cleared"]:
-        log.debug(f"folder {path} is {status}. skipping")
-        return
-    else:
-        log.debug(f"tagging folder {path}")
+    if with_status is None or status in with_status:
         invoker.enqueue_tag_path(path, kind=kind)
+        log.debug(f"tagging folder {path}")
+    else:
+        log.debug(f"folder {path} has {status=}. skipping.")
+        return
 
     if inbox:
         inbox["last_tagged"] = datetime.now().isoformat()
@@ -158,19 +171,24 @@ def retag_folder(path: str, kind: str | None = None):
 
 def retag_inbox(
     inbox_dir: str,
-    with_status: list[str] = ["unmatched", "failed", "tagged", "untagged"],
+    with_status: None | list[str] = None,
     kind: str | None = None,
 ):
     """
-    Refresh an inbox folder, retagging all its subfolders
+    Refresh an inbox folder, retagging all its subfolders.
+
+    # Args
+    path: str, full path to the inbox
+    kind: str, 'preview' or 'import'
+    with_status: None or list of strings. If None (default), always retag, no matter what. If list of strings, only retag if the tag for the folder matches one of the supplied statuses.
     """
 
     inbox = get_inbox_for_path(inbox_dir)
 
     if inbox and kind is None:
-        kind = inbox["kind"]
+        kind = inbox["autotag"]
 
-    if kind is None:
+    if not kind:
         raise ValueError(f"Autotagging kind not found for {inbox_dir=}")
 
     log.debug(f"Refreshing all folders in {inbox_dir} to {kind=} {with_status=}")
@@ -180,7 +198,7 @@ def retag_inbox(
     todo_second = []
     for f in all_album_folders(inbox_dir):
         status = invoker.tag_status(path=f)
-        if status not in with_status:
+        if with_status and status not in with_status:
             log.debug(f"folder {f} has {status=}. skipping")
             continue
         if status == "untagged":
