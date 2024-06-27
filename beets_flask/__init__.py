@@ -49,6 +49,9 @@ def create_app():
     from .disk import register_inboxes
     register_inboxes()
 
+    from .invoker import delete_tags
+    delete_tags(with_status=["pending", "tagging", "importing"])
+
     log.info("App created")
 
     return app

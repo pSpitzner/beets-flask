@@ -148,7 +148,7 @@ function InboxTable({ stats }: { stats: InboxStats }) {
             <thead>
                 <tr>
                     <th>
-                        <span>New</span>
+                        <span>Untagged</span>
                     </th>
                     <th>
                         <span>Tagged</span>

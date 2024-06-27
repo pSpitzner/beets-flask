@@ -50,7 +50,7 @@ export const useTerminalSocket = () => {
         };
     }, []);
 
-    return { socket : termSocket, isConnected };
+    return { socket: termSocket, isConnected };
 };
 
 /* ---------------------------------------------------------------------------------- */
@@ -65,9 +65,7 @@ interface StatusInvalidationI {
 }
 
 const STATUS_URL =
-    import.meta.env.MODE === "development"
-        ? "ws://localhost:5001/status"
-        : "/status";
+    import.meta.env.MODE === "development" ? "ws://localhost:5001/status" : "/status";
 
 const statusSocket = io(STATUS_URL, {
     autoConnect: true,
@@ -86,7 +84,9 @@ const StatusContext = createContext<StatusContextI>({
 const useStatusSocket = () => {
     const context = useContext(StatusContext);
     if (!context) {
-        throw new Error("useStatusSocket must be used within a StatusSocketContextProvider");
+        throw new Error(
+            "useStatusSocket must be used within a StatusSocketContextProvider"
+        );
     }
     return context;
 };
@@ -113,7 +113,7 @@ const StatusContextProvider = ({
             setIsConnected(false);
         }
 
-        function handleTagUpdate(data : StatusInvalidationI) {
+        function handleTagUpdate(data: StatusInvalidationI) {
             console.log("Tag Update", data);
 
             if (data.attributes === "all") {
@@ -134,28 +134,39 @@ const StatusContextProvider = ({
             }
         }
 
+        function handleInboxUpdates(data: StatusInvalidationI) {
+            if (data.attributes === "all") {
+                client.invalidateQueries({
+                    queryKey: ["inbox"],
+                });
+            } else {
+                throw new Error(
+                    "Inbox update with partial attributes is not supported"
+                );
+            }
+        }
+
         statusSocket.on("connect", handleConnect);
         statusSocket.on("disconnect", handleDisconnect);
         statusSocket.on("tag", handleTagUpdate);
+        statusSocket.on("inbox", handleInboxUpdates);
 
         return () => {
             statusSocket.off("connect", handleConnect);
             statusSocket.off("disconnect", handleDisconnect);
             statusSocket.off("tag", handleTagUpdate);
+            statusSocket.off("inbox", handleInboxUpdates);
         };
     }, [client]);
 
     const socketState: StatusContextI = {
-        socket : statusSocket,
-        isConnected
-    }
+        socket: statusSocket,
+        isConnected,
+    };
 
     return (
-        <StatusContext.Provider value={socketState}>
-            {children}
-        </StatusContext.Provider>
-    )
+        <StatusContext.Provider value={socketState}>{children}</StatusContext.Provider>
+    );
 };
 
-
-export { useStatusSocket, StatusContextProvider }
+export { useStatusSocket, StatusContextProvider };

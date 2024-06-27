@@ -20,7 +20,7 @@ export function TagStatusIcon({
     className?: string;
 }) {
     const { data } = useQuery(tagQueryOptions(tagId, tagPath));
-    const status = data?.status ?? "frontend waiting";
+    const status = data?.status ?? "untagged";
 
     return <StatusIcon status={status} className={className} />;
 }

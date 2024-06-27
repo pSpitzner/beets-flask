@@ -80,7 +80,7 @@ export const retagInboxNewMutation: UseMutationOptions<unknown, Error, string> =
             body: JSON.stringify({
                 folder: inboxPath,
                 kind: "preview",
-                with_status: ["notag"],
+                with_status: ["untagged"],
             }),
         });
     },
@@ -96,7 +96,7 @@ export const retagInboxAllMutation: UseMutationOptions<unknown, Error, string> =
             body: JSON.stringify({
                 folder: inboxPath,
                 kind: "preview",
-                with_status: ["unmatched", "failed", "tagged", "notag"],
+                with_status: ["unmatched", "failed", "tagged", "untagged"],
             }),
         });
     },

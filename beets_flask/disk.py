@@ -16,6 +16,7 @@ from beets_flask.db_engine import db_session
 from beets_flask.models.tag import Tag
 from beets_flask.logger import log
 from beets_flask.config import config
+from beets_flask.routes.backend.sse import update_client_view
 
 
 # ------------------------------------------------------------------------------------ #
@@ -111,7 +112,7 @@ class InboxHandler(FileSystemEventHandler):
 
         # trigger cache clear and gui update of inbox directories
         path_to_dict.cache.clear()  # type: ignore
-        ut.update_client_view("inbox")
+        update_client_view("inbox")
 
         try:
             album_folder = album_folders_from_track_paths([fullpath])[0]
@@ -157,7 +158,7 @@ def retag_folder(path: str, kind: str | None = None):
 
 def retag_inbox(
     inbox_dir: str,
-    with_status: list[str] = ["unmatched", "failed", "tagged", "notag"],
+    with_status: list[str] = ["unmatched", "failed", "tagged", "untagged"],
     kind: str | None = None,
 ):
     """
@@ -178,11 +179,11 @@ def retag_inbox(
     todo_first = []
     todo_second = []
     for f in all_album_folders(inbox_dir):
-        status = invoker.tag_status(f)
+        status = invoker.tag_status(path=f)
         if status not in with_status:
             log.debug(f"folder {f} has {status=}. skipping")
             continue
-        if status == "notag":
+        if status == "untagged":
             todo_first.append(f)
         else:
             todo_second.append(f)

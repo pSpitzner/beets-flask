@@ -72,7 +72,7 @@ def autotag_inbox_folder():
     data = request.get_json()
     kind = data.get("kind")
     folder = data.get("folder")
-    with_status = data.get("with_status", ["notag"])
+    with_status = data.get("with_status", ["untagged"])
 
     if not folder.startswith("/"):
         folder = "/" + folder

@@ -7,6 +7,7 @@ This module is the glue between three concepts:
 
 from __future__ import annotations
 from datetime import datetime
+
 import requests
 
 from beets_flask.models import Tag
@@ -19,6 +20,7 @@ from beets_flask.db_engine import (
 )
 from beets_flask.routes.backend.errors import InvalidUsage
 from beets_flask.routes.backend.sse import update_client_view
+from sqlalchemy import delete
 
 
 def enqueue(id: str, session: Session | None = None):
@@ -279,7 +281,7 @@ def tag_status(
 ):
     """
     Get the status of a tag by its id or path.
-    Returns "notag" if the tag does not exist or the path was not tagged yet.
+    Returns "untagged" if the tag does not exist or the path was not tagged yet.
     """
 
     with db_session(session) as s:
@@ -290,6 +292,21 @@ def tag_status(
             bt = Tag.get_by(Tag.album_folder == path, session=s)
 
         if bt is None or bt.status is None:
-            return "notag"
+            return "untagged"
 
         return bt.status
+
+def delete_tags(with_status : list[str]):
+    """
+    Delete all tags that have a certain status from the database.
+    We call this during container launch, to clear up things that
+    went were not finished.
+
+    # Args:
+    with_status : list
+    """
+    with db_session() as session:
+        stmt = delete(Tag).where(Tag.status.in_(with_status))
+        result = session.execute(stmt)
+        log.debug(f"Deleted {result.rowcount} tags with statuses: {', '.join(with_status)}")
+        session.commit()
