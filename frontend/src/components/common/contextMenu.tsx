@@ -1,7 +1,7 @@
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 
-import { UseMutationOptions } from "@tanstack/react-query";
+import { UseMutationOptions, useMutation } from "@tanstack/react-query";
 
 import {
     useState,
@@ -11,6 +11,8 @@ import {
     useRef,
     useEffect,
     cloneElement,
+    forwardRef,
+    Ref,
 } from "react";
 import { IconTextButtonWithMutation } from "@/components/common/buttons";
 import { queryClient } from "@/main";
@@ -22,6 +24,8 @@ import { useSelection } from "@/components/context/useSelection";
 
 import styles from "./contextMenu.module.scss";
 import { useSiblings } from "@/components/context/useSiblings";
+import { MenuList } from "@mui/material";
+import { ErrorDialog } from "./dialogs";
 
 interface ContextMenuContextI {
     closeMenu: () => void;
@@ -59,10 +63,9 @@ interface ContextMenuProps
 }
 
 export const defaultActions = [
-    <SelectionSummary divider />,
-    <SelectAllAction />,
-    <DeselectAllAction />,
-    <RetagAction autoFocus />,
+    <SelectAllAction autoFocus />,
+    <DeselectAllAction divider />,
+    <RetagAction />,
     <ImportAction />,
     <TerminalImportAction />,
     <CopyPathAction />,
@@ -129,8 +132,8 @@ export function ContextMenu({
                 onClose={closeMenu} // enables `esc` and outside clicks to close the menu
                 anchorReference="anchorPosition"
                 anchorPosition={position}
+                className={styles.ContextMenu}
             >
-
                 {actions.map((action, index) =>
                     cloneElement(action as React.ReactElement, {
                         key: (action as React.ReactElement).key || `action-${index}`,
@@ -156,7 +159,7 @@ function Trigger({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
 }
 
 /* ---------------------------------------------------------------------------------- */
-/*                                       Actions                                      */
+/*                                   Simple Actions                                   */
 /* ---------------------------------------------------------------------------------- */
 
 export function SelectionSummary({ ...props }: { [key: string]: any }) {
@@ -170,9 +173,7 @@ export function SelectionSummary({ ...props }: { [key: string]: any }) {
 
     return (
         // make this a non-clickable heading
-        <MenuItem disabled className={styles.menuHeading} {...props}>
-            <span>{N.current} selected</span>
-        </MenuItem>
+        <Heading {...props} text={N.current + " selected"} />
     );
 }
 
@@ -180,16 +181,14 @@ export function SelectAllAction({ ...props }: { [key: string]: any }) {
     const { selectAll } = useSelection();
     const { closeMenu } = useContextMenu();
     return (
-        <MenuItem
+        <Action
             {...props}
-            className={styles.menuItem}
             onClick={() => {
                 closeMenu();
                 selectAll();
             }}
-        >
-            <span>Select All</span>
-        </MenuItem>
+            text={"Select All"}
+        />
     );
 }
 
@@ -197,16 +196,14 @@ export function DeselectAllAction({ ...props }: { [key: string]: any }) {
     const { deselectAll } = useSelection();
     const { closeMenu } = useContextMenu();
     return (
-        <MenuItem
+        <Action
             {...props}
-            className={styles.menuItem}
             onClick={() => {
                 closeMenu();
                 deselectAll();
             }}
-        >
-            <span>Deselect All</span>
-        </MenuItem>
+            text={"Deselect All"}
+        />
     );
 }
 
@@ -214,40 +211,87 @@ export function DeselectAllAction({ ...props }: { [key: string]: any }) {
 export function ExpandAllAction({ ...props }: { [key: string]: any }) {
     const { siblings } = useSiblings();
     const { closeMenu } = useContextMenu();
-    const handleClick = () => {
-        siblings.forEach((sibling : React.RefObject<any>) => {
-            sibling.current.setExpanded(true);
-        });
-        closeMenu();
-    }
-
     return (
-        <MenuItem
+        <Action
             {...props}
-            className={styles.menuItem}
-            onClick={handleClick}
-        >
-            <span>Expand All</span>
-        </MenuItem>
+            onClick={() => {
+                siblings.forEach((sibling: React.RefObject<any>) => {
+                    sibling.current.setExpanded(true);
+                });
+                closeMenu();
+            }}
+            text={"Expand All"}
+        />
     );
 }
 
 export function CollapseAllAction({ ...props }: { [key: string]: any }) {
     const { siblings } = useSiblings();
     const { closeMenu } = useContextMenu();
-    const handleClick = () => {
-        siblings.forEach((sibling: React.RefObject<any>) => {
-            sibling.current.setExpanded(false);
-        });
-        closeMenu();
-    };
-
     return (
-        <MenuItem {...props} className={styles.menuItem} onClick={handleClick}>
-            <span>Collapse All</span>
-        </MenuItem>
+        <Action
+            {...props}
+            onClick={() => {
+                siblings.forEach((sibling: React.RefObject<any>) => {
+                    sibling.current.setExpanded(false);
+                });
+                closeMenu();
+            }}
+            text={"Collapse All"}
+        />
     );
 }
+
+export function CopyPathAction({ ...props }: { [key: string]: any }) {
+    const { closeMenu } = useContextMenu();
+    const { getSelected } = useSelection();
+    const text = useRef("");
+
+    useEffect(() => {
+        text.current = "'" + getSelected().join("' '") + "'";
+    }, [text]);
+
+    return (
+        <Action
+            {...props}
+            onClick={() => {
+                closeMenu();
+                navigator.clipboard.writeText(text.current).catch(console.error);
+            }}
+            icon={<Clipboard />}
+            text={"Copy Path"}
+        />
+    );
+}
+
+export function TerminalImportAction({ ...props }: { [key: string]: any }) {
+    const { closeMenu } = useContextMenu();
+    const { setOpen, inputText, clearInput } = useTerminalContext();
+    const { getSelected } = useSelection();
+    const text = useRef("");
+
+    useEffect(() => {
+        text.current = "'" + getSelected().join("' '") + "'";
+    }, [text]);
+
+    return (
+        <Action
+            {...props}
+            onClick={() => {
+                closeMenu();
+                setOpen(true);
+                clearInput();
+                inputText(`beet import -t ${text.current}`);
+            }}
+            icon={<Terminal />}
+            text={"Terminal Import"}
+        />
+    );
+}
+
+/* ---------------------------------------------------------------------------------- */
+/*                                  Mutation Actions                                  */
+/* ---------------------------------------------------------------------------------- */
 
 /**
  * Refresh or tag for the first time.
@@ -282,14 +326,12 @@ export function RetagAction({ ...props }: { [key: string]: any }) {
     };
 
     return (
-        <MenuItem {...props} className={styles.menuItem}>
-            <IconTextButtonWithMutation
-                icon={<Tag size={12} />}
-                text="(Re-)Tag"
-                color="inherit"
-                mutationOption={retagOptions}
-            />
-        </MenuItem>
+        <ActionWithMutation
+            {...props}
+            icon={<Tag />}
+            text={"(Re-)Tag"}
+            mutationOption={retagOptions}
+        />
     );
 }
 
@@ -323,63 +365,108 @@ export function ImportAction({ ...props }: { [key: string]: any }) {
     };
 
     return (
-        <MenuItem {...props} className={styles.menuItem}>
-            <IconTextButtonWithMutation
-                icon={<HardDriveDownload size={12} />}
-                text="Import"
-                color="inherit"
-                mutationOption={importOptions}
-            />
-        </MenuItem>
+        <ActionWithMutation
+            {...props}
+            icon={<HardDriveDownload />}
+            text={"Import"}
+            mutationOption={importOptions}
+        />
     );
 }
 
-export function CopyPathAction({ ...props }: { [key: string]: any }) {
-    const { closeMenu } = useContextMenu();
-    const { getSelected } = useSelection();
-    const text = useRef("");
+/* ---------------------------------------------------------------------------------- */
+/*                                   Action Helpers                                   */
+/* ---------------------------------------------------------------------------------- */
 
-    useEffect(() => {
-        text.current = "'" + getSelected().join("' '") + "'";
-    }, []);
+function Action({
+    onClick,
+    icon,
+    text,
+    className,
+    ...props
+}: {
+    onClick?: () => void;
+    icon?: React.ReactNode;
+    text: React.ReactNode;
+    className?: string;
+    [key: string]: any;
+}) {
+    const { closeMenu } = useContextMenu();
 
     return (
         <MenuItem
             {...props}
-            className={styles.menuItem}
-            onClick={() => {
-                closeMenu();
-                navigator.clipboard.writeText(text.current).catch(console.error);
-            }}
+            className={`${styles.Action} ${className ? className : ""}`}
+            onClick={onClick || closeMenu}
         >
-            <Clipboard size={12} />
-            <span>Copy Path</span>
+            <div className={styles.ActionText}>{text}</div>
+            {icon && <div className={styles.ActionIcon}>{icon}</div>}
         </MenuItem>
     );
 }
 
-export function TerminalImportAction({ ...props }: { [key: string]: any }) {
-    const { closeMenu } = useContextMenu();
-    const { setOpen, inputText, clearInput } = useTerminalContext();
-    const { getSelected } = useSelection();
-    const text = useRef("");
-
-    useEffect(() => {
-        text.current = "'" + getSelected().join("' '") + "'";
-    }, []);
+const ActionWithMutation = forwardRef(function ActionWithMutation(
+    {
+        mutationOption,
+        icon,
+        text,
+        className,
+        ...props
+    }: {
+        mutationOption: UseMutationOptions;
+        icon: React.ReactNode;
+        text: React.ReactNode;
+        className?: string;
+        [key: string]: any;
+    },
+    ref?: React.Ref<HTMLDivElement>
+) {
+    const { isSuccess, isPending, mutate, isError, error, reset } =
+        useMutation(mutationOption);
 
     return (
         <MenuItem
             {...props}
-            onClick={() => {
-                closeMenu();
-                setOpen(true);
-                clearInput();
-                inputText(`beet import -t ${text.current}`);
+            className={`${styles.Action} ${className ? className : ""}`}
+            onClick={(event: React.MouseEvent) => {
+                event.stopPropagation();
+                if (isSuccess) {
+                    reset();
+                } else {
+                    mutate();
+                }
             }}
         >
-            <Terminal size={12} />
-            <span>Terminal Import</span>
+            <div className={styles.ActionText}>{isPending ? text + " ..." : text}</div>
+
+            {icon && (
+                <div className={styles.ActionIcon} ref={ref}>
+                    {icon}
+                </div>
+            )}
+
+            {isError && <ErrorDialog open={isError} error={error} onClose={reset} />}
+        </MenuItem>
+    );
+});
+
+function Heading({
+    onClick,
+    icon,
+    text,
+    className,
+    ...props
+}: {
+    onClick?: () => void;
+    icon?: React.ReactNode;
+    text: React.ReactNode;
+    className?: string;
+    [key: string]: any;
+}) {
+    return (
+        <MenuItem disabled className={`${styles.Action} ${styles.Heading}`} {...props}>
+            <div className={styles.ActionText}>{text}</div>
+            {icon && <div className={styles.ActionIcon}>{icon}</div>}
         </MenuItem>
     );
 }

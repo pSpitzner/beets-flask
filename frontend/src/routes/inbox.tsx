@@ -4,7 +4,7 @@ import { FsPath, inboxQueryOptions } from "@/lib/inbox";
 import { TagStatusIcon } from "@/components/common/statusIcon";
 import { SimilarityBadgeWithHover } from "@/components/common/similarityBadge";
 import { SelectionProvider, useSelection } from "@/components/context/useSelection";
-import { ContextMenu, defaultActions } from "@/components/common/contextMenu";
+import { ContextMenu, SelectionSummary, defaultActions } from "@/components/common/contextMenu";
 
 import styles from "./inbox.module.scss";
 import { ChevronRight } from "lucide-react";
@@ -119,7 +119,7 @@ export function FolderView({
                 <ContextMenu
                     className={styles.contextMenuHeaderWrapper}
                     identifier={fp.full_path}
-                    actions={defaultActions}
+                    actions={[<SelectionSummary />, ...defaultActions]}
                 >
                     <LowestFolder fp={fp} label={label} />
                 </ContextMenu>
