@@ -16,7 +16,7 @@ from beets_flask.db_engine import db_session
 from beets_flask.models.tag import Tag
 from beets_flask.logger import log
 from beets_flask.config import config
-from beets_flask.routes.backend.sse import update_client_view
+from beets_flask.routes.sse import update_client_view
 
 
 # ------------------------------------------------------------------------------------ #

@@ -33,8 +33,8 @@ def create_app():
     app.config["REDIS_URL"] = "redis://localhost"
 
     # Register blueprints
-    from .routes.backend import backend_bp
-    from .routes.frontend import frontend_bp
+    from .routes import backend_bp
+    from .routes import frontend_bp
 
     app.register_blueprint(backend_bp)
     app.register_blueprint(frontend_bp)

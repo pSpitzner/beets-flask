@@ -18,8 +18,8 @@ from beets_flask.db_engine import (
     db_session,
     Session,
 )
-from beets_flask.routes.backend.errors import InvalidUsage
-from beets_flask.routes.backend.sse import update_client_view
+from beets_flask.routes.errors import InvalidUsage
+from beets_flask.routes.sse import update_client_view
 from sqlalchemy import delete
 
 

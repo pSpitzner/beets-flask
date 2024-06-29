@@ -1,3 +1,7 @@
+"""
+This provides the glue between the compiled vite frontend and our backend.
+"""
+
 from flask import Blueprint, send_from_directory
 
 frontend_bp = Blueprint("frontend", __name__)
