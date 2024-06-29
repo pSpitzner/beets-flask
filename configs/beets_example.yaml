@@ -2,9 +2,10 @@
 
 gui:
     library:
-        include_paths: yes
-        readonly: yes
-        jsonify_prettyprint_regular: no
+        readonly: no # disables importing and changes to library
+        include_paths: yes # for the library-browsing (backend api)
+
+    num_workers_preview: 4 # how many previews to generate in parallel
 
     tags:
         recent_days: 14 # Number of days to consider for the "recent" tag group

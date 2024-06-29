@@ -4,7 +4,7 @@ Tag related API endpoints
 Tags are our database represenation of a look-up or import performed by beets. can be created by the user or automatically by the system.
 """
 
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, abort
 from sqlalchemy import select
 
 from beets_flask.models import Tag, TagGroup
@@ -12,6 +12,7 @@ from beets_flask.db_engine import db_session, with_db_session, Session
 from beets_flask.routes.backend.errors import InvalidUsage
 from beets_flask.utility import log
 import beets_flask.invoker as invoker
+from beets_flask.config import config
 
 tag_bp = Blueprint("tag", __name__, url_prefix="/tag")
 
@@ -78,6 +79,9 @@ def add_tag():
         kind = data.get("kind")
         folder = data.get("folder", None)
         folders = data.get("folders", [])
+
+        if kind == "import" and config["gui"]["library"]["readonly"].get(bool):
+            return abort(405)
 
         if folder is not None and len(folders) > 0:
             raise InvalidUsage("You can't specify both `folder` and `folders`")

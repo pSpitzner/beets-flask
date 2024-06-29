@@ -20,12 +20,18 @@ if [ ! -f /home/beetle/.config/beets/config.yaml ]; then
 	        cp /repo/configs/beets_default.yaml /home/beetle/.config/beets/config.yaml
 fi
 
+NUM_WORKERS_PREVIEW=$(yq e '.gui.num_workers_preview' /home/beetle/.config/beets/config.yaml)
+if ! [[ "$NUM_WORKERS_PREVIEW" =~ ^[0-9]+$ ]]; then
+    NUM_WORKERS_PREVIEW=1
+fi
 
 for i in $(seq 1 $NUM_WORKERS_PREVIEW)
 do
   rq worker preview --log-format "Preview worker $i: %(message)s" > /dev/null &
 done
 
+# imports are fast, because they use previously fetched previews. one worker should be enough.
+NUM_WORKERS_IMPORT=1
 for i in $(seq 1 $NUM_WORKERS_IMPORT)
 do
   rq worker import --log-format "Import worker $i: %(message)s" > /dev/null &

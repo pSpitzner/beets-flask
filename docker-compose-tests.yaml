@@ -6,7 +6,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: test # dev or prod
+      target: test
       args:
         # 502 is default on macos, 1000 on linux
         USER_ID: 502
@@ -20,6 +20,5 @@ services:
       LOG_LEVEL_WEB: DEBUG # web interface console
       # inside the container
       LOG_FILE_WEB: "/repo/log/for_web.log"
-      INBOX: "/music/inbox/"
     volumes:
       - ./:/repo/

@@ -14,7 +14,7 @@ COPY requirements.txt .
 RUN --mount=type=cache,target=/var/cache/apk \
     apk --no-cache update
 RUN --mount=type=cache,target=/var/cache/apk \
-    apk --no-cache add imagemagick redis git bash keyfinder-cli npm tmux
+    apk --no-cache add imagemagick redis git bash keyfinder-cli npm tmux yq
 RUN --mount=type=cache,target=/root/.cache/pip \
 pip3 install -r requirements.txt
 
