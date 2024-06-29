@@ -27,5 +27,5 @@ def reverse_proxy(path):
     if "logo.png" in path:
         path = path[path.index("logo.png") :]
 
-    r = send_from_directory("../frontend/dist/", path)
+    r = send_from_directory("../../frontend/dist/", path)
     return r

@@ -25,6 +25,21 @@ if ! [[ "$NUM_WORKERS_PREVIEW" =~ ^[0-9]+$ ]]; then
     NUM_WORKERS_PREVIEW=1
 fi
 
+mkdir -p /repo/log
+rm /repo/log/for_web.log >/dev/null 2>&1
+rm /repo/frontend/vite.config.ts.timestamp-*.mjs >/dev/null 2>&1
+
+export FLASK_ENV=development
+export FLASK_DEBUG=1
+
+# ------------------------------------------------------------------------------------ #
+#                                     start backend                                    #
+# ------------------------------------------------------------------------------------ #
+
+
+# running the server from inside the backend dir makes imports and redis easier
+cd backend
+
 for i in $(seq 1 $NUM_WORKERS_PREVIEW)
 do
   rq worker preview --log-format "Preview worker $i: %(message)s" > /dev/null &
@@ -38,14 +53,6 @@ do
 done
 
 redis-cli FLUSHALL
-
-mkdir -p /repo/log
-rm /repo/log/for_web.log >/dev/null 2>&1
-rm /repo/frontend/vite.config.ts.timestamp-*.mjs >/dev/null 2>&1
-
-export FLASK_ENV=development
-export FLASK_DEBUG=1
-
 
 # we need to run with one worker for socketio to work (but need at lesat threads for SSEs)
 gunicorn --worker-class eventlet -w 1 --threads 32 --bind 0.0.0.0:5001 --reload 'main:create_app()'
