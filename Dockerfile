@@ -7,9 +7,9 @@ ARG GROUP_ID
 ENV USER_ID=$USER_ID
 ENV GROUP_ID=$GROUP_ID
 RUN addgroup -g $GROUP_ID beetle && adduser -D -u $USER_ID -G beetle beetle
-WORKDIR /repo
 
 # dependencies
+WORKDIR /repo
 COPY requirements.txt .
 RUN --mount=type=cache,target=/var/cache/apk \
     apk --no-cache update
@@ -18,6 +18,9 @@ RUN --mount=type=cache,target=/var/cache/apk \
 RUN --mount=type=cache,target=/root/.cache/pip \
 pip3 install -r requirements.txt
 
+# ------------------------------------------------------------------------------------ #
+#                                      Development                                     #
+# ------------------------------------------------------------------------------------ #
 
 FROM deps as dev
 
@@ -28,8 +31,14 @@ RUN chown -R beetle:beetle /repo
 RUN chmod +x ./entrypoint_dev.sh
 
 # we copy config files in the script, so they can be put into mounted volumes
+WORKDIR /repo
 USER beetle
+
 ENTRYPOINT ["./entrypoint_dev.sh"]
+
+# ------------------------------------------------------------------------------------ #
+#                                        Testing                                       #
+# ------------------------------------------------------------------------------------ #
 
 FROM deps as test
 
@@ -43,6 +52,9 @@ RUN chmod +x ./entrypoint_test.sh
 USER beetle
 ENTRYPOINT ["./entrypoint_test.sh"]
 
+# ------------------------------------------------------------------------------------ #
+#                                      Production                                      #
+# ------------------------------------------------------------------------------------ #
 
 FROM deps as prod
 
@@ -52,6 +64,10 @@ COPY . .
 RUN chown -R beetle:beetle /repo
 RUN chmod +x ./entrypoint.sh
 
+WORKDIR /repo/frontend
+RUN npm install
+RUN npm run build
+
+WORKDIR /repo
 USER beetle
 ENTRYPOINT ["./entrypoint.sh"]
-

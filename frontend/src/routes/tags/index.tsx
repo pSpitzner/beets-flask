@@ -4,12 +4,9 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { tagGroupAllQueryOptions, tagGroupIdQueryOptions } from "@/lib/tag";
 import TagGroupView from "@/components/common/tagGroupView";
 
-import styles from "./tags.module.scss";
-
 import { TagView } from "@/components/common/tagView";
-import { Button, Typography } from "@mui/material";
 import { SiblingRefsProvider } from "@/components/context/useSiblings";
-import { createRef, useEffect, useMemo, useRef } from "react";
+import { createRef, useMemo } from "react";
 
 export const Route = createFileRoute("/tags/")({
     loader: (opts) =>
@@ -67,7 +64,7 @@ function ManualTagGroup({id, tag_ids} : {id: string, tag_ids: string[]}) {
     );
 }
 
-function ManualTagGroup2( {id, tag_ids} : { id: string; tag_ids: string[] }) {
+export function ManualTagGroup2( {id, tag_ids} : { id: string; tag_ids: string[] }) {
     const title = id;
     const subtitle = tag_ids.length === 1 ? "(1 tag)" : `(${tag_ids.length} tags)`;
 

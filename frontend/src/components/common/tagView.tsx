@@ -12,11 +12,9 @@ import { SimilarityBadge } from "./similarityBadge";
 import { Typography } from "@mui/material";
 import { Ellipsis } from "lucide-react";
 import {
-    createRef,
     forwardRef,
     useEffect,
     useImperativeHandle,
-    useRef,
     useState,
 } from "react";
 import { useSelection } from "@/components/context/useSelection";
@@ -24,7 +22,6 @@ import {
     CollapseAllAction,
     ContextMenu,
     ExpandAllAction,
-    SelectionSummary,
     defaultActions,
 } from "./contextMenu";
 import { useSiblings } from "@/components/context/useSiblings";

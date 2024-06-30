@@ -12,8 +12,6 @@ npm run dev &
 
 cd /repo
 
-redis-server --daemonize yes
-
 # Check if configs exist and copy if they dont
 if [ ! -f /home/beetle/.config/beets/config.yaml ]; then
 	    mkdir -p /home/beetle/.config/beets
@@ -36,9 +34,10 @@ export FLASK_DEBUG=1
 #                                     start backend                                    #
 # ------------------------------------------------------------------------------------ #
 
-
 # running the server from inside the backend dir makes imports and redis easier
-cd backend
+cd /repo/backend
+
+redis-server --daemonize yes
 
 for i in $(seq 1 $NUM_WORKERS_PREVIEW)
 do
@@ -57,4 +56,5 @@ redis-cli FLUSHALL
 # we need to run with one worker for socketio to work (but need at lesat threads for SSEs)
 gunicorn --worker-class eventlet -w 1 --threads 32 --bind 0.0.0.0:5001 --reload 'main:create_app()'
 
+# if we need to debug the continaer without running the webserver:
 # tail -f /dev/null

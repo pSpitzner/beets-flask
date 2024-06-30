@@ -17,10 +17,8 @@ services:
             - "5001:5001" # production and backend
             - "5173:5173" # for vite dev server
         environment:
-            LOG_LEVEL_SERVER: DEBUG # container console
-            LOG_LEVEL_WEB: DEBUG # web interface console
-            # inside the container
-            LOG_FILE_WEB: "/repo/log/for_web.log"
+            LOG_LEVEL_BEETSFLASK: DEBUG  # this is used for our own logs. (set beets level via the config)
+            LOG_LEVEL_OTHERS: WARNING # this is passed python logging basic config (all other modules)
         volumes:
             # beets puts its config files into the home directory
             # We dont use the home directory for anything else, so its easy to

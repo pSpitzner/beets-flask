@@ -47,10 +47,10 @@ def register_inboxes():
 
     for inbox in _inboxes:
         if not inbox["autotag"]:
-            log.debug(f'Skipping observer for inbox {inbox["path"]}')
+            log.info(f'Skipping observer for inbox {inbox["path"]}')
             continue
 
-        log.debug(f'Starting observer for {inbox["path"]}')
+        log.info(f'Starting observer for {inbox["path"]}')
         try:
             # the polling observer worked more reliably for me than the default observer.
             observer.schedule(handler, path=inbox["path"], recursive=True)
@@ -106,7 +106,7 @@ class InboxHandler(FileSystemEventHandler):
                     del self.debounce[path]
                 elif timestamp <= limit:
                     self.debounce[path] = -1
-                    log.info("Processing %s", path)
+                    log.debug("Processing %s", path)
                     retag_folder(path, with_status=["untagged"])
 
     def on_any_event(self, event: FileSystemEvent):

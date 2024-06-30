@@ -1,18 +1,46 @@
 #!/bin/sh
 
+whoami
+id
+pwd
+
+cd /repo
+
 # Check if configs exist and copy if they dont
 if [ ! -f /home/beetle/.config/beets/config.yaml ]; then
 	    mkdir -p /home/beetle/.config/beets
 	        cp /repo/configs/beets_default.yaml /home/beetle/.config/beets/config.yaml
 fi
 
+NUM_WORKERS_PREVIEW=$(yq e '.gui.num_workers_preview' /home/beetle/.config/beets/config.yaml)
+if ! [[ "$NUM_WORKERS_PREVIEW" =~ ^[0-9]+$ ]]; then
+    NUM_WORKERS_PREVIEW=1
+fi
+
 mkdir -p /repo/log
 
-# start redis and workers
-redis-server --daemonize yes >/dev/null
-rq worker preview --log-format '%(message)s'  --disable-job-desc-logging >/dev/null &
-rq worker import --log-format '%(message)s'  --disable-job-desc-logging >/dev/null &
+# ------------------------------------------------------------------------------------ #
+#                                     start backend                                    #
+# ------------------------------------------------------------------------------------ #
 
-export FLASK_APP=beets_flask
-flask run --host=0.0.0.0 --port=5001
+# running the server from inside the backend dir makes imports and redis easier
+cd /repo/backend
 
+redis-server --daemonize yes
+
+for i in $(seq 1 $NUM_WORKERS_PREVIEW)
+do
+  rq worker preview --log-format "Preview worker $i: %(message)s" > /dev/null &
+done
+
+# imports are fast, because they use previously fetched previews. one worker should be enough.
+NUM_WORKERS_IMPORT=1
+for i in $(seq 1 $NUM_WORKERS_IMPORT)
+do
+  rq worker import --log-format "Import worker $i: %(message)s" > /dev/null &
+done
+
+redis-cli FLUSHALL
+
+# we need to run with one worker for socketio to work (but need at lesat threads for SSEs)
+gunicorn --worker-class eventlet -w 1 --threads 32 --bind 0.0.0.0:5001 'main:create_app()'

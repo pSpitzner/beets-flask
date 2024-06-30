@@ -22,7 +22,7 @@ const darkTheme = extendTheme({
             mode: "dark",
             primary: {
                 main: "#7FFFD4",
-                muted: "#89a99e",
+                // muted: "#89a99e",
             },
             secondary: {
                 main: "#C07351",

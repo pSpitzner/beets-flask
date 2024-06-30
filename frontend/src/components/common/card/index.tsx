@@ -2,7 +2,6 @@ import { Avatar, Box, styled } from "@mui/material";
 import MuiCard from "@mui/material/Card";
 import MuiCardContent from "@mui/material/CardContent";
 import MuiCardActions from "@mui/material/CardActions";
-import MuiCardHeader from "@mui/material/CardHeader";
 import React from "react";
 
 export const Card = styled(MuiCard)(() => ({

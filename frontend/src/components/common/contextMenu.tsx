@@ -12,9 +12,7 @@ import {
     useEffect,
     cloneElement,
     forwardRef,
-    Ref,
 } from "react";
-import { IconTextButtonWithMutation } from "@/components/common/buttons";
 import { queryClient } from "@/main";
 import { TagI } from "@/lib/tag";
 import { Tag, HardDriveDownload, Clipboard, Terminal } from "lucide-react";
@@ -24,7 +22,6 @@ import { useSelection } from "@/components/context/useSelection";
 
 import styles from "./contextMenu.module.scss";
 import { useSiblings } from "@/components/context/useSiblings";
-import { MenuList } from "@mui/material";
 import { ErrorDialog } from "./dialogs";
 
 interface ContextMenuContextI {

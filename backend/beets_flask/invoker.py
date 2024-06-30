@@ -49,12 +49,16 @@ def enqueue(id: str, session: Session | None = None):
             message="Tag enqueued",
         )
 
+        log.info(f"Enqueued {tag.id=} {tag.album_folder=} {tag.kind=}")
+
         if tag.kind == "preview":
             rq.get_queue("preview").enqueue(runPreview, id)
         elif tag.kind == "import":
             rq.get_queue("import").enqueue(runImport, id)
         else:
             raise ValueError(f"Unknown kind {tag.kind}")
+
+
 
 
 def enqueue_tag_path(path: str, kind: str, session: Session | None = None):
