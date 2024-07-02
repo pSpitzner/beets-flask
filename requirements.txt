@@ -22,9 +22,7 @@ gevent-websocket==0.10.1
 pytest==8.2.2
 # beets dependencies
 jellyfish==0.10 # current version does not compile on arm64
-# beets==1.6.0
-# this is the commit bumping to version 2.0.0
-git+https://github.com/beetbox/beets.git@33ab22db8c69ffad8209f3258c7e22acb04eb668
+beets==2.0.0
 pylast==5.2.0
 beautifulsoup4==4.12.3
 pyacoustid==1.3.0

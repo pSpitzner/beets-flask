@@ -17,6 +17,7 @@ RUN --mount=type=cache,target=/var/cache/apk \
     apk --no-cache add imagemagick redis git bash keyfinder-cli npm tmux yq
 RUN --mount=type=cache,target=/root/.cache/pip \
 pip3 install -r requirements.txt
+RUN corepack enable && corepack prepare pnpm@8.7.5 --activate
 
 # ------------------------------------------------------------------------------------ #
 #                                      Development                                     #
@@ -65,8 +66,8 @@ RUN chown -R beetle:beetle /repo
 RUN chmod +x ./entrypoint.sh
 
 WORKDIR /repo/frontend
-RUN npm install
-RUN npm run build
+RUN pnpm install
+RUN pnpm run build
 
 WORKDIR /repo
 USER beetle

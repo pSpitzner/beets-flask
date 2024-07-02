@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 
-import { ListItemText, List as MuiList } from "@mui/material";
+import { ListItemText } from "@mui/material";
 import ListItem, { ListItemProps } from "@mui/material/ListItem";
 
 import { ReactNode, ComponentType } from "react";
@@ -55,7 +55,7 @@ function Item({
 
     if (to) {
         return (
-            <Link key={index} to={encodeURI(to)} preload={"intent"} preloadDelay={2000}>
+            <Link key={index} to={to} preload={"intent"} preloadDelay={2000}>
                 {it}
             </Link>
         );
