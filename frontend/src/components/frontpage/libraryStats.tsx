@@ -9,7 +9,7 @@ import { libraryStatsQueryOptions } from "@/lib/stats";
 import { JSONPretty } from "../json";
 import { useQuery } from "@tanstack/react-query";
 import { Divider, Tooltip } from "@mui/material";
-import { Library, Trash2 } from "lucide-react";
+import { Library, RefreshCcw } from "lucide-react";
 import { IconButtonWithMutation } from "../common/buttons";
 import { RelativeTime } from "../common/time";
 
@@ -25,11 +25,20 @@ export function LibraryStats() {
             </CardContent>
             <Divider className="mt-auto" />
             <CardActions>
-                <IconButtonWithMutation color="error">
-                    <Tooltip title="Delete all files in the inbox">
-                        <Trash2 size="1em" />
-                    </Tooltip>
-                </IconButtonWithMutation>
+                <div className="flex flex-row space-x-4">
+
+                </div>
+                <div className="flex flex-row space-x-4">
+                    <IconButtonWithMutation
+                        className="ms-auto"
+                        disabled
+                        color="primary"
+                    >
+                        <Tooltip title="Refresh library stats">
+                            <RefreshCcw size="1em" />
+                        </Tooltip>
+                    </IconButtonWithMutation>
+                </div>
             </CardActions>
         </Card>
     );
@@ -77,7 +86,7 @@ function LibraryTable() {
                     </tr>
                     <tr>
                         <th>Size</th>
-                        <td>{Math.round(data.size / 1024 / 1024)}mb</td>
+                        <td>{_humanize(data.size)}</td>
                     </tr>
                 </tbody>
             </table>
@@ -102,4 +111,14 @@ function LastAddedInfo() {
             Last added: <RelativeTime date={data.lastItemAdded} />
         </CardTopInfo>
     );
+}
+
+function _humanize(bytes: number): string {
+    const units = ["bytes", "kb", "mb", "gb", "tb"];
+    if (bytes === 0) return "0 bytes";
+
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    const value = bytes / Math.pow(1024, i);
+
+    return `${parseFloat(value.toFixed(1))} ${units[i]}`;
 }

@@ -1,6 +1,7 @@
 from datetime import datetime
+import shutil
 from typing import Optional, TypedDict
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, abort
 from beets_flask.db_engine import db_session
 from beets_flask.disk import (
     get_inbox_folders,
@@ -10,10 +11,13 @@ from beets_flask.disk import (
 )
 from beets_flask.utility import AUDIO_EXTENSIONS
 from beets_flask.models import Tag
+from beets_flask.logger import log
 
 import os
 
 from pathlib import Path
+
+from sqlalchemy import select
 
 inbox_bp = Blueprint("inbox", __name__, url_prefix="/inbox")
 
@@ -45,11 +49,62 @@ def delete_inbox(folder):
     !This is not reversible
     """
 
+    data = request.get_json()
+    with_status = data.get("with_status", [])
+
+    if not folder.startswith("/"):
+        folder = "/" + folder
+
     inbox = get_inbox_for_path(folder)
+    log.info(f"Deleting from {folder=} in {inbox=} {with_status=}")
+
     if inbox is None:
-        return {"error": "Inbox not found", "status": 404}
+        return abort(
+            404,
+            description={"error": "Specified folder is not within a configured inbox"},
+        )
+
+    if len(with_status) == 0:
+        try:
+            shutil.rmtree(folder)
+        except Exception as e:
+            return jsonify({"error": str(e), "status": 500}), 500
+    else:
+        with db_session() as session:
+            stmt = select(Tag.album_folder).where(
+                Tag.status.in_(with_status) & Tag.album_folder.startswith(folder)
+            )
+            album_folders = [row[0] for row in session.execute(stmt).all()]
+            for f in album_folders:
+                try:
+                    _delete_folder_and_parents_until(f, stop_before=inbox["path"])
+                except Exception as e:
+                    return jsonify({"error": str(e), "status": 500}), 500
 
     return {"ok": True}
+
+
+def _delete_folder_and_parents_until(delete_path: str, stop_before: str):
+    """
+    Delete the folder and its parent folders up until (but excluding) the stop_before folder. Only traverses up the hierarchy if the child-folder is the only content. Dotfiles are ignored and do not prevent deletion.
+    """
+
+    def find_highest_deletable_folder(path, stop_path):
+        current = path
+        log.debug(f"{current=} {stop_path=}")
+        while current.startswith(stop_path) and current != stop_path:
+            parent = os.path.dirname(current)
+            items = [i for i in os.listdir(parent) if not i.startswith('.')]
+            if len(items) == 1:
+                current = parent
+            else:
+                break
+        return current
+
+    highest_deletable_path = find_highest_deletable_folder(delete_path, stop_before)
+
+    log.debug(f"Deleting {highest_deletable_path}")
+    shutil.rmtree(highest_deletable_path)
 
 
 @inbox_bp.route("/path/<path:folder>", methods=["GET"])
@@ -77,6 +132,7 @@ def autotag_inbox_folder():
     if not folder.startswith("/"):
         folder = "/" + folder
 
+    log.info(f"Triggered autotag for {folder=} {with_status=} with {kind=}")
     retag_inbox(inbox_dir=folder, kind=kind, with_status=with_status)
 
     return jsonify(

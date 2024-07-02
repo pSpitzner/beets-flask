@@ -81,7 +81,12 @@ def add_tag():
         folders = data.get("folders", [])
 
         if kind == "import" and config["gui"]["library"]["readonly"].get(bool):
-            return abort(405)
+            return abort(
+                405,
+                description={
+                    "error": "Library is configured as readonly"
+                },
+            )
 
         if folder is not None and len(folders) > 0:
             raise InvalidUsage("You can't specify both `folder` and `folders`")

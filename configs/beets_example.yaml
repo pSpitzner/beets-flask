@@ -50,6 +50,7 @@ import:
     log: /music/last_beets_imports.log
     quiet_fallback: skip
     detail: yes
+    duplicate_action: ask # ask|skip|merge|keep|remove
 
 ui:
     color: yes

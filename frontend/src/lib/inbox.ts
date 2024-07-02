@@ -62,12 +62,36 @@ export const inboxStatsQueryOptions = () => {
 
 export const deleteInboxMutation: UseMutationOptions<unknown, Error, string> = {
     mutationFn: async (inboxPath: string) => {
-        return await fetch(`/inbox/path/${inboxPath}`, { method: "DELETE" });
+        return await fetch(`/inbox/path/${inboxPath}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                with_status: [], // default, delete all, independent of status
+            }),
+        });
+    },
+    onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["inbox"] });
     },
 };
 
-export const deleteInboxImportedMutation: UseMutationOptions = {
-    mutationFn: async () => {},
+export const deleteInboxImportedMutation: UseMutationOptions<unknown, Error, string> = {
+    mutationFn: async (inboxPath: string) => {
+        return await fetch(`/inbox/path/${inboxPath}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                with_status: ["imported"],
+            }),
+        });
+    },
+    onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["inbox"] });
+    },
 };
 
 export const retagInboxNewMutation: UseMutationOptions<unknown, Error, string> = {

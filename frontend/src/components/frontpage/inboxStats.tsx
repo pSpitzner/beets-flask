@@ -89,7 +89,7 @@ function InboxCardView({ stats }: { stats: InboxStats }) {
                 <div className="flex flex-row space-x-4">
                     <IconButtonWithMutationAndFeedback
                         mutationOption={deleteInboxMutation}
-                        mutateArgs={stats.inboxName}
+                        mutateArgs={stats.inboxPath}
                         color="error"
                         confirmTitle="Are you sure you want to delete all files?"
                     >
@@ -99,7 +99,7 @@ function InboxCardView({ stats }: { stats: InboxStats }) {
                     </IconButtonWithMutationAndFeedback>
                     <IconButtonWithMutation
                         mutationOption={deleteInboxImportedMutation}
-                        mutateArgs={stats.inboxName}
+                        mutateArgs={stats.inboxPath}
                         color="warning"
                     >
                         <Tooltip title="Delete files that have been imported">
@@ -186,3 +186,4 @@ function InboxTable({ stats }: { stats: InboxStats }) {
 function _to_mb(bytes: number) {
     return Math.round(bytes / 1024 / 1024)
 }
+
