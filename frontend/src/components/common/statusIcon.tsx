@@ -1,8 +1,9 @@
 import {
-    CircleCheck,
+    Tag,
     CircleCheckBig,
     CircleDashed,
-    CircleHelp,
+    RectangleEllipsis,
+    Layers2,
     TriangleAlert,
 } from "lucide-react";
 import { Tooltip } from "@mui/material";
@@ -35,11 +36,13 @@ export function StatusIcon({
     let icon = <CircleDashed size={12} />;
 
     if (["matched", "tagged"].includes(status.toLocaleLowerCase())) {
-        icon = <CircleCheck size={12} />;
+        icon = <Tag size={12} />;
     } else if (status.toLocaleLowerCase() === "imported") {
         icon = <CircleCheckBig size={12} />;
     } else if (status.toLocaleLowerCase() === "unmatched") {
-        icon = <CircleHelp size={12} />;
+        icon = <RectangleEllipsis size={12} />;
+    } else if (status.toLocaleLowerCase() === "duplicate") {
+        icon = <Layers2 size={12} />;
     } else if (status.toLocaleLowerCase() === "failed") {
         icon = <TriangleAlert size={12} />;
     } else if (["tagging", "importing"].includes(status.toLocaleLowerCase())) {

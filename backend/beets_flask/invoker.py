@@ -126,7 +126,7 @@ def runPreview(tagId: str, callback_url: str | None = None) -> str | None:
             bt.status = (
                 "tagged"
                 if (bt.match_url is not None and bs.status == "ok")
-                else "unmatched"
+                else bs.status
             )
         except Exception as e:
             log.debug(e)
@@ -222,7 +222,7 @@ def runImport(
             bt.match_artist = bs.match_artist
             bt.num_tracks = bs.match_num_tracks
             bt.track_paths_after = bs.track_paths_after_import
-            bt.status = "imported" if bs.status == "ok" else "failed"
+            bt.status = "imported" if bs.status == "ok" else bs.status
             log.debug(bs.preview)
             log.debug(bs.status)
         except Exception as e:

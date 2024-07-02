@@ -29,7 +29,7 @@ class Tag(Base):
 
     status: Mapped[str]
     kind: Mapped[str]
-    _valid_statuses = ["dummy", "pending", "tagging", "failed", "unmatched"]
+    _valid_statuses = ["dummy", "pending", "tagging", "failed", "unmatched", "duplicate"]
     _valid_kind = ["preview", "import"]
 
     # we could alternatively handle this by allowing multiple tag groups

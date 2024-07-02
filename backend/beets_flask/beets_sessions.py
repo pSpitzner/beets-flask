@@ -218,6 +218,7 @@ class PreviewSession(BaseSession):
             print_(
                 f'\nThis {"album" if task.is_album else "item"} is already in the library!'
             )
+            self.status = "duplicate"
         for duplicate in duplicates:
             old_dir = colorize("import_path", duplicate.item_dir().decode("utf-8"))
             print_(
