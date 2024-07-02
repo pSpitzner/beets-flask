@@ -4,6 +4,7 @@ import Box from "@mui/material/Box";
 import { Outlet, createFileRoute, useParams } from "@tanstack/react-router";
 import z from "zod";
 import styles from "./browse.module.scss";
+import { useMemo } from "react";
 
 export const Route = createFileRoute("/library/browse/$artist")({
     parseParams: (params) => ({
@@ -27,22 +28,19 @@ function ArtistOverview() {
     const artist = Route.useLoaderData();
     const params = useParams({ strict: false }) as { albumId?: number };
 
+    const data = useMemo(() => {
+        return artist.albums.map((album) => ({
+            to: album.id.toString(),
+            label: album.name,
+            className: styles.listItem,
+            "data-selected": params.albumId == album.id,
+        }));
+    }, [artist, params]);
+
     return (
         <>
             <Box className={styles.listBox}>
-                <List>
-                    {artist.albums.map((album, i) => {
-                        return (
-                            <List.Item
-                                key={i}
-                                to={album.id.toString()}
-                                label={album.name}
-                                className={styles.listItem}
-                                data-selected={album.id === params.albumId}
-                            />
-                        );
-                    })}
-                </List>
+                <List data={data}>{List.Item}</List>
             </Box>
             <Outlet />
         </>

@@ -21,6 +21,7 @@ import json
 import os
 from pathlib import Path
 from typing import Optional, TypedDict, cast
+import time
 
 from flask import (
     Blueprint,
@@ -496,19 +497,26 @@ def all_artists():
     with g.lib.transaction() as tx:
         rows = tx.query("SELECT DISTINCT albumartist FROM albums")
     all_artists = [{"name": row[0]} for row in rows]
-    return jsonify(all_artists)
+    return jsonify(sorted(all_artists, key=lambda a: a["name"]))
 
 
 @library_bp.route("/artist/<string:artist_name>")
 def albums_by_artist(artist_name):
-    albums = g.lib.albums()
-    return jsonify(
+
+    with g.lib.transaction() as tx:
+        rows = tx.query(f"SELECT id FROM albums WHERE albumartist = '{artist_name}'")
+
+    expanded = is_expand()
+    minimal = is_minimal()
+
+    res =  jsonify(
         albums=[
-            _rep(album, expand=is_expand(), minimal=is_minimal())
-            for album in albums
-            if album.albumartist == artist_name
+            _rep(g.lib.get_album(row[0]), expand=expanded, minimal=minimal)
+            for row in rows
         ]
     )
+
+    return res
 
 
 # ------------------------------------------------------------------------------------ #
