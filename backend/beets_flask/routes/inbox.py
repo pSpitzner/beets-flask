@@ -41,6 +41,24 @@ def get_all():
     return inboxes
 
 
+@inbox_bp.route("/path", methods=["DELETE"])
+def delete_folders():
+    data = request.get_json()
+    with_status = data.get("with_status", [])
+    folders = data.get("folders", [])
+
+    if len(folders) == 0:
+        return abort(
+            401,
+            description={"error": "You need to specify the `folders` to delete."},
+        )
+
+    for f in folders:
+        _delete_folder(f, with_status)
+
+    return {"ok": True}
+
+
 @inbox_bp.route("/path/<path:folder>", methods=["DELETE"])
 def delete_inbox(folder):
     """
@@ -52,6 +70,19 @@ def delete_inbox(folder):
     data = request.get_json()
     with_status = data.get("with_status", [])
 
+    try:
+        _delete_folder(folder, with_status)
+    except Exception as e:
+        return jsonify({"error": str(e), "status": 500}), 500
+
+    return {"ok": True}
+
+
+def _delete_folder(folder, with_status=[]):
+    """Helper to delete a folder from a configured inbox. If `with_status` is given,
+    only album_folders that correspond to tags of the given statuses are deleted (and
+    any parent folders, if the folder requested for deletion was the only child)
+    """
     if not folder.startswith("/"):
         folder = "/" + folder
 
@@ -59,29 +90,18 @@ def delete_inbox(folder):
     log.info(f"Deleting from {folder=} in {inbox=} {with_status=}")
 
     if inbox is None:
-        return abort(
-            404,
-            description={"error": "Specified folder is not within a configured inbox"},
-        )
+        raise ValueError("Specified folder is not within a configured inbox")
 
     if len(with_status) == 0:
-        try:
-            shutil.rmtree(folder)
-        except Exception as e:
-            return jsonify({"error": str(e), "status": 500}), 500
+        _delete_folder_and_parents_until(folder, inbox["path"])
     else:
         with db_session() as session:
             stmt = select(Tag.album_folder).where(
                 Tag.status.in_(with_status) & Tag.album_folder.startswith(folder)
             )
             album_folders = [row[0] for row in session.execute(stmt).all()]
-            for f in album_folders:
-                try:
-                    _delete_folder_and_parents_until(f, stop_before=inbox["path"])
-                except Exception as e:
-                    return jsonify({"error": str(e), "status": 500}), 500
-
-    return {"ok": True}
+            for i in album_folders:
+                _delete_folder_and_parents_until(i, stop_before=inbox["path"])
 
 
 def _delete_folder_and_parents_until(delete_path: str, stop_before: str):
@@ -89,13 +109,19 @@ def _delete_folder_and_parents_until(delete_path: str, stop_before: str):
     Delete the folder and its parent folders up until (but excluding) the stop_before folder. Only traverses up the hierarchy if the child-folder is the only content. Dotfiles are ignored and do not prevent deletion.
     """
 
+    if delete_path == stop_before:
+        log.debug(f"Skipping deletion of {delete_path} (its a configured inbox)")
+        return
+    if not os.path.exists(delete_path):
+        log.debug(f"Skipping deletion of {delete_path} (folder does not exist anymore)")
+        return
+
     def find_highest_deletable_folder(path, stop_path):
         current = path
-        log.debug(f"{current=} {stop_path=}")
-        while current.startswith(stop_path) and current != stop_path:
+        while current.startswith(stop_path):
             parent = os.path.dirname(current)
-            items = [i for i in os.listdir(parent) if not i.startswith('.')]
-            if len(items) == 1:
+            items = [i for i in os.listdir(parent) if not i.startswith(".")]
+            if len(items) == 1 and parent != stop_path:
                 current = parent
             else:
                 break

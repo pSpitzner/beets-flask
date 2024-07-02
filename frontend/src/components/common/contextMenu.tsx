@@ -15,7 +15,7 @@ import {
 } from "react";
 import { queryClient } from "@/main";
 import { TagI } from "@/lib/tag";
-import { Tag, HardDriveDownload, Clipboard, Terminal } from "lucide-react";
+import { Tag, HardDriveDownload, Clipboard, Terminal, Trash2 } from "lucide-react";
 
 import { useTerminalContext } from "@/components/terminal";
 import { useSelection } from "@/components/context/useSelection";
@@ -23,6 +23,7 @@ import { useSelection } from "@/components/context/useSelection";
 import styles from "./contextMenu.module.scss";
 import { useSiblings } from "@/components/context/useSiblings";
 import { ErrorDialog } from "./dialogs";
+import { Typography } from "@mui/material";
 
 interface ContextMenuContextI {
     closeMenu: () => void;
@@ -66,6 +67,7 @@ export const defaultActions = [
     <ImportAction />,
     <TerminalImportAction />,
     <CopyPathAction />,
+    <DeleteAction />,
 ];
 
 export function ContextMenu({
@@ -367,6 +369,41 @@ export function ImportAction({ ...props }: { [key: string]: any }) {
             icon={<HardDriveDownload />}
             text={"Import"}
             mutationOption={importOptions}
+        />
+    );
+}
+
+export function DeleteAction({ ...props }: { [key: string]: any }) {
+    const { closeMenu } = useContextMenu();
+    const { getSelected } = useSelection();
+    const deleteOptions: UseMutationOptions = {
+        mutationFn: async () => {
+            await fetch(`/inbox/path`, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    folders: getSelected(),
+                    with_status: [],
+                }),
+            });
+        },
+        onSuccess: async () => {
+            closeMenu();
+            queryClient.invalidateQueries({ queryKey: ["inbox"] });
+        },
+        onError: (error: Error) => {
+            console.error(error);
+        },
+    };
+
+    return (
+        <ActionWithMutation
+            {...props}
+            icon={<Trash2 color="red" />}
+            text={<Typography color="red">Delete Folder</Typography>}
+            mutationOption={deleteOptions}
         />
     );
 }
