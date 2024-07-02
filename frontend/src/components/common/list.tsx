@@ -13,38 +13,36 @@ interface WrapperProps<D = any> {
     data: Array<D>;
 }
 
-function List<D> ({ children, data, ...props }: WrapperProps<D>){
-    return <AutoSizer>
-        {({ height, width }) => (
-            <FixedSizeList
-            className="List"
-            height={height}
-            width={width}
-            itemData={data}
-            itemCount={data.length}
-            itemSize={35}
-            {...props}
-            >
-                {children}
-            </FixedSizeList>
-        )}
-    </AutoSizer>
+function List<D>({ children, data, ...props }: WrapperProps<D>) {
+    return (
+        <AutoSizer>
+            {({ height, width }) => (
+                <FixedSizeList
+                    className="List"
+                    height={height}
+                    width={width}
+                    itemData={data}
+                    itemCount={data.length}
+                    itemSize={35}
+                    {...props}
+                >
+                    {children}
+                </FixedSizeList>
+            )}
+        </AutoSizer>
+    );
 }
 
 type ListItemData = {
     label: string;
     to?: string;
+    params?: { [key: string]: any };
     icon?: ReactNode;
     [key: string]: any;
 };
 
-function Item({
-    index,
-    data,
-    style,
-}: ListChildComponentProps<ListItemData[]>) {
-
-    const { label, to, icon, ...props } = data[index];
+function Item({ index, data, style }: ListChildComponentProps<ListItemData[]>) {
+    const { label, to, params, icon, ...props } = data[index];
 
     const it = (
         <ListItem key={index} style={style} {...props}>
@@ -55,7 +53,13 @@ function Item({
 
     if (to) {
         return (
-            <Link key={index} to={to} preload={"intent"} preloadDelay={2000}>
+            <Link
+                key={index}
+                to={to}
+                params={params}
+                preload={"intent"}
+                preloadDelay={2000}
+            >
                 {it}
             </Link>
         );
@@ -69,8 +73,6 @@ export interface ItemProps extends ListItemProps {
     to?: string;
 }
 
-
 List.Item = Item;
-
 
 export default List;
