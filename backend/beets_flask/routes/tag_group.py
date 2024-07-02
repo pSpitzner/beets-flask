@@ -72,7 +72,7 @@ def get_tag_by_id(group_id: str):
 def get_recent_tags() -> list[str]:
     """Get the most recent tags. Number of days can be set in the config file."""
 
-    recent_days: int = config["tags"]["recent_days"].as_number()  # type: ignore
+    recent_days: int = config["gui"]["tags"]["recent_days"].as_number()  # type: ignore
 
     with db_session() as session:
         stmt = select(Tag).where(

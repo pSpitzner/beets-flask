@@ -21,7 +21,7 @@ const router = createRouter({
     },
     defaultPreload: "intent",
     defaultPendingComponent: () => (
-        <div className="flex flex-col h-screen w-screen justify-center items-center">
+        <div className="flex flex-col h-screen w-100 justify-center items-center">
             <div className="flex flex-col space-y-4 justify-center items-center">
                 <CircularProgress />
                 <p className="text-lg">

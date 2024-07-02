@@ -29,7 +29,7 @@ _inboxes: List[OrderedDict] = []
 def register_inboxes():
 
     global _inboxes
-    _inboxes = config["gui"]["inbox"]["folders"].get()  # type: ignore
+    _inboxes = config["gui"]["inbox"]["folders"].get().values()  # type: ignore
 
     for i in _inboxes:
         i["last_tagged"] = None

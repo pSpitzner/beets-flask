@@ -1,5 +1,6 @@
 import json
 import traceback
+from confuse import ConfigError
 from flask import Blueprint, jsonify
 
 from werkzeug.exceptions import HTTPException
@@ -37,6 +38,20 @@ def handle_crawler_exception(error: InvalidUsage):
     )
 
 
+@error_bp.app_errorhandler(ConfigError)
+def handle_config_exception(error: ConfigError):
+    return (
+        jsonify(
+            {
+                "error": "Bad request",
+                "message": "Configuration Error",
+                "description": error.__doc__,
+            }
+        ),
+        400,
+    )
+
+
 @error_bp.app_errorhandler(FileNotFoundError)
 def handle_file_not_found(error):
     return jsonify({"error": "File not found", "message": str(error)}), 404
@@ -61,11 +76,16 @@ def handle_exception(e):
 
 @error_bp.app_errorhandler(Exception)
 def handle_generic_error(error):
-    return jsonify({
-        "error": "Internal server error",
-        "message": str(error),
-        "trace": traceback.format_exc()
-    }), 500
+    return (
+        jsonify(
+            {
+                "error": "Internal server error",
+                "message": str(error),
+                "trace": traceback.format_exc(),
+            }
+        ),
+        500,
+    )
 
 
 # ---------------------------------------------------------------------------- #

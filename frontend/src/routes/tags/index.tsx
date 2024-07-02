@@ -31,40 +31,18 @@ export function TagGroupOverview() {
     return (
         <>
             <PredefinedTagGroup id="inbox" defaultExpanded />
-            {/* <PredefinedTagGroup id="recent" /> */}
+            <PredefinedTagGroup id="recent" />
 
-            {/* using ManualTagGroup2 - which we want - expand all does not work. i think the references are not created correctly to persist across renders */}
             {manualTagGroups.map((group, i) => {
                 return <ManualTagGroup key={i} id={group.id} tag_ids={group.tag_ids} />;
             })}
 
-            {/* <PredefinedTagGroup id="archive" /> */}
+            <PredefinedTagGroup id="archive" />
         </>
     );
 }
 
-function ManualTagGroup({id, tag_ids} : {id: string, tag_ids: string[]}) {
-    const tagRefs = useMemo(() => tag_ids.map(() => createRef()), []);
-    const subtitle =
-        tag_ids.length === 1 ? "(1 tag)" : `(${tag_ids.length} tags)`;
-
-    return (
-        <TagGroupView
-            key={id}
-            title={id}
-            subtitle={subtitle}
-            defaultExpanded
-        >
-            <SiblingRefsProvider>
-                {tag_ids.map((tagId, i) => (
-                    <TagView key={i} tagId={tagId} ref={tagRefs[i]} />
-                ))}
-            </SiblingRefsProvider>
-        </TagGroupView>
-    );
-}
-
-export function ManualTagGroup2( {id, tag_ids} : { id: string; tag_ids: string[] }) {
+export function ManualTagGroup({ id, tag_ids }: { id: string; tag_ids: string[] }) {
     const title = id;
     const subtitle = tag_ids.length === 1 ? "(1 tag)" : `(${tag_ids.length} tags)`;
 
@@ -82,7 +60,7 @@ function TagGroup({
     subtitle?: string;
     [key: string]: any;
 }) {
-    const tagRefs = useMemo(() => tag_ids.map(() => createRef()), []);
+    const tagRefs = useMemo(() => tag_ids.map(() => createRef()), [tag_ids]);
     return (
         <TagGroupView
             title={title}
@@ -90,9 +68,11 @@ function TagGroup({
             disabled={tag_ids.length === 0}
             {...props}
         >
-            {tag_ids.map((tagId, i) => (
-                <TagView key={i} tagId={tagId} ref={tagRefs[i]} />
-            ))}
+            <SiblingRefsProvider>
+                {tag_ids.map((tagId, i) => (
+                    <TagView key={i} tagId={tagId} ref={tagRefs[i]} />
+                ))}
+            </SiblingRefsProvider>
         </TagGroupView>
     );
 }
