@@ -5,16 +5,18 @@ An opinionated docker container for a web-interface around the music organizer [
 
 ## Motivation
 
-Importing music with beets could be more convenient. Beets identifies metadata correctly _most_ of the time, and in those cases, a single click should be enough to import.
+Autotagging music with beets is great. Beets identifies metadata correctly _most_ of the time, and if you are not a control-freak, there is hardly any reason to check the found metadata.
+
+However, if you do want a bit more control, things could be more convenient.
 
 This is the main idea with beets-flask: For all folders in your inbox, we generate a preview of what beets _would do_ and show you those previews. Then it's easy to go through them and import the correct ones, while falling back to terminal for those that were not to your liking.
 
 ## Features
 
-- Create previews before importing
+- Autogenerate previews before importing
 - Import via GUI (if found matches are okay)
-- Integrated Terminal for easy access to beets cli (to correct matches)
-- Monitor inboxes, generate previews automatically
+- Import via Web-Terminal using beets as you know it (to correct matches)
+- Monitor multiple inboxes
 - A basic library view
 - Most File/Tag actions sit in a context menu (right-click, or long-press on touch)
 
