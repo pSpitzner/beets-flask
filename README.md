@@ -7,7 +7,7 @@ An opinionated docker container for a web-interface around the music organizer [
 
 Importing music with beets could be more convenient. Beets identifies metadata correctly _most_ of the time, and in those cases, a single click should be enough to import.
 
-This is the main idea with beets-flask: For all folders in your inbox, we generate a preview of what beets _would do_ and show you those previews. Then it's easy to go through them and import the correct ones, while falling back to terminal for those that were incorrect.
+This is the main idea with beets-flask: For all folders in your inbox, we generate a preview of what beets _would do_ and show you those previews. Then it's easy to go through them and import the correct ones, while falling back to terminal for those that were not to your liking.
 
 ## Features
 
@@ -15,7 +15,8 @@ This is the main idea with beets-flask: For all folders in your inbox, we genera
 - Import via GUI (if found matches are okay)
 - Integrated Terminal for easy access to beets cli (to correct matches)
 - Monitor inboxes, generate previews automatically
-- Library view
+- A basic library view
+- Most File/Tag actions sit in a right-click / context menu. (mobile friendly soon)
 
 
 ## Setup
@@ -23,6 +24,7 @@ This is the main idea with beets-flask: For all folders in your inbox, we genera
 - Make a backup of your beets configs and library. This project is **early work in progress!**
 - Clone the repo
 - Adjust config files
+- Place a folder with music files into your inbox
 - Build and run `docker compose up --build`, check for problems
 - Once happy, you can run the container as a daemon with `docker compose up -d --build`
 
@@ -32,8 +34,7 @@ This is the container path layout, created with the default configs:
 ```
 ├── music
 │   ├── inbox
-│   ├── imported
-│   └── last_beets_import.log
+│   └── imported
 ├── repo
 └── home
     └── beetle
@@ -65,43 +66,49 @@ volumes:
     - /desired/path/containeruser/:/home/beetle/
     - /path/to/music/:/path/to/music/
 ```
+- Because the GUI provides easy ways to clean your inbox, we suggest to set the beets import setting to `copy`:
+```yaml
+import:
+    copy: yes
+```
 
 
 ### GUI Config
 
-We added a `gui` section in the beets config to tweak the container and webfrontend:
+We added a `gui` section in the beets config to tweak the container and webfrontend.
+You need to add this section, and for now, all keys must be present.
 
 ```yaml
 gui:
-    library:
-        readonly: no # disables importing and changes to library
-        include_paths: yes # for the library-browsing (backend api)
-
     num_workers_preview: 4 # how many previews to generate in parallel
 
+    library:
+        readonly: no
+        include_paths: yes
+
     tags:
+        expand_tags: yes # for tag groups, on page load, show tag details?
         recent_days: 14 # Number of days to consider for the "recent" tag group
 
     inbox:
-        # keep in mind to volume-map these folders in your docker-compose.yml
-        folders:
-            - name: 'Awesome inbox'
-              path : '/music/inbox'
-              autotag : no # no | "preview" | "import"
-            - name: 'Dummy inbox'
-              path : '/music/dummy'
-              autotag : no
+        concat_nested_folders: yes # show multiple folders in one line if they only have one child
+        expand_files: no # on page load, show files in (album) folders, or collapse them
+
+        folders: # keep in mind to volume-map these folders in your docker-compose.yml
+            Inbox:
+                name: 'Inbox'
+                path : '/music/inbox'
+                autotag : no # no | "preview" | "import"
 ```
 
 ## Terminal
 
-The container runs a tmux session that you can connect to from the host, or from the
-webgui (bottom-right button or ``cmd/ctrl + ` ``).
+The container runs a tmux session that you can connect to from the host, or from the webgui (bottom-right button or ``cmd/ctrl + ` ``).
 To access the tmux from the host:
 ```
 docker exec -it beets-flask /usr/bin/tmux attach-session -t beets-socket-term
 ```
-Beware, you can close the tmux session, and we have not implemented a way to restart it.
+Beware, you can close the tmux session, and we have not yet implemented a way to restart it. (Just restart the container)
 
 ## Roadmap
 
@@ -109,9 +116,10 @@ For the current state, there is a [KanBan board](https://github.com/users/pSpitz
 
 Major things that are planned:
 
-- An ammend mechanic. This should allow the container to run imports automatically. Instead of approving, you would later correct imports that were identified incorrectly.
+- An amend mechanic. This should allow the container to run imports automatically. Instead of approving, you would later correct imports that were identified incorrectly.
 - An actual library view, with search, covers and audio preview. The backend is likely up for the task already.
 - Push the image to dockerhub
+- Mobile friendly
 
 
 # Developing
@@ -122,6 +130,7 @@ Major things that are planned:
     - [Flask](https://flask.palletsprojects.com/en/3.0.x/) with some plugins
     - [Gunicorn](https://gunicorn.org/)
     - [Redis Queue](https://python-rq.org/)
+    - [SQLite via SQLAlchemy](https://docs.sqlalchemy.org/en/20/)
 - Frontend:
     - [React](https://react.dev/)
     - [Vite](https://vitejs.dev/)
@@ -133,10 +142,44 @@ Major things that are planned:
     - [xtermjs](https://xtermjs.org/)
     - [tmux](https://github.com/tmux/tmux/wiki)
 
-## Notes
+## Notes, Design Choices and Ideas
 
 - The current docker-compose already creates the dev container:
     - maps `.repo` to edit the source from the host.
     - runs `entrypoint_dev.sh`, starting redis workers, flask, and the vite dev server
 - It seems that our vite dev setup **does not work with safari** because it uses CORS
 
+### Previews and Imports
+
+The big question is how to get a sensible gui for autotagging music. At some point, user-interaction is required. The aim is here to make this seamless. Via the CLI, we have to wait for each item to fetch the meta data, before we can confirm (or just trust beets, giving up control).
+
+Therefore, here, we automatically generate a `preview` for every album in the inbox. Then, the user can quickly skim all of them, and `import` those that are to their liking. For each preview, we generate a `tag` entry in the sqlite database, that is referenced when importing to avoid looking up the meta-data again (we use the existing `search_ids`).
+
+`preview` and `import` are the main two tasks ("kind" of job) in the backend.
+For each we have subclassed the beets ImportSession (see [beets_sessions.py](/backend/beets_flask/beets_sessions.py) and [invoker.py](/backend/beets_flask/invoker.py)). They overwrite some methods and the config to grab the data needed for the webinterface. Currently, we mainly keep a status and the preview that closely resembles the cli output. Finegrained details and web rendering should be easy to add as needed.
+
+Both are delegated to separate redis queues / workers, so previews can be generated while an import session runs.
+
+
+### Tags
+
+A `tag` is what we store to sqlite, it is the basic data associated with the import or preview of one album. (It has details like the status, path on disk, a unique id ...).
+Tags in the database are updated by the workers, and can be read independently via the web backend/frontend.
+
+Keeping a `tag` associated with a preview/import around, will also enable an _amend_ mechanic. The plan here is to just import if the match is good (respecting the normal beets config) and to store the id of our tag as a note in the beets database. Then, if a correction is needed, we can query and delete via the import-tag-id and re-import with corrections.
+
+
+### Status updates
+
+We use a websocket (for the terminal and) to push updates from the server when information of a tag changes. The general order here is: i) worker creates or updates tag, ii) worker writes tag to db iii) worker triggers queryinvalidation in the react frontend iv) we requery from backend and db.
+
+The websocket should also allow for a GUI import-session, where in the simplest form, we replace terminal input (keys) with buttons.
+
+### Library
+
+The library view backend is adapted from the existing beets webplugin that is also built on flask.
+
+
+### Testing
+
+We have started on a version of the container that runs some (backend) tests, but coverage is pretty non-existent.

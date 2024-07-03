@@ -6,7 +6,7 @@ services:
         build:
             context: .
             dockerfile: Dockerfile
-            target: dev
+            target: dev # or prod
             args:
                 # 502 is default on macos, 1000 on linux
                 USER_ID: 1000
@@ -26,8 +26,8 @@ services:
             # create these folders before starting the container! otherwise you get permission issues.
             - ${PWD}/local_data/user/:/home/beetle/
             # if you want to use the same beets-library inside and out,
-            # you need to map your music folder to in the container to the same path as outside
+            # you need to map your music folder in the container to the same path as outside
             # and make sure the config used in the container has the right path!
             - ${PWD}/local_data/music/:/music/
-            # for development:
+            # for development. (disable if target is `prod`)
             - ./:/repo/
