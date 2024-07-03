@@ -7,6 +7,7 @@
 import { queryOptions } from "@tanstack/react-query";
 
 export interface LibraryStats {
+    libraryPath: string;
     items: number;
     albums: number;
     artists: number;

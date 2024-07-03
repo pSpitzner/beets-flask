@@ -525,6 +525,7 @@ def albums_by_artist(artist_name):
 
 
 class Stats(TypedDict):
+    libraryPath: str
     items: int  # Num Tracks and stuff / num Files
     albums: int  # Num Albums
     artists: int  # Num Artists
@@ -551,6 +552,7 @@ def stats():
     lib_path = Path(lib_path)
 
     ret: Stats = {
+        "libraryPath": str(config["directory"].as_str()),
         "items": item_rows[0][0],
         "albums": album_rows[0][0],
         "artists": unique_artists[0][0],

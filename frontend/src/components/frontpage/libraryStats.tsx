@@ -8,26 +8,37 @@ import {
 import { libraryStatsQueryOptions } from "@/lib/stats";
 import { JSONPretty } from "../json";
 import { useQuery } from "@tanstack/react-query";
-import { Divider, Tooltip } from "@mui/material";
+import { Box, Divider, Tooltip } from "@mui/material";
 import { Library, RefreshCcw } from "lucide-react";
 import { IconButtonWithMutation } from "../common/buttons";
 import { RelativeTime } from "../common/time";
 
 export function LibraryStats() {
+    const { data } = useQuery(libraryStatsQueryOptions());
+
     return (
         <Card>
             <CardContent>
                 <LastAddedInfo />
-                <CardAvatar Icon={Library} title="Library"></CardAvatar>
+                <CardAvatar Icon={Library} title="Library">
+                    <Box
+                        component="code"
+                        sx={{
+                            fontSize: 14,
+                            color: "grey.500",
+                            marginBottom: "0.875em",
+                        }}
+                    >
+                        {data?.libraryPath || "Loading..."}
+                    </Box>
+                </CardAvatar>
                 <div className="h-full flex flex-col justify-end ">
                     <LibraryTable />
                 </div>
             </CardContent>
             <Divider className="mt-auto" />
             <CardActions>
-                <div className="flex flex-row space-x-4">
-
-                </div>
+                <div className="flex flex-row space-x-4"></div>
                 <div className="flex flex-row space-x-4">
                     <IconButtonWithMutation
                         className="ms-auto"

@@ -1,5 +1,6 @@
 import os
 import glob
+import subprocess
 from typing import List, OrderedDict
 from cachetools import cached, LRUCache, TTLCache
 import threading
@@ -85,7 +86,6 @@ def register_inboxes():
                 os.utime(f, None)
 
 
-
 class InboxHandler(FileSystemEventHandler):
 
     def __init__(self):
@@ -134,10 +134,9 @@ class InboxHandler(FileSystemEventHandler):
             self.debounce[album_folder] = time()
 
 
-def retag_folder(path: str,
-                 kind: str | None = None,
-                 with_status : None | list[str] = None
-                 ):
+def retag_folder(
+    path: str, kind: str | None = None, with_status: None | list[str] = None
+):
     """
     Retag a (taggable) folder.
 
@@ -342,4 +341,8 @@ def all_album_folders(root_dir: str):
 # cache data for no longer than one minutes
 @cached(cache=TTLCache(maxsize=1024, ttl=60), info=True)
 def dir_size(path: Path):
-    return sum(file.stat().st_size for file in path.rglob("*"))
+    result = subprocess.run(
+        ["du", "-sb", str(path.resolve())], capture_output=True, text=True, check=True
+    )
+    size = int(result.stdout.split()[0])
+    return size
