@@ -6,6 +6,7 @@ import { UseMutationOptions, useMutation } from "@tanstack/react-query";
 import {
     useState,
     MouseEvent,
+    TouchEvent,
     createContext,
     useContext,
     useRef,
@@ -27,14 +28,20 @@ import { Typography } from "@mui/material";
 
 interface ContextMenuContextI {
     closeMenu: () => void;
-    openMenu: (event: MouseEvent) => void;
+    openMenuMouse: (event: MouseEvent) => void;
+    startLongPressTimer: (event: TouchEvent) => void;
+    handleTouchMove: (event: TouchEvent) => void;
+    cancelLongPressTimer: (event: TouchEvent) => void;
     open: boolean;
     position: { left: number; top: number } | undefined;
 }
 
 const ContextMenuContext = createContext<ContextMenuContextI>({
-    openMenu: () => {},
     closeMenu: () => {},
+    openMenuMouse: () => {},
+    startLongPressTimer: () => {},
+    handleTouchMove: () => {},
+    cancelLongPressTimer: () => {},
     open: false,
     position: undefined,
 });
@@ -78,16 +85,12 @@ export function ContextMenu({
 }: ContextMenuProps) {
     const { addToSelection, removeFromSelection, selection } = useSelection();
 
-    const [position, setPosition] = useState<
-        | {
-              left: number;
-              top: number;
-          }
-        | undefined
-    >(undefined);
+    const [position, setPosition] = useState<{ left: number; top: number } | undefined>(
+        undefined
+    );
 
     const prevState = useRef<undefined | boolean>();
-    const openMenu = (event: React.MouseEvent) => {
+    const openMenuMouse = (event: React.MouseEvent) => {
         event.preventDefault();
         // we use the identifier to always include the currently clicked item in the
         // selection, and remember that we added it.
@@ -104,6 +107,61 @@ export function ContextMenu({
                 : undefined
         );
     };
+
+    /* ------------------------------------------------------------------------------ */
+    /*                          Long-press for touch devices                          */
+    /* ------------------------------------------------------------------------------ */
+
+    const LONG_PRESS_DURATION = 500; // Define the long press duration (in milliseconds)
+    const touchTimeoutRef = useRef<number | null>(null);
+    const touchStartCoords = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+    const startLongPressTimer = (event: TouchEvent) => {
+        touchStartCoords.current = {
+            x: event.touches[0].clientX,
+            y: event.touches[0].clientY,
+        };
+        touchTimeoutRef.current = setTimeout(
+            () => openMenuTouch(event),
+            LONG_PRESS_DURATION
+        );
+    };
+
+    const openMenuTouch = (event: TouchEvent) => {
+        event.preventDefault();
+        cancelLongPressTimer();
+
+        const touch = event.touches[0];
+        const { clientX, clientY } = touch;
+
+        setPosition({
+            left: clientX + 2,
+            top: clientY - 6,
+        });
+    };
+
+    const cancelLongPressTimer = () => {
+        if (touchTimeoutRef.current) {
+            clearTimeout(touchTimeoutRef.current);
+            touchTimeoutRef.current = null;
+        }
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+        const moveThreshold = 10;
+        const { x, y } = touchStartCoords.current;
+        const currentX = event.touches[0].clientX;
+        const currentY = event.touches[0].clientY;
+
+        if (
+            Math.abs(currentX - x) > moveThreshold ||
+            Math.abs(currentY - y) > moveThreshold
+        ) {
+            cancelLongPressTimer();
+        }
+    };
+
+    /* ------------------------------------------------------------------------------ */
 
     const closeMenu = () => {
         if (prevState.current !== undefined) {
@@ -123,7 +181,15 @@ export function ContextMenu({
 
     return (
         <ContextMenuContext.Provider
-            value={{ closeMenu, openMenu, open: position !== undefined, position }}
+            value={{
+                closeMenu,
+                openMenuMouse,
+                handleTouchMove,
+                cancelLongPressTimer,
+                startLongPressTimer,
+                open: position !== undefined,
+                position,
+            }}
         >
             <Trigger {...props}>{children}</Trigger>
             <Menu
@@ -148,10 +214,22 @@ function useContextMenu() {
 }
 
 function Trigger({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-    const { openMenu } = useContextMenu();
+    const {
+        openMenuMouse,
+        startLongPressTimer,
+        handleTouchMove,
+        cancelLongPressTimer,
+    } = useContextMenu();
 
     return (
-        <div onContextMenu={openMenu} {...props}>
+        <div
+            onContextMenu={openMenuMouse}
+            onTouchStart={startLongPressTimer}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={cancelLongPressTimer}
+            onTouchCancel={cancelLongPressTimer}
+            {...props}
+        >
             {children}
         </div>
     );
@@ -312,8 +390,8 @@ export function RetagAction({ ...props }: { [key: string]: any }) {
             });
         },
         onSuccess: async () => {
-            getSelected().forEach(async (fullPath: string) => {
-                await queryClient.setQueryData(["tag", fullPath], (old: TagI) => {
+            getSelected().forEach(async (tagPath: string) => {
+                await queryClient.setQueryData(["tag", tagPath], (old: TagI) => {
                     return { ...old, status: "pending" };
                 });
             });
@@ -352,8 +430,8 @@ export function ImportAction({ ...props }: { [key: string]: any }) {
         },
         onSuccess: async () => {
             closeMenu();
-            getSelected().forEach(async (fullPath: string) => {
-                await queryClient.setQueryData(["tag", fullPath], (old: TagI) => {
+            getSelected().forEach(async (tagPath: string) => {
+                await queryClient.setQueryData(["tag", tagPath], (old: TagI) => {
                     return { ...old, status: "pending" };
                 });
             });
@@ -376,6 +454,7 @@ export function ImportAction({ ...props }: { [key: string]: any }) {
 export function DeleteAction({ ...props }: { [key: string]: any }) {
     const { closeMenu } = useContextMenu();
     const { getSelected } = useSelection();
+    const selection = getSelected();
     const deleteOptions: UseMutationOptions = {
         mutationFn: async () => {
             await fetch(`/inbox/path`, {
@@ -384,7 +463,7 @@ export function DeleteAction({ ...props }: { [key: string]: any }) {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    folders: getSelected(),
+                    folders: selection,
                     with_status: [],
                 }),
             });
@@ -392,6 +471,7 @@ export function DeleteAction({ ...props }: { [key: string]: any }) {
         onSuccess: async () => {
             closeMenu();
             queryClient.invalidateQueries({ queryKey: ["inbox"] });
+            queryClient.invalidateQueries({ queryKey: ["tagGroup"] });
         },
         onError: (error: Error) => {
             console.error(error);

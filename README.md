@@ -16,7 +16,7 @@ This is the main idea with beets-flask: For all folders in your inbox, we genera
 - Integrated Terminal for easy access to beets cli (to correct matches)
 - Monitor inboxes, generate previews automatically
 - A basic library view
-- Most File/Tag actions sit in a right-click / context menu. (mobile friendly soon)
+- Most File/Tag actions sit in a context menu (right-click, or long-press on touch)
 
 
 ## Setup

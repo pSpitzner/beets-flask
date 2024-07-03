@@ -26,6 +26,7 @@ import {
 } from "./contextMenu";
 import { useSiblings } from "@/components/context/useSiblings";
 import { useConfig } from "@/components/context/useConfig";
+import { TagStatusIcon } from "./statusIcon";
 
 const StyledAccordion = styled(Accordion)(({ theme }) => ({
     borderTop: `1px solid ${theme.palette.divider}`,
@@ -136,8 +137,15 @@ export const TagView = forwardRef(
                         aria-controls="tag-content"
                         expandIcon={<Ellipsis size={"0.9rem"} />}
                         onClick={handleExpand}
+                        className={styles.header}
                     >
-                        <SimilarityBadge dist={data.distance} />
+                        <div className={styles.albumIcons}>
+                            <TagStatusIcon
+                                className={styles.albumIcon}
+                                tagPath={data.album_folder}
+                            />
+                            <SimilarityBadge dist={data.distance} />
+                        </div>
                         <Typography fontSize={"0.9rem"}>
                             {data.album_folder_basename}
                         </Typography>
