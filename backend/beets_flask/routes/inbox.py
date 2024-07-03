@@ -41,6 +41,41 @@ def get_all():
     return inboxes
 
 
+@inbox_bp.route("/path/<path:folder>", methods=["GET"])
+def get_folder(folder):
+    """
+    Get all subfolders from of the specified one
+    """
+    return path_to_dict("/" + folder, relative_to="/" + folder)
+
+
+@inbox_bp.route("/autotag", methods=["POST"])
+def autotag_inbox_folder():
+    """
+    Trigger a tagging process on all subfolders of a given inbox folder.
+
+    By default, tags folders that were not tagged yet.
+    To retag existing folders use `with_status` to provide a list of statuses
+    that should be renewed.
+    """
+    data = request.get_json()
+    kind = data.get("kind")
+    folder = data.get("folder")
+    with_status = data.get("with_status", ["untagged"])
+
+    if not folder.startswith("/"):
+        folder = "/" + folder
+
+    log.info(f"Triggered autotag for {folder=} {with_status=} with {kind=}")
+    retag_inbox(inbox_dir=folder, kind=kind, with_status=with_status)
+
+    return jsonify(
+        {
+            "message": f"enqueued retagging {folder}",
+        }
+    )
+
+
 @inbox_bp.route("/path", methods=["DELETE"])
 def delete_folders():
     data = request.get_json()
@@ -131,41 +166,6 @@ def _delete_folder_and_parents_until(delete_path: str, stop_before: str):
 
     log.debug(f"Deleting {highest_deletable_path}")
     shutil.rmtree(highest_deletable_path)
-
-
-@inbox_bp.route("/path/<path:folder>", methods=["GET"])
-def get_folder(folder):
-    """
-    Get all subfolders from of the specified one
-    """
-    return path_to_dict("/" + folder, relative_to="/" + folder)
-
-
-@inbox_bp.route("/autotag", methods=["POST"])
-def autotag_inbox_folder():
-    """
-    Trigger a tagging process on all subfolders of a given inbox folder.
-
-    By default, tags folders that were not tagged yet.
-    To retag existing folders use `with_status` to provide a list of statuses
-    that should be renewed.
-    """
-    data = request.get_json()
-    kind = data.get("kind")
-    folder = data.get("folder")
-    with_status = data.get("with_status", ["untagged"])
-
-    if not folder.startswith("/"):
-        folder = "/" + folder
-
-    log.info(f"Triggered autotag for {folder=} {with_status=} with {kind=}")
-    retag_inbox(inbox_dir=folder, kind=kind, with_status=with_status)
-
-    return jsonify(
-        {
-            "message": f"enqueued retagging {folder}",
-        }
-    )
 
 
 # ------------------------------------------------------------------------------------ #

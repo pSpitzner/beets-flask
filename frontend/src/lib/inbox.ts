@@ -9,25 +9,24 @@ export interface FsPath {
     children: Record<string, FsPath>;
 }
 
-export const inboxQueryOptions = () =>
+export const inboxQueryAllOptions = () =>
     queryOptions({
         queryKey: ["inbox"],
-        queryFn: async function fetchInboxes() {
+        queryFn: async () => {
             const response = await fetch(`/inbox`);
             return (await response.json()) as FsPath[];
         },
     });
 
-export const fsPathQueryOptions = (path: string) =>
+export const inboxQueryByPathOptions = (path: string) =>
     queryOptions({
         queryKey: ["inbox", "path", path],
-        queryFn: () => fetchFsPath(path),
+        queryFn: async () => {
+            if (path.startsWith("/")) path = path.slice(1);
+            const response = await fetch(`/inbox/path/${path}`);
+            return (await response.json()) as FsPath;
+        },
     });
-async function fetchFsPath(folderPath: string): Promise<FsPath> {
-    if (folderPath.startsWith("/")) folderPath = folderPath.slice(1);
-    const response = await fetch(`/inbox/path/${folderPath}`);
-    return (await response.json()) as FsPath;
-}
 
 export interface InboxStats {
     nFiles: number;

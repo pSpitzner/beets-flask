@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { FsPath, inboxQueryOptions } from "@/lib/inbox";
+import { useQuery } from "@tanstack/react-query";
+import { FsPath, inboxQueryByPathOptions } from "@/lib/inbox";
 import { TagStatusIcon } from "@/components/common/statusIcon";
 import { SimilarityBadgeWithHover } from "@/components/common/similarityBadge";
 import { SelectionProvider, useSelection } from "@/components/context/useSelection";
@@ -18,55 +18,69 @@ import { useEffect, useState } from "react";
 import { useConfig } from "@/components/context/useConfig";
 
 export const Route = createFileRoute("/inbox")({
-    loader: (opts) => opts.context.queryClient.ensureQueryData(inboxQueryOptions()),
-    component: () => <Inbox />,
+    component: () => <Inboxes />,
 });
 
-export function Inbox() {
-    const query = useSuspenseQuery(inboxQueryOptions());
-    const inboxes = query.data;
+function Inboxes() {
+    const config = useConfig();
+    const inboxes = config.gui.inbox.folders;
 
-    if (inboxes.length == 0) {
+    if (Object.keys(inboxes).length == 0) {
         return <>No inboxes found. Check your config!</>;
     }
 
-    return inboxes.map((inboxFp, i) => {
+    return (
+        <>
+            {Object.values(inboxes).map((inbox, i) => {
+                return <Inbox key={i} name={inbox.name} path={inbox.path} />;
+            })}
+        </>
+    );
+}
+
+function Inbox({ name, path }: { name: string; path: string }) {
+    const { data, isLoading, isPending, isError, error } = useQuery(
+        inboxQueryByPathOptions(path)
+    );
+
+    if (isLoading || isPending) {
+        return <>{name} Loading...</>;
+    }
+
+    if (isError) {
         return (
-            <SelectionProvider key={i}>
-                <div className={styles.inboxView}>
-                    <FolderTreeView fp={inboxFp} />
-                </div>
-            </SelectionProvider>
+            <>
+                {name} Error: {error}
+            </>
         );
-    });
+    }
+
+    return (
+        <SelectionProvider>
+            <>{name}</>
+            <div className={styles.inboxView}>
+                <FolderTreeView fp={data} />
+            </div>
+        </SelectionProvider>
+    );
 }
 
 /**
  * Renders a view for a folder.
  * It recursively generates views for subfolders and files within the folder.
- *
- * @param {Object} props - The properties passed to the component.
- * @param {FsPath} props.fp - The file path object representing the folder.
- * @param {string} [props.label] - The label to display for the folder. Optional.
- * @param {boolean} [props.mergeLabels=false] - Whether to merge labels of nested folders. Optional, defaults to true.
- *
- * @returns {JSX.Element} A JSX element representing the view for the folder.
  */
-export function FolderTreeView({
+function FolderTreeView({
     fp,
     label,
     level = 0,
 }: {
     fp: FsPath;
-    label?: string | React.ReactNode;
+    label?: string;
     level?: number;
 }): React.ReactNode {
-    /** The subviews for each child of the folder.
-     */
-
     const config = useConfig();
-
-    const defaultExpandState = (fp.is_album && !config.gui.inbox.expand_files) ? false : true
+    const defaultExpandState =
+        fp.is_album && !config.gui.inbox.expand_files ? false : true;
     const [expanded, setExpanded] = useState<boolean>(defaultExpandState);
     const numChildren = Object.keys(fp.children).length;
     const uid = `collapsible-${fp.full_path}`;
@@ -87,11 +101,6 @@ export function FolderTreeView({
         return <File fp={fp} />;
     }
 
-    if (level === 0) {
-        // this takes care of the root folder
-        return <SubFolders fp={fp} level={level} />;
-    }
-
     return (
         <div className={styles.folder} data-empty={numChildren < 1}>
             <Collapsible.Root open={expanded} onOpenChange={handleExpandedChange}>
@@ -100,7 +109,10 @@ export function FolderTreeView({
                     identifier={fp.full_path}
                     actions={[<SelectionSummary />, ...defaultActions]}
                 >
-                    <Folder fp={fp} label={label} />
+                    <Folder
+                        fp={fp}
+                        label={label || fp.full_path.replaceAll("/", " / ")}
+                    />
                 </ContextMenu>
                 <Collapsible.Content className={styles.content}>
                     <SubFolders fp={fp} level={level} />
@@ -111,27 +123,16 @@ export function FolderTreeView({
 }
 
 function SubFolders({ fp, level }: { fp: FsPath; level: number }) {
-
-    return Object.keys(fp.children).map((name) => {
+    return Object.keys(fp.children).map((name, i) => {
         const child = fp.children[name];
         if (child.type === "directory") {
             const [subFp, subName, mergedName] = concatSubFolderNames(fp, name);
             // enable line wrapping
-            const mergedNameJsx = (
-                <>
-                    {mergedName.split(" / ").map((part, i, arr) => (
-                        <span key={i}>
-                            {part}
-                            {i < arr.length - 1 && " / "}
-                        </span>
-                    ))}
-                </>
-            );
             return (
                 <FolderTreeView
-                    key={mergedName}
+                    key={i}
                     fp={subFp.children[subName]}
-                    label={mergedNameJsx}
+                    label={mergedName}
                     level={level + 1}
                 />
             );
@@ -142,7 +143,7 @@ function SubFolders({ fp, level }: { fp: FsPath; level: number }) {
 }
 
 // actual content, wrapped by the context menu
-function Folder({ fp, label }: { fp: FsPath; label?: React.ReactNode }) {
+function Folder({ fp, label }: { fp: FsPath; label: string }) {
     const { isSelected, toggleSelection, markSelectable } = useSelection();
     const handleSelect = () => {
         if (fp.is_album) {
@@ -170,7 +171,6 @@ function Folder({ fp, label }: { fp: FsPath; label?: React.ReactNode }) {
                     asChild
                     className={styles.trigger}
                     onClick={(e) => {
-                        console.log(e, fp.full_path);
                         e.stopPropagation();
                     }}
                 >
@@ -192,8 +192,23 @@ function Folder({ fp, label }: { fp: FsPath; label?: React.ReactNode }) {
                 </div>
             )}
 
-            <span className={styles.label}>{label}</span>
+            <span className={styles.label}>
+                <WrapableAtSlash label={label} />
+            </span>
         </div>
+    );
+}
+
+function WrapableAtSlash({ label }: { label: string }) {
+    return (
+        <>
+            {label.split(" / ").map((part, i, arr) => (
+                <span key={i}>
+                    {part}
+                    {i < arr.length - 1 && " / "}
+                </span>
+            ))}
+        </>
     );
 }
 
