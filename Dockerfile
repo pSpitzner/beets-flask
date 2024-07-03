@@ -1,6 +1,6 @@
-FROM python:3.11-alpine as base
+FROM python:3.11-alpine AS base
 
-FROM base as deps
+FROM base AS deps
 
 ARG USER_ID
 ARG GROUP_ID
@@ -23,7 +23,7 @@ RUN corepack enable && corepack prepare pnpm@8.7.5 --activate
 #                                      Development                                     #
 # ------------------------------------------------------------------------------------ #
 
-FROM deps as dev
+FROM deps AS dev
 
 WORKDIR /repo
 COPY --from=deps /repo /repo
@@ -41,7 +41,7 @@ ENTRYPOINT ["./entrypoint_dev.sh"]
 #                                        Testing                                       #
 # ------------------------------------------------------------------------------------ #
 
-FROM deps as test
+FROM deps AS test
 
 WORKDIR /repo
 COPY --from=deps /repo /repo
@@ -57,7 +57,7 @@ ENTRYPOINT ["./entrypoint_test.sh"]
 #                                      Production                                      #
 # ------------------------------------------------------------------------------------ #
 
-FROM deps as prod
+FROM deps AS prod
 
 WORKDIR /repo
 COPY --from=deps /repo /repo
