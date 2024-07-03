@@ -25,6 +25,7 @@ import {
     defaultActions,
 } from "./contextMenu";
 import { useSiblings } from "@/components/context/useSiblings";
+import { useConfig } from "@/components/context/useConfig";
 
 const StyledAccordion = styled(Accordion)(({ theme }) => ({
     borderTop: `1px solid ${theme.palette.divider}`,
@@ -70,7 +71,8 @@ export const TagView = forwardRef(
         );
         const { isSelected, toggleSelection, markSelectable } = useSelection();
         const { registerSibling } = useSiblings();
-        const [expanded, setExpanded] = useState<boolean>(false);
+        const config = useConfig();
+        const [expanded, setExpanded] = useState<boolean>(config.gui.tags.expand_tags);
         const handleSelect = (event: React.MouseEvent) => {
             if (event.metaKey || event.ctrlKey) {
                 if (data) toggleSelection(data.album_folder);

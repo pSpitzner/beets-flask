@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
 
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
@@ -9,6 +9,7 @@ import ThemeProvider from "./theme";
 import CircularProgress from "@mui/material/CircularProgress";
 import "@/lib/fetch";
 import { StatusContextProvider } from "./lib/socket";
+import { PrefetchConfigQueryClientProvider } from "./components/context/useConfig";
 
 // Create a new query client instance
 export const queryClient = new QueryClient({});
@@ -45,13 +46,13 @@ declare module "@tanstack/react-router" {
 
 function App() {
     return (
-        <QueryClientProvider client={queryClient}>
+        <PrefetchConfigQueryClientProvider client={queryClient}>
             <StatusContextProvider client={queryClient}>
                 <ThemeProvider>
                     <RouterProvider router={router} />
                 </ThemeProvider>
             </StatusContextProvider>
-        </QueryClientProvider>
+        </PrefetchConfigQueryClientProvider>
     );
 }
 

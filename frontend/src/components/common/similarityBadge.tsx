@@ -1,6 +1,4 @@
-// TODO: get them from backend beets: beets.config["match"]["strong_rec_thresh"]
-const strong_rec_thresh = 0.04;
-const medium_rec_thresh = 0.25;
+
 
 import { useQuery } from "@tanstack/react-query";
 import styles from "./similarityBadge.module.scss";
@@ -9,6 +7,7 @@ import { tagQueryOptions } from "@/lib/tag";
 import * as HoverCard from "@radix-ui/react-hover-card";
 
 import { TagPreview } from "./tagView";
+import { useConfig } from "@/components/context/useConfig"
 
 export function SimilarityBadgeWithHover({
     tagId,
@@ -58,6 +57,10 @@ export function SimilarityBadge({
     dist?: number;
     className?: string;
 }) {
+    const config = useConfig()
+    const strong_rec_thresh = config?.match.strong_rec_thresh || 0.04
+    const medium_rec_thresh = config?.match.medium_rec_thresh || 0.025
+
     let simClass = styles.tbd; // Default class
     let simText = "tbd"; // Default text
 

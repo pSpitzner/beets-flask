@@ -1,18 +1,21 @@
 # minimal config that assumes that your music sits in `/music/imported`
 
 gui:
-    library:
-        readonly: no # disables importing and changes to library
-        include_paths: yes # for the library-browsing (backend api)
+    num_workers_preview: 4 # how many previews to generate in parallel
 
-    num_workers_preview: 1 # how many previews to generate in parallel
+    library:
+        readonly: no
+        include_paths: yes
 
     tags:
+        expand_tags: yes # for tag groups, on page load, show tag details?
         recent_days: 14 # Number of days to consider for the "recent" tag group
 
     inbox:
-        # keep in mind to volume-map these folders in your docker-compose.yml
-        folders:
+        concat_nested_folders: yes # show multiple folders in one line if they only have one child
+        expand_files: no # on page load, show files in (album) folders, or collapse them
+
+        folders: # keep in mind to volume-map these folders in your docker-compose.yml
             Inbox:
                 name: 'Inbox'
                 path : '/music/inbox'

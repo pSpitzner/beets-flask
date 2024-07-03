@@ -4,13 +4,18 @@ import { FsPath, inboxQueryOptions } from "@/lib/inbox";
 import { TagStatusIcon } from "@/components/common/statusIcon";
 import { SimilarityBadgeWithHover } from "@/components/common/similarityBadge";
 import { SelectionProvider, useSelection } from "@/components/context/useSelection";
-import { ContextMenu, SelectionSummary, defaultActions } from "@/components/common/contextMenu";
+import {
+    ContextMenu,
+    SelectionSummary,
+    defaultActions,
+} from "@/components/common/contextMenu";
 
 import styles from "./inbox.module.scss";
 import { ChevronRight } from "lucide-react";
 
 import * as Collapsible from "@radix-ui/react-collapsible";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useConfig } from "@/components/context/useConfig";
 
 export const Route = createFileRoute("/inbox")({
     loader: (opts) => opts.context.queryClient.ensureQueryData(inboxQueryOptions()),
@@ -22,16 +27,14 @@ export function Inbox() {
     const inboxes = query.data;
 
     if (inboxes.length == 0) {
-        return <>
-        No inboxes found. Check your config!
-        </>
+        return <>No inboxes found. Check your config!</>;
     }
 
     return inboxes.map((inboxFp, i) => {
         return (
             <SelectionProvider key={i}>
                 <div className={styles.inboxView}>
-                    <FolderView fp={inboxFp} />
+                    <FolderTreeView fp={inboxFp} />
                 </div>
             </SelectionProvider>
         );
@@ -49,90 +52,97 @@ export function Inbox() {
  *
  * @returns {JSX.Element} A JSX element representing the view for the folder.
  */
-export function FolderView({
+export function FolderTreeView({
     fp,
     label,
-    mergeLabels = true,
     level = 0,
 }: {
     fp: FsPath;
     label?: string | React.ReactNode;
-    mergeLabels?: boolean;
     level?: number;
 }): React.ReactNode {
     /** The subviews for each child of the folder.
      */
+
+    const config = useConfig();
+
+    const defaultExpandState = (fp.is_album && !config.gui.inbox.expand_files) ? false : true
+    const [expanded, setExpanded] = useState<boolean>(defaultExpandState);
     const numChildren = Object.keys(fp.children).length;
-    const SubViews = () => {
-        return Object.keys(fp.children).map((name) => {
-            const child = fp.children[name];
-            if (child.type === "directory") {
-                if (!mergeLabels) {
-                    return (
-                        <FolderView
-                            key={name}
-                            fp={child}
-                            label={name}
-                            mergeLabels={false}
-                        />
-                    );
-                } else {
-                    const [subFp, subName, mergedName] = mergeSubFolderNames(fp, name);
-                    // enable line wrapping
-                    const mergedNameJsx = (
-                        <>
-                            {mergedName.split(" / ").map((part, i, arr) => (
-                                <span key={i}>
-                                    {part}
-                                    {i < arr.length - 1 && " / "}
-                                </span>
-                            ))}
-                        </>
-                    );
-                    return (
-                        <FolderView
-                            key={mergedName}
-                            fp={subFp.children[subName]}
-                            label={mergedNameJsx}
-                            level={level + 1}
-                        />
-                    );
-                }
-            } else {
-                return <FileView key={child.full_path} fp={child} />;
-            }
-        });
+    const uid = `collapsible-${fp.full_path}`;
+
+    useEffect(() => {
+        const savedState = localStorage.getItem(uid);
+        if (savedState !== null) {
+            setExpanded(JSON.parse(savedState));
+        }
+    }, [uid]);
+
+    const handleExpandedChange = (isOpen: boolean) => {
+        setExpanded(isOpen);
+        localStorage.setItem(uid, JSON.stringify(isOpen));
     };
 
     if (fp.type === "file") {
-        return <FileView fp={fp} />;
+        return <File fp={fp} />;
     }
 
     if (level === 0) {
         // this takes care of the root folder
-        return <SubViews />;
+        return <SubFolders fp={fp} level={level} />;
     }
 
     return (
         <div className={styles.folder} data-empty={numChildren < 1}>
-            <Collapsible.Root defaultOpen>
+            <Collapsible.Root open={expanded} onOpenChange={handleExpandedChange}>
                 <ContextMenu
                     className={styles.contextMenuHeaderWrapper}
                     identifier={fp.full_path}
                     actions={[<SelectionSummary />, ...defaultActions]}
                 >
-                    <LowestFolder fp={fp} label={label} />
+                    <Folder fp={fp} label={label} />
                 </ContextMenu>
                 <Collapsible.Content className={styles.content}>
-                    <SubViews />
+                    <SubFolders fp={fp} level={level} />
                 </Collapsible.Content>
             </Collapsible.Root>
         </div>
     );
 }
 
+function SubFolders({ fp, level }: { fp: FsPath; level: number }) {
+
+    return Object.keys(fp.children).map((name) => {
+        const child = fp.children[name];
+        if (child.type === "directory") {
+            const [subFp, subName, mergedName] = concatSubFolderNames(fp, name);
+            // enable line wrapping
+            const mergedNameJsx = (
+                <>
+                    {mergedName.split(" / ").map((part, i, arr) => (
+                        <span key={i}>
+                            {part}
+                            {i < arr.length - 1 && " / "}
+                        </span>
+                    ))}
+                </>
+            );
+            return (
+                <FolderTreeView
+                    key={mergedName}
+                    fp={subFp.children[subName]}
+                    label={mergedNameJsx}
+                    level={level + 1}
+                />
+            );
+        } else {
+            return <File key={child.full_path} fp={child} />;
+        }
+    });
+}
+
 // actual content, wrapped by the context menu
-function LowestFolder({ fp, label }: { fp: FsPath; label?: React.ReactNode }) {
+function Folder({ fp, label }: { fp: FsPath; label?: React.ReactNode }) {
     const { isSelected, toggleSelection, markSelectable } = useSelection();
     const handleSelect = () => {
         if (fp.is_album) {
@@ -155,14 +165,22 @@ function LowestFolder({ fp, label }: { fp: FsPath; label?: React.ReactNode }) {
             data-selected={isSelected(fp.full_path)}
             onClick={handleSelect}
         >
-            <Collapsible.Trigger
-                asChild
-                className={styles.trigger}
-                disabled={numChildren < 1}
-                onClick={(e) => e.stopPropagation()}
-            >
-                <ChevronRight />
-            </Collapsible.Trigger>
+            {numChildren > 0 ? (
+                <Collapsible.Trigger
+                    asChild
+                    className={styles.trigger}
+                    onClick={(e) => {
+                        console.log(e, fp.full_path);
+                        e.stopPropagation();
+                    }}
+                >
+                    <ChevronRight />
+                </Collapsible.Trigger>
+            ) : (
+                <div>
+                    <ChevronRight />
+                </div>
+            )}
 
             {fp.is_album && (
                 <div className={styles.albumIcons}>
@@ -179,7 +197,7 @@ function LowestFolder({ fp, label }: { fp: FsPath; label?: React.ReactNode }) {
     );
 }
 
-export function FileView({ fp: fp }: { fp: FsPath }): JSX.Element {
+function File({ fp: fp }: { fp: FsPath }): JSX.Element {
     if (fp.type !== "file") {
         throw new TypeError("Expected a file, got a directory");
     }
@@ -191,11 +209,16 @@ export function FileView({ fp: fp }: { fp: FsPath }): JSX.Element {
     );
 }
 
-function mergeSubFolderNames(
+function concatSubFolderNames(
     parent: FsPath,
     name: string,
     merged = ""
 ): [FsPath, string, string] {
+    const config = useConfig();
+    if (!config.gui.inbox.concat_nested_folders) {
+        return [parent, name, merged + name];
+    }
+
     const me = parent.children[name];
     const numChildren = Object.keys(me.children).length;
 
@@ -207,7 +230,7 @@ function mergeSubFolderNames(
     }
 
     if (singleChildName && singleChild?.type === "directory") {
-        return mergeSubFolderNames(me, singleChildName, merged + name + " / ");
+        return concatSubFolderNames(me, singleChildName, merged + name + " / ");
     } else {
         return [parent, name, merged + name];
     }
