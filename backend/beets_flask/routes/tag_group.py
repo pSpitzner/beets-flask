@@ -58,7 +58,8 @@ def get_tag_by_id(group_id: str):
         )
 
     with db_session() as session:
-        g = TagGroup.get_by(TagGroup.id == group_id, session=session)
+        stmt = select(TagGroup).where(TagGroup.id == group_id)
+        g = session.execute(stmt).scalar_one()
         if g is None:
             raise InvalidUsage(f"Group {group_id} not found")
         return g.to_dict()
@@ -75,8 +76,10 @@ def get_recent_tags() -> list[str]:
     recent_days: int = config["gui"]["tags"]["recent_days"].as_number()  # type: ignore
 
     with db_session() as session:
-        stmt = select(Tag).where(
-            Tag.updated_at > (datetime.now() - timedelta(days=recent_days))
+        stmt = (
+            select(Tag)
+            .where(Tag.updated_at > (datetime.now() - timedelta(days=recent_days)))
+            .order_by(_order_by_clause())
         )
         tags = session.execute(stmt).scalars().all()
         return [tag.id for tag in tags]
@@ -86,7 +89,7 @@ def get_archived_tags() -> list[str]:
     """Get all tags that are tagged as archived"""
 
     with db_session() as session:
-        stmt = select(Tag).where(Tag.archived == True)
+        stmt = select(Tag).where(Tag.status == "imported").order_by(_order_by_clause())
         tags = session.execute(stmt).scalars().all()
         return [tag.id for tag in tags]
 
@@ -110,6 +113,24 @@ def get_inbox_tags() -> list[str]:
         album_folders.extend(get_album_folders(inbox))
 
     with db_session() as session:
-        stmt = select(Tag).where(Tag.album_folder.in_(album_folders))
+        stmt = (
+            select(Tag)
+            .where(Tag.album_folder.in_(album_folders))
+            .order_by(_order_by_clause())
+        )
         tags = session.execute(stmt).scalars().all()
         return [tag.id for tag in tags]
+
+
+def _order_by_clause():
+    """Convert the user config to an order clause to use with sqlalchemy"""
+
+    match config["gui"]["tags"]["order_by"].as_str():
+        case "name":
+            return Tag.album_folder_basename.asc()
+        case "date_created":
+            return Tag.created_at.desc()
+        case "date_modified":
+            return Tag.updated_at.desc()
+        case _:
+            return Tag.updated_at.desc()

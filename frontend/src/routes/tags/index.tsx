@@ -32,12 +32,12 @@ export function TagGroupOverview() {
         <>
             <PredefinedTagGroup id="inbox" defaultExpanded />
             <PredefinedTagGroup id="recent" />
+            <PredefinedTagGroup id="archive" />
 
             {manualTagGroups.map((group, i) => {
                 return <ManualTagGroup key={i} id={group.id} tag_ids={group.tag_ids} />;
             })}
 
-            <PredefinedTagGroup id="archive" />
         </>
     );
 }

@@ -26,6 +26,7 @@ class Tag(Base):
     # for now we want to allow only one tag per folder.
     id: Mapped[str] = mapped_column(primary_key=True)
     album_folder: Mapped[str]
+    album_folder_basename: Mapped[str]
 
     status: Mapped[str]
     kind: Mapped[str]
@@ -69,6 +70,7 @@ class Tag(Base):
         track_paths_after=None,
     ):
         self.album_folder = album_folder
+        self.album_folder_basename = str(os.path.basename(album_folder))
         self.id = str(id) if id is not None else str(uuid())
         self.created_at = datetime.now()
         self.updated_at = datetime.now()
@@ -148,17 +150,12 @@ class Tag(Base):
             self._group_id = group_id
             self._tag_group = tag_group
 
-    @property
-    def album_folder_basename(self):
-        return os.path.basename(str(self.album_folder))
-
 
     def to_dict(self):
         data = {c.name: getattr(self, c.name) for c in self.__table__.columns}  # type: ignore
         data["track_paths_after"] = self.track_paths_after
         data["track_paths_before"] = self.track_paths_before
         data["group_id"] = self.group_id
-        data["album_folder_basename"] = self.album_folder_basename
 
         return data
 

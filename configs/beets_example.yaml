@@ -14,6 +14,7 @@ gui:
     inbox:
         concat_nested_folders: yes # show multiple folders in one line if they only have one child
         expand_files: no # on page load, show files in (album) folders, or collapse them
+        order_by: "name" # how to sort tags within the trag groups: "name" (the album folder basename) | "date_created" | "date_modified"
 
         folders: # keep in mind to volume-map these folders in your docker-compose.yml
             Lorem:
