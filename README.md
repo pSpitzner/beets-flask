@@ -170,6 +170,14 @@ Tags in the database are updated by the workers, and can be read independently v
 
 Keeping a `tag` associated with a preview/import around, will also enable an _amend_ mechanic. The plan here is to just import if the match is good (respecting the normal beets config) and to store the id of our tag as a note in the beets database. Then, if a correction is needed, we can query and delete via the import-tag-id and re-import with corrections.
 
+### Tag Groups
+
+The aim of tag groups is to get some order into the previews / imports. Currently we have:
+
+- Inbox: still have a folder in an inbox
+- Recent: have been modified recently
+- Archive: Tags that have been imported already
+- Unsorted: currently corresponds to all tags (we have 'manual tag groups' in the backend, but no way to set them yet)
 
 ### Status updates
 
