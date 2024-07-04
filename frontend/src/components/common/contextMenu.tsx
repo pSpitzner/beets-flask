@@ -16,7 +16,18 @@ import {
 } from "react";
 import { queryClient } from "@/main";
 import { TagI } from "@/lib/tag";
-import { Tag, HardDriveDownload, Clipboard, Terminal, Trash2 } from "lucide-react";
+import {
+    Tag,
+    HardDriveDownload,
+    Clipboard,
+    Terminal,
+    Trash2,
+    ChevronRight,
+    LayoutList,
+    ListChecks,
+    Maximize,
+    Minimize2,
+} from "lucide-react";
 
 import { useTerminalContext } from "@/components/terminal";
 import { useSelection } from "@/components/context/useSelection";
@@ -265,6 +276,7 @@ export function SelectAllAction({ ...props }: { [key: string]: any }) {
                 selectAll();
             }}
             text={"Select All"}
+            icon={<ListChecks />}
         />
     );
 }
@@ -280,6 +292,7 @@ export function DeselectAllAction({ ...props }: { [key: string]: any }) {
                 deselectAll();
             }}
             text={"Deselect All"}
+            icon={<LayoutList />}
         />
     );
 }
@@ -298,6 +311,7 @@ export function ExpandAllAction({ ...props }: { [key: string]: any }) {
                 closeMenu();
             }}
             text={"Expand All"}
+            icon={<Maximize />}
         />
     );
 }
@@ -315,6 +329,7 @@ export function CollapseAllAction({ ...props }: { [key: string]: any }) {
                 closeMenu();
             }}
             text={"Collapse All"}
+            icon={<Minimize2 />}
         />
     );
 }
@@ -513,8 +528,14 @@ function Action({
             className={`${styles.Action} ${className ? className : ""}`}
             onClick={onClick || closeMenu}
         >
+            {icon ? (
+                <div className={styles.ActionIcon}>{icon}</div>
+            ) : (
+                <div className={styles.ActionIcon}>
+                    <ChevronRight />
+                </div>
+            )}
             <div className={styles.ActionText}>{text}</div>
-            {icon && <div className={styles.ActionIcon}>{icon}</div>}
         </MenuItem>
     );
 }
@@ -551,13 +572,16 @@ const ActionWithMutation = forwardRef(function ActionWithMutation(
                 }
             }}
         >
-            <div className={styles.ActionText}>{isPending ? text + " ..." : text}</div>
-
-            {icon && (
+            {icon ? (
                 <div className={styles.ActionIcon} ref={ref}>
                     {icon}
                 </div>
+            ) : (
+                <div className={styles.ActionIcon} ref={ref}>
+                    <ChevronRight />
+                </div>
             )}
+            <div className={styles.ActionText}>{isPending ? text + " ..." : text}</div>
 
             {isError && <ErrorDialog open={isError} error={error} onClose={reset} />}
         </MenuItem>
