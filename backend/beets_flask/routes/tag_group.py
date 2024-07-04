@@ -104,8 +104,8 @@ def get_inbox_tags() -> list[str]:
             for k, v in d["children"].items():
                 yield from get_album_folders(v)
 
-    # should we reset the cache here?
-    # path_to_dict.cache.clear()  # type: ignore
+    # we need to reset the cache, as refetches might be triggered after folder deletion.
+    path_to_dict.cache.clear()  # type: ignore
     inboxes = [path_to_dict(f) for f in get_inbox_folders()]
 
     album_folders = []
