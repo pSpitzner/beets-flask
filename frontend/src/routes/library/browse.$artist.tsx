@@ -22,9 +22,6 @@ export const Route = createFileRoute(`${BASE_ROUTE}/$artist`)({
     component: ArtistOverview,
 });
 
-/** Shows all
- * albums of an artist
- */
 function ArtistOverview() {
     const artist = Route.useLoaderData();
     const params = Route.useParams() as {

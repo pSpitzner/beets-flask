@@ -22,9 +22,6 @@ export const Route = createFileRoute(`${BASE_ROUTE}/$artist/$albumId`)({
     component: AlbumOverview,
 });
 
-/** Shows all
- * albums of an artist
- */
 function AlbumOverview() {
     const album = Route.useLoaderData() as Album;
     const params = Route.useParams() as {
@@ -36,7 +33,7 @@ function AlbumOverview() {
     const data = useMemo(() => {
         return album.items.map((item) => ({
             to: `${BASE_ROUTE}/$artist/$albumId/$itemId`,
-            params: {artist: params.artist, albumId: params.albumId, itemId: item.id},
+            params: { artist: params.artist, albumId: params.albumId, itemId: item.id },
             label: item.name,
             className: styles.listItem,
             "data-selected": item.id === params.itemId,
