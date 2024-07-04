@@ -16,6 +16,7 @@ import { ChevronRight } from "lucide-react";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { useEffect, useState } from "react";
 import { useConfig } from "@/components/context/useConfig";
+import { Card, Typography } from "@mui/material";
 
 export const Route = createFileRoute("/inbox")({
     component: () => <Inboxes />,
@@ -43,24 +44,36 @@ function Inbox({ name, path }: { name: string; path: string }) {
         inboxQueryByPathOptions(path)
     );
 
+    const heading = (
+        <Typography gutterBottom variant="h6" component="div">
+            {name}
+        </Typography>
+    );
+
     if (isLoading || isPending) {
-        return <>{name} Loading...</>;
+        return (
+            <Card className={styles.inboxView}>
+                {heading}
+                <>Loading ...</>
+            </Card>
+        );
     }
 
     if (isError) {
         return (
-            <>
-                {name} Error: {error}
-            </>
+            <Card className={styles.inboxView}>
+                {heading}
+                <>Error: {error}</>
+            </Card>
         );
     }
 
     return (
         <SelectionProvider>
-            <>{name}</>
-            <div className={styles.inboxView}>
+            <Card className={styles.inboxView}>
+                { heading }
                 <FolderTreeView fp={data} />
-            </div>
+            </Card>
         </SelectionProvider>
     );
 }

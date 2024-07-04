@@ -54,6 +54,20 @@ const darkTheme = extendTheme({
                     },
                 },
             },
+            MuiCard: {
+                styleOverrides: {
+                    root: {
+                        backgroundColor: "#0B0C0D",
+                    },
+                },
+            },
+            MuiAccordion: {
+                styleOverrides: {
+                    root: {
+                        backgroundColor: "#0B0C0D",
+                    },
+                },
+            },
         },
     }),
 });

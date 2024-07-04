@@ -8,9 +8,9 @@ import { ChevronDown } from "lucide-react";
 
 import { SelectionProvider } from "@/components/context/useSelection";
 
-const StyledAccordion = styled(Accordion)(({ theme }) => ({
-    border: `1px solid ${theme.palette.divider}`,
-    background: theme.palette.background.default,
+const StyledGroupAccordion = styled(Accordion)(({ theme }) => ({
+    // border: `1px solid ${theme.palette.divider}`,
+    // background: theme.palette.background.default,
     borderRadius: theme.shape.borderRadius,
     marginBottom: theme.spacing(1),
     "&:before": {
@@ -19,6 +19,7 @@ const StyledAccordion = styled(Accordion)(({ theme }) => ({
     "& .MuiAccordionSummary-root": {
         "&:hover": {
             background: theme.palette.action.hover,
+            borderRadius: theme.shape.borderRadius,
         },
     },
     "& .MuiAccordionDetails-root": {
@@ -46,7 +47,7 @@ export default function TagGroupView({
     [key: string]: any;
 }) {
     return (
-        <StyledAccordion
+        <StyledGroupAccordion
             disableGutters
             slotProps={{ transition: { unmountOnExit: true } }}
             {...props}
@@ -61,7 +62,7 @@ export default function TagGroupView({
             <AccordionDetails>
                 <SelectionProvider>{children}</SelectionProvider>
             </AccordionDetails>
-        </StyledAccordion>
+        </StyledGroupAccordion>
     );
 }
 

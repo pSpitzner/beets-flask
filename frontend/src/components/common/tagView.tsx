@@ -28,15 +28,16 @@ import { useSiblings } from "@/components/context/useSiblings";
 import { useConfig } from "@/components/context/useConfig";
 import { TagStatusIcon } from "./statusIcon";
 
-const StyledAccordion = styled(Accordion)(({ theme }) => ({
-    borderTop: `1px solid ${theme.palette.divider}`,
+const StyledTagAccordion = styled(Accordion)(({ theme }) => ({
+    // borderTop: `1px solid ${theme.palette.divider}`,
     borderRadius: 0,
-    background: theme.palette.background.default,
+    // background: theme.palette.background.default,
     "&:before": {
         display: "none",
     },
     "&:hover": {
         background: theme.palette.action.hover,
+        borderRadius: theme.shape.borderRadius,
     },
     '&[data-selected="true"]': {
         background: theme.palette.action.selected,
@@ -53,8 +54,11 @@ const StyledAccordion = styled(Accordion)(({ theme }) => ({
         margin: "0.4rem",
     },
     "& .MuiAccordionDetails-root": {
-        borderTop: `1px dashed ${theme.palette.divider}`,
+        // borderTop: `1px dashed ${theme.palette.divider}`,
         padding: "0.4rem 0 1rem 1rem",
+        margin: "0rem 1rem 0.5rem 1rem",
+        borderRadius: theme.shape.borderRadius,
+        background: "#1E1F20",
     },
     "& .MuiAccordionSummary-expandIconWrapper.Mui-expanded": {
         transform: "rotate(90deg)",
@@ -110,9 +114,9 @@ export const TagView = forwardRef(
             if (isPending) inner = "Pending...";
             if (isError) inner = "Error...";
             return (
-                <StyledAccordion disableGutters disabled>
+                <StyledTagAccordion disableGutters disabled>
                     <AccordionSummary>{inner}</AccordionSummary>
-                </StyledAccordion>
+                </StyledTagAccordion>
             );
         }
 
@@ -125,7 +129,7 @@ export const TagView = forwardRef(
                     ...defaultActions,
                 ]}
             >
-                <StyledAccordion
+                <StyledTagAccordion
                     disableGutters
                     key={identifier}
                     className={styles.accordionOuter}
@@ -153,7 +157,7 @@ export const TagView = forwardRef(
                     <AccordionDetails>
                         <TagPreview tagId={tagId} tagPath={tagPath} />
                     </AccordionDetails>
-                </StyledAccordion>
+                </StyledTagAccordion>
             </ContextMenu>
         );
     }

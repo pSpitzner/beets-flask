@@ -3,7 +3,7 @@ import {
     CircleCheckBig,
     CircleDashed,
     RectangleEllipsis,
-    Layers2,
+    Copy,
     TriangleAlert,
 } from "lucide-react";
 import { Tooltip } from "@mui/material";
@@ -42,7 +42,7 @@ export function StatusIcon({
     } else if (status.toLocaleLowerCase() === "unmatched") {
         icon = <RectangleEllipsis size={12} />;
     } else if (status.toLocaleLowerCase() === "duplicate") {
-        icon = <Layers2 size={12} />;
+        icon = <Copy size={12} />;
     } else if (status.toLocaleLowerCase() === "failed") {
         icon = <TriangleAlert size={12} />;
     } else if (["tagging", "importing"].includes(status.toLocaleLowerCase())) {
