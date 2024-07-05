@@ -125,7 +125,13 @@ def get_inbox_tags() -> list[str]:
 def _order_by_clause():
     """Convert the user config to an order clause to use with sqlalchemy"""
 
-    match config["gui"]["tags"]["order_by"].as_str():
+    try:
+        order_by = config["gui"]["tags"]["order_by"].as_str()
+    except:
+        order_by = ""
+
+
+    match order_by:
         case "name":
             return Tag.album_folder_basename.asc()
         case "date_created":
