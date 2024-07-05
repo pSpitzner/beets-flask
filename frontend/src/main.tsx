@@ -1,14 +1,15 @@
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
 
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
 import ThemeProvider from "./theme";
 import CircularProgress from "@mui/material/CircularProgress";
 import "@/lib/fetch";
-import { SSEStreamProvider } from "./components/context/useSSEStream";
+import { StatusContextProvider } from "./lib/socket";
+import { PrefetchConfigQueryClientProvider } from "./components/context/useConfig";
 
 // Create a new query client instance
 export const queryClient = new QueryClient({});
@@ -21,7 +22,7 @@ const router = createRouter({
     },
     defaultPreload: "intent",
     defaultPendingComponent: () => (
-        <div className="flex flex-col h-screen w-screen justify-center items-center">
+        <div className="flex flex-col h-screen w-100 justify-center items-center">
             <div className="flex flex-col space-y-4 justify-center items-center">
                 <CircularProgress />
                 <p className="text-lg">
@@ -45,13 +46,13 @@ declare module "@tanstack/react-router" {
 
 function App() {
     return (
-        <QueryClientProvider client={queryClient}>
-            <SSEStreamProvider client={queryClient}>
+        <PrefetchConfigQueryClientProvider client={queryClient}>
+            <StatusContextProvider client={queryClient}>
                 <ThemeProvider>
                     <RouterProvider router={router} />
                 </ThemeProvider>
-            </SSEStreamProvider>
-        </QueryClientProvider>
+            </StatusContextProvider>
+        </PrefetchConfigQueryClientProvider>
     );
 }
 

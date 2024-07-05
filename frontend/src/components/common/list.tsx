@@ -1,61 +1,78 @@
 import { Link } from "@tanstack/react-router";
 
-import { ListItemText, List as MuiList } from '@mui/material';
-import ListItem, { ListItemProps } from '@mui/material/ListItem';
+import { ListItemText } from "@mui/material";
+import ListItem, { ListItemProps } from "@mui/material/ListItem";
 
-import {ReactNode } from "react";
-import Box from "@mui/material/Box";
+import { ReactNode, ComponentType } from "react";
+import { FixedSizeList, ListChildComponentProps } from "react-window";
+import AutoSizer from "react-virtualized-auto-sizer";
 
-import styles from "./list.module.scss";
-
-
-
-
-function Wrapper({children}:{children: ReactNode}){
-    return <Box className={styles.wrapper}>
-        <MuiList>
-            {children}
-        </MuiList>
-    </Box>
+interface WrapperProps<D = any> {
+    children: ComponentType<ListChildComponentProps<Array<D>>>;
+    className?: string;
+    data: Array<D>;
 }
 
-
-export interface ItemProps extends ListItemProps{
-    label:string;
-    icon?:React.ReactNode;
-    to?:string;
+function List<D>({ children, data, ...props }: WrapperProps<D>) {
+    return (
+        <AutoSizer>
+            {({ height, width }) => (
+                <FixedSizeList
+                    className="List"
+                    height={height}
+                    width={width}
+                    itemData={data}
+                    itemCount={data.length}
+                    itemSize={35}
+                    {...props}
+                >
+                    {children}
+                </FixedSizeList>
+            )}
+        </AutoSizer>
+    );
 }
 
-function Item({label, to, icon,...props}:ItemProps){
+type ListItemData = {
+    label: string;
+    to?: string;
+    params?: { [key: string]: any };
+    icon?: ReactNode;
+    [key: string]: any;
+};
 
-    const it = <ListItem className={styles.item} {...props}>
-        {icon}
-        <ListItemText primary={label}/>
-    </ListItem>
+function Item({ index, data, style }: ListChildComponentProps<ListItemData[]>) {
+    const { label, to, params, icon, ...props } = data[index];
+
+    const it = (
+        <ListItem key={index} style={style} {...props}>
+            {icon}
+            <ListItemText primary={label} />
+        </ListItem>
+    );
 
     if (to) {
-        return <Link to={to}>
-            {it}
-        </Link>
+        return (
+            <Link
+                key={index}
+                to={to}
+                params={params}
+                preload={"intent"}
+                preloadDelay={2000}
+            >
+                {it}
+            </Link>
+        );
     }
     return it;
 }
 
-const List = {
-    Wrapper,
-    Item,
-};
+export interface ItemProps extends ListItemProps {
+    label: string;
+    icon?: React.ReactNode;
+    to?: string;
+}
+
+List.Item = Item;
+
 export default List;
-
-
-/**
- * import List from ...#efefef
- *
- * const data =
- *
- * return <List.Wrapper>
- * {data.map()=>{
- *  <List.Item to={data.}/>
- * }}
- *
- */

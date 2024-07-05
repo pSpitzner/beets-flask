@@ -1,24 +1,53 @@
 # opinionated config that assumes that your music sits in `/music/imported`
 
+gui:
+    num_workers_preview: 4 # how many previews to generate in parallel
+
+    library:
+        readonly: no
+        include_paths: yes
+
+    tags:
+        expand_tags: yes # for tag groups, on page load, show tag details?
+        recent_days: 14 # Number of days to consider for the "recent" tag group
+
+    terminal:
+        start_path: "/music/inbox" # the directory where to start new terminal sessions
+
+    inbox:
+        concat_nested_folders: yes # show multiple folders in one line if they only have one child
+        expand_files: no # on page load, show files in (album) folders, or collapse them
+        order_by: "name" # how to sort tags within the trag groups: "name" (the album folder basename) | "date_created" | "date_modified"
+
+        folders: # keep in mind to volume-map these folders in your docker-compose.yml
+            Lorem:
+                name: "Awesome Inbox"
+                path: "/music/inbox"
+                autotag: no # no | "preview" | "import"
+            Ipsum:
+                name: "Dummy inbox"
+                path: "/music/dummy"
+                autotag: no
+
 plugins: [
-    info,
-    the,
-    fetchart,
-    embedart,
-    ftintitle,
-    lastgenre,
-    missing,
-    albumtypes,
-    scrub,
-    zero,
-    mbsync,
-    duplicates,
-    convert,
-    fromfilename,
-    inline,
-    edit,
-    spotify, # needs authentication https://docs.beets.io/en/latest/plugins/spotify.html
-]
+        info,
+        the,
+        fetchart,
+        embedart,
+        ftintitle,
+        lastgenre,
+        missing,
+        albumtypes,
+        scrub,
+        zero,
+        mbsync,
+        duplicates,
+        convert,
+        fromfilename,
+        inline,
+        edit,
+        spotify, # needs authentication https://docs.beets.io/en/latest/plugins/spotify.html
+    ]
 
 directory: /music/imported
 # library: /home/user/.config/beets/library.db # default location
@@ -30,25 +59,26 @@ import:
     log: /music/last_beets_imports.log
     quiet_fallback: skip
     detail: yes
+    duplicate_action: ask # ask|skip|merge|keep|remove
 
 ui:
     color: yes
 
 replace:
-    '[\\]':         ''
-    '[_]':          '-'
-    '[/]':          '-'
-    '^\.+':         ''
-    '[\x00-\x1f]':  ''
-    '[<>:"\?\*\|]': ''
-    '\.$':          ''
-    '\s+$':         ''
-    '^\s+':         ''
-    '^-':           ''
-    '’':            ''
-    '′':            ''
-    '″':            ''
-    '‐':            '-'
+    '[\\]': ""
+    "[_]": "-"
+    "[/]": "-"
+    '^\.+': ""
+    '[\x00-\x1f]': ""
+    '[<>:"\?\*\|]': ""
+    '\.$': ""
+    '\s+$': ""
+    '^\s+': ""
+    "^-": ""
+    "’": ""
+    "′": ""
+    "″": ""
+    "‐": "-"
 
 per_disc_numbering: no
 threaded: yes
@@ -56,14 +86,14 @@ asciify_paths: yes
 
 albumtypes:
     types:
-        - ep: 'EP'
-        - single: 'Single'
-        - soundtrack: 'OST'
-        - live: 'Live'
-        - compilation: 'Compilation'
-        - remix: 'Remix'
+        - ep: "EP"
+        - single: "Single"
+        - soundtrack: "OST"
+        - live: "Live"
+        - compilation: "Compilation"
+        - remix: "Remix"
     ignore_va: compilation # list of (album)types that should not be output for Various Artists albums
-    bracket: '[]'
+    bracket: "[]"
 
 item_fields:
     disc_and_track: u'%02i-%02i' % (disc, track) if disctotal > 1 else u'%02i' % (track)
@@ -108,17 +138,16 @@ lastgenre: # get genres from last fm
     prefer_specific: yes # Sort genres by the most to least specific, rather than most to least popular.
     force: yes # By default, beets will always fetch new genres, even if the files already have one
     source: track # album|track
-    separator: '; '
-    fallback: ''
+    separator: "; "
+    fallback: ""
 
 # for the list command
 format_item: $albumartist - $album - $title [$format, $bitrate] - $artist
 
 missing: # finds and lists, for every album in your collection, which or how many tracks are missing
-  format: $albumartist - $album - $title - $artist
-  count: yes
-  total: no
-
+    format: $albumartist - $album - $title - $artist
+    count: yes
+    total: no
 
 scrub:
     auto: no # `yes` removes traktor cue points etc!
@@ -127,17 +156,10 @@ zero:
     fields: comments
     auto: yes
 
-va_name: 'Various Artists' # 'Various Artists' is the default name for the albumartist on musicbrainz
+va_name: "Various Artists" # 'Various Artists' is the default name for the albumartist on musicbrainz
 
 # A directory is considered empty (and removed after import) if it only contains files whose names match the glob patterns
-clutter: [
-    "Thumbs.DB",
-    ".DS_Store",
-    "*.pdf",
-    "*.png",
-    "*.jpg",
-]
-
+clutter: ["Thumbs.DB", ".DS_Store", "*.pdf", "*.png", "*.jpg"]
 
 match:
     #.1 = 90% similarity required. automatically matches above the threshold.
@@ -145,10 +167,21 @@ match:
     #There is a GitHub issue for this that I can't find.
     strong_rec_thresh: 0.1 # autotagger tolerance [0, 1], default 0.04
     #see https://beets.readthedocs.io/en/v1.4.3/reference/config.html#preferred
-    ignored_media: ['Data CD', 'DVD', 'DVD-Video', 'Blu-ray', 'HD-DVD', 'VCD', 'SVCD', 'UMD', 'VHS']
+    ignored_media:
+        [
+            "Data CD",
+            "DVD",
+            "DVD-Video",
+            "Blu-ray",
+            "HD-DVD",
+            "VCD",
+            "SVCD",
+            "UMD",
+            "VHS",
+        ]
     preferred:
-        media: ['CD', 'Digital Media|File', 'Digital Media']
-        countries: ['US', 'GB|UK', "DE"]
+        media: ["CD", "Digital Media|File", "Digital Media"]
+        countries: ["US", "GB|UK", "DE"]
     distance_weights:
         # source: 2.0
         # artist: 3.0

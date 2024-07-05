@@ -1,0 +1,39 @@
+.ContextMenu {
+    & > div > ul {
+        // this is where MUI adds some extra padding to
+        // MUI-List root, which is a ul.
+        padding: 0;
+    }
+}
+
+.Action {
+    // those are mui menu-items
+    padding: 0.2rem 0.5rem;
+    &:hover {
+        background-color:#6F7B8555;
+    }
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+}
+
+.Heading {
+    // overwrite MUI default lower opacaity
+    opacity: 0.8 !important;
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+    // padding-bottom: 0.8rem;
+    justify-content:center;
+}
+
+.ActionText {
+    font-size: medium;
+}
+
+.ActionIcon {
+    padding-right: 0.3rem;
+    padding-left: 0.15rem;
+    & > svg {
+        width: 0.8rem;
+    }
+}

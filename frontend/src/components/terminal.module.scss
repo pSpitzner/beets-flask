@@ -43,6 +43,10 @@
     font-family: monospace;
     padding: 0.2rem 0.5rem;
     z-index: 2;
+    background-color: black;
+    &:hover {
+        background-color: #222;
+    }
 }
 
 .terminalOuterContainer {

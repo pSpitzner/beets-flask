@@ -5,15 +5,20 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 
-export default function ErrorDialog({
+export function ErrorDialog({
     open,
     onClose,
     error,
 }: {
     open: boolean;
     onClose: () => void;
-    error: Error;
+    error?: Error | null;
 }) {
+
+    if (!error) {
+        return
+    }
+
     return (
         <>
             <Dialog
@@ -34,4 +39,41 @@ export default function ErrorDialog({
             </Dialog>
         </>
     );
+}
+
+
+export function ConfirmDialog({
+    open,
+    onConfirm,
+    onCancel,
+    title,
+    children
+}: {
+    open: boolean,
+    onConfirm: () => void,
+    onCancel: () => void,
+    title: string,
+    children?: React.ReactNode
+}) {
+    return (
+        <>
+            <Dialog
+                open={open}
+                onClose={onCancel}
+            >
+                <DialogTitle>{title}</DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="error-dialog-description">
+                        {children}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions >
+                    <Button onClick={onCancel} sx={{
+                        marginRight: "auto"
+                    }}>No</Button>
+                    <Button onClick={onConfirm} className="ml-auto">Yes</Button>
+                </DialogActions>
+            </Dialog>
+        </>
+    )
 }

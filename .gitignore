@@ -9,7 +9,6 @@ docker-compose-custom.yaml
 
 **/package-lock.json
 **/vite.config.ts.timestamp-*.mjs
-**/routeTree.gen.ts
 *.code-workspace
 *.rdb
 

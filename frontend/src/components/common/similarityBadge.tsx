@@ -1,6 +1,4 @@
-// TODO: get them from backend beets: beets.config["match"]["strong_rec_thresh"]
-const strong_rec_thresh = 0.04;
-const medium_rec_thresh = 0.25;
+
 
 import { useQuery } from "@tanstack/react-query";
 import styles from "./similarityBadge.module.scss";
@@ -9,6 +7,7 @@ import { tagQueryOptions } from "@/lib/tag";
 import * as HoverCard from "@radix-ui/react-hover-card";
 
 import { TagPreview } from "./tagView";
+import { useConfig } from "@/components/context/useConfig"
 
 export function SimilarityBadgeWithHover({
     tagId,
@@ -58,32 +57,31 @@ export function SimilarityBadge({
     dist?: number;
     className?: string;
 }) {
-    if (dist == undefined) {
-        return (
-            <span className={`${className} ${styles.SimilarityBadge} ${styles.tbd}`}>
-                tbd
-            </span>
-        );
+    const config = useConfig()
+    const strong_rec_thresh = config?.match.strong_rec_thresh || 0.04
+    const medium_rec_thresh = config?.match.medium_rec_thresh || 0.025
+
+    let simClass = styles.tbd; // Default class
+    let simText = "tbd"; // Default text
+
+    if (dist !== undefined && dist !== null) {
+        const simPercentage = `${Math.floor((1 - dist) * 100)}%`;
+        simText = simPercentage;
+
+        if (dist <= strong_rec_thresh) {
+            simClass = styles.strong;
+        } else if (dist <= medium_rec_thresh) {
+            simClass = styles.medium;
+        } else {
+            simClass = styles.weak;
+        }
     }
 
-    const sim = `${Math.floor((1 - dist) * 100)}%`;
-    if (dist <= strong_rec_thresh) {
-        return (
-            <span className={`${className} ${styles.SimilarityBadge} ${styles.strong}`}>
-                {sim}
-            </span>
-        );
-    } else if (dist <= medium_rec_thresh) {
-        return (
-            <span className={`${className} ${styles.SimilarityBadge} ${styles.medium}`}>
-                {sim}
-            </span>
-        );
-    } else {
-        return (
-            <span className={`${className} ${styles.SimilarityBadge} ${styles.weak}`}>
-                {sim}
-            </span>
-        );
-    }
+    const combinedClassName = `${className ? `${className} ` : ""}${styles.SimilarityBadgeInner} ${simClass}`;
+
+    return (
+        <div className={styles.SimilarityBadgeOuter}>
+            <span className={combinedClassName}>{simText}</span>
+        </div>
+    );
 }

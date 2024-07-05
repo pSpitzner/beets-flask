@@ -1,170 +1,231 @@
 import { createFileRoute } from "@tanstack/react-router";
-
-import { UseMutationOptions, useSuspenseQuery } from "@tanstack/react-query";
-import { FsPath, inboxQueryOptions } from "@/lib/inbox";
+import { useQuery } from "@tanstack/react-query";
+import { FsPath, inboxQueryByPathOptions } from "@/lib/inbox";
 import { TagStatusIcon } from "@/components/common/statusIcon";
 import { SimilarityBadgeWithHover } from "@/components/common/similarityBadge";
-import { useTerminalContext } from "@/components/terminal";
+import { SelectionProvider, useSelection } from "@/components/context/useSelection";
+import {
+    ContextMenu,
+    SelectionSummary,
+    defaultActions,
+} from "@/components/common/contextMenu";
 
 import styles from "./inbox.module.scss";
-import {
-    ChevronRight,
-    Settings2,
-    Tag,
-    HardDriveDownload,
-    Clipboard,
-} from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 import * as Collapsible from "@radix-ui/react-collapsible";
-import { IconButton } from "@mui/material";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
-
-import { useState, MouseEvent } from "react";
-import { IconTextButtonWithMutation } from "@/components/common/buttons";
-import { queryClient } from "@/main";
-import { TagI } from "@/lib/tag";
+import { useEffect, useState } from "react";
+import { useConfig } from "@/components/context/useConfig";
+import { Card, Typography } from "@mui/material";
 
 export const Route = createFileRoute("/inbox")({
-    loader: (opts) => opts.context.queryClient.ensureQueryData(inboxQueryOptions()),
-    component: () => <Inbox />,
+    component: () => <Inboxes />,
 });
 
-export function Inbox() {
-    const query = useSuspenseQuery(inboxQueryOptions());
+function Inboxes() {
+    const config = useConfig();
+    const inboxes = config.gui.inbox.folders;
+
+    if (Object.keys(inboxes).length == 0) {
+        return <>No inboxes found. Check your config!</>;
+    }
 
     return (
-        <div className={styles.inboxView}>
-            <FolderView fp={query.data} />
-        </div>
+        <>
+            {Object.values(inboxes).map((inbox, i) => {
+                return <Inbox key={i} name={inbox.name} path={inbox.path} />;
+            })}
+        </>
+    );
+}
+
+function Inbox({ name, path }: { name: string; path: string }) {
+    const { data, isLoading, isPending, isError, error } = useQuery(
+        inboxQueryByPathOptions(path)
+    );
+
+    const heading = (
+        <Typography gutterBottom variant="h6" component="div">
+            {name}
+        </Typography>
+    );
+
+    if (isLoading || isPending) {
+        return (
+            <Card className={styles.inboxView}>
+                {heading}
+                <>Loading ...</>
+            </Card>
+        );
+    }
+
+    if (isError) {
+        return (
+            <Card className={styles.inboxView}>
+                {heading}
+                <>Error: {error}</>
+            </Card>
+        );
+    }
+
+    return (
+        <SelectionProvider>
+            <Card className={styles.inboxView}>
+                { heading }
+                <FolderTreeView fp={data} />
+            </Card>
+        </SelectionProvider>
     );
 }
 
 /**
  * Renders a view for a folder.
  * It recursively generates views for subfolders and files within the folder.
- *
- * @param {Object} props - The properties passed to the component.
- * @param {FsPath} props.fp - The file path object representing the folder.
- * @param {string} [props.label] - The label to display for the folder. Optional.
- * @param {boolean} [props.mergeLabels=false] - Whether to merge labels of nested folders. Optional, defaults to true.
- *
- * @returns {JSX.Element} A JSX element representing the view for the folder.
  */
-export function FolderView({
+function FolderTreeView({
     fp,
     label,
-    mergeLabels = true,
     level = 0,
 }: {
     fp: FsPath;
-    label?: string | JSX.Element;
-    mergeLabels?: boolean;
+    label?: string;
     level?: number;
-}): JSX.Element {
-    // selecting rows
-    const [isSelected, setIsSelected] = useState(false);
-    const handleSelect = () => {
-        if (fp.is_album) {
-            setIsSelected(!isSelected);
-        }
-    };
-
-    /** The subviews for each child of the folder.
-     */
+}): React.ReactNode {
+    const config = useConfig();
+    const defaultExpandState =
+        fp.is_album && !config.gui.inbox.expand_files ? false : true;
+    const [expanded, setExpanded] = useState<boolean>(defaultExpandState);
     const numChildren = Object.keys(fp.children).length;
-    const SubViews = () => {
-        return Object.keys(fp.children).map((name) => {
-            const child = fp.children[name];
-            if (child.type === "directory") {
-                if (!mergeLabels) {
-                    return (
-                        <FolderView
-                            key={name}
-                            fp={child}
-                            label={name}
-                            mergeLabels={false}
-                        />
-                    );
-                } else {
-                    const [subFp, subName, mergedName] = mergeSubFolderNames(fp, name);
-                    // enable line wrapping
-                    const mergedNameJsx = (
-                        <>
-                            {mergedName.split(" / ").map((part, i, arr) => (
-                                <span key={i}>
-                                    {part}
-                                    {i < arr.length - 1 && " / "}
-                                </span>
-                            ))}
-                        </>
-                    );
-                    return (
-                        <FolderView
-                            key={mergedName}
-                            fp={subFp.children[subName]}
-                            label={mergedNameJsx}
-                            level={level + 1}
-                        />
-                    );
-                }
-            } else {
-                return <FileView key={child.full_path} fp={child} />;
-            }
-        });
+    const uid = `collapsible-${fp.full_path}`;
+
+    useEffect(() => {
+        const savedState = localStorage.getItem(uid);
+        if (savedState !== null) {
+            setExpanded(JSON.parse(savedState));
+        }
+    }, [uid]);
+
+    const handleExpandedChange = (isOpen: boolean) => {
+        setExpanded(isOpen);
+        localStorage.setItem(uid, JSON.stringify(isOpen));
     };
 
     if (fp.type === "file") {
-        return <FileView fp={fp} />;
+        return <File fp={fp} />;
     }
 
-    if (level === 0) {
-        // this takes care of the root folder
-        return <SubViews />;
-    }
     return (
         <div className={styles.folder} data-empty={numChildren < 1}>
-            <Collapsible.Root defaultOpen>
+            <Collapsible.Root open={expanded} onOpenChange={handleExpandedChange}>
                 <ContextMenu
                     className={styles.contextMenuHeaderWrapper}
-                    innerContent={
-                        <div
-                            key={fp.full_path}
-                            className={styles.header}
-                            data-selected={isSelected}
-                            onClick={handleSelect}
-                        >
-                            <Collapsible.Trigger
-                                asChild
-                                className={styles.trigger}
-                                disabled={numChildren < 1}
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <ChevronRight />
-                            </Collapsible.Trigger>
-
-                            {fp.is_album && (
-                                <div className={styles.albumIcons}>
-                                    <TagStatusIcon tagPath={fp.full_path} />
-                                    <SimilarityBadgeWithHover tagPath={fp.full_path} />
-                                    {/* <ActionMenu fp={fp} /> */}
-                                </div>
-                            )}
-
-                            <span className={styles.label}>{label}</span>
-                        </div>
-                    }
-                    fp={fp}
-                />
+                    identifier={fp.full_path}
+                    actions={[<SelectionSummary />, ...defaultActions]}
+                >
+                    <Folder
+                        fp={fp}
+                        label={label || fp.full_path.replaceAll("/", " / ")}
+                    />
+                </ContextMenu>
                 <Collapsible.Content className={styles.content}>
-                    <SubViews />
+                    <SubFolders fp={fp} level={level} />
                 </Collapsible.Content>
             </Collapsible.Root>
         </div>
     );
 }
 
-export function FileView({ fp: fp }: { fp: FsPath }): JSX.Element {
+function SubFolders({ fp, level }: { fp: FsPath; level: number }) {
+    return Object.keys(fp.children).map((name, i) => {
+        const child = fp.children[name];
+        if (child.type === "directory") {
+            const [subFp, subName, mergedName] = concatSubFolderNames(fp, name);
+            // enable line wrapping
+            return (
+                <FolderTreeView
+                    key={i}
+                    fp={subFp.children[subName]}
+                    label={mergedName}
+                    level={level + 1}
+                />
+            );
+        } else {
+            return <File key={child.full_path} fp={child} />;
+        }
+    });
+}
+
+// actual content, wrapped by the context menu
+function Folder({ fp, label }: { fp: FsPath; label: string }) {
+    const { isSelected, toggleSelection, markSelectable } = useSelection();
+    const handleSelect = () => {
+        if (fp.is_album) {
+            toggleSelection(fp.full_path);
+        }
+    };
+    const numChildren = Object.keys(fp.children).length;
+
+    useEffect(() => {
+        // Register as selectable
+        if (fp.is_album && numChildren > 0) {
+            markSelectable(fp.full_path);
+        }
+    }, []);
+
+    return (
+        <div
+            key={fp.full_path}
+            className={styles.header}
+            data-selected={isSelected(fp.full_path)}
+            onClick={handleSelect}
+        >
+            {numChildren > 0 ? (
+                <Collapsible.Trigger
+                    asChild
+                    className={styles.trigger}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                    }}
+                >
+                    <ChevronRight />
+                </Collapsible.Trigger>
+            ) : (
+                <div>
+                    <ChevronRight />
+                </div>
+            )}
+
+            {fp.is_album && (
+                <div className={styles.albumIcons}>
+                    <TagStatusIcon
+                        className={styles.albumIcon}
+                        tagPath={fp.full_path}
+                    />
+                    <SimilarityBadgeWithHover tagPath={fp.full_path} />
+                </div>
+            )}
+
+            <span className={styles.label}>
+                <WrapableAtSlash label={label} />
+            </span>
+        </div>
+    );
+}
+
+function WrapableAtSlash({ label }: { label: string }) {
+    return (
+        <>
+            {label.split(" / ").map((part, i, arr) => (
+                <span key={i}>
+                    {part}
+                    {i < arr.length - 1 && " / "}
+                </span>
+            ))}
+        </>
+    );
+}
+
+function File({ fp: fp }: { fp: FsPath }): JSX.Element {
     if (fp.type !== "file") {
         throw new TypeError("Expected a file, got a directory");
     }
@@ -176,155 +237,16 @@ export function FileView({ fp: fp }: { fp: FsPath }): JSX.Element {
     );
 }
 
-export function ContextMenu({
-    innerContent,
-    fp,
-    className,
-}: {
-    innerContent: JSX.Element;
-    fp: FsPath;
-    className?: string;
-}) {
-    const {
-        setOpen: setTerminalOpen,
-        gui: terminalGui,
-        inputText: inputTerminalText,
-    } = useTerminalContext();
-
-    const [contextMenu, setContextMenu] = useState<{
-        mouseX: number;
-        mouseY: number;
-    } | null>(null);
-
-    const handleContextMenu = (event: React.MouseEvent) => {
-        event.preventDefault();
-        setContextMenu(
-            contextMenu === null
-                ? {
-                      mouseX: event.clientX + 2,
-                      mouseY: event.clientY - 6,
-                  }
-                : null
-        );
-    };
-
-    const handleClose = () => {
-        setContextMenu(null);
-    };
-
-    const retagOptions: UseMutationOptions = {
-        mutationFn: async () => {
-            await fetch(`/tag/add`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    folder: fp.full_path,
-                    kind: "preview",
-                }),
-            });
-        },
-        onSuccess: async () => {
-            handleClose();
-            await queryClient.setQueryData(["tag", fp.full_path], (old: TagI) => {
-                return { ...old, status: "pending" };
-            });
-        },
-        onError: (error: Error) => {
-            console.error(error);
-        },
-    };
-
-    const importOptions: UseMutationOptions = {
-        mutationFn: async () => {
-            await fetch(`/tag/add`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    folder: fp.full_path,
-                    kind: "import",
-                }),
-            });
-        },
-        onSuccess: async () => {
-            handleClose();
-            await queryClient.setQueryData(["tag", fp.full_path], (old: TagI) => {
-                return { ...old, status: "pending" };
-            });
-        },
-        onError: (error: Error) => {
-            console.error(error);
-        },
-    };
-
-    return (
-        <div onContextMenu={handleContextMenu} className={className}>
-            {innerContent}
-            <Menu
-                open={contextMenu !== null}
-                onClose={handleClose}
-                anchorReference="anchorPosition"
-                anchorPosition={
-                    contextMenu !== null
-                        ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
-                        : undefined
-                }
-                MenuListProps={{
-                    "aria-labelledby": "basic-button",
-                }}
-            >
-                <MenuItem sx={{ padding: 0 }}>
-                    <IconTextButtonWithMutation
-                        icon={<Tag size={12} />}
-                        text="(Re-)Tag"
-                        color="inherit"
-                        mutationOption={retagOptions}
-                    />
-                </MenuItem>
-                <MenuItem sx={{ padding: 0 }}>
-                    <IconTextButtonWithMutation
-                        icon={<HardDriveDownload size={12} />}
-                        text="Import"
-                        color="inherit"
-                        mutationOption={importOptions}
-                    />
-                </MenuItem>
-                <MenuItem
-                    onClick={(event: React.MouseEvent) => {
-                        event.stopPropagation();
-                        handleClose();
-                        navigator.clipboard
-                            .writeText(fp.full_path)
-                            .catch(console.error);
-                    }}
-                >
-                    <Clipboard size={12} />
-                    Copy Path
-                </MenuItem>
-
-                <MenuItem
-                    onClick={(event: MouseEvent) => {
-                        event.stopPropagation();
-                        setTerminalOpen(true);
-                        inputTerminalText(`beet import -t '${fp.full_path}'`);
-                        handleClose();
-                    }}
-                >
-                    Terminal
-                </MenuItem>
-            </Menu>
-        </div>
-    );
-}
-
-function mergeSubFolderNames(
+function concatSubFolderNames(
     parent: FsPath,
     name: string,
     merged = ""
 ): [FsPath, string, string] {
+    const config = useConfig();
+    if (!config.gui.inbox.concat_nested_folders) {
+        return [parent, name, merged + name];
+    }
+
     const me = parent.children[name];
     const numChildren = Object.keys(me.children).length;
 
@@ -336,7 +258,7 @@ function mergeSubFolderNames(
     }
 
     if (singleChildName && singleChild?.type === "directory") {
-        return mergeSubFolderNames(me, singleChildName, merged + name + " / ");
+        return concatSubFolderNames(me, singleChildName, merged + name + " / ");
     } else {
         return [parent, name, merged + name];
     }

@@ -29,7 +29,8 @@ $border-color: #495057;
     height: 100%;
     width: auto;
     overflow: wrap;
-    margin: 0 auto;
+    margin: 0 auto 1rem auto;
+    padding: 1rem 1.5rem;
 
     @media (min-width: 576px) {
         max-width: 540px;
@@ -82,7 +83,9 @@ $border-color: #495057;
         background-color: #6F7B8533;
     }
     &:hover {
-        background-color: #6F7B8555;
+        // background-color: #6F7B8555;
+        // carbon copy of theme.tsx hover color :/
+        background-color: #212529;
     }
 }
 
@@ -125,8 +128,12 @@ $border-color: #495057;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    margin-left: 0.7rem;
+    margin-left: 0.0rem;
     margin-right: 0.5rem;
+}
+
+.albumIcon {
+    height: 1rem;
 }
 
 .content {

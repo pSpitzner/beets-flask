@@ -17,11 +17,11 @@ function RootComponent() {
         <main className="flex flex-col w-screen">
             <TerminalContextProvider>
 
-            <NavTabs />
-            <Container maxWidth="lg" className="mt-2">
-                <Outlet />
-            </Container>
-            <Terminal />
+                <NavTabs />
+                <Container maxWidth="lg" className="mt-2">
+                    <Outlet />
+                </Container>
+                <Terminal />
             </TerminalContextProvider>
         </main>
     );

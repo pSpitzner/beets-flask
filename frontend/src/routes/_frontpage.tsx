@@ -1,5 +1,8 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router";
-import { InboxStatsOverview } from "@/components/inboxStats";
+import { InboxStatsGridItems } from "@/components/frontpage/inboxStats";
+
+import Grid from "@mui/material/Unstable_Grid2";
+import { LibraryStats } from "@/components/frontpage/libraryStats";
 
 export const Route = createFileRoute("/_frontpage")({
     component: Index,
@@ -15,9 +18,12 @@ function Index() {
     return (
         <div>
             <Outlet />
-            <div className="flex flex-row space-x-4">
-                <InboxStatsOverview />
-            </div>
+            <Grid container spacing={2} display="flex" justifyContent="center">
+                <InboxStatsGridItems />
+                <Grid xs={12} sm={8} md={8} lg={6}>
+                    <LibraryStats />
+                </Grid>
+            </Grid>
         </div>
     );
 }

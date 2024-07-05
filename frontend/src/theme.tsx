@@ -22,9 +22,14 @@ const darkTheme = extendTheme({
             mode: "dark",
             primary: {
                 main: "#7FFFD4",
+                // muted: "#89a99e",
             },
             secondary: {
                 main: "#C07351",
+            },
+            // TODO: hover color that works well with background of badges
+            action: {
+                hover: "#212529",
             },
         },
         components: {
@@ -46,6 +51,20 @@ const darkTheme = extendTheme({
                         backdropFilter: "blur(10px)",
                         padding: "0.0rem",
                         backgroundImage: "none",
+                    },
+                },
+            },
+            MuiCard: {
+                styleOverrides: {
+                    root: {
+                        backgroundColor: "#0B0C0D",
+                    },
+                },
+            },
+            MuiAccordion: {
+                styleOverrides: {
+                    root: {
+                        backgroundColor: "#0B0C0D",
                     },
                 },
             },

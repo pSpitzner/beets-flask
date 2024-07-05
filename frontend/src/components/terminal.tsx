@@ -6,18 +6,35 @@ import React, {
     useRef,
     useState,
 } from "react";
-import { Slide, Button, Box, Portal, IconButton } from "@mui/material";
+import { Slide, Button, Portal, IconButton } from "@mui/material";
 import { ChevronDown, Terminal as TerminalIcon } from "lucide-react";
 
 import "node_modules/@xterm/xterm/css/xterm.css";
 import { Terminal as xTerminal } from "@xterm/xterm";
 import { FitAddon as xTermFitAddon } from "@xterm/addon-fit";
 import styles from "./terminal.module.scss";
-import { useSocket } from "@/lib/socket";
+import { useTerminalSocket } from "@/lib/socket";
 import { Socket } from "socket.io-client";
 
+// match our style - this is somewhat redundant with index.css
+const xTermTheme = {
+    red: "#C0626B",
+    green: "#A4BF8C",
+    yellow: "#EBCB8C",
+    blue: "#7EA2BF",
+    magenta: "#B48EAD",
+    cyan: "#8FBCBB",
+    brightBlack: "#818689",
+    brightRed: "#D0737F",
+    brightGreen: "#B5D0A0",
+    brightYellow: "#F0D9A6",
+    brightBlue: "#8FB8D1",
+    brightMagenta: "#C79EC4",
+    brightCyan: "#A3CDCD",
+};
+
 const SlideIn = ({ children }: { children: React.ReactNode }) => {
-    const { gui, open, toggle, setOpen } = useTerminalContext();
+    const { open, toggle, setOpen } = useTerminalContext();
 
     // prevent scrolling of main content when terminal is open
     // would be nicer to scroll depending on where the mouser cursor is, but that seems more difficult.
@@ -90,13 +107,13 @@ export function Terminal() {
 
 function XTermBinding() {
     const ref = useRef<HTMLDivElement>(null);
-    const { gui } = useTerminalContext();
+    const { term } = useTerminalContext();
 
     useEffect(() => {
-        if (!ref.current || !gui) return;
+        if (!ref.current || !term) return;
 
         function copyPasteHandler(e: KeyboardEvent) {
-            if (!gui) return false;
+            if (!term) return false;
 
             if (e.type !== "keydown") return true;
 
@@ -105,7 +122,7 @@ function XTermBinding() {
                 if (key === "v") {
                     // ctrl+shift+v: paste whatever is in the clipboard
                     navigator.clipboard.readText().then((toPaste) => {
-                        gui.write(toPaste);
+                        term.write(toPaste);
                     });
                     return false;
                 } else if (key === "c" || key === "x") {
@@ -116,25 +133,21 @@ function XTermBinding() {
                     // (open devtools).
                     // I'm not aware of ctrl+shift+x being used by anything in the terminal
                     // or browser
-                    const toCopy = gui.getSelection();
+                    const toCopy = term.getSelection();
                     navigator.clipboard.writeText(toCopy);
-                    gui.focus();
+                    term.focus();
                     return false;
                 }
             }
             return true;
         }
 
-        gui.attachCustomKeyEventHandler(copyPasteHandler);
+        term.attachCustomKeyEventHandler(copyPasteHandler);
 
         const fitAddon = new xTermFitAddon();
-        gui.loadAddon(fitAddon);
-        gui.open(ref.current);
+        term.loadAddon(fitAddon);
+        term.open(ref.current);
         fitAddon.fit();
-
-        gui.onResize(({ cols, rows }) => {
-            console.log(`Terminal was resized to ${cols} cols and ${rows} rows.`);
-        });
 
         const resizeObserver = new ResizeObserver(() => {
             fitAddon.fit();
@@ -143,10 +156,10 @@ function XTermBinding() {
         resizeObserver.observe(ref.current);
 
         return () => {
-            gui.dispose();
+            term.dispose();
             if (ref.current) resizeObserver.unobserve(ref.current);
         };
-    }, [gui]);
+    }, [term]);
 
     return <div ref={ref} className={styles.xTermBindingContainer}></div>;
 }
@@ -156,8 +169,9 @@ export interface TerminalContextI {
     toggle: () => void;
     setOpen: Dispatch<SetStateAction<boolean>>;
     inputText: (input: string) => void;
+    clearInput: () => void;
     socket?: Socket;
-    gui?: xTerminal;
+    term?: xTerminal;
 }
 
 const TerminalContext = createContext<TerminalContextI>({
@@ -165,57 +179,102 @@ const TerminalContext = createContext<TerminalContextI>({
     toggle: () => {},
     setOpen: () => {},
     inputText: () => {},
+    clearInput: () => {},
 });
 
 export function TerminalContextProvider({ children }: { children: React.ReactNode }) {
     const [open, setOpen] = useState(false);
-    const [gui, setGui] = useState<xTerminal>();
+    const [term, setTerm] = useState<xTerminal>();
 
-    const { socket, isConnected } = useSocket();
+    const { socket, isConnected } = useTerminalSocket();
 
     useEffect(() => {
         // Create gui on mount
-        if (!gui) {
+        if (!term) {
             const term = new xTerminal({
+                theme: xTermTheme,
                 cursorBlink: true,
                 macOptionIsMeta: true,
                 rows: 12,
                 cols: 80,
             });
             term.write("Connecting...");
-            setGui(term);
+            setTerm(term);
         }
-    }, []);
+    }, [term]);
 
     // Attatch socketio handler
     useEffect(() => {
-        if (!gui || !isConnected) return;
+        if (!term || !isConnected) return;
 
-        gui.writeln("\rConnected!   ");
+        term.writeln("\rConnected!   ");
 
-        gui!.onData((data) => {
+        const onInput = term.onData((data) => {
+            console.log("ptyInput", data);
+            if (data === "\x01" || data === "\x04") {
+                // prevent ctrl+a because it can detach tmux, and ctrl+d because it can close the terminal
+                return;
+            }
             socket.emit("ptyInput", { input: data });
         });
 
-        function onOutput(data: { output: string }) {
-            gui!.write(data.output);
+        function onOutput(data: { output: Array<string> }) {
+            // term!.clear(); seems to be preferred from the documentation,
+            // but it leaves the prompt on the first line in place - which we here do not want
+            // ideally we would directly access the buffer.
+            console.log("ptyOutput", data);
+            term!.reset();
+            data.output.forEach((line, index) => {
+                if (index < data.output.length - 1) {
+                    term!.writeln(line);
+                } else {
+                    // Workaround: strip all trailing whitespaces except for one
+                    // not a perfect fix (one wrong space remains when backspacing)
+                    const stripped_line = line.replace(/\s+$/, " ");
+                    term!.write(stripped_line);
+                }
+            });
         }
         socket.on("ptyOutput", onOutput);
 
+        function onCursorUpdate(data: { x: number; y: number }) {
+            // xterm uses 1-based indexing
+            term!.write(`\x1b[${data.y + 1};${data.x + 1}H`);
+        }
+        socket.on("ptyCursorPosition", onCursorUpdate);
+
+        const onResize = term.onResize(({ cols, rows }) => {
+            console.log(`Terminal was resized to ${cols} cols and ${rows} rows.`);
+            socket.emit("ptyResize", { cols, rows: rows });
+        });
+
+        // resize once on connect (after we fitted size on mount)
+        socket.emit("ptyResize", { cols: term.cols, rows: term.rows });
+
+        // request server update, so show whats actually on the pty when connecting
+        socket.emit("ptyResendOutput");
+
         return () => {
+            onResize.dispose();
+            onInput.dispose();
             socket.off("ptyOutput", onOutput);
+            socket.off("ptyCursorPosition", onCursorUpdate);
         };
-    }, [isConnected, gui, socket]);
+    }, [isConnected, term, socket]);
 
     // make first responder directly after opening
     useEffect(() => {
-        if (open && gui) {
-            gui.focus();
+        if (open && term) {
+            term.focus();
         }
-    }, [open, gui]);
+    }, [open, term]);
 
     function inputText(t: string) {
         socket.emit("ptyInput", { input: t });
+    }
+
+    function clearInput() {
+        socket.emit("ptyInput", { input: "\x15" });
     }
 
     const terminalState: TerminalContextI = {
@@ -223,8 +282,9 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
         toggle: () => setOpen(!open),
         setOpen,
         inputText,
+        clearInput,
         socket,
-        gui,
+        term,
     };
 
     return (
