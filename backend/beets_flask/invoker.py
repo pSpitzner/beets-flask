@@ -59,8 +59,6 @@ def enqueue(id: str, session: Session | None = None):
             raise ValueError(f"Unknown kind {tag.kind}")
 
 
-
-
 def enqueue_tag_path(path: str, kind: str, session: Session | None = None):
     """
     For a given path that is taggable, update the existing tag or create a new one.
@@ -300,7 +298,8 @@ def tag_status(
 
         return bt.status
 
-def delete_tags(with_status : list[str]):
+
+def delete_tags(with_status: list[str]):
     """
     Delete all tags that have a certain status from the database.
     We call this during container launch, to clear up things that
@@ -312,5 +311,7 @@ def delete_tags(with_status : list[str]):
     with db_session() as session:
         stmt = delete(Tag).where(Tag.status.in_(with_status))
         result = session.execute(stmt)
-        log.debug(f"Deleted {result.rowcount} tags with statuses: {', '.join(with_status)}")
+        log.debug(
+            f"Deleted {result.rowcount} tags with statuses: {', '.join(with_status)}"
+        )
         session.commit()

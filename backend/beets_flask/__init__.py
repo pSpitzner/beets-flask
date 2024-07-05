@@ -16,8 +16,8 @@ def create_app():
     CORS(app)
 
     global socketio
-    app.config['SECRET_KEY'] = 'your-secret-key'
-    #app.wsgi_app = socketio.WSGIApp(sio, app.wsgi_app)
+    app.config["SECRET_KEY"] = "your-secret-key"
+    # app.wsgi_app = socketio.WSGIApp(sio, app.wsgi_app)
 
     # Setting this is important otherwise your raised
     # exception will just generate a regular exception
@@ -41,17 +41,21 @@ def create_app():
 
     # Start websocket for realtime Terminal and status updates
     from .websocket import register_socketio
+
     register_socketio(app)
 
     from .terminal import register_tmux
+
     register_tmux()
 
     from .disk import register_inboxes
+
     register_inboxes()
 
     from .invoker import delete_tags
+
     delete_tags(with_status=["pending", "tagging", "importing"])
 
-    log.info("App created")
+    log.debug("App created")
 
     return app

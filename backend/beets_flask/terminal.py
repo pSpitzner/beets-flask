@@ -17,25 +17,17 @@ https://stackoverflow.com/questions/44447473/how-to-make-xterm-js-accept-input
 
 """
 
-import errno
-import os
-import pty
-import signal
-import subprocess
-import struct
-import fcntl
-import termios
-import select
-import shlex
 import libtmux
 from libtmux import Pane, Session, Window
 from beets_flask.logger import log
 from beets_flask.websocket import sio
+from beets_flask.config import config
 
 
 session: Session
 window: Window
 pane: Pane
+
 
 def register_tmux():
     global session, window, pane
@@ -44,9 +36,14 @@ def register_tmux():
     try:
         session = server.sessions.get(session_name="beets-socket-term")  # type: ignore
     except:
-        session = server.new_session(session_name="beets-socket-term")
+        abs_path_lib = str(config["gui"]["terminal"]["start_path"].as_str())
+        session = server.new_session(
+            session_name="beets-socket-term", start_directory=abs_path_lib
+        )
+
     window = session.active_window  # type: ignore
     pane = window.active_pane or window.split_window(attach=True)
+
 
 def emit_output():
     try:

@@ -341,8 +341,16 @@ def all_album_folders(root_dir: str):
 # cache data for no longer than one minutes
 @cached(cache=TTLCache(maxsize=1024, ttl=60), info=True)
 def dir_size(path: Path):
-    result = subprocess.run(
-        ["du", "-sb", str(path.resolve())], capture_output=True, text=True, check=True
-    )
-    size = int(result.stdout.split()[0])
-    return size
+    try:
+        result = subprocess.run(
+            ["du", "-sb", str(path.resolve())],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        size = int(result.stdout.split()[0])
+        return size
+    except Exception as e:
+        # this happens e.g. if the directory does not exist.
+        log.error(e)
+        return -1

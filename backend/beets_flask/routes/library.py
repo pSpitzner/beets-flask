@@ -511,7 +511,7 @@ def albums_by_artist(artist_name):
     expanded = is_expand()
     minimal = is_minimal()
 
-    res =  jsonify(
+    res = jsonify(
         albums=[
             _rep(g.lib.get_album(row[0]), expand=expanded, minimal=minimal)
             for row in rows
@@ -542,32 +542,27 @@ class Stats(TypedDict):
 @library_bp.route("/stats")
 def stats():
     with g.lib.transaction() as tx:
-        item_rows = tx.query("SELECT COUNT(*) FROM items")
-        album_rows = tx.query("SELECT COUNT(*) FROM albums")
-        unique_artists = tx.query("SELECT COUNT(DISTINCT albumartist) FROM albums")
-        unique_genres = tx.query("SELECT COUNT(DISTINCT genre) FROM albums")
-        unique_labels = tx.query("SELECT COUNT(DISTINCT label) FROM albums")
-        last_added = tx.query("SELECT MAX(added) FROM items")
-        last_modified = tx.query("SELECT MAX(mtime) FROM items")
+        album_stats = tx.query(
+            "SELECT COUNT(*), COUNT(DISTINCT genre), COUNT(DISTINCT label), COUNT(DISTINCT albumartist) FROM albums"
+        )
+        items_stats = tx.query("SELECT COUNT(*), MAX(added), MAX(mtime) FROM items")
 
     lib_path = cast(str, config["directory"].get())
     lib_path = Path(lib_path)
 
     ret: Stats = {
         "libraryPath": str(config["directory"].as_str()),
-        "items": item_rows[0][0],
-        "albums": album_rows[0][0],
-        "artists": unique_artists[0][0],
-        "genres": unique_genres[0][0],
-        "labels": unique_labels[0][0],
+        "items": items_stats[0][0],
+        "albums": album_stats[0][0],
+        "artists": album_stats[0][3],
+        "genres": album_stats[0][1],
+        "labels": album_stats[0][2],
         "size": dir_size(lib_path),
         "lastItemAdded": (
-            round(last_added[0][0] * 1000) if last_added[0][0] is not None else None
+            round(items_stats[0][1] * 1000) if items_stats[0][1] is not None else None
         ),
         "lastItemModified": (
-            round(last_modified[0][0] * 1000)
-            if last_modified[0][0] is not None
-            else None
+            round(items_stats[0][2] * 1000) if items_stats[0][2] is not None else None
         ),
     }
 

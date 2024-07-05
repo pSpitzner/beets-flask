@@ -17,7 +17,12 @@ RUN --mount=type=cache,target=/var/cache/apk \
     apk --no-cache add imagemagick redis git bash keyfinder-cli npm tmux yq
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip3 install -r requirements.txt
-RUN corepack enable && corepack prepare pnpm@8.7.5 --activate
+RUN corepack enable && corepack prepare pnpm@9.4.0 --activate
+
+# our default folders they should not be used in production
+RUN mkdir -p /music/inbox
+RUN mkdir -p /music/imported
+RUN chown -R beetle:beetle /music
 
 # ------------------------------------------------------------------------------------ #
 #                                      Development                                     #
@@ -61,8 +66,7 @@ FROM deps AS prod
 
 WORKDIR /repo
 COPY --from=deps /repo /repo
-COPY . .
-RUN chown -R beetle:beetle /repo
+COPY --chown=beetle:beetle . . 
 RUN chmod +x ./entrypoint.sh
 
 WORKDIR /repo/frontend

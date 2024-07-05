@@ -1,7 +1,6 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router";
 import { InboxStatsGridItems } from "@/components/frontpage/inboxStats";
-import { TagsStatsOverview } from "@/components/frontpage/tagsStats";
-import { AddInbox } from "@/components/frontpage/addInbox";
+
 import Grid from "@mui/material/Unstable_Grid2";
 import { LibraryStats } from "@/components/frontpage/libraryStats";
 
@@ -23,12 +22,6 @@ function Index() {
                 <InboxStatsGridItems />
                 <Grid xs={12} sm={8} md={8} lg={6}>
                     <LibraryStats />
-                </Grid>
-                <Grid xs={12} sm={8} md={8} lg={6}>
-                    <TagsStatsOverview />
-                </Grid>
-                <Grid xs={12} sm={8} md={8} lg={6}>
-                    <AddInbox />
                 </Grid>
             </Grid>
         </div>

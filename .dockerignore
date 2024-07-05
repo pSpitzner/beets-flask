@@ -2,3 +2,5 @@
 venv/
 .venv/
 .git
+node_modules/
+.pnpm-store/

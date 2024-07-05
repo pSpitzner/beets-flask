@@ -1,10 +1,9 @@
 #!/bin/sh
-
-whoami
+echo "Running as"
 id
-pwd
 
 cd /repo
+
 
 # Check if configs exist and copy if they dont
 if [ ! -f /home/beetle/.config/beets/config.yaml ]; then
