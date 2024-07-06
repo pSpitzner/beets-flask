@@ -96,15 +96,19 @@ gui:
         expand_tags: yes # for tag groups, on page load, show tag details?
         recent_days: 14 # Number of days to consider for the "recent" tag group
 
+    terminal:
+        start_path: "/music/inbox" # the directory where to start new terminal sessions
+
     inbox:
         concat_nested_folders: yes # show multiple folders in one line if they only have one child
         expand_files: no # on page load, show files in (album) folders, or collapse them
+        order_by: "name" # how to sort tags within the trag groups: "name" (the album folder basename) | "date_created" | "date_modified"
 
         folders: # keep in mind to volume-map these folders in your docker-compose.yml
             Inbox:
-                name: 'Inbox'
-                path : '/music/inbox'
-                autotag : no # no | "preview" | "import"
+                name: "Inbox"
+                path: "/music/inbox"
+                autotag: no # no | "preview" | "import"
 ```
 
 ## Terminal
