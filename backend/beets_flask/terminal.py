@@ -36,7 +36,10 @@ def register_tmux():
     try:
         session = server.sessions.get(session_name="beets-socket-term")  # type: ignore
     except:
-        abs_path_lib = str(config["gui"]["terminal"]["start_path"].as_str())
+        try:
+            abs_path_lib = str(config["gui"]["terminal"]["start_path"].as_str())
+        except:
+            abs_path_lib = "/repo"
         session = server.new_session(
             session_name="beets-socket-term", start_directory=abs_path_lib
         )
