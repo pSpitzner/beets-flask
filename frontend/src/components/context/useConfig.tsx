@@ -7,7 +7,7 @@ import {
 import { ReactNode } from "@tanstack/react-router";
 import { useEffect } from "react";
 
-interface MinimalConfig {
+export interface MinimalConfig {
     gui: {
         inbox: {
             concat_nested_folders: boolean;
@@ -60,8 +60,8 @@ export function PrefetchConfigQueryClientProvider({
     children: ReactNode;
 }) {
     useEffect(() => {
-        client.prefetchQuery(configQueryOptions());
-    }, []);
+        client.prefetchQuery(configQueryOptions()).catch(console.error);
+    }, [client]);
 
     return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }

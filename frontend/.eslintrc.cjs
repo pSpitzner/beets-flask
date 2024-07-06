@@ -15,7 +15,7 @@ module.exports = {
     plugins: ['react-refresh'],
     rules: {
         'react-refresh/only-export-components': [
-            'ignore',
+            0,
         ],
     },
     parserOptions: {

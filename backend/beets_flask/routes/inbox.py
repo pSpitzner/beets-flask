@@ -46,6 +46,9 @@ def get_folder(folder):
     """
     Get all subfolders from of the specified one
     """
+    use_cache = bool(request.args.get("use_cache", False))
+    if not use_cache:
+        path_to_dict.cache.clear()  # type: ignore
     return path_to_dict("/" + folder, relative_to="/" + folder)
 
 

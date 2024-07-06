@@ -483,10 +483,12 @@ export function DeleteAction({ ...props }: { [key: string]: any }) {
                 }),
             });
         },
-        onSuccess: async () => {
+        onSuccess: () => {
             closeMenu();
-            queryClient.invalidateQueries({ queryKey: ["inbox"] });
-            queryClient.invalidateQueries({ queryKey: ["tagGroup"] });
+            queryClient.invalidateQueries({ queryKey: ["inbox"] }).catch(console.error);
+            queryClient
+                .invalidateQueries({ queryKey: ["tagGroup"] })
+                .catch(console.error);
         },
         onError: (error: Error) => {
             console.error(error);

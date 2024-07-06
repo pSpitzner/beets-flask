@@ -88,8 +88,8 @@ export const deleteInboxImportedMutation: UseMutationOptions<unknown, Error, str
             }),
         });
     },
-    onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["inbox"] });
+    onSuccess: (_data, variables) => {
+        queryClient.invalidateQueries({ queryKey: ["inbox", "path", variables] });
     },
 };
 

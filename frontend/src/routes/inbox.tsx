@@ -15,7 +15,7 @@ import { ChevronRight } from "lucide-react";
 
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { useEffect, useState } from "react";
-import { useConfig } from "@/components/context/useConfig";
+import { MinimalConfig, useConfig } from "@/components/context/useConfig";
 import { Card, Typography } from "@mui/material";
 
 export const Route = createFileRoute("/inbox")({
@@ -71,17 +71,13 @@ function Inbox({ name, path }: { name: string; path: string }) {
     return (
         <SelectionProvider>
             <Card className={styles.inboxView}>
-                { heading }
+                {heading}
                 <FolderTreeView fp={data} />
             </Card>
         </SelectionProvider>
     );
 }
 
-/**
- * Renders a view for a folder.
- * It recursively generates views for subfolders and files within the folder.
- */
 function FolderTreeView({
     fp,
     label,
@@ -136,23 +132,28 @@ function FolderTreeView({
 }
 
 function SubFolders({ fp, level }: { fp: FsPath; level: number }) {
-    return Object.keys(fp.children).map((name, i) => {
-        const child = fp.children[name];
-        if (child.type === "directory") {
-            const [subFp, subName, mergedName] = concatSubFolderNames(fp, name);
-            // enable line wrapping
-            return (
-                <FolderTreeView
-                    key={i}
-                    fp={subFp.children[subName]}
-                    label={mergedName}
-                    level={level + 1}
-                />
-            );
-        } else {
-            return <File key={child.full_path} fp={child} />;
-        }
-    });
+    const config = useConfig();
+    return (
+        <>
+            {Object.keys(fp.children).map((name) => {
+                const child = fp.children[name];
+                const [subFp, subName, mergedName] = concatSubFolderNames(
+                    fp,
+                    name,
+                    config
+                );
+                // enable line wrapping
+                return (
+                    <FolderTreeView
+                        key={child.full_path}
+                        fp={subFp.children[subName]}
+                        label={mergedName}
+                        level={level + 1}
+                    />
+                );
+            })}
+        </>
+    );
 }
 
 // actual content, wrapped by the context menu
@@ -174,7 +175,7 @@ function Folder({ fp, label }: { fp: FsPath; label: string }) {
 
     return (
         <div
-            key={fp.full_path}
+            key={`folder-${fp.full_path}`}
             className={styles.header}
             data-selected={isSelected(fp.full_path)}
             onClick={handleSelect}
@@ -231,7 +232,7 @@ function File({ fp: fp }: { fp: FsPath }): JSX.Element {
     }
     const fileName = fp.full_path.split("/").pop();
     return (
-        <div key={fp.full_path} className={styles.file}>
+        <div key={`file-${fp.full_path}`} className={styles.file}>
             <div>{fileName}</div>
         </div>
     );
@@ -240,9 +241,9 @@ function File({ fp: fp }: { fp: FsPath }): JSX.Element {
 function concatSubFolderNames(
     parent: FsPath,
     name: string,
+    config: MinimalConfig,
     merged = ""
 ): [FsPath, string, string] {
-    const config = useConfig();
     if (!config.gui.inbox.concat_nested_folders) {
         return [parent, name, merged + name];
     }
@@ -258,7 +259,7 @@ function concatSubFolderNames(
     }
 
     if (singleChildName && singleChild?.type === "directory") {
-        return concatSubFolderNames(me, singleChildName, merged + name + " / ");
+        return concatSubFolderNames(me, singleChildName, config, merged + name + " / ");
     } else {
         return [parent, name, merged + name];
     }
