@@ -17,7 +17,7 @@ from beets.util import displayable_path
 from beets.autotag import Recommendation, AlbumMatch, TrackMatch, Distance
 
 
-# config overwrite that are required for generating the right previews
+# config overwrites that are required for generating the right previews
 def set_config_defaults():
     config.clear()
     config.read()
@@ -241,16 +241,23 @@ class MatchedImportSession(BaseSession):
     import_task: importer.ImportTask | None = None
 
     def __init__(
-        self, path: str, match_url: str, config_overlay: str | dict | None = None
+        self,
+        path: str,
+        match_url: str,
+        config_overlay: str | dict | None = None,
+        tag_id: str | None = None,
     ):
         # make sure to start with clean slate
         set_config_defaults()
         config["import"]["search_ids"].set([match_url])
 
+        if tag_id is not None:
+            config["import"]["set_fields"]["gui_import_id"] = tag_id
+
         # this also merged config_overlay into the global config
         super(MatchedImportSession, self).__init__(path, config_overlay)
 
-        # inconvenient: beets does not invoke a sessions resolve_duplicates() method if config["import"]["duplicate_action"] is set meaningfully.
+        # inconvenient: beets does not invoke a sessions resolve_duplicates() method if config["import"]["duplicate_action"] is set meaningfully (anything except 'ask'?).
         # Because we want to use this method, we cannot use the general lazyconfig overlay approach, and have to handle parsing duplicate actions ourselves. (and modify the global config)
         self.duplicate_action = str(config["import"]["duplicate_action"].as_str())
         config["import"]["duplicate_action"].set("ask")
@@ -339,27 +346,38 @@ class MatchedImportSession(BaseSession):
 
         match self.duplicate_action:
             case "skip":
-                print_("Dropping new items (configured `duplicate_action: skip`)")
+                print_(
+                    colorize(
+                        "text_error",
+                        "Dropping new items (configured `duplicate_action: skip`)",
+                    )
+                )
                 self.status = "failed"
                 task.set_choice(importer.action.SKIP)
             case "keep":
-                print_("Keeping both, old and new items")
+                print_(colorize("text_success", "Keeping both, old and new items"))
                 pass
             case "remove":
-                print_("Removing old items")
+                print_(colorize("text_success", "Removing old items"))
                 task.should_remove_duplicates = True
             case "merge":
-                print_("Merging old and new items")
+                print_(colorize("text_success", "Merging old and new items"))
                 task.should_merge_duplicates = True
             case "ask":
                 print_(
-                    "Configured `duplicate_action: ask` not supported: Dropping new items"
+                    colorize(
+                        "text_error",
+                        "Configured `duplicate_action: ask` not supported: Dropping new items",
+                    )
                 )
                 self.status = "failed"
                 task.set_choice(importer.action.SKIP)
             case _:
                 print_(
-                    f"Configured `duplicate_action: {self.config['duplicate_action']}` not supported: Dropping new items"
+                    colorize(
+                        "text_error",
+                        f"Configured `duplicate_action: {self.config['duplicate_action']}` not supported: Dropping new items",
+                    )
                 )
                 self.status = "failed"
                 task.set_choice(importer.action.SKIP)

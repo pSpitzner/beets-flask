@@ -12,7 +12,7 @@ import requests
 
 from beets_flask.models import Tag
 from beets_flask.redis import rq
-from beets_flask.beets_sessions import PreviewSession, MatchedImportSession
+from beets_flask.beets_sessions import PreviewSession, MatchedImportSession, colorize
 from beets_flask.utility import log
 from beets_flask.db_engine import (
     db_session,
@@ -182,6 +182,7 @@ def runImport(
             raise InvalidUsage(f"Tag {tagId} not found in database")
 
         bt.kind = "import"
+        bt.status = "importing"
         bt.updated_at = datetime.now()
         session.merge(bt)
         session.commit()
@@ -210,7 +211,9 @@ def runImport(
             return []
 
         try:
-            bs = MatchedImportSession(path=bt.album_folder, match_url=match_url)
+            bs = MatchedImportSession(
+                path=bt.album_folder, match_url=match_url, tag_id=bt.id
+            )
             bs.run_and_capture_output()
 
             bt.preview = bs.preview
@@ -221,10 +224,11 @@ def runImport(
             bt.num_tracks = bs.match_num_tracks
             bt.track_paths_after = bs.track_paths_after_import
             bt.status = "imported" if bs.status == "ok" else bs.status
-            log.debug(bs.preview)
-            log.debug(bs.status)
+            log.debug(f"tried import {bt.status=}")
         except Exception as e:
             log.debug(e)
+            bt.distance = 1.0;
+            bt.preview = colorize("text_error", str(e))
             bt.track_paths_after = []
             bt.status = "failed"
             if callback_url:
@@ -237,7 +241,7 @@ def runImport(
             bt.updated_at = datetime.now()
             session.merge(bt)
             session.commit()
-            log.debug(bt.status)
+            log.debug(f"finally {bt.status=}")
             update_client_view(
                 type="tag",
                 tagId=bt.id,
