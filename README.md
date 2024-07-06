@@ -16,6 +16,7 @@ This is the main idea with beets-flask: For all folders in your inbox, we genera
 - Autogenerate previews before importing
 - Import via GUI (if found matches are okay)
 - Import via Web-Terminal using beets as you know it (to correct matches)
+- Undo imports (uses web terminal)
 - Monitor multiple inboxes
 - A basic library view
 - Most File/Tag actions sit in a context menu (right-click, or long-press on touch)
@@ -68,7 +69,7 @@ volumes:
     - /desired/path/containeruser/:/home/beetle/
     - /path/to/music/:/path/to/music/
 ```
-- Because the GUI provides easy ways to clean your inbox, we suggest to set the beets import setting to `copy`:
+- Because the GUI provides easy ways to clean your inbox, we suggest to set the beets import setting to `copy`. Also needed if you want to undo an import to correct it (which deletes files from the library).
 ```yaml
 import:
     copy: yes
@@ -120,7 +121,6 @@ For the current state, there is a [KanBan board](https://github.com/users/pSpitz
 
 Major things that are planned:
 
-- An amend mechanic. This should allow the container to run imports automatically. Instead of approving, you would later correct imports that were identified incorrectly.
 - An actual library view, with search, covers and audio preview. The backend is likely up for the task already.
 - Push the image to dockerhub
 - Mobile friendly
@@ -171,6 +171,8 @@ A `tag` is what we store to sqlite, it is the basic data associated with the imp
 Tags in the database are updated by the workers, and can be read independently via the web backend/frontend.
 
 Keeping a `tag` associated with a preview/import around, will also enable an _amend_ mechanic. The plan here is to just import if the match is good (respecting the normal beets config) and to store the id of our tag as a note in the beets database. Then, if a correction is needed, we can query and delete via the import-tag-id and re-import with corrections.
+
+Currently we can at least undo an import. We add a `gui_import_id` field to the beets db, which we use to query and delete corresponding files.
 
 ### Tag Groups
 

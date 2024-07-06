@@ -44,7 +44,7 @@ export default function TagGroupView({
     title: React.ReactNode | string;
     subtitle?: string;
     children: React.ReactNode;
-    [key: string]: any;
+    [key: string]: unknown;
 }) {
     return (
         <StyledGroupAccordion

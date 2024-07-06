@@ -1,6 +1,8 @@
 // in various places we need to make a selection of tags available to lower components,
 // e.g. to action multiple tags at the same time via the context menu.
 
+import { TagI } from "@/lib/tag";
+import { useQueries } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useState } from "react";
 
 type SelectionContextType = {
@@ -33,7 +35,7 @@ const SelectionContext = createContext<SelectionContextType>({
     deselectAll: () => {},
 });
 
-const SelectionProvider = ({ children }: { children: React.ReactNode }) => {
+export const SelectionProvider = ({ children }: { children: React.ReactNode }) => {
     // item to selected
     const [selection, setSelection] = useState<Map<string, boolean>>(new Map());
 
@@ -138,7 +140,7 @@ const SelectionProvider = ({ children }: { children: React.ReactNode }) => {
     );
 };
 
-const useSelection = () => {
+export const useSelection = () => {
     const context = useContext(SelectionContext);
     if (!context) {
         throw new Error("useSelection must be used within a SelectionProvider");
@@ -146,4 +148,25 @@ const useSelection = () => {
     return context;
 };
 
-export { SelectionProvider, useSelection };
+export interface SelectionLookupI {
+    query: string; // the queried folder
+    tag?: TagI;
+    is_tagged: boolean;
+    is_inbox: boolean;
+    is_deleted: boolean;
+    is_album_folder: boolean;
+}
+
+
+export function useSelectionLookupQueries(fullPaths: string[]) {
+    const queries = fullPaths.map((path) => ({
+        queryKey: ["lookup", path],
+        queryFn: async () => {
+            if (path.startsWith("/")) path = path.slice(1);
+            const response = await fetch(`/lookup/${path}`);
+            return (await response.json()) as SelectionLookupI;
+        },
+    }));
+
+    return useQueries( { queries });
+}

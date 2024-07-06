@@ -1,7 +1,10 @@
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 
-import { UseMutationOptions, useMutation } from "@tanstack/react-query";
+import {
+    UseMutationOptions,
+    useMutation,
+} from "@tanstack/react-query";
 
 import {
     useState,
@@ -30,7 +33,10 @@ import {
 } from "lucide-react";
 
 import { useTerminalContext } from "@/components/terminal";
-import { useSelection } from "@/components/context/useSelection";
+import {
+    useSelection,
+    useSelectionLookupQueries,
+} from "@/components/context/useSelection";
 
 import styles from "./contextMenu.module.scss";
 import { useSiblings } from "@/components/context/useSiblings";
@@ -84,6 +90,7 @@ export const defaultActions = [
     <RetagAction />,
     <ImportAction />,
     <TerminalImportAction />,
+    <UndoImportAction />,
     <CopyPathAction />,
     <DeleteAction />,
 ];
@@ -377,6 +384,51 @@ export function TerminalImportAction({ ...props }: { [key: string]: any }) {
             }}
             icon={<Terminal />}
             text={"Terminal Import"}
+        />
+    );
+}
+
+export function UndoImportAction(props: Record<string, unknown>) {
+    const { closeMenu } = useContextMenu();
+    const { setOpen, inputText, clearInput } = useTerminalContext();
+    const { getSelected } = useSelection();
+
+    const [cmd, setCmd] = useState("");
+    const [label, setLabel] = useState("Undo Import ...");
+
+    const selected = getSelected();
+    const selectedObjects = useSelectionLookupQueries(selected).map((i) => i.data);
+    const undoableTags = selectedObjects
+        .filter((sel) => sel?.tag && sel.tag.status == "imported")
+        .map((sel) => sel?.tag?.id);
+
+    useEffect(() => {
+        setCmd(
+            "beet remove -d gui_import_id:" + undoableTags.join(" , gui_import_id:")
+        );
+    }, [undoableTags]);
+
+    useEffect(() => {
+        const tagDesc =
+            undoableTags.length === 1 ? "1 tag" : `${undoableTags.length} tags`;
+        setLabel(`Undo Import (${tagDesc})`);
+    }, [undoableTags]);
+
+    if (undoableTags.length === 0) {
+        return null; // Return null instead of an empty fragment for clarity.
+    }
+
+    return (
+        <Action
+            {...props}
+            onClick={() => {
+                closeMenu();
+                setOpen(true);
+                clearInput();
+                inputText(cmd);
+            }}
+            icon={<Terminal />}
+            text={label}
         />
     );
 }

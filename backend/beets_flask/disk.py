@@ -323,14 +323,20 @@ def album_folders_from_track_paths(track_paths: list):
     for path in track_paths:
         if os.path.isfile(path):
             album_folders.append(os.path.dirname(os.path.abspath(path)))
-        elif os.path.isdir(path):
-            for file in os.listdir(path):
-                if file.lower().endswith(ut.AUDIO_EXTENSIONS):
-                    album_folders.append(os.path.abspath(path))
-                    break
+        elif is_album_folder(path):
+            album_folders.append(os.path.abspath(path))
+
     return sorted(
         [str(folder) for folder in set(album_folders)], key=lambda s: s.lower()
     )
+
+
+def is_album_folder(path):
+    if os.path.isdir(path):
+        for file in os.listdir(path):
+            if file.lower().endswith(ut.AUDIO_EXTENSIONS):
+                return True
+    return False
 
 
 def all_album_folders(root_dir: str):
