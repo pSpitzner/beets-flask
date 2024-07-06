@@ -21,6 +21,7 @@ This is the main idea with beets-flask: For all folders in your inbox, we genera
 - A basic library view
 - Most File/Tag actions sit in a context menu (right-click, or long-press on touch)
 
+![demo gif](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcDZmZjJ0NzA0Z3h4Z2tycnBlMG1mbm9mMXFoMWM1bjJwdDBsOXR1NiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Z3lL2fo5m6UNf85dZT/giphy.gif)
 
 ## Setup
 
