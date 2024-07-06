@@ -146,7 +146,8 @@ export const TagView = forwardRef(
                         <div className={styles.albumIcons}>
                             <TagStatusIcon
                                 className={styles.albumIcon}
-                                tagPath={data.album_folder}
+                                tagPath={tagPath}
+                                tagId={tagId}
                             />
                             <SimilarityBadge dist={data.distance} />
                         </div>
