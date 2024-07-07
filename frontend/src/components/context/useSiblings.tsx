@@ -1,35 +1,41 @@
 // we want to be able to modify a componenents siblings.
 // e.g. rightclicking on a tag in the tag list should allow us to expand all tags in the same group.
 
-import React, { createContext, useCallback, useContext, useRef } from "react";
+import React, { Context, MutableRefObject, createContext, useCallback, useContext, useRef } from "react";
 
-type SiblingRefsContextType = {
-    siblings: React.RefObject<any>[];
-    registerSibling: (ref: React.RefObject<any>) => void;
-    callOnSiblings: (callable: (ref: React.RefObject<any>) => void) => void;
-};
 
-const SiblingRefsContext = createContext<SiblingRefsContextType>({
-    siblings: [],
-    registerSibling: () => {},
-    callOnSiblings: () => {},
+interface SiblingRefsContextType<SibType> {
+    siblingsRef: MutableRefObject<Map<string, SibType>>;
+    register: (id: string, sib: SibType) => void;
+    unregister: (id: string) => void;
+    callOnSiblings: (callable: (sib: SibType) => void) => void;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const SiblingRefsContext = createContext<SiblingRefsContextType<any>>({
+    siblingsRef: {
+        current: new Map()
+    },
+    register: () => { },
+    unregister: () => { },
+    callOnSiblings: () => { },
 });
 
-const SiblingRefsProvider = ({ children }: { children: React.ReactNode }) => {
-    const refs = useRef<React.RefObject<any>[]>([]);
+function SiblingRefsProvider<SibType>({ children }: { children: React.ReactNode }) {
+    const siblingsRef = useRef<Map<string, SibType>>(new Map());
 
-    const registerSibling = useCallback((ref: any) => {
-        if (ref && !refs.current.includes(ref)) {
-            refs.current.push(ref);
-        }
+    const register = useCallback((id: string, sib: SibType) => {
+        siblingsRef.current.set(id, sib);
+    }, []);
+
+    const unregister = useCallback((id: string) => {
+        siblingsRef.current.delete(id);
     }, []);
 
     const callOnSiblings = useCallback(
-        (callable: (ref: React.RefObject<any>) => void) => {
-            refs.current.forEach((childRef) => {
-                if (childRef.current) {
-                    callable(childRef.current);
-                }
+        (callable: (sib: SibType, id?: string) => void) => {
+            siblingsRef.current.forEach((child, key) => {
+                callable(child, key);
             });
         },
         []
@@ -37,20 +43,20 @@ const SiblingRefsProvider = ({ children }: { children: React.ReactNode }) => {
 
     return (
         <SiblingRefsContext.Provider
-            value={{ registerSibling, callOnSiblings, siblings: refs.current }}
+            value={{ register, unregister, callOnSiblings, siblingsRef }}
         >
             {children}
         </SiblingRefsContext.Provider>
     );
-};
+}
 
-const useSiblings = () => {
-    const context = useContext(SiblingRefsContext);
+function useSiblings<SibType>() {
+    const context = useContext<SiblingRefsContextType<SibType>>(SiblingRefsContext as Context<SiblingRefsContextType<SibType>>);
     if (!context) {
         throw new Error("useSiblings must be used within a SiblingRefsProvider");
     }
-    return context;
-};
+    return context
+}
 
 export { SiblingRefsProvider, useSiblings };
 export type { SiblingRefsContextType };

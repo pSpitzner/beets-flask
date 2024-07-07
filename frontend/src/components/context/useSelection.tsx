@@ -5,7 +5,7 @@ import { TagI } from "@/lib/tag";
 import { useQueries } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useState } from "react";
 
-type SelectionContextType = {
+interface SelectionContextType {
     selection: Map<string, boolean>;
     setSelection: React.Dispatch<React.SetStateAction<Map<string, boolean>>>;
     addToSelection: (item: string) => void;
@@ -18,7 +18,7 @@ type SelectionContextType = {
     markSelectable: (item: string) => void;
     selectAll: () => void;
     deselectAll: () => void;
-};
+}
 
 const SelectionContext = createContext<SelectionContextType>({
     selection: new Map(),

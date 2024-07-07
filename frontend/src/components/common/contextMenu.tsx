@@ -1,5 +1,5 @@
 import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
+import MenuItem, { MenuItemOwnProps } from "@mui/material/MenuItem";
 
 import {
     UseMutationOptions,
@@ -14,7 +14,6 @@ import {
     useContext,
     useRef,
     useEffect,
-    cloneElement,
     forwardRef,
 } from "react";
 import { queryClient } from "@/main";
@@ -42,6 +41,7 @@ import styles from "./contextMenu.module.scss";
 import { useSiblings } from "@/components/context/useSiblings";
 import { ErrorDialog } from "./dialogs";
 import { Typography } from "@mui/material";
+import { ExpandableSib } from "./tagView";
 
 interface ContextMenuContextI {
     closeMenu: () => void;
@@ -54,11 +54,11 @@ interface ContextMenuContextI {
 }
 
 const ContextMenuContext = createContext<ContextMenuContextI>({
-    closeMenu: () => {},
-    openMenuMouse: () => {},
-    startLongPressTimer: () => {},
-    handleTouchMove: () => {},
-    cancelLongPressTimer: () => {},
+    closeMenu: () => { },
+    openMenuMouse: () => { },
+    startLongPressTimer: () => { },
+    handleTouchMove: () => { },
+    cancelLongPressTimer: () => { },
     open: false,
     position: undefined,
 });
@@ -77,22 +77,24 @@ const ContextMenuContext = createContext<ContextMenuContextI>({
  * </SelectionProvider>
  */
 
+
 interface ContextMenuProps
     extends Omit<React.HTMLAttributes<HTMLDivElement>, "onContextMenu"> {
     children: React.ReactNode;
-    actions?: React.ReactNode[];
+    actions?: JSX.Element[];
     identifier?: string;
 }
 
+
 export const defaultActions = [
-    <SelectAllAction autoFocus />,
-    <DeselectAllAction divider />,
-    <RetagAction />,
-    <ImportAction />,
-    <TerminalImportAction />,
-    <UndoImportAction />,
-    <CopyPathAction />,
-    <DeleteAction />,
+    <SelectAllAction key="action-select-all" autoFocus />,
+    <DeselectAllAction key="action-deselect-all" divider />,
+    <RetagAction key="action-retag" />,
+    <ImportAction key="action-import" />,
+    <TerminalImportAction key="action-terminal-import" />,
+    <UndoImportAction key="action-undo-import" />,
+    <CopyPathAction key="action-copy-path" />,
+    <DeleteAction key="action-delete" />,
 ];
 
 export function ContextMenu({
@@ -119,9 +121,9 @@ export function ContextMenu({
         setPosition((prev?: { left: number; top: number }) =>
             prev === undefined
                 ? {
-                      left: event.clientX + 2,
-                      top: event.clientY - 6,
-                  }
+                    left: event.clientX + 2,
+                    top: event.clientY - 6,
+                }
                 : undefined
         );
     };
@@ -217,11 +219,7 @@ export function ContextMenu({
                 anchorPosition={position}
                 className={styles.ContextMenu}
             >
-                {actions.map((action, index) =>
-                    cloneElement(action as React.ReactElement, {
-                        key: (action as React.ReactElement).key || `action-${index}`,
-                    })
-                )}
+                {actions}
             </Menu>
         </ContextMenuContext.Provider>
     );
@@ -257,14 +255,14 @@ function Trigger({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
 /*                                   Simple Actions                                   */
 /* ---------------------------------------------------------------------------------- */
 
-export function SelectionSummary({ ...props }: { [key: string]: any }) {
+export function SelectionSummary({ ...props }: Partial<ActionProps>) {
     const { numSelected } = useSelection();
     const N = useRef(numSelected());
 
     // on close, we reset N. prevent the menu from displaying 0 for a split second
     useEffect(() => {
         N.current = numSelected();
-    }, []);
+    }, [numSelected]);
 
     return (
         // make this a non-clickable heading
@@ -272,7 +270,7 @@ export function SelectionSummary({ ...props }: { [key: string]: any }) {
     );
 }
 
-export function SelectAllAction({ ...props }: { [key: string]: any }) {
+export function SelectAllAction({ ...props }: Partial<ActionProps>) {
     const { selectAll } = useSelection();
     const { closeMenu } = useContextMenu();
     return (
@@ -288,7 +286,7 @@ export function SelectAllAction({ ...props }: { [key: string]: any }) {
     );
 }
 
-export function DeselectAllAction({ ...props }: { [key: string]: any }) {
+export function DeselectAllAction({ ...props }: Partial<ActionProps>) {
     const { deselectAll } = useSelection();
     const { closeMenu } = useContextMenu();
     return (
@@ -305,16 +303,16 @@ export function DeselectAllAction({ ...props }: { [key: string]: any }) {
 }
 
 // for accordions that can be expanded, like in the tags view
-export function ExpandAllAction({ ...props }: { [key: string]: any }) {
-    const { siblings } = useSiblings();
+export function ExpandAllAction({ ...props }: Partial<ActionProps>) {
+    const { callOnSiblings } = useSiblings<ExpandableSib>();
     const { closeMenu } = useContextMenu();
     return (
         <Action
             {...props}
             onClick={() => {
-                siblings.forEach((sibling: React.RefObject<any>) => {
-                    sibling.current.setExpanded(true);
-                });
+                callOnSiblings((sib) => {
+                    sib.setExpanded(true);
+                })
                 closeMenu();
             }}
             text={"Expand All"}
@@ -323,16 +321,16 @@ export function ExpandAllAction({ ...props }: { [key: string]: any }) {
     );
 }
 
-export function CollapseAllAction({ ...props }: { [key: string]: any }) {
-    const { siblings } = useSiblings();
+export function CollapseAllAction({ ...props }: Partial<ActionProps>) {
+    const { callOnSiblings } = useSiblings<ExpandableSib>();
     const { closeMenu } = useContextMenu();
     return (
         <Action
             {...props}
             onClick={() => {
-                siblings.forEach((sibling: React.RefObject<any>) => {
-                    sibling.current.setExpanded(false);
-                });
+                callOnSiblings((sib) => {
+                    sib.setExpanded(false);
+                })
                 closeMenu();
             }}
             text={"Collapse All"}
@@ -341,14 +339,14 @@ export function CollapseAllAction({ ...props }: { [key: string]: any }) {
     );
 }
 
-export function CopyPathAction({ ...props }: { [key: string]: any }) {
+export function CopyPathAction(props: Partial<ActionProps>) {
     const { closeMenu } = useContextMenu();
     const { getSelected } = useSelection();
     const text = useRef("");
 
     useEffect(() => {
         text.current = "'" + getSelected().join("' '") + "'";
-    }, [text]);
+    }, [getSelected, text]);
 
     return (
         <Action
@@ -363,7 +361,7 @@ export function CopyPathAction({ ...props }: { [key: string]: any }) {
     );
 }
 
-export function TerminalImportAction({ ...props }: { [key: string]: any }) {
+export function TerminalImportAction(props: Partial<ActionProps>) {
     const { closeMenu } = useContextMenu();
     const { setOpen, inputText, clearInput } = useTerminalContext();
     const { getSelected } = useSelection();
@@ -371,7 +369,7 @@ export function TerminalImportAction({ ...props }: { [key: string]: any }) {
 
     useEffect(() => {
         text.current = "'" + getSelected().join("' '") + "'";
-    }, [text]);
+    }, [getSelected, text]);
 
     return (
         <Action
@@ -388,7 +386,7 @@ export function TerminalImportAction({ ...props }: { [key: string]: any }) {
     );
 }
 
-export function UndoImportAction(props: Record<string, unknown>) {
+export function UndoImportAction(props: Partial<ActionProps>) {
     const { closeMenu } = useContextMenu();
     const { setOpen, inputText, clearInput } = useTerminalContext();
     const { getSelected } = useSelection();
@@ -440,7 +438,7 @@ export function UndoImportAction(props: Record<string, unknown>) {
 /**
  * Refresh or tag for the first time.
  */
-export function RetagAction({ ...props }: { [key: string]: any }) {
+export function RetagAction(props: Partial<ActionProps>) {
     const { closeMenu } = useContextMenu();
     const { getSelected } = useSelection();
     const retagOptions: UseMutationOptions = {
@@ -457,11 +455,12 @@ export function RetagAction({ ...props }: { [key: string]: any }) {
             });
         },
         onSuccess: async () => {
-            getSelected().forEach(async (tagPath: string) => {
+            const selected = getSelected();
+            for (const tagPath of selected) {
                 await queryClient.setQueryData(["tag", tagPath], (old: TagI) => {
                     return { ...old, status: "pending" };
                 });
-            });
+            }
             closeMenu();
         },
         onError: (error: Error) => {
@@ -479,7 +478,7 @@ export function RetagAction({ ...props }: { [key: string]: any }) {
     );
 }
 
-export function ImportAction({ ...props }: { [key: string]: any }) {
+export function ImportAction(props: Partial<ActionProps>) {
     const { closeMenu } = useContextMenu();
     const { getSelected } = useSelection();
     const importOptions: UseMutationOptions = {
@@ -497,11 +496,12 @@ export function ImportAction({ ...props }: { [key: string]: any }) {
         },
         onSuccess: async () => {
             closeMenu();
-            getSelected().forEach(async (tagPath: string) => {
+            const selected = getSelected();
+            for (const tagPath of selected) {
                 await queryClient.setQueryData(["tag", tagPath], (old: TagI) => {
                     return { ...old, status: "pending" };
                 });
-            });
+            }
         },
         onError: (error: Error) => {
             console.error(error);
@@ -518,7 +518,7 @@ export function ImportAction({ ...props }: { [key: string]: any }) {
     );
 }
 
-export function DeleteAction({ ...props }: { [key: string]: any }) {
+export function DeleteAction(props: Partial<ActionProps>) {
     const { closeMenu } = useContextMenu();
     const { getSelected } = useSelection();
     const selection = getSelected();
@@ -558,8 +558,24 @@ export function DeleteAction({ ...props }: { [key: string]: any }) {
 }
 
 /* ---------------------------------------------------------------------------------- */
-/*                                   Action Helpers                                   */
+/*                          Base action definitions                                   */
 /* ---------------------------------------------------------------------------------- */
+
+
+interface ActionWithMutationProps extends ActionProps {
+    mutationOption: UseMutationOptions;
+}
+
+
+interface ActionProps extends MenuItemOwnProps {
+    onClick?: () => void;
+    icon?: React.ReactNode;
+    text: React.ReactNode;
+    className?: string;
+}
+
+
+
 
 function Action({
     onClick,
@@ -567,20 +583,14 @@ function Action({
     text,
     className,
     ...props
-}: {
-    onClick?: () => void;
-    icon?: React.ReactNode;
-    text: React.ReactNode;
-    className?: string;
-    [key: string]: any;
-}) {
+}: ActionProps) {
     const { closeMenu } = useContextMenu();
 
     return (
         <MenuItem
-            {...props}
             className={`${styles.Action} ${className ? className : ""}`}
-            onClick={onClick || closeMenu}
+            onClick={onClick ?? closeMenu}
+            {...props}
         >
             {icon ? (
                 <div className={styles.ActionIcon}>{icon}</div>
@@ -601,13 +611,7 @@ const ActionWithMutation = forwardRef(function ActionWithMutation(
         text,
         className,
         ...props
-    }: {
-        mutationOption: UseMutationOptions;
-        icon: React.ReactNode;
-        text: React.ReactNode;
-        className?: string;
-        [key: string]: any;
-    },
+    }: ActionWithMutationProps,
     ref?: React.Ref<HTMLDivElement>
 ) {
     const { isSuccess, isPending, mutate, isError, error, reset } =
@@ -615,7 +619,6 @@ const ActionWithMutation = forwardRef(function ActionWithMutation(
 
     return (
         <MenuItem
-            {...props}
             className={`${styles.Action} ${className ? className : ""}`}
             onClick={(event: React.MouseEvent) => {
                 event.stopPropagation();
@@ -625,6 +628,7 @@ const ActionWithMutation = forwardRef(function ActionWithMutation(
                     mutate();
                 }
             }}
+            {...props}
         >
             {icon ? (
                 <div className={styles.ActionIcon} ref={ref}>
@@ -635,7 +639,7 @@ const ActionWithMutation = forwardRef(function ActionWithMutation(
                     <ChevronRight />
                 </div>
             )}
-            <div className={styles.ActionText}>{isPending ? text + " ..." : text}</div>
+            <div className={styles.ActionText}>{isPending ? <>{text}...</> : text}</div>
 
             {isError && <ErrorDialog open={isError} error={error} onClose={reset} />}
         </MenuItem>
@@ -643,20 +647,17 @@ const ActionWithMutation = forwardRef(function ActionWithMutation(
 });
 
 function Heading({
-    onClick,
     icon,
     text,
     className,
     ...props
 }: {
-    onClick?: () => void;
     icon?: React.ReactNode;
     text: React.ReactNode;
     className?: string;
-    [key: string]: any;
-}) {
+} & MenuItemOwnProps) {
     return (
-        <MenuItem disabled className={`${styles.Action} ${styles.Heading}`} {...props}>
+        <MenuItem disabled className={`${styles.Action} ${styles.Heading} ${className ?? ""}`} {...props}>
             <div className={styles.ActionText}>{text}</div>
             {icon && <div className={styles.ActionIcon}>{icon}</div>}
         </MenuItem>

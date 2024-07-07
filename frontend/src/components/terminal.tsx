@@ -218,7 +218,7 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
             socket.emit("ptyInput", { input: data });
         });
 
-        function onOutput(data: { output: Array<string> }) {
+        function onOutput(data: { output: string[] }) {
             // term!.clear(); seems to be preferred from the documentation,
             // but it leaves the prompt on the first line in place - which we here do not want
             // ideally we would directly access the buffer.

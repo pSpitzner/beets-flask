@@ -1,16 +1,17 @@
 import { Link } from "@tanstack/react-router";
 
 import { ListItemText } from "@mui/material";
-import ListItem, { ListItemProps } from "@mui/material/ListItem";
+import ListItem, { ListItemOwnProps, ListItemProps } from "@mui/material/ListItem";
 
 import { ReactNode, ComponentType } from "react";
 import { FixedSizeList, ListChildComponentProps } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface WrapperProps<D = any> {
-    children: ComponentType<ListChildComponentProps<Array<D>>>;
+    children: ComponentType<ListChildComponentProps<D[]>>;
     className?: string;
-    data: Array<D>;
+    data: D[];
 }
 
 function List<D>({ children, data, ...props }: WrapperProps<D>) {
@@ -33,13 +34,12 @@ function List<D>({ children, data, ...props }: WrapperProps<D>) {
     );
 }
 
-type ListItemData = {
+interface ListItemData extends ListItemOwnProps {
     label: string;
     to?: string;
-    params?: { [key: string]: any };
+    params?: Record<string, unknown>;
     icon?: ReactNode;
-    [key: string]: any;
-};
+}
 
 function Item({ index, data, style }: ListChildComponentProps<ListItemData[]>) {
     const { label, to, params, icon, ...props } = data[index];

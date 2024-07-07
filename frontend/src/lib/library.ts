@@ -20,7 +20,7 @@ export interface MinimalItem {
 }
 
 export interface Item extends MinimalItem {
-    [key: string]: any; // enable indexing item[key]
+    [key: string]: unknown; // enable indexing item[key]
 
     album?: string; // "In the City / Wasted"
     album_id?: number; // 1
@@ -165,7 +165,10 @@ export async function fetchArtist({
     expand?: boolean;
     minimal?: boolean;
 }): Promise<MinimalArtist> {
-    let url = _url_parse_minimal_expand(`/library/artist/${name}`, { expand, minimal });
+    const url = _url_parse_minimal_expand(`/library/artist/${name}`, {
+        expand,
+        minimal,
+    });
     const response = await fetch(url);
     return (await response.json()) as MinimalArtist;
 }
@@ -193,7 +196,7 @@ export async function fetchAlbum({
     expand?: boolean;
     minimal?: boolean;
 }): Promise<MinimalAlbum> {
-    let url = _url_parse_minimal_expand(`/library/album/${id}`, { expand, minimal });
+    const url = _url_parse_minimal_expand(`/library/album/${id}`, { expand, minimal });
     console.log(url);
     const response = await fetch(url);
     return (await response.json()) as MinimalAlbum;
@@ -222,7 +225,7 @@ export async function fetchItem({
     expand?: boolean;
     minimal?: boolean;
 }): Promise<Item> {
-    let url = _url_parse_minimal_expand(`/library/item/${id}`, { expand, minimal });
+    const url = _url_parse_minimal_expand(`/library/item/${id}`, { expand, minimal });
     const response = await fetch(url);
     return (await response.json()) as Item;
 }

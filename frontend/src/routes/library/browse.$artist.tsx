@@ -1,7 +1,7 @@
 import List from "@/components/common/list";
 import { artistQueryOptions } from "@/lib/library";
 import Box from "@mui/material/Box";
-import { Outlet, createFileRoute } from "@tanstack/react-router";
+import { Outlet, createFileRoute, useParams } from "@tanstack/react-router";
 import z from "zod";
 import styles from "./browse.module.scss";
 import { BASE_ROUTE } from "./browse";
@@ -24,10 +24,9 @@ export const Route = createFileRoute(`${BASE_ROUTE}/$artist`)({
 
 function ArtistOverview() {
     const artist = Route.useLoaderData();
-    const params = Route.useParams() as {
-        artist: string;
-        albumId?: number;
-    };
+    const params = useParams({
+        from: '/library/browse/$artist/$albumId',
+    });
 
     const data = useMemo(() => {
         return artist.albums.map((album) => ({
@@ -35,7 +34,7 @@ function ArtistOverview() {
             params: { artist: params.artist, albumId: album.id },
             label: album.name,
             className: styles.listItem,
-            "data-selected": params.albumId == album.id,
+            "data-selected": params.albumId && params.albumId == album.id,
         }));
     }, [artist, params]);
 

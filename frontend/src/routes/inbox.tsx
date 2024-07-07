@@ -97,7 +97,7 @@ function FolderTreeView({
     useEffect(() => {
         const savedState = localStorage.getItem(uid);
         if (savedState !== null) {
-            setExpanded(JSON.parse(savedState));
+            setExpanded(JSON.parse(savedState) as boolean);
         }
     }, [uid]);
 
@@ -116,11 +116,11 @@ function FolderTreeView({
                 <ContextMenu
                     className={styles.contextMenuHeaderWrapper}
                     identifier={fp.full_path}
-                    actions={[<SelectionSummary />, ...defaultActions]}
+                    actions={[<SelectionSummary key={0} />, ...defaultActions]}
                 >
                     <Folder
                         fp={fp}
-                        label={label || fp.full_path.replaceAll("/", " / ")}
+                        label={label ?? fp.full_path.replaceAll("/", " / ")}
                     />
                 </ContextMenu>
                 <Collapsible.Content className={styles.content}>
