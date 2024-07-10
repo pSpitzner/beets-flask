@@ -24,6 +24,11 @@ gui:
         concat_nested_folders: yes
         expand_files: no
 
+        folders: # keep in mind to volume-map these folders in your docker-compose.yml
+            Lorem:
+                name: "Please configure your inbox!"
+                path: "/music/inbox"
+                autotag: no # no | "preview" | "import"
+
 # set this in you beets config! (we only keep it around so the container can launch when nothing is configured)
 directory: /music/imported
-
