@@ -171,7 +171,7 @@ function Folder({ fp, label }: { fp: FsPath; label: string }) {
         if (fp.is_album && numChildren > 0) {
             markSelectable(fp.full_path);
         }
-    }, []);
+    }, [fp.full_path, fp.is_album, markSelectable, numChildren]);
 
     return (
         <div

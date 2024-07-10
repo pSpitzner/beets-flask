@@ -71,8 +71,8 @@ export const deleteInboxMutation: UseMutationOptions<unknown, Error, string> = {
             }),
         });
     },
-    onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["inbox"] });
+    onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: ["inbox"] });
     },
 };
 
@@ -88,8 +88,8 @@ export const deleteInboxImportedMutation: UseMutationOptions<unknown, Error, str
             }),
         });
     },
-    onSuccess: (_data, variables) => {
-        queryClient.invalidateQueries({ queryKey: ["inbox", "path", variables] });
+    onSuccess: async (_data, variables) => {
+        await queryClient.invalidateQueries({ queryKey: ["inbox", "path", variables] });
     },
 };
 
@@ -123,7 +123,7 @@ export const retagInboxAllMutation: UseMutationOptions<unknown, Error, string> =
             }),
         });
     },
-    onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["inbox"] });
+    onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: ["inbox"] });
     },
 };

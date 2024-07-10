@@ -111,7 +111,7 @@ function XTermBinding() {
 
     useEffect(() => {
         if (!ref.current || !term) return;
-
+        const ele = ref.current;
         function copyPasteHandler(e: KeyboardEvent) {
             if (!term) return false;
 
@@ -123,7 +123,7 @@ function XTermBinding() {
                     // ctrl+shift+v: paste whatever is in the clipboard
                     navigator.clipboard.readText().then((toPaste) => {
                         term.write(toPaste);
-                    });
+                    }).catch(console.error);
                     return false;
                 } else if (key === "c" || key === "x") {
                     // ctrl+shift+x: copy whatever is highlighted to clipboard
@@ -134,7 +134,7 @@ function XTermBinding() {
                     // I'm not aware of ctrl+shift+x being used by anything in the terminal
                     // or browser
                     const toCopy = term.getSelection();
-                    navigator.clipboard.writeText(toCopy);
+                    navigator.clipboard.writeText(toCopy).catch(console.error);
                     term.focus();
                     return false;
                 }
@@ -146,18 +146,18 @@ function XTermBinding() {
 
         const fitAddon = new xTermFitAddon();
         term.loadAddon(fitAddon);
-        term.open(ref.current);
+        term.open(ele);
         fitAddon.fit();
 
         const resizeObserver = new ResizeObserver(() => {
             fitAddon.fit();
         });
 
-        resizeObserver.observe(ref.current);
+        resizeObserver.observe(ele);
 
         return () => {
             term.dispose();
-            if (ref.current) resizeObserver.unobserve(ref.current);
+            if (ele) resizeObserver.unobserve(ele);
         };
     }, [term]);
 
@@ -176,10 +176,10 @@ export interface TerminalContextI {
 
 const TerminalContext = createContext<TerminalContextI>({
     open: false,
-    toggle: () => {},
-    setOpen: () => {},
-    inputText: () => {},
-    clearInput: () => {},
+    toggle: () => { },
+    setOpen: () => { },
+    inputText: () => { },
+    clearInput: () => { },
 });
 
 export function TerminalContextProvider({ children }: { children: React.ReactNode }) {

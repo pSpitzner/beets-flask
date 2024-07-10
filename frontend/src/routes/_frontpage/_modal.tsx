@@ -12,6 +12,7 @@ export const Route = createFileRoute("/_frontpage/_modal")({
 
 const Transition = forwardRef(function Transition(
     props: TransitionProps & {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         children: React.ReactElement<any, any>;
     },
     ref: React.Ref<unknown>
@@ -33,7 +34,7 @@ function DialogWrapper() {
             onClose={handleClose}
             onTransitionExited={() => {
                 if (!open) {
-                    navigate({ to: ".." });
+                    navigate({ to: ".." }).catch(console.error);
                 }
             }}
             TransitionComponent={Transition}
