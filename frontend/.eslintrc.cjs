@@ -13,7 +13,6 @@ module.exports = {
     ignorePatterns: ['dist', '.eslintrc.cjs', 'tailwind.config.js', 'postcss.config.js', 'vite.config.ts', '*.md'],
     parser: '@typescript-eslint/parser',
     plugins: ['react-refresh'],
-
     rules: {
         'react-refresh/only-export-components': [
             0,
@@ -22,7 +21,7 @@ module.exports = {
     },
     settings: {
         react: {
-            version: 'detect',
+            version: '18.2',
         },
     },
     parserOptions: {
