@@ -1,7 +1,7 @@
 .conda/*
 local_data/*
 beets_flask/beets/*
-tinker.ipynb
+tinker/*
 static/bootstrap/*
 static/bootstrap-icons/*
 docker-compose-custom.yaml
