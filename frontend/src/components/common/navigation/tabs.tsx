@@ -1,21 +1,20 @@
-import Tab, { tabClasses } from "@mui/material/Tab";
+import Tab, { tabClasses, TabProps } from "@mui/material/Tab";
 import Tabs, { tabsClasses } from "@mui/material/Tabs";
 import { styled } from "@mui/material/styles";
 import { Home, Inbox, Tag, Library } from "lucide-react";
-import { createLink, useRouterState } from "@tanstack/react-router";
+import { createLink, useRouterState, LinkProps } from "@tanstack/react-router";
+import { Typography } from "@mui/material";
+import { ReactElement } from "react";
 
-/**
- * Custom styled component for a tab item.
- *
- * I just found we can style mui coponents
- * like this. I like it!
- *
- * @param {object} theme - The theme object.
- * @returns {JSX.Element} - The styled TabItem component.
- */
-const TabItem = createLink(
-    styled(Tab)(({ theme }) => ({
+interface StyledTabProps extends Omit<LinkProps, "children">, Omit<TabProps, "ref"> {
+    label: string | ReactElement;
+}
+
+const StyledTab = createLink(
+    styled(Tab)<StyledTabProps>(({ theme }) => ({
         lineHeight: "inherit",
+        minHeight: 32,
+        marginTop: 8,
         minWidth: 0,
         flexDirection: "row",
         letterSpacing: "1px",
@@ -24,7 +23,6 @@ const TabItem = createLink(
         textTransform: "uppercase",
         "& svg": {
             fontSize: 16,
-            marginRight: 8,
             width: 16,
             height: 16,
         },
@@ -46,12 +44,20 @@ const TabItem = createLink(
     }))
 );
 
-/** Minimal tabs with dark background
- * and a white border at the top which
- * indicates the active tab.
- */
+const TabLabel = styled(Typography)(({ theme }) => ({
+    marginLeft: 8,
+    lineHeight: "12px",
+    [theme.breakpoints.down("sm")]: {
+        marginLeft: 0,
+        display: "none",
+    },
+}));
+
+function NavItem({ label, ...props }: StyledTabProps) {
+    return <StyledTab label={<TabLabel>{label}</TabLabel>} disableRipple {...props} />;
+}
+
 export default function NavTabs() {
-    // TODO:
     const location = useRouterState({ select: (s) => s.location });
     const basePath = location.pathname.split("/")[1];
     return (
@@ -60,6 +66,7 @@ export default function NavTabs() {
             value={"/" + basePath}
             sx={{
                 boxShadow: "inset 0 1px 0 0 #efefef",
+                backgroundColor: "background.paper",
                 overflow: "visible",
                 [`& .${tabsClasses.indicator}`]: {
                     bottom: "unset",
@@ -72,34 +79,33 @@ export default function NavTabs() {
                 },
             }}
         >
-            <TabItem
+            <NavItem
                 value={"/"}
                 to="/"
                 label={"Home"}
                 icon={<Home />}
-                disableRipple
                 //
             />
-            <TabItem
+            <NavItem
                 to="/inbox"
                 value={"/inbox"}
                 label={"Inbox"}
                 icon={<Inbox />}
-                disableRipple
+                //
             />
-            <TabItem
+            <NavItem
                 to="/tags"
                 value={"/tags"}
                 label={"Tags"}
                 icon={<Tag />}
-                disableRipple
+                //
             />
-            <TabItem
+            <NavItem
                 to="/library/browse"
                 value={"/library"}
                 label={"Library"}
                 icon={<Library />}
-                disableRipple
+                //
             />
         </Tabs>
     );
