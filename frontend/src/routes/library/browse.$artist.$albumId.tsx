@@ -5,7 +5,8 @@ import z from "zod";
 import styles from "./browse.module.scss";
 import { BASE_ROUTE } from "./browse";
 import { useMemo } from "react";
-import { Paper } from "@mui/material";
+import { Box, Paper } from "@mui/material";
+import { BrowserHeader } from "@/components/browserHeader";
 
 export const Route = createFileRoute(`${BASE_ROUTE}/$artist/$albumId`)({
     parseParams: (params) => ({
@@ -48,9 +49,13 @@ function AlbumOverview() {
     return (
         <>
             <Paper
-                className={`${styles.listBox} ${isSecondary ? styles.isSecondary : ""}`}
+                className={`${styles.column} ${isSecondary ? styles.isSecondary : ""}`}
             >
-                <List data={data}>{List.Item}</List>
+                <Box className={styles.columnLabel}>Album</Box>
+                <BrowserHeader className={styles.browserHeader} />
+                <Box className={styles.listBox}>
+                    <List data={data}>{List.Item}</List>
+                </Box>
             </Paper>
             <Outlet />
         </>

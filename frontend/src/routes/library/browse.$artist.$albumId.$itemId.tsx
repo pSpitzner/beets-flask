@@ -1,4 +1,4 @@
-import { itemQueryOptions } from "@/lib/library";
+import { Item, itemQueryOptions } from "@/lib/library";
 import { createFileRoute } from "@tanstack/react-router";
 import z from "zod";
 import styles from "./browse.module.scss";
@@ -7,7 +7,8 @@ import { useState } from "react";
 import { Bug as BugOn, BugOff } from "lucide-react";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
-import { Paper } from "@mui/material";
+import { Box, Paper } from "@mui/material";
+import { BrowserHeader } from "@/components/browserHeader";
 
 export const Route = createFileRoute("/library/browse/$artist/$albumId/$itemId")({
     parseParams: (params) => ({
@@ -25,12 +26,14 @@ export const Route = createFileRoute("/library/browse/$artist/$albumId/$itemId")
 });
 
 function TrackView() {
-    const item = Route.useLoaderData();
+    const item: Item = Route.useLoaderData();
     const [detailed, setDetailed] = useState(false);
 
     return (
         <>
-            <Paper className={styles.listBox + " " + styles.trackViewBox}>
+            <Paper className={styles.column + " " + styles.trackViewBox}>
+                <Box className={styles.columnLabel}>Item</Box>
+                <BrowserHeader className={styles.browserHeader} />
                 <Tooltip title="Toggle Details" className="ml-auto mt-1">
                     <IconButton color="primary" onClick={() => setDetailed(!detailed)}>
                         {detailed && <BugOff size="1em" />}

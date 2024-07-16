@@ -1,11 +1,12 @@
 import { artistsQueryOptions } from "@/lib/library";
 import { Outlet, createFileRoute } from "@tanstack/react-router";
-
-import List from "@/components/common/list";
-import Box from "@mui/material/Box";
-import styles from "./browse.module.scss";
 import { useMemo } from "react";
 import { Paper } from "@mui/material";
+import Box from "@mui/material/Box";
+
+import List from "@/components/common/list";
+import { BrowserHeader } from "@/components/browserHeader";
+import styles from "./browse.module.scss";
 
 export const BASE_ROUTE = "/library/browse";
 export const Route = createFileRoute(BASE_ROUTE)({
@@ -38,9 +39,15 @@ function AllArtists() {
         <>
             <Box className={styles.columnBrowser}>
                 <Paper
-                    className={`${styles.listBox} ${isSecondary ? styles.isSecondary : ""}`}
+                    className={`${styles.column} ${isSecondary ? styles.isSecondary : ""}`}
                 >
-                    <List data={data}>{List.Item}</List>
+                    <Box className={styles.columnLabel}>Artist</Box>
+                    <BrowserHeader
+                        className={styles.browserHeader}
+                    />
+                    <Box className={styles.listBox}>
+                        <List data={data}>{List.Item}</List>
+                    </Box>
                 </Paper>
                 <Outlet />
             </Box>

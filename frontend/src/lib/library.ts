@@ -178,7 +178,7 @@ export const albumQueryOptions = ({
     expand = true,
     minimal = true,
 }: {
-    id: number;
+    id?: number;
     expand?: boolean;
     minimal?: boolean;
 }) =>
@@ -192,10 +192,13 @@ export async function fetchAlbum({
     expand = false,
     minimal = true,
 }: {
-    id: number;
+    id?: number;
     expand?: boolean;
     minimal?: boolean;
-}): Promise<MinimalAlbum> {
+}): Promise<MinimalAlbum | null> {
+    if (id === undefined || id === null) {
+        return null;
+    }
     const url = _url_parse_minimal_expand(`/library/album/${id}`, { expand, minimal });
     console.log(url);
     const response = await fetch(url);
@@ -207,7 +210,7 @@ export const itemQueryOptions = ({
     expand = false,
     minimal = true,
 }: {
-    id: number;
+    id?: number;
     expand?: boolean;
     minimal?: boolean;
 }) =>
@@ -221,10 +224,13 @@ export async function fetchItem({
     expand = false,
     minimal = true,
 }: {
-    id: number;
+    id?: number;
     expand?: boolean;
     minimal?: boolean;
-}): Promise<Item> {
+}): Promise<Item | null> {
+    if (id === undefined || id === null) {
+        return null;
+    }
     const url = _url_parse_minimal_expand(`/library/item/${id}`, { expand, minimal });
     const response = await fetch(url);
     return (await response.json()) as Item;

@@ -3,23 +3,14 @@
     gap: 0px;
 }
 
-.listBox {
-    position: relative;
-    height: calc(100vh - 104px); // TODO: get navbar height and substract.
-    display: flex;
-    align-items: start;
+.column {
     margin: 0;
     gap: 0;
     padding: 0;
-    overflow-y: hidden;
-    overflow-x: hidden;
-    // mui adds uls
-    & > ul {
-        padding: 0;
-        width: 100%;
-    }
+    overflow: hidden;
+
     // on mobile only one column
-    width: calc(100%);
+    width: 100%;
     &.isSecondary {
         width: 0;
     }
@@ -33,14 +24,60 @@
     }
 }
 
+.columnLabel {
+    text-align: center;
+    // font-weight: bold;
+    text-transform: uppercase;
+    padding-top: 0.5rem;
+    position: relative;
+    opacity: 0.6;
+    display: none;
+    @media (min-width: 768px) {
+        display: block;
+    }
+    &::after {
+        // divider line with full opactiy
+        content: "";
+        width: 100%;
+        display: block;
+        height: 0.5rem; // this is effectively padding bottom
+        position: aboslute;
+        border-bottom: #292e31 solid 1px;
+    }
+}
+
+.browserHeader {
+    border-bottom: #292e31 solid 1px;
+    padding: 0.5rem 0.5rem;
+    display: block;
+    @media (min-width: 768px) {
+        display: none;
+    }
+}
+
+.listBox {
+    width: 100%;
+    height: calc(100vh - 125px);
+
+    position: relative;
+    display: flex;
+    align-items: start;
+
+    // mui adds uls
+    & > ul {
+        padding: 0;
+        width: 100%;
+    }
+}
+
 .listItem {
     --default-bg: var(--mui-palette-background-paper);
-    --hover-bg: #353A3F;
-    --selected-bg: #292E31;
+    --hover-bg: #353a3f;
+    --selected-bg: #292e31;
     padding: 0rem 0.5rem;
     width: 100%;
     &[data-selected="true"] {
-         background-color: var(--selected-bg);
+        background-color: var(--selected-bg);
     }
     &:hover {
         background-color: var(--hover-bg);
@@ -53,11 +90,7 @@
         bottom: 0;
         width: 15px;
         pointer-events: none;
-        background: linear-gradient(
-            to right,
-            transparent,
-            var(--current-bg)
-        );
+        background: linear-gradient(to right, transparent, var(--current-bg));
     }
 }
 // Dynamically set the --current-bg variable based on state
