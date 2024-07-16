@@ -5,6 +5,7 @@ import List from "@/components/common/list";
 import Box from "@mui/material/Box";
 import styles from "./browse.module.scss";
 import { useMemo } from "react";
+import { Paper } from "@mui/material";
 
 export const BASE_ROUTE = "/library/browse";
 export const Route = createFileRoute(BASE_ROUTE)({
@@ -18,7 +19,7 @@ interface RouteParams {
 
 function AllArtists() {
     const artists = Route.useLoaderData();
-    const params = Route.useParams < RouteParams >();
+    const params = Route.useParams<RouteParams>();
 
     const data = useMemo(() => {
         return artists.map((artist) => ({
@@ -33,9 +34,9 @@ function AllArtists() {
     return (
         <>
             <Box className={styles.columnBrowser}>
-                <Box className={styles.listBox}>
+                <Paper className={styles.listBox}>
                     <List data={data}>{List.Item}</List>
-                </Box>
+                </Paper>
                 <Outlet />
             </Box>
         </>

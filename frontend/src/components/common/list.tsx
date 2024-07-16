@@ -20,7 +20,7 @@ function List<D>({ children, data, ...props }: WrapperProps<D>) {
         <AutoSizer>
             {({ height, width }) => (
                 <FixedSizeList
-                    className="List"
+                    className={styles.List}
                     height={height}
                     width={width}
                     itemData={data}
@@ -51,7 +51,7 @@ function Item({ index, data, style }: ListChildComponentProps<ListItemData[]>) {
         const textEl = textRef.current;
         if (textEl) {
             const parent = textEl.parentElement?.parentElement;
-            if (parent && textEl.scrollWidth > parent.clientWidth) {
+            if (parent && textEl.scrollWidth > parent.clientWidth - 15) {
                 setIsOverflowing(true);
                 const d = parent.clientWidth - textEl.scrollWidth - 15;
                 textEl.style.setProperty("--translate-distance", `${d}px`);

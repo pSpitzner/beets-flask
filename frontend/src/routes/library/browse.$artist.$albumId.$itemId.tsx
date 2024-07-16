@@ -1,5 +1,4 @@
 import { itemQueryOptions } from "@/lib/library";
-import Box from "@mui/material/Box";
 import { createFileRoute } from "@tanstack/react-router";
 import z from "zod";
 import styles from "./browse.module.scss";
@@ -8,6 +7,7 @@ import { useState } from "react";
 import { Bug as BugOn, BugOff } from "lucide-react";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
+import { Paper } from "@mui/material";
 
 export const Route = createFileRoute("/library/browse/$artist/$albumId/$itemId")({
     parseParams: (params) => ({
@@ -30,7 +30,7 @@ function TrackView() {
 
     return (
         <>
-            <Box className={styles.listBox + " " + styles.trackViewBox}>
+            <Paper className={styles.listBox + " " + styles.trackViewBox}>
                 <Tooltip title="Toggle Details" className="ml-auto mt-1">
                     <IconButton color="primary" onClick={() => setDetailed(!detailed)}>
                         {detailed && <BugOff size="1em" />}
@@ -39,7 +39,7 @@ function TrackView() {
                 </Tooltip>
 
                 <ItemDetailsTableView item={item} keys={detailed ? "all" : "basic"} />
-            </Box>
+            </Paper>
         </>
     );
 }

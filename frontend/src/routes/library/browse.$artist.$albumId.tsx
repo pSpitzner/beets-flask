@@ -1,11 +1,11 @@
 import List from "@/components/common/list";
 import { Album, albumQueryOptions } from "@/lib/library";
-import Box from "@mui/material/Box";
 import { Outlet, createFileRoute } from "@tanstack/react-router";
 import z from "zod";
 import styles from "./browse.module.scss";
 import { BASE_ROUTE } from "./browse";
 import { useMemo } from "react";
+import { Paper } from "@mui/material";
 
 export const Route = createFileRoute(`${BASE_ROUTE}/$artist/$albumId`)({
     parseParams: (params) => ({
@@ -44,9 +44,9 @@ function AlbumOverview() {
 
     return (
         <>
-            <Box className={styles.listBox}>
+            <Paper className={styles.listBox}>
                 <List data={data}>{List.Item}</List>
-            </Box>
+            </Paper>
             <Outlet />
         </>
     );

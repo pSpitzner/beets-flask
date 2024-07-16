@@ -5,6 +5,7 @@
 
 .listBox {
     // TODO: get navbar height and substract.
+    position: relative;
     height: calc(100vh - 110px);
     width: calc(25% - 4px);
     display: flex;
@@ -12,9 +13,7 @@
     margin: 0;
     gap: 0;
     padding: 0;
-    border: 1px solid #495057;
-    border-radius: 0.3rem;
-    overflow-y: auto;
+    overflow-y: hidden;
     overflow-x: hidden;
     // mui adds uls
     & > ul {
@@ -24,13 +23,42 @@
 }
 
 .listItem {
+    --default-bg: var(--mui-palette-background-paper);
+    --hover-bg: #353A3F;
+    --selected-bg: #292E31;
     padding: 0rem 0.5rem;
     width: 100%;
     &[data-selected="true"] {
-        background-color: #6F7B8533;
+         background-color: var(--selected-bg);
     }
     &:hover {
-        background-color: #6F7B8555;
+        background-color: var(--hover-bg);
+    }
+    &::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 15px;
+        pointer-events: none;
+        background: linear-gradient(
+            to right,
+            transparent,
+            var(--current-bg)
+        );
+    }
+}
+// Dynamically set the --current-bg variable based on state
+.listItem {
+    &[data-selected="true"]::after {
+        --current-bg: var(--selected-bg);
+    }
+    &:hover::after {
+        --current-bg: var(--hover-bg);
+    }
+    &:not(:hover):not([data-selected="true"])::after {
+        --current-bg: var(--default-bg);
     }
 }
 
