@@ -1,8 +1,8 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router";
-import { InboxStatsGridItems } from "@/components/frontpage/inboxStats";
+import { InboxStatsGridItems } from "@/components/_frontpage/inboxStats";
 
 import Grid from "@mui/material/Unstable_Grid2";
-import { LibraryStats } from "@/components/frontpage/libraryStats";
+import { LibraryStats } from "@/components/_frontpage/libraryStats";
 
 export const Route = createFileRoute("/_frontpage/")({
     component: Index,
