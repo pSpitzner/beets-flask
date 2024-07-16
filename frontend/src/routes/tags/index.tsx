@@ -1,12 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { tagGroupAllQueryOptions, tagGroupIdQueryOptions } from "@/lib/tag";
 import TagGroupView from "@/components/common/tagGroupView";
 
 import { TagView } from "@/components/common/tagView";
 import { SiblingRefsProvider } from "@/components/context/useSiblings";
-import { createRef, useMemo } from "react";
+import { ComponentProps } from "react";
 
 export const Route = createFileRoute("/tags/")({
     loader: (opts) =>
@@ -58,9 +57,7 @@ function TagGroup({
     tag_ids: string[];
     title?: string;
     subtitle?: string;
-    [key: string]: any;
-}) {
-    const tagRefs = useMemo(() => tag_ids.map(() => createRef()), [tag_ids]);
+} & Omit<ComponentProps<typeof TagGroupView>, "children">) {
     return (
         <TagGroupView
             title={title}
@@ -70,14 +67,14 @@ function TagGroup({
         >
             <SiblingRefsProvider>
                 {tag_ids.map((tagId, i) => (
-                    <TagView key={i} tagId={tagId} ref={tagRefs[i]} />
+                    <TagView key={i} tagId={tagId} />
                 ))}
             </SiblingRefsProvider>
         </TagGroupView>
     );
 }
 
-function PredefinedTagGroup({ id, ...props }: { id: string; [key: string]: any }) {
+function PredefinedTagGroup({ id, ...props }: { id: string; } & Partial<ComponentProps<typeof TagGroup>>) {
     const query = useSuspenseQuery(tagGroupIdQueryOptions(id));
     const group = query.data;
     const tag_ids = group.tag_ids;

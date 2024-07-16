@@ -17,6 +17,12 @@ module.exports = {
         'react-refresh/only-export-components': [
             0,
         ],
+        "@typescript-eslint/no-empty-function": "off",
+    },
+    settings: {
+        react: {
+            version: '18.2',
+        },
     },
     parserOptions: {
         ecmaVersion: "latest",

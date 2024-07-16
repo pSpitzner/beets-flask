@@ -29,7 +29,7 @@ export const useTerminalSocket = () => {
         return () => {
             termSocket.disconnect();
         };
-    }, [termSocket]);
+    }, []);
 
     useEffect(() => {
         function handleConnect() {
@@ -48,7 +48,7 @@ export const useTerminalSocket = () => {
             termSocket.off("connect", handleConnect);
             termSocket.off("disconnect", handleDisconnect);
         };
-    }, [termSocket]);
+    }, []);
 
     return { socket: termSocket, isConnected };
 };
@@ -118,9 +118,9 @@ const StatusContextProvider = ({
 
             if (data.attributes === "all") {
                 if (data.tagId)
-                    client.invalidateQueries({ queryKey: ["tag", data.tagId] });
+                    client.invalidateQueries({ queryKey: ["tag", data.tagId] }).catch(console.error);
                 if (data.tagPath)
-                    client.invalidateQueries({ queryKey: ["tag", data.tagPath] });
+                    client.invalidateQueries({ queryKey: ["tag", data.tagPath] }).catch(console.error);
             } else {
                 const attrs = data.attributes;
                 if (data.tagId)
@@ -138,7 +138,7 @@ const StatusContextProvider = ({
             if (data.attributes === "all") {
                 client.invalidateQueries({
                     queryKey: ["inbox"],
-                });
+                }).catch(console.error);
             } else {
                 throw new Error(
                     "Inbox update with partial attributes is not supported"

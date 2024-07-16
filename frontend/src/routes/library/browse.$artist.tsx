@@ -22,12 +22,14 @@ export const Route = createFileRoute(`${BASE_ROUTE}/$artist`)({
     component: ArtistOverview,
 });
 
+interface RouteParams {
+    artist: string;
+    albumId?: number;
+}
+
 function ArtistOverview() {
     const artist = Route.useLoaderData();
-    const params = Route.useParams() as {
-        artist: string;
-        albumId?: number;
-    };
+    const params = Route.useParams<RouteParams>();
 
     const data = useMemo(() => {
         return artist.albums.map((album) => ({
@@ -35,7 +37,7 @@ function ArtistOverview() {
             params: { artist: params.artist, albumId: album.id },
             label: album.name,
             className: styles.listItem,
-            "data-selected": params.albumId == album.id,
+            "data-selected": params.albumId && params.albumId == album.id,
         }));
     }, [artist, params]);
 

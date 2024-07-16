@@ -7,6 +7,7 @@ import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableRow from "@mui/material/TableRow";
+import { ReactNode } from "react";
 
 export default function ItemDetailsTableView({
     item,
@@ -69,7 +70,8 @@ export default function ItemDetailsTableView({
 }
 
 
-function parse(key: string, value: any) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parse(key: string, value: any): ReactNode {
     // format n/a
     if (value === null || value === undefined || value === "") {
         return <span style={{ opacity: 0.3 }}>n/a</span>;
@@ -107,5 +109,5 @@ function parse(key: string, value: any) {
         return <span style={{ opacity: 0.3 }}>n/a</span>;
 
     }
-    return value;
+    return value as string;
 }

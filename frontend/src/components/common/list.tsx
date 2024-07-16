@@ -1,16 +1,18 @@
 import { Link } from "@tanstack/react-router";
 
-import { ListItemText } from "@mui/material";
-import ListItem, { ListItemProps } from "@mui/material/ListItem";
+import { Typography } from "@mui/material";
+import ListItem, { ListItemOwnProps, ListItemProps } from "@mui/material/ListItem";
 
-import { ReactNode, ComponentType } from "react";
+import { ReactNode, ComponentType, useRef, useState, useEffect } from "react";
 import { FixedSizeList, ListChildComponentProps } from "react-window";
 import AutoSizer from "react-virtualized-auto-sizer";
+import styles from "./list.module.scss";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface WrapperProps<D = any> {
-    children: ComponentType<ListChildComponentProps<Array<D>>>;
+    children: ComponentType<ListChildComponentProps<D[]>>;
     className?: string;
-    data: Array<D>;
+    data: D[];
 }
 
 function List<D>({ children, data, ...props }: WrapperProps<D>) {
@@ -33,21 +35,44 @@ function List<D>({ children, data, ...props }: WrapperProps<D>) {
     );
 }
 
-type ListItemData = {
+interface ListItemData extends ListItemOwnProps {
     label: string;
     to?: string;
-    params?: { [key: string]: any };
+    params?: Record<string, unknown>;
     icon?: ReactNode;
-    [key: string]: any;
-};
+}
 
 function Item({ index, data, style }: ListChildComponentProps<ListItemData[]>) {
     const { label, to, params, icon, ...props } = data[index];
+    const textRef = useRef<HTMLDivElement>(null);
+    const [isOverflowing, setIsOverflowing] = useState(false);
+
+    useEffect(() => {
+        const textEl = textRef.current;
+        if (textEl) {
+            const parent = textEl.parentElement?.parentElement;
+            if (parent && textEl.scrollWidth > parent.clientWidth) {
+                setIsOverflowing(true);
+                const d = parent.clientWidth - textEl.scrollWidth - 15;
+                textEl.style.setProperty("--translate-distance", `${d}px`);
+            } else {
+                setIsOverflowing(false);
+                textEl.style.removeProperty("--translate-distance");
+            }
+        }
+    }, [label]);
 
     const it = (
         <ListItem key={index} style={style} {...props}>
             {icon}
-            <ListItemText primary={label} />
+            <div>
+                <Typography
+                    ref={textRef}
+                    className={`${styles.ListItemText} ${isOverflowing ? styles.overflowing : ""}`}
+                >
+                    {label}
+                </Typography>
+            </div>
         </ListItem>
     );
 

@@ -7,9 +7,6 @@ import { forwardRef, useState } from "react";
 
 
 
-
-
-
 /**
  * Renders an icon button with a mutation option.
  *
@@ -30,8 +27,8 @@ export const IconButtonWithMutation = forwardRef(function IconButtonWithMutation
         children,
         ...props
     }: {
-        mutationOption?: UseMutationOptions<unknown, Error, any, unknown>
-        mutateArgs?: any;
+        mutationOption?: UseMutationOptions<unknown, Error, unknown, unknown>
+        mutateArgs?: unknown;
     } & ButtonProps,
     ref?: React.Ref<HTMLDivElement>
 ) {
@@ -96,8 +93,8 @@ export const IconButtonWithMutationAndFeedback = forwardRef(function IconButtonW
         mutateArgs,
         ...props
     }: {
-        mutationOption: UseMutationOptions<unknown, Error, any, unknown>
-        mutateArgs: any,
+        mutationOption: UseMutationOptions<unknown, Error, unknown, unknown>
+        mutateArgs: unknown,
         confirmTitle: string;
     } & ButtonProps,
     ref?: React.Ref<HTMLDivElement>

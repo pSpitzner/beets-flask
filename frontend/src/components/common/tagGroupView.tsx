@@ -1,4 +1,4 @@
-import React from "react";
+import React, { ComponentProps } from "react";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
@@ -44,8 +44,7 @@ export default function TagGroupView({
     title: React.ReactNode | string;
     subtitle?: string;
     children: React.ReactNode;
-    [key: string]: unknown;
-}) {
+} & ComponentProps<typeof StyledGroupAccordion>) {
     return (
         <StyledGroupAccordion
             disableGutters

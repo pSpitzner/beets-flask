@@ -12,9 +12,13 @@ export const Route = createFileRoute(BASE_ROUTE)({
     component: () => <AllArtists />,
 });
 
+interface RouteParams {
+    artist?: string;
+}
+
 function AllArtists() {
     const artists = Route.useLoaderData();
-    const params = Route.useParams() as { artist?: string };
+    const params = Route.useParams < RouteParams >();
 
     const data = useMemo(() => {
         return artists.map((artist) => ({
@@ -22,7 +26,7 @@ function AllArtists() {
             params: { artist: artist.name },
             label: artist.name,
             className: styles.listItem,
-            "data-selected": params.artist == artist.name,
+            "data-selected": params.artist && params.artist == artist.name,
         }));
     }, [artists, params]);
 

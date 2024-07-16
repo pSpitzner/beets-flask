@@ -29,7 +29,7 @@ export function LibraryStats() {
                             marginBottom: "0.875em",
                         }}
                     >
-                        {data?.libraryPath || "Loading..."}
+                        {data?.libraryPath ?? "Loading..."}
                     </Box>
                 </CardAvatar>
                 <div className="h-full flex flex-col justify-end ">

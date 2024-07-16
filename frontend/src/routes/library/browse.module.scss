@@ -15,6 +15,7 @@
     border: 1px solid #495057;
     border-radius: 0.3rem;
     overflow-y: auto;
+    overflow-x: hidden;
     // mui adds uls
     & > ul {
         padding: 0;
