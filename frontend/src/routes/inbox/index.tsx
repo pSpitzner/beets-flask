@@ -18,7 +18,7 @@ import { useEffect, useState } from "react";
 import { MinimalConfig, useConfig } from "@/components/context/useConfig";
 import { Card, Typography } from "@mui/material";
 
-export const Route = createFileRoute("/inbox")({
+export const Route = createFileRoute("/inbox/")({
     component: () => <Inboxes />,
 });
 
