@@ -31,6 +31,10 @@ const darkTheme = extendTheme({
             action: {
                 hover: "#212529",
             },
+            background: {
+                default: "#000000",
+                paper: "#181A1C",
+            },
         },
         components: {
             MuiTooltip: {
@@ -54,17 +58,11 @@ const darkTheme = extendTheme({
                     },
                 },
             },
-            MuiCard: {
+            MuiPaper: {
                 styleOverrides: {
                     root: {
-                        backgroundColor: "#0B0C0D",
-                    },
-                },
-            },
-            MuiAccordion: {
-                styleOverrides: {
-                    root: {
-                        backgroundColor: "#0B0C0D",
+                        // Ensuring consistent dark mode color independent of paper elevation
+                        backgroundImage: "none",
                     },
                 },
             },
