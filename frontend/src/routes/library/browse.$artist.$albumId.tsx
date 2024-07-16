@@ -38,13 +38,18 @@ function AlbumOverview() {
             params: { artist: params.artist, albumId: params.albumId, itemId: item.id },
             label: item.name,
             className: styles.listItem,
-            "data-selected": params.itemId && params.itemId == item.id
+            "data-selected": params.itemId && params.itemId == item.id,
         }));
     }, [album, params]);
 
+    // for mobile, we only want to show one central column.
+    const isSecondary = Boolean(params.itemId);
+
     return (
         <>
-            <Paper className={styles.listBox}>
+            <Paper
+                className={`${styles.listBox} ${isSecondary ? styles.isSecondary : ""}`}
+            >
                 <List data={data}>{List.Item}</List>
             </Paper>
             <Outlet />

@@ -31,10 +31,15 @@ function AllArtists() {
         }));
     }, [artists, params]);
 
+    // for mobile, we only want to show one central column.
+    const isSecondary = Boolean(params.artist);
+
     return (
         <>
             <Box className={styles.columnBrowser}>
-                <Paper className={styles.listBox}>
+                <Paper
+                    className={`${styles.listBox} ${isSecondary ? styles.isSecondary : ""}`}
+                >
                     <List data={data}>{List.Item}</List>
                 </Paper>
                 <Outlet />

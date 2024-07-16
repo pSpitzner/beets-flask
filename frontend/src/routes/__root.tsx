@@ -16,9 +16,14 @@ function RootComponent() {
     return (
         <main className="flex flex-col w-screen">
             <TerminalContextProvider>
-
                 <NavTabs />
-                <Container maxWidth="lg" className="mt-2">
+                <Container
+                    maxWidth="lg"
+                    sx={{
+                        mt: 1,
+                        px: { xs: 1 },
+                    }}
+                >
                     <Outlet />
                 </Container>
                 <Terminal />

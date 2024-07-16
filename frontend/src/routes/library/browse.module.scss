@@ -1,13 +1,11 @@
 .columnBrowser {
     display: flex;
-    gap: 4px;
+    gap: 0px;
 }
 
 .listBox {
-    // TODO: get navbar height and substract.
     position: relative;
-    height: calc(100vh - 110px);
-    width: calc(25% - 4px);
+    height: calc(100vh - 104px); // TODO: get navbar height and substract.
     display: flex;
     align-items: start;
     margin: 0;
@@ -19,6 +17,19 @@
     & > ul {
         padding: 0;
         width: 100%;
+    }
+    // on mobile only one column
+    width: calc(100%);
+    &.isSecondary {
+        width: 0;
+    }
+    // on large screens multiple columns
+    @media (min-width: 768px) {
+        width: calc(25% - 0.5rem);
+        &.isSecondary {
+            width: calc(25% - 0.5rem);
+            margin-right: 0.5rem;
+        }
     }
 }
 
