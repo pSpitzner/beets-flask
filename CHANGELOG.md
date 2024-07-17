@@ -15,6 +15,9 @@ might persist although the user sets them. moved to config loading in python.
 - Backend to get cover art from metadata of music files.
 - Impoved library view (friendlier for mobile, and a browser header component)
 
+### Changed
+- Simplified folder structure of frontend
+
 ## [0.0.2] - 24-07-16
 
 ### Fixed

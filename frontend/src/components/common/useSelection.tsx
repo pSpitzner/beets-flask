@@ -4,7 +4,7 @@
 import { createContext, useCallback, useContext, useState } from "react";
 import { useQueries } from "@tanstack/react-query";
 
-import { TagI } from "@/lib/tag";
+import { TagI } from "@/components/common/_query";
 
 interface SelectionContextType {
     selection: Map<string, boolean>;
@@ -158,7 +158,6 @@ export interface SelectionLookupI {
     is_album_folder: boolean;
 }
 
-
 export function useSelectionLookupQueries(fullPaths: string[]) {
     const queries = fullPaths.map((path) => ({
         queryKey: ["lookup", path],
@@ -169,5 +168,5 @@ export function useSelectionLookupQueries(fullPaths: string[]) {
         },
     }));
 
-    return useQueries( { queries });
+    return useQueries({ queries });
 }
