@@ -1,26 +1,27 @@
 // Show an info box where the user is currently navigating
 
-import { albumQueryOptions, itemQueryOptions } from "@/lib/library";
-import { Typography } from "@mui/material";
+import {
+    Album,
+    albumQueryOptions,
+    itemArtQueryOptions,
+    itemQueryOptions,
+} from "@/lib/library";
+import { Box, Typography } from "@mui/material";
+import { SxProps } from "@mui/system";
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "@tanstack/react-router";
+import { Link, useParams } from "@tanstack/react-router";
 
 interface BrowseHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
     lorem?: string;
 }
 
-interface RouteParams {
-    artist?: string;
-    albumId?: number;
-    itemId?: number;
-}
-
 export function BrowserHeader({ ...props }: BrowseHeaderProps) {
     const params: RouteParams = useParams({ strict: false });
-    const artist = params.artist ?? "Artists"
+    const artist = params.artist ?? "Artists";
 
-    const { data : albumData} = useQuery(
-        // although we do not need all the details, we use the same query options as for the browser to use the cache
+    // although we do not need all the details, we use the same query options as for the browser to use the cache
+    // if the parsed id is undefined, the queries return null without server communication
+    const { data: albumData } = useQuery(
         albumQueryOptions({
             id: params.albumId,
             expand: true,
@@ -29,40 +30,112 @@ export function BrowserHeader({ ...props }: BrowseHeaderProps) {
     );
     const album = albumData?.name;
 
-    const { data : itemData } = useQuery(
-            itemQueryOptions({
-                id: params.itemId,
-                minimal: false,
-                expand: true,
-            })
-        );
+    const { data: itemData } = useQuery(
+        itemQueryOptions({
+            id: params.itemId,
+            minimal: false,
+            expand: true,
+        })
+    );
     const track = itemData?.name;
 
+    const idForArt = params.itemId ?? (albumData as Album)?.items?.[0]?.id;
+    const { data: artData } = useQuery(itemArtQueryOptions({ itemId: idForArt }));
+
     return (
-        <div {...props}>
-            <Typography
+        <Box
+            {...props}
+            sx={{
+                display: "flex",
+                alignItems: "center",
+            }}
+        >
+            {artData && (
+                <Box
+                    component="img"
+                    sx={{
+                        height: 100,
+                        width: 100,
+                        marginRight: "0.5rem",
+                    }}
+                    src={artData}
+                    alt="CoverArt"
+                />
+            )}
+            <Box
                 sx={{
-                    fontSize: "2rem",
-                    fontWeight: "bold",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignSelf: "flex-start",
+                    alignItems: "flex-start",
                 }}
             >
-                {artist}
-            </Typography>
-            <Typography
-                sx={{
-                    fontSize: "1.2rem",
-                }}
-            >
-                {album}
-            </Typography>
-            <Typography
-                sx={{
-                    fontSize: "1.0rem",
-                    fontStyle: "italic",
-                }}
-            >
-                {track}
-            </Typography>
-        </div>
+                <LinkTypography
+                    sx={{
+                        fontSize: "1.5rem",
+                        lineHeight: 1.0,
+                        marginBottom: "0.5rem",
+                    }}
+                    label={artist}
+                    target="artist"
+                    params={params}
+                />
+                <LinkTypography
+                    sx={{
+                        fontSize: "1.2rem",
+                        lineHeight: 1.0,
+                        marginBottom: "0.5rem",
+                    }}
+                    label={album}
+                    target="album"
+                    params={params}
+                />
+                <LinkTypography
+                    sx={{
+                        fontSize: "1.0rem",
+                        fontStyle: "italic",
+                        lineHeight: 1.0,
+                    }}
+                    label={track}
+                />
+            </Box>
+        </Box>
     );
+}
+
+interface RouteParams {
+    artist?: string;
+    albumId?: number;
+    itemId?: number;
+}
+
+interface LinkTypographyProps {
+    target?: "artist" | "album" | "library";
+    label?: string;
+    params?: RouteParams;
+    sx?: SxProps;
+}
+
+function LinkTypography({
+    target = "library",
+    label,
+    params,
+    sx,
+}: LinkTypographyProps) {
+    if (!params) {
+        return <Typography sx={sx}>{label}</Typography>;
+    } else {
+        let to = `/library/browse`;
+        if (target == "artist") {
+            to = `/library/browse/${params.artist}`;
+        } else if (target == "album") {
+            to = `/library/browse/${params.artist}/${params.albumId}`;
+        }
+
+        return (
+            <Link to={to} preload={"intent"} preloadDelay={2000}>
+                <Typography sx={sx}>{label}</Typography>
+            </Link>
+        );
+    }
 }

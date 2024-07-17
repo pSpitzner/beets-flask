@@ -51,7 +51,7 @@ function AlbumOverview() {
             <Paper
                 className={`${styles.column} ${isSecondary ? styles.isSecondary : ""}`}
             >
-                <Box className={styles.columnLabel}>Album</Box>
+                <Box className={styles.columnLabel}>Item</Box>
                 <BrowserHeader className={styles.browserHeader} />
                 <Box className={styles.listBox}>
                     <List data={data}>{List.Item}</List>

@@ -31,16 +31,22 @@ function TrackView() {
 
     return (
         <>
-            <Paper className={styles.column + " " + styles.trackViewBox}>
-                <Box className={styles.columnLabel}>Item</Box>
-                <BrowserHeader className={styles.browserHeader} />
-                <Tooltip title="Toggle Details" className="ml-auto mt-1">
-                    <IconButton color="primary" onClick={() => setDetailed(!detailed)}>
-                        {detailed && <BugOff size="1em" />}
-                        {!detailed && <BugOn size="1em" />}
-                    </IconButton>
-                </Tooltip>
-
+            <Paper className={styles.column}>
+                <Box className={styles.columnLabel}>Info</Box>
+                <BrowserHeader
+                    className={styles.browserHeader + " " + styles.alwaysShow}
+                />
+                <Box className={styles.trackViewBox}>
+                    <Tooltip title="Toggle Details" className="ml-auto mt-1">
+                        <IconButton
+                            color="primary"
+                            onClick={() => setDetailed(!detailed)}
+                        >
+                            {detailed && <BugOff size="1em" />}
+                            {!detailed && <BugOn size="1em" />}
+                        </IconButton>
+                    </Tooltip>
+                </Box>
                 <ItemDetailsTableView item={item} keys={detailed ? "all" : "basic"} />
             </Paper>
         </>

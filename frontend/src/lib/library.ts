@@ -134,13 +134,11 @@ function _url_parse_minimal_expand(
 export const artistsQueryOptions = () =>
     queryOptions({
         queryKey: ["artists"],
-        queryFn: () => fetchArtists(),
+        queryFn: async () => {
+            const response = await fetch(`/library/artist/`);
+            return (await response.json()) as MinimalArtist[];
+        },
     });
-
-export async function fetchArtists(): Promise<MinimalArtist[]> {
-    const response = await fetch(`/library/artist/`);
-    return (await response.json()) as MinimalArtist[];
-}
 
 export const artistQueryOptions = ({
     name,
@@ -153,25 +151,15 @@ export const artistQueryOptions = ({
 }) =>
     queryOptions({
         queryKey: ["artist", name, expand, minimal],
-        queryFn: () => fetchArtist({ name, expand, minimal }),
+        queryFn: async (): Promise<MinimalArtist> => {
+            const url = _url_parse_minimal_expand(`/library/artist/${name}`, {
+                expand,
+                minimal,
+            });
+            const response = await fetch(url);
+            return (await response.json()) as MinimalArtist;
+        },
     });
-
-export async function fetchArtist({
-    name,
-    expand = false,
-    minimal = true,
-}: {
-    name: string;
-    expand?: boolean;
-    minimal?: boolean;
-}): Promise<MinimalArtist> {
-    const url = _url_parse_minimal_expand(`/library/artist/${name}`, {
-        expand,
-        minimal,
-    });
-    const response = await fetch(url);
-    return (await response.json()) as MinimalArtist;
-}
 
 export const albumQueryOptions = ({
     id,
@@ -184,26 +172,18 @@ export const albumQueryOptions = ({
 }) =>
     queryOptions({
         queryKey: ["album", id, expand, minimal],
-        queryFn: () => fetchAlbum({ id, expand, minimal }),
+        queryFn: async () : Promise<null | MinimalAlbum | Album> => {
+            if (id === undefined || id === null) {
+                return null;
+            }
+            const url = _url_parse_minimal_expand(`/library/album/${id}`, {
+                expand,
+                minimal,
+            });
+            const response = await fetch(url);
+            return (await response.json()) as MinimalAlbum | Album;
+        },
     });
-
-export async function fetchAlbum({
-    id,
-    expand = false,
-    minimal = true,
-}: {
-    id?: number;
-    expand?: boolean;
-    minimal?: boolean;
-}): Promise<MinimalAlbum | null> {
-    if (id === undefined || id === null) {
-        return null;
-    }
-    const url = _url_parse_minimal_expand(`/library/album/${id}`, { expand, minimal });
-    console.log(url);
-    const response = await fetch(url);
-    return (await response.json()) as MinimalAlbum;
-}
 
 export const itemQueryOptions = ({
     id,
@@ -216,22 +196,30 @@ export const itemQueryOptions = ({
 }) =>
     queryOptions({
         queryKey: ["item", id, expand, minimal],
-        queryFn: () => fetchItem({ id, expand, minimal }),
+        queryFn: async () => {
+            if (id === undefined || id === null) {
+                return null;
+            }
+            const url = _url_parse_minimal_expand(`/library/item/${id}`, {
+                expand,
+                minimal,
+            });
+            const response = await fetch(url);
+            return (await response.json()) as Item;
+        },
     });
 
-export async function fetchItem({
-    id,
-    expand = false,
-    minimal = true,
-}: {
-    id?: number;
-    expand?: boolean;
-    minimal?: boolean;
-}): Promise<Item | null> {
-    if (id === undefined || id === null) {
-        return null;
-    }
-    const url = _url_parse_minimal_expand(`/library/item/${id}`, { expand, minimal });
-    const response = await fetch(url);
-    return (await response.json()) as Item;
-}
+export const itemArtQueryOptions = ({ itemId }: { itemId?: number }) =>
+    queryOptions({
+        queryKey: ["item", itemId, "art"],
+        queryFn: async () => {
+            if (itemId === undefined || itemId === null) {
+                return null;
+            }
+            const url = `/library/item/${itemId}/art`;
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            return objectUrl;
+        },
+    });

@@ -21,6 +21,7 @@ import json
 import os
 from pathlib import Path
 from typing import Optional, TypedDict, cast
+from io import BytesIO
 import time
 
 from flask import (
@@ -38,6 +39,7 @@ from unidecode import unidecode
 from werkzeug.routing import BaseConverter, PathConverter
 
 import beets.library
+from mediafile import MediaFile # comes with the beets install
 from beets import ui, util
 from beets.ui import _open_library
 from beets_flask.config import config
@@ -408,6 +410,19 @@ def item_file(item_id):
     response = send_file(item_path, as_attachment=True, download_name=safe_filename)
     return response
 
+@library_bp.route("/item/<int:item_id>/art")
+def item_art(item_id):
+    item : beets.library.Item = g.lib.get_item(item_id)
+    item_path = util.py3_path(item.path)
+    if not os.path.exists(item_path):
+        return abort(404, description="Media file not found")
+    mediafile = MediaFile(item_path)
+    if mediafile.art:
+        return send_file(BytesIO(mediafile.art), mimetype='image/jpeg')
+    else:
+        abort(404, description="Item has no cover art")
+
+
 
 @library_bp.route("/item/query/<query:queries>", methods=["GET", "DELETE", "PATCH"])
 @resource_query("items", patchable=True)
@@ -465,7 +480,7 @@ def album_art(album_id):
     if album and album.artpath:
         return send_file(album.artpath.decode())
     else:
-        return abort(404)
+        return abort(404, description="No art for this ablum id, or id does not exist")
 
 
 @library_bp.route("/album/values/<string:key>")

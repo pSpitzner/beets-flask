@@ -49,15 +49,18 @@
 .browserHeader {
     border-bottom: #292e31 solid 1px;
     padding: 0.5rem 0.5rem;
-    display: block;
     @media (min-width: 768px) {
-        display: none;
+        &:not(.alwaysShow) {
+            display: none;
+        }
     }
 }
 
 .listBox {
     width: 100%;
-    height: calc(100vh - 125px);
+    // we have to set the height explicitly for the list that loads dynamic.
+    // 110px ~= column label + navbar header. not working for browser header (on mobile)
+    height: calc(100vh - 110px);
 
     position: relative;
     display: flex;
@@ -109,5 +112,4 @@
 .trackViewBox {
     display: flex;
     flex-direction: column;
-    padding: 0 0.5rem;
 }
