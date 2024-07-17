@@ -1,10 +1,10 @@
+import { Home, Inbox, Library,Tag } from "lucide-react";
+import { ReactElement } from "react";
+import { Typography } from "@mui/material";
+import { styled } from "@mui/material/styles";
 import Tab, { tabClasses, TabProps } from "@mui/material/Tab";
 import Tabs, { tabsClasses } from "@mui/material/Tabs";
-import { styled } from "@mui/material/styles";
-import { Home, Inbox, Tag, Library } from "lucide-react";
-import { createLink, useRouterState, LinkProps } from "@tanstack/react-router";
-import { Typography } from "@mui/material";
-import { ReactElement } from "react";
+import { createLink, LinkProps,useRouterState } from "@tanstack/react-router";
 
 interface StyledTabProps extends Omit<LinkProps, "children">, Omit<TabProps, "ref"> {
     label: string | ReactElement;

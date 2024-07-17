@@ -1,10 +1,9 @@
-import { Outlet, createFileRoute, useNavigate } from "@tanstack/react-router";
-
-import Dialog from "@mui/material/Dialog";
 import { forwardRef, useState } from "react";
-import { TransitionProps } from "@mui/material/transitions";
-import Slide from "@mui/material/Slide";
 import { Button, DialogActions, DialogContent } from "@mui/material";
+import Dialog from "@mui/material/Dialog";
+import Slide from "@mui/material/Slide";
+import { TransitionProps } from "@mui/material/transitions";
+import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_frontpage/_modal")({
     component: DialogWrapper,

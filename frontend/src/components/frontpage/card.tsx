@@ -1,8 +1,8 @@
+import React from "react";
 import { Avatar, Box, styled } from "@mui/material";
 import MuiCard from "@mui/material/Card";
-import MuiCardContent from "@mui/material/CardContent";
 import MuiCardActions from "@mui/material/CardActions";
-import React from "react";
+import MuiCardContent from "@mui/material/CardContent";
 
 export const Card = styled(MuiCard)(() => ({
     borderRadius: "12px",

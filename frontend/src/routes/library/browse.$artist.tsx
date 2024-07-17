@@ -1,14 +1,15 @@
-import List from "@/components/common/list";
-import { artistQueryOptions } from "@/lib/library";
-import { Outlet, createFileRoute } from "@tanstack/react-router";
-import z from "zod";
-import styles from "./browse.module.scss";
-import { BASE_ROUTE } from "./browse";
 import { useMemo } from "react";
+import z from "zod";
 import { Box, Paper } from "@mui/material";
-import { BrowserHeader } from "@/components/browserHeader";
+import { createFileRoute,Outlet } from "@tanstack/react-router";
 
-export const Route = createFileRoute(`${BASE_ROUTE}/$artist`)({
+import { artistQueryOptions,LIB_BROWSE_ROUTE } from "@/components/common/_query";
+import { BrowserHeader } from "@/components/library/browserHeader";
+import List from "@/components/library/list";
+
+import styles from "./browse.module.scss";
+
+export const Route = createFileRoute(`${LIB_BROWSE_ROUTE}/$artist`)({
     parseParams: (params) => ({
         artist: z.string().parse(params.artist),
     }),
@@ -34,7 +35,7 @@ function ArtistOverview() {
 
     const data = useMemo(() => {
         return artist.albums.map((album) => ({
-            to: `${BASE_ROUTE}/$artist/$albumId`,
+            to: `${LIB_BROWSE_ROUTE}/$artist/$albumId`,
             params: { artist: params.artist, albumId: album.id },
             label: album.name,
             className: styles.listItem,

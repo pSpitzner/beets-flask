@@ -1,5 +1,7 @@
-import { Card, CardContent, } from "@/components/common/card";
 import { Plus } from "lucide-react";
+
+import { Card, CardContent, } from "@/components/frontpage/card";
+
 import { IconButtonWithMutation } from "../common/buttons";
 
 export function AddInbox() {

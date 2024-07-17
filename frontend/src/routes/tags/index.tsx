@@ -1,11 +1,15 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { tagGroupAllQueryOptions, tagGroupIdQueryOptions } from "@/lib/tag";
-import TagGroupView from "@/components/common/tagGroupView";
-
-import { TagView } from "@/components/common/tagView";
-import { SiblingRefsProvider } from "@/components/context/useSiblings";
 import { ComponentProps } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+
+import {
+    tagGroupAllQueryOptions,
+    tagGroupIdQueryOptions,
+} from "@/components/common/_query";
+import { SiblingRefsProvider } from "@/components/common/useSiblings";
+import TagGroupView from "@/components/tags/tagGroupView";
+import { TagView } from "@/components/tags/tagView";
+
 
 export const Route = createFileRoute("/tags/")({
     loader: (opts) =>

@@ -202,3 +202,15 @@ The library view backend is adapted from the existing beets webplugin that is al
 ### Testing
 
 We have started on a version of the container that runs some (backend) tests, but coverage is pretty non-existent.
+
+
+### Convention for typescript imports
+
+We have an eslint sorting rule for imports:
+
+Order:
+1. other modules/components
+2. our modules/components
+3. css (first others, then ours)
+
+Try to use absolute paths with `@/` prefix if not in the same folder.

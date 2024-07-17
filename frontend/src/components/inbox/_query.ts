@@ -1,5 +1,6 @@
-import { queryClient } from "@/main";
-import { UseMutationOptions, queryOptions } from "@tanstack/react-query";
+import { queryOptions,UseMutationOptions } from "@tanstack/react-query";
+
+import { queryClient } from "@/components/common/_query";
 
 // these guys can be infinetely nested and represent a file path on disk.
 export interface FsPath {

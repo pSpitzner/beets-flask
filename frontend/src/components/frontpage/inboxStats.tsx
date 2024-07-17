@@ -1,29 +1,31 @@
-import { FolderSync, FolderSearch, Inbox, Recycle, Trash2 } from "lucide-react";
-import {
-    Card,
-    CardContent,
-    CardActions,
-    CardAvatar,
-    CardTopInfo,
-} from "@/components/common/card";
+import { FolderSearch, FolderSync, Inbox, Recycle, Trash2 } from "lucide-react";
+import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import Tooltip from "@mui/material/Tooltip";
-import Box from "@mui/material/Box";
+import Grid from "@mui/material/Unstable_Grid2";
+import { useQuery } from "@tanstack/react-query";
+
+import {
+    deleteInboxImportedMutation,
+    deleteInboxMutation,
+    InboxStats,
+    inboxStatsQueryOptions,
+    retagInboxAllMutation,
+    retagInboxNewMutation,
+} from "@/components/common/_query";
+import {
+    Card,
+    CardActions,
+    CardAvatar,
+    CardContent,
+    CardTopInfo,
+} from "@/components/frontpage/card";
+
 import {
     IconButtonWithMutation,
     IconButtonWithMutationAndFeedback,
 } from "../common/buttons";
-import { useQuery } from "@tanstack/react-query";
 import { RelativeTime } from "../common/time";
-import Grid from "@mui/material/Unstable_Grid2";
-import {
-    InboxStats,
-    deleteInboxImportedMutation,
-    deleteInboxMutation,
-    inboxStatsQueryOptions,
-    retagInboxAllMutation,
-    retagInboxNewMutation,
-} from "@/lib/inbox";
 
 export function InboxStatsGridItems() {
     const { data, isLoading, isPending, isError, error } = useQuery(

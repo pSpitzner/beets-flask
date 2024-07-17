@@ -1,13 +1,12 @@
-
-
-import { useQuery } from "@tanstack/react-query";
-import styles from "./similarityBadge.module.scss";
-import { tagQueryOptions } from "@/lib/tag";
-
 import * as HoverCard from "@radix-ui/react-hover-card";
+import { useQuery } from "@tanstack/react-query";
+
+import { tagQueryOptions } from "@/components/common/_query";
+import { useConfig } from "@/components/common/useConfig"
 
 import { TagPreview } from "./tagView";
-import { useConfig } from "@/components/context/useConfig"
+
+import styles from "./similarityBadge.module.scss";
 
 export function SimilarityBadgeWithHover({
     tagId,

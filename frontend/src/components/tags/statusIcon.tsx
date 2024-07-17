@@ -1,14 +1,16 @@
 import {
-    Tag,
     CircleCheckBig,
     CircleDashed,
-    RectangleEllipsis,
     Copy,
+    RectangleEllipsis,
+    Tag,
     TriangleAlert,
 } from "lucide-react";
 import { Tooltip } from "@mui/material";
-import { tagQueryOptions } from "@/lib/tag";
 import { useQuery } from "@tanstack/react-query";
+
+import { tagQueryOptions } from "@/components/common/_query";
+
 import styles from "./statusIcon.module.scss";
 
 export function TagStatusIcon({

@@ -1,12 +1,12 @@
+import { ChevronDown } from "lucide-react";
 import React, { ComponentProps } from "react";
 import Accordion from "@mui/material/Accordion";
-import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
-import Typography from "@mui/material/Typography";
+import AccordionSummary from "@mui/material/AccordionSummary";
 import { styled } from "@mui/material/styles";
-import { ChevronDown } from "lucide-react";
+import Typography from "@mui/material/Typography";
 
-import { SelectionProvider } from "@/components/context/useSelection";
+import { SelectionProvider } from "@/components/common/useSelection";
 
 const StyledGroupAccordion = styled(Accordion)(({ theme }) => ({
     // border: `1px solid ${theme.palette.divider}`,

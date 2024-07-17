@@ -1,17 +1,18 @@
+import { Library, RefreshCcw } from "lucide-react";
+import { Box, Divider, Tooltip } from "@mui/material";
+import { useQuery } from "@tanstack/react-query";
+
+import { libraryStatsQueryOptions } from "@/components/common/_query";
+import { IconButtonWithMutation } from "@/components/common/buttons";
+import { JSONPretty } from "@/components/common/json";
+import { RelativeTime } from "@/components/common/time";
 import {
     Card,
-    CardContent,
     CardActions,
     CardAvatar,
+    CardContent,
     CardTopInfo,
-} from "@/components/common/card";
-import { libraryStatsQueryOptions } from "@/lib/stats";
-import { JSONPretty } from "../json";
-import { useQuery } from "@tanstack/react-query";
-import { Box, Divider, Tooltip } from "@mui/material";
-import { Library, RefreshCcw } from "lucide-react";
-import { IconButtonWithMutation } from "../common/buttons";
-import { RelativeTime } from "../common/time";
+} from "@/components/frontpage/card";
 
 export function LibraryStats() {
     const { data } = useQuery(libraryStatsQueryOptions());

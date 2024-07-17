@@ -1,14 +1,16 @@
-import { Item, itemQueryOptions } from "@/lib/library";
-import { createFileRoute } from "@tanstack/react-router";
-import z from "zod";
-import styles from "./browse.module.scss";
-import ItemDetailsTableView from "@/components/common/itemDetailsTable";
-import { useState } from "react";
 import { Bug as BugOn, BugOff } from "lucide-react";
+import { useState } from "react";
+import z from "zod";
+import { Box, Paper } from "@mui/material";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
-import { Box, Paper } from "@mui/material";
-import { BrowserHeader } from "@/components/browserHeader";
+import { createFileRoute } from "@tanstack/react-router";
+
+import { Item, itemQueryOptions } from "@/components/common/_query";
+import { BrowserHeader } from "@/components/library/browserHeader";
+import ItemDetailsTableView from "@/components/library/itemDetailsTable";
+
+import styles from "./browse.module.scss";
 
 export const Route = createFileRoute("/library/browse/$artist/$albumId/$itemId")({
     parseParams: (params) => ({

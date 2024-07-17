@@ -1,9 +1,10 @@
 // we use a single socket, currently only needed for the terminal connection
 
-import { QueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useState } from "react";
-import { Socket, io } from "socket.io-client";
-import { TagI } from "./tag";
+import { io,Socket } from "socket.io-client";
+import { QueryClient } from "@tanstack/react-query";
+
+import { TagI } from "../tags/_query";
 
 /* ---------------------------------------------------------------------------------- */
 /*                                      Terminal                                      */

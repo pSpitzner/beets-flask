@@ -1,13 +1,11 @@
-/** Table Representation of an item (track) */
-
-import { Item } from "@/lib/library";
-
+import { ReactNode } from "react";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableRow from "@mui/material/TableRow";
-import { ReactNode } from "react";
+
+import { Item } from "@/components/common/_query";
 
 export default function ItemDetailsTableView({
     item,
@@ -69,7 +67,6 @@ export default function ItemDetailsTableView({
     );
 }
 
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function parse(key: string, value: any): ReactNode {
     // format n/a
@@ -107,7 +104,6 @@ function parse(key: string, value: any): ReactNode {
     if (key === "bpm" && value === 0) {
         // format to n/a
         return <span style={{ opacity: 0.3 }}>n/a</span>;
-
     }
     return value as string;
 }

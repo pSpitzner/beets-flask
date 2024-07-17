@@ -1,22 +1,22 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Card, Typography } from "@mui/material";
+import * as Collapsible from "@radix-ui/react-collapsible";
 import { useQuery } from "@tanstack/react-query";
-import { FsPath, inboxQueryByPathOptions } from "@/lib/inbox";
-import { TagStatusIcon } from "@/components/common/statusIcon";
-import { SimilarityBadgeWithHover } from "@/components/common/similarityBadge";
-import { SelectionProvider, useSelection } from "@/components/context/useSelection";
+import { createFileRoute } from "@tanstack/react-router";
+
+import { FsPath, inboxQueryByPathOptions } from "@/components/common/_query";
 import {
     ContextMenu,
-    SelectionSummary,
     defaultActions,
+    SelectionSummary,
 } from "@/components/common/contextMenu";
+import { MinimalConfig, useConfig } from "@/components/common/useConfig";
+import { SelectionProvider, useSelection } from "@/components/common/useSelection";
+import { SimilarityBadgeWithHover } from "@/components/tags/similarityBadge";
+import { TagStatusIcon } from "@/components/tags/statusIcon";
 
 import styles from "./inbox.module.scss";
-import { ChevronRight } from "lucide-react";
-
-import * as Collapsible from "@radix-ui/react-collapsible";
-import { useEffect, useState } from "react";
-import { MinimalConfig, useConfig } from "@/components/context/useConfig";
-import { Card, Typography } from "@mui/material";
 
 export const Route = createFileRoute("/inbox/")({
     component: () => <Inboxes />,

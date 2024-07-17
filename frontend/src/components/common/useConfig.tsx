@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
     QueryClient,
     QueryClientProvider,
@@ -5,7 +6,6 @@ import {
     useSuspenseQuery,
 } from "@tanstack/react-query";
 import { ReactNode } from "@tanstack/react-router";
-import { useEffect } from "react";
 
 export interface MinimalConfig {
     gui: {

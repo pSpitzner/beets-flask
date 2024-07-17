@@ -1,9 +1,10 @@
 // in various places we need to make a selection of tags available to lower components,
 // e.g. to action multiple tags at the same time via the context menu.
 
-import { TagI } from "@/lib/tag";
-import { useQueries } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useState } from "react";
+import { useQueries } from "@tanstack/react-query";
+
+import { TagI } from "@/lib/tag";
 
 interface SelectionContextType {
     selection: Map<string, boolean>;

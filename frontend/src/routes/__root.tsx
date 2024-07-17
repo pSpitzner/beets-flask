@@ -1,10 +1,9 @@
-import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
-import { QueryClient } from "@tanstack/react-query";
-
-import "../index.css";
-import NavTabs from "@/components/common/navigation/tabs";
 import Container from "@mui/material/Container";
-import { Terminal, TerminalContextProvider } from "@/components/terminal";
+import { QueryClient } from "@tanstack/react-query";
+import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
+
+import NavTabs from "@/components/frontpage/navigationTabs";
+import { Terminal, TerminalContextProvider } from "@/components/frontpage/terminal";
 
 export const Route = createRootRouteWithContext<{
     queryClient: QueryClient;

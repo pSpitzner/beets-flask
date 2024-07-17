@@ -1,18 +1,17 @@
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
-import { RouterProvider, createRouter } from "@tanstack/react-router";
-import { QueryClient } from "@tanstack/react-query";
+import CircularProgress from "@mui/material/CircularProgress";
+import { createRouter,RouterProvider } from "@tanstack/react-router";
 
-// Import the generated route tree
+import { customizeFetch,queryClient } from "@/components/common/_query";
+import { PrefetchConfigQueryClientProvider } from "@/components/common/useConfig";
+import { StatusContextProvider } from "@/components/common/useSocket";
+
 import { routeTree } from "./routeTree.gen";
 import ThemeProvider from "./theme";
-import CircularProgress from "@mui/material/CircularProgress";
-import "@/lib/fetch";
-import { StatusContextProvider } from "./lib/socket";
-import { PrefetchConfigQueryClientProvider } from "./components/context/useConfig";
 
-// Create a new query client instance
-export const queryClient = new QueryClient({});
+// we tweak the backend-route on the dev server
+customizeFetch();
 
 // Create a new router instance
 const router = createRouter({
@@ -26,7 +25,7 @@ const router = createRouter({
             <div className="flex flex-col space-y-4 justify-center items-center">
                 <CircularProgress />
                 <p className="text-lg">
-                    Hang tight! We&apos;re tuning our server to tag your tunes.
+                    Loading ...
                 </p>
             </div>
         </div>

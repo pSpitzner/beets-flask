@@ -1,21 +1,18 @@
 // Show an info box where the user is currently navigating
 
-import {
-    Album,
-    albumQueryOptions,
-    itemArtQueryOptions,
-    itemQueryOptions,
-} from "@/lib/library";
 import { Box, Typography } from "@mui/material";
 import { SxProps } from "@mui/system";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 
-interface BrowseHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
-    lorem?: string;
-}
+import {
+    Album,
+    albumQueryOptions,
+    itemArtQueryOptions,
+    itemQueryOptions,
+} from "@/components/common/_query";
 
-export function BrowserHeader({ ...props }: BrowseHeaderProps) {
+export function BrowserHeader({ ...props }: React.HTMLAttributes<HTMLDivElement>) {
     const params: RouteParams = useParams({ strict: false });
     const artist = params.artist ?? "Artists";
 

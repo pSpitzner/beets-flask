@@ -1,7 +1,7 @@
 // we want to be able to modify a componenents siblings.
 // e.g. rightclicking on a tag in the tag list should allow us to expand all tags in the same group.
 
-import React, { Context, MutableRefObject, createContext, useCallback, useContext, useRef } from "react";
+import React, { Context, createContext, MutableRefObject, useCallback, useContext, useRef } from "react";
 
 
 interface SiblingRefsContextType<SibType> {

@@ -1,14 +1,14 @@
+import CssBaseline from "@mui/material/CssBaseline";
 import { StyledEngineProvider } from "@mui/material/styles";
 import {
-    ThemeProvider as MatThemeProvider,
     createTheme,
     Experimental_CssVarsProvider as CssVarsProvider,
     experimental_extendTheme as extendTheme,
+    ThemeProvider as MatThemeProvider,
 } from "@mui/material/styles";
-import CssBaseline from "@mui/material/CssBaseline";
 
 // Global styles
-import "./index.css";
+import "./main.css";
 
 /** Relative basic theme for now
  * using a mint green and a orange

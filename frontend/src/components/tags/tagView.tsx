@@ -1,30 +1,28 @@
-import { useQuery } from "@tanstack/react-query";
-import Ansi from "@curvenote/ansi-to-react";
-import Accordion from "@mui/material/Accordion";
-import AccordionSummary from "@mui/material/AccordionSummary";
-import AccordionDetails from "@mui/material/AccordionDetails";
-import { styled } from "@mui/material/styles";
-import styles from "./tagView.module.scss";
-
-import { tagQueryOptions } from "@/lib/tag";
-import { APIError } from "@/lib/fetch";
-import { SimilarityBadge } from "./similarityBadge";
-import { Typography } from "@mui/material";
 import { Ellipsis } from "lucide-react";
-import {
-    useEffect,
-    useState,
-} from "react";
-import { useSelection } from "@/components/context/useSelection";
+import { useEffect, useState } from "react";
+import Ansi from "@curvenote/ansi-to-react";
+import { Typography } from "@mui/material";
+import Accordion from "@mui/material/Accordion";
+import AccordionDetails from "@mui/material/AccordionDetails";
+import AccordionSummary from "@mui/material/AccordionSummary";
+import { styled } from "@mui/material/styles";
+import { useQuery } from "@tanstack/react-query";
+
+import { APIError, tagQueryOptions } from "@/components/common/_query";
+import { useConfig } from "@/components/common/useConfig";
+import { useSelection } from "@/components/common/useSelection";
+import { useSiblings } from "@/components/common/useSiblings";
+
 import {
     CollapseAllAction,
     ContextMenu,
-    ExpandAllAction,
     defaultActions,
-} from "./contextMenu";
-import { useSiblings } from "@/components/context/useSiblings";
-import { useConfig } from "@/components/context/useConfig";
+    ExpandAllAction,
+} from "../common/contextMenu";
+import { SimilarityBadge } from "./similarityBadge";
 import { TagStatusIcon } from "./statusIcon";
+
+import styles from "./tagView.module.scss";
 
 const StyledTagAccordion = styled(Accordion)(({ theme }) => ({
     // borderTop: `1px solid ${theme.palette.divider}`,
@@ -63,9 +61,8 @@ const StyledTagAccordion = styled(Accordion)(({ theme }) => ({
     },
 }));
 
-
 export interface ExpandableSib {
-    setExpanded: (state: boolean) => void
+    setExpanded: (state: boolean) => void;
 }
 
 export function TagView({ tagId, tagPath }: { tagId?: string; tagPath?: string }) {
@@ -77,7 +74,8 @@ export function TagView({ tagId, tagPath }: { tagId?: string; tagPath?: string }
         tagQueryOptions(tagId, tagPath)
     );
     const { isSelected, toggleSelection, markSelectable } = useSelection();
-    const { register: registerSibling, unregister: unregisterSibling } = useSiblings<ExpandableSib>();
+    const { register: registerSibling, unregister: unregisterSibling } =
+        useSiblings<ExpandableSib>();
     const config = useConfig();
     const [expanded, setExpanded] = useState<boolean>(config.gui.tags.expand_tags);
     const handleSelect = (event: React.MouseEvent) => {
@@ -95,22 +93,19 @@ export function TagView({ tagId, tagPath }: { tagId?: string; tagPath?: string }
         }
     };
 
-
     // Self register as sibling
     useEffect(() => {
         registerSibling(identifier, {
-            setExpanded
+            setExpanded,
         });
         return () => {
             unregisterSibling(identifier);
-        }
+        };
     }, [identifier, registerSibling, unregisterSibling]);
-
 
     useEffect(() => {
         if (data?.album_folder) markSelectable(data?.album_folder);
     }, [markSelectable, data?.album_folder]);
-
 
     if (isLoading || isPending || isError) {
         let inner = "";
@@ -166,7 +161,6 @@ export function TagView({ tagId, tagPath }: { tagId?: string; tagPath?: string }
         </ContextMenu>
     );
 }
-
 
 export const TagPreview = ({
     tagId,

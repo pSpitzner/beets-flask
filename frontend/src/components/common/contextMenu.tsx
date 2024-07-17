@@ -1,47 +1,42 @@
-import Menu from "@mui/material/Menu";
-import MenuItem, { MenuItemOwnProps } from "@mui/material/MenuItem";
-
 import {
-    UseMutationOptions,
-    useMutation,
-} from "@tanstack/react-query";
-
-import {
-    useState,
-    MouseEvent,
-    TouchEvent,
-    createContext,
-    useContext,
-    useRef,
-    useEffect,
-    forwardRef,
-} from "react";
-import { queryClient } from "@/main";
-import { TagI } from "@/lib/tag";
-import {
-    Tag,
-    HardDriveDownload,
-    Clipboard,
-    Terminal,
-    Trash2,
     ChevronRight,
+    Clipboard,
+    HardDriveDownload,
     LayoutList,
     ListChecks,
     Maximize,
     Minimize2,
+    Tag,
+    Terminal,
+    Trash2,
 } from "lucide-react";
+import {
+    createContext,
+    forwardRef,
+    MouseEvent,
+    TouchEvent,
+    useContext,
+    useEffect,
+    useRef,
+    useState,
+} from "react";
+import { Typography } from "@mui/material";
+import Menu from "@mui/material/Menu";
+import MenuItem, { MenuItemOwnProps } from "@mui/material/MenuItem";
+import { useMutation,UseMutationOptions } from "@tanstack/react-query";
 
-import { useTerminalContext } from "@/components/terminal";
+import { queryClient, TagI } from "@/components/common/_query";
 import {
     useSelection,
     useSelectionLookupQueries,
-} from "@/components/context/useSelection";
+} from "@/components/common/useSelection";
+import { useSiblings } from "@/components/common/useSiblings";
+import { useTerminalContext } from "@/components/frontpage/terminal";
+import { ExpandableSib } from "@/components/tags/tagView";
+
+import { ErrorDialog } from "./dialogs";
 
 import styles from "./contextMenu.module.scss";
-import { useSiblings } from "@/components/context/useSiblings";
-import { ErrorDialog } from "./dialogs";
-import { Typography } from "@mui/material";
-import { ExpandableSib } from "./tagView";
 
 interface ContextMenuContextI {
     closeMenu: () => void;
@@ -54,11 +49,11 @@ interface ContextMenuContextI {
 }
 
 const ContextMenuContext = createContext<ContextMenuContextI>({
-    closeMenu: () => { },
-    openMenuMouse: () => { },
-    startLongPressTimer: () => { },
-    handleTouchMove: () => { },
-    cancelLongPressTimer: () => { },
+    closeMenu: () => {},
+    openMenuMouse: () => {},
+    startLongPressTimer: () => {},
+    handleTouchMove: () => {},
+    cancelLongPressTimer: () => {},
     open: false,
     position: undefined,
 });
@@ -77,14 +72,12 @@ const ContextMenuContext = createContext<ContextMenuContextI>({
  * </SelectionProvider>
  */
 
-
 interface ContextMenuProps
     extends Omit<React.HTMLAttributes<HTMLDivElement>, "onContextMenu"> {
     children: React.ReactNode;
     actions?: JSX.Element[];
     identifier?: string;
 }
-
 
 export const defaultActions = [
     <SelectAllAction key="action-select-all" autoFocus />,
@@ -121,9 +114,9 @@ export function ContextMenu({
         setPosition((prev?: { left: number; top: number }) =>
             prev === undefined
                 ? {
-                    left: event.clientX + 2,
-                    top: event.clientY - 6,
-                }
+                      left: event.clientX + 2,
+                      top: event.clientY - 6,
+                  }
                 : undefined
         );
     };
@@ -312,7 +305,7 @@ export function ExpandAllAction({ ...props }: Partial<ActionProps>) {
             onClick={() => {
                 callOnSiblings((sib) => {
                     sib.setExpanded(true);
-                })
+                });
                 closeMenu();
             }}
             text={"Expand All"}
@@ -330,7 +323,7 @@ export function CollapseAllAction({ ...props }: Partial<ActionProps>) {
             onClick={() => {
                 callOnSiblings((sib) => {
                     sib.setExpanded(false);
-                })
+                });
                 closeMenu();
             }}
             text={"Collapse All"}
@@ -561,11 +554,9 @@ export function DeleteAction(props: Partial<ActionProps>) {
 /*                          Base action definitions                                   */
 /* ---------------------------------------------------------------------------------- */
 
-
 interface ActionWithMutationProps extends ActionProps {
     mutationOption: UseMutationOptions;
 }
-
 
 interface ActionProps extends MenuItemOwnProps {
     onClick?: () => void;
@@ -574,16 +565,7 @@ interface ActionProps extends MenuItemOwnProps {
     className?: string;
 }
 
-
-
-
-function Action({
-    onClick,
-    icon,
-    text,
-    className,
-    ...props
-}: ActionProps) {
+function Action({ onClick, icon, text, className, ...props }: ActionProps) {
     const { closeMenu } = useContextMenu();
 
     return (
@@ -605,13 +587,7 @@ function Action({
 }
 
 const ActionWithMutation = forwardRef(function ActionWithMutation(
-    {
-        mutationOption,
-        icon,
-        text,
-        className,
-        ...props
-    }: ActionWithMutationProps,
+    { mutationOption, icon, text, className, ...props }: ActionWithMutationProps,
     ref?: React.Ref<HTMLDivElement>
 ) {
     const { isSuccess, isPending, mutate, isError, error, reset } =
@@ -657,7 +633,11 @@ function Heading({
     className?: string;
 } & MenuItemOwnProps) {
     return (
-        <MenuItem disabled className={`${styles.Action} ${styles.Heading} ${className ?? ""}`} {...props}>
+        <MenuItem
+            disabled
+            className={`${styles.Action} ${styles.Heading} ${className ?? ""}`}
+            {...props}
+        >
             <div className={styles.ActionText}>{text}</div>
             {icon && <div className={styles.ActionIcon}>{icon}</div>}
         </MenuItem>

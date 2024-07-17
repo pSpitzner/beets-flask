@@ -1,20 +1,21 @@
+import { ChevronDown, Terminal as TerminalIcon } from "lucide-react";
 import React, {
+    createContext,
     Dispatch,
     SetStateAction,
-    createContext,
     useEffect,
     useRef,
     useState,
 } from "react";
-import { Slide, Button, Portal, IconButton } from "@mui/material";
-import { ChevronDown, Terminal as TerminalIcon } from "lucide-react";
+import { Socket } from "socket.io-client";
+import { Button, IconButton,Portal, Slide } from "@mui/material";
+import { FitAddon as xTermFitAddon } from "@xterm/addon-fit";
+import { Terminal as xTerminal } from "@xterm/xterm";
+
+import { useTerminalSocket } from "@/components/common/useSocket";
 
 import "node_modules/@xterm/xterm/css/xterm.css";
-import { Terminal as xTerminal } from "@xterm/xterm";
-import { FitAddon as xTermFitAddon } from "@xterm/addon-fit";
 import styles from "./terminal.module.scss";
-import { useTerminalSocket } from "@/lib/socket";
-import { Socket } from "socket.io-client";
 
 // match our style - this is somewhat redundant with index.css
 const xTermTheme = {
