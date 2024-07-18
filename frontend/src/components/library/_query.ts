@@ -10,6 +10,8 @@ export interface MinimalArtist {
 export interface MinimalAlbum {
     id: number;
     name: string;
+    albumartist: string;
+    year: number;
 }
 
 export interface Album extends MinimalAlbum {
@@ -18,15 +20,18 @@ export interface Album extends MinimalAlbum {
 
 export interface MinimalItem {
     id: number;
-    name: string;
+    name: string; // Track title
+    artist: string; // "Basstripper"
+    albumartist: string; // "Basstripper"
+    album: string; // "In the City / Wasted"
+    album_id: number; // 1
+    year: number; // 2023
+    isrc: string; // "US39N2308955"
 }
 
 export interface Item extends MinimalItem {
     [key: string]: unknown; // enable indexing item[key]
 
-    album?: string; // "In the City / Wasted"
-    album_id?: number; // 1
-    albumartist?: string; // "Basstripper"
     albumartist_credit?: string; // "Basstripper"
     albumartist_sort?: string; // "Basstripper"
     albumartists?: string[]; // ["Basstripper"]
@@ -40,7 +45,6 @@ export interface Item extends MinimalItem {
     acoustid_id?: string; // ""
     added?: number; // 1715716057.413927
     arranger?: string; // ""
-    artist?: string; // "Basstripper"
     artist_credit?: string; // "Basstripper"
     artist_sort?: string; // "Basstripper"
     artists?: string[]; // ["Basstripper"]
@@ -74,7 +78,6 @@ export interface Item extends MinimalItem {
     genre?: string; // ""
     grouping?: string; // ""
     initial_key?: string; // null
-    isrc?: string; // "US39N2308955"
     label?: string; // "DnB Allstars Records"
     language?: string; // ""
     length?: number; // 156.34643990929706
@@ -116,7 +119,6 @@ export interface Item extends MinimalItem {
     tracktotal?: number; // 2
     work?: string; // ""
     work_disambig?: string; // ""
-    year?: number; // 2023
 }
 
 function _url_parse_minimal_expand(
@@ -174,7 +176,7 @@ export const albumQueryOptions = ({
 }) =>
     queryOptions({
         queryKey: ["album", id, expand, minimal],
-        queryFn: async () : Promise<null | MinimalAlbum | Album> => {
+        queryFn: async (): Promise<null | MinimalAlbum | Album> => {
             if (id === undefined || id === null) {
                 return null;
             }
@@ -226,6 +228,23 @@ export const itemArtQueryOptions = ({ itemId }: { itemId?: number }) =>
         },
     });
 
+export const itemSearchQueryOptions = ({ searchFor }: { searchFor?: string }) =>
+    queryOptions({
+        queryKey: ["itemSearch", searchFor],
+        queryFn: async () => {
+            if (searchFor === undefined || searchFor === null) {
+                return null;
+            }
+            const expand = false;
+            const minimal = true;
+            const url = _url_parse_minimal_expand(`/library/item/query/${searchFor}`, {
+                expand,
+                minimal,
+            });
+            const response = await fetch(url);
+            return (await response.json()) as Item;
+        },
+    });
 
 /* ---------------------------------------------------------------------------------- */
 /*                                        Stats                                       */

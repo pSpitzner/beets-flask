@@ -39,7 +39,7 @@ from unidecode import unidecode
 from werkzeug.routing import BaseConverter, PathConverter
 
 import beets.library
-from mediafile import MediaFile # comes with the beets install
+from mediafile import MediaFile  # comes with the beets install
 from beets import ui, util
 from beets.ui import _open_library
 from beets_flask.config import config
@@ -67,10 +67,19 @@ def _rep(obj, expand=False, minimal=False):
         out.get("title", None) or out.get("album", None) or out.get("artist", None)
     )
 
-    if minimal:
-        out = {k: v for k, v in out.items() if k in ["id", "name"]}
-
     if isinstance(obj, beets.library.Item):
+        if minimal:
+            fields = [
+                "id",
+                "name",
+                "artist",
+                "albumartist",
+                "album",
+                "album_id",
+                "year",
+                "isrc",
+            ]
+            out = {k: v for k, v in out.items() if k in fields}
 
         if not minimal:
             out["path"] = util.displayable_path(out["path"])
@@ -89,7 +98,10 @@ def _rep(obj, expand=False, minimal=False):
         return out
 
     elif isinstance(obj, beets.library.Album):
-        if not minimal:
+        if minimal:
+            fields = ["id", "name", "albumartist", "year"]
+            out = {k: v for k, v in out.items() if k in fields}
+        else:
             out["artpath"] = util.displayable_path(out["artpath"])
 
         if expand:
@@ -404,18 +416,18 @@ def item_file(item_id):
     response = send_file(item_path, as_attachment=True, download_name=safe_filename)
     return response
 
+
 @library_bp.route("/item/<int:item_id>/art")
 def item_art(item_id):
-    item : beets.library.Item = g.lib.get_item(item_id)
+    item: beets.library.Item = g.lib.get_item(item_id)
     item_path = util.py3_path(item.path)
     if not os.path.exists(item_path):
         return abort(404, description="Media file not found")
     mediafile = MediaFile(item_path)
     if mediafile.art:
-        return send_file(BytesIO(mediafile.art), mimetype='image/jpeg')
+        return send_file(BytesIO(mediafile.art), mimetype="image/jpeg")
     else:
         abort(404, description="Item has no cover art")
-
 
 
 @library_bp.route("/item/query/<query:queries>", methods=["GET", "DELETE", "PATCH"])
