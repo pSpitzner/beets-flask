@@ -10,7 +10,6 @@ gui:
 
     library:
         readonly: no
-        include_paths: yes
 
     tags:
         expand_tags: yes

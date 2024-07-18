@@ -17,6 +17,7 @@ might persist although the user sets them. moved to config loading in python.
 
 ### Changed
 - Simplified folder structure of frontend
+- Removed `include_paths` option from config and library backend (most of the frontend needs some form of file paths. thus, the option was not / could not be respected consistently)
 
 ## [0.0.2] - 24-07-16
 

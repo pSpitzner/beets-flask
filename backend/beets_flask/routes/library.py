@@ -61,7 +61,7 @@ def _rep(obj, expand=False, minimal=False):
     """
     out = dict(obj)
 
-    # For out client side, we want to have a consistent name for each kind of item.
+    # For our client side, we want to have a consistent name for each kind of item.
     # for tracks its the title, for albums album name...
     out["name"] = (
         out.get("title", None) or out.get("album", None) or out.get("artist", None)
@@ -73,10 +73,7 @@ def _rep(obj, expand=False, minimal=False):
     if isinstance(obj, beets.library.Item):
 
         if not minimal:
-            if config["gui"]["library"]["include_paths"].get(bool):
-                out["path"] = util.displayable_path(out["path"])
-            else:
-                del out["path"]
+            out["path"] = util.displayable_path(out["path"])
 
         for key, value in out.items():
             if isinstance(out[key], bytes):
@@ -93,10 +90,7 @@ def _rep(obj, expand=False, minimal=False):
 
     elif isinstance(obj, beets.library.Album):
         if not minimal:
-            if config["gui"]["library"]["include_paths"].get(bool):
-                out["artpath"] = util.displayable_path(out["artpath"])
-            else:
-                del out["artpath"]
+            out["artpath"] = util.displayable_path(out["artpath"])
 
         if expand:
             out["items"] = [

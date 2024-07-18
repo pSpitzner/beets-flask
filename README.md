@@ -90,7 +90,6 @@ gui:
 
     library:
         readonly: no
-        include_paths: yes
 
     tags:
         expand_tags: yes # for tag groups, on page load, show tag details?
