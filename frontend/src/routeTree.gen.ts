@@ -14,6 +14,7 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as TagsIndexImport } from './routes/tags/index'
 import { Route as InboxIndexImport } from './routes/inbox/index'
 import { Route as FrontpageIndexImport } from './routes/_frontpage/index'
+import { Route as LibrarySearchImport } from './routes/library/search'
 import { Route as LibraryBrowseImport } from './routes/library/browse'
 import { Route as FrontpageModalImport } from './routes/_frontpage/_modal'
 import { Route as LibraryBrowseArtistImport } from './routes/library/browse.$artist'
@@ -35,6 +36,11 @@ const InboxIndexRoute = InboxIndexImport.update({
 
 const FrontpageIndexRoute = FrontpageIndexImport.update({
   path: '/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const LibrarySearchRoute = LibrarySearchImport.update({
+  path: '/library/search',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -87,6 +93,13 @@ declare module '@tanstack/react-router' {
       path: '/library/browse'
       fullPath: '/library/browse'
       preLoaderRoute: typeof LibraryBrowseImport
+      parentRoute: typeof rootRoute
+    }
+    '/library/search': {
+      id: '/library/search'
+      path: '/library/search'
+      fullPath: '/library/search'
+      preLoaderRoute: typeof LibrarySearchImport
       parentRoute: typeof rootRoute
     }
     '/_frontpage/': {
@@ -155,6 +168,7 @@ export const routeTree = rootRoute.addChildren({
         }),
     }),
   }),
+  LibrarySearchRoute,
   FrontpageIndexRoute,
   InboxIndexRoute,
   TagsIndexRoute,
@@ -170,6 +184,7 @@ export const routeTree = rootRoute.addChildren({
       "children": [
         "/_frontpage/_modal",
         "/library/browse",
+        "/library/search",
         "/_frontpage/",
         "/inbox/",
         "/tags/"
@@ -186,6 +201,9 @@ export const routeTree = rootRoute.addChildren({
       "children": [
         "/library/browse/$artist"
       ]
+    },
+    "/library/search": {
+      "filePath": "library/search.tsx"
     },
     "/_frontpage/": {
       "filePath": "_frontpage/index.tsx"

@@ -232,9 +232,6 @@ export const itemSearchQueryOptions = ({ searchFor }: { searchFor?: string }) =>
     queryOptions({
         queryKey: ["itemSearch", searchFor],
         queryFn: async () => {
-            if (searchFor === undefined || searchFor === null) {
-                return null;
-            }
             const expand = false;
             const minimal = true;
             const url = _url_parse_minimal_expand(`/library/item/query/${searchFor}`, {
@@ -242,7 +239,7 @@ export const itemSearchQueryOptions = ({ searchFor }: { searchFor?: string }) =>
                 minimal,
             });
             const response = await fetch(url);
-            return (await response.json()) as Item;
+            return (await response.json()) as MinimalItem;
         },
     });
 
