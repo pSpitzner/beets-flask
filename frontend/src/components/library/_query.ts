@@ -228,18 +228,35 @@ export const itemArtQueryOptions = ({ itemId }: { itemId?: number }) =>
         },
     });
 
-export const itemSearchQueryOptions = ({ searchFor }: { searchFor?: string }) =>
+/* ---------------------------------------------------------------------------------- */
+/*                                       Search                                       */
+/* ---------------------------------------------------------------------------------- */
+
+export interface SearchResult<T extends MinimalItem | MinimalAlbum> {
+    results: T[];
+}
+
+export const searchQueryOptions = <T extends MinimalItem | MinimalAlbum>({
+    searchFor,
+    kind,
+}: {
+    searchFor: string;
+    kind: "item" | "album";
+}) =>
     queryOptions({
-        queryKey: ["itemSearch", searchFor],
+        queryKey: ["search", kind, searchFor],
         queryFn: async () => {
             const expand = false;
             const minimal = true;
-            const url = _url_parse_minimal_expand(`/library/item/query/${searchFor}`, {
-                expand,
-                minimal,
-            });
+            const url = _url_parse_minimal_expand(
+                `/library/${kind}/query/${searchFor}`,
+                {
+                    expand,
+                    minimal,
+                }
+            );
             const response = await fetch(url);
-            return (await response.json()) as MinimalItem;
+            return (await response.json()) as SearchResult<T>;
         },
     });
 
