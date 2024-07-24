@@ -16,20 +16,89 @@ import {
     searchQueryOptions,
     SearchResult,
 } from "@/components/common/_query";
+import { useDebounce } from "@/components/common/useDebounce";
 import List from "@/components/library/list";
 
 export const Route = createFileRoute("/library/search")({
     component: SearchPage,
 });
 
-function SearchPage() {
-    const [searchBoxText, setSearchBoxText] = useState("");
-    const [searchBoxKind, setSearchBoxKind] = useState<"item" | "album">("item");
-    const [searchKind, setSearchKind] = useState<"item" | "album">("item");
-    const [searchTerm, setSearchTerm] = useState("");
-    const [searching, setSearching] = useState(false);
+type SearchType = "item" | "album";
 
+/** Searches are typically done with a debounce
+ * to prevent too many requests to the server while a user
+ * is typing. Pressing enter to trigger searches
+ * is not really done anymore tbh.
+ * Should be fine in my opinion and makes
+ * the search a bit more responsive.
+ *
+ * I opted to move some things into an small hook,
+ * to isolate search logic from ui logic,
+ * if many smaller components modify the search
+ * or it gets more complicated feel free to move it into
+ * a context.
+ *
+ */
+function useSearch() {
+    const [query, setQuery] = useState<string>("");
+    const [type, setType] = useState<SearchType>("item");
+
+    // Debounce search by 500ms
+    const debouncedQuery = useDebounce(query, 500);
+
+    const {
+        data: results,
+        isFetching,
+        isError,
+    } = useQuery({
+        ...searchQueryOptions<MinimalItem | MinimalAlbum>({
+            searchFor: debouncedQuery,
+            kind: type,
+        }),
+        enabled: debouncedQuery.length > 0,
+    });
+
+    // Cancel a currently running query
+    // reactquery also does this on demount if abort signals are set
+    const cancelSearch = useCallback(() => {
+        queryClient
+            .cancelQueries({ queryKey: ["search", type, query] })
+            .catch(console.error);
+    }, [type, query]);
+
+    // Reset the search to the default state
+    const resetSearch = useCallback(() => {
+        setQuery("");
+        setType("item");
+    }, []);
+
+    return {
+        query,
+        setQuery,
+        type,
+        setType,
+        results,
+        isFetching,
+        isError,
+        cancelSearch,
+        resetSearch,
+    };
+}
+
+function SearchPage() {
     const searchFieldRef = useRef<HTMLInputElement>(null);
+
+    const {
+        query,
+        setQuery,
+        type,
+        setType,
+        results,
+        isFetching,
+        isError,
+        cancelSearch,
+        resetSearch,
+    } = useSearch();
 
     useEffect(() => {
         if (searchFieldRef.current) {
@@ -37,67 +106,34 @@ function SearchPage() {
         }
     }, []);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchBoxText(e.target.value);
-    };
-
-    const handleKindChange = (
+    function handleTypeChange(
         _e: React.MouseEvent<HTMLElement>,
-        newKind: "album" | "item"
-    ) => {
-        if (!["item", "album"].includes(newKind)) {
-            // mui bug? newKind is null if the currently selected button is pressed again
-            newKind = searchBoxKind;
-        }
-        setSearchBoxKind(newKind);
-    };
+        newKind: SearchType | null
+    ) {
+        if (!newKind) return;
+        // mui bug? newKind is null if the currently selected button is pressed again
+        // SBM: not a bug, it is triggering a deselect, you are not using a radio but a button!
+        // To prevent this you may want to add a radio element instead
+        setType(newKind);
+    }
 
-    const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === "Enter") {
-            e.preventDefault();
-            startSearch();
-        } else if (e.key == "Escape") {
-            cancelSearch();
-        }
-    };
+    function handleInput(e: React.ChangeEvent<HTMLInputElement>) {
+        setQuery(e.target.value);
+    }
 
-    const clearSearch = useCallback(() => {
-        setSearchBoxText("");
-        setSearchTerm("");
-        setSearching(false);
-    }, []);
-
-    const cancelSearch = useCallback(() => {
-        queryClient
-            .cancelQueries({ queryKey: ["search", searchKind, searchTerm] })
-            .catch(console.error);
-        setSearching(false);
-    }, [searchTerm, searchKind]);
-
-    const startSearch = useCallback(() => {
-        console.log(`searching: ${searchBoxKind} ${searchBoxText}`);
-        cancelSearch();
-        setSearchKind(searchBoxKind);
-        setSearchTerm(searchBoxText);
-        setSearching(true);
-    }, [searchBoxText, searchBoxKind, cancelSearch]);
-
-    const { data: searchRes, isFetching } = useQuery({
-        ...searchQueryOptions<MinimalItem | MinimalAlbum>({
-            searchFor: searchTerm,
-            kind: searchKind,
-        }),
-        enabled: searching && searchTerm.length > 0,
-    });
-
-    useEffect(() => {
-        if (isFetching && searching) {
-            setSearching(false);
-        }
-    }, [isFetching, searching]);
+    /** Some more general remarks:
+     *
+     * I would modularize the components a bit
+     * and create a search context. This would allow
+     * to share the current search state more
+     * easily. E.g. inside the cancel button
+     *
+     * Same goes for the results, error messages
+     */
 
     return (
         <>
+            {/*I would put this box into a searchbar component*/}
             <Box
                 component="form"
                 noValidate
@@ -108,10 +144,10 @@ function SearchPage() {
                 }}
                 onSubmit={(e) => {
                     e.preventDefault();
-                    startSearch();
                 }}
             >
                 <TextField
+                    inputRef={searchFieldRef}
                     sx={{
                         width: "100%",
                         marginRight: "0.5rem",
@@ -123,20 +159,18 @@ function SearchPage() {
                         },
                     }}
                     id="search_field"
-                    label={`Search ${searchBoxKind}s`}
-                    value={searchBoxText}
+                    label={`Search ${type}s`}
+                    value={query}
                     variant="outlined"
                     type="search"
-                    onChange={handleInputChange}
-                    onKeyDown={handleInputKeyDown}
-                    inputRef={searchFieldRef}
+                    onInput={handleInput}
                     InputProps={{
                         endAdornment: (
                             <CancelSearchButton
-                                text={searchBoxText}
+                                text={query}
                                 isFetching={isFetching}
                                 cancelSearch={cancelSearch}
-                                clearSearch={clearSearch}
+                                clearSearch={resetSearch}
                                 searchFieldRef={searchFieldRef}
                             />
                         ),
@@ -145,9 +179,9 @@ function SearchPage() {
 
                 <ToggleButtonGroup
                     color="primary"
-                    value={searchBoxKind}
+                    value={type}
                     exclusive
-                    onChange={handleKindChange}
+                    onChange={handleTypeChange}
                     aria-label="Search Kind"
                 >
                     <ToggleButton value="item">Item</ToggleButton>
@@ -158,11 +192,11 @@ function SearchPage() {
                 {isFetching && (
                     <>
                         <CircularProgress />
-                        Searching {searchBoxKind} with `{searchTerm}` ...
+                        Searching {type} with `{query}` ...
                     </>
                 )}
-                {!isFetching && searchRes && (
-                    <ResultsBox searchRes={searchRes} kind={searchKind} />
+                {!isFetching && results && (
+                    <ResultsBox searchRes={results} kind={type} />
                 )}
             </Box>
         </>
@@ -253,7 +287,6 @@ function ItemResultsBox({ searchRes }: { searchRes: SearchResult<MinimalItem> })
 }
 
 function AlbumResultsBox({ searchRes }: { searchRes: SearchResult<MinimalAlbum> }) {
-
     const data = useMemo(() => {
         return searchRes.results.map((album) => ({
             label: `${album.albumartist} - ${album.name}`,

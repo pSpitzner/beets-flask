@@ -245,7 +245,7 @@ export const searchQueryOptions = <T extends MinimalItem | MinimalAlbum>({
 }) =>
     queryOptions({
         queryKey: ["search", kind, searchFor],
-        queryFn: async () => {
+        queryFn: async ({ signal }) => {
             const expand = false;
             const minimal = true;
             const url = _url_parse_minimal_expand(
@@ -255,7 +255,7 @@ export const searchQueryOptions = <T extends MinimalItem | MinimalAlbum>({
                     minimal,
                 }
             );
-            const response = await fetch(url);
+            const response = await fetch(url, { signal });
             return (await response.json()) as SearchResult<T>;
         },
     });
