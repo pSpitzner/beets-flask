@@ -202,3 +202,7 @@ match:
         # track_index: 1.0
         # track_length: 2.0
         # track_id: 5.0
+
+
+spotify:
+    source_weight: 0.0 # 0.0 gives spotify the same priority as musicbrainz
