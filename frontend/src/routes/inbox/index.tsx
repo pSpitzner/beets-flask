@@ -1,6 +1,6 @@
 import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Card, Typography } from "@mui/material";
+import { Box, Card, Typography } from "@mui/material";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -31,11 +31,11 @@ function Inboxes() {
     }
 
     return (
-        <>
+        <Box>
             {Object.values(inboxes).map((inbox, i) => {
                 return <Inbox key={i} name={inbox.name} path={inbox.path} />;
             })}
-        </>
+        </Box>
     );
 }
 

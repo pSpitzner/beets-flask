@@ -1,10 +1,10 @@
-import { Home, Inbox, Library,Tag } from "lucide-react";
+import { Home, Inbox, Library, Search, Tag } from "lucide-react";
 import { ReactElement } from "react";
 import { Typography } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import Tab, { tabClasses, TabProps } from "@mui/material/Tab";
 import Tabs, { tabsClasses } from "@mui/material/Tabs";
-import { createLink, LinkProps,useRouterState } from "@tanstack/react-router";
+import { createLink, LinkProps, useRouterState } from "@tanstack/react-router";
 
 interface StyledTabProps extends Omit<LinkProps, "children">, Omit<TabProps, "ref"> {
     label: string | ReactElement;
@@ -59,7 +59,13 @@ function NavItem({ label, ...props }: StyledTabProps) {
 
 export default function NavTabs() {
     const location = useRouterState({ select: (s) => s.location });
-    const basePath = location.pathname.split("/")[1];
+    let basePath = location.pathname.split("/")[1];
+
+    // only needed temporarily until search gets an icon in the toolbar!
+    if (basePath === "library") {
+        basePath += "/" + location.pathname.split("/")[2];
+    }
+
     return (
         <Tabs
             textColor="inherit"
@@ -102,9 +108,16 @@ export default function NavTabs() {
             />
             <NavItem
                 to="/library/browse"
-                value={"/library"}
+                value={"/library/browse"}
                 label={"Library"}
                 icon={<Library />}
+                //
+            />
+            <NavItem
+                to="/library/search"
+                value={"/library/search"}
+                label={"Search"}
+                icon={<Search />}
                 //
             />
         </Tabs>

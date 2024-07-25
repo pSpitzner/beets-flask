@@ -67,6 +67,16 @@ const SlideIn = ({ children }: { children: React.ReactNode }) => {
     }, [open, setOpen]);
 
     return (
+        <>
+        <Button
+        variant="outlined"
+        color="primary"
+        onClick={toggle}
+        className={styles.terminalExpandButton}
+        startIcon={<TerminalIcon size={14} />}
+    >
+        Terminal
+    </Button>
         <Portal container={document.getElementById("app")}>
             <div className={styles.slideIn} data-open={open}>
                 <Slide direction="up" in={open}>
@@ -85,16 +95,9 @@ const SlideIn = ({ children }: { children: React.ReactNode }) => {
                     </div>
                 </Slide>
             </div>
-            <Button
-                variant="outlined"
-                color="primary"
-                onClick={toggle}
-                className={styles.terminalExpandButton}
-                startIcon={<TerminalIcon size={14} />}
-            >
-                Terminal
-            </Button>
+
         </Portal>
+        </>
     );
 };
 

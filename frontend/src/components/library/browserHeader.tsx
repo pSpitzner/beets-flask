@@ -45,20 +45,9 @@ export function BrowserHeader({ ...props }: React.HTMLAttributes<HTMLDivElement>
             sx={{
                 display: "flex",
                 alignItems: "center",
+                justifyContent: "space-between",
             }}
         >
-            {artData && (
-                <Box
-                    component="img"
-                    sx={{
-                        height: 100,
-                        width: 100,
-                        marginRight: "0.5rem",
-                    }}
-                    src={artData}
-                    alt="CoverArt"
-                />
-            )}
             <Box
                 sx={{
                     display: "flex",
@@ -71,7 +60,6 @@ export function BrowserHeader({ ...props }: React.HTMLAttributes<HTMLDivElement>
                     sx={{
                         fontSize: "1.5rem",
                         lineHeight: 1.0,
-                        marginBottom: "0.5rem",
                     }}
                     label={artist}
                     target="artist"
@@ -81,7 +69,7 @@ export function BrowserHeader({ ...props }: React.HTMLAttributes<HTMLDivElement>
                     sx={{
                         fontSize: "1.2rem",
                         lineHeight: 1.0,
-                        marginBottom: "0.5rem",
+                        marginTop: "0.5rem",
                     }}
                     label={album}
                     target="album"
@@ -91,11 +79,24 @@ export function BrowserHeader({ ...props }: React.HTMLAttributes<HTMLDivElement>
                     sx={{
                         fontSize: "1.0rem",
                         fontStyle: "italic",
+                        marginTop: "0.5rem",
                         lineHeight: 1.0,
                     }}
                     label={track}
                 />
             </Box>
+            {artData && (
+                <Box
+                    component="img"
+                    sx={{
+                        height: 100,
+                        width: 100,
+                        marginRight: "0.5rem",
+                    }}
+                    src={artData}
+                    alt="CoverArt"
+                />
+            )}
         </Box>
     );
 }
@@ -119,20 +120,23 @@ function LinkTypography({
     params,
     sx,
 }: LinkTypographyProps) {
+    if (!label) {
+        return <></>;
+    }
     if (!params) {
         return <Typography sx={sx}>{label}</Typography>;
-    } else {
-        let to = `/library/browse`;
-        if (target == "artist") {
-            to = `/library/browse/${params.artist}`;
-        } else if (target == "album") {
-            to = `/library/browse/${params.artist}/${params.albumId}`;
-        }
-
-        return (
-            <Link to={to} preload={"intent"} preloadDelay={2000}>
-                <Typography sx={sx}>{label}</Typography>
-            </Link>
-        );
     }
+
+    let to = `/library/browse`;
+    if (target == "artist") {
+        to = `/library/browse/${params.artist}`;
+    } else if (target == "album") {
+        to = `/library/browse/${params.artist}/${params.albumId}`;
+    }
+
+    return (
+        <Link to={to} preload={"intent"} preloadDelay={2000}>
+            <Typography sx={sx}>{label}</Typography>
+        </Link>
+    );
 }

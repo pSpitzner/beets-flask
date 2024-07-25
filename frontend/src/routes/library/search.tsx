@@ -1,11 +1,10 @@
-import { OctagonX,  X } from "lucide-react";
+import { OctagonX, X } from "lucide-react";
 import {
     createContext,
     Dispatch,
     SetStateAction,
     useCallback,
     useContext,
-    useEffect,
     useMemo,
     useRef,
     useState,
@@ -24,11 +23,12 @@ import {
     MinimalItem,
     queryClient,
     searchQueryOptions,
-    SearchResult,
 } from "@/components/common/_query";
+import { JSONPretty } from "@/components/common/json";
 import { useDebounce } from "@/components/common/useDebounce";
 import List from "@/components/library/list";
-import { JSONPretty } from "@/components/common/json";
+
+import styles from "./search.module.scss";
 
 export const Route = createFileRoute("/library/search")({
     component: SearchPage,
@@ -127,15 +127,11 @@ function useSearchContext() {
 function SearchPage() {
     return (
         <SearchContextProvider>
-            <SearchBar />
-
-            <Box sx = {{
-                marginTop: "0.5rem",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-            }}>
-                <SearchResults />
+            <Box className={styles.SearchPageOuter}>
+                <SearchBar />
+                <Box className={styles.SearchPage}>
+                    <SearchResults />
+                </Box>
             </Box>
         </SearchContextProvider>
     );
@@ -163,26 +159,14 @@ function SearchBar() {
             component="form"
             noValidate
             autoComplete="off"
-            sx={{
-                display: "flex",
-                flexDirection: "row",
-            }}
+            className={styles.SearchBarOuter}
             onSubmit={(e) => {
                 e.preventDefault();
             }}
         >
             <TextField
                 inputRef={searchFieldRef}
-                sx={{
-                    width: "100%",
-                    marginRight: "0.5rem",
-                    "& .MuiOutlinedInput-root": {
-                        "& fieldset": {
-                            borderColor: "#A2A2A355",
-                            borderWidth: "1px",
-                        },
-                    },
-                }}
+                className={styles.SearchBarTextField}
                 id="search_field"
                 label={`Search ${type}s`}
                 value={query}
@@ -254,21 +238,15 @@ function SearchResults() {
     if (isError) {
         return (
             <>
-                    <span>Error loading results:</span>
-                    <JSONPretty error={error} />
+                <span>Error loading results:</span>
+                <JSONPretty error={error} />
             </>
         );
     }
 
     if (isFetching) {
         return (
-            <Box
-                sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                }}
-            >
+            <Box className={styles.SearchResultsLoading}>
                 <CircularProgress />
                 <span>
                     Searching {type}s with `{query}` ...
@@ -289,26 +267,17 @@ function SearchResults() {
         );
     }
 
-
     // Show results!
     return (
-        <Box>
-            {type === "item" && (
-                <ItemResultsBox />
-            )}
-            {type === "album" && (
-                <AlbumResultsBox />
-            )}
-        </Box>
+        <>
+            {type === "item" && <ItemResultsBox />}
+            {type === "album" && <AlbumResultsBox />}
+        </>
     );
 }
 
-
-
 function ItemResultsBox() {
-
     const { results } = useSearchContext() as { results: MinimalItem[] };
-
 
     const data = useMemo(() => {
         return results.map((item) => ({
@@ -320,14 +289,9 @@ function ItemResultsBox() {
         }));
     }, [results]);
 
-    useEffect(() => {
-        console.log(data);
-    }, [data]);
-
-
     return (
-        <Paper>
-            <Box sx={{ width: "300px", height: "400px" }}>
+        <Paper className={styles.h100w100}>
+            <Box className={styles.h100w100}>
                 <List data={data}>{List.Item}</List>
             </Box>
         </Paper>
@@ -335,8 +299,7 @@ function ItemResultsBox() {
 }
 
 function AlbumResultsBox() {
-
-    const {results} = useSearchContext() as {results:MinimalAlbum[]};
+    const { results } = useSearchContext() as { results: MinimalAlbum[] };
 
     const data = useMemo(() => {
         return results.map((album) => ({
@@ -345,8 +308,8 @@ function AlbumResultsBox() {
     }, [results]);
 
     return (
-        <Paper>
-            <Box sx={{ width: "100%", height: "400px" }}>
+        <Paper className={styles.h100w100}>
+            <Box className={styles.h100w100}>
                 <List data={data}>{List.Item}</List>
             </Box>
         </Paper>

@@ -1,0 +1,45 @@
+.SearchPageOuter {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.SearchPage {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+.SearchBarOuter {
+    display: flex;
+    flex-direction: row;
+    margin-top: 0.5rem;
+
+}
+
+.SearchBarTextField {
+    width: 100%;
+    margin-right: 0.5rem;
+    & :global(.MuiOutlinedInput-root) {
+        & fieldset {
+            border-color: #a2a2a355;
+            border-width: 1px;
+        }
+    }
+}
+
+.SearchResultsLoading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.h100w100 {
+    height: 100%;
+    width: 100%;
+}

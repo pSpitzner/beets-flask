@@ -2,8 +2,9 @@ import Container from "@mui/material/Container";
 import { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 
-import NavTabs from "@/components/frontpage/navigationTabs";
-import { Terminal, TerminalContextProvider } from "@/components/frontpage/terminal";
+import NavTabs from "@/components/frontpage/navbar";
+import { TerminalContextProvider } from "@/components/frontpage/terminal";
+import ToolBar from "@/components/frontpage/toolbar";
 
 export const Route = createRootRouteWithContext<{
     queryClient: QueryClient;
@@ -13,7 +14,7 @@ export const Route = createRootRouteWithContext<{
 
 function RootComponent() {
     return (
-        <main className="flex flex-col w-screen">
+        <main>
             <TerminalContextProvider>
                 <NavTabs />
                 <Container
@@ -21,11 +22,15 @@ function RootComponent() {
                     sx={{
                         mt: 1,
                         px: { xs: 1 },
+                        flexGrow: 1,
+                        overflow: "hidden",
+                        // display: "flex",
+                        // flexDirection: "column",
                     }}
                 >
                     <Outlet />
                 </Container>
-                <Terminal />
+                <ToolBar />
             </TerminalContextProvider>
         </main>
     );

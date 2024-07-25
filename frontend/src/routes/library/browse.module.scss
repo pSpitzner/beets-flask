@@ -1,6 +1,11 @@
+
+$column_gap: 0.5rem;
+
 .columnBrowser {
     display: flex;
-    gap: 0px;
+    height: 100%;
+    column-gap: $column_gap;
+    padding-bottom: 0;
 }
 
 .column {
@@ -11,15 +16,18 @@
 
     // on mobile only one column
     width: 100%;
+    display: flex;
+    flex-direction: column;
     &.isSecondary {
-        width: 0;
+        display: none;
     }
     // on large screens multiple columns
     @media (min-width: 768px) {
-        width: calc(25% - 0.5rem);
+        // 4 columns, 3 gaps => x0.75
+        width: calc(25% - 0.75*$column_gap);
         &.isSecondary {
-            width: calc(25% - 0.5rem);
-            margin-right: 0.5rem;
+            display: flex;
+            width: calc(25% - 0.75*$column_gap)
         }
     }
 }
@@ -60,7 +68,7 @@
     width: 100%;
     // we have to set the height explicitly for the list that loads dynamic.
     // 110px ~= column label + navbar header. not working for browser header (on mobile)
-    height: calc(100vh - 110px);
+    height: 100%;
 
     position: relative;
     display: flex;
