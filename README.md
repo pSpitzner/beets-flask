@@ -29,7 +29,8 @@ This is the main idea with beets-flask: For all folders in your inbox, we genera
 - Clone the repo
 - Adjust config files
 - Place a folder with music files into your inbox
-- Build and run `docker compose up --build`, check for problems
+- Build and run `docker compose up --build`
+- Check the webinterface, by default at `http://localhost:5001`
 - Once happy, you can run the container as a daemon with `docker compose up -d --build`
 
 ### Config
@@ -94,6 +95,7 @@ gui:
     tags:
         expand_tags: yes # for tag groups, on page load, show tag details?
         recent_days: 14 # Number of days to consider for the "recent" tag group
+        order_by: "name" # how to sort tags within the trag groups: "name" (the album folder basename) | "date_created" | "date_modified"
 
     terminal:
         start_path: "/music/inbox" # the directory where to start new terminal sessions
@@ -101,7 +103,6 @@ gui:
     inbox:
         concat_nested_folders: yes # show multiple folders in one line if they only have one child
         expand_files: no # on page load, show files in (album) folders, or collapse them
-        order_by: "name" # how to sort tags within the trag groups: "name" (the album folder basename) | "date_created" | "date_modified"
 
         folders: # keep in mind to volume-map these folders in your docker-compose.yml
             Inbox:
@@ -132,6 +133,8 @@ Major things that are planned:
 
 # Developing
 
+The current state is pretty much a playground. Only essential features are included, but most tools are in place to easily add whatever you feel like.
+
 ## Tech Stack
 
 - Backend:
@@ -152,7 +155,7 @@ Major things that are planned:
 
 ## Notes, Design Choices and Ideas
 
-- The current docker-compose already creates the dev container:
+- See [docker-compose-dev.yaml](/docker-compose-dev.yaml) to createe the dev container:
     - maps `.repo` to edit the source from the host.
     - runs `entrypoint_dev.sh`, starting redis workers, flask, and the vite dev server
 - It seems that our vite dev setup **does not work with safari** because it uses CORS
