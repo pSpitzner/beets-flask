@@ -129,7 +129,7 @@ function SearchPage() {
         <SearchContextProvider>
             <Box className={styles.SearchPageOuter}>
                 <SearchBar />
-                <Box className={styles.SearchPage}>
+                <Box className={styles.SearchResultsWrapper}>
                     <SearchResults />
                 </Box>
             </Box>
@@ -256,7 +256,7 @@ function SearchResults() {
     }
 
     if (results === undefined) {
-        return <span>We shall explain some beets query commands here.</span>;
+        return <BeetsSearchHelp />;
     }
 
     if (results.length === 0) {
@@ -313,5 +313,87 @@ function AlbumResultsBox() {
                 <List data={data}>{List.Item}</List>
             </Box>
         </Paper>
+    );
+}
+
+function BeetsSearchHelp() {
+    return (
+        <Box className={styles.BeetsSearchHelpOuter}>
+            <Box className={styles.BeetsSearchHelp}>
+                <h1>Search uses beets&apos; query syntax</h1>
+                <ul>
+                    <li>
+                        combine keywords with a space (AND):{" "}
+                        <code>magnetic tomorrow</code>
+                    </li>
+                    <li>
+                        combine keywords with a comma (OR):{" "}
+                        <code>magnetic tomorrow , beatles yesterday</code>
+                    </li>
+                    <li>
+                        search specific fields: <code>artist:dream</code>
+                    </li>
+                    <li>
+                        escape phrases: <code>&quot;the rebel&quot;</code> or{" "}
+                        <code>the\ rebel</code>
+                    </li>
+                    <li>
+                        use <code>-</code> or <code>^</code> to exclude a term:{" "}
+                        <code>^difficult</code>
+                    </li>
+                </ul>
+
+                <h1>Exact matches</h1>
+                <ul>
+                    <li>
+                        <code>artist:air</code> substring match, default
+                    </li>
+                    <li>
+                        <code>artist:=~air</code> exact match, ignore case
+                    </li>
+                    <li>
+                        <code>artist:=AIR</code> exact match, case sensitive
+                    </li>
+                    <li>
+                        work on phrases: <code>artist:=~&quot;dave matthews&quot;</code>
+                    </li>
+                    <li>
+                        can be used across <em>all</em> fields: <code>=~crash</code>
+                    </li>
+                </ul>
+
+                <h1>
+                    To use Regexp, add an extra <code>:</code>
+                </h1>
+                <ul>
+                    <li>
+                        <code>&quot;artist::Ann(a|ie)&quot;</code> finds artists Anna
+                        Calvi and Annie but not Annuals
+                    </li>
+                    <li>
+                        <code>&quot;:Ho[pm]eless&quot;</code> to search all fields
+                    </li>
+                </ul>
+
+                <h1>Common fields</h1>
+                <ul>
+                    <li>
+                        <code>title</code> <code>album</code> <code>genre</code>{" "}
+                        <code>label</code> <code>isrc</code>
+                    </li>
+                    <li>
+                        <code>artist</code> <code>albumartist</code>{" "}
+                        <code>albumartist_sort</code> <code>albumtype</code>
+                    </li>
+                    <li>
+                        <code>year</code> <code>added</code> <code>comment</code>{" "}
+                        <code>data_source</code>
+                    </li>
+                    <li>
+                        <code>path</code> (searches recursively in sub directories)
+                    </li>
+                </ul>
+            </Box>
+        </Box>
     );
 }

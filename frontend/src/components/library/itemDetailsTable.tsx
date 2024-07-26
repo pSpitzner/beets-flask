@@ -16,7 +16,7 @@ export default function ItemDetailsTableView({
 }) {
     if (!keys || keys === "basic") {
         keys = [
-            "name",
+            "title",
             "artist",
             "albumartist",
             "album",
@@ -37,6 +37,9 @@ export default function ItemDetailsTableView({
         ];
     } else if (keys === "all") {
         keys = Object.keys(item);
+        // we only added name for backend-frontend consistency, its not a beets-field
+        // note: this could cause problems if a user adds a custom field "name"
+        keys = keys.filter((key) => key !== "name");
     }
 
     keys = keys as string[];
