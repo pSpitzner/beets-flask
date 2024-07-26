@@ -4,7 +4,7 @@ import Paper from "@mui/material/Paper";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { SearchType } from "@/components/common/useSearch";
-import { TrackView } from "@/components/library/trackView";
+import { AlbumView, ItemView } from "@/components/library/detailsView";
 
 import { RouteParams } from "./search";
 
@@ -15,17 +15,18 @@ export const Route = createFileRoute("/library/search/$type/$id")({
         id: z.number().int().parse(parseInt(params.id)),
         type: z.string().parse(params.type) as SearchType,
     }),
-    component: ItemView,
+    component: DetailsPage,
 });
 
-function ItemView() {
+function DetailsPage() {
     const params = Route.useParams<RouteParams>();
 
     return (
         <>
             <Paper className={styles.SearchResultInfoOuter}>
                 <Box className={styles.SearchResultInfo}>
-                    <TrackView itemId={params.id} />
+                    {params.type === "item" && <ItemView itemId={params.id} />}
+                    {params.type === "album" && <AlbumView albumId={params.id} />}
                 </Box>
             </Paper>
         </>

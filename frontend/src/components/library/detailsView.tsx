@@ -11,11 +11,10 @@ import TableRow from "@mui/material/TableRow";
 import Tooltip from "@mui/material/Tooltip";
 import { useQuery } from "@tanstack/react-query";
 
-import { itemQueryOptions } from "@/components/common/_query";
-import { Item } from "@/components/common/_query";
+import { Album, albumQueryOptions, Item, itemQueryOptions } from "@/components/common/_query";
 import { JSONPretty } from "@/components/common/json";
 
-export function TrackView({ itemId }: { itemId?: number }) {
+export function ItemView({ itemId }: { itemId?: number }) {
     const [detailed, setDetailed] = useState(false);
     const {
         data: item,
@@ -48,10 +47,7 @@ export function TrackView({ itemId }: { itemId?: number }) {
                                 {!detailed && <BugOn size="1em" />}
                             </IconButton>
                         </Tooltip>
-                        <ItemDetailsTableView
-                            item={item!}
-                            keys={detailed ? "all" : "basic"}
-                        />
+                        <DetailsTable obj={item!} keys={detailed ? "all" : "basic"} />
                     </>
                 )}
                 {!isSuccess && isFetching && (
@@ -70,36 +66,108 @@ export function TrackView({ itemId }: { itemId?: number }) {
     );
 }
 
-export function ItemDetailsTableView({
-    item,
+// for now this is the same as ItemView.
+export function AlbumView({ albumId }: { albumId?: number }) {
+    const [detailed, setDetailed] = useState(false);
+    const {
+        data,
+        isFetching,
+        isError,
+        error,
+        isSuccess,
+    } = useQuery(albumQueryOptions({ id: albumId, minimal: false, expand: false }));
+    const album = data as Album;
+
+    return (
+        <>
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    flexGrow: 1,
+                    alignItems: "center",
+                    justifyContent: "flex-start",
+                    overflow: "auto",
+                }}
+            >
+                {isSuccess && (
+                    <>
+                        <Tooltip title="Toggle Details" className="ml-auto mt-1">
+                            <IconButton
+                                color="primary"
+                                onClick={() => setDetailed(!detailed)}
+                            >
+                                {detailed && <BugOff size="1em" />}
+                                {!detailed && <BugOn size="1em" />}
+                            </IconButton>
+                        </Tooltip>
+                        <DetailsTable obj={album} keys={detailed ? "all" : "basic"} />
+                    </>
+                )}
+                {!isSuccess && isFetching && (
+                    <Box sx={{ margin: "auto" }}>
+                        <CircularProgress />
+                    </Box>
+                )}
+                {isError && (
+                    <>
+                        <span>Error:</span>
+                        <JSONPretty error={error} />
+                    </>
+                )}
+            </Box>
+        </>
+    );
+}
+
+const basicItemKeys = [
+    "title",
+    "artist",
+    "albumartist",
+    "album",
+    "albumtype",
+    "comp",
+    "genre",
+    "label",
+    "isrc",
+    "bpm",
+    "initialkey",
+    "year",
+    "added",
+    "length",
+    "size",
+    "bitrate",
+    "samplerate",
+    "path",
+];
+
+const basicAlbumKeys = [
+    "album",
+    "albumartist",
+    "albumtype",
+    "genre",
+    "comp",
+    "label",
+    "year",
+    "added",
+];
+
+export function DetailsTable({
+    obj,
     keys,
 }: {
-    item: Item;
+    obj: Item | Album;
     keys?: string | string[];
 }) {
+    // albums only have an albumartist (not artist), so we can use this to distinguish
+    const isItem = (item: unknown): item is Item => {
+        return (item as Item).artist !== undefined;
+    };
+
     if (!keys || keys === "basic") {
-        keys = [
-            "title",
-            "artist",
-            "albumartist",
-            "album",
-            "albumtype",
-            "comp",
-            "genre",
-            "label",
-            "isrc",
-            "bpm",
-            "initialkey",
-            "year",
-            "added",
-            "length",
-            "size",
-            "bitrate",
-            "samplerate",
-            "path",
-        ];
+        keys = isItem(obj) ? basicItemKeys : basicAlbumKeys;
     } else if (keys === "all") {
-        keys = Object.keys(item);
+        keys = Object.keys(obj);
         // we only added name for backend-frontend consistency, its not a beets-field
         // note: this could cause problems if a user adds a custom field "name"
         keys = keys.filter((key) => key !== "name");
@@ -134,7 +202,7 @@ export function ItemDetailsTableView({
                                     {key}
                                 </TableCell>
                                 <TableCell align="left">
-                                    {parse(key, item[key])}
+                                    {parse(key, obj[key])}
                                 </TableCell>
                             </TableRow>
                         );

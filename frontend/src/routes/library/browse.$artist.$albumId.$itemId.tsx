@@ -1,11 +1,11 @@
 import z from "zod";
+import Box from "@mui/material/Box";
+import Paper from "@mui/material/Paper";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { itemQueryOptions } from "@/components/library/_query";
-import { TrackView } from "@/components/library/trackView";
-import Paper from "@mui/material/Paper";
-import Box from "@mui/material/Box";
 import { BrowserHeader } from "@/components/library/browserHeader";
+import { ItemView } from "@/components/library/detailsView";
 
 import styles from "@/components/library/library.module.scss";
 
@@ -40,7 +40,7 @@ function TrackPage() {
                 <BrowserHeader
                     className={styles.browserHeader + " " + styles.alwaysShow}
                 />
-                <TrackView itemId={params.itemId} />
+                <ItemView itemId={params.itemId} />
             </Paper>
         </>
     );

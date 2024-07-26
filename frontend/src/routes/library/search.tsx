@@ -192,9 +192,7 @@ export interface RouteParams {
 
 function ItemResultsBox() {
     const { results } = useSearchContext() as { results: MinimalItem[] };
-
     const params = Route.useParams<RouteParams>();
-    console.log(params);
 
     const data = useMemo(() => {
         return results.map((item) => ({
@@ -217,15 +215,20 @@ function ItemResultsBox() {
 
 function AlbumResultsBox() {
     const { results } = useSearchContext() as { results: MinimalAlbum[] };
+    const params = Route.useParams<RouteParams>();
 
     const data = useMemo(() => {
         return results.map((album) => ({
+            to: `/library/search/$type/$id`,
+            params: { type: "album", id: album.id },
             label: `${album.albumartist} - ${album.name}`,
+            className: styles.listItem,
+            "data-selected": params.type === "album" && params.id && params.id == album.id,
         }));
-    }, [results]);
+    }, [results, params]);
 
     return (
-        <Paper className={styles.h100w100}>
+        <Paper className={styles.SearchResults}>
             <Box className={styles.h100w100}>
                 <List data={data}>{List.Item}</List>
             </Box>

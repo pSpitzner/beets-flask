@@ -9,18 +9,60 @@ export interface MinimalArtist {
 
 export interface MinimalAlbum {
     id: number;
-    name: string;
+    name: string; // added by us for consistency, not a beets-fields
     albumartist: string;
     year: number;
 }
 
 export interface Album extends MinimalAlbum {
-    items: MinimalItem[];
+    [key: string]: unknown; // enable indexing item[key]
+    items?: MinimalItem[];
+
+    added?: number; // 1707767640.980912
+    album?: string; // "Away From the Sun"
+    albumartist_credit?: string; // "3 Doors Down"
+    albumartist_sort?: string; // "3 Doors Down"
+    albumartists?: string[]; // ["3 Doors Down"]
+    albumartists_credit?: string[]; // ["3 Doors Down"]
+    albumartists_sort?: string[]; // ["3 Doors Down"]
+    albumdisambig?: string; // "BMG club edition"
+    albumstatus?: string; // "Official"
+    albumtype?: string; // "album"
+    albumtypes?: string[]; // ["album"]
+    artpath?: string; // "None"
+    asin?: string; // ""
+    barcode?: string; // ""
+    catalognum?: string; // "440 064 396-2"
+    comp?: number; // 0
+    country?: string; // "US"
+    day?: number; // 12
+    discogs_albumid?: number; // 0
+    discogs_artistid?: number; // 0
+    discogs_labelid?: number; // 0
+    disctotal?: number; // 1
+    genre?: string; // "Post-Grunge; Hard Rock; Alternative Rock; Rock"
+    label?: string; // ""
+    language?: string; // "eng"
+    mb_albumartistid?: string; // "2386cd66-e923-4e8e-bf14-2eebe2e9b973"
+    mb_albumid?: string; // "9a7b7d7c-3e5d-4006-a97f-06e10a12cb16"
+    mb_releasegroupid?: string; // "8f4d4f05-36ed-3c81-86a7-aae2a03b1520"
+    month?: number; // 11
+    original_day?: number; // 11
+    original_month?: number; // 11
+    original_year?: number; // 2002
+    // r128_album_gain?: null; // null
+    release_group_title?: string; // "Away From the Sun"
+    releasegroupdisambig?: string; // ""
+    // rg_album_gain?: null; // null
+    // rg_album_peak?: null; // null
+    script?: string; // "Latn"
+    style?: string; // ""
 }
+
 
 export interface MinimalItem {
     id: number;
-    name: string; // Track title
+    name: string; // Track title, added by us for consistency, not a beets-fields
     artist: string; // "Basstripper"
     albumartist: string; // "Basstripper"
     album: string; // "In the City / Wasted"
