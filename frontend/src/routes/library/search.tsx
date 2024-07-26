@@ -5,6 +5,7 @@ import {
     SetStateAction,
     useCallback,
     useContext,
+    useEffect,
     useMemo,
     useRef,
     useState,
@@ -152,6 +153,12 @@ function SearchBar() {
     const searchFieldRef = useRef<HTMLInputElement>(null);
     const { query, setQuery, type, setType } = useSearchContext();
 
+    useEffect(() => {
+        if (searchFieldRef.current) {
+            searchFieldRef.current.focus();
+        }
+    }, [searchFieldRef]);
+
     function handleTypeChange(
         _e: React.MouseEvent<HTMLElement>,
         newType: SearchType | null
@@ -260,7 +267,7 @@ function SearchResults() {
             <Box className={styles.SearchResultsLoading}>
                 <CircularProgress />
                 <span>
-                    Searching {type}s with `{sentQuery}` ...
+                    Searching {type}s with <code>{sentQuery}</code> ...
                 </span>
             </Box>
         );
@@ -273,7 +280,7 @@ function SearchResults() {
     if (results.length === 0) {
         return (
             <span>
-                No {type}s found with `{sentQuery}`
+                No {type}s found with <code>{sentQuery}</code>
             </span>
         );
     }
@@ -393,8 +400,11 @@ function BeetsSearchHelp() {
                         <code>label</code> <code>isrc</code>
                     </li>
                     <li>
-                        <code>artist</code> <code>albumartist</code>{" "}
-                        <code>albumartist_sort</code> <code>albumtype</code>
+                        <code>artist</code> (only for items, not albums)
+                    </li>
+                    <li>
+                        <code>albumartist</code> <code>albumartist_sort</code>{" "}
+                        <code>albumtype</code>
                     </li>
                     <li>
                         <code>year</code> <code>added</code> <code>comment</code>{" "}

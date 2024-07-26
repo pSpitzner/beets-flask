@@ -38,7 +38,6 @@
     justify-content: center;
     align-items: center;
     gap: 1rem;
-    margin-top: 1rem;
 }
 
 .h100w100 {
@@ -83,15 +82,16 @@
     li {
         margin-bottom: 8px;
     }
+}
 
-    code {
-        background-color: #212529;
-        padding: 2px 4px;
-        border-radius: 4px;
-        font-family: 'Courier New', Courier, monospace;
-        font-size: 0.9em;
-        white-space: nowrap;
-    }
+// we want to use code also for reporting what's searched.
+code {
+    background-color: #212529;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+    white-space: nowrap;
 }
 
 // fade-out of explanations

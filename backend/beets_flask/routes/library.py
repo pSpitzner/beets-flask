@@ -487,7 +487,7 @@ def all_albums():
     return g.lib.albums()
 
 
-@library_bp.route("/album/query/<query:queries>", methods=["GET", "DELETE"])
+@library_bp.route("/album/query/<path:queries>", methods=["GET", "DELETE"])
 @resource_query("albums")
 def album_query(queries):
     return g.lib.albums(queries)
