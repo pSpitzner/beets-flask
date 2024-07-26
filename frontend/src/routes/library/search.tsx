@@ -1,32 +1,20 @@
 import { OctagonX, X } from "lucide-react";
-import {
-    createContext,
-    Dispatch,
-    SetStateAction,
-    useCallback,
-    useContext,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { IconButton, InputAdornment, Paper, Tooltip } from "@mui/material";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import TextField from "@mui/material/TextField";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
-import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
-import {
-    MinimalAlbum,
-    MinimalItem,
-    queryClient,
-    searchQueryOptions,
-} from "@/components/common/_query";
+import { MinimalAlbum, MinimalItem } from "@/components/common/_query";
 import { JSONPretty } from "@/components/common/json";
-import { useDebounce } from "@/components/common/useDebounce";
+import {
+    SearchContextProvider,
+    SearchType,
+    useSearchContext,
+} from "@/components/common/useSearch";
 import List from "@/components/library/list";
 
 import styles from "./search.module.scss";
@@ -34,107 +22,6 @@ import styles from "./search.module.scss";
 export const Route = createFileRoute("/library/search")({
     component: SearchPage,
 });
-
-type SearchType = "item" | "album";
-
-interface SearchContextType {
-    query: string;
-    setQuery: Dispatch<SetStateAction<string>>;
-    type: SearchType;
-    setType: Dispatch<SetStateAction<SearchType>>;
-    results?: (MinimalItem | MinimalAlbum)[];
-    sentQuery: string;
-    isFetching: boolean;
-    isError: boolean;
-    error: Error | null;
-    cancelSearch: () => void;
-    resetSearch: () => void;
-}
-
-const SearchContext = createContext<SearchContextType>({
-    query: "",
-    setQuery: () => {},
-    type: "item",
-    setType: () => {},
-    results: [],
-    sentQuery: "",
-    isFetching: true,
-    isError: true,
-    error: null,
-    cancelSearch: () => {},
-    resetSearch: () => {},
-});
-
-function SearchContextProvider({ children }: { children: React.ReactNode }) {
-    const [query, setQuery] = useState<string>("");
-    const [type, setType] = useState<SearchType>("item");
-
-    // Debounce search by 500ms
-    let sentQuery = useDebounce(query, 750);
-    // deal with trailing escape-characters the same way as in the backend,
-    // so we correctly reflect frontend-side what we are actually searching for
-    if (
-        sentQuery.endsWith("\\") &&
-        (sentQuery.length - sentQuery.replace(/\\+$/, "").length) % 2 === 1
-    ) {
-        sentQuery = sentQuery.slice(0, -1);
-    }
-
-    const {
-        data: data,
-        isFetching,
-        isError,
-        error,
-    } = useQuery({
-        ...searchQueryOptions<MinimalItem | MinimalAlbum>({
-            searchFor: sentQuery,
-            kind: type,
-        }),
-        enabled: sentQuery.length > 0,
-    });
-
-    // Cancel a currently running query
-    // reactquery also does this on demount if abort signals are set
-    const cancelSearch = useCallback(() => {
-        queryClient
-            .cancelQueries({ queryKey: ["search", type, query] })
-            .catch(console.error);
-    }, [type, query]);
-
-    // Reset the search to the default state
-    const resetSearch = useCallback(() => {
-        setQuery("");
-        setType("item");
-    }, []);
-
-    return (
-        <SearchContext.Provider
-            value={{
-                query,
-                setQuery,
-                type,
-                setType,
-                results: data?.results,
-                sentQuery,
-                isFetching,
-                isError,
-                error,
-                cancelSearch,
-                resetSearch,
-            }}
-        >
-            {children}
-        </SearchContext.Provider>
-    );
-}
-
-function useSearchContext() {
-    const context = useContext(SearchContext);
-    if (!context) {
-        throw new Error("useSeachContext must be used within a SearchContextProvider");
-    }
-    return context;
-}
 
 function SearchPage() {
     return (
