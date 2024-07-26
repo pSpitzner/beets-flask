@@ -16,9 +16,9 @@ This is the main idea with beets-flask: For all folders in your inbox, we genera
 - Autogenerate previews before importing
 - Import via GUI (if found matches are okay)
 - Import via Web-Terminal using beets as you know it (to correct matches)
-- Undo imports (uses web terminal)
+- Undo imports
 - Monitor multiple inboxes
-- A basic library view
+- A basic library view and search
 - Most File/Tag actions sit in a context menu (right-click, or long-press on touch)
 
 ![demo gif](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcDZmZjJ0NzA0Z3h4Z2tycnBlMG1mbm9mMXFoMWM1bjJwdDBsOXR1NiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Z3lL2fo5m6UNf85dZT/giphy.gif)
@@ -126,9 +126,9 @@ For the current state, there is a [KanBan board](https://github.com/users/pSpitz
 
 Major things that are planned:
 
-- An actual library view, with search, covers and audio preview. The backend is likely up for the task already.
+- Better library view, improved cover handling and audio preview.
 - Push the image to dockerhub
-- Mobile friendly
+- Mobile friendly (started)
 
 
 # Developing
