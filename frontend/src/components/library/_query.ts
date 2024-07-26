@@ -249,7 +249,7 @@ export const searchQueryOptions = <T extends MinimalItem | MinimalAlbum>({
             const expand = false;
             const minimal = true;
             const url = _url_parse_minimal_expand(
-                `/library/${kind}/query/${searchFor}`,
+                `/library/${kind}/query/${encodeURIComponent(searchFor)}`,
                 {
                     expand,
                     minimal,

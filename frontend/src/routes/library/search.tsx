@@ -42,6 +42,7 @@ interface SearchContextType {
     type: SearchType;
     setType: Dispatch<SetStateAction<SearchType>>;
     results?: (MinimalItem | MinimalAlbum)[];
+    sentQuery: string;
     isFetching: boolean;
     isError: boolean;
     error: Error | null;
@@ -55,6 +56,7 @@ const SearchContext = createContext<SearchContextType>({
     type: "item",
     setType: () => {},
     results: [],
+    sentQuery: "",
     isFetching: true,
     isError: true,
     error: null,
@@ -67,7 +69,15 @@ function SearchContextProvider({ children }: { children: React.ReactNode }) {
     const [type, setType] = useState<SearchType>("item");
 
     // Debounce search by 500ms
-    const debouncedQuery = useDebounce(query, 750);
+    let sentQuery = useDebounce(query, 750);
+    // deal with trailing escape-characters the same way as in the backend,
+    // so we correctly reflect frontend-side what we are actually searching for
+    if (
+        sentQuery.endsWith("\\") &&
+        (sentQuery.length - sentQuery.replace(/\\+$/, "").length) % 2 === 1
+    ) {
+        sentQuery = sentQuery.slice(0, -1);
+    }
 
     const {
         data: data,
@@ -76,10 +86,10 @@ function SearchContextProvider({ children }: { children: React.ReactNode }) {
         error,
     } = useQuery({
         ...searchQueryOptions<MinimalItem | MinimalAlbum>({
-            searchFor: debouncedQuery,
+            searchFor: sentQuery,
             kind: type,
         }),
-        enabled: debouncedQuery.length > 0,
+        enabled: sentQuery.length > 0,
     });
 
     // Cancel a currently running query
@@ -104,6 +114,7 @@ function SearchContextProvider({ children }: { children: React.ReactNode }) {
                 type,
                 setType,
                 results: data?.results,
+                sentQuery,
                 isFetching,
                 isError,
                 error,
@@ -233,7 +244,7 @@ function CancelSearchButton({
 }
 
 function SearchResults() {
-    const { isError, error, isFetching, type, query, results } = useSearchContext();
+    const { isError, error, isFetching, type, sentQuery, results } = useSearchContext();
 
     if (isError) {
         return (
@@ -249,7 +260,7 @@ function SearchResults() {
             <Box className={styles.SearchResultsLoading}>
                 <CircularProgress />
                 <span>
-                    Searching {type}s with `{query}` ...
+                    Searching {type}s with `{sentQuery}` ...
                 </span>
             </Box>
         );
@@ -262,7 +273,7 @@ function SearchResults() {
     if (results.length === 0) {
         return (
             <span>
-                No {type}s found with `{query}`
+                No {type}s found with `{sentQuery}`
             </span>
         );
     }

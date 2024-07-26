@@ -226,7 +226,20 @@ def resource_query(name, patchable=False):
 
     def make_responder(query_func):
         def responder(queries):
+            # we set the route to use a path converter before us,
+            # so queries is a single string.
+            # edgecase: trailing escape character `\` would crash. we should
+            # also avoid this in the frontend.
+            if (
+                queries.endswith("\\")
+                and (len(queries) - len(queries.rstrip("\\"))) % 2 == 1
+            ):
+                # only remove the last character if it is a single escape character
+                queries = queries[:-1]
+
             entities = query_func(queries)
+
+            log.debug(queries)
 
             if get_method() == "DELETE":
                 if config["gui"]["library"]["readonly"].get(bool):
@@ -430,7 +443,7 @@ def item_art(item_id):
         abort(404, description="Item has no cover art")
 
 
-@library_bp.route("/item/query/<query:queries>", methods=["GET", "DELETE", "PATCH"])
+@library_bp.route("/item/query/<path:queries>", methods=["GET", "DELETE", "PATCH"])
 @resource_query("items", patchable=True)
 def item_query(queries):
     return g.lib.items(queries)
