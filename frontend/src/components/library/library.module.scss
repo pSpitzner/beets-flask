@@ -1,0 +1,261 @@
+/* ---------------------------------------------------------------------------------- */
+/*                                   Column Browser                                   */
+/* ---------------------------------------------------------------------------------- */
+
+$column_gap: 0.5rem;
+
+.columnBrowser {
+    display: flex;
+    height: 100%;
+    column-gap: $column_gap;
+    padding-bottom: 0;
+}
+
+.column {
+    margin: 0;
+    gap: 0;
+    padding: 0;
+    overflow: hidden;
+
+    // on mobile only one column
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    &.isSecondary {
+        display: none;
+    }
+    // on large screens multiple columns
+    @media (min-width: 768px) {
+        // 4 columns, 3 gaps => x0.75
+        width: calc(25% - 0.75*$column_gap);
+        &.isSecondary {
+            display: flex;
+            width: calc(25% - 0.75*$column_gap)
+        }
+    }
+}
+
+.columnLabel {
+    text-align: center;
+    // font-weight: bold;
+    text-transform: uppercase;
+    padding-top: 0.5rem;
+    position: relative;
+    opacity: 0.6;
+    display: none;
+    @media (min-width: 768px) {
+        display: block;
+    }
+    &::after {
+        // divider line with full opactiy
+        content: "";
+        width: 100%;
+        display: block;
+        height: 0.5rem; // this is effectively padding bottom
+        position: aboslute;
+        border-bottom: #292e31 solid 1px;
+    }
+}
+
+.browserHeader {
+    border-bottom: #292e31 solid 1px;
+    padding: 0.5rem 0.5rem;
+    @media (min-width: 768px) {
+        &:not(.alwaysShow) {
+            display: none;
+        }
+    }
+}
+
+.listBox {
+    width: 100%;
+    height: 100%;
+
+    position: relative;
+    display: flex;
+    align-items: start;
+
+    // mui adds uls
+    & > ul {
+        padding: 0;
+        width: 100%;
+    }
+}
+
+.listItem {
+    --default-bg: var(--mui-palette-background-paper);
+    --hover-bg: #353a3f;
+    --selected-bg: #292e31;
+    padding: 0rem 0.5rem;
+    width: 100%;
+    &[data-selected="true"] {
+        background-color: var(--selected-bg);
+    }
+    &:hover {
+        background-color: var(--hover-bg);
+    }
+    &::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 15px;
+        pointer-events: none;
+        background: linear-gradient(to right, transparent, var(--current-bg));
+    }
+}
+// Dynamically set the --current-bg variable based on state
+.listItem {
+    &[data-selected="true"]::after {
+        --current-bg: var(--selected-bg);
+    }
+    &:hover::after {
+        --current-bg: var(--hover-bg);
+    }
+    &:not(:hover):not([data-selected="true"])::after {
+        --current-bg: var(--default-bg);
+    }
+}
+
+
+
+/* ---------------------------------------------------------------------------------- */
+/*                                       Search                                       */
+/* ---------------------------------------------------------------------------------- */
+
+.SearchPageOuter {
+    height: 100%;
+    display: flex;
+    flex-grow: 1;
+    flex-direction: column;
+}
+
+.SearchBarOuter {
+    display: flex;
+    flex-direction: row;
+    margin-top: 0.5rem;
+    flex-shrink: 0;
+}
+
+.SearchBarTextField {
+    width: 100%;
+    margin-right: 0.5rem;
+    & :global(.MuiOutlinedInput-root) {
+        & fieldset {
+            border-color: #a2a2a355;
+            border-width: 1px;
+        }
+    }
+}
+
+.SearchResultsWrapper {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    flex-grow: 1;
+    overflow: hidden;
+    column-gap: $column_gap;
+}
+
+.SearchResultsLoading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin: auto;
+}
+
+.SearchResults {
+    height: 100%;
+    width: 33%;
+    overflow: hidden;
+}
+.SearchResultInfoOuter {
+    width: 67%;
+}
+
+.SearchResultInfo {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    flex-grow: 1;
+    height: 100%;
+}
+
+.h100w100 {
+    height: 100%;
+    width: 100%;
+}
+
+
+.BeetsSearchHelpOuter {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items:  center;
+    flex-grow: 1;
+    flex-shrink: 0;
+    overflow: hidden;
+    // for fade-out pseudo-elements
+    position: relative;
+
+}
+
+.BeetsSearchHelp {
+    position: relative;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    padding-bottom: 1.5rem;
+    height: 100%;
+    overflow-y: auto;
+
+    h1 {
+        font-size: 1.2em;
+        margin-bottom: 0.5em;
+        margin-top: 1.5rem;
+    }
+
+    ul {
+        list-style-type: disc;
+        padding-left: 2rem;
+    }
+
+    li {
+        margin-bottom: 8px;
+    }
+}
+
+// we want to use code also for reporting what's searched.
+code {
+    background-color: #212529;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+    white-space: nowrap;
+}
+
+// fade-out of explanations
+.BeetsSearchHelpOuter::before,
+.BeetsSearchHelpOuter::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2.5rem;
+    pointer-events: none; // Ensure the overlays don't interfere with interactions
+    z-index: 1;
+}
+
+.BeetsSearchHelpOuter::before {
+    top: 0;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+}
+
+.BeetsSearchHelpOuter::after {
+    bottom: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+}

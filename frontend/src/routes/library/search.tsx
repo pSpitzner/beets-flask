@@ -6,7 +6,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import TextField from "@mui/material/TextField";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { MinimalAlbum, MinimalItem } from "@/components/common/_query";
 import { JSONPretty } from "@/components/common/json";
@@ -17,7 +17,7 @@ import {
 } from "@/components/common/useSearch";
 import List from "@/components/library/list";
 
-import styles from "./search.module.scss";
+import styles from "@/components/library/library.module.scss";
 
 export const Route = createFileRoute("/library/search")({
     component: SearchPage,
@@ -30,6 +30,7 @@ function SearchPage() {
                 <SearchBar />
                 <Box className={styles.SearchResultsWrapper}>
                     <SearchResults />
+                    <Outlet />
                 </Box>
             </Box>
         </SearchContextProvider>
@@ -141,11 +142,12 @@ function SearchResults() {
     const { isError, error, isFetching, type, sentQuery, results } = useSearchContext();
 
     if (isError) {
+        console.error("Error loading search results", error);
         return (
-            <>
+            <Box className={styles.SearchResultsLoading}>
                 <span>Error loading results:</span>
                 <JSONPretty error={error} />
-            </>
+            </Box>
         );
     }
 
@@ -166,9 +168,11 @@ function SearchResults() {
 
     if (results.length === 0) {
         return (
-            <span>
-                No {type}s found with <code>{sentQuery}</code>
-            </span>
+            <Box className={styles.SearchResultsLoading}>
+                <span>
+                    No {type}s found with <code>{sentQuery}</code>
+                </span>
+            </Box>
         );
     }
 
@@ -181,21 +185,29 @@ function SearchResults() {
     );
 }
 
+export interface RouteParams {
+    type?: SearchType;
+    id?: number;
+}
+
 function ItemResultsBox() {
     const { results } = useSearchContext() as { results: MinimalItem[] };
 
+    const params = Route.useParams<RouteParams>();
+    console.log(params);
+
     const data = useMemo(() => {
         return results.map((item) => ({
-            // to: `${LIB_BROWSE_ROUTE}/$artist`,
-            // params: { artist: artist.name },
+            to: `/library/search/$type/$id`,
+            params: { type: "item", id: item.id },
             label: `${item.artist} - ${item.name}`,
-            // className: styles.listItem,
-            // "data-selected": params.artist && params.artist == artist.name,
+            className: styles.listItem,
+            "data-selected": params.type === "item" && params.id && params.id == item.id,
         }));
-    }, [results]);
+    }, [results, params]);
 
     return (
-        <Paper className={styles.h100w100}>
+        <Paper className={styles.SearchResults}>
             <Box className={styles.h100w100}>
                 <List data={data}>{List.Item}</List>
             </Box>

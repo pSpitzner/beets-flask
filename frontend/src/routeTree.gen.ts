@@ -19,6 +19,7 @@ import { Route as LibraryBrowseImport } from './routes/library/browse'
 import { Route as FrontpageModalImport } from './routes/_frontpage/_modal'
 import { Route as LibraryBrowseArtistImport } from './routes/library/browse.$artist'
 import { Route as FrontpageModalScheduleImport } from './routes/_frontpage/_modal.schedule'
+import { Route as LibrarySearchTypeIdImport } from './routes/library/search.$type.$id'
 import { Route as LibraryBrowseArtistAlbumIdImport } from './routes/library/browse.$artist.$albumId'
 import { Route as LibraryBrowseArtistAlbumIdItemIdImport } from './routes/library/browse.$artist.$albumId.$itemId'
 
@@ -62,6 +63,11 @@ const LibraryBrowseArtistRoute = LibraryBrowseArtistImport.update({
 const FrontpageModalScheduleRoute = FrontpageModalScheduleImport.update({
   path: '/schedule',
   getParentRoute: () => FrontpageModalRoute,
+} as any)
+
+const LibrarySearchTypeIdRoute = LibrarySearchTypeIdImport.update({
+  path: '/$type/$id',
+  getParentRoute: () => LibrarySearchRoute,
 } as any)
 
 const LibraryBrowseArtistAlbumIdRoute = LibraryBrowseArtistAlbumIdImport.update(
@@ -144,6 +150,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LibraryBrowseArtistAlbumIdImport
       parentRoute: typeof LibraryBrowseArtistImport
     }
+    '/library/search/$type/$id': {
+      id: '/library/search/$type/$id'
+      path: '/$type/$id'
+      fullPath: '/library/search/$type/$id'
+      preLoaderRoute: typeof LibrarySearchTypeIdImport
+      parentRoute: typeof LibrarySearchImport
+    }
     '/library/browse/$artist/$albumId/$itemId': {
       id: '/library/browse/$artist/$albumId/$itemId'
       path: '/$itemId'
@@ -168,7 +181,9 @@ export const routeTree = rootRoute.addChildren({
         }),
     }),
   }),
-  LibrarySearchRoute,
+  LibrarySearchRoute: LibrarySearchRoute.addChildren({
+    LibrarySearchTypeIdRoute,
+  }),
   FrontpageIndexRoute,
   InboxIndexRoute,
   TagsIndexRoute,
@@ -203,7 +218,10 @@ export const routeTree = rootRoute.addChildren({
       ]
     },
     "/library/search": {
-      "filePath": "library/search.tsx"
+      "filePath": "library/search.tsx",
+      "children": [
+        "/library/search/$type/$id"
+      ]
     },
     "/_frontpage/": {
       "filePath": "_frontpage/index.tsx"
@@ -231,6 +249,10 @@ export const routeTree = rootRoute.addChildren({
       "children": [
         "/library/browse/$artist/$albumId/$itemId"
       ]
+    },
+    "/library/search/$type/$id": {
+      "filePath": "library/search.$type.$id.tsx",
+      "parent": "/library/search"
     },
     "/library/browse/$artist/$albumId/$itemId": {
       "filePath": "library/browse.$artist.$albumId.$itemId.tsx",

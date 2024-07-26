@@ -1,13 +1,76 @@
-import { ReactNode } from "react";
+import { Bug as BugOn, BugOff } from "lucide-react";
+import { useState } from "react";
+import { ReactNode, useMemo } from "react";
+import { Box, CircularProgress } from "@mui/material";
+import IconButton from "@mui/material/IconButton";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableRow from "@mui/material/TableRow";
+import Tooltip from "@mui/material/Tooltip";
+import { useQuery } from "@tanstack/react-query";
 
+import { itemQueryOptions } from "@/components/common/_query";
 import { Item } from "@/components/common/_query";
+import { JSONPretty } from "@/components/common/json";
 
-export default function ItemDetailsTableView({
+export function TrackView({ itemId }: { itemId?: number }) {
+    const [detailed, setDetailed] = useState(false);
+    const {
+        data: item,
+        isFetching,
+        isError,
+        error,
+        isSuccess,
+    } = useQuery(itemQueryOptions({ id: itemId, minimal: false, expand: true }));
+
+    return (
+        <>
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    flexGrow: 1,
+                    alignItems: "center",
+                    justifyContent: "flex-start",
+                    overflow: "auto",
+                }}
+            >
+                {isSuccess && (
+                    <>
+                        <Tooltip title="Toggle Details" className="ml-auto mt-1">
+                            <IconButton
+                                color="primary"
+                                onClick={() => setDetailed(!detailed)}
+                            >
+                                {detailed && <BugOff size="1em" />}
+                                {!detailed && <BugOn size="1em" />}
+                            </IconButton>
+                        </Tooltip>
+                        <ItemDetailsTableView
+                            item={item!}
+                            keys={detailed ? "all" : "basic"}
+                        />
+                    </>
+                )}
+                {!isSuccess && isFetching && (
+                    <Box sx={{ margin: "auto" }}>
+                        <CircularProgress />
+                    </Box>
+                )}
+                {isError && (
+                    <>
+                        <span>Error:</span>
+                        <JSONPretty error={error} />
+                    </>
+                )}
+            </Box>
+        </>
+    );
+}
+
+export function ItemDetailsTableView({
     item,
     keys,
 }: {
@@ -44,6 +107,11 @@ export default function ItemDetailsTableView({
 
     keys = keys as string[];
 
+    const maxKeyWidth = useMemo(() => {
+        const keyWidths = keys.map((key) => key.length);
+        return Math.max(...keyWidths) * 10;
+    }, [keys]);
+
     return (
         <TableContainer>
             <Table size="small">
@@ -57,7 +125,14 @@ export default function ItemDetailsTableView({
                                     "td, th": { borderBottom: "0.5px solid #495057" },
                                 }}
                             >
-                                <TableCell align="right">{key}</TableCell>
+                                <TableCell
+                                    align="right"
+                                    sx={{
+                                        width: maxKeyWidth,
+                                    }}
+                                >
+                                    {key}
+                                </TableCell>
                                 <TableCell align="left">
                                     {parse(key, item[key])}
                                 </TableCell>

@@ -7,7 +7,7 @@ import { artistQueryOptions,LIB_BROWSE_ROUTE } from "@/components/common/_query"
 import { BrowserHeader } from "@/components/library/browserHeader";
 import List from "@/components/library/list";
 
-import styles from "./browse.module.scss";
+import styles from "@/components/library/library.module.scss";
 
 export const Route = createFileRoute(`${LIB_BROWSE_ROUTE}/$artist`)({
     parseParams: (params) => ({

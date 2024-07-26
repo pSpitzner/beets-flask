@@ -1,21 +1,19 @@
-import { Bug as BugOn, BugOff } from "lucide-react";
-import { useState } from "react";
 import z from "zod";
-import { Box, Paper } from "@mui/material";
-import IconButton from "@mui/material/IconButton";
-import Tooltip from "@mui/material/Tooltip";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { Item, itemQueryOptions } from "@/components/common/_query";
+import { itemQueryOptions } from "@/components/library/_query";
+import { TrackView } from "@/components/library/trackView";
+import Paper from "@mui/material/Paper";
+import Box from "@mui/material/Box";
 import { BrowserHeader } from "@/components/library/browserHeader";
-import ItemDetailsTableView from "@/components/library/itemDetailsTable";
 
-import styles from "./browse.module.scss";
+import styles from "@/components/library/library.module.scss";
 
 export const Route = createFileRoute("/library/browse/$artist/$albumId/$itemId")({
     parseParams: (params) => ({
         itemId: z.number().int().parse(parseInt(params.itemId)),
     }),
+    // PS 24-07-26: I kept the loader, although the new TrackView does query on its own. because it uses the same querykeys, i suppose pre-loading should still work.
     loader: (opts) =>
         opts.context.queryClient.ensureQueryData(
             itemQueryOptions({
@@ -24,13 +22,17 @@ export const Route = createFileRoute("/library/browse/$artist/$albumId/$itemId")
                 expand: true,
             })
         ),
-    component: TrackView,
+    component: TrackPage,
 });
 
-function TrackView() {
-    const item: Item = Route.useLoaderData();
-    const [detailed, setDetailed] = useState(false);
+interface RouteParams {
+    artist: string;
+    albumId: number;
+    itemId: number;
+}
 
+function TrackPage() {
+    const params = Route.useParams<RouteParams>();
     return (
         <>
             <Paper className={styles.column}>
@@ -38,18 +40,7 @@ function TrackView() {
                 <BrowserHeader
                     className={styles.browserHeader + " " + styles.alwaysShow}
                 />
-                <Box className={styles.trackViewBox}>
-                    <Tooltip title="Toggle Details" className="ml-auto mt-1">
-                        <IconButton
-                            color="primary"
-                            onClick={() => setDetailed(!detailed)}
-                        >
-                            {detailed && <BugOff size="1em" />}
-                            {!detailed && <BugOn size="1em" />}
-                        </IconButton>
-                    </Tooltip>
-                </Box>
-                <ItemDetailsTableView item={item} keys={detailed ? "all" : "basic"} />
+                <TrackView itemId={params.itemId} />
             </Paper>
         </>
     );
