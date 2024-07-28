@@ -47,7 +47,7 @@ const StyledTab = createLink(
 const TabLabel = styled(Typography)(({ theme }) => ({
     marginLeft: 8,
     lineHeight: "12px",
-    [theme.breakpoints.down("sm")]: {
+    [theme.breakpoints.down("md")]: {
         marginLeft: 0,
         display: "none",
     },

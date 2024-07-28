@@ -16,7 +16,7 @@ import { SelectionProvider, useSelection } from "@/components/common/useSelectio
 import { SimilarityBadgeWithHover } from "@/components/tags/similarityBadge";
 import { TagStatusIcon } from "@/components/tags/statusIcon";
 
-import styles from "./inbox.module.scss";
+import styles from "@/components/inbox/inbox.module.scss";
 
 export const Route = createFileRoute("/inbox/")({
     component: () => <Inboxes />,

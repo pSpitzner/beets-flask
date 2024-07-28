@@ -27,10 +27,10 @@ $column_gap: 0.5rem;
     // on large screens multiple columns
     @media (min-width: 768px) {
         // 4 columns, 3 gaps => x0.75
-        width: calc(25% - 0.75*$column_gap);
+        width: calc(25% - 0.75 * $column_gap);
         &.isSecondary {
             display: flex;
-            width: calc(25% - 0.75*$column_gap)
+            width: calc(25% - 0.75 * $column_gap);
         }
     }
 }
@@ -118,8 +118,6 @@ $column_gap: 0.5rem;
     }
 }
 
-
-
 /* ---------------------------------------------------------------------------------- */
 /*                                       Search                                       */
 /* ---------------------------------------------------------------------------------- */
@@ -129,6 +127,15 @@ $column_gap: 0.5rem;
     display: flex;
     flex-grow: 1;
     flex-direction: column;
+
+    code {
+        background-color: #212529;
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-family: "Courier New", Courier, monospace;
+        font-size: 0.9em;
+        white-space: nowrap;
+    }
 }
 
 .SearchBarOuter {
@@ -189,19 +196,17 @@ $column_gap: 0.5rem;
     width: 100%;
 }
 
-
 .BeetsSearchHelpOuter {
     width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
-    align-items:  center;
+    align-items: center;
     flex-grow: 1;
     flex-shrink: 0;
     overflow: hidden;
     // for fade-out pseudo-elements
     position: relative;
-
 }
 
 .BeetsSearchHelp {
@@ -228,20 +233,10 @@ $column_gap: 0.5rem;
     }
 }
 
-// we want to use code also for reporting what's searched.
-code {
-    background-color: #212529;
-    padding: 2px 4px;
-    border-radius: 4px;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 0.9em;
-    white-space: nowrap;
-}
-
 // fade-out of explanations
 .BeetsSearchHelpOuter::before,
 .BeetsSearchHelpOuter::after {
-    content: '';
+    content: "";
     position: absolute;
     left: 0;
     right: 0;

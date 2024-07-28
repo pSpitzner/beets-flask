@@ -23,7 +23,7 @@ function RootComponent() {
                         mt: 1,
                         px: { xs: 1 },
                         flexGrow: 1,
-                        overflow: "hidden",
+                        overflow: "auto",
                         // display: "flex",
                         // flexDirection: "column",
                     }}
