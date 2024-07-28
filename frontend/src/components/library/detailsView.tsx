@@ -131,7 +131,7 @@ const basicItemKeys = [
     "label",
     "isrc",
     "bpm",
-    "initialkey",
+    "initial_key",
     "year",
     "added",
     "length",
