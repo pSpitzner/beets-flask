@@ -1,14 +1,13 @@
 // Show an info box where the user is currently navigating
 
-import { Box, Typography } from "@mui/material";
+import { Box, Skeleton, Typography } from "@mui/material";
 import { SxProps } from "@mui/system";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 
 import {
-    Album,
     albumQueryOptions,
-    itemArtQueryOptions,
+    artQueryOptions,
     itemQueryOptions,
 } from "@/components/common/_query";
 
@@ -35,9 +34,6 @@ export function BrowserHeader({ ...props }: React.HTMLAttributes<HTMLDivElement>
         })
     );
     const track = itemData?.name;
-
-    const idForArt = params.itemId ?? (albumData as Album)?.items?.[0]?.id;
-    const { data: artData } = useQuery(itemArtQueryOptions({ itemId: idForArt }));
 
     return (
         <Box
@@ -85,17 +81,8 @@ export function BrowserHeader({ ...props }: React.HTMLAttributes<HTMLDivElement>
                     label={track}
                 />
             </Box>
-            {artData && (
-                <Box
-                    component="img"
-                    sx={{
-                        height: 100,
-                        width: 100,
-                        marginRight: "0.5rem",
-                    }}
-                    src={artData}
-                    alt="CoverArt"
-                />
+            {(album ?? track) && (
+                <CoverArt itemId={params.itemId} albumId={params.albumId} />
             )}
         </Box>
     );
@@ -138,5 +125,53 @@ function LinkTypography({
         <Link to={to} preload={"intent"} preloadDelay={2000}>
             <Typography sx={sx}>{label}</Typography>
         </Link>
+    );
+}
+
+function CoverArt({ albumId, itemId }: { albumId?: number; itemId?: number }) {
+    // assuming we browse by album, this cover should be cached already, and we only get the item-level cover second.
+    const { data: albumArt } = useQuery({
+        ...artQueryOptions({ type: "album", id: albumId }),
+        enabled: albumId !== undefined,
+    });
+
+    const { data: itemArt } = useQuery({
+        ...artQueryOptions({ type: "item", id: albumId }),
+        enabled: itemId !== undefined,
+    });
+
+    return (
+        <>
+            {albumArt ?? itemArt ? (
+                <Box
+                    component="img"
+                    sx={{
+                        height: 100,
+                        width: 100,
+                        marginRight: "0.1rem",
+                        marginLeft: "0.1rem",
+                    }}
+                    // give higher prio to item-level art
+                    src={(itemArt ?? albumArt)!}
+                    alt="CoverArt"
+                />
+            ) : (
+                <Box
+                    sx={{
+                        height: 100,
+                        width: 100,
+                        marginRight: "0.1rem",
+                        marginLeft: "0.1rem",
+                    }}
+                >
+                    <Skeleton
+                        variant="rectangular"
+                        animation={false}
+                        width={100}
+                        height={100}
+                    />
+                </Box>
+            )}
+        </>
     );
 }

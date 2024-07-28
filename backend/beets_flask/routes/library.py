@@ -498,8 +498,23 @@ def album_art(album_id):
     album = g.lib.get_album(album_id)
     if album and album.artpath:
         return send_file(album.artpath.decode())
+    elif album:
+        # Check the first item in the album for embedded cover art
+        try:
+            first_item: beets.library.Item = album.items()[0]
+            item_path = util.py3_path(first_item.path)
+            if not os.path.exists(item_path):
+                return abort(404, description="Media file not found")
+            mediafile = MediaFile(item_path)
+            if mediafile.art:
+                return send_file(BytesIO(mediafile.art), mimetype="image/jpeg")
+            else:
+                return abort(404, description="Item has no cover art")
+        except:
+            return abort(500, description="Failed to get album items")
+
     else:
-        return abort(404, description="No art for this ablum id, or id does not exist")
+        return abort(404, description="No art for this album id, or id does not exist")
 
 
 @library_bp.route("/album/values/<string:key>")

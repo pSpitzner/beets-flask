@@ -59,7 +59,6 @@ export interface Album extends MinimalAlbum {
     style?: string; // ""
 }
 
-
 export interface MinimalItem {
     id: number;
     name: string; // Track title, added by us for consistency, not a beets-fields
@@ -255,14 +254,14 @@ export const itemQueryOptions = ({
         },
     });
 
-export const itemArtQueryOptions = ({ itemId }: { itemId?: number }) =>
+export const artQueryOptions = ({ type, id }: { type?: string; id?: number }) =>
     queryOptions({
-        queryKey: ["item", itemId, "art"],
+        queryKey: ["art", type, id],
         queryFn: async () => {
-            if (itemId === undefined || itemId === null) {
+            if (id === undefined || id === null) {
                 return null;
             }
-            const url = `/library/item/${itemId}/art`;
+            const url = `/library/${type}/${id}/art`;
             const response = await fetch(url);
             const blob = await response.blob();
             const objectUrl = URL.createObjectURL(blob);
