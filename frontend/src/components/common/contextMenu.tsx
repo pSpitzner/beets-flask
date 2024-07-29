@@ -360,8 +360,22 @@ export function TerminalImportAction(props: Partial<ActionProps>) {
     const { getSelected } = useSelection();
     const text = useRef("");
 
+    const escapeForBash = (str: string) => {
+        return str
+            .replace(/'/g, "'\\''")
+            .replace(/\\/g, "\\\\")
+            .replace(/ /g, "\\ ");
+    };
+
+
     useEffect(() => {
-        text.current = "'" + getSelected().join("' '") + "'";
+        // text.current = "'" + getSelected().join("' '") + "'";
+        const selectedPaths = getSelected().map(escapeForBash);
+        if (selectedPaths.length > 1) {
+            text.current = "\\\n  " + selectedPaths.join(" \\\n  ");
+        } else {
+            text.current = selectedPaths.join(" ")
+        }
     }, [getSelected, text]);
 
     return (
