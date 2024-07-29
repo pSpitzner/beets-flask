@@ -24,6 +24,7 @@
 // to get the color codes working, you will need the ansi css classes form our main.css
 .tagPreview {
     white-space: pre-wrap;
+    overflow-wrap: break-workd; // this allows wrapping e.g. spotify urls
     font-family: monospace;
     font-size: 0.7rem;
 }

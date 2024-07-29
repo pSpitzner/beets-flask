@@ -153,6 +153,7 @@ $border-color: #495057;
     margin-left: 0.45rem;
     font-family: monospace;
     font-size: 0.7rem;
-    white-space: pre;
+    white-space: pre-wrap;
+    overflow-wrap: break-workd;
     color: #999;
 }
