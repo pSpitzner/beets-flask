@@ -431,7 +431,6 @@ def item_file(item_id):
     return response
 
 
-
 @library_bp.route("/item/query/<path:queries>", methods=["GET", "DELETE", "PATCH"])
 @resource_query("items", patchable=True)
 def item_query(queries):
@@ -509,15 +508,13 @@ def album_items(album_id):
 @library_bp.route("/item/<int:item_id>/art")
 def item_art(item_id):
     log.debug(f"Item art query for '{item_id}'")
-    max_size = (200, 200)
     item: beets.library.Item = g.lib.get_item(item_id)
     item_path = util.py3_path(item.path)
     if not os.path.exists(item_path):
         return abort(404, description="Media file not found")
     mediafile = MediaFile(item_path)
     if mediafile.art:
-        img = _resize(BytesIO(mediafile.art), max_size)
-        return send_file(img, mimetype="image/jpeg")
+        return _send_image(BytesIO(mediafile.art))
     else:
         abort(404, description="Item has no cover art")
 
@@ -525,11 +522,9 @@ def item_art(item_id):
 @library_bp.route("/album/<int:album_id>/art")
 def album_art(album_id):
     log.debug(f"Art art query for album id '{album_id}'")
-    max_size = (200, 200)
     album = g.lib.get_album(album_id)
     if album and album.artpath:
-        img = _resize(BytesIO(album.artpath.decode()), max_size)
-        return send_file(img, mimetype="image/jpeg")
+        return _send_image(BytesIO(album.artpath.decode()))
     elif album:
         # Check the first item in the album for embedded cover art
         try:
@@ -539,8 +534,7 @@ def album_art(album_id):
                 return abort(404, description="Media file not found")
             mediafile = MediaFile(item_path)
             if mediafile.art:
-                img = _resize(BytesIO(mediafile.art), max_size)
-                return send_file(img, mimetype="image/jpeg")
+                return _send_image(BytesIO(mediafile.art))
             else:
                 return abort(404, description="Item has no cover art")
         except:
@@ -549,14 +543,22 @@ def album_art(album_id):
     else:
         return abort(404, description="No art for this album id, or id does not exist")
 
-def _resize(img_data : BytesIO, size : tuple[int, int]) -> BytesIO:
+
+def _send_image(img_data: BytesIO):
+    max_size = (200, 200)
+    img = _resize(img_data, max_size)
+    response = make_response(send_file(img, mimetype="image/jpeg"))
+    response.headers["Cache-Control"] = "public, max-age=86400"
+    return response
+
+
+def _resize(img_data: BytesIO, size: tuple[int, int]) -> BytesIO:
     image = PILImage.open(img_data)
     image.thumbnail(size)
     image_io = BytesIO()
-    image.save(image_io, format='JPEG')
+    image.save(image_io, format="JPEG")
     image_io.seek(0)
     return image_io
-
 
 
 # ------------------------------------------------------------------------------------ #
