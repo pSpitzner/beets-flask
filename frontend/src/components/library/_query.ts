@@ -259,8 +259,9 @@ export const artQueryOptions = ({ type, id }: { type?: string; id?: number }) =>
         queryKey: ["art", type, id],
         queryFn: async () => {
             if (id === undefined || id === null) {
-                return null;
+                return undefined;
             }
+            console.log("artQueryOptions", type, id);
             const url = `/library/${type}/${id}/art`;
             const response = await fetch(url);
             const blob = await response.blob();

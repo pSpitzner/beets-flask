@@ -1,14 +1,16 @@
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
-import CircularProgress from "@mui/material/CircularProgress";
-import { createRouter,RouterProvider } from "@tanstack/react-router";
 
-import { customizeFetch,queryClient } from "@/components/common/_query";
+import { createRouter, RouterProvider } from "@tanstack/react-router";
+
+import { customizeFetch, queryClient } from "@/components/common/_query";
 import { PrefetchConfigQueryClientProvider } from "@/components/common/useConfig";
 import { StatusContextProvider } from "@/components/common/useSocket";
+import Box from "@mui/material/Box";
 
 import { routeTree } from "./routeTree.gen";
 import ThemeProvider from "./theme";
+import LoadingIndicator from "@/components/common/loadingIndicator";
 
 // we tweak the backend-route on the dev server
 customizeFetch();
@@ -21,14 +23,19 @@ const router = createRouter({
     },
     defaultPreload: "intent",
     defaultPendingComponent: () => (
-        <div className="flex flex-col h-screen w-100 justify-center items-center">
-            <div className="flex flex-col space-y-4 justify-center items-center">
-                <CircularProgress />
-                <p className="text-lg">
-                    Loading ...
-                </p>
-            </div>
-        </div>
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",
+                margin: "auto",
+                justifyContent: "center",
+                alignItems: "center",
+
+            }}
+        >
+            <LoadingIndicator />
+        </Box>
     ),
 
     // Since we're using React Query, we don't want loader calls to ever be stale

@@ -1,11 +1,12 @@
 import { useMemo } from "react";
 import z from "zod";
 import { Box, Paper } from "@mui/material";
-import { createFileRoute,Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 
-import { artistQueryOptions,LIB_BROWSE_ROUTE } from "@/components/common/_query";
+import { artistQueryOptions, LIB_BROWSE_ROUTE } from "@/components/common/_query";
 import { BrowserHeader } from "@/components/library/browserHeader";
 import List from "@/components/library/list";
+import LoadingIndicator from "@/components/common/loadingIndicator";
 
 import styles from "@/components/library/library.module.scss";
 
@@ -43,6 +44,8 @@ function ArtistOverview() {
         }));
     }, [artist, params]);
 
+    console.log("browse.$artist ", artist, data);
+
     // for mobile, we only want to show one central column.
     const isSecondary = Boolean(params.albumId);
 
@@ -53,9 +56,13 @@ function ArtistOverview() {
             >
                 <Box className={styles.columnLabel}>Album</Box>
                 <BrowserHeader className={styles.browserHeader} />
-                <Box className={styles.listBox}>
-                    <List data={data}>{List.Item}</List>
-                </Box>
+                {artist && data ? (
+                    <Box className={styles.listBox}>
+                        <List data={data}>{List.Item}</List>
+                    </Box>
+                ) : (
+                    <LoadingIndicator />
+                )}
             </Paper>
             <Outlet />
         </>

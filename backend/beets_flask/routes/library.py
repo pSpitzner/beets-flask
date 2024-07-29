@@ -22,6 +22,7 @@ import os
 from pathlib import Path
 from typing import Optional, TypedDict, cast
 from io import BytesIO
+from PIL import Image as PILImage
 import time
 
 from flask import (
@@ -430,18 +431,6 @@ def item_file(item_id):
     return response
 
 
-@library_bp.route("/item/<int:item_id>/art")
-def item_art(item_id):
-    item: beets.library.Item = g.lib.get_item(item_id)
-    item_path = util.py3_path(item.path)
-    if not os.path.exists(item_path):
-        return abort(404, description="Media file not found")
-    mediafile = MediaFile(item_path)
-    if mediafile.art:
-        return send_file(BytesIO(mediafile.art), mimetype="image/jpeg")
-    else:
-        abort(404, description="Item has no cover art")
-
 
 @library_bp.route("/item/query/<path:queries>", methods=["GET", "DELETE", "PATCH"])
 @resource_query("items", patchable=True)
@@ -493,30 +482,6 @@ def album_query(queries):
     return g.lib.albums(queries)
 
 
-@library_bp.route("/album/<int:album_id>/art")
-def album_art(album_id):
-    album = g.lib.get_album(album_id)
-    if album and album.artpath:
-        return send_file(album.artpath.decode())
-    elif album:
-        # Check the first item in the album for embedded cover art
-        try:
-            first_item: beets.library.Item = album.items()[0]
-            item_path = util.py3_path(first_item.path)
-            if not os.path.exists(item_path):
-                return abort(404, description="Media file not found")
-            mediafile = MediaFile(item_path)
-            if mediafile.art:
-                return send_file(BytesIO(mediafile.art), mimetype="image/jpeg")
-            else:
-                return abort(404, description="Item has no cover art")
-        except:
-            return abort(500, description="Failed to get album items")
-
-    else:
-        return abort(404, description="No art for this album id, or id does not exist")
-
-
 @library_bp.route("/album/values/<string:key>")
 def album_unique_field_values(key):
     sort_key = request.args.get("sort_key", key)
@@ -534,6 +499,64 @@ def album_items(album_id):
         return jsonify(items=[_rep(item) for item in album.items()])
     else:
         return abort(404)
+
+
+# ------------------------------------------------------------------------------------ #
+#                                        Artwork                                       #
+# ------------------------------------------------------------------------------------ #
+
+
+@library_bp.route("/item/<int:item_id>/art")
+def item_art(item_id):
+    log.debug(f"Item art query for '{item_id}'")
+    max_size = (200, 200)
+    item: beets.library.Item = g.lib.get_item(item_id)
+    item_path = util.py3_path(item.path)
+    if not os.path.exists(item_path):
+        return abort(404, description="Media file not found")
+    mediafile = MediaFile(item_path)
+    if mediafile.art:
+        img = _resize(BytesIO(mediafile.art), max_size)
+        return send_file(img, mimetype="image/jpeg")
+    else:
+        abort(404, description="Item has no cover art")
+
+
+@library_bp.route("/album/<int:album_id>/art")
+def album_art(album_id):
+    log.debug(f"Art art query for album id '{album_id}'")
+    max_size = (200, 200)
+    album = g.lib.get_album(album_id)
+    if album and album.artpath:
+        img = _resize(BytesIO(album.artpath.decode()), max_size)
+        return send_file(img, mimetype="image/jpeg")
+    elif album:
+        # Check the first item in the album for embedded cover art
+        try:
+            first_item: beets.library.Item = album.items()[0]
+            item_path = util.py3_path(first_item.path)
+            if not os.path.exists(item_path):
+                return abort(404, description="Media file not found")
+            mediafile = MediaFile(item_path)
+            if mediafile.art:
+                img = _resize(BytesIO(mediafile.art), max_size)
+                return send_file(img, mimetype="image/jpeg")
+            else:
+                return abort(404, description="Item has no cover art")
+        except:
+            return abort(500, description="Failed to get album items")
+
+    else:
+        return abort(404, description="No art for this album id, or id does not exist")
+
+def _resize(img_data : BytesIO, size : tuple[int, int]) -> BytesIO:
+    image = PILImage.open(img_data)
+    image.thumbnail(size)
+    image_io = BytesIO()
+    image.save(image_io, format='JPEG')
+    image_io.seek(0)
+    return image_io
+
 
 
 # ------------------------------------------------------------------------------------ #

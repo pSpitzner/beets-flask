@@ -32,6 +32,8 @@ function AllArtists() {
         }));
     }, [artists, params]);
 
+    console.log("browse ", artists, data);
+
     // for mobile, we only want to show one central column.
     const isSecondary = Boolean(params.artist);
 
