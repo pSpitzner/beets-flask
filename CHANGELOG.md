@@ -10,10 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - default config: mandatory fields cannot be set in the yaml, or they
 might persist although the user sets them. moved to config loading in python.
+- tmux session now restarts on page load if it is not alive.
+- navbar, tags, inbox are now more friendly for mobile
 
 ### Added
 - Backend to get cover art from metadata of music files.
-- Impoved library view (friendlier for mobile, and a browser header component)
+- Impoved library view (mobile friendly, and a browser header component)
 - Library search
 
 ### Changed

@@ -118,7 +118,6 @@ To access the tmux from the host:
 ```
 docker exec -it beets-flask /usr/bin/tmux attach-session -t beets-socket-term
 ```
-Beware, you can close the tmux session, and we have not yet implemented a way to restart it. (Just restart the container)
 
 If you use iTerm on macOS and want to create a profile for connecting to the tmux session natively:
 ```
