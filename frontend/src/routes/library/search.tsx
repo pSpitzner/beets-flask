@@ -1,4 +1,4 @@
-import { OctagonX, X } from "lucide-react";
+import { ChevronRight, OctagonX, X } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { IconButton, InputAdornment, Paper, Tooltip } from "@mui/material";
 import Box from "@mui/material/Box";
@@ -6,7 +6,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import TextField from "@mui/material/TextField";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 
 import { MinimalAlbum, MinimalItem } from "@/components/common/_query";
 import { JSONPretty } from "@/components/common/json";
@@ -15,6 +15,8 @@ import {
     SearchType,
     useSearchContext,
 } from "@/components/common/useSearch";
+import CoverArt from "@/components/library/coverArt";
+import { AlbumView, ItemView } from "@/components/library/itemAlbumDetails";
 import List from "@/components/library/list";
 
 import styles from "@/components/library/library.module.scss";
@@ -30,7 +32,7 @@ function SearchPage() {
                 <SearchBar />
                 <Box className={styles.SearchResultsWrapper}>
                     <SearchResults />
-                    <Outlet />
+                    <SearchResultDetails />
                 </Box>
             </Box>
         </SearchContextProvider>
@@ -39,7 +41,7 @@ function SearchPage() {
 
 function SearchBar() {
     const searchFieldRef = useRef<HTMLInputElement>(null);
-    const { query, setQuery, type, setType } = useSearchContext();
+    const { query, setQuery, type, setType, setSelectedResult } = useSearchContext();
 
     useEffect(() => {
         if (searchFieldRef.current) {
@@ -51,8 +53,9 @@ function SearchBar() {
         _e: React.MouseEvent<HTMLElement>,
         newType: SearchType | null
     ) {
-        if (newType !== null) {
+        if (newType !== null && newType !== type) {
             setType(newType);
+            setSelectedResult(undefined);
         }
     }
 
@@ -192,17 +195,24 @@ export interface RouteParams {
 
 function ItemResultsBox() {
     const { results } = useSearchContext() as { results: MinimalItem[] };
-    const params = Route.useParams<RouteParams>();
+    const { selectedResult, setSelectedResult } = useSearchContext();
 
     const data = useMemo(() => {
         return results.map((item) => ({
-            to: `/library/search/$type/$id`,
-            params: { type: "item", id: item.id },
-            label: `${item.artist} - ${item.name}`,
             className: styles.listItem,
-            "data-selected": params.type === "item" && params.id && params.id == item.id,
+            "data-selected": selectedResult !== undefined && selectedResult === item.id,
+            onClick: () => setSelectedResult(item.id),
+            label: (
+                <Box>
+                    <span className={styles.ItemResultArtist}>
+                        {item.artist}
+                        <ChevronRight size={14} />
+                    </span>
+                    <span className={styles.ItemResultName}>{item.name}</span>
+                </Box>
+            ),
         }));
-    }, [results, params]);
+    }, [results, selectedResult, setSelectedResult]);
 
     return (
         <Paper className={styles.SearchResults}>
@@ -215,17 +225,24 @@ function ItemResultsBox() {
 
 function AlbumResultsBox() {
     const { results } = useSearchContext() as { results: MinimalAlbum[] };
-    const params = Route.useParams<RouteParams>();
+    const { selectedResult, setSelectedResult } = useSearchContext();
 
     const data = useMemo(() => {
         return results.map((album) => ({
-            to: `/library/search/$type/$id`,
-            params: { type: "album", id: album.id },
-            label: `${album.albumartist} - ${album.name}`,
             className: styles.listItem,
-            "data-selected": params.type === "album" && params.id && params.id == album.id,
+            "data-selected": selectedResult !== undefined && selectedResult == album.id,
+            onClick: () => setSelectedResult(album.id),
+            label: (
+                <Box>
+                    <span className={styles.ItemResultArtist}>
+                        {album.albumartist}
+                        <ChevronRight size={14} />
+                    </span>
+                    <span className={styles.ItemResultName}>{album.name}</span>
+                </Box>
+            ),
         }));
-    }, [results, params]);
+    }, [results, selectedResult, setSelectedResult]);
 
     return (
         <Paper className={styles.SearchResults}>
@@ -233,6 +250,50 @@ function AlbumResultsBox() {
                 <List data={data}>{List.Item}</List>
             </Box>
         </Paper>
+    );
+}
+
+function SearchResultDetails() {
+    const { type, selectedResult } = useSearchContext();
+
+    if (selectedResult === undefined) {
+        return null;
+    }
+
+    console.log(type);
+    let art = <></>;
+    if (type === "item") {
+        console.log("1");
+        art = (
+            <CoverArt
+                itemId={selectedResult}
+                type={type}
+                showPlaceholder={false}
+                className={styles.SearchResultCover}
+            />
+        );
+    } else if (type === "album") {
+        console.log("2");
+        art = (
+            <CoverArt
+                albumId={selectedResult}
+                type={type}
+                showPlaceholder={false}
+                className={styles.SearchResultCover}
+            />
+        );
+    }
+
+    return (
+        <>
+            <Paper className={styles.SearchResultInfoOuter}>
+                <Box className={styles.SearchResultInfo}>
+                    {art}
+                    {type === "item" && <ItemView itemId={selectedResult} />}
+                    {type === "album" && <AlbumView albumId={selectedResult} />}
+                </Box>
+            </Paper>
+        </>
     );
 }
 

@@ -1,8 +1,8 @@
-import { ComponentType, ReactNode, useEffect,useRef, useState } from "react";
+import { ComponentType, ReactNode, useEffect, useRef, useState } from "react";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList, ListChildComponentProps } from "react-window";
-import { Typography } from "@mui/material";
-import ListItem, { ListItemOwnProps, ListItemProps } from "@mui/material/ListItem";
+import { Box } from "@mui/material";
+import ListItem, { ListItemOwnProps } from "@mui/material/ListItem";
 import { Link } from "@tanstack/react-router";
 
 import styles from "./list.module.scss";
@@ -35,42 +35,45 @@ function List<D>({ children, data, ...props }: WrapperProps<D>) {
 }
 
 interface ListItemData extends ListItemOwnProps {
-    label: string;
+    label: string | ReactNode;
     to?: string;
     params?: Record<string, unknown>;
     icon?: ReactNode;
+    animateOverflow?: boolean;
 }
 
 function Item({ index, data, style }: ListChildComponentProps<ListItemData[]>) {
-    const { label, to, params, icon, ...props } = data[index];
-    const textRef = useRef<HTMLDivElement>(null);
+    const { label, to, params, icon, animateOverflow = true, ...props } = data[index];
+    const labelRef = useRef<HTMLDivElement>(null);
     const [isOverflowing, setIsOverflowing] = useState(false);
 
     useEffect(() => {
-        const textEl = textRef.current;
-        if (textEl) {
-            const parent = textEl.parentElement?.parentElement;
-            if (parent && textEl.scrollWidth > parent.clientWidth - 15) {
+        const el = labelRef.current;
+        if (el) {
+            const parent = el.parentElement?.parentElement;
+            const diff = parent ? parent.clientWidth - el.scrollWidth - 15 : 0;
+            if (animateOverflow && parent && diff < 0) {
                 setIsOverflowing(true);
-                const d = parent.clientWidth - textEl.scrollWidth - 15;
-                textEl.style.setProperty("--translate-distance", `${d}px`);
+                el.style.setProperty("--translate-distance", `${diff}px`);
             } else {
                 setIsOverflowing(false);
-                textEl.style.removeProperty("--translate-distance");
+                el.style.removeProperty("--translate-distance");
             }
         }
-    }, [label]);
+    }, [labelRef, label, animateOverflow]);
 
     const it = (
         <ListItem key={index} style={style} {...props}>
             {icon}
             <div>
-                <Typography
-                    ref={textRef}
-                    className={`${styles.ListItemText} ${isOverflowing ? styles.overflowing : ""}`}
-                >
-                    {label}
-                </Typography>
+                {
+                    <Box
+                        ref={labelRef}
+                        className={`${styles.ListItemText} ${isOverflowing ? styles.overflowing : ""}`}
+                    >
+                        {label}
+                    </Box>
+                }
             </div>
         </ListItem>
     );
@@ -89,12 +92,6 @@ function Item({ index, data, style }: ListChildComponentProps<ListItemData[]>) {
         );
     }
     return it;
-}
-
-export interface ItemProps extends ListItemProps {
-    label: string;
-    icon?: React.ReactNode;
-    to?: string;
 }
 
 List.Item = Item;

@@ -1,15 +1,16 @@
 // Show an info box where the user is currently navigating
 
-import { Box, Skeleton, Typography } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { SxProps } from "@mui/system";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 
 import {
     albumQueryOptions,
-    artQueryOptions,
     itemQueryOptions,
 } from "@/components/common/_query";
+
+import CoverArt from "./coverArt";
 
 export function BrowserHeader({ ...props }: React.HTMLAttributes<HTMLDivElement>) {
     const params: RouteParams = useParams({ strict: false });
@@ -139,85 +140,5 @@ function LinkTypography({
         <Link to={to} preload={"intent"} preloadDelay={2000}>
             <Typography sx={sx}>{label}</Typography>
         </Link>
-    );
-}
-
-function CoverArt({
-    type,
-    albumId,
-    itemId,
-    sx,
-}: {
-    type?: string;
-    albumId?: number;
-    itemId?: number;
-    sx?: SxProps;
-}) {
-    // in the library browse view, we can assume the album cover should is requested first and cached, and we only get the item-level cover second.
-    const { data: albumArt } = useQuery({
-        ...artQueryOptions({ type: "album", id: albumId }),
-        enabled: albumId !== undefined && (type === undefined || type === "album"),
-    });
-
-    const { data: itemArt, isFetching: isFetchingItem } = useQuery({
-        ...artQueryOptions({ type: "item", id: itemId }),
-        enabled: itemId !== undefined && (type === undefined || type === "item"),
-    });
-
-    if (type === "album" && albumArt) {
-        return <CoverArtContent sx={sx} src={albumArt} />;
-    } else if (type === "item") {
-        if (isFetchingItem && albumArt) {
-            return <CoverArtContent sx={sx} src={albumArt} />;
-        }
-        if (itemArt) {
-            return <CoverArtContent sx={sx} src={itemArt} />;
-        }
-    }
-
-    // default case, nothing is loading and no cover found.
-    return <CoverArtPlaceholder sx={sx} animation={false} />;
-}
-
-function CoverArtPlaceholder({
-    animation,
-    sx,
-}: {
-    animation: false | "pulse" | "wave" | undefined;
-    sx?: SxProps;
-}) {
-    return (
-        <Box
-            sx={{
-                height: 100,
-                width: 100,
-                marginRight: "0.1rem",
-                marginLeft: "0.1rem",
-                ...sx,
-            }}
-        >
-            <Skeleton
-                variant="rectangular"
-                animation={animation}
-                width={100}
-                height={100}
-            />
-        </Box>
-    );
-}
-
-function CoverArtContent({ src, sx }: { src: string; sx?: SxProps }) {
-    return (
-        <Box
-            component="img"
-            sx={{
-                height: 100,
-                width: 100,
-                marginRight: "0.1rem",
-                marginLeft: "0.1rem",
-                ...sx,
-            }}
-            src={src}
-        />
     );
 }

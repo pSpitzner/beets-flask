@@ -23,6 +23,8 @@ interface SearchContextType {
     setQuery: Dispatch<SetStateAction<string>>;
     type: SearchType;
     setType: Dispatch<SetStateAction<SearchType>>;
+    selectedResult?: number;
+    setSelectedResult: Dispatch<SetStateAction<number | undefined>>;
     results?: (MinimalItem | MinimalAlbum)[];
     sentQuery: string;
     isFetching: boolean;
@@ -37,6 +39,7 @@ const SearchContext = createContext<SearchContextType>({
     setQuery: () => {},
     type: "item",
     setType: () => {},
+    setSelectedResult: () => {},
     results: [],
     sentQuery: "",
     isFetching: true,
@@ -49,6 +52,7 @@ const SearchContext = createContext<SearchContextType>({
 export function SearchContextProvider({ children }: { children: React.ReactNode }) {
     const [query, setQuery] = useState<string>("");
     const [type, setType] = useState<SearchType>("item");
+    const [selectedResult, setSelectedResult] = useState<number | undefined>(undefined);
 
     // Debounce search by 500ms
     let sentQuery = useDebounce(query, 750);
@@ -80,12 +84,13 @@ export function SearchContextProvider({ children }: { children: React.ReactNode 
         queryClient
             .cancelQueries({ queryKey: ["search", type, query] })
             .catch(console.error);
-    }, [type, query]);
+        setSelectedResult(undefined);
+    }, [type, query, setSelectedResult]);
 
     // Reset the search to the default state
     const resetSearch = useCallback(() => {
         setQuery("");
-        setType("item");
+        setSelectedResult(undefined);
     }, []);
 
     return (
@@ -95,6 +100,8 @@ export function SearchContextProvider({ children }: { children: React.ReactNode 
                 setQuery,
                 type,
                 setType,
+                selectedResult,
+                setSelectedResult,
                 results: data?.results,
                 sentQuery,
                 isFetching,

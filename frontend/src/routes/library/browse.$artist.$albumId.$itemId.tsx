@@ -5,7 +5,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { itemQueryOptions } from "@/components/library/_query";
 import { BrowserHeader } from "@/components/library/browserHeader";
-import { ItemView } from "@/components/library/detailsView";
+import { ItemView } from "@/components/library/itemAlbumDetails";
 
 import styles from "@/components/library/library.module.scss";
 

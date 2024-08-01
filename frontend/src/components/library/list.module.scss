@@ -7,6 +7,7 @@
     white-space: nowrap;
     text-overflow: ellipsis;
     display: block;
+    line-height: 2.0; // setting this large line height prevents vertical jitter
     &.overflowing {
         &:hover {
             animation: MoveText 3s ease-in-out infinite;
@@ -23,11 +24,9 @@
     }
     40% {
         transform: translateX(var(--translate-distance, 0));
-
     }
     60% {
         transform: translateX(var(--translate-distance, 0));
-
     }
     95% {
         transform: translateX(0);

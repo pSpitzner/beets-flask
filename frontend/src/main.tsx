@@ -1,16 +1,15 @@
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
-
+import Box from "@mui/material/Box";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 
 import { customizeFetch, queryClient } from "@/components/common/_query";
+import LoadingIndicator from "@/components/common/loadingIndicator";
 import { PrefetchConfigQueryClientProvider } from "@/components/common/useConfig";
 import { StatusContextProvider } from "@/components/common/useSocket";
-import Box from "@mui/material/Box";
 
 import { routeTree } from "./routeTree.gen";
 import ThemeProvider from "./theme";
-import LoadingIndicator from "@/components/common/loadingIndicator";
 
 // we tweak the backend-route on the dev server
 customizeFetch();

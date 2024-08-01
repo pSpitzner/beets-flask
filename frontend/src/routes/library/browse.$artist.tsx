@@ -4,9 +4,9 @@ import { Box, Paper } from "@mui/material";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { artistQueryOptions, LIB_BROWSE_ROUTE } from "@/components/common/_query";
+import LoadingIndicator from "@/components/common/loadingIndicator";
 import { BrowserHeader } from "@/components/library/browserHeader";
 import List from "@/components/library/list";
-import LoadingIndicator from "@/components/common/loadingIndicator";
 
 import styles from "@/components/library/library.module.scss";
 
