@@ -16,9 +16,9 @@ This is the main idea with beets-flask: For all folders in your inbox, we genera
 - Autogenerate previews before importing
 - Import via GUI (if found matches are okay)
 - Import via Web-Terminal using beets as you know it (to correct matches)
-- Undo imports (uses web terminal)
+- Undo imports
 - Monitor multiple inboxes
-- A basic library view
+- A basic library view and search
 - Most File/Tag actions sit in a context menu (right-click, or long-press on touch)
 
 ![demo gif](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcDZmZjJ0NzA0Z3h4Z2tycnBlMG1mbm9mMXFoMWM1bjJwdDBsOXR1NiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Z3lL2fo5m6UNf85dZT/giphy.gif)
@@ -29,7 +29,8 @@ This is the main idea with beets-flask: For all folders in your inbox, we genera
 - Clone the repo
 - Adjust config files
 - Place a folder with music files into your inbox
-- Build and run `docker compose up --build`, check for problems
+- Build and run `docker compose up --build`
+- Check the webinterface, by default at `http://localhost:5001`
 - Once happy, you can run the container as a daemon with `docker compose up -d --build`
 
 ### Config
@@ -90,11 +91,11 @@ gui:
 
     library:
         readonly: no
-        include_paths: yes
 
     tags:
         expand_tags: yes # for tag groups, on page load, show tag details?
         recent_days: 14 # Number of days to consider for the "recent" tag group
+        order_by: "name" # how to sort tags within the trag groups: "name" (the album folder basename) | "date_created" | "date_modified"
 
     terminal:
         start_path: "/music/inbox" # the directory where to start new terminal sessions
@@ -102,7 +103,6 @@ gui:
     inbox:
         concat_nested_folders: yes # show multiple folders in one line if they only have one child
         expand_files: no # on page load, show files in (album) folders, or collapse them
-        order_by: "name" # how to sort tags within the trag groups: "name" (the album folder basename) | "date_created" | "date_modified"
 
         folders: # keep in mind to volume-map these folders in your docker-compose.yml
             Inbox:
@@ -118,7 +118,11 @@ To access the tmux from the host:
 ```
 docker exec -it beets-flask /usr/bin/tmux attach-session -t beets-socket-term
 ```
-Beware, you can close the tmux session, and we have not yet implemented a way to restart it. (Just restart the container)
+
+If you use iTerm on macOS and want to create a profile for connecting to the tmux session natively:
+```
+ssh -t yourserver "/usr/bin/docker exec -it beets-flask /usr/bin/tmux -CC new -A -s beets-socket-term"
+```
 
 ## Roadmap
 
@@ -126,12 +130,14 @@ For the current state, there is a [KanBan board](https://github.com/users/pSpitz
 
 Major things that are planned:
 
-- An actual library view, with search, covers and audio preview. The backend is likely up for the task already.
+- Better library view, improved cover handling and audio preview.
 - Push the image to dockerhub
-- Mobile friendly
+- Mobile friendly (started)
 
 
 # Developing
+
+The current state is pretty much a playground. Only essential features are included, but most tools are in place to easily add whatever you feel like.
 
 ## Tech Stack
 
@@ -153,7 +159,7 @@ Major things that are planned:
 
 ## Notes, Design Choices and Ideas
 
-- The current docker-compose already creates the dev container:
+- See [docker-compose-dev.yaml](/docker-compose-dev.yaml) to createe the dev container:
     - maps `.repo` to edit the source from the host.
     - runs `entrypoint_dev.sh`, starting redis workers, flask, and the vite dev server
 - It seems that our vite dev setup **does not work with safari** because it uses CORS
@@ -202,3 +208,15 @@ The library view backend is adapted from the existing beets webplugin that is al
 ### Testing
 
 We have started on a version of the container that runs some (backend) tests, but coverage is pretty non-existent.
+
+
+### Convention for typescript imports
+
+We have an eslint sorting rule for imports:
+
+Order:
+1. other modules/components
+2. our modules/components
+3. css (first others, then ours)
+
+Try to use absolute paths with `@/` prefix if not in the same folder.

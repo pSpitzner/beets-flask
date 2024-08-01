@@ -1,10 +1,10 @@
-import IconButton from "@mui/material/IconButton";
-import { UseMutationOptions, useMutation } from "@tanstack/react-query";
 import { CheckIcon } from "lucide-react";
-import { ConfirmDialog, ErrorDialog } from "./dialogs";
-import { Button, ButtonProps, CircularProgress } from "@mui/material";
 import { forwardRef, useState } from "react";
+import { Button, ButtonProps, CircularProgress } from "@mui/material";
+import IconButton from "@mui/material/IconButton";
+import { useMutation,UseMutationOptions } from "@tanstack/react-query";
 
+import { ConfirmDialog, ErrorDialog } from "./dialogs";
 
 
 /**
@@ -27,8 +27,10 @@ export const IconButtonWithMutation = forwardRef(function IconButtonWithMutation
         children,
         ...props
     }: {
-        mutationOption?: UseMutationOptions<unknown, Error, unknown, unknown>
-        mutateArgs?: unknown;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        mutationOption?: UseMutationOptions<unknown, Error, any, unknown>;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        mutateArgs?: any;
     } & ButtonProps,
     ref?: React.Ref<HTMLDivElement>
 ) {
@@ -45,8 +47,6 @@ export const IconButtonWithMutation = forwardRef(function IconButtonWithMutation
             },
         }
     );
-
-
 
     return (
         <div className="relative" ref={ref}>
@@ -85,59 +85,62 @@ export const IconButtonWithMutation = forwardRef(function IconButtonWithMutation
 
 
 /** A Icon button which also requires a confirmation */
-export const IconButtonWithMutationAndFeedback = forwardRef(function IconButtonWithMutationAndFeedback(
-    {
-        mutationOption,
-        children,
-        confirmTitle,
-        mutateArgs,
-        ...props
-    }: {
-        mutationOption: UseMutationOptions<unknown, Error, unknown, unknown>
-        mutateArgs: unknown,
-        confirmTitle: string;
-    } & ButtonProps,
-    ref?: React.Ref<HTMLDivElement>
-) {
+export const IconButtonWithMutationAndFeedback = forwardRef(
+    function IconButtonWithMutationAndFeedback(
+        {
+            mutationOption,
+            children,
+            confirmTitle,
+            mutateArgs,
+            ...props
+        }: {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            mutationOption: UseMutationOptions<unknown, Error, any, unknown>;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            mutateArgs: any;
+            confirmTitle: string;
+        } & ButtonProps,
+        ref?: React.Ref<HTMLDivElement>
+    ) {
+        const { isSuccess, isPending, mutate, isError, error, reset } =
+            useMutation(mutationOption);
+        const [show, setShow] = useState(false); // show confirm state
 
-    const { isSuccess, isPending, mutate, isError, error, reset } = useMutation(mutationOption);
-    const [show, setShow] = useState(false); // show confirm state
-
-
-    return (
-        <div className="relative" ref={ref}>
-            <IconButton
-                {...props}
-                onClick={() => setShow(true)
+        return (
+            <div className="relative" ref={ref}>
+                <IconButton {...props} onClick={() => setShow(true)}>
+                    {isSuccess ? <CheckIcon /> : children}
+                </IconButton>
+                {isPending ? (
+                    <CircularProgress
+                        color={props.color}
+                        sx={{
+                            position: "absolute",
+                            top: "0",
+                            left: "0",
+                            padding: "2px",
+                            zIndex: 1,
+                        }}
+                    />
+                ) : null}
+                {<ErrorDialog open={isError} error={error} onClose={reset} />}
+                {
+                    <ConfirmDialog
+                        title={confirmTitle}
+                        open={show}
+                        onConfirm={() => {
+                            setShow(false);
+                            mutate(mutateArgs);
+                        }}
+                        onCancel={() => {
+                            setShow(false);
+                        }}
+                    />
                 }
-            >
-                {isSuccess ? <CheckIcon /> : children}
-            </IconButton>
-            {isPending ? (
-                <CircularProgress
-                    color={props.color}
-                    sx={{
-                        position: "absolute",
-                        top: "0",
-                        left: "0",
-                        padding: "2px",
-                        zIndex: 1,
-                    }}
-                />
-            ) : null}
-            {<ErrorDialog open={isError} error={error} onClose={reset} />}
-            {<ConfirmDialog
-                title={confirmTitle}
-                open={show} onConfirm={() => {
-                    setShow(false);
-                    mutate(mutateArgs);
-                }} onCancel={() => {
-                    setShow(false);
-                }} />
-            }
-        </div>
-    );
-});
+            </div>
+        );
+    }
+);
 
 
 

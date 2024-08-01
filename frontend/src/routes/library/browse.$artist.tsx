@@ -1,13 +1,16 @@
-import List from "@/components/common/list";
-import { artistQueryOptions } from "@/lib/library";
-import Box from "@mui/material/Box";
-import { Outlet, createFileRoute } from "@tanstack/react-router";
-import z from "zod";
-import styles from "./browse.module.scss";
-import { BASE_ROUTE } from "./browse";
 import { useMemo } from "react";
+import z from "zod";
+import { Box, Paper } from "@mui/material";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 
-export const Route = createFileRoute(`${BASE_ROUTE}/$artist`)({
+import { artistQueryOptions, LIB_BROWSE_ROUTE } from "@/components/common/_query";
+import LoadingIndicator from "@/components/common/loadingIndicator";
+import { BrowserHeader } from "@/components/library/browserHeader";
+import List from "@/components/library/list";
+
+import styles from "@/components/library/library.module.scss";
+
+export const Route = createFileRoute(`${LIB_BROWSE_ROUTE}/$artist`)({
     parseParams: (params) => ({
         artist: z.string().parse(params.artist),
     }),
@@ -33,7 +36,7 @@ function ArtistOverview() {
 
     const data = useMemo(() => {
         return artist.albums.map((album) => ({
-            to: `${BASE_ROUTE}/$artist/$albumId`,
+            to: `${LIB_BROWSE_ROUTE}/$artist/$albumId`,
             params: { artist: params.artist, albumId: album.id },
             label: album.name,
             className: styles.listItem,
@@ -41,11 +44,26 @@ function ArtistOverview() {
         }));
     }, [artist, params]);
 
+    console.log("browse.$artist ", artist, data);
+
+    // for mobile, we only want to show one central column.
+    const isSecondary = Boolean(params.albumId);
+
     return (
         <>
-            <Box className={styles.listBox}>
-                <List data={data}>{List.Item}</List>
-            </Box>
+            <Paper
+                className={`${styles.column} ${isSecondary ? styles.isSecondary : ""}`}
+            >
+                <Box className={styles.columnLabel}>Album</Box>
+                <BrowserHeader className={styles.browserHeader} />
+                {artist && data ? (
+                    <Box className={styles.listBox}>
+                        <List data={data}>{List.Item}</List>
+                    </Box>
+                ) : (
+                    <LoadingIndicator />
+                )}
+            </Paper>
             <Outlet />
         </>
     );

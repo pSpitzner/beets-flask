@@ -20,6 +20,7 @@ gunicorn==22.0.0
 gevent==24.2.1
 gevent-websocket==0.10.1
 pytest==8.2.2
+pillow==10.4.0
 # beets dependencies
 jellyfish==0.10 # current version does not compile on arm64
 beets==2.0.0

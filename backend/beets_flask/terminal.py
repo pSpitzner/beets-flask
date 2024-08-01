@@ -48,11 +48,23 @@ def register_tmux():
     pane = window.active_pane or window.split_window(attach=True)
 
 
+def is_session_alive():
+    try:
+        if len(session.windows) > 0:  # type: ignore
+            # session.windows should raise if the session is not alive.
+            return True
+        else:
+            return False
+    except:
+        return False
+
+
 def emit_output():
     try:
-        # this approach to capture screen content keeps extra whitespaces, but we can
-        # fix that client side.
-        current = pane.cmd("capture-pane", "-p", "-N", "-T", "-e").stdout
+        if is_session_alive():
+            current = pane.cmd("capture-pane", "-p", "-N", "-T", "-e").stdout
+        else:
+            current = ["Session ended. Reload page to restart!"]
         sio.emit("ptyOutput", {"output": current}, namespace="/terminal")
     except Exception as e:
         log.error(f"Error reading from pty: {e}")
@@ -69,7 +81,10 @@ def emit_output_continuously(sleep_seconds=0.1):
     while True:
         sio.sleep(sleep_seconds)  # type: ignore
         try:
-            current = pane.cmd("capture-pane", "-p", "-N", "-T", "-e").stdout
+            if is_session_alive():
+                current = pane.cmd("capture-pane", "-p", "-N", "-T", "-e").stdout
+            else:
+                current = ["Session ended. Reload page to restart!"]
             if current != prev:
                 sio.emit("ptyOutput", {"output": current}, namespace="/terminal")
                 emit_cursor_position()
@@ -132,6 +147,7 @@ def resend_output(sid):
 def connect(sid, environ):
     """new client connected"""
     log.debug(f"TerminalSocket new client connected {sid}")
+    register_tmux()
 
 
 @sio.on("disconnect", namespace="/terminal")  # type: ignore

@@ -1,18 +1,18 @@
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
-import { RouterProvider, createRouter } from "@tanstack/react-router";
-import { QueryClient } from "@tanstack/react-query";
+import Box from "@mui/material/Box";
+import { createRouter, RouterProvider } from "@tanstack/react-router";
 
-// Import the generated route tree
+import { customizeFetch, queryClient } from "@/components/common/_query";
+import LoadingIndicator from "@/components/common/loadingIndicator";
+import { PrefetchConfigQueryClientProvider } from "@/components/common/useConfig";
+import { StatusContextProvider } from "@/components/common/useSocket";
+
 import { routeTree } from "./routeTree.gen";
 import ThemeProvider from "./theme";
-import CircularProgress from "@mui/material/CircularProgress";
-import "@/lib/fetch";
-import { StatusContextProvider } from "./lib/socket";
-import { PrefetchConfigQueryClientProvider } from "./components/context/useConfig";
 
-// Create a new query client instance
-export const queryClient = new QueryClient({});
+// we tweak the backend-route on the dev server
+customizeFetch();
 
 // Create a new router instance
 const router = createRouter({
@@ -22,14 +22,19 @@ const router = createRouter({
     },
     defaultPreload: "intent",
     defaultPendingComponent: () => (
-        <div className="flex flex-col h-screen w-100 justify-center items-center">
-            <div className="flex flex-col space-y-4 justify-center items-center">
-                <CircularProgress />
-                <p className="text-lg">
-                    Hang tight! We&apos;re tuning our server to tag your tunes.
-                </p>
-            </div>
-        </div>
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",
+                margin: "auto",
+                justifyContent: "center",
+                alignItems: "center",
+
+            }}
+        >
+            <LoadingIndicator />
+        </Box>
     ),
 
     // Since we're using React Query, we don't want loader calls to ever be stale

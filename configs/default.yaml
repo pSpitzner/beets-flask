@@ -10,7 +10,6 @@ gui:
 
     library:
         readonly: no
-        include_paths: yes
 
     tags:
         expand_tags: yes
@@ -24,13 +23,4 @@ gui:
         concat_nested_folders: yes
         expand_files: no
 
-        # you must set inbox folders and the music directory in *your* beets config!
-        # (we only keep it around so the container can launch when nothing is configured)
 
-        folders:
-            Placeholder:
-                name: "Please configure your inbox!"
-                path: "/music/inbox"
-                autotag: no # no | "preview" | "import"
-
-directory: /music/imported

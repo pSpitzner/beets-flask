@@ -11,10 +11,10 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as InboxImport } from './routes/inbox'
-import { Route as FrontpageImport } from './routes/_frontpage'
 import { Route as TagsIndexImport } from './routes/tags/index'
+import { Route as InboxIndexImport } from './routes/inbox/index'
 import { Route as FrontpageIndexImport } from './routes/_frontpage/index'
+import { Route as LibrarySearchImport } from './routes/library/search'
 import { Route as LibraryBrowseImport } from './routes/library/browse'
 import { Route as FrontpageModalImport } from './routes/_frontpage/_modal'
 import { Route as LibraryBrowseArtistImport } from './routes/library/browse.$artist'
@@ -24,24 +24,24 @@ import { Route as LibraryBrowseArtistAlbumIdItemIdImport } from './routes/librar
 
 // Create/Update Routes
 
-const InboxRoute = InboxImport.update({
-  path: '/inbox',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const FrontpageRoute = FrontpageImport.update({
-  id: '/_frontpage',
-  getParentRoute: () => rootRoute,
-} as any)
-
 const TagsIndexRoute = TagsIndexImport.update({
   path: '/tags/',
   getParentRoute: () => rootRoute,
 } as any)
 
+const InboxIndexRoute = InboxIndexImport.update({
+  path: '/inbox/',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const FrontpageIndexRoute = FrontpageIndexImport.update({
   path: '/',
-  getParentRoute: () => FrontpageRoute,
+  getParentRoute: () => rootRoute,
+} as any)
+
+const LibrarySearchRoute = LibrarySearchImport.update({
+  path: '/library/search',
+  getParentRoute: () => rootRoute,
 } as any)
 
 const LibraryBrowseRoute = LibraryBrowseImport.update({
@@ -50,8 +50,8 @@ const LibraryBrowseRoute = LibraryBrowseImport.update({
 } as any)
 
 const FrontpageModalRoute = FrontpageModalImport.update({
-  id: '/_modal',
-  getParentRoute: () => FrontpageRoute,
+  id: '/_frontpage/_modal',
+  getParentRoute: () => rootRoute,
 } as any)
 
 const LibraryBrowseArtistRoute = LibraryBrowseArtistImport.update({
@@ -81,26 +81,12 @@ const LibraryBrowseArtistAlbumIdItemIdRoute =
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_frontpage': {
-      id: '/_frontpage'
-      path: ''
-      fullPath: ''
-      preLoaderRoute: typeof FrontpageImport
-      parentRoute: typeof rootRoute
-    }
-    '/inbox': {
-      id: '/inbox'
-      path: '/inbox'
-      fullPath: '/inbox'
-      preLoaderRoute: typeof InboxImport
-      parentRoute: typeof rootRoute
-    }
     '/_frontpage/_modal': {
       id: '/_frontpage/_modal'
       path: ''
       fullPath: ''
       preLoaderRoute: typeof FrontpageModalImport
-      parentRoute: typeof FrontpageImport
+      parentRoute: typeof rootRoute
     }
     '/library/browse': {
       id: '/library/browse'
@@ -109,12 +95,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LibraryBrowseImport
       parentRoute: typeof rootRoute
     }
+    '/library/search': {
+      id: '/library/search'
+      path: '/library/search'
+      fullPath: '/library/search'
+      preLoaderRoute: typeof LibrarySearchImport
+      parentRoute: typeof rootRoute
+    }
     '/_frontpage/': {
       id: '/_frontpage/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof FrontpageIndexImport
-      parentRoute: typeof FrontpageImport
+      parentRoute: typeof rootRoute
+    }
+    '/inbox/': {
+      id: '/inbox/'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof InboxIndexImport
+      parentRoute: typeof rootRoute
     }
     '/tags/': {
       id: '/tags/'
@@ -157,13 +157,9 @@ declare module '@tanstack/react-router' {
 // Create and export the route tree
 
 export const routeTree = rootRoute.addChildren({
-  FrontpageRoute: FrontpageRoute.addChildren({
-    FrontpageModalRoute: FrontpageModalRoute.addChildren({
-      FrontpageModalScheduleRoute,
-    }),
-    FrontpageIndexRoute,
+  FrontpageModalRoute: FrontpageModalRoute.addChildren({
+    FrontpageModalScheduleRoute,
   }),
-  InboxRoute,
   LibraryBrowseRoute: LibraryBrowseRoute.addChildren({
     LibraryBrowseArtistRoute: LibraryBrowseArtistRoute.addChildren({
       LibraryBrowseArtistAlbumIdRoute:
@@ -172,6 +168,9 @@ export const routeTree = rootRoute.addChildren({
         }),
     }),
   }),
+  LibrarySearchRoute,
+  FrontpageIndexRoute,
+  InboxIndexRoute,
   TagsIndexRoute,
 })
 
@@ -183,25 +182,16 @@ export const routeTree = rootRoute.addChildren({
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
-        "/_frontpage",
-        "/inbox",
+        "/_frontpage/_modal",
         "/library/browse",
+        "/library/search",
+        "/_frontpage/",
+        "/inbox/",
         "/tags/"
       ]
     },
-    "/_frontpage": {
-      "filePath": "_frontpage.tsx",
-      "children": [
-        "/_frontpage/_modal",
-        "/_frontpage/"
-      ]
-    },
-    "/inbox": {
-      "filePath": "inbox.tsx"
-    },
     "/_frontpage/_modal": {
       "filePath": "_frontpage/_modal.tsx",
-      "parent": "/_frontpage",
       "children": [
         "/_frontpage/_modal/schedule"
       ]
@@ -212,9 +202,14 @@ export const routeTree = rootRoute.addChildren({
         "/library/browse/$artist"
       ]
     },
+    "/library/search": {
+      "filePath": "library/search.tsx"
+    },
     "/_frontpage/": {
-      "filePath": "_frontpage/index.tsx",
-      "parent": "/_frontpage"
+      "filePath": "_frontpage/index.tsx"
+    },
+    "/inbox/": {
+      "filePath": "inbox/index.tsx"
     },
     "/tags/": {
       "filePath": "tags/index.tsx"

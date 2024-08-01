@@ -1,4 +1,3 @@
-version: '3'
 services:
   beets-flask-tests:
     container_name: beets-flask-tests

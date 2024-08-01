@@ -21,6 +21,8 @@ import json
 import os
 from pathlib import Path
 from typing import Optional, TypedDict, cast
+from io import BytesIO
+from PIL import Image as PILImage
 import time
 
 from flask import (
@@ -38,6 +40,7 @@ from unidecode import unidecode
 from werkzeug.routing import BaseConverter, PathConverter
 
 import beets.library
+from mediafile import MediaFile  # comes with the beets install
 from beets import ui, util
 from beets.ui import _open_library
 from beets_flask.config import config
@@ -59,22 +62,28 @@ def _rep(obj, expand=False, minimal=False):
     """
     out = dict(obj)
 
-    # For out client side, we want to have a consistent name for each kind of item.
+    # For our client side, we want to have a consistent name for each kind of item.
     # for tracks its the title, for albums album name...
     out["name"] = (
         out.get("title", None) or out.get("album", None) or out.get("artist", None)
     )
 
-    if minimal:
-        out = {k: v for k, v in out.items() if k in ["id", "name"]}
-
     if isinstance(obj, beets.library.Item):
+        if minimal:
+            fields = [
+                "id",
+                "name",
+                "artist",
+                "albumartist",
+                "album",
+                "album_id",
+                "year",
+                "isrc",
+            ]
+            out = {k: v for k, v in out.items() if k in fields}
 
         if not minimal:
-            if config["gui"]["library"]["include_paths"].get(bool):
-                out["path"] = util.displayable_path(out["path"])
-            else:
-                del out["path"]
+            out["path"] = util.displayable_path(out["path"])
 
         for key, value in out.items():
             if isinstance(out[key], bytes):
@@ -90,11 +99,11 @@ def _rep(obj, expand=False, minimal=False):
         return out
 
     elif isinstance(obj, beets.library.Album):
-        if not minimal:
-            if config["gui"]["library"]["include_paths"].get(bool):
-                out["artpath"] = util.displayable_path(out["artpath"])
-            else:
-                del out["artpath"]
+        if minimal:
+            fields = ["id", "name", "albumartist", "year"]
+            out = {k: v for k, v in out.items() if k in fields}
+        else:
+            out["artpath"] = util.displayable_path(out["artpath"])
 
         if expand:
             out["items"] = [
@@ -218,7 +227,20 @@ def resource_query(name, patchable=False):
 
     def make_responder(query_func):
         def responder(queries):
+            # we set the route to use a path converter before us,
+            # so queries is a single string.
+            # edgecase: trailing escape character `\` would crash. we should
+            # also avoid this in the frontend.
+            if (
+                queries.endswith("\\")
+                and (len(queries) - len(queries.rstrip("\\"))) % 2 == 1
+            ):
+                # only remove the last character if it is a single escape character
+                queries = queries[:-1]
+
             entities = query_func(queries)
+
+            log.debug(queries)
 
             if get_method() == "DELETE":
                 if config["gui"]["library"]["readonly"].get(bool):
@@ -409,7 +431,7 @@ def item_file(item_id):
     return response
 
 
-@library_bp.route("/item/query/<query:queries>", methods=["GET", "DELETE", "PATCH"])
+@library_bp.route("/item/query/<path:queries>", methods=["GET", "DELETE", "PATCH"])
 @resource_query("items", patchable=True)
 def item_query(queries):
     return g.lib.items(queries)
@@ -453,19 +475,10 @@ def all_albums():
     return g.lib.albums()
 
 
-@library_bp.route("/album/query/<query:queries>", methods=["GET", "DELETE"])
+@library_bp.route("/album/query/<path:queries>", methods=["GET", "DELETE"])
 @resource_query("albums")
 def album_query(queries):
     return g.lib.albums(queries)
-
-
-@library_bp.route("/album/<int:album_id>/art")
-def album_art(album_id):
-    album = g.lib.get_album(album_id)
-    if album and album.artpath:
-        return send_file(album.artpath.decode())
-    else:
-        return abort(404)
 
 
 @library_bp.route("/album/values/<string:key>")
@@ -485,6 +498,67 @@ def album_items(album_id):
         return jsonify(items=[_rep(item) for item in album.items()])
     else:
         return abort(404)
+
+
+# ------------------------------------------------------------------------------------ #
+#                                        Artwork                                       #
+# ------------------------------------------------------------------------------------ #
+
+
+@library_bp.route("/item/<int:item_id>/art")
+def item_art(item_id):
+    log.debug(f"Item art query for '{item_id}'")
+    item: beets.library.Item = g.lib.get_item(item_id)
+    item_path = util.py3_path(item.path)
+    if not os.path.exists(item_path):
+        return abort(404, description="Media file not found")
+    mediafile = MediaFile(item_path)
+    if mediafile.art:
+        return _send_image(BytesIO(mediafile.art))
+    else:
+        abort(404, description="Item has no cover art")
+
+
+@library_bp.route("/album/<int:album_id>/art")
+def album_art(album_id):
+    log.debug(f"Art art query for album id '{album_id}'")
+    album = g.lib.get_album(album_id)
+    if album and album.artpath:
+        return _send_image(BytesIO(album.artpath.decode()))
+    elif album:
+        # Check the first item in the album for embedded cover art
+        try:
+            first_item: beets.library.Item = album.items()[0]
+            item_path = util.py3_path(first_item.path)
+            if not os.path.exists(item_path):
+                return abort(404, description="Media file not found")
+            mediafile = MediaFile(item_path)
+            if mediafile.art:
+                return _send_image(BytesIO(mediafile.art))
+            else:
+                return abort(404, description="Item has no cover art")
+        except:
+            return abort(500, description="Failed to get album items")
+
+    else:
+        return abort(404, description="No art for this album id, or id does not exist")
+
+
+def _send_image(img_data: BytesIO):
+    max_size = (200, 200)
+    img = _resize(img_data, max_size)
+    response = make_response(send_file(img, mimetype="image/jpeg"))
+    response.headers["Cache-Control"] = "public, max-age=86400"
+    return response
+
+
+def _resize(img_data: BytesIO, size: tuple[int, int]) -> BytesIO:
+    image = PILImage.open(img_data)
+    image.thumbnail(size)
+    image_io = BytesIO()
+    image.save(image_io, format="JPEG")
+    image_io.seek(0)
+    return image_io
 
 
 # ------------------------------------------------------------------------------------ #

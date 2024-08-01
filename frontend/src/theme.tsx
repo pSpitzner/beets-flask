@@ -1,14 +1,14 @@
+import CssBaseline from "@mui/material/CssBaseline";
 import { StyledEngineProvider } from "@mui/material/styles";
 import {
-    ThemeProvider as MatThemeProvider,
     createTheme,
     Experimental_CssVarsProvider as CssVarsProvider,
     experimental_extendTheme as extendTheme,
+    ThemeProvider as MatThemeProvider,
 } from "@mui/material/styles";
-import CssBaseline from "@mui/material/CssBaseline";
 
 // Global styles
-import "./index.css";
+import "./main.css";
 
 /** Relative basic theme for now
  * using a mint green and a orange
@@ -30,6 +30,10 @@ const darkTheme = extendTheme({
             // TODO: hover color that works well with background of badges
             action: {
                 hover: "#212529",
+            },
+            background: {
+                default: "#000000",
+                paper: "#181A1C",
             },
         },
         components: {
@@ -54,17 +58,11 @@ const darkTheme = extendTheme({
                     },
                 },
             },
-            MuiCard: {
+            MuiPaper: {
                 styleOverrides: {
                     root: {
-                        backgroundColor: "#0B0C0D",
-                    },
-                },
-            },
-            MuiAccordion: {
-                styleOverrides: {
-                    root: {
-                        backgroundColor: "#0B0C0D",
+                        // Ensuring consistent dark mode color independent of paper elevation
+                        backgroundImage: "none",
                     },
                 },
             },
