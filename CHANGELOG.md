@@ -5,13 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.0.3] - 24-07-26
+## [0.0.3] - 24-08-01
 
 ### Fixed
 - default config: mandatory fields cannot be set in the yaml, or they
 might persist although the user sets them. moved to config loading in python.
 - tmux session now restarts on page load if it is not alive.
 - navbar, tags, inbox are now more friendly for mobile
+- folder paths are now better escaped for terminal imports
 
 ### Added
 - Backend to get cover art from metadata of music files.
