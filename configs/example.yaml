@@ -22,7 +22,7 @@ gui:
             Lorem:
                 name: "Awesome Inbox"
                 path: "/music/inbox"
-                autotag: no # no | "preview" | "import"
+                autotag: no # no | "preview" | "import" | "auto" (generates a preview and imports if better than match:strong_rec_thresh)
             Ipsum:
                 name: "Dummy inbox"
                 path: "/music/dummy"
@@ -202,7 +202,6 @@ match:
         # track_index: 1.0
         # track_length: 2.0
         # track_id: 5.0
-
 
 spotify:
     source_weight: 0.0 # 0.0 gives spotify the same priority as musicbrainz
