@@ -81,7 +81,6 @@ import:
 ### GUI Config
 
 We added a `gui` section in the beets config to tweak the container and webfrontend.
-You need to add this section, and for now, all keys must be present.
 
 Config changes currently require a container restart.
 
