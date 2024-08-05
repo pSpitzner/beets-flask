@@ -10,7 +10,6 @@ import { TagI } from "../tags/_query";
 /*                                      Terminal                                      */
 /* ---------------------------------------------------------------------------------- */
 
-// "undefined" means the URL will be computed from the `window.location` object
 const TERMINAL_URL =
     import.meta.env.MODE === "development"
         ? "ws://localhost:5001/terminal"
@@ -82,7 +81,7 @@ const StatusContext = createContext<StatusContextI>({
     isConnected: false,
 });
 
-const useStatusSocket = () => {
+export const useStatusSocket = () => {
     const context = useContext(StatusContext);
     if (!context) {
         throw new Error(
@@ -92,7 +91,7 @@ const useStatusSocket = () => {
     return context;
 };
 
-const StatusContextProvider = ({
+export const StatusContextProvider = ({
     children,
     client,
 }: {
@@ -170,4 +169,94 @@ const StatusContextProvider = ({
     );
 };
 
-export { useStatusSocket, StatusContextProvider };
+
+/* ---------------------------------------------------------------------------------- */
+/*                             Interactive Import Sessions                            */
+/* ---------------------------------------------------------------------------------- */
+
+
+const IMPORT_URL =
+    import.meta.env.MODE === "development" ? "ws://localhost:5001/import" : "/import";
+
+const importSocket = io(IMPORT_URL, {
+    autoConnect: true,
+    transports: ["websocket"],
+});
+
+interface ImportContextI {
+    isConnected: boolean;
+    socket?: Socket;
+}
+
+const ImportContext = createContext<ImportContextI>({
+    isConnected: false,
+});
+
+export const useImportSocket = () => {
+    const context = useContext(ImportContext);
+    if (!context) {
+        throw new Error(
+            "useImportSocket must be used within a ImportSocketContextProvider"
+        );
+    }
+    return context;
+};
+
+export const ImportContextProvider = ({
+    children,
+    client,
+}: {
+    children: React.ReactNode;
+    client: QueryClient;
+}) => {
+    const [isConnected, setIsConnected] = useState(importSocket.connected);
+
+    useEffect(() => {
+        importSocket.connect();
+
+        function handleConnect() {
+            console.log("Import websocket connected");
+            setIsConnected(true);
+        }
+
+        function handleDisconnect() {
+            console.log("Import websocket disconnected");
+            setIsConnected(false);
+        }
+
+        function handleText(data: string) {
+            console.log("Importer text update", data);
+        }
+
+        function handleCandidates(data: unknown) {
+            console.log("Importer candidates", data);
+        }
+
+        function handlePrompt(data: unknown) {
+            console.log("Importer prompt", data);
+        }
+
+        importSocket.on("connect", handleConnect);
+        importSocket.on("disconnect", handleDisconnect);
+        importSocket.on("text", handleText);
+        importSocket.on("candidates", handleCandidates);
+        importSocket.on("prompt", handlePrompt);
+
+        return () => {
+            importSocket.off("connect", handleConnect);
+            importSocket.off("disconnect", handleDisconnect);
+            importSocket.off("text", handleText);
+            importSocket.off("candidates", handleCandidates);
+            importSocket.off("prompt", handlePrompt);
+        };
+    }, [client]);
+
+    const socketState: ImportContextI = {
+        socket: importSocket,
+        isConnected,
+    };
+
+    return (
+        <ImportContext.Provider value={socketState}>{children}</ImportContext.Provider>
+    );
+};

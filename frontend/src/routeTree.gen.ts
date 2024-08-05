@@ -11,6 +11,7 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as ImportImport } from './routes/import'
 import { Route as TagsIndexImport } from './routes/tags/index'
 import { Route as InboxIndexImport } from './routes/inbox/index'
 import { Route as FrontpageIndexImport } from './routes/_frontpage/index'
@@ -23,6 +24,11 @@ import { Route as LibraryBrowseArtistAlbumIdImport } from './routes/library/brow
 import { Route as LibraryBrowseArtistAlbumIdItemIdImport } from './routes/library/browse.$artist.$albumId.$itemId'
 
 // Create/Update Routes
+
+const ImportRoute = ImportImport.update({
+  path: '/import',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const TagsIndexRoute = TagsIndexImport.update({
   path: '/tags/',
@@ -81,6 +87,13 @@ const LibraryBrowseArtistAlbumIdItemIdRoute =
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/import': {
+      id: '/import'
+      path: '/import'
+      fullPath: '/import'
+      preLoaderRoute: typeof ImportImport
+      parentRoute: typeof rootRoute
+    }
     '/_frontpage/_modal': {
       id: '/_frontpage/_modal'
       path: ''
@@ -157,6 +170,7 @@ declare module '@tanstack/react-router' {
 // Create and export the route tree
 
 export const routeTree = rootRoute.addChildren({
+  ImportRoute,
   FrontpageModalRoute: FrontpageModalRoute.addChildren({
     FrontpageModalScheduleRoute,
   }),
@@ -182,6 +196,7 @@ export const routeTree = rootRoute.addChildren({
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
+        "/import",
         "/_frontpage/_modal",
         "/library/browse",
         "/library/search",
@@ -189,6 +204,9 @@ export const routeTree = rootRoute.addChildren({
         "/inbox/",
         "/tags/"
       ]
+    },
+    "/import": {
+      "filePath": "import.tsx"
     },
     "/_frontpage/_modal": {
       "filePath": "_frontpage/_modal.tsx",

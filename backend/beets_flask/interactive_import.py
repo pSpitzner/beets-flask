@@ -1,8 +1,10 @@
-from typing import Callable, List, NamedTuple
+from dataclasses import dataclass
+import time
+from typing import Callable, List, NamedTuple, Union
 
+from beets import ui, autotag, config, plugins, importer, IncludeLazyConfig
 from beets.ui import _open_library, print_, colorize, UserError
 from beets.util import displayable_path
-from beets import autotag, config, plugins, importer, IncludeLazyConfig
 from beets.ui.commands import (
     TerminalImportSession,
     choose_candidate,
@@ -27,6 +29,9 @@ from beets.autotag import (
     Recommendation,
     Proposal,
 )
+
+from beets.util.pipeline import Pipeline
+from beets.importer import ImportAbort
 
 
 from beets_flask.logger import log
@@ -68,7 +73,7 @@ def start_import_session(sid, data):
     global session
     assert session is None
     session = InteractiveImportSession(album_folder)
-    sio.start_background_task(session.event_loop)
+    sio.start_background_task(session.run)
 
 
 @sio.on("choice", namespace=namespace)  # type: ignore
@@ -78,10 +83,12 @@ def choice(sid, data):
     """
     global session
     if not session is None:
-        session.choice = data["choice"]
+        session.user_prompt_choice = data.get("prompt_choice", None)
+        session.user_candidate_choice = data.get("candidate_choice", None)
 
 
-class PromptChoice(NamedTuple):
+@dataclass
+class PromptChoice:
     short: str
     long: str
     callback: (
@@ -89,22 +96,43 @@ class PromptChoice(NamedTuple):
     )
 
 
+@dataclass
+class CandidateChoice:
+    id: int
+    match: Union[AlbumMatch, TrackMatch]
+    type: str = "unset"
+
+    def __post_init__(self):
+        self.type = "album" if isinstance(self.match, AlbumMatch) else "track"
+
+
 class InteractiveImportSession(BaseSession):
 
-    # user choices arrive async via websocket. we use this variable to pass them into the sessions event loop.
-    choice: str | None = None
+    # attributes to receive user input
+    user_prompt_choice: str | None = (
+        None  # 1-char string, representing prompt short choice
+    )
+    user_candidate_choice: int | None = None  # index of candidate choice
+    user_text_input: str | None = None  # if we have a text input, store it here
+
+    # current session state
+    task: importer.ImportTask | None = None
+    prompt_choices: List[PromptChoice] = []
+    candidate_choices: List[CandidateChoice] = []
+    pipeline: Pipeline | None = None
 
     def __init__(self, path: str, config_overlay: str | dict | None = None):
         set_config_defaults()
         super(InteractiveImportSession, self).__init__(path, config_overlay)
 
     def choose_match(self, task: importer.ImportTask):
-        """Given an initial autotagging of items, go through an interactive
+        """
+        Given an initial autotagging of items, go through an interactive
         dance with the user to ask for a choice of metadata. Returns an
         AlbumMatch object, ASIS, or SKIP.
         """
         # Show what we're tagging.
-        self.emit_text("Tagging...")
+        self.emit_text("Choose match...")
 
         path_str0 = displayable_path(task.paths, "\n")
         path_str = colorize("import_path", path_str0)
@@ -134,41 +162,114 @@ class InteractiveImportSession(BaseSession):
             # `choose_candidate` may be an `importer.action`, an
             # `AlbumMatch` object for a specific selection, or a
             # `PromptChoice`.
-            choices = self.get_choices(task)
-            choice = self.choose_candidate(
-                candidates = task.candidates,
-                singleton = False,
-                rec = task.rec,
-                cur_artist = task.cur_artist,
-                cur_album = task.cur_album,
-                itemcount=len(task.items),
-                choices=choices,
-            )
+
+            self.prompt_choices = self._get_choices(task)
+            choice = self._choose_candidate(task)
 
             # Basic choices that require no more action here.
             if choice in (importer.action.SKIP, importer.action.ASIS):
                 # Pass selection to main control flow.
                 return choice
 
-            # Plugin-provided choices. We invoke the associated callback
-            # function.
-            elif choice in choices:
-                post_choice = choice.callback(self, task)
-                if isinstance(post_choice, importer.action):
-                    return post_choice
-                elif isinstance(post_choice, autotag.Proposal):
-                    # Use the new candidates and continue around the loop.
-                    task.candidates = post_choice.candidates
-                    task.rec = post_choice.recommendation
-
-            # Otherwise, we have a specific match selection.
-            else:
-                # We have a candidate! Finish tagging. Here, choice is an
-                # AlbumMatch object.
-                assert isinstance(choice, autotag.AlbumMatch)
+            elif isinstance(choice, autotag.AlbumMatch):
                 return choice
 
-    def get_choices(self, task):
+            # Plugin-provided choices. We invoke the associated callback
+            # function.
+            assert choice in self.prompt_choices
+
+            post_choice = choice.callback(self, task)  # type: ignore
+            if isinstance(post_choice, importer.action):
+                return post_choice
+            elif isinstance(post_choice, autotag.Proposal):
+                # Use the new candidates and continue around the loop.
+                task.candidates = post_choice.candidates
+                task.rec = post_choice.recommendation
+
+    def _choose_candidate(
+        self,
+        task: importer.ImportTask,
+    ) -> importer.action | AlbumMatch | PromptChoice:
+        """
+        Given a sorted list of candidates, ask the user for a selection
+        of which candidate to use. Applies to both full albums and
+        singletons  (tracks). Candidates are either AlbumMatch or TrackMatch
+        objects depending on `singleton`. for albums, `cur_artist`,
+        `cur_album`, and `itemcount` must be provided. For singletons,
+        `item` must be provided.
+
+        `choices` is a list of `PromptChoice`s to be used in each prompt.
+
+        Returns one of the following:
+        * the result of the choice, which may be SKIP or ASIS
+        * a candidate (an AlbumMatch/TrackMatch object)
+        * a chosen `PromptChoice` from `choices`
+        """
+
+        #     candidates=task.candidates,
+        #     singleton=False,
+        #     rec=task.rec,
+        #     cur_artist=task.cur_artist,
+        #     cur_album=task.cur_album,
+        #     itemcount=len(task.items),
+        #     choices=choices,
+
+        choice_actions = {c.short: c for c in self.prompt_choices}
+
+        if not task.candidates:
+            msg = f"No matching release found for {len(task.items)} tracks."
+            self.logger.debug(msg)
+            self.emit_text(msg)
+
+            # wait for user input from web socket
+            sel = None
+            while sel is None:
+                time.sleep(0.5)
+                sel = self.user_prompt_choice
+            if sel in choice_actions:
+                return choice_actions[sel]
+            else:
+                raise ValueError("Invalid user choice. This should not happen.")
+
+        # Is the change good enough?
+        bypass_candidates = False
+        if task.rec != Recommendation.none:
+            match: AlbumMatch = task.candidates[0]
+            bypass_candidates = True
+
+        while True:
+            if not bypass_candidates:
+                self.emit_candidate_choices(task.candidates)
+
+                # not sure yet how we do this here.
+                # rework: always require a num choice and a proceed_with_num_choice prompt_choice
+                sel = None
+                num = None
+                while sel is None:
+                    time.sleep(0.5)
+                    sel = self.user_prompt_choice
+                    num = self.user_candidate_choice
+                    # we can only proceed after selecting a candidate
+                    if sel == "a" and num is None:
+                        sel = None
+
+                assert num is not None
+                match: AlbumMatch = task.candidates[num]
+
+            # 1. show change
+            self.emit_text("Change...")
+            # 2. confirmation change-display, new choices
+
+            sel = None
+            while sel is None:
+                sel = self.user_prompt_choice
+
+            if sel == "a":
+                return match  # type: ignore
+            elif sel in choice_actions:
+                return choice_actions[sel]
+
+    def _get_choices(self, task):
         """
         Get the list of prompt choices that should be presented to the
         user. This consists of both built-in choices and ones provided by
@@ -192,8 +293,8 @@ class InteractiveImportSession(BaseSession):
         ]
         if task.is_album:
             choices += [
-                PromptChoice("t", "as Tracks", lambda s, t: importer.action.TRACKS),
-                PromptChoice("g", "Group albums", lambda s, t: importer.action.ALBUMS),
+                # PromptChoice("t", "as Tracks", lambda s, t: importer.action.TRACKS),
+                # PromptChoice("g", "Group albums", lambda s, t: importer.action.ALBUMS),
             ]
         choices += [
             # PromptChoice("e", "Enter search", manual_search),
@@ -233,51 +334,69 @@ class InteractiveImportSession(BaseSession):
 
         return choices + extra_choices
 
-    def choose_candidate(
-        self,
-        candidates: List[autotag.AlbumMatch | autotag.TrackMatch],
-        singleton: bool,
-        rec: autotag.Recommendation | None,
-        cur_artist: str | None = None,
-        cur_album: str | None = None,
-        item: autotag.Item | None = None,
-        itemcount: int | None = None,
-        choices: List[PromptChoice] = [],
-    ):
+    def emit_candidate_choices(self, candidates: List[AlbumMatch | TrackMatch]):
         """
-        Given a sorted list of candidates, ask the user for a selection
-        of which candidate to use. Applies to both full albums and
-        singletons  (tracks). Candidates are either AlbumMatch or TrackMatch
-        objects depending on `singleton`. for albums, `cur_artist`,
-        `cur_album`, and `itemcount` must be provided. For singletons,
-        `item` must be provided.
+        Emit the list of candidates to the user.
 
-        `choices` is a list of `PromptChoice`s to be used in each prompt.
-
-        Returns one of the following:
-        * the result of the choice, which may be SKIP or ASIS
-        * a candidate (an AlbumMatch/TrackMatch object)
-        * a chosen `PromptChoice` from `choices`
+        # Parameters:
+        candidates: list of (distance, TrackInfo) pairs.
         """
-        # Sanity check.
-        if singleton:
-            assert item is not None
+        self.candidate_choices = [
+            CandidateChoice(i, c) for i, c in enumerate(candidates)
+        ]
+        sio.emit(
+            "candidates",
+            {"data": self.candidate_choices},
+            namespace=namespace,
+        )
+
+    def emit_text(self, text: str):
+        sio.emit("text", {"data": text}, namespace=namespace)
+
+    def emit_prompt_choices(self, choices: List[PromptChoice]):
+        self.prompt_choices = choices
+        sio.emit(
+            "prompt",
+            {
+                "data": [
+                    {
+                        "short": choice.short,
+                        "long": choice.long,
+                    }
+                    for choice in choices
+                ]
+            },
+            namespace=namespace,
+        )
+
+    def run(self):
+        """Run the import task. Customized version of ImportSession.run"""
+        self.logger.info(f"import started {time.asctime()}")
+        self.set_config(config["import"])
+
+        stages = [importer.read_tasks(self)]
+
+        if self.config["group_albums"] and not self.config["singletons"]:
+            stages += [importer.group_albums(self)]
+
+        if self.config["autotag"]:
+            stages += [importer.lookup_candidates(self), importer.user_query(self)]  # type: ignore
         else:
-            assert cur_artist is not None
-            assert cur_album is not None
+            stages += [importer.import_asis(self)]  # type: ignore
 
+        # Plugin stages.
+        for stage_func in plugins.early_import_stages():
+            stages.append(importer.plugin_stage(self, stage_func))  # type: ignore
+        for stage_func in plugins.import_stages():
+            stages.append(importer.plugin_stage(self, stage_func))  # type: ignore
 
+        stages += [importer.manipulate_files(self)]  # type: ignore
 
-    def emit_text(self, text: str, choices: List[PromptChoice] = []):
-        sio.emit("text", {"text": text}, namespace=namespace)
+        self.pipeline = Pipeline(stages)
 
-
-    def event_loop(self):
-        """
-        Main event loop for the interactive import session.
-        """
-        global session
-        while True:
-            if not session is self:
-                log.error("Session mismatch")
-                return
+        # Run the pipeline.
+        plugins.send("import_begin", session=self)
+        try:
+            self.pipeline.run_sequential()
+        except ImportAbort:
+            self.logger.debug(f"Interactive import session aborted by user")
