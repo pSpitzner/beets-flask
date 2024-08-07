@@ -56,6 +56,10 @@ def create_app():
 
     delete_tags(with_status=["pending", "tagging", "importing"])
 
+    from .interactive_import import register_import_socket
+
+    register_import_socket()
+
     log.debug("App created")
 
     return app

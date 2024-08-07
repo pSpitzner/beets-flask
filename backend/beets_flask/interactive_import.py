@@ -1,6 +1,9 @@
-from dataclasses import dataclass
+from copy import deepcopy
+from dataclasses import dataclass, asdict
 import time
-from typing import Callable, List, NamedTuple, Union
+from typing import Callable, List, NamedTuple, Union, Any
+from types import GeneratorType
+from uuid import uuid4 as uuid
 
 from beets import ui, autotag, config, plugins, importer, IncludeLazyConfig
 from beets.ui import _open_library, print_, colorize, UserError
@@ -21,14 +24,17 @@ from beets.ui.commands import (
 )
 
 from beets.autotag import (
-    AlbumMatch,
-    TrackMatch,
+    # AlbumMatch,
+    # TrackMatch,
     AlbumInfo,
     TrackInfo,
     Item,
     Recommendation,
     Proposal,
+    Distance,
 )
+
+import eventlet
 
 from beets.util.pipeline import Pipeline
 from beets.importer import ImportAbort
@@ -40,13 +46,25 @@ from beets_flask.config import config
 
 from beets_flask.beets_sessions import BaseSession, set_config_defaults
 
+log.debug("ImportSocket module loaded")
+
 namespace = "/import"
+
+
+def register_import_socket():
+    # we need this to at least allow loading the module at the right time
+    pass
 
 
 @sio.on("connect", namespace=namespace)  # type: ignore
 def connect(sid, environ):
     """new client connected"""
     log.debug(f"ImportSocket new client connected {sid}")
+    start_import_session(
+        sid, {"album_folder": "/music/inbox.nosync/1992/Chant [SINGLE]"}
+    )
+    if session is not None:
+        session.reemit_last()
 
 
 @sio.on("disconnect", namespace=namespace)  # type: ignore
@@ -71,9 +89,9 @@ def start_import_session(sid, data):
     """
     album_folder = data["album_folder"]
     global session
-    assert session is None
-    session = InteractiveImportSession(album_folder)
-    sio.start_background_task(session.run)
+    if session is None:
+        session = InteractiveImportSession(album_folder)
+        sio.start_background_task(session.run)
 
 
 @sio.on("choice", namespace=namespace)  # type: ignore
@@ -86,6 +104,34 @@ def choice(sid, data):
         session.user_prompt_choice = data.get("prompt_choice", None)
         session.user_candidate_choice = data.get("candidate_choice", None)
 
+
+@sio.on("receipt", namespace=namespace)  # type: ignore
+def receipt(sid, data):
+    """
+    We re-emit until we receive confirmation.
+    """
+    message_id = data.get("id", None)
+    if (
+        session is not None
+        and message_id is not None
+        and message_id not in session.emit_id_history
+    ):
+        session.emit_id_history.append(message_id)
+
+
+# type beets classes
+@dataclass
+class AlbumMatch(NamedTuple):
+    distance: Distance
+    info: AlbumInfo
+    extra_items: list[Item]
+    extra_tracks: list[TrackInfo]
+    mapping: dict[Item, TrackInfo] | None = None
+
+@dataclass
+class TrackMatch(NamedTuple):
+    distance: Distance
+    info: TrackInfo
 
 @dataclass
 class PromptChoice:
@@ -103,7 +149,54 @@ class CandidateChoice:
     type: str = "unset"
 
     def __post_init__(self):
-        self.type = "album" if isinstance(self.match, AlbumMatch) else "track"
+        self.type = "album" if hasattr(self.match, "extra_tracks") else "track"
+
+    def serialize(self):
+        # currently we try to send everything we have and patch whats needed.
+        # TODO: only send what frontend needs.
+
+        self.match.info.decode()
+        # beets' AlbumInfo & TrackInfo is a custom implementation of AttributeDict,
+        # which has some generators breaking serialization (which i cannot find)
+        # I found no way to get around them, except recreating the dict.
+        info = _enforce_dict(self.match.info)
+
+        info["tracks"] = []
+        for track in self.match.info.tracks or []:
+            track.decode()
+            info["tracks"].append(_enforce_dict(track))
+
+        match = dict()
+        match["info"] = info
+        match["distance"] = self.match.distance.distance
+
+        if self.type == "album":
+            match["extra_items"] = [] # self.match.extra_items
+            match["extra_tracks"] = [] # self.match.extra_tracks
+
+            for item in self.match.extra_items or []: # type: ignore
+                match["extra_items"].append(item.__repr__())
+
+            for track in self.match.extra_tracks or []: # type: ignore
+                track.decode()
+                match["extra_tracks"].append(_enforce_dict(track))
+
+        res = dict()
+        res["id"] = self.id
+        res["type"] = self.type
+        res["match"] = match
+
+        log.debug(res)
+        return res
+
+def _enforce_dict(d):
+    return {k: v for k, v in d.items()}
+
+@dataclass
+class ConfirmableMessage:
+    event: str
+    id: str
+    data: Any
 
 
 class InteractiveImportSession(BaseSession):
@@ -120,6 +213,8 @@ class InteractiveImportSession(BaseSession):
     prompt_choices: List[PromptChoice] = []
     candidate_choices: List[CandidateChoice] = []
     pipeline: Pipeline | None = None
+    emit_history: List[ConfirmableMessage] = []
+    emit_id_history: List[str] = []
 
     def __init__(self, path: str, config_overlay: str | dict | None = None):
         set_config_defaults()
@@ -162,9 +257,12 @@ class InteractiveImportSession(BaseSession):
             # `choose_candidate` may be an `importer.action`, an
             # `AlbumMatch` object for a specific selection, or a
             # `PromptChoice`.
+            log.debug("Choosing candidate")
 
             self.prompt_choices = self._get_choices(task)
             choice = self._choose_candidate(task)
+
+            log.debug("Choosing candidate done")
 
             # Basic choices that require no more action here.
             if choice in (importer.action.SKIP, importer.action.ASIS):
@@ -216,7 +314,7 @@ class InteractiveImportSession(BaseSession):
 
         choice_actions = {c.short: c for c in self.prompt_choices}
 
-        if not task.candidates:
+        if not task.candidates or len(task.candidates) == 0:
             msg = f"No matching release found for {len(task.items)} tracks."
             self.logger.debug(msg)
             self.emit_text(msg)
@@ -231,30 +329,28 @@ class InteractiveImportSession(BaseSession):
             else:
                 raise ValueError("Invalid user choice. This should not happen.")
 
-        # Is the change good enough?
-        bypass_candidates = False
-        if task.rec != Recommendation.none:
-            match: AlbumMatch = task.candidates[0]
-            bypass_candidates = True
+        match: AlbumMatch = task.candidates[0]
 
         while True:
-            if not bypass_candidates:
-                self.emit_candidate_choices(task.candidates)
 
-                # not sure yet how we do this here.
-                # rework: always require a num choice and a proceed_with_num_choice prompt_choice
-                sel = None
-                num = None
-                while sel is None:
-                    time.sleep(0.5)
-                    sel = self.user_prompt_choice
-                    num = self.user_candidate_choice
-                    # we can only proceed after selecting a candidate
-                    if sel == "a" and num is None:
-                        sel = None
+            log.debug("candidates loop")
 
-                assert num is not None
-                match: AlbumMatch = task.candidates[num]
+            self.emit_candidate_choices(task.candidates)
+
+            # not sure yet how we do this here.
+            # rework: always require a num choice and a proceed_with_num_choice prompt_choice
+            sel = None
+            num = None
+            while sel is None:
+                time.sleep(0.5)
+                sel = self.user_prompt_choice
+                num = self.user_candidate_choice
+                # we can only proceed after selecting a candidate
+                if sel == "a" and num is None:
+                    sel = None
+
+            assert num is not None
+            match: AlbumMatch = task.candidates[num]
 
             # 1. show change
             self.emit_text("Change...")
@@ -334,6 +430,29 @@ class InteractiveImportSession(BaseSession):
 
         return choices + extra_choices
 
+    def emit(self, event: str, data: Any):
+
+        msg = ConfirmableMessage(event, str(uuid()), data)
+        while msg.id not in self.emit_id_history:
+            log.debug("emit loop")
+            if client_connected():
+                log.debug(f"emitting {msg.event} {msg.data}")
+                sio.emit(msg.event, asdict(msg), namespace=namespace)
+            time.sleep(1)
+
+    def reemit_last(self):
+        if len(self.emit_history) == 0:
+            return
+
+        msg = self.emit_history.pop()
+        _ = self.emit_id_history.pop()
+        while msg.id not in self.emit_id_history:
+            log.debug("re-emit loop")
+            if client_connected():
+                log.debug(f"re-emitting {msg.event} {msg.data}")
+                sio.emit(msg.event, asdict(msg), namespace=namespace)
+            time.sleep(1)
+
     def emit_candidate_choices(self, candidates: List[AlbumMatch | TrackMatch]):
         """
         Emit the list of candidates to the user.
@@ -344,18 +463,18 @@ class InteractiveImportSession(BaseSession):
         self.candidate_choices = [
             CandidateChoice(i, c) for i, c in enumerate(candidates)
         ]
-        sio.emit(
+
+        self.emit(
             "candidates",
-            {"data": self.candidate_choices},
-            namespace=namespace,
+            {"data": self.candidate_choices[0].serialize()},
         )
 
     def emit_text(self, text: str):
-        sio.emit("text", {"data": text}, namespace=namespace)
+        self.emit("text", text)
 
     def emit_prompt_choices(self, choices: List[PromptChoice]):
         self.prompt_choices = choices
-        sio.emit(
+        self.emit(
             "prompt",
             {
                 "data": [
@@ -366,7 +485,6 @@ class InteractiveImportSession(BaseSession):
                     for choice in choices
                 ]
             },
-            namespace=namespace,
         )
 
     def run(self):
@@ -400,3 +518,8 @@ class InteractiveImportSession(BaseSession):
             self.pipeline.run_sequential()
         except ImportAbort:
             self.logger.debug(f"Interactive import session aborted by user")
+
+
+def client_connected():
+    rooms = sio.manager.rooms.get(namespace)
+    return rooms is not None and len(rooms) > 0
