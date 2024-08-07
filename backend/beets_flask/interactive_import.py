@@ -63,8 +63,9 @@ def connect(sid, environ):
     start_import_session(
         sid, {"album_folder": "/music/inbox.nosync/1992/Chant [SINGLE]"}
     )
-    if session is not None:
-        session.reemit_last()
+    # we cannot block here, or the client will not finish connecting.
+    # if session is not None:
+    # session.reemit_last()
 
 
 @sio.on("disconnect", namespace=namespace)  # type: ignore
@@ -89,9 +90,9 @@ def start_import_session(sid, data):
     """
     album_folder = data["album_folder"]
     global session
-    if session is None:
-        session = InteractiveImportSession(album_folder)
-        sio.start_background_task(session.run)
+    # if session is None:
+    session = InteractiveImportSession(album_folder)
+    sio.start_background_task(session.run)
 
 
 @sio.on("choice", namespace=namespace)  # type: ignore
@@ -99,6 +100,7 @@ def choice(sid, data):
     """
     User has made a choice. Pass it to the session.
     """
+    log.debug(f"recevied user choice {data}")
     global session
     if not session is None:
         session.user_prompt_choice = data.get("prompt_choice", None)
@@ -114,9 +116,9 @@ def receipt(sid, data):
     if (
         session is not None
         and message_id is not None
-        and message_id not in session.emit_id_history
+        and message_id not in session.confirmed_history
     ):
-        session.emit_id_history.append(message_id)
+        session.confirmed_history.append(message_id)
 
 
 # type beets classes
@@ -128,10 +130,12 @@ class AlbumMatch(NamedTuple):
     extra_tracks: list[TrackInfo]
     mapping: dict[Item, TrackInfo] | None = None
 
+
 @dataclass
 class TrackMatch(NamedTuple):
     distance: Distance
     info: TrackInfo
+
 
 @dataclass
 class PromptChoice:
@@ -140,6 +144,13 @@ class PromptChoice:
     callback: (
         None | Callable[[BaseSession, importer.ImportTask], importer.action | None]
     )
+
+    def serialize(self):
+        return {
+            "short": self.short,
+            "long": self.long,
+            "callback": self.callback.__name__ if self.callback else "None",
+        }
 
 
 @dataclass
@@ -160,37 +171,45 @@ class CandidateChoice:
         # which has some generators breaking serialization (which i cannot find)
         # I found no way to get around them, except recreating the dict.
         info = _enforce_dict(self.match.info)
+        # we need to add the `name` field, because in frontend, we reuse the typings
+        # from the library, where we added a `name` field to artist, albums and items.
+        info["name"] = self.match.info.album
 
         info["tracks"] = []
         for track in self.match.info.tracks or []:
             track.decode()
-            info["tracks"].append(_enforce_dict(track))
+            t = _enforce_dict(track)
+            t["name"] = track.title
+            info["tracks"].append(t)
 
         match = dict()
         match["info"] = info
         match["distance"] = self.match.distance.distance
 
         if self.type == "album":
-            match["extra_items"] = [] # self.match.extra_items
-            match["extra_tracks"] = [] # self.match.extra_tracks
+            match["extra_items"] = []  # self.match.extra_items
+            match["extra_tracks"] = []  # self.match.extra_tracks
 
-            for item in self.match.extra_items or []: # type: ignore
+            for item in self.match.extra_items or []:  # type: ignore
                 match["extra_items"].append(item.__repr__())
 
-            for track in self.match.extra_tracks or []: # type: ignore
+            for track in self.match.extra_tracks or []:  # type: ignore
                 track.decode()
-                match["extra_tracks"].append(_enforce_dict(track))
+                t = _enforce_dict(track)
+                t["name"] = track.title
+                match["extra_tracks"].append(t)
 
         res = dict()
         res["id"] = self.id
         res["type"] = self.type
         res["match"] = match
 
-        log.debug(res)
         return res
+
 
 def _enforce_dict(d):
     return {k: v for k, v in d.items()}
+
 
 @dataclass
 class ConfirmableMessage:
@@ -214,7 +233,7 @@ class InteractiveImportSession(BaseSession):
     candidate_choices: List[CandidateChoice] = []
     pipeline: Pipeline | None = None
     emit_history: List[ConfirmableMessage] = []
-    emit_id_history: List[str] = []
+    confirmed_history: List[str] = []
 
     def __init__(self, path: str, config_overlay: str | dict | None = None):
         set_config_defaults()
@@ -319,7 +338,7 @@ class InteractiveImportSession(BaseSession):
             self.logger.debug(msg)
             self.emit_text(msg)
 
-            # wait for user input from web socket
+            self.emit_prompt_choices()
             sel = None
             while sel is None:
                 time.sleep(0.5)
@@ -335,6 +354,7 @@ class InteractiveImportSession(BaseSession):
 
             log.debug("candidates loop")
 
+            self.emit_prompt_choices()
             self.emit_candidate_choices(task.candidates)
 
             # not sure yet how we do this here.
@@ -428,28 +448,36 @@ class InteractiveImportSession(BaseSession):
                     )
                     extra_choices.remove(c)
 
-        return choices + extra_choices
+        log.debug(f"choices {[c.long for c in choices + extra_choices]}")
+
+        # manually cast, as beets does not give us PrompChoice instances, but namedutples
+        return [
+            PromptChoice(c.short, c.long, c.callback) for c in
+            choices + extra_choices
+        ]
 
     def emit(self, event: str, data: Any):
 
         msg = ConfirmableMessage(event, str(uuid()), data)
-        while msg.id not in self.emit_id_history:
-            log.debug("emit loop")
+        self.emit_history.append(msg)
+        while msg.id not in self.confirmed_history:
             if client_connected():
-                log.debug(f"emitting {msg.event} {msg.data}")
+                # log.debug(f"emitting {msg.event} {msg.data}")
                 sio.emit(msg.event, asdict(msg), namespace=namespace)
             time.sleep(1)
 
     def reemit_last(self):
+
         if len(self.emit_history) == 0:
             return
 
-        msg = self.emit_history.pop()
-        _ = self.emit_id_history.pop()
-        while msg.id not in self.emit_id_history:
-            log.debug("re-emit loop")
+        if len(self.confirmed_history) == len(self.emit_history):
+            self.confirmed_history.pop()
+
+        msg = self.emit_history[-1]
+        while msg.id not in self.confirmed_history:
             if client_connected():
-                log.debug(f"re-emitting {msg.event} {msg.data}")
+                # log.debug(f"re-emitting {msg.event} {msg.data}")
                 sio.emit(msg.event, asdict(msg), namespace=namespace)
             time.sleep(1)
 
@@ -463,28 +491,25 @@ class InteractiveImportSession(BaseSession):
         self.candidate_choices = [
             CandidateChoice(i, c) for i, c in enumerate(candidates)
         ]
-
+        log.debug(
+            f"emitting candidates {[c.match.info.album for c in self.candidate_choices]}"
+        )
         self.emit(
             "candidates",
-            {"data": self.candidate_choices[0].serialize()},
+            [c.serialize() for c in self.candidate_choices],
         )
 
     def emit_text(self, text: str):
+        log.debug(f"emitting text {text}")
         self.emit("text", text)
 
-    def emit_prompt_choices(self, choices: List[PromptChoice]):
-        self.prompt_choices = choices
+    def emit_prompt_choices(self, choices: List[PromptChoice] | None = None):
+        if choices is not None:
+            self.prompt_choices = choices
+        log.debug(f"emitting prompt choices {[c.long for c in self.prompt_choices]}")
         self.emit(
             "prompt",
-            {
-                "data": [
-                    {
-                        "short": choice.short,
-                        "long": choice.long,
-                    }
-                    for choice in choices
-                ]
-            },
+            [c.serialize() for c in self.prompt_choices],
         )
 
     def run(self):
