@@ -362,8 +362,8 @@ export function TerminalImportAction(props: Partial<ActionProps>) {
 
     const escapeForBash = (str: string) => {
         return str
-            .replace(/'/g, "'\\''")
             .replace(/\\/g, "\\\\")
+            .replace(/'/g, "\\'")
             .replace(/ /g, "\\ ");
     };
 
