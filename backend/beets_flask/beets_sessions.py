@@ -64,7 +64,7 @@ class BaseSession(importer.ImportSession):
             config.set_file(config_overlay)
         elif isinstance(config_overlay, dict):
             config.set_args(config_overlay)
-        # self.run() sets self.config to dict(config['import'])
+        # super.run() sets self.config to dict(config['import'])
 
         handler = logging.StreamHandler()
         handler.setFormatter(

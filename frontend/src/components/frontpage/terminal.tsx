@@ -17,7 +17,7 @@ import { useTerminalSocket } from "@/components/common/useSocket";
 import "node_modules/@xterm/xterm/css/xterm.css";
 import styles from "./terminal.module.scss";
 
-// match our style - this is somewhat redundant with index.css
+// match our style - this is somewhat redundant with main.css
 const xTermTheme = {
     red: "#C0626B",
     green: "#A4BF8C",
@@ -214,7 +214,7 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
         term.writeln("\rConnected!   ");
 
         const onInput = term.onData((data) => {
-            console.log("ptyInput", data);
+            // console.log("ptyInput", data);
             if (data === "\x01" || data === "\x04") {
                 // prevent ctrl+a because it can detach tmux, and ctrl+d because it can close the terminal
                 return;
@@ -226,7 +226,7 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
             // term!.clear(); seems to be preferred from the documentation,
             // but it leaves the prompt on the first line in place - which we here do not want
             // ideally we would directly access the buffer.
-            console.log("ptyOutput", data);
+            // console.log("ptyOutput", data);
             term!.reset();
             data.output.forEach((line, index) => {
                 if (index < data.output.length - 1) {
@@ -248,7 +248,7 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
         socket.on("ptyCursorPosition", onCursorUpdate);
 
         const onResize = term.onResize(({ cols, rows }) => {
-            console.log(`Terminal was resized to ${cols} cols and ${rows} rows.`);
+            // console.log(`Terminal was resized to ${cols} cols and ${rows} rows.`);
             socket.emit("ptyResize", { cols, rows: rows });
         });
 
