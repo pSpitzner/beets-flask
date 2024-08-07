@@ -120,6 +120,12 @@ export default function NavTabs() {
                 icon={<Search />}
                 //
             />
+            <NavItem
+                to="/import"
+                value={"/import"}
+                label={"Import"}
+                icon={<Library />}
+            />
         </Tabs>
     );
 }

@@ -1,7 +1,7 @@
 // we use a single socket, currently only needed for the terminal connection
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { io,Socket } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 import { QueryClient } from "@tanstack/react-query";
 
 import { TagI } from "../tags/_query";
@@ -54,8 +54,54 @@ export const useTerminalSocket = () => {
 };
 
 /* ---------------------------------------------------------------------------------- */
+/*                                 Interactive Import                                 */
+/* ---------------------------------------------------------------------------------- */
+
+const IMPORT_URL =
+    import.meta.env.MODE === "development" ? "ws://localhost:5001/import" : "/import";
+
+const importSocket = io(IMPORT_URL, {
+    autoConnect: false,
+    transports: ["websocket"],
+});
+
+export const useImportSocket = () => {
+    const [isConnected, setIsConnected] = useState(importSocket.connected);
+
+    useEffect(() => {
+        importSocket.connect();
+
+        return () => {
+            importSocket.disconnect();
+        };
+    }, []);
+
+    useEffect(() => {
+        function handleConnect() {
+            console.log("Import websocket connected");
+            setIsConnected(true);
+        }
+        function handleDisconnect() {
+            console.log("Import websocket disconnected");
+            setIsConnected(false);
+        }
+
+        importSocket.on("connect", handleConnect);
+        importSocket.on("disconnect", handleDisconnect);
+
+        return () => {
+            importSocket.off("connect", handleConnect);
+            importSocket.off("disconnect", handleDisconnect);
+        };
+    }, []);
+
+    return { socket: importSocket, isConnected };
+};
+
+/* ---------------------------------------------------------------------------------- */
 /*                           Status Updates, (previous SSE)                           */
 /* ---------------------------------------------------------------------------------- */
+
 
 interface StatusInvalidationI {
     attributes: Record<string, string> | "all";
@@ -118,9 +164,13 @@ export const StatusContextProvider = ({
 
             if (data.attributes === "all") {
                 if (data.tagId)
-                    client.invalidateQueries({ queryKey: ["tag", data.tagId] }).catch(console.error);
+                    client
+                        .invalidateQueries({ queryKey: ["tag", data.tagId] })
+                        .catch(console.error);
                 if (data.tagPath)
-                    client.invalidateQueries({ queryKey: ["tag", data.tagPath] }).catch(console.error);
+                    client
+                        .invalidateQueries({ queryKey: ["tag", data.tagPath] })
+                        .catch(console.error);
             } else {
                 const attrs = data.attributes;
                 if (data.tagId)
@@ -136,9 +186,11 @@ export const StatusContextProvider = ({
 
         function handleInboxUpdates(data: StatusInvalidationI) {
             if (data.attributes === "all") {
-                client.invalidateQueries({
-                    queryKey: ["inbox"],
-                }).catch(console.error);
+                client
+                    .invalidateQueries({
+                        queryKey: ["inbox"],
+                    })
+                    .catch(console.error);
             } else {
                 throw new Error(
                     "Inbox update with partial attributes is not supported"
@@ -166,97 +218,5 @@ export const StatusContextProvider = ({
 
     return (
         <StatusContext.Provider value={socketState}>{children}</StatusContext.Provider>
-    );
-};
-
-
-/* ---------------------------------------------------------------------------------- */
-/*                             Interactive Import Sessions                            */
-/* ---------------------------------------------------------------------------------- */
-
-
-const IMPORT_URL =
-    import.meta.env.MODE === "development" ? "ws://localhost:5001/import" : "/import";
-
-const importSocket = io(IMPORT_URL, {
-    autoConnect: true,
-    transports: ["websocket"],
-});
-
-interface ImportContextI {
-    isConnected: boolean;
-    socket?: Socket;
-}
-
-const ImportContext = createContext<ImportContextI>({
-    isConnected: false,
-});
-
-export const useImportSocket = () => {
-    const context = useContext(ImportContext);
-    if (!context) {
-        throw new Error(
-            "useImportSocket must be used within a ImportSocketContextProvider"
-        );
-    }
-    return context;
-};
-
-export const ImportContextProvider = ({
-    children,
-    client,
-}: {
-    children: React.ReactNode;
-    client: QueryClient;
-}) => {
-    const [isConnected, setIsConnected] = useState(importSocket.connected);
-
-    useEffect(() => {
-        importSocket.connect();
-
-        function handleConnect() {
-            console.log("Import websocket connected");
-            setIsConnected(true);
-        }
-
-        function handleDisconnect() {
-            console.log("Import websocket disconnected");
-            setIsConnected(false);
-        }
-
-        function handleText(data: string) {
-            console.log("Importer text update", data);
-        }
-
-        function handleCandidates(data: unknown) {
-            console.log("Importer candidates", data);
-        }
-
-        function handlePrompt(data: unknown) {
-            console.log("Importer prompt", data);
-        }
-
-        importSocket.on("connect", handleConnect);
-        importSocket.on("disconnect", handleDisconnect);
-        importSocket.on("text", handleText);
-        importSocket.on("candidates", handleCandidates);
-        importSocket.on("prompt", handlePrompt);
-
-        return () => {
-            importSocket.off("connect", handleConnect);
-            importSocket.off("disconnect", handleDisconnect);
-            importSocket.off("text", handleText);
-            importSocket.off("candidates", handleCandidates);
-            importSocket.off("prompt", handlePrompt);
-        };
-    }, [client]);
-
-    const socketState: ImportContextI = {
-        socket: importSocket,
-        isConnected,
-    };
-
-    return (
-        <ImportContext.Provider value={socketState}>{children}</ImportContext.Provider>
     );
 };
