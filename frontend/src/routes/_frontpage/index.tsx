@@ -1,5 +1,5 @@
 import Grid from "@mui/material/Unstable_Grid2";
-import { createFileRoute,Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { InboxStatsGridItems } from "@/components/frontpage/inboxStats";
 import { LibraryStats } from "@/components/frontpage/libraryStats";

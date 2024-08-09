@@ -18,6 +18,8 @@ export interface Album extends MinimalAlbum {
     [key: string]: unknown; // enable indexing item[key]
     items?: MinimalItem[];
 
+    artist?: string; // if this field exists depends on which part of beets we ask. looking up online data does have it, library queries dont.
+
     added?: number; // 1707767640.980912
     album?: string; // "Away From the Sun"
     albumartist_credit?: string; // "3 Doors Down"

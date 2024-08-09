@@ -1,13 +1,104 @@
+# class ImportTask(BaseImportTask):
+#     """Represents a single set of items to be imported along with its
+#     intermediate state. May represent an album or a single item.
+
+#     The import session and stages call the following methods in the
+#     given order.
+
+#     * `lookup_candidates(self)` Sets the `common_artist`, `common_album`,
+#       `candidates`, and `rec` attributes. `candidates` is a list of
+#       `AlbumMatch` objects.
+
+#     * `def choose_match(self, session)` Uses the session to set the `match` attribute
+#       from the `candidates` list.
+
+#     * `find_duplicates(self, lib)` Returns a list of albums from `lib` with the
+#       same artist and album name as the task.
+
+#     * `def apply_metadata(self)` Sets the attributes of the items from the
+#       task's `match` attribute.
+
+#     * `add(self, lib)` Add the imported items and album to the database.
+
+#     * `manipulate_files(self, operation=None, write=False, session=None)`
+#       Copy, move, and write files depending on the
+#       session configuration.
+
+#     * `set_fields(self, lib)` Sets the fields given at CLI or configuration to
+#       the specified values.
+
+#     * `finalize(self, session)` Update the import progress and cleanup the file
+#       system.
+
+# ----------------------------------------------------------------------
+
+# ImportSession Stages -> pipeline
+
+# * read_tasks(session):
+#     A generator yielding all the albums (as ImportTask objects) found
+#     in the user-specified list of paths. In the case of a singleton
+#     import, yields single-item tasks instead.
+
+# * group_albums(session):
+#     A pipeline stage that groups the items of each task into albums
+#     using their metadata.
+
+#     Groups are identified using their artist and album fields. The
+#     pipeline stage emits new album tasks for each discovered group.
+
+# --flat?
+
+# if self.config["autotag"]:
+#     * lookup_candidates(session, task)
+#         A coroutine for performing the initial MusicBrainz lookup for an
+#         album. It accepts lists of Items and yields
+#         (items, cur_artist, cur_album, candidates, rec) tuples. If no match
+#         is found, all of the yielded parameters (except items) are None.
+#     * user_query(session, task)
+#         A coroutine for interfacing with the user about the tagging
+#         process.
+
+#         The coroutine accepts an ImportTask objects. It uses the
+#         session's `choose_match` method to determine the `action` for
+#         this task. Depending on the action additional stages are executed
+#         and the processed task is yielded.
+
+#         It emits the ``import_task_choice`` event for plugins. Plugins have
+#         access to the choice via the ``task.choice_flag`` property and may
+#         choose to change it.
+
+# else:
+#     * import_asis(session, task)
+#         Select the `action.ASIS` choice for all tasks.
+
+#         This stage replaces the initial_lookup and user_query stages
+#         when the importer is run without autotagging.
+
+# plugins
+#     * plugin_stage(session, func, task)
+#         A coroutine (pipeline stage) that calls the given function with
+#         each non-skipped import task. These stages occur between applying
+#         metadata changes and moving/copying/writing files.
+#     * early_import_stages()
+#     * import_stages()
+
+# * manipulate_files(session, task):
+#     A coroutine (pipeline stage) that performs necessary file
+#     manipulations *after* items have been added to the library and
+#     finalizes each task.
+
+from __future__ import annotations
 from copy import deepcopy
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
+from collections import namedtuple
 import time
-from typing import Callable, List, NamedTuple, Union, Any
+from typing import Callable, List, NamedTuple, Union, Any, Dict, TypedDict
 from types import GeneratorType
 from uuid import uuid4 as uuid
 
 from beets import ui, autotag, config, plugins, importer, IncludeLazyConfig
 from beets.ui import _open_library, print_, colorize, UserError
-from beets.util import displayable_path
+from beets.util import displayable_path, pipeline
 from beets.ui.commands import (
     TerminalImportSession,
     choose_candidate,
@@ -60,9 +151,7 @@ def register_import_socket():
 def connect(sid, environ):
     """new client connected"""
     log.debug(f"ImportSocket new client connected {sid}")
-    start_import_session(
-        sid, {"album_folder": "/music/inbox.nosync/1992/Chant [SINGLE]"}
-    )
+    start_import_session(sid, {"album_folder": "/music/inbox.nosync/Bad Company UK/"})
     # we cannot block here, or the client will not finish connecting.
     # if session is not None:
     # session.reemit_last()
@@ -95,30 +184,57 @@ def start_import_session(sid, data):
     sio.start_background_task(session.run)
 
 
-@sio.on("choice", namespace=namespace)  # type: ignore
-def choice(sid, data):
+class ChoiceRequest(TypedDict):
+    selection_id: str
+    candidate_idx: int
+
+
+@sio.on("choose_candidate", namespace=namespace)  # type: ignore
+def choice(sid, req: ChoiceRequest):
     """
     User has made a choice. Pass it to the session.
     """
-    log.debug(f"recevied user choice {data}")
+    selection_id = req.get("selection_id", None)
+    candidate_idx = req.get("candidate_idx", None)
+    log.debug(f"recevied user choice {selection_id=}")
     global session
     if not session is None:
-        session.user_prompt_choice = data.get("prompt_choice", None)
-        session.user_candidate_choice = data.get("candidate_choice", None)
+        state = session.import_state.get_selection_state_by_id(selection_id)
+        if state is None:
+            raise ValueError("No selection state found for task.")
+        state.current_candidate_idx = candidate_idx
+
+    # forward state to all other clients
+    sio.emit("candidate_choice", req, namespace=namespace)
 
 
-@sio.on("receipt", namespace=namespace)  # type: ignore
-def receipt(sid, data):
+class CompletionRequest(TypedDict):
+    selection_ids: List[str]
+    are_completed: List[bool]
+
+
+@sio.on("complete_selections", namespace=namespace)  # type: ignore
+def complete_selections(sid, req: CompletionRequest):
     """
-    We re-emit until we receive confirmation.
+    Mark selection states as completed.
     """
-    message_id = data.get("id", None)
-    if (
-        session is not None
-        and message_id is not None
-        and message_id not in session.confirmed_history
-    ):
-        session.confirmed_history.append(message_id)
+    selection_ids = req.get("selection_ids", [])
+    are_completed = req.get("are_completed", [])
+    log.debug(f"received completion request {selection_ids=} {are_completed=}")
+    if len(selection_ids) != len(are_completed):
+        raise ValueError(
+            "Selections and completion status do not have the same lengths."
+        )
+    global session
+    if not session is None:
+        for i, id in enumerate(selection_ids):
+            state = session.import_state.get_selection_state_by_id(id)
+            if state is None:
+                raise ValueError("No selection state found for task.")
+            state.completed = are_completed[i]
+
+    # forward state to all other clients
+    sio.emit("selections_completed", req, namespace=namespace)
 
 
 # type beets classes
@@ -137,8 +253,7 @@ class TrackMatch(NamedTuple):
     info: TrackInfo
 
 
-@dataclass
-class PromptChoice:
+class PromptChoice(NamedTuple):
     short: str
     long: str
     callback: (
@@ -201,8 +316,9 @@ class CandidateChoice:
 
         res = dict()
         res["id"] = self.id
-        res["type"] = self.type
-        res["match"] = match
+
+        res["track_match"] = match if self.type == "track" else None
+        res["album_match"] = match if self.type == "album" else None
 
         return res
 
@@ -212,305 +328,142 @@ def _enforce_dict(d):
 
 
 @dataclass
-class ConfirmableMessage:
-    event: str
-    id: str
-    data: Any
+class SelectionState:
+    task: importer.ImportTask
+    id: str = str(uuid())
+    current_candidate_idx: int | None = None
+    completed: bool = False
+
+    @property
+    def candidate_choices(self) -> List[CandidateChoice]:
+        if self.task is None:
+            return []
+        return [CandidateChoice(i, c) for i, c in enumerate(self.task.candidates)]
+
+    def serialize(self):
+        return {
+            "candidates": [c.serialize() for c in self.candidate_choices],
+            "current_candidate_idx": self.current_candidate_idx,
+            "id": self.id,
+        }
+
+    def emit(self):
+        emit(
+            "selection_state",
+            self.serialize(),
+        )
+
+    def await_completion(self):
+        while not self.completed:
+            time.sleep(0.5)
+        return True
+
+
+@dataclass
+class ImportState:
+    _selection_states: List[SelectionState] = field(default_factory=list)
+
+    @property
+    def selection_states(self):
+        return self._selection_states
+
+    @property
+    def selection_state_ids(self):
+        return [s.id for s in self.selection_states]
+
+    @property
+    def tasks(self):
+        return [s.task for s in self.selection_states]
+
+    def get_selection_state_for_task(
+        self, task: importer.ImportTask
+    ) -> SelectionState | None:
+        state: SelectionState | None = None
+        log.debug(f"get_selection_state_for_task {task} {self.selection_states}")
+        for s in self.selection_states:
+            # TODO: are tasks really comparable?
+            if s.task == task:
+                state = s
+                break
+        return state
+
+    def get_selection_state_by_id(self, id: str) -> SelectionState | None:
+        state: SelectionState | None = None
+        for s in self.selection_states:
+            if s.id == id:
+                state = s
+                break
+        return state
+
+    def upsert_task(self, task: importer.ImportTask) -> SelectionState:
+        """Adds selection state if it does not exist yet or updates
+        existitng entry. Automatically emits the updated state to clients.
+        """
+        state = self.get_selection_state_for_task(task)
+
+        if state is None:
+            state = SelectionState(task)
+            self._selection_states.append(state)
+
+        state.emit()
+
+        return state
+
+    def await_completion_all(self):
+        while not all([s.completed for s in self.selection_states]):
+            time.sleep(0.5)
+        return True
+
+
+@pipeline.mutator_stage
+def offer_match(session: InteractiveImportSession, task: importer.ImportTask):
+    session.offer_match(task)
 
 
 class InteractiveImportSession(BaseSession):
-
-    # attributes to receive user input
-    user_prompt_choice: str | None = (
-        None  # 1-char string, representing prompt short choice
-    )
-    user_candidate_choice: int | None = None  # index of candidate choice
-    user_text_input: str | None = None  # if we have a text input, store it here
-
     # current session state
+    import_state = ImportState()
+
     task: importer.ImportTask | None = None
-    prompt_choices: List[PromptChoice] = []
-    candidate_choices: List[CandidateChoice] = []
     pipeline: Pipeline | None = None
-    emit_history: List[ConfirmableMessage] = []
-    confirmed_history: List[str] = []
 
     def __init__(self, path: str, config_overlay: str | dict | None = None):
         set_config_defaults()
         super(InteractiveImportSession, self).__init__(path, config_overlay)
 
-    def choose_match(self, task: importer.ImportTask):
-        """
-        Given an initial autotagging of items, go through an interactive
-        dance with the user to ask for a choice of metadata. Returns an
-        AlbumMatch object, ASIS, or SKIP.
-        """
-        # Show what we're tagging.
-        self.emit_text("Choose match...")
+    def offer_match(self, task: importer.ImportTask):
+        self.import_state.upsert_task(task)
 
-        path_str0 = displayable_path(task.paths, "\n")
-        path_str = colorize("import_path", path_str0)
-        items_str0 = "({} items)".format(len(task.items))
-        items_str = colorize("import_path_items", items_str0)
-        self.emit_text(" ".join([path_str, items_str]))
-
-        # Let plugins display info or prompt the user before we go through the
-        # process of selecting candidate.
+        # tell plugins we are starting user_query
         results = plugins.send("import_task_before_choice", session=self, task=task)
         actions = [action for action in results if action]
-
-        if len(actions) == 1:
-            return actions[0]
-        elif len(actions) > 1:
-            raise plugins.PluginConflictException(
-                "Only one handler for `import_task_before_choice` may return "
-                "an action."
+        # but do not support actions via gui (yet?)
+        if len(actions) > 0:
+            raise ValueError(
+                "Plugins are not allowed to return actions for GUI Sessions"
             )
 
-        # Skip summary judgement. We always want interaction.
-        # action = _summary_judgment(task.rec)
-
-        # Loop until we have a choice.
-        while True:
-            # Ask for a choice from the user. The result of
-            # `choose_candidate` may be an `importer.action`, an
-            # `AlbumMatch` object for a specific selection, or a
-            # `PromptChoice`.
-            log.debug("Choosing candidate")
-
-            self.prompt_choices = self._get_choices(task)
-            choice = self._choose_candidate(task)
-
-            log.debug("Choosing candidate done")
-
-            # Basic choices that require no more action here.
-            if choice in (importer.action.SKIP, importer.action.ASIS):
-                # Pass selection to main control flow.
-                return choice
-
-            elif isinstance(choice, autotag.AlbumMatch):
-                return choice
-
-            # Plugin-provided choices. We invoke the associated callback
-            # function.
-            assert choice in self.prompt_choices
-
-            post_choice = choice.callback(self, task)  # type: ignore
-            if isinstance(post_choice, importer.action):
-                return post_choice
-            elif isinstance(post_choice, autotag.Proposal):
-                # Use the new candidates and continue around the loop.
-                task.candidates = post_choice.candidates
-                task.rec = post_choice.recommendation
-
-    def _choose_candidate(
-        self,
-        task: importer.ImportTask,
-    ) -> importer.action | AlbumMatch | PromptChoice:
+    def choose_match(self, task: importer.ImportTask):
         """
-        Given a sorted list of candidates, ask the user for a selection
-        of which candidate to use. Applies to both full albums and
-        singletons  (tracks). Candidates are either AlbumMatch or TrackMatch
-        objects depending on `singleton`. for albums, `cur_artist`,
-        `cur_album`, and `itemcount` must be provided. For singletons,
-        `item` must be provided.
+        Needs to return an AlbumMatch object, ASIS, or SKIP.
 
-        `choices` is a list of `PromptChoice`s to be used in each prompt.
-
-        Returns one of the following:
-        * the result of the choice, which may be SKIP or ASIS
-        * a candidate (an AlbumMatch/TrackMatch object)
-        * a chosen `PromptChoice` from `choices`
+        this blocks the stages pipeline, until choose_match invoked by each task has
+        returned one of the above.
         """
+        state = self.import_state.get_selection_state_for_task(task)
 
-        #     candidates=task.candidates,
-        #     singleton=False,
-        #     rec=task.rec,
-        #     cur_artist=task.cur_artist,
-        #     cur_album=task.cur_album,
-        #     itemcount=len(task.items),
-        #     choices=choices,
+        if state is None:
+            raise ValueError("No selection state found for task.")
 
-        choice_actions = {c.short: c for c in self.prompt_choices}
+        # BLOCKING
+        state.await_completion()
 
-        if not task.candidates or len(task.candidates) == 0:
-            msg = f"No matching release found for {len(task.items)} tracks."
-            self.logger.debug(msg)
-            self.emit_text(msg)
+        if state.current_candidate_idx is None:
+            raise ValueError("No candidate selected.")
 
-            self.emit_prompt_choices()
-            sel = None
-            while sel is None:
-                time.sleep(0.5)
-                sel = self.user_prompt_choice
-            if sel in choice_actions:
-                return choice_actions[sel]
-            else:
-                raise ValueError("Invalid user choice. This should not happen.")
+        match = task.candidates[state.current_candidate_idx]
 
-        match: AlbumMatch = task.candidates[0]
-
-        while True:
-
-            log.debug("candidates loop")
-
-            self.emit_prompt_choices()
-            self.emit_candidate_choices(task.candidates)
-
-            # not sure yet how we do this here.
-            # rework: always require a num choice and a proceed_with_num_choice prompt_choice
-            sel = None
-            num = None
-            while sel is None:
-                time.sleep(0.5)
-                sel = self.user_prompt_choice
-                num = self.user_candidate_choice
-                # we can only proceed after selecting a candidate
-                if sel == "a" and num is None:
-                    sel = None
-
-            assert num is not None
-            match: AlbumMatch = task.candidates[num]
-
-            # 1. show change
-            self.emit_text("Change...")
-            # 2. confirmation change-display, new choices
-
-            sel = None
-            while sel is None:
-                sel = self.user_prompt_choice
-
-            if sel == "a":
-                return match  # type: ignore
-            elif sel in choice_actions:
-                return choice_actions[sel]
-
-    def _get_choices(self, task):
-        """
-        Get the list of prompt choices that should be presented to the
-        user. This consists of both built-in choices and ones provided by
-        plugins.
-
-        The `before_choose_candidate` event is sent to the plugins, with
-        session and task as its parameters. Plugins are responsible for
-        checking the right conditions and returning a list of `PromptChoice`s,
-        which is flattened and checked for conflicts.
-
-        If two or more choices have the same short letter, a warning is
-        emitted and all but one choices are discarded, giving preference
-        to the default importer choices.
-
-        Returns a list of `PromptChoice`s.
-        """
-        # Standard, built-in choices.
-        choices = [
-            PromptChoice("s", "Skip", lambda s, t: importer.action.SKIP),
-            PromptChoice("u", "Use as-is", lambda s, t: importer.action.ASIS),
-        ]
-        if task.is_album:
-            choices += [
-                # PromptChoice("t", "as Tracks", lambda s, t: importer.action.TRACKS),
-                # PromptChoice("g", "Group albums", lambda s, t: importer.action.ALBUMS),
-            ]
-        choices += [
-            # PromptChoice("e", "Enter search", manual_search),
-            # PromptChoice("i", "enter Id", manual_id),
-            PromptChoice("b", "aBort", abort_action),
-        ]
-
-        # Send the before_choose_candidate event and flatten list.
-        extra_choices = list(
-            chain(*plugins.send("before_choose_candidate", session=self, task=task))
-        )
-
-        # Add a "dummy" choice for the other baked-in option, for
-        # duplicate checking.
-        all_choices = (
-            [
-                PromptChoice("a", "Apply", None),
-            ]
-            + choices
-            + extra_choices
-        )
-
-        # Check for conflicts.
-        short_letters = [c.short for c in all_choices]
-        if len(short_letters) != len(set(short_letters)):
-            # Duplicate short letter has been found.
-            duplicates = [i for i, count in Counter(short_letters).items() if count > 1]
-            for short in duplicates:
-                # Keep the first of the choices, removing the rest.
-                dup_choices = [c for c in all_choices if c.short == short]
-                for c in dup_choices[1:]:
-                    log.warning(
-                        f"Prompt choice '{c.long}' removed due to conflict "
-                        f"with '{dup_choices[0].long}' (short letter: '{c.short}')"
-                    )
-                    extra_choices.remove(c)
-
-        log.debug(f"choices {[c.long for c in choices + extra_choices]}")
-
-        # manually cast, as beets does not give us PrompChoice instances, but namedutples
-        return [
-            PromptChoice(c.short, c.long, c.callback) for c in
-            choices + extra_choices
-        ]
-
-    def emit(self, event: str, data: Any):
-
-        msg = ConfirmableMessage(event, str(uuid()), data)
-        self.emit_history.append(msg)
-        while msg.id not in self.confirmed_history:
-            if client_connected():
-                # log.debug(f"emitting {msg.event} {msg.data}")
-                sio.emit(msg.event, asdict(msg), namespace=namespace)
-            time.sleep(1)
-
-    def reemit_last(self):
-
-        if len(self.emit_history) == 0:
-            return
-
-        if len(self.confirmed_history) == len(self.emit_history):
-            self.confirmed_history.pop()
-
-        msg = self.emit_history[-1]
-        while msg.id not in self.confirmed_history:
-            if client_connected():
-                # log.debug(f"re-emitting {msg.event} {msg.data}")
-                sio.emit(msg.event, asdict(msg), namespace=namespace)
-            time.sleep(1)
-
-    def emit_candidate_choices(self, candidates: List[AlbumMatch | TrackMatch]):
-        """
-        Emit the list of candidates to the user.
-
-        # Parameters:
-        candidates: list of (distance, TrackInfo) pairs.
-        """
-        self.candidate_choices = [
-            CandidateChoice(i, c) for i, c in enumerate(candidates)
-        ]
-        log.debug(
-            f"emitting candidates {[c.match.info.album for c in self.candidate_choices]}"
-        )
-        self.emit(
-            "candidates",
-            [c.serialize() for c in self.candidate_choices],
-        )
-
-    def emit_text(self, text: str):
-        log.debug(f"emitting text {text}")
-        self.emit("text", text)
-
-    def emit_prompt_choices(self, choices: List[PromptChoice] | None = None):
-        if choices is not None:
-            self.prompt_choices = choices
-        log.debug(f"emitting prompt choices {[c.long for c in self.prompt_choices]}")
-        self.emit(
-            "prompt",
-            [c.serialize() for c in self.prompt_choices],
-        )
+        return match
 
     def run(self):
         """Run the import task. Customized version of ImportSession.run"""
@@ -522,10 +475,7 @@ class InteractiveImportSession(BaseSession):
         if self.config["group_albums"] and not self.config["singletons"]:
             stages += [importer.group_albums(self)]
 
-        if self.config["autotag"]:
-            stages += [importer.lookup_candidates(self), importer.user_query(self)]  # type: ignore
-        else:
-            stages += [importer.import_asis(self)]  # type: ignore
+        stages += [importer.lookup_candidates(self), offer_match(self), importer.user_query(self)]  # type: ignore
 
         # Plugin stages.
         for stage_func in plugins.early_import_stages():
@@ -545,6 +495,15 @@ class InteractiveImportSession(BaseSession):
             self.logger.debug(f"Interactive import session aborted by user")
 
 
-def client_connected():
+def is_client_connected():
     rooms = sio.manager.rooms.get(namespace)
     return rooms is not None and len(rooms) > 0
+
+
+def emit(event: str, data: Dict[str, Any]):
+    sio.emit(
+        event,
+        data,
+        namespace=namespace,
+        # callback=confirm(id),
+    )

@@ -57,51 +57,56 @@ export const useTerminalSocket = () => {
 /*                                 Interactive Import                                 */
 /* ---------------------------------------------------------------------------------- */
 
-const IMPORT_URL =
-    import.meta.env.MODE === "development" ? "ws://localhost:5001/import" : "/import";
+export const useImportSocket = (namespace: string) => {
+    const url: string =
+        import.meta.env.MODE === "development"
+            ? `ws://localhost:5001/${namespace}`
+            : namespace;
 
-const importSocket = io(IMPORT_URL, {
-    autoConnect: false,
-    transports: ["websocket"],
-});
-
-export const useImportSocket = () => {
-    const [isConnected, setIsConnected] = useState(importSocket.connected);
+    const [socket, setSocket] = useState<Socket | null>(null);
+    const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
-        importSocket.connect();
-
-        return () => {
-            importSocket.disconnect();
-        };
-    }, []);
+        setSocket((prev) => {
+            if (prev == null) {
+                return io(url, {
+                    autoConnect: true,
+                    transports: ["websocket"],
+                });
+            }
+            return prev;
+        });
+    }, [url]);
 
     useEffect(() => {
         function handleConnect() {
-            console.log("Import websocket connected");
+            console.log(`${namespace}-socket connected`);
             setIsConnected(true);
         }
         function handleDisconnect() {
-            console.log("Import websocket disconnected");
+            console.log(`${namespace}-socket disconnected`);
             setIsConnected(false);
         }
+        function handleError(e: unknown) {
+            console.error(e);
+        }
 
-        importSocket.on("connect", handleConnect);
-        importSocket.on("disconnect", handleDisconnect);
+        socket?.on("connect", handleConnect);
+        socket?.on("disconnect", handleDisconnect);
+        socket?.on("connect_error", handleError);
 
         return () => {
-            importSocket.off("connect", handleConnect);
-            importSocket.off("disconnect", handleDisconnect);
+            socket?.off("connect", handleConnect);
+            socket?.off("disconnect", handleDisconnect);
         };
-    }, []);
+    }, [socket, namespace]);
 
-    return { socket: importSocket, isConnected };
+    return { socket, isConnected };
 };
 
 /* ---------------------------------------------------------------------------------- */
 /*                           Status Updates, (previous SSE)                           */
 /* ---------------------------------------------------------------------------------- */
-
 
 interface StatusInvalidationI {
     attributes: Record<string, string> | "all";

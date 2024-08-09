@@ -66,10 +66,21 @@ export default function NavTabs() {
         basePath += "/" + location.pathname.split("/")[2];
     }
 
+    const navItems = [
+        { label: "Home", icon: <Home />, to: "/" as const },
+        { label: "Inbox", icon: <Inbox />, to: "/inbox" as const },
+        { label: "Tags", icon: <Tag />, to: "/tags" as const },
+        { label: "Library", icon: <Library />, to: "/library/browse" as const },
+        { label: "Search", icon: <Search />, to: "/library/search" as const },
+        { label: "Import", icon: <Library />, to: "/import" as const },
+    ];
+
+    const currentIdx = navItems.findIndex((item) => item.to === "/" + basePath);
+
     return (
         <Tabs
             textColor="inherit"
-            value={"/" + basePath}
+            value={currentIdx === -1 ? false : currentIdx}
             sx={{
                 boxShadow: "inset 0 1px 0 0 #efefef",
                 backgroundColor: "background.paper",
@@ -85,47 +96,9 @@ export default function NavTabs() {
                 },
             }}
         >
-            <NavItem
-                value={"/"}
-                to="/"
-                label={"Home"}
-                icon={<Home />}
-                //
-            />
-            <NavItem
-                to="/inbox"
-                value={"/inbox"}
-                label={"Inbox"}
-                icon={<Inbox />}
-                //
-            />
-            <NavItem
-                to="/tags"
-                value={"/tags"}
-                label={"Tags"}
-                icon={<Tag />}
-                //
-            />
-            <NavItem
-                to="/library/browse"
-                value={"/library/browse"}
-                label={"Library"}
-                icon={<Library />}
-                //
-            />
-            <NavItem
-                to="/library/search"
-                value={"/library/search"}
-                label={"Search"}
-                icon={<Search />}
-                //
-            />
-            <NavItem
-                to="/import"
-                value={"/import"}
-                label={"Import"}
-                icon={<Library />}
-            />
+            {navItems.map((item) => (
+                <NavItem key={item.to} {...item} />
+            ))}
         </Tabs>
     );
 }
