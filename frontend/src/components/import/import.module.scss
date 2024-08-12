@@ -33,3 +33,12 @@
     max-height: 1rem;
     max-width: 1rem;
 }
+
+.diff {
+    .added {
+        color: #a4bf8c;
+    }
+    .removed {
+        color: #c0626b;
+    }
+}

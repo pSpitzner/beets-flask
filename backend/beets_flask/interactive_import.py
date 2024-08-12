@@ -289,7 +289,7 @@ class CandidateChoice:
         out, err, _ = capture_stdout_stderr(
             show_change, self.task.cur_artist, self.task.cur_album, self.match
         )
-        self.diff_preview = out
+        self.diff_preview = out.lstrip("\n")
         if len(err) > 0:
             self.diff_preview += f"\n\nError: {err}"
 

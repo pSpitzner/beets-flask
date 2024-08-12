@@ -13,6 +13,7 @@ import { SimilarityBadgeWithHover } from "@/components/tags/similarityBadge";
 import { CandidatePreview } from "./candidatePreview";
 import { CandidateChoice, SelectionState, useImportContext } from "./context";
 import { SourceIcon } from "./sourceIcon";
+import { useDiff } from "./diff";
 
 import styles from "./import.module.scss";
 
@@ -60,6 +61,7 @@ export function ImportView() {
  */
 function Selections() {
     const { selections } = useImportContext();
+    const { left, right } = useDiff("test", "tesd2");
 
     return (
         <div className={styles.wrapper}>
@@ -68,6 +70,13 @@ function Selections() {
             {selections?.map((selection) => (
                 <ImportSelection key={selection.id} selection={selection} />
             ))}
+            <Box className={styles.diff}>
+                <Typography>
+                    {left}
+                    {" -> "}
+                    {right}
+                </Typography>
+            </Box>
         </div>
     );
 }
