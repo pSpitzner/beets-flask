@@ -37,12 +37,16 @@ export type CandidateChoice =
     | {
           id: number;
           diff_preview?: string;
+          cur_artist?: string;
+          cur_album?: string;
           track_match: TrackMatch;
           album_match?: never;
       }
     | {
           id: number;
           diff_preview?: string;
+          cur_artist?: string;
+          cur_album?: string;
           track_match?: never;
           album_match: AlbumMatch;
       };

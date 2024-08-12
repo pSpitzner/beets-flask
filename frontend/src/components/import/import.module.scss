@@ -29,9 +29,34 @@
     font-size: 0.7rem;
 }
 
+.candidateHeader {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-left: 0.5rem;
+
+    .headerGroup {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+
+        &.changed {
+            color: #ebcb8c;
+        }
+    }
+}
+
 .sourceIcon {
-    max-height: 1rem;
-    max-width: 1rem;
+    display: flex;
+    align-items: center;
+    height: 1rem;
+    width: 1rem;
+    color: "inherit";
+    svg {
+        height: 100%;
+        width: 100%;
+        stroke-width: 1.75;
+    }
 }
 
 .diff {

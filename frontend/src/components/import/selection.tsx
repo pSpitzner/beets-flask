@@ -16,6 +16,8 @@ import { SourceIcon } from "./sourceIcon";
 import { useDiff } from "./diff";
 
 import styles from "./import.module.scss";
+import { Disc3, UserRound } from "lucide-react";
+import { useEffect } from "react";
 
 export function ImportView() {
     const { completeAllSelections, startSession, status } = useImportContext();
@@ -120,24 +122,39 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
 function CandidateView({ candidate }: { candidate: CandidateChoice }) {
     const match = candidate.track_match ?? candidate.album_match;
     const source = match.info.data_source as string;
+    const artist_is_same = candidate.cur_artist === match.info.artist;
+    const album_is_same = candidate.cur_album === match.info.album;
+
+    const artistClass = `${styles.headerGroup} ${artist_is_same ? "" : styles.changed}`;
+    const albumClass = `${styles.headerGroup} ${album_is_same ? "" : styles.changed}`;
+
+    useEffect(() => {
+        console.log("CandidateView", candidate);
+        console.log("artist_is_same", artist_is_same);
+        console.log("album_is_same", album_is_same);
+    }, [candidate]);
 
     return (
-        <Box
-            sx={{
-                display: "flex",
-                gap: "0.5rem",
-                alignItems: "center",
-            }}
-            key={candidate.id}
-        >
-            <SimilarityBadgeWithHover dist={match.distance}>
-                <CandidatePreview candidate={candidate} />
-            </SimilarityBadgeWithHover>
-            <Typography variant="body1">
-                {match.info.artist} - {match.info.name}
-            </Typography>
-            <Box className={styles.sourceIcon}>
-                <SourceIcon source={source} />
+        <Box className={styles.candidateHeader} key={candidate.id}>
+            <Box className={styles.headerGroup}>
+                <Box className={styles.sourceIcon}>
+                    <SourceIcon source={source} />
+                </Box>
+                <SimilarityBadgeWithHover dist={match.distance}>
+                    <CandidatePreview candidate={candidate} />
+                </SimilarityBadgeWithHover>
+            </Box>
+            <Box className={artistClass}>
+                <Box className={styles.sourceIcon}>
+                    <UserRound />
+                </Box>
+                {match.info.artist}
+            </Box>
+            <Box className={albumClass}>
+                <Box className={styles.sourceIcon}>
+                    <Disc3 />
+                </Box>
+                {match.info.album}
             </Box>
         </Box>
     );

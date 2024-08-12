@@ -282,6 +282,9 @@ class CandidateChoice:
     task: importer.ImportTask  # only needed for diff preview generation
     type: str = "unset"
     diff_preview: str | None = None
+    # these are needed for diffs, but they are details of the task, which is not passed to frontend
+    cur_artist: str | None = None
+    cur_album: str | None = None
 
     def __post_init__(self):
         self.type = "album" if hasattr(self.match, "extra_tracks") else "track"
@@ -292,6 +295,9 @@ class CandidateChoice:
         self.diff_preview = out.lstrip("\n")
         if len(err) > 0:
             self.diff_preview += f"\n\nError: {err}"
+
+        self.cur_artist = self.task.cur_artist
+        self.cur_album = self.task.cur_album
 
     def serialize(self):
         # currently we try to send everything we have and patch whats needed.
@@ -336,6 +342,8 @@ class CandidateChoice:
         res["track_match"] = match if self.type == "track" else None
         res["album_match"] = match if self.type == "album" else None
         res["diff_preview"] = self.diff_preview
+        res["cur_artist"] = self.cur_artist
+        res["cur_album"] = self.cur_album
 
         return res
 
