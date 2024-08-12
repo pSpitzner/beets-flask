@@ -2,13 +2,13 @@ import * as HoverCard from "@radix-ui/react-hover-card";
 import { useQuery } from "@tanstack/react-query";
 
 import { tagQueryOptions } from "@/components/common/_query";
-import { useConfig } from "@/components/common/useConfig"
+import { useConfig } from "@/components/common/useConfig";
 
 import { TagPreview } from "./tagView";
 
 import styles from "./similarityBadge.module.scss";
 
-export function SimilarityBadgeWithHover({
+export function TagSimilarityBadgeWithHover({
     tagId,
     tagPath,
     className,
@@ -32,9 +32,25 @@ export function SimilarityBadgeWithHover({
     }
 
     return (
+        <SimilarityBadgeWithHover dist={data.distance} className={className}>
+            <TagPreview tagId={tagId} tagPath={tagPath} />
+        </SimilarityBadgeWithHover>
+    );
+}
+
+export function SimilarityBadgeWithHover({
+    dist,
+    className,
+    children,
+}: {
+    dist?: number;
+    className?: string;
+    children: React.ReactNode;
+}) {
+    return (
         <HoverCard.Root openDelay={300}>
             <HoverCard.Trigger className={styles.hoverTrigger}>
-                <SimilarityBadge dist={data.distance} className={className} />
+                <SimilarityBadge dist={dist} className={className} />
             </HoverCard.Trigger>
             <HoverCard.Content
                 side="right"
@@ -43,7 +59,7 @@ export function SimilarityBadgeWithHover({
                 align="start"
                 className={styles.HoverContent}
             >
-                <TagPreview tagId={tagId} tagPath={tagPath} />
+                {children}
             </HoverCard.Content>
         </HoverCard.Root>
     );
@@ -56,9 +72,9 @@ export function SimilarityBadge({
     dist?: number;
     className?: string;
 }) {
-    const config = useConfig()
-    const strong_rec_thresh = config?.match.strong_rec_thresh || 0.04
-    const medium_rec_thresh = config?.match.medium_rec_thresh || 0.025
+    const config = useConfig();
+    const strong_rec_thresh = config?.match.strong_rec_thresh || 0.04;
+    const medium_rec_thresh = config?.match.medium_rec_thresh || 0.025;
 
     let simClass = styles.tbd; // Default class
     let simText = "tbd"; // Default text

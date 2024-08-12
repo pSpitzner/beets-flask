@@ -8,9 +8,11 @@ import RadioGroup from "@mui/material/RadioGroup";
 import Skeleton from "@mui/material/Skeleton";
 import Typography from "@mui/material/Typography";
 
-import { SimilarityBadge } from "@/components/tags/similarityBadge";
+import { SimilarityBadgeWithHover } from "@/components/tags/similarityBadge";
 
+import { CandidatePreview } from "./candidatePreview";
 import { CandidateChoice, SelectionState, useImportContext } from "./context";
+import { SourceIcon } from "./sourceIcon";
 
 import styles from "./import.module.scss";
 
@@ -72,7 +74,7 @@ function Selections() {
 
 function ImportSelection({ selection }: { selection: SelectionState }) {
     const { chooseCanidate } = useImportContext();
-    const folder = selection.paths.length == 1 ? selection.paths[0] : selection.toppath;
+    const folder = selection.paths.join("\n");
 
     function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
         const canidateIdx = parseInt(event.target.value);
@@ -108,6 +110,7 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
 
 function CandidateView({ candidate }: { candidate: CandidateChoice }) {
     const match = candidate.track_match ?? candidate.album_match;
+    const source = match.info.data_source as string;
 
     return (
         <Box
@@ -118,10 +121,15 @@ function CandidateView({ candidate }: { candidate: CandidateChoice }) {
             }}
             key={candidate.id}
         >
-            <SimilarityBadge dist={match.distance} />
+            <SimilarityBadgeWithHover dist={match.distance}>
+                <CandidatePreview candidate={candidate} />
+            </SimilarityBadgeWithHover>
             <Typography variant="body1">
                 {match.info.artist} - {match.info.name}
             </Typography>
+            <Box className={styles.sourceIcon}>
+                <SourceIcon source={source} />
+            </Box>
         </Box>
     );
 }

@@ -20,3 +20,16 @@
         color: dimgrey;
     }
 }
+
+// exact same style as tagPreview
+.candidatePreview {
+    white-space: pre-wrap;
+    overflow-wrap: break-workd; // this allows wrapping e.g. spotify urls
+    font-family: monospace;
+    font-size: 0.7rem;
+}
+
+.sourceIcon {
+    max-height: 1rem;
+    max-width: 1rem;
+}

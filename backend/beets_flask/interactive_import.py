@@ -134,6 +134,7 @@ from beets.importer import ImportAbort
 from beets_flask.logger import log
 from beets_flask.websocket import sio
 from beets_flask.config import config
+from beets_flask.utility import capture_stdout_stderr
 
 from beets_flask.beets_sessions import BaseSession, set_config_defaults
 
@@ -278,10 +279,19 @@ class PromptChoice(NamedTuple):
 class CandidateChoice:
     id: int
     match: Union[AlbumMatch, TrackMatch]
+    task: importer.ImportTask  # only needed for diff preview generation
     type: str = "unset"
+    diff_preview: str | None = None
 
     def __post_init__(self):
         self.type = "album" if hasattr(self.match, "extra_tracks") else "track"
+
+        out, err, _ = capture_stdout_stderr(
+            show_change, self.task.cur_artist, self.task.cur_album, self.match
+        )
+        self.diff_preview = out
+        if len(err) > 0:
+            self.diff_preview += f"\n\nError: {err}"
 
     def serialize(self):
         # currently we try to send everything we have and patch whats needed.
@@ -325,6 +335,7 @@ class CandidateChoice:
 
         res["track_match"] = match if self.type == "track" else None
         res["album_match"] = match if self.type == "album" else None
+        res["diff_preview"] = self.diff_preview
 
         return res
 
@@ -346,17 +357,23 @@ class SelectionState:
     def candidate_choices(self) -> List[CandidateChoice]:
         if self.task is None:
             return []
-        return [CandidateChoice(i, c) for i, c in enumerate(self.task.candidates)]
+        return [
+            CandidateChoice(i, c, self.task) for i, c in enumerate(self.task.candidates)
+        ]
 
     @property
-    def toppath(self):
+    def toppath(self) -> str | None:
         if self.task.toppath is not None:
             return self.task.toppath.decode("utf-8")
         return None
 
     @property
-    def paths(self):
+    def paths(self) -> List[str]:
         return [p.decode("utf-8") for p in self.task.paths]
+
+    @property
+    def items(self) -> List[Item]:
+        return [item for item in self.task.items]
 
     def serialize(self):
         return {

@@ -34,8 +34,18 @@ export interface SelectionState {
 }
 
 export type CandidateChoice =
-    | { id: number; track_match: TrackMatch; album_match?: never }
-    | { id: number; track_match?: never; album_match: AlbumMatch };
+    | {
+          id: number;
+          diff_preview?: string;
+          track_match: TrackMatch;
+          album_match?: never;
+      }
+    | {
+          id: number;
+          diff_preview?: string;
+          track_match?: never;
+          album_match: AlbumMatch;
+      };
 
 interface AlbumMatch {
     distance: number; // TODO: backend uses an object
@@ -74,6 +84,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         }
 
         function handleSelecionState(data: SelectionState) {
+            console.log("Selection state", data);
             setSelections((prev) => {
                 if (!prev) {
                     prev = [];

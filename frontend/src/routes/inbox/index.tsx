@@ -13,7 +13,7 @@ import {
 } from "@/components/common/contextMenu";
 import { MinimalConfig, useConfig } from "@/components/common/useConfig";
 import { SelectionProvider, useSelection } from "@/components/common/useSelection";
-import { SimilarityBadgeWithHover } from "@/components/tags/similarityBadge";
+import { TagSimilarityBadgeWithHover } from "@/components/tags/similarityBadge";
 import { TagStatusIcon } from "@/components/tags/statusIcon";
 
 import styles from "@/components/inbox/inbox.module.scss";
@@ -202,7 +202,7 @@ function Folder({ fp, label }: { fp: FsPath; label: string }) {
                         className={styles.albumIcon}
                         tagPath={fp.full_path}
                     />
-                    <SimilarityBadgeWithHover tagPath={fp.full_path} />
+                    <TagSimilarityBadgeWithHover tagPath={fp.full_path} />
                 </div>
             )}
 
