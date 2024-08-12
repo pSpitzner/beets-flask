@@ -153,6 +153,11 @@ def register_import_socket():
 def connect(sid, environ):
     """new client connected"""
     log.debug(f"ImportSocket new client connected {sid}")
+
+
+@sio.on("after_connect", namespace=namespace)  # type: ignore
+def after_connect(sid):
+    """This needs to be invoked by a callback of the client"""
     if session is not None:
         session.import_state.emit()
 
@@ -330,6 +335,8 @@ def _enforce_dict(d):
 
 @dataclass
 class SelectionState:
+    """State to represent a beets ImportTask in the frontend."""
+
     task: importer.ImportTask
     id: str = str(uuid())
     current_candidate_idx: int | None = None
@@ -341,11 +348,24 @@ class SelectionState:
             return []
         return [CandidateChoice(i, c) for i, c in enumerate(self.task.candidates)]
 
+    @property
+    def toppath(self):
+        if self.task.toppath is not None:
+            return self.task.toppath.decode("utf-8")
+        return None
+
+    @property
+    def paths(self):
+        return [p.decode("utf-8") for p in self.task.paths]
+
     def serialize(self):
         return {
             "candidates": [c.serialize() for c in self.candidate_choices],
             "current_candidate_idx": self.current_candidate_idx,
             "id": self.id,
+            "completed": self.completed,
+            "toppath": self.toppath,
+            "paths": self.paths,
         }
 
     def emit(self):

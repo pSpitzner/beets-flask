@@ -72,6 +72,7 @@ function Selections() {
 
 function ImportSelection({ selection }: { selection: SelectionState }) {
     const { chooseCanidate } = useImportContext();
+    const folder = selection.paths.length == 1 ? selection.paths[0] : selection.toppath;
 
     function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
         const canidateIdx = parseInt(event.target.value);
@@ -81,7 +82,7 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
 
     return (
         <div className={styles.selection}>
-            <span className={styles.folderName}>{selection.id}</span>
+            <span className={styles.folderName}>{folder}</span>
             <Paper className={styles.choices}>
                 <FormControl>
                     <RadioGroup

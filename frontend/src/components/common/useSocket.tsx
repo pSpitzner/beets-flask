@@ -82,6 +82,7 @@ export const useImportSocket = (namespace: string) => {
         function handleConnect() {
             console.log(`${namespace}-socket connected`);
             setIsConnected(true);
+            socket?.emit("after_connect");
         }
         function handleDisconnect() {
             console.log(`${namespace}-socket disconnected`);

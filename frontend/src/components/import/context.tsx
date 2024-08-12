@@ -29,6 +29,8 @@ export interface SelectionState {
     current_candidate_idx: number | null;
     candidates: CandidateChoice[];
     completed: boolean;
+    toppath?: string; // folder supplied to import by user
+    paths: string[]; // lowest level (album folders) of music
 }
 
 export type CandidateChoice =
