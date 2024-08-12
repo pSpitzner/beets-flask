@@ -39,6 +39,7 @@ export type CandidateChoice =
           diff_preview?: string;
           cur_artist?: string;
           cur_album?: string;
+          penalties?: string[];
           track_match: TrackMatch;
           album_match?: never;
       }
@@ -47,6 +48,7 @@ export type CandidateChoice =
           diff_preview?: string;
           cur_artist?: string;
           cur_album?: string;
+          penalties?: string[];
           track_match?: never;
           album_match: AlbumMatch;
       };

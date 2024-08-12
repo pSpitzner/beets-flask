@@ -285,6 +285,7 @@ class CandidateChoice:
     # these are needed for diffs, but they are details of the task, which is not passed to frontend
     cur_artist: str | None = None
     cur_album: str | None = None
+    penalties: List[str] = field(default_factory=list)
 
     def __post_init__(self):
         self.type = "album" if hasattr(self.match, "extra_tracks") else "track"
@@ -298,6 +299,12 @@ class CandidateChoice:
 
         self.cur_artist = self.task.cur_artist
         self.cur_album = self.task.cur_album
+
+        for key in self.match.distance.keys():
+            key = key.replace("album_", "")
+            key = key.replace("track_", "")
+            key = key.replace("_", " ")
+            self.penalties.append(key)
 
     def serialize(self):
         # currently we try to send everything we have and patch whats needed.
@@ -344,6 +351,7 @@ class CandidateChoice:
         res["diff_preview"] = self.diff_preview
         res["cur_artist"] = self.cur_artist
         res["cur_album"] = self.cur_album
+        res["penalties"] = self.penalties
 
         return res
 

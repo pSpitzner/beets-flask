@@ -34,6 +34,7 @@
     gap: 1rem;
     align-items: center;
     margin-left: 0.5rem;
+    width: 100%;
 
     .headerGroup {
         display: flex;
@@ -44,14 +45,31 @@
             color: #ebcb8c;
         }
     }
+
+    .penaltyIconRow {
+        display: flex;
+        gap: 0.25rem;
+        align-items: center;
+        margin-left: auto;
+    }
 }
 
-.sourceIcon {
+.sourceIcon,
+.penaltyIcon {
     display: flex;
     align-items: center;
     height: 1rem;
     width: 1rem;
     color: "inherit";
+
+    &.inactive {
+        color: #495057;
+    }
+
+    &.penalty {
+        color: #ebcb8c;
+    }
+
     svg {
         height: 100%;
         width: 100%;

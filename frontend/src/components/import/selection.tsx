@@ -12,12 +12,13 @@ import { SimilarityBadgeWithHover } from "@/components/tags/similarityBadge";
 
 import { CandidatePreview } from "./candidatePreview";
 import { CandidateChoice, SelectionState, useImportContext } from "./context";
-import { SourceIcon } from "./sourceIcon";
+import { PenaltyIcon, penaltyOrder, SourceIcon } from "./icons";
 import { useDiff } from "./diff";
 
-import styles from "./import.module.scss";
 import { Disc3, UserRound } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+
+import styles from "./import.module.scss";
 
 export function ImportView() {
     const { completeAllSelections, startSession, status } = useImportContext();
@@ -97,7 +98,7 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
         <div className={styles.selection}>
             <span className={styles.folderName}>{folder}</span>
             <Paper className={styles.choices}>
-                <FormControl>
+                <FormControl sx={{ width: "100%", marginRight: 0 }}>
                     <RadioGroup
                         value={selection.current_candidate_idx}
                         onChange={handleChange}
@@ -105,6 +106,7 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
                         {selection.candidates.map((choice) => {
                             return (
                                 <FormControlLabel
+                                    disableTypography={true}
                                     value={choice.id}
                                     key={choice.id}
                                     control={<Radio size="small" />}
@@ -156,6 +158,37 @@ function CandidateView({ candidate }: { candidate: CandidateChoice }) {
                 </Box>
                 {match.info.album}
             </Box>
+
+            <PenaltyIconRow penalties={candidate.penalties ?? []} />
+        </Box>
+    );
+}
+
+function PenaltyIconRow({ penalties }: { penalties: string[] }) {
+    const [others, setOthers] = useState<string[]>([]);
+
+    useEffect(() => {
+        const otherPenalties = penalties.filter((p) => !penaltyOrder.includes(p));
+        setOthers(otherPenalties);
+    }, [penalties]);
+
+    return (
+        <Box className={styles.penaltyIconRow}>
+            {penaltyOrder.map((p) => (
+                <PenaltyIcon
+                    key={p}
+                    kind={p}
+                    className={
+                        penalties.indexOf(p) === -1 ? styles.inactive : styles.penalty
+                    }
+                />
+            ))}
+            {
+                <PenaltyIcon
+                    kind={others.join(" ")}
+                    className={others.length === 0 ? styles.inactive : styles.penalty}
+                />
+            }
         </Box>
     );
 }
