@@ -12,9 +12,16 @@ interface ImportContextI {
     // All selections for the current import
     // might be undefined if the data is not yet loaded
     selections?: SelectionState[];
+    status: string;
     generateDummySelections: () => void;
+    startSession: (path: string) => void;
     chooseCanidate: (selectionId: string, choiceIdx: number) => void;
     completeAllSelections: () => void;
+}
+
+export interface ImportState {
+    selection_states: SelectionState[];
+    status: string;
 }
 
 export interface SelectionState {
@@ -46,9 +53,23 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
     /** Get data via socket */
     const { socket, isConnected } = useImportSocket("import");
     const [selections, setSelections] = useState<SelectionState[]>();
+    const [status, setStatus] = useState<string>("waiting for socket");
+
+    useEffect(() => {
+        if (status !== "waiting for socket") return;
+        if (!socket) return;
+        if (isConnected) {
+            setStatus("Socket connected");
+        }
+    }, [socket, isConnected, status, setStatus]);
 
     useEffect(() => {
         if (!socket) return;
+
+        function handleFullUpdate(data: ImportState) {
+            setSelections(data.selection_states);
+            setStatus(data.status);
+        }
 
         function handleSelecionState(data: SelectionState) {
             setSelections((prev) => {
@@ -75,6 +96,11 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
             });
         }
 
+        function handleStatusUpdate(data: { status: string }) {
+            console.log("Status update", data);
+            setStatus(data.status);
+        }
+
         // another client may make a choice, and the server informs us
         function remoteCandidateChoice(data: {
             selection_id: string;
@@ -90,13 +116,18 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
             });
         }
 
+        socket.on("import_state", handleFullUpdate);
         socket.on("selection_state", handleSelecionState);
         socket.on("candidate_choice", remoteCandidateChoice);
+        socket.on("import_state_status", handleStatusUpdate);
 
         return () => {
+            socket.off("import_state", handleFullUpdate);
             socket.off("selection_state", handleSelecionState);
+            socket.off("candidate_choice", remoteCandidateChoice);
+            socket.off("import_state_status", handleStatusUpdate);
         };
-    }, [socket, isConnected]);
+    }, [socket, isConnected, setStatus, setSelections]);
 
     function generateDummySelections() {
         const dummyAlbum: AlbumMatch = {
@@ -152,6 +183,10 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         });
     }
 
+    function startSession(path: string) {
+        socket?.emit("start_import_session", { path });
+    }
+
     /**
      * Updates the selected candidate for a specific selection.
      * @param {number} selectionIdx - The index of the selection.
@@ -202,6 +237,8 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
     const ret: ImportContextI = {
         completeAllSelections,
         selections,
+        status,
+        startSession,
         generateDummySelections,
         chooseCanidate,
     };

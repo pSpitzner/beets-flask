@@ -140,6 +140,8 @@ from beets_flask.beets_sessions import BaseSession, set_config_defaults
 log.debug("ImportSocket module loaded")
 
 namespace = "/import"
+session = None
+session_ref = None
 
 
 def register_import_socket():
@@ -151,10 +153,8 @@ def register_import_socket():
 def connect(sid, environ):
     """new client connected"""
     log.debug(f"ImportSocket new client connected {sid}")
-    start_import_session(sid, {"album_folder": "/music/inbox.nosync/Bad Company UK/"})
-    # we cannot block here, or the client will not finish connecting.
-    # if session is not None:
-    # session.reemit_last()
+    if session is not None:
+        session.import_state.emit()
 
 
 @sio.on("disconnect", namespace=namespace)  # type: ignore
@@ -168,20 +168,21 @@ def any_event(event, sid, data):
     log.debug(f"ImportSocket sid {sid} undhandled event {event} with data {data}")
 
 
-session = None
-
-
 @sio.on("start_import_session", namespace=namespace)  # type: ignore
 def start_import_session(sid, data):
     """
     Start a new interactive import session. We shall only have one running at a time.
-    TODO: what about the import worker? wait for completion? Block other imports while we are running?
     """
-    album_folder = data["album_folder"]
-    global session
-    # if session is None:
-    session = InteractiveImportSession(album_folder)
-    sio.start_background_task(session.run)
+    log.debug(f"received start_import_session {data=}")
+    path = data.get("path", None)
+    global session, session_ref
+    try:
+        session_ref.kill()  # type: ignore
+    except AttributeError:
+        pass
+    session = InteractiveImportSession(path)
+    session.import_state.emit()
+    session_ref = sio.start_background_task(session.run)
 
 
 class ChoiceRequest(TypedDict):
@@ -362,6 +363,9 @@ class SelectionState:
 @dataclass
 class ImportState:
     _selection_states: List[SelectionState] = field(default_factory=list)
+    _status: str = "initializing"
+    # stages
+    # tasks
 
     @property
     def selection_states(self):
@@ -382,9 +386,12 @@ class ImportState:
         log.debug(f"get_selection_state_for_task {task} {self.selection_states}")
         for s in self.selection_states:
             # TODO: are tasks really comparable?
+            log.debug(f"{task=}")
             if s.task == task:
+                log.debug("match!")
                 state = s
                 break
+        log.debug(f"{state=}")
         return state
 
     def get_selection_state_by_id(self, id: str) -> SelectionState | None:
@@ -395,7 +402,7 @@ class ImportState:
                 break
         return state
 
-    def upsert_task(self, task: importer.ImportTask) -> SelectionState:
+    def upsert_task(self, task: importer.ImportTask, emit=True) -> SelectionState:
         """Adds selection state if it does not exist yet or updates
         existitng entry. Automatically emits the updated state to clients.
         """
@@ -405,19 +412,56 @@ class ImportState:
             state = SelectionState(task)
             self._selection_states.append(state)
 
-        state.emit()
+        if emit:
+            state.emit()
 
         return state
+
+    @property
+    def status(self):
+        return self._status
+
+    def set_status(self, status: str, emit=True):
+        log.debug(f"ImportState {status=}")
+        self._status = status
+        if emit:
+            self.emit_status()
 
     def await_completion_all(self):
         while not all([s.completed for s in self.selection_states]):
             time.sleep(0.5)
         return True
 
+    def emit(self):
+        emit(
+            "import_state",
+            {
+                "status": self.status,
+                "selection_states": [s.serialize() for s in self.selection_states],
+            },
+        )
+
+    def emit_status(self):
+        log.debug(f"ImportState {self.status=}")
+        emit(
+            "import_state_status",
+            {
+                "status": self.status,
+            },
+        )
+
 
 @pipeline.mutator_stage
 def offer_match(session: InteractiveImportSession, task: importer.ImportTask):
     session.offer_match(task)
+
+
+@pipeline.mutator_stage
+def set_status(
+    session: InteractiveImportSession, status: str, task: importer.ImportTask
+):
+    log.debug(f"mutator_stage {status=}")
+    session.import_state.set_status(status)
 
 
 class InteractiveImportSession(BaseSession):
@@ -430,6 +474,7 @@ class InteractiveImportSession(BaseSession):
     def __init__(self, path: str, config_overlay: str | dict | None = None):
         set_config_defaults()
         super(InteractiveImportSession, self).__init__(path, config_overlay)
+        self.import_state.set_status("session ready", emit=False)
 
     def offer_match(self, task: importer.ImportTask):
         self.import_state.upsert_task(task)
@@ -470,12 +515,25 @@ class InteractiveImportSession(BaseSession):
         self.logger.info(f"import started {time.asctime()}")
         self.set_config(config["import"])
 
-        stages = [importer.read_tasks(self)]
+        self.import_state.set_status("reading files")
+        stages = [
+            # mutator stage does not work for first task, set status manually
+            importer.read_tasks(self),
+        ]
 
         if self.config["group_albums"] and not self.config["singletons"]:
-            stages += [importer.group_albums(self)]
+            stages += [
+                set_status(self, "grouping albums"),  # type: ignore
+                importer.group_albums(self),
+            ]
 
-        stages += [importer.lookup_candidates(self), offer_match(self), importer.user_query(self)]  # type: ignore
+        stages += [
+            set_status(self, "looking up candidates"),  # type: ignore
+            importer.lookup_candidates(self),  # type: ignore
+            offer_match(self),  # type: ignore
+            set_status(self, "waiting for user selection"),  # type: ignore
+            importer.user_query(self),  # type: ignore
+        ]
 
         # Plugin stages.
         for stage_func in plugins.early_import_stages():
@@ -483,7 +541,10 @@ class InteractiveImportSession(BaseSession):
         for stage_func in plugins.import_stages():
             stages.append(importer.plugin_stage(self, stage_func))  # type: ignore
 
-        stages += [importer.manipulate_files(self)]  # type: ignore
+        stages += [
+            set_status(self, "manipulating files"),  # type: ignore
+            importer.manipulate_files(self),  # type: ignore
+        ]
 
         self.pipeline = Pipeline(stages)
 
@@ -493,6 +554,8 @@ class InteractiveImportSession(BaseSession):
             self.pipeline.run_sequential()
         except ImportAbort:
             self.logger.debug(f"Interactive import session aborted by user")
+
+        self.import_state.set_status("completed")
 
 
 def is_client_connected():

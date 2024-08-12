@@ -5,23 +5,38 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Paper from "@mui/material/Paper";
 import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
+import Skeleton from "@mui/material/Skeleton";
 import Typography from "@mui/material/Typography";
 
 import { SimilarityBadge } from "@/components/tags/similarityBadge";
 
-import LoadingIndicator from "../common/loadingIndicator";
 import { CandidateChoice, SelectionState, useImportContext } from "./context";
 
 import styles from "./import.module.scss";
-import Skeleton from "@mui/material/Skeleton";
 
 export function ImportView() {
-    const { completeAllSelections } = useImportContext();
+    const { completeAllSelections, startSession, status } = useImportContext();
 
     return (
         <div>
             <Selections />
-            <div>
+            <Box
+                sx={{
+                    display: "flex",
+                    gap: "1rem",
+                    justifyContent: "flex-start",
+                    alignItems: "center",
+                }}
+            >
+                <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={() => {
+                        startSession("/music/inbox.nosync/Bad Company UK/");
+                    }}
+                >
+                    Re-Start Session
+                </Button>
                 <Button
                     variant="outlined"
                     color="primary"
@@ -32,7 +47,8 @@ export function ImportView() {
                 <Button variant="outlined" color="warning">
                     Abort
                 </Button>
-            </div>
+                <Typography>Status: {status}</Typography>
+            </Box>
         </div>
     );
 }
@@ -43,13 +59,11 @@ export function ImportView() {
 function Selections() {
     const { selections } = useImportContext();
 
-    // Loading
-    if (!selections) {
-        return <Skeleton />;
-    }
     return (
         <div className={styles.wrapper}>
-            {selections.map((selection) => (
+            {/* loading */}
+            {!selections && <Skeleton />}
+            {selections?.map((selection) => (
                 <ImportSelection key={selection.id} selection={selection} />
             ))}
         </div>
