@@ -40,6 +40,7 @@ export type CandidateChoice =
           cur_artist?: string;
           cur_album?: string;
           penalties?: string[];
+          items?: MinimalItemAndTrackInfo[];
           track_match: TrackMatch;
           album_match?: never;
       }
@@ -49,6 +50,7 @@ export type CandidateChoice =
           cur_artist?: string;
           cur_album?: string;
           penalties?: string[];
+          items?: MinimalItemAndTrackInfo[];
           track_match?: never;
           album_match: AlbumMatch;
       };
@@ -56,13 +58,26 @@ export type CandidateChoice =
 interface AlbumMatch {
     distance: number; // TODO: backend uses an object
     info: AlbumInfo; // Complete album info
-    extra_tracks: TrackInfo[]; // Tracks found online but not on disk
-    // mapping?: // not passed to frontend yet
+    extra_items: MinimalItemAndTrackInfo[]; // Items found on disk but not matched online
+    extra_tracks: MinimalItemAndTrackInfo[]; // Tracks found online but not on disk
+    mapping: Record<number, number>; // indices of candidatechoice.items to match.info.tracks
 }
 
 interface TrackMatch {
     distance: number; // TODO: backend uses an object
-    info: TrackInfo;
+    info: MinimalItemAndTrackInfo;
+}
+
+export interface MinimalItemAndTrackInfo {
+    name: string;
+    title: string;
+    artist: string;
+    album: string;
+    length: number;
+    data_source: string;
+    data_url: string;
+    bitrate?: number;
+    format?: string;
 }
 
 const ImportContext = createContext<ImportContextI | null>(null);

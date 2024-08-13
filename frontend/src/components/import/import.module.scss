@@ -22,7 +22,7 @@
 }
 
 // exact same style as tagPreview
-.candidatePreview {
+.beetsDump {
     white-space: pre-wrap;
     overflow-wrap: break-workd; // this allows wrapping e.g. spotify urls
     font-family: monospace;
@@ -32,7 +32,7 @@
 .candidateHeader {
     display: flex;
     gap: 1rem;
-    align-items: center;
+    align-items: top;
     margin-left: 0.5rem;
     width: 100%;
 
@@ -41,7 +41,7 @@
         gap: 0.5rem;
         align-items: center;
 
-        &.changed {
+        > .changed {
             color: #ebcb8c;
         }
     }
@@ -54,16 +54,22 @@
     }
 }
 
+.fieldSeparator {
+    opacity: 0.6;
+}
+
 .sourceIcon,
 .penaltyIcon {
     display: flex;
     align-items: center;
+    flex-shrink: 0;
     height: 1rem;
     width: 1rem;
     color: "inherit";
 
     &.inactive {
-        color: #495057;
+        // color: #495057;
+        color: #403b31;
     }
 
     &.penalty {
@@ -77,7 +83,57 @@
     }
 }
 
+.candidatePreview {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.disambig {
+    font-style: italic;
+}
+
+.dataUrl {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+.artistChange {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.albumChange {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.tracksChange {
+    display: flex;
+    gap: 0.3rem;
+    align-items: start;
+    flex-direction: column;
+    font-size: 0.8rem;
+    margin-left: 1rem;
+
+    .trackChange {
+        display: flex;
+        flex-direction: row;
+        gap: 0.5rem;
+        align-items: center;
+    }
+}
+
 .diff {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+
     .added {
         color: #a4bf8c;
     }

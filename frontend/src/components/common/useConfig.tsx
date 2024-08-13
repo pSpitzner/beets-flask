@@ -35,6 +35,8 @@ export interface MinimalConfig {
     match: {
         medium_rec_thresh: number;
         strong_rec_thresh: number;
+        album_disambig_fields: string[];
+        singleton_disambig_fields: string[];
     };
 }
 

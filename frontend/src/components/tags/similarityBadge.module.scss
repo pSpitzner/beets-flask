@@ -24,20 +24,12 @@
         color: #495057;
     }
     &.strong {
-        color: #A4BF8C;
+        color: #a4bf8c;
     }
     &.medium {
-        color: #EBCB8C;
+        color: #ebcb8c;
     }
     &.weak {
-        color: #C0626B;
+        color: #c0626b;
     }
-}
-
-.HoverContent {
-    Background-color: #21252933;
-    border-radius: 0.3rem;
-    backdrop-filter: blur(10px);
-    padding: 1rem;
-    z-index: 2;
 }

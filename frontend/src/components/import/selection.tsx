@@ -1,3 +1,5 @@
+import { ChevronRight } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import FormControl from "@mui/material/FormControl";
@@ -5,19 +7,17 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Paper from "@mui/material/Paper";
 import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
-import Skeleton from "@mui/material/Skeleton";
 import Typography from "@mui/material/Typography";
+import * as HoverCard from "@radix-ui/react-hover-card";
 
 import { SimilarityBadgeWithHover } from "@/components/tags/similarityBadge";
 
-import { CandidatePreview } from "./candidatePreview";
+import { BeetsDump, CandidatePreview } from "./candidatePreview";
 import { CandidateChoice, SelectionState, useImportContext } from "./context";
-import { PenaltyIcon, penaltyOrder, SourceIcon } from "./icons";
 import { useDiff } from "./diff";
+import { PenaltyIcon, penaltyOrder, SourceIcon } from "./icons";
 
-import { Disc3, UserRound } from "lucide-react";
-import { useEffect, useState } from "react";
-
+import "@/main.css";
 import styles from "./import.module.scss";
 
 export function ImportView() {
@@ -38,7 +38,10 @@ export function ImportView() {
                     variant="outlined"
                     color="primary"
                     onClick={() => {
-                        startSession("/music/inbox.nosync/Bad Company UK/");
+                        // startSession("/music/inbox.nosync/Bad Company UK/");
+                        startSession(
+                            "/music/inbox.nosync/John B/Light Speed [ALBUM]/CD1"
+                        );
                     }}
                 >
                     Re-Start Session
@@ -69,7 +72,7 @@ function Selections() {
     return (
         <div className={styles.wrapper}>
             {/* loading */}
-            {!selections && <Skeleton />}
+            {/* {!selections && <Skeleton />} */}
             {selections?.map((selection) => (
                 <ImportSelection key={selection.id} selection={selection} />
             ))}
@@ -106,6 +109,7 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
                         {selection.candidates.map((choice) => {
                             return (
                                 <FormControlLabel
+                                    sx={{ marginRight: 0 }}
                                     disableTypography={true}
                                     value={choice.id}
                                     key={choice.id}
@@ -123,49 +127,61 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
 
 function CandidateView({ candidate }: { candidate: CandidateChoice }) {
     const match = candidate.track_match ?? candidate.album_match;
-    const source = match.info.data_source as string;
     const artist_is_same = candidate.cur_artist === match.info.artist;
     const album_is_same = candidate.cur_album === match.info.album;
-
-    const artistClass = `${styles.headerGroup} ${artist_is_same ? "" : styles.changed}`;
-    const albumClass = `${styles.headerGroup} ${album_is_same ? "" : styles.changed}`;
 
     useEffect(() => {
         console.log("CandidateView", candidate);
         console.log("artist_is_same", artist_is_same);
         console.log("album_is_same", album_is_same);
-    }, [candidate]);
+    }, [candidate, artist_is_same, album_is_same]);
 
     return (
         <Box className={styles.candidateHeader} key={candidate.id}>
             <Box className={styles.headerGroup}>
-                <Box className={styles.sourceIcon}>
-                    <SourceIcon source={source} />
-                </Box>
                 <SimilarityBadgeWithHover dist={match.distance}>
-                    <CandidatePreview candidate={candidate} />
+                    <BeetsDump candidate={candidate} />
                 </SimilarityBadgeWithHover>
             </Box>
-            <Box className={artistClass}>
-                <Box className={styles.sourceIcon}>
-                    <UserRound />
-                </Box>
-                {match.info.artist}
-            </Box>
-            <Box className={albumClass}>
-                <Box className={styles.sourceIcon}>
-                    <Disc3 />
-                </Box>
-                {match.info.album}
-            </Box>
+            <HoverCard.Root openDelay={50} closeDelay={50}>
+                <HoverCard.Trigger>
+                    <Box className={styles.headerGroup}>
+                        <Box className={artist_is_same ? "" : styles.changed}>
+                            {match.info.artist}
+                        </Box>
+                        <ChevronRight className={styles.fieldSeparator} size={14} />
+                        <Box className={album_is_same ? "" : styles.changed}>
+                            {match.info.album}
+                        </Box>
+                    </Box>
+                </HoverCard.Trigger>
+                <HoverCard.Content
+                    side="bottom"
+                    sideOffset={0}
+                    alignOffset={0}
+                    align="start"
+                    className={"HoverContent"}
+                >
+                    {<CandidatePreview candidate={candidate} />}
+                </HoverCard.Content>
+            </HoverCard.Root>
 
-            <PenaltyIconRow penalties={candidate.penalties ?? []} />
+            <PenaltyIconRow candidate={candidate} />
         </Box>
     );
 }
 
-function PenaltyIconRow({ penalties }: { penalties: string[] }) {
+function PenaltyIconRow({
+    candidate,
+    showSource = true,
+}: {
+    candidate: CandidateChoice;
+    showSource?: boolean;
+}) {
+    const penalties = useMemo(() => candidate.penalties ?? [], [candidate]);
     const [others, setOthers] = useState<string[]>([]);
+    const match = candidate.track_match ?? candidate.album_match;
+    const source = match.info.data_source!;
 
     useEffect(() => {
         const otherPenalties = penalties.filter((p) => !penaltyOrder.includes(p));
@@ -174,6 +190,11 @@ function PenaltyIconRow({ penalties }: { penalties: string[] }) {
 
     return (
         <Box className={styles.penaltyIconRow}>
+            {showSource && (
+                <Box sx={{ marginRight: "0.75rem" }} className={styles.sourceIcon}>
+                    <SourceIcon source={source} />
+                </Box>
+            )}
             {penaltyOrder.map((p) => (
                 <PenaltyIcon
                     key={p}

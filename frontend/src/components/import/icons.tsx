@@ -3,12 +3,12 @@ import {
     Calendar,
     CassetteTape,
     Disc3,
-    FileQuestion,
     Flag,
     List,
     ListX,
     TextSearch,
     UserRound,
+    Variable,
 } from "lucide-react";
 import Box from "@mui/material/Box";
 import Tooltip from "@mui/material/Tooltip";
@@ -26,13 +26,19 @@ export const SourceIcon = ({
     source: string;
     color?: boolean;
 }) => {
+    const render = (children: React.ReactNode, alt?: string) => (
+        <Tooltip title={alt}>
+            <Box className={styles.sourceIcon}>{children}</Box>
+        </Tooltip>
+    );
+
     switch (source.toLowerCase()) {
         case "spotify":
-            if (color) return <img src={spotify} alt="Spotify" />;
-            return <img src={spotifyBw} alt="Spotify" />;
+            if (color) return render(<img src={spotify} />, source);
+            return render(<img src={spotifyBw} />, source);
         case "musicbrainz":
-            if (color) return <img src={mb} alt="MusicBrainz" />;
-            return <Brain />;
+            if (color) return render(<img src={mb} />, source);
+            return render(<Brain />, source);
 
         default:
             return null;
@@ -43,21 +49,28 @@ export const penaltyOrder = [
     "artist",
     "album",
     "tracks",
-    "unmatched tracks",
-    "missing tracks",
+    "unmatched_tracks",
+    "missing_tracks",
     "media",
     "year",
     "country",
 ];
 
 export function PenaltyIcon({ kind, className }: { kind: string; className?: string }) {
-    const render = (IconComponent: React.ComponentType) => (
-        <Tooltip title={kind}>
-            <Box className={`${styles.penaltyIcon} ${className}`}>
-                <IconComponent />
-            </Box>
-        </Tooltip>
-    );
+    const render = (IconComponent: React.ComponentType) => {
+        const res = kind
+            .replace("album_", "")
+            .replace("track_", "")
+            .replaceAll(" ", ", ")
+            .replaceAll("_", " ");
+        return (
+            <Tooltip title={res}>
+                <Box className={`${styles.penaltyIcon} ${className}`}>
+                    <IconComponent />
+                </Box>
+            </Tooltip>
+        );
+    };
 
     switch (kind) {
         case "artist":
@@ -66,9 +79,9 @@ export function PenaltyIcon({ kind, className }: { kind: string; className?: str
             return render(Disc3);
         case "tracks":
             return render(List);
-        case "unmatched tracks":
+        case "unmatched_tracks":
             return render(TextSearch);
-        case "missing tracks":
+        case "missing_tracks":
             return render(ListX);
         case "media":
             return render(CassetteTape);
@@ -79,6 +92,6 @@ export function PenaltyIcon({ kind, className }: { kind: string; className?: str
         case "year":
             return render(Calendar);
         default:
-            return render(FileQuestion);
+            return render(Variable);
     }
 }

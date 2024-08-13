@@ -87,6 +87,52 @@
 #     manipulations *after* items have been added to the library and
 #     finalizes each task.
 
+
+# function to work around needing to parse cur_artist and cur_album
+
+# def current_metadata(
+#     items: Iterable[Item],
+# ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+#     """Extract the likely current metadata for an album given a list of its
+#     items. Return two dictionaries:
+#      - The most common value for each field.
+#      - Whether each field's value was unanimous (values are booleans).
+#     """
+#     assert items  # Must be nonempty.
+
+#     likelies = {}
+#     consensus = {}
+#     fields = [
+#         "artist",
+#         "album",
+#         "albumartist",
+#         "year",
+#         "disctotal",
+#         "mb_albumid",
+#         "label",
+#         "barcode",
+#         "catalognum",
+#         "country",
+#         "media",
+#         "albumdisambig",
+#     ]
+#     for field in fields:
+#         values = [item[field] for item in items if item]
+#         likelies[field], freq = plurality(values)
+#         consensus[field] = freq == len(values)
+
+#     # If there's an album artist consensus, use this for the artist.
+#     if consensus["albumartist"] and likelies["albumartist"]:
+#         likelies["artist"] = likelies["albumartist"]
+
+#     return likelies, consensus
+
+#
+# likelies, consensus = current_metadata(items)
+# cur_artist = cast(str, likelies["artist"])
+# cur_album = cast(str, likelies["album"])
+
+
 from __future__ import annotations
 from copy import deepcopy
 from dataclasses import dataclass, asdict, field
@@ -249,8 +295,8 @@ def complete_selections(sid, req: CompletionRequest):
 class AlbumMatch(NamedTuple):
     distance: Distance
     info: AlbumInfo
-    extra_items: list[Item]
-    extra_tracks: list[TrackInfo]
+    extra_items: list[Item]  # these are tracks in the folder that were not found online
+    extra_tracks: list[TrackInfo]  # tracks found online not present in the folder
     mapping: dict[Item, TrackInfo] | None = None
 
 
@@ -300,11 +346,11 @@ class CandidateChoice:
         self.cur_artist = self.task.cur_artist
         self.cur_album = self.task.cur_album
 
-        for key in self.match.distance.keys():
-            key = key.replace("album_", "")
-            key = key.replace("track_", "")
-            key = key.replace("_", " ")
-            self.penalties.append(key)
+        self.penalties.extend(self.match.distance.keys())
+
+    @property
+    def items(self) -> List[Item]:
+        return self.task.items
 
     def serialize(self):
         # currently we try to send everything we have and patch whats needed.
@@ -322,9 +368,9 @@ class CandidateChoice:
         info["tracks"] = []
         for track in self.match.info.tracks or []:
             track.decode()
-            t = _enforce_dict(track)
-            t["name"] = track.title
-            info["tracks"].append(t)
+            info["tracks"].append(
+                MinimalItemAndTrackInfo.from_item_or_track(track).serialize()
+            )
 
         match = dict()
         match["info"] = info
@@ -335,13 +381,25 @@ class CandidateChoice:
             match["extra_tracks"] = []  # self.match.extra_tracks
 
             for item in self.match.extra_items or []:  # type: ignore
-                match["extra_items"].append(item.__repr__())
+                match["extra_items"].append(
+                    MinimalItemAndTrackInfo.from_item_or_track(item).serialize()
+                )
 
             for track in self.match.extra_tracks or []:  # type: ignore
                 track.decode()
-                t = _enforce_dict(track)
-                t["name"] = track.title
-                match["extra_tracks"].append(t)
+                match["extra_tracks"].append(
+                    MinimalItemAndTrackInfo.from_item_or_track(track).serialize()
+                )
+
+            # the mapping of a beets albummatch uses objects, but we don not want
+            # to send them over redundantly. convert to an index mapping,
+            # where first index is in self.items, and second is in self.match.info.tracks
+            mapping = dict()
+            for item, track in self.match.mapping.items():  # type: ignore
+                idx = self.items.index(item)
+                tdx = self.match.info.tracks.index(track)  # type: ignore
+                mapping[idx] = tdx
+            match["mapping"] = mapping
 
         res = dict()
         res["id"] = self.id
@@ -352,12 +410,46 @@ class CandidateChoice:
         res["cur_artist"] = self.cur_artist
         res["cur_album"] = self.cur_album
         res["penalties"] = self.penalties
+        res["items"] = [
+            MinimalItemAndTrackInfo.from_item_or_track(i).serialize()
+            for i in self.items
+        ]
 
         return res
 
 
 def _enforce_dict(d):
     return {k: v for k, v in d.items()}
+
+
+@dataclass
+class MinimalItemAndTrackInfo:
+    name: str
+    title: str
+    artist: str
+    album: str
+    length: int
+    data_source: str
+    data_url: str
+    # item only
+    bitrate: int | None
+    format: str | None
+
+    def serialize(self):
+        return asdict(self)
+
+    @classmethod
+    def from_item_or_track(
+        cls, track: Union[TrackInfo, Item]
+    ) -> MinimalItemAndTrackInfo:
+        kwargs = dict()
+        for k in cls.__annotations__.keys():
+            kwargs[k] = getattr(track, k, None)
+        try:
+            kwargs["name"] = getattr(track, "title", None)
+        except AttributeError:
+            pass
+        return cls(**kwargs)
 
 
 @dataclass

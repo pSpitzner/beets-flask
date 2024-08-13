@@ -7,6 +7,7 @@ import { useConfig } from "@/components/common/useConfig";
 import { TagPreview } from "./tagView";
 
 import styles from "./similarityBadge.module.scss";
+import "@/main.css";
 
 export function TagSimilarityBadgeWithHover({
     tagId,
@@ -49,7 +50,7 @@ export function SimilarityBadgeWithHover({
 }) {
     return (
         <HoverCard.Root openDelay={300}>
-            <HoverCard.Trigger className={styles.hoverTrigger}>
+            <HoverCard.Trigger>
                 <SimilarityBadge dist={dist} className={className} />
             </HoverCard.Trigger>
             <HoverCard.Content
@@ -57,7 +58,7 @@ export function SimilarityBadgeWithHover({
                 sideOffset={0}
                 alignOffset={15}
                 align="start"
-                className={styles.HoverContent}
+                className={"HoverContent"}
             >
                 {children}
             </HoverCard.Content>

@@ -29,6 +29,16 @@
 }
 
 
+/* applied to all custom hover cards that use radix */
+.HoverContent {
+    Background-color: #21252933;
+    border-radius: 0.3rem;
+    backdrop-filter: blur(10px);
+    padding: 1rem;
+    z-index: 2;
+    pointer-events: none;
+}
+
 /* Ansi colors, opiniated, for https: //github.com/nteract/ansi-to-react */
 
 .ansi-dim {
