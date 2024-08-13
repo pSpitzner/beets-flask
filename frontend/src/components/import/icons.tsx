@@ -1,11 +1,14 @@
 import {
+    AudioLines,
     Brain,
     Calendar,
     CassetteTape,
     Disc3,
     Flag,
+    GitPullRequestArrow,
     List,
     ListX,
+    SearchX,
     TextSearch,
     UserRound,
     Variable,
@@ -78,11 +81,11 @@ export function PenaltyIcon({ kind, className }: { kind: string; className?: str
         case "album":
             return render(Disc3);
         case "tracks":
-            return render(List);
+            return render(AudioLines);
         case "unmatched_tracks":
-            return render(TextSearch);
+            return render(GitPullRequestArrow);
         case "missing_tracks":
-            return render(ListX);
+            return render(SearchX);
         case "media":
             return render(CassetteTape);
         case "mediums":

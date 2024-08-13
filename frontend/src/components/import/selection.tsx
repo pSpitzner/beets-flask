@@ -67,7 +67,6 @@ export function ImportView() {
  */
 function Selections() {
     const { selections } = useImportContext();
-    const { left, right } = useDiff("test", "tesd2");
 
     return (
         <div className={styles.wrapper}>
@@ -76,13 +75,6 @@ function Selections() {
             {selections?.map((selection) => (
                 <ImportSelection key={selection.id} selection={selection} />
             ))}
-            <Box className={styles.diff}>
-                <Typography>
-                    {left}
-                    {" -> "}
-                    {right}
-                </Typography>
-            </Box>
         </div>
     );
 }

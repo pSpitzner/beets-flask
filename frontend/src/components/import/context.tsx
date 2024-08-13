@@ -41,6 +41,7 @@ export type CandidateChoice =
           cur_album?: string;
           penalties?: string[];
           items?: MinimalItemAndTrackInfo[];
+          // instead of sending items, we can resolve them from selection_state (ie. the task)
           track_match: TrackMatch;
           album_match?: never;
       }

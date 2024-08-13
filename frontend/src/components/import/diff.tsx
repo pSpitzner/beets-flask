@@ -1,41 +1,31 @@
-// eslint-disable-next-line
-// @ts-nocheck
 import * as Diff from "diff";
 import { useEffect, useState } from "react";
 
 import styles from "./import.module.scss";
 
-interface DiffPart {
-    added?: boolean;
-    removed?: boolean;
-    value: string;
-}
-
 export function useDiff(one: string, other: string) {
-    const [left, setLeft] = useState<JSX.Element[]>([]);
-    const [right, setRight] = useState<JSX.Element[]>([]);
+    const [left, setLeft] = useState<React.ReactNode[]>([]);
+    const [right, setRight] = useState<React.ReactNode[]>([]);
     const [didRemove, setRemoved] = useState<boolean>(false);
     const [didAdd, setAdded] = useState<boolean>(false);
 
     useEffect(() => {
-        // eslint-disable-next-line
-        let diff = Diff.diffChars(one, other) as DiffPart[];
-        // diffChars diffWords diffWordsWithSpace
+        let diff = Diff.diffChars(one, other);
+
         // simple heuristics: if we have a lot to replaceme, maybe a word diff is better
         if (diff.length > one.length / 2) {
-            // eslint-disable-next-line
-            const wordDiff = Diff.diffWords(one, other) as DiffPart[];
+            const wordDiff = Diff.diffWords(one, other);
             if (0.75 * wordDiff.length < diff.length) {
                 diff = wordDiff;
             }
         }
         console.log("diff", diff);
-        const leftParts: JSX.Element[] = [];
-        const rightParts: JSX.Element[] = [];
+        const leftParts: React.ReactNode[] = [];
+        const rightParts: React.ReactNode[] = [];
         let wasAdded = false;
         let wasRemoved = false;
 
-        diff.forEach((part: DiffPart, index: number) => {
+        diff.forEach((part, index) => {
             const className = part.added
                 ? styles.added
                 : part.removed
