@@ -76,8 +76,8 @@ function ArtistChange({ prev, next }: { prev: string; next: string }) {
     } else {
         inner = (
             <Box className={styles.inner}>
-                {didRemove && <span>{left}</span>}
-                {didRemove && <ArrowRight className={styles.changed} size={14} />}
+                {<span>{left}</span>}
+                {<ArrowRight className={styles.changed} size={14} />}
                 {<span>{right}</span>}
             </Box>
         );
@@ -101,8 +101,8 @@ function AlbumChange({ prev, next }: { prev: string; next: string }) {
     } else {
         inner = (
             <Box className={styles.inner}>
-                {didRemove && <span>{left}</span>}
-                {didRemove && <ArrowRight className={styles.changed} size={14} />}
+                {<span>{left}</span>}
+                {<ArrowRight className={styles.changed} size={14} />}
                 {<span>{right}</span>}
             </Box>
         );
