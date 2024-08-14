@@ -78,11 +78,11 @@ export interface MinimalItemAndTrackInfo {
     // track info only
     data_source?: string;
     data_url?: string;
-    index?: number;
+    index?: number; // 1-based
     // item only (before import is done)
     bitrate?: number;
     format?: string;
-    track?: number; // note that trackinfo > index is 0-based, but item > track is 1-based
+    track?: number; // 1-based
 }
 
 const ImportContext = createContext<ImportContextI | null>(null);

@@ -610,11 +610,11 @@ class MinimalItemAndTrackInfo:
     # track info only
     data_source: str
     data_url: str
-    index: int
+    index: int  #  1-based
     # item only (before import is done)
     bitrate: int
     format: str
-    track: int  # note that trackinfo > index is 0-based, but item > track is 1-based
+    track: int  #  1-based
 
     def serialize(self):
         return asdict(self)

@@ -155,8 +155,12 @@ function TrackChanges({ candidate }: { candidate: CandidateChoice }) {
                             key={idx}
                             prev={items[parseInt(idx)]}
                             next={tracks[tdx]}
-                            pdx={parseInt(idx)}
-                            ndx={tdx}
+                            // mapping uses 0-based indexing, but track display 1-based
+                            // probably the most robus way to do the mapping would be
+                            // from data-path to match-url
+                            // (that is, iff every trackinfo has match url, and not just on the album-level)
+                            pdx={parseInt(idx) + 1}
+                            ndx={tdx + 1}
                         />
                     );
                 })}
@@ -173,8 +177,8 @@ function TrackDiff({
 }: {
     prev: MinimalItemAndTrackInfo;
     next: MinimalItemAndTrackInfo;
-    pdx?: number; // previous index
-    ndx?: number; // next index
+    pdx?: number; // previous index, 1-based
+    ndx?: number; // next index, 1-based
 }) {
     const { left: lTitleD, right: rTitleD } = useDiff(prev.title, next.title);
 
@@ -339,8 +343,6 @@ function _fmtTrackIndex(num?: number) {
     if (num === undefined) {
         return "";
     }
-    // indices are 0-based
-    num += 1;
     return num < 10 ? ` [${num}]` : `[${num}]`;
 }
 
@@ -413,9 +415,7 @@ function UnmatchedTracks({ candidate }: { candidate: CandidateChoice }) {
             </Box>
             <Box className={styles.trackChanges}>
                 {unmatchedTracks.map((track, idx) => {
-                    return (
-                        <UnmatchedTrack key={idx} track={track} idx={track.track - 1} />
-                    );
+                    return <UnmatchedTrack key={idx} track={track} idx={track.track} />;
                 })}
             </Box>
         </Box>

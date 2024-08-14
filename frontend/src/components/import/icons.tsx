@@ -71,7 +71,8 @@ export function PenaltyIconRow({
             .map((penalty) => {
                 switch (penalty) {
                     // somewhat preferential. source is still punished by weight,
-                    // but we display the source as an icon...
+                    // but we display the source as an icon... id like not to think
+                    // of the source as a penalty.
                     case "mediums":
                         return "media";
                     case "source":
