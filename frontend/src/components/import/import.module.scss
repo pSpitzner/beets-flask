@@ -101,12 +101,24 @@
     display: flex;
     gap: 0.5rem;
     align-items: center;
+
+    .inner {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
 }
 
 .albumChange {
     display: flex;
     gap: 0.5rem;
     align-items: center;
+
+    .inner {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
 }
 
 .trackChanges {
@@ -144,7 +156,7 @@
         align-items: center;
         width: 100%;
         border-radius: 0.3rem;
-        padding: 0rem 0.3rem;
+        padding: 0.1rem 0.5rem 0.1rem 0.3rem;
         &:nth-child(even) {
             background-color: #88888822;
         }

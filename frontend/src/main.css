@@ -33,7 +33,7 @@
 .HoverContent {
     Background-color: #21252933;
     border-radius: 0.3rem;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(17px);
     padding: 1rem;
     z-index: 2;
     pointer-events: none;

@@ -107,6 +107,7 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
                                     control={<Radio size="small" />}
                                     label={<CandidateView candidate={choice} />}
                                 />
+                                // <CandidatePreview candidate={choice} key={choice.id} />
                             );
                         })}
                     </RadioGroup>

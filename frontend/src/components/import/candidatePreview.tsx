@@ -75,7 +75,7 @@ function ArtistChange({ prev, next }: { prev: string; next: string }) {
         inner = <span>{prev}</span>;
     } else {
         inner = (
-            <Box className={styles.diff}>
+            <Box className={styles.inner}>
                 {didRemove && <span>{left}</span>}
                 {didRemove && <ArrowRight className={styles.changed} size={14} />}
                 {<span>{right}</span>}
@@ -100,7 +100,7 @@ function AlbumChange({ prev, next }: { prev: string; next: string }) {
         inner = <span>{prev}</span>;
     } else {
         inner = (
-            <Box className={styles.diff}>
+            <Box className={styles.inner}>
                 {didRemove && <span>{left}</span>}
                 {didRemove && <ArrowRight className={styles.changed} size={14} />}
                 {<span>{right}</span>}
@@ -199,16 +199,15 @@ function TrackDiff({
                     <ArrowRight className={styles.changed} size={14} />
                     {
                         <span className={styles.trackChangeSide}>
-                            {hasIndexChanged ? (
-                                <TrackIndex idx={rightIdx} className={styles.added} />
-                            ) : null}
+                            <TrackIndex
+                                idx={rightIdx}
+                                className={hasIndexChanged ? styles.added : styles.fade}
+                            />
                             <span>{rTitleD}</span>
-                            {hasTimeChanged ? (
-                                <TrackLength
-                                    length={rightTime}
-                                    className={styles.added}
-                                />
-                            ) : null}
+                            <TrackLength
+                                length={rightTime}
+                                className={hasTimeChanged ? styles.added : styles.fade}
+                            />
                         </span>
                     }
                 </Box>
@@ -233,16 +232,7 @@ function TrackDiff({
         );
     }
 
-    return (
-        <Box className={styles.trackChange}>
-            {hasTitleChanged || hasIndexChanged ? (
-                <AudioLines size={14} className={styles.changed} />
-            ) : (
-                <Check className={styles.fade} size={14} />
-            )}
-            {inner}
-        </Box>
-    );
+    return <Box className={styles.trackChange}>{inner}</Box>;
 }
 
 function TrackLength({ length, className }: { length: number; className?: string }) {
