@@ -15,7 +15,7 @@ import { SimilarityBadgeWithHover } from "@/components/tags/similarityBadge";
 import { BeetsDump, CandidatePreview } from "./candidatePreview";
 import { CandidateChoice, SelectionState, useImportContext } from "./context";
 import { useDiff } from "./diff";
-import { PenaltyIcon, penaltyOrder, SourceIcon } from "./icons";
+import { PenaltyIcon, PenaltyIconRow, penaltyOrder, SourceIcon } from "./icons";
 
 import "@/main.css";
 import styles from "./import.module.scss";
@@ -159,49 +159,6 @@ function CandidateView({ candidate }: { candidate: CandidateChoice }) {
             </HoverCard.Root>
 
             <PenaltyIconRow candidate={candidate} />
-        </Box>
-    );
-}
-
-function PenaltyIconRow({
-    candidate,
-    showSource = true,
-}: {
-    candidate: CandidateChoice;
-    showSource?: boolean;
-}) {
-    const penalties = useMemo(() => candidate.penalties ?? [], [candidate]);
-    const [others, setOthers] = useState<string[]>([]);
-    const match = candidate.track_match ?? candidate.album_match;
-    const source = match.info.data_source!;
-
-    useEffect(() => {
-        const otherPenalties = penalties.filter((p) => !penaltyOrder.includes(p));
-        setOthers(otherPenalties);
-    }, [penalties]);
-
-    return (
-        <Box className={styles.penaltyIconRow}>
-            {showSource && (
-                <Box sx={{ marginRight: "0.75rem" }} className={styles.sourceIcon}>
-                    <SourceIcon source={source} />
-                </Box>
-            )}
-            {penaltyOrder.map((p) => (
-                <PenaltyIcon
-                    key={p}
-                    kind={p}
-                    className={
-                        penalties.indexOf(p) === -1 ? styles.inactive : styles.penalty
-                    }
-                />
-            ))}
-            {
-                <PenaltyIcon
-                    kind={others.join(" ")}
-                    className={others.length === 0 ? styles.inactive : styles.penalty}
-                />
-            }
         </Box>
     );
 }

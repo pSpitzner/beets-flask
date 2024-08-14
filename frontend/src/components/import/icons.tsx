@@ -6,19 +6,19 @@ import {
     Disc3,
     Flag,
     GitPullRequestArrow,
-    List,
-    ListX,
     SearchX,
-    TextSearch,
     UserRound,
     Variable,
 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import Tooltip from "@mui/material/Tooltip";
 
 import mb from "@/assets/musicbrainz.webp";
 import spotify from "@/assets/spotify.png";
 import spotifyBw from "@/assets/spotifyBw.svg";
+
+import { CandidateChoice } from "./context";
 
 import styles from "./import.module.scss";
 
@@ -48,16 +48,75 @@ export const SourceIcon = ({
     }
 };
 
-export const penaltyOrder = [
-    "artist",
-    "album",
+const penaltyOrder = [
+    "missing_tracks",
     "tracks",
     "unmatched_tracks",
-    "missing_tracks",
+    "artist",
+    "album",
     "media",
     "year",
     "country",
 ];
+
+export function PenaltyIconRow({
+    candidate,
+    showSource = true,
+}: {
+    candidate: CandidateChoice;
+    showSource?: boolean;
+}) {
+    const penalties = useMemo(() => {
+        return (candidate.penalties ?? [])
+            .map((penalty) => {
+                switch (penalty) {
+                    // somewhat preferential. source is still punished by weight,
+                    // but we display the source as an icon...
+                    case "mediums":
+                        return "media";
+                    case "source":
+                        return null;
+                    default:
+                        return penalty;
+                }
+            })
+            .filter(Boolean) as string[];
+    }, [candidate]);
+
+    const [others, setOthers] = useState<string[]>([]);
+    const match = candidate.track_match ?? candidate.album_match;
+    const source = match.info.data_source!;
+
+    useEffect(() => {
+        const otherPenalties = penalties.filter((p) => !penaltyOrder.includes(p));
+        setOthers(otherPenalties);
+    }, [penalties]);
+
+    return (
+        <Box className={styles.penaltyIconRow}>
+            {showSource && (
+                <Box sx={{ marginRight: "0.75rem" }} className={styles.sourceIcon}>
+                    <SourceIcon source={source} />
+                </Box>
+            )}
+            {penaltyOrder.map((p) => (
+                <PenaltyIcon
+                    key={p}
+                    kind={p}
+                    className={
+                        penalties.indexOf(p) === -1 ? styles.inactive : styles.penalty
+                    }
+                />
+            ))}
+            {
+                <PenaltyIcon
+                    kind={others.join(" ")}
+                    className={others.length === 0 ? styles.inactive : styles.penalty}
+                />
+            }
+        </Box>
+    );
+}
 
 export function PenaltyIcon({ kind, className }: { kind: string; className?: string }) {
     const render = (IconComponent: React.ComponentType) => {
