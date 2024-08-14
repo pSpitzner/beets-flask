@@ -129,18 +129,24 @@ function TrackChanges({ candidate }: { candidate: CandidateChoice }) {
     console.log("mapping", mapping);
 
     return (
-        <Box className={styles.trackChanges}>
-            {Object.entries(mapping).map(([idx, tdx]) => {
-                return (
-                    <TrackDiff
-                        key={idx}
-                        prev={items[parseInt(idx)]}
-                        next={tracks[tdx]}
-                        pdx={parseInt(idx)}
-                        ndx={tdx}
-                    />
-                );
-            })}
+        <Box sx={{ display: "flex", flexDirection: "column" }}>
+            <Box className={styles.previewHeading}>
+                <AudioLines size={14} className={styles.changed} />
+                <span className={""}>Changed Tracks:</span>
+            </Box>
+            <Box className={styles.trackChanges}>
+                {Object.entries(mapping).map(([idx, tdx]) => {
+                    return (
+                        <TrackDiff
+                            key={idx}
+                            prev={items[parseInt(idx)]}
+                            next={tracks[tdx]}
+                            pdx={parseInt(idx)}
+                            ndx={tdx}
+                        />
+                    );
+                })}
+            </Box>
         </Box>
     );
 }

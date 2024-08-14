@@ -83,6 +83,19 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+
+    .previewHeading,
+    .previewSubHeading {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .previewSubHeading {
+        // 2rem margin and 0.9 size align well with track indices and titles
+        margin-left: 2rem;
+        font-size: 0.9rem;
+    }
 }
 
 .disambig {
