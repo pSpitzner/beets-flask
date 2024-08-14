@@ -132,6 +132,184 @@
 # cur_artist = cast(str, likelies["artist"])
 # cur_album = cast(str, likelies["album"])
 
+# ------------------------------------------------------------------------------------ #
+#                                 fields in extra item                                 #
+# ------------------------------------------------------------------------------------ #
+# Item(
+#     id=None,
+#     path=b"/Users/paul/para/2_Projects/_shared_data/music/inbox.nosync/John B/Light Speed [ALBUM]/CD1/07 Connected.flac",
+#     album_id=None,
+#     title="Connected",
+#     artist="John B, Kirsty Hawkshaw",
+#     artists=[],
+#     artists_ids=[],
+#     artist_sort="",
+#     artists_sort=[],
+#     artist_credit="",
+#     artists_credit=[],
+#     remixer="",
+#     album="Light Speed",
+#     albumartist="John B",
+#     albumartists=[],
+#     albumartist_sort="",
+#     albumartists_sort=[],
+#     albumartist_credit="",
+#     albumartists_credit=[],
+#     genre="",
+#     style="",
+#     discogs_albumid=0,
+#     discogs_artistid=0,
+#     discogs_labelid=0,
+#     lyricist="",
+#     composer="John B Williams",
+#     composer_sort="",
+#     work="",
+#     mb_workid="",
+#     work_disambig="",
+#     arranger="",
+#     grouping="",
+#     year=2012,
+#     month=2,
+#     day=6,
+#     track=7,
+#     tracktotal=0,
+#     disc=1,
+#     disctotal=2,
+#     lyrics="",
+#     comments="",
+#     bpm=0,
+#     comp=False,
+#     mb_trackid="",
+#     mb_albumid="",
+#     mb_artistid="",
+#     mb_artistids=[],
+#     mb_albumartistid="",
+#     mb_albumartistids=[],
+#     mb_releasetrackid="",
+#     trackdisambig="",
+#     albumtype="",
+#     albumtypes=[],
+#     label="",
+#     barcode="",
+#     acoustid_fingerprint="",
+#     acoustid_id="",
+#     mb_releasegroupid="",
+#     release_group_title="",
+#     asin="",
+#     isrc="GBLHX1407007",
+#     catalognum="",
+#     script="",
+#     language="",
+#     country="",
+#     albumstatus="",
+#     media="",
+#     albumdisambig="",
+#     releasegroupdisambig="",
+#     disctitle="",
+#     encoder="",
+#     rg_track_gain=None,
+#     rg_track_peak=None,
+#     rg_album_gain=None,
+#     rg_album_peak=None,
+#     r128_track_gain=None,
+#     r128_album_gain=None,
+#     original_year=0,
+#     original_month=0,
+#     original_day=0,
+#     initial_key=None,
+#     length=463.6046031746032,
+#     bitrate=1054459,
+#     bitrate_mode="",
+#     encoder_info="",
+#     encoder_settings="",
+#     format="FLAC",
+#     samplerate=44100,
+#     bitdepth=16,
+#     channels=2,
+#     mtime=1723116460,
+#     added=0.0,
+# )
+
+
+# ------------------------------------------------------------------------------------ #
+#                          fields in extra track from spotify                          #
+# ------------------------------------------------------------------------------------ #
+
+# {'title': "Good Lovin'",
+#  'track_id': '3jp1Uz4i9NpjzjCFwFoT28',
+#  'release_track_id': None,
+#  'artist': 'Peven Everett',
+#  'artist_id': '0v2oB2xMS64U3lcU5DFuCY',
+#  'artists': [],
+#  'artists_ids': [],
+#  'length': 334.822,
+#  'index': 13,
+#  'media': None,
+#  'medium': 1,
+#  'medium_index': 13,
+#  'medium_total': 14,
+#  'artist_sort': None,
+#  'artists_sort': [],
+#  'disctitle': None,
+#  'artist_credit': None,
+#  'artists_credit': [],
+#  'data_source': 'Spotify',
+#  'data_url': 'https://open.spotify.com/track/3jp1Uz4i9NpjzjCFwFoT28',
+#  'lyricist': None,
+#  'composer': None,
+#  'composer_sort': None,
+#  'arranger': None,
+#  'track_alt': None,
+#  'work': None,
+#  'mb_workid': None,
+#  'work_disambig': None,
+#  'bpm': None,
+#  'initial_key': None,
+#  'genre': None,
+#  'album': None,
+#  'spotify_track_id': '3jp1Uz4i9NpjzjCFwFoT28',
+#  'spotify_artist_id': '0v2oB2xMS64U3lcU5DFuCY'}
+
+# ------------------------------------------------------------------------------------ #
+#                             fields in extra track from MB                            #
+# ------------------------------------------------------------------------------------ #
+# {'album': None,
+#  'arranger': None,
+#  'artist': 'John B feat. NSG',
+#  'artist_credit': 'John B feat. NSG',
+#  'artist_id': '353856b7-8d79-4136-9ac6-7e47954e5be9',
+#  'artist_sort': 'B, John feat. NSG',
+#  'artists': ['John B', 'NSG'],
+#  'artists_credit': ['John B', 'NSG'],
+#  'artists_ids': ['353856b7-8d79-4136-9ac6-7e47954e5be9',
+#                  'ecebea6a-c064-4409-9699-b0bf6b5df720'],
+#  'artists_sort': ['B, John', 'NSG'],
+#  'bpm': None,
+#  'composer': 'John B',
+#  'composer_sort': 'B, John',
+#  'data_source': 'MusicBrainz',
+#  'data_url': 'https://musicbrainz.org/recording/3a048c8a-dcf5-4fb6-9406-55d90369657b',
+#  'disctitle': None,
+#  'genre': None,
+#  'index': 14,
+#  'initial_key': None,
+#  'isrc': 'GBLHX1407032',
+#  'length': 386.0,
+#  'lyricist': None,
+#  'mb_workid': '4895f701-e93a-41e8-95c4-81bc2be4c91d',
+#  'media': 'Digital Media',
+#  'medium': 1,
+#  'medium_index': 14,
+#  'medium_total': 15,
+#  'release_track_id': '15898957-08f5-3dab-b935-9aa4564d226b',
+#  'remixer': '',
+#  'title': 'Light Speed (original version)',
+#  'track_alt': '14',
+#  'track_id': '3a048c8a-dcf5-4fb6-9406-55d90369657b',
+#  'trackdisambig': None,
+#  'work': 'Light Speed',
+#  'work_disambig': None}
+
 
 from __future__ import annotations
 from copy import deepcopy
@@ -429,11 +607,14 @@ class MinimalItemAndTrackInfo:
     artist: str
     album: str
     length: int
+    # track info only
     data_source: str
     data_url: str
-    # item only
-    bitrate: int | None
-    format: str | None
+    index: int
+    # item only (before import is done)
+    bitrate: int
+    format: str
+    track: int  # note that trackinfo > index is 0-based, but item > track is 1-based
 
     def serialize(self):
         return asdict(self)

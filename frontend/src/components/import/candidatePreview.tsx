@@ -3,10 +3,10 @@
 import {
     ArrowRight,
     AudioLines,
-    Check,
-    ChevronRight,
     Disc3,
+    GitPullRequestArrow,
     Link2,
+    SearchX,
     UserRound,
 } from "lucide-react";
 import Ansi from "@curvenote/ansi-to-react";
@@ -17,7 +17,6 @@ import { CandidateChoice, MinimalItemAndTrackInfo } from "./context";
 import { useDiff } from "./diff";
 
 import styles from "./import.module.scss";
-import { useEffect } from "react";
 
 export function BeetsDump({ candidate }: { candidate: CandidateChoice }) {
     const content = candidate.diff_preview ?? "No preview available";
@@ -62,6 +61,8 @@ export function CandidatePreview({ candidate }: { candidate: CandidateChoice }) 
             <ArtistChange prev={candidate.cur_artist!} next={info.artist!} />
             <AlbumChange prev={candidate.cur_album!} next={info.album!} />
             <TrackChanges candidate={candidate} />
+            <MissingTracks candidate={candidate} />
+            <UnmatchedTracks candidate={candidate} />
         </Box>
     );
 }
@@ -115,6 +116,10 @@ function AlbumChange({ prev, next }: { prev: string; next: string }) {
         </Box>
     );
 }
+
+/* ---------------------------------------------------------------------------------- */
+/*                                    Track Changes                                   */
+/* ---------------------------------------------------------------------------------- */
 
 function TrackChanges({ candidate }: { candidate: CandidateChoice }) {
     if (candidate.track_match) {
@@ -337,4 +342,98 @@ function _fmtTrackIndex(num?: number) {
     // indices are 0-based
     num += 1;
     return num < 10 ? ` [${num}]` : `[${num}]`;
+}
+
+/* ---------------------------------------------------------------------------------- */
+/*                                   Missing Tracks                                   */
+/* ---------------------------------------------------------------------------------- */
+
+function MissingTracks({ candidate }: { candidate: CandidateChoice }) {
+    if (candidate.track_match) {
+        return null;
+    }
+    const missingTracks = candidate.album_match.extra_tracks;
+    const tracksMissing = missingTracks.length > 0;
+
+    if (!tracksMissing) {
+        return null;
+    }
+
+    return (
+        <Box sx={{ display: "flex", flexDirection: "column" }}>
+            <Box className={styles.previewHeading}>
+                <SearchX size={14} className={styles.changed} />
+                <span className={""}>Missing tracks: {missingTracks.length}</span>
+            </Box>
+            <Box className={styles.trackChanges}>
+                {missingTracks.map((track, idx) => {
+                    return <MissingTrack key={idx} track={track} idx={track.index} />;
+                })}
+            </Box>
+        </Box>
+    );
+}
+
+function MissingTrack({
+    track,
+    idx,
+}: {
+    track: MinimalItemAndTrackInfo;
+    idx?: number;
+}) {
+    return (
+        <Box className={styles.trackChange}>
+            <TrackIndex idx={idx} />
+            <span>{track.title}</span>
+            <TrackLength length={track.length} />
+        </Box>
+    );
+}
+
+/* ---------------------------------------------------------------------------------- */
+/*                                  Unmatched Tracks                                  */
+/* ---------------------------------------------------------------------------------- */
+
+function UnmatchedTracks({ candidate }: { candidate: CandidateChoice }) {
+    if (candidate.track_match) {
+        return null;
+    }
+    const unmatchedTracks = candidate.album_match.extra_items;
+    const tracksUnmatched = unmatchedTracks.length > 0;
+
+    if (!tracksUnmatched) {
+        return null;
+    }
+
+    return (
+        <Box sx={{ display: "flex", flexDirection: "column" }}>
+            <Box className={styles.previewHeading}>
+                <GitPullRequestArrow size={14} className={styles.changed} />
+                <span className={""}>Unmatched tracks: {unmatchedTracks.length}</span>
+            </Box>
+            <Box className={styles.trackChanges}>
+                {unmatchedTracks.map((track, idx) => {
+                    return (
+                        <UnmatchedTrack key={idx} track={track} idx={track.track - 1} />
+                    );
+                })}
+            </Box>
+        </Box>
+    );
+}
+
+function UnmatchedTrack({
+    track,
+    idx,
+}: {
+    track: MinimalItemAndTrackInfo;
+    idx?: number;
+}) {
+    return (
+        <Box className={styles.trackChange}>
+            <TrackIndex idx={idx} />
+            <span>{track.title}</span>
+            <TrackLength length={track.length} />
+        </Box>
+    );
 }

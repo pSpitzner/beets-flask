@@ -75,10 +75,14 @@ export interface MinimalItemAndTrackInfo {
     artist: string;
     album: string;
     length: number;
-    data_source: string;
-    data_url: string;
+    // track info only
+    data_source?: string;
+    data_url?: string;
+    index?: number;
+    // item only (before import is done)
     bitrate?: number;
     format?: string;
+    track?: number; // note that trackinfo > index is 0-based, but item > track is 1-based
 }
 
 const ImportContext = createContext<ImportContextI | null>(null);
