@@ -126,7 +126,7 @@ export function PenaltyIcon({ kind, className }: { kind: string; className?: str
             .replaceAll(" ", ", ")
             .replaceAll("_", " ")
             // rename for more verbose hover
-            .replace(/^tracks\b/, "changed tracks");
+            .replace(/^tracks\b/, "track changes");
 
         return (
             <Tooltip title={res}>

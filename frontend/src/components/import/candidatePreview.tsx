@@ -123,16 +123,25 @@ function TrackChanges({ candidate }: { candidate: CandidateChoice }) {
     const tracks = candidate.album_match.info.tracks as MinimalItemAndTrackInfo[];
     const items = candidate.items!;
     const mapping = candidate.album_match.mapping;
-
-    console.log("tracks", tracks);
-    console.log("items", items);
-    console.log("mapping", mapping);
+    // curious: when only capitalization changes in tracks, we do not get the
+    // track change penalty. this leads to a bit of communication issue:
+    // reading 'no changes' in the heading but having a bunch of them marked is confusing.
+    const tracksChanged = candidate.penalties?.includes("tracks");
 
     return (
         <Box sx={{ display: "flex", flexDirection: "column" }}>
             <Box className={styles.previewHeading}>
-                <AudioLines size={14} className={styles.changed} />
-                <span className={""}>Changed Tracks:</span>
+                {tracksChanged ? (
+                    <>
+                        <AudioLines size={14} className={styles.changed} />
+                        <span className={""}>Track changes</span>
+                    </>
+                ) : (
+                    <>
+                        <AudioLines size={14} />
+                        <span className={""}>No severe track changes</span>
+                    </>
+                )}
             </Box>
             <Box className={styles.trackChanges}>
                 {Object.entries(mapping).map(([idx, tdx]) => {
