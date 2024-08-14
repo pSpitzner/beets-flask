@@ -54,10 +54,6 @@
     }
 }
 
-.fieldSeparator {
-    opacity: 0.6;
-}
-
 .sourceIcon,
 .penaltyIcon {
     display: flex;
@@ -113,31 +109,81 @@
     align-items: center;
 }
 
-.tracksChange {
+.trackChanges {
     display: flex;
-    gap: 0.3rem;
+    gap: 0.1rem;
     align-items: start;
     flex-direction: column;
     font-size: 0.8rem;
     margin-left: 1rem;
+
+    .diff {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        align-items: center;
+        width: 100%;
+
+        .lhs,
+        .rhs {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            width: 100%;
+
+            > svg {
+                flex-shrink: 0;
+            }
+        }
+    }
 
     .trackChange {
         display: flex;
         flex-direction: row;
         gap: 0.5rem;
         align-items: center;
+        width: 100%;
+        border-radius: 0.3rem;
+        padding: 0rem 0.3rem;
+        &:nth-child(even) {
+            background-color: #88888822;
+        }
+
+        .trackChangeSide {
+            // one side of a track change, where the title changed
+            display: flex;
+            gap: 0.4rem; // this corresponds to space e.g. between title and time
+            align-items: center;
+        }
     }
 }
 
-.diff {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
+.trackIndex {
+    white-space: pre;
+    font-size: 0.7rem;
+    font-family: monospace;
+    > .added {
+        white-space: normal !important;
+    }
+}
 
-    .added {
-        color: #a4bf8c;
-    }
-    .removed {
-        color: #c0626b;
-    }
+.trackIndexChange,
+.trackLengthChange {
+    // time or track number change, e.g. (3:45) -> (3:46)
+    display: flex;
+    gap: 0.2rem;
+    align-items: center;
+}
+
+.added {
+    color: #a4bf8c;
+}
+.removed {
+    color: #c0626b;
+}
+.changed {
+    color: #ebcb8c;
+}
+.fade {
+    opacity: 0.4;
 }

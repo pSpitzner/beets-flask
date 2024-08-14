@@ -1,5 +1,5 @@
 import { ChevronRight } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import FormControl from "@mui/material/FormControl";
@@ -14,8 +14,7 @@ import { SimilarityBadgeWithHover } from "@/components/tags/similarityBadge";
 
 import { BeetsDump, CandidatePreview } from "./candidatePreview";
 import { CandidateChoice, SelectionState, useImportContext } from "./context";
-import { useDiff } from "./diff";
-import { PenaltyIcon, PenaltyIconRow, penaltyOrder, SourceIcon } from "./icons";
+import { PenaltyIconRow } from "./icons";
 
 import "@/main.css";
 import styles from "./import.module.scss";
@@ -141,7 +140,7 @@ function CandidateView({ candidate }: { candidate: CandidateChoice }) {
                         <Box className={artist_is_same ? "" : styles.changed}>
                             {match.info.artist}
                         </Box>
-                        <ChevronRight className={styles.fieldSeparator} size={14} />
+                        <ChevronRight className={styles.fade} size={14} />
                         <Box className={album_is_same ? "" : styles.changed}>
                             {match.info.album}
                         </Box>

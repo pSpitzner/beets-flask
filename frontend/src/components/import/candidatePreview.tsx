@@ -1,6 +1,14 @@
 // for now we only display the beets generated text preview.
 
-import { ArrowRight, Disc3, Link2, UserRound } from "lucide-react";
+import {
+    ArrowRight,
+    AudioLines,
+    Check,
+    ChevronRight,
+    Disc3,
+    Link2,
+    UserRound,
+} from "lucide-react";
 import Ansi from "@curvenote/ansi-to-react";
 import Box from "@mui/material/Box";
 
@@ -9,6 +17,7 @@ import { CandidateChoice, MinimalItemAndTrackInfo } from "./context";
 import { useDiff } from "./diff";
 
 import styles from "./import.module.scss";
+import { useEffect } from "react";
 
 export function BeetsDump({ candidate }: { candidate: CandidateChoice }) {
     const content = candidate.diff_preview ?? "No preview available";
@@ -52,24 +61,23 @@ export function CandidatePreview({ candidate }: { candidate: CandidateChoice }) 
             ) : null}
             <ArtistChange prev={candidate.cur_artist!} next={info.artist!} />
             <AlbumChange prev={candidate.cur_album!} next={info.album!} />
-            <TracksChange candidate={candidate} />
+            <TrackChanges candidate={candidate} />
         </Box>
     );
 }
 
 function ArtistChange({ prev, next }: { prev: string; next: string }) {
-    const { left, right, didRemove } = useDiff(prev, next);
+    const { left, right, didRemove, didAdd } = useDiff(prev, next);
+    const didChange = didRemove || didAdd;
 
-    let artist: React.ReactNode;
+    let inner: React.ReactNode;
     if (prev === next) {
-        artist = <span>{prev}</span>;
+        inner = <span>{prev}</span>;
     } else {
-        artist = (
+        inner = (
             <Box className={styles.diff}>
                 {didRemove && <span>{left}</span>}
-                {didRemove && (
-                    <ArrowRight className={styles.fieldSeparator} size={14} />
-                )}
+                {didRemove && <ArrowRight className={styles.changed} size={14} />}
                 {<span>{right}</span>}
             </Box>
         );
@@ -77,25 +85,24 @@ function ArtistChange({ prev, next }: { prev: string; next: string }) {
 
     return (
         <Box className={styles.artistChange}>
-            <UserRound size={14} />
-            {artist}
+            <UserRound size={14} className={didChange ? styles.changed : ""} />
+            {inner}
         </Box>
     );
 }
 
 function AlbumChange({ prev, next }: { prev: string; next: string }) {
-    const { left, right, didRemove } = useDiff(prev, next);
+    const { left, right, didRemove, didAdd } = useDiff(prev, next);
+    const didChange = didRemove || didAdd;
 
-    let album: React.ReactNode;
+    let inner: React.ReactNode;
     if (prev === next) {
-        album = <span>{prev}</span>;
+        inner = <span>{prev}</span>;
     } else {
-        album = (
+        inner = (
             <Box className={styles.diff}>
                 {didRemove && <span>{left}</span>}
-                {didRemove && (
-                    <ArrowRight className={styles.fieldSeparator} size={14} />
-                )}
+                {didRemove && <ArrowRight className={styles.changed} size={14} />}
                 {<span>{right}</span>}
             </Box>
         );
@@ -103,13 +110,13 @@ function AlbumChange({ prev, next }: { prev: string; next: string }) {
 
     return (
         <Box className={styles.albumChange}>
-            <Disc3 size={14} />
-            {album}
+            <Disc3 size={14} className={didChange ? styles.changed : ""} />
+            {inner}
         </Box>
     );
 }
 
-function TracksChange({ candidate }: { candidate: CandidateChoice }) {
+function TrackChanges({ candidate }: { candidate: CandidateChoice }) {
     if (candidate.track_match) {
         return null;
     }
@@ -122,14 +129,207 @@ function TracksChange({ candidate }: { candidate: CandidateChoice }) {
     console.log("mapping", mapping);
 
     return (
-        <Box className={styles.tracksChange}>
-            {Object.entries(mapping).map(([idx, tdx]) => (
-                <Box className={styles.trackChange} key={parseInt(idx)}>
-                    <span>{items[parseInt(idx)].title}</span>
-                    <ArrowRight className={styles.fieldSeparator} size={14} />
-                    <span>{tracks[parseInt(tdx)].title}</span>
-                </Box>
-            ))}
+        <Box className={styles.trackChanges}>
+            {Object.entries(mapping).map(([idx, tdx]) => {
+                return (
+                    <TrackDiff
+                        key={idx}
+                        prev={items[parseInt(idx)]}
+                        next={tracks[tdx]}
+                        pdx={parseInt(idx)}
+                        ndx={tdx}
+                    />
+                );
+            })}
         </Box>
     );
+}
+
+function TrackDiff({
+    prev,
+    next,
+    pdx,
+    ndx,
+}: {
+    prev: MinimalItemAndTrackInfo;
+    next: MinimalItemAndTrackInfo;
+    pdx?: number; // previous index
+    ndx?: number; // next index
+}) {
+    const { left: lTitleD, right: rTitleD } = useDiff(prev.title, next.title);
+
+    const leftTime = prev.length;
+    const rightTime = next.length;
+
+    const leftIdx = pdx;
+    const rightIdx = ndx;
+
+    const hasTitleChanged = prev.title !== next.title;
+    const hasTimeChanged = Math.abs(rightTime - leftTime) > 1;
+    const hasIndexChanged = pdx !== ndx;
+    const numChanges = [hasTitleChanged, hasTimeChanged, hasIndexChanged].filter(
+        (x) => x
+    ).length;
+
+    let inner: React.ReactNode;
+    if (hasTitleChanged || numChanges > 1) {
+        // 'big change'
+        inner = (
+            <Box className={styles.diff}>
+                <Box className={styles.lhs}>
+                    {
+                        <span className={styles.trackChangeSide}>
+                            <TrackIndex
+                                idx={leftIdx}
+                                className={
+                                    hasIndexChanged ? styles.removed : styles.fade
+                                }
+                            />
+                            <span>{lTitleD}</span>
+                            <TrackLength
+                                length={leftTime}
+                                className={
+                                    hasTimeChanged ? styles.removed : styles.fade
+                                }
+                            />
+                        </span>
+                    }
+                </Box>
+                <Box className={styles.rhs}>
+                    <ArrowRight className={styles.changed} size={14} />
+                    {
+                        <span className={styles.trackChangeSide}>
+                            {hasIndexChanged ? (
+                                <TrackIndex idx={rightIdx} className={styles.added} />
+                            ) : null}
+                            <span>{rTitleD}</span>
+                            {hasTimeChanged ? (
+                                <TrackLength
+                                    length={rightTime}
+                                    className={styles.added}
+                                />
+                            ) : null}
+                        </span>
+                    }
+                </Box>
+            </Box>
+        );
+    } else {
+        // title unchanged, 'small' change
+        inner = (
+            <span className={styles.trackChangeSide}>
+                {hasIndexChanged ? (
+                    <TrackIndexChange leftIdx={leftIdx} rightIdx={rightIdx} />
+                ) : (
+                    <TrackIndex idx={leftIdx} className={styles.fade} />
+                )}
+                <span className={styles.fade}>{prev.title}</span>
+                {hasTimeChanged ? (
+                    <TrackLengthChange left={leftTime} right={rightTime} />
+                ) : (
+                    <TrackLength length={leftTime} className={styles.fade} />
+                )}
+            </span>
+        );
+    }
+
+    return (
+        <Box className={styles.trackChange}>
+            {hasTitleChanged || hasIndexChanged ? (
+                <AudioLines size={14} className={styles.changed} />
+            ) : (
+                <Check className={styles.fade} size={14} />
+            )}
+            {inner}
+        </Box>
+    );
+}
+
+function TrackLength({ length, className }: { length: number; className?: string }) {
+    return (
+        <span
+            className={
+                className ? `${styles.trackLength} ${className}` : styles.trackLength
+            }
+        >
+            {_fmtLength(length)}
+        </span>
+    );
+}
+
+function TrackLengthChange({
+    left,
+    right,
+    className,
+}: {
+    left: number;
+    right: number;
+    className?: string;
+}) {
+    return (
+        <Box
+            className={
+                className
+                    ? `${styles.trackLengthChange} ${className}`
+                    : styles.trackLengthChange
+            }
+        >
+            <TrackLength length={left} className={styles.removed} />
+            <ArrowRight className={styles.changed} size={14} />
+            <TrackLength length={right} className={styles.added} />
+        </Box>
+    );
+}
+
+function _fmtLength(l: number) {
+    const hours = Math.floor(l / 3600);
+    const minutes = Math.floor((l % 3600) / 60);
+    const seconds = Math.floor(l % 60);
+    return `(${hours ? `${hours}h ` : ""}${minutes}:${seconds.toString().padStart(2, "0")})`;
+}
+
+function TrackIndex({ idx, className }: { idx?: number; className?: string }) {
+    return (
+        <span
+            className={
+                className ? `${styles.trackIndex} ${className}` : styles.trackIndex
+            }
+        >
+            {_fmtTrackIndex(idx)}
+        </span>
+    );
+}
+
+function TrackIndexChange({
+    leftIdx,
+    rightIdx,
+    className,
+}: {
+    leftIdx?: number;
+    rightIdx?: number;
+    className?: string;
+}) {
+    return (
+        <Box
+            className={
+                className
+                    ? `${styles.trackIndexChange} ${className}`
+                    : styles.trackIndexChange
+            }
+        >
+            <TrackIndex idx={leftIdx} className={styles.removed} />
+            <ArrowRight className={styles.changed} size={14} />
+            <TrackIndex idx={rightIdx} className={styles.added} />
+        </Box>
+    );
+}
+
+function _fmtTrackIndex(num?: number) {
+    // for now, we only pad to 2 digits, should be fine for most albums
+    if (num === undefined) {
+        return "";
+    }
+    // indices are 0-based
+    num += 1;
+    return num < 10 ? ` [${num}]` : `[${num}]`;
 }

@@ -124,7 +124,10 @@ export function PenaltyIcon({ kind, className }: { kind: string; className?: str
             .replace("album_", "")
             .replace("track_", "")
             .replaceAll(" ", ", ")
-            .replaceAll("_", " ");
+            .replaceAll("_", " ")
+            // rename for more verbose hover
+            .replace(/^tracks\b/, "changed tracks");
+
         return (
             <Tooltip title={res}>
                 <Box className={`${styles.penaltyIcon} ${className}`}>
