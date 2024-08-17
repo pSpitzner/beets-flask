@@ -44,9 +44,11 @@ def create_app():
 
     register_socketio(app)
 
-    from .terminal import register_tmux
+    from .websocket.terminal import register_tmux
+    from .websocket.importer import register_importer
 
     register_tmux()
+    register_importer()
 
     from .disk import register_inboxes
 
@@ -55,10 +57,6 @@ def create_app():
     from .invoker import delete_tags
 
     delete_tags(with_status=["pending", "tagging", "importing"])
-
-    from .interactive_import import register_import_socket
-
-    register_import_socket()
 
     log.debug("App created")
 

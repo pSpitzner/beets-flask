@@ -1,5 +1,6 @@
 import { ChevronRight } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Input } from "@mui/material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import FormControl from "@mui/material/FormControl";
@@ -22,6 +23,8 @@ import styles from "./import.module.scss";
 export function ImportView() {
     const { completeAllSelections, startSession, status } = useImportContext();
 
+    const [path, setPath] = useState<string>("");
+
     return (
         <div>
             <Selections />
@@ -30,31 +33,41 @@ export function ImportView() {
                     display: "flex",
                     gap: "1rem",
                     justifyContent: "flex-start",
-                    alignItems: "center",
+                    alignItems: "flex-start",
+                    flexDirection: "column",
                 }}
             >
-                <Button
-                    variant="outlined"
-                    color="primary"
-                    onClick={() => {
-                        // startSession("/music/inbox.nosync/Bad Company UK/");
-                        startSession(
-                            "/music/inbox.nosync/John B/Light Speed [ALBUM]/CD1"
-                        );
-                    }}
-                >
-                    Re-Start Session
-                </Button>
-                <Button
-                    variant="outlined"
-                    color="primary"
-                    onClick={completeAllSelections}
-                >
-                    Apply
-                </Button>
-                <Button variant="outlined" color="warning">
-                    Abort
-                </Button>
+                <div className="flex gap-2">
+                    <Input
+                        type="text"
+                        placeholder="Enter path to start session"
+                        className="w-96"
+                        value={path}
+                        onChange={(e) => setPath(e.target.value)}
+                    ></Input>
+                    <Button
+                        variant="outlined"
+                        color="primary"
+                        onClick={() => {
+                            // startSession("/music/inbox.nosync/Bad Company UK/");
+                            startSession(path);
+                        }}
+                    >
+                        (Re-)Start Session
+                    </Button>
+                </div>
+                <div className="flex gap-2">
+                    <Button
+                        variant="outlined"
+                        color="primary"
+                        onClick={completeAllSelections}
+                    >
+                        Apply
+                    </Button>
+                    <Button variant="outlined" color="warning">
+                        Abort
+                    </Button>
+                </div>
                 <Typography>Status: {status}</Typography>
             </Box>
         </div>

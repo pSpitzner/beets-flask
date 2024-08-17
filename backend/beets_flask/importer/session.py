@@ -1,4 +1,5 @@
 import time
+from typing import Type
 
 from beets import importer, plugins
 from beets.util import pipeline as beets_pipeline
@@ -9,7 +10,7 @@ from beets_flask.config import config
 from beets_flask.logger import log
 
 from .states import ImportState
-from .emitter import ImportCommunicator, WebsocketEmitter
+from .communicator import ImportCommunicator
 
 
 class InteractiveImportSession(BaseSession):
@@ -21,13 +22,19 @@ class InteractiveImportSession(BaseSession):
     """
 
     # current session state
-    import_state = ImportState()
+    import_state: ImportState
     communicator: ImportCommunicator
 
     task: importer.ImportTask | None = None
     pipeline: beets_pipeline.Pipeline | None = None
 
-    def __init__(self, path: str, config_overlay: str | dict | None = None):
+    def __init__(
+        self,
+        import_state: ImportState,
+        communicator: ImportCommunicator,
+        path: str,
+        config_overlay: str | dict | None = None,
+    ):
         """
         Create a new interactive import session. Automatically sets the default config values.
 
@@ -42,15 +49,15 @@ class InteractiveImportSession(BaseSession):
 
         set_config_defaults()
         super(InteractiveImportSession, self).__init__(path, config_overlay)
-        self.communicator = WebsocketEmitter(self.import_state, sio)
+        self.communicator = communicator
+        self.import_state = import_state
 
     def offer_match(self, task: importer.ImportTask):
 
         # Update state with new task
         # Emit the task to the user
-        # TODO: Think about partial updates/emits for task diffs
         self.import_state.upsert_task(task)
-        self.communicator.emit_status(self.import_state)
+        self.communicator.emit_state(self.import_state)
 
         # tell plugins we are starting user_query
         results = plugins.send("import_task_before_choice", session=self, task=task)
@@ -70,12 +77,13 @@ class InteractiveImportSession(BaseSession):
         """
 
         state = self.import_state.get_selection_state_for_task(task)
-        self.communicator.emit_status(state)
+        self.communicator.emit_state(state)
 
         if state is None:
             raise ValueError("No selection state found for task.")
 
         # BLOCKING
+        # use communicator to receive user input
         state.await_completion()
 
         if state.current_candidate_idx is None:

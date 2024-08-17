@@ -120,44 +120,53 @@ export function PenaltyIconRow({
 }
 
 export function PenaltyIcon({ kind, className }: { kind: string; className?: string }) {
-    const render = (IconComponent: React.ComponentType) => {
-        const res = kind
-            .replace("album_", "")
-            .replace("track_", "")
-            .replaceAll(" ", ", ")
-            .replaceAll("_", " ")
-            // rename for more verbose hover
-            .replace(/^tracks\b/, "track changes");
-
-        return (
-            <Tooltip title={res}>
-                <Box className={`${styles.penaltyIcon} ${className}`}>
-                    <IconComponent />
-                </Box>
-            </Tooltip>
-        );
-    };
-
+    /** Determine the icon to use for a penalty kind */
+    let Icon: React.ComponentType | null = null;
     switch (kind) {
         case "artist":
-            return render(UserRound);
+            Icon = UserRound;
+            break;
         case "album":
-            return render(Disc3);
+            Icon = Disc3;
+            break;
         case "tracks":
-            return render(AudioLines);
+            Icon = AudioLines;
+            break;
         case "unmatched_tracks":
-            return render(GitPullRequestArrow);
+            Icon = GitPullRequestArrow;
+            break;
         case "missing_tracks":
-            return render(SearchX);
+            Icon = SearchX;
+            break;
         case "media":
-            return render(CassetteTape);
         case "mediums":
-            return render(CassetteTape);
+            Icon = CassetteTape;
+            break;
         case "country":
-            return render(Flag);
+            Icon = Flag;
+            break;
         case "year":
-            return render(Calendar);
+            Icon = Calendar;
+            break;
         default:
-            return render(Variable);
+            Icon = Variable;
+            console.warn("Unknown penalty kind", kind);
+            break;
     }
+
+    const kind_title = kind
+        .replace("album_", "")
+        .replace("track_", "")
+        .replaceAll(" ", ", ")
+        .replaceAll("_", " ")
+        // rename for more verbose hover
+        .replace(/^tracks\b/, "track changes");
+
+    return (
+        <Tooltip title={kind_title}>
+            <Box className={`${styles.penaltyIcon} ${className}`}>
+                <Icon />
+            </Box>
+        </Tooltip>
+    );
 }

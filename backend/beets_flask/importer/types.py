@@ -4,7 +4,7 @@ Typed versions of data classes that beets uses.
 
 from __future__ import annotations
 from dataclasses import dataclass, asdict
-from typing import Callable, List, NamedTuple, Union, Any, Dict, TypedDict
+from typing import Callable, List, Literal, NamedTuple, Union, Any, Dict, TypedDict
 
 from beets import autotag
 
@@ -145,3 +145,37 @@ class SerializedCandidateState(TypedDict):
     tracks: List[Dict] | None  #  MinimalItemAndTrackInfo
     extra_tracks: List[Dict] | None  #  MinimalItemAndTrackInfo
     extra_items: List[Dict] | None  #  MinimalItemAndTrackInfo
+
+
+""" Communicator requests
+"""
+
+
+class ChoiceRequest(TypedDict):
+    event: Literal["choice"]
+    selection_id: str
+    candidate_idx: int
+
+
+class CompleteRequest(TypedDict):
+    event: Literal["complete"]
+    selection_ids: List[str]
+    are_completed: List[bool]
+
+
+class ImportStateUpdate(TypedDict):
+    event: Literal["import_state"]
+    selection_states: List[SerializedSelectionState]
+
+
+class SelectionStateUpdate(TypedDict):
+    event: Literal["selection_state"]
+    selection_state: SerializedSelectionState
+
+
+class CandidateStateUpdate(TypedDict):
+    event: Literal["candidate_state"]
+    candidate_state: SerializedCandidateState
+
+
+StateUpdate = Union[ImportStateUpdate, SelectionStateUpdate, CandidateStateUpdate]

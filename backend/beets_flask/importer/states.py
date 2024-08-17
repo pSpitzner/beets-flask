@@ -72,9 +72,12 @@ class ImportState:
                 break
         return state
 
-    def upsert_task(self, task: importer.ImportTask, emit=True) -> SelectionState:
+    def upsert_task(
+        self,
+        task: importer.ImportTask,
+    ) -> SelectionState:
         """Adds selection state if it does not exist yet or updates
-        existitng entry. Automatically emits the updated state to clients.
+        existitng entry.
         """
         state = self.get_selection_state_for_task(task)
 
@@ -82,43 +85,23 @@ class ImportState:
             state = SelectionState(task)
             self._selection_states.append(state)
 
-        # if emit:
-        #     state.emit()
-
         return state
 
     @property
     def status(self):
         return self._status
 
-    def set_status(self, status: str, emit=True):
+    def set_status(
+        self,
+        status: str,
+    ):
         log.debug(f"ImportState {status=}")
         self._status = status
-        # if emit:
-        #     self.emit_status()
 
     def await_completion_all(self):
         while not all([s.completed for s in self.selection_states]):
             time.sleep(0.5)
         return True
-
-    # def emit(self):
-    #     emit(
-    #         "import_state",
-    #         {
-    #             "status": self.status,
-    #             "selection_states": [s.serialize() for s in self.selection_states],
-    #         },
-    #     )
-
-    # def emit_status(self):
-    #     log.debug(f"ImportState {self.status=}")
-    #     emit(
-    #         "import_state_status",
-    #         {
-    #             "status": self.status,
-    #         },
-    #     )
 
 
 @dataclass
@@ -183,12 +166,6 @@ class SelectionState:
             toppath=self.toppath,
             paths=self.paths,
         )
-
-    # def emit(self):
-    #     emit(
-    #         "selection_state",
-    #         self.serialize(),
-    #     )
 
     def await_completion(self):
         """Blocks until all associated candidated states have been marked as completed"""
