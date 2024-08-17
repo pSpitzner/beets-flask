@@ -4,17 +4,16 @@ State classes to represent the current state of an import session.
 """
 
 from __future__ import annotations
-from dataclasses import dataclass, asdict, field
-from typing import Callable, List, NamedTuple, Union, Any, Dict, TypedDict
+from dataclasses import dataclass, field
+from typing import List, Union
 from uuid import uuid4 as uuid
 import time
 
 
 import beets.ui.commands as uicommands
-from beets import ui, autotag, config, plugins, importer, IncludeLazyConfig
+from beets import autotag, importer
 
 from beets_flask.logger import log
-from beets_flask.config import config
 from beets_flask.utility import capture_stdout_stderr
 
 from .types import (

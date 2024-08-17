@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 // the info types are _very_ similar to what we get from our library queries
 // just that we have added a custom `name` field to albums and items.
 // annoying: albuminfo of candidates has a .artist, but albums from library dont.
-import { Album as AlbumInfo, Item as TrackInfo } from "@/components/common/_query";
+import { Album as AlbumInfo } from "@/components/common/_query";
 
 import { useImportSocket } from "../common/useSocket";
 
@@ -13,7 +13,6 @@ interface ImportContextI {
     // might be undefined if the data is not yet loaded
     selections?: SelectionState[];
     status: string;
-    generateDummySelections: () => void;
     startSession: (path: string) => void;
     chooseCanidate: (selectionId: string, choiceIdx: number) => void;
     completeAllSelections: () => void;
@@ -26,8 +25,9 @@ export interface ImportState {
 
 export interface SelectionState {
     id: string;
+    candidate_states: CandidateState[];
     current_candidate_idx: number | null;
-    candidates: CandidateState[];
+    items: MinimalItemAndTrackInfo[];
     completed: boolean;
     toppath?: string; // folder supplied to import by user
     paths: string[]; // lowest level (album folders) of music
@@ -35,11 +35,11 @@ export interface SelectionState {
 
 interface BaseCandidateState {
     id: number;
+    diff_preview?: string;
     cur_artist: string;
     cur_album: string;
     penalties: string[];
-    items?: MinimalItemAndTrackInfo[];
-    diff_preview?: string;
+    distance: number;
 }
 
 interface AlbumCandidateState extends BaseCandidateState {
@@ -55,7 +55,7 @@ interface TrackCandidateState extends BaseCandidateState {
     type: "track";
 }
 
-export type CanditateState = AlbumCandidateState | TrackCandidateState;
+export type CandidateState = AlbumCandidateState | TrackCandidateState;
 
 interface AlbumMatch {
     distance: number; // TODO: backend uses an object
@@ -105,14 +105,18 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
     useEffect(() => {
         if (!socket) return;
 
-        function handleFullUpdate(data: ImportState) {
-            console.log("Full update", data);
+        function handleImportState(data: ImportState) {
+            console.log("Import state", data);
             setSelections(data.selection_states);
             setStatus(data.status);
         }
 
-        function handleSelecionState(data: SelectionState) {
-            console.log("Selection state", data);
+        function handleSelectionState({
+            selection_state,
+        }: {
+            selection_state: SelectionState;
+        }) {
+            console.log("Selection state", selection_state);
             setSelections((prev) => {
                 if (!prev) {
                     prev = [];
@@ -121,17 +125,18 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
                 // first candidate is the best match, and our default choice,
                 // and we want to set the default choice in the frontend (here!)
                 if (
-                    data.current_candidate_idx === null ||
-                    data.current_candidate_idx === undefined
+                    selection_state.current_candidate_idx === null ||
+                    selection_state.current_candidate_idx === undefined
                 ) {
-                    data.current_candidate_idx = data.candidates.length > 0 ? 0 : null;
+                    selection_state.current_candidate_idx =
+                        selection_state.candidate_states.length > 0 ? 0 : null;
                 }
 
-                const idx = prev.findIndex((s) => s.id === data.id);
+                const idx = prev.findIndex((s) => s.id === selection_state.id);
                 if (idx === -1) {
-                    return [...prev, data];
+                    return [...prev, selection_state];
                 } else {
-                    prev[idx] = data;
+                    prev[idx] = selection_state;
                     return [...prev];
                 }
             });
@@ -157,72 +162,20 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
             });
         }
 
-        socket.on("import_state", handleFullUpdate);
-        socket.on("selection_state", handleSelecionState);
+        socket.on("import_state", handleImportState);
+        socket.on("selection_state", handleSelectionState);
         socket.on("candidate_state", remoteCandidateChoice);
+
         socket.on("import_state_status", handleStatusUpdate);
 
         return () => {
-            socket.off("import_state", handleFullUpdate);
-            socket.off("selection_state", handleSelecionState);
+            socket.off("import_state", handleImportState);
+            socket.off("selection_state", handleSelectionState);
             socket.off("candidate_choice", remoteCandidateChoice);
+
             socket.off("import_state_status", handleStatusUpdate);
         };
     }, [socket, isConnected, setStatus, setSelections]);
-
-    function generateDummySelections() {
-        const dummyAlbum: AlbumMatch = {
-            distance: 0.1,
-            extra_tracks: [],
-            info: {
-                // Add necessary fields for AlbumInfo
-                name: "Dummy Album",
-                artist: "Dummy Artist",
-                id: 0,
-                albumartist: "Dummy Album Artist",
-                year: 0,
-            },
-        };
-
-        const dummyTrack: TrackMatch = {
-            distance: 0.1,
-            info: {
-                // Add necessary fields for TrackInfo
-                name: "Dummy Track",
-                id: 0,
-                artist: "Dummy Artist",
-                albumartist: "Dummy Album Artist",
-                album: "Dummy Album",
-                album_id: 0,
-                year: 0,
-                isrc: "Dummy ISRC",
-            },
-        };
-
-        const dummyCandidateChoice1: CandidateState = {
-            id: 1,
-            album_match: dummyAlbum, // or dummyTrack
-        };
-
-        const dummyCandidateChoice2: CandidateState = {
-            id: 2,
-            track_match: dummyTrack, // or dummyTrack
-        };
-
-        setSelections((prev) => {
-            const dummySelectionState: SelectionState = {
-                id: "1" + Math.random() * 10000 + "",
-                current_candidate_idx: 1,
-                candidates: [dummyCandidateChoice1, dummyCandidateChoice2],
-                completed: false,
-            };
-            if (prev) {
-                return [...prev, dummySelectionState];
-            } else {
-                return [dummySelectionState];
-            }
-        });
-    }
 
     function startSession(path: string) {
         socket?.emit("start_import_session", { path });
@@ -240,7 +193,9 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
                 const selection = prev.find((s) => s.id === selectionId);
                 if (!selection) return prev;
 
-                const idx = selection.candidates.findIndex((c) => c.id === canidateId);
+                const idx = selection.candidate_states.findIndex(
+                    (c) => c.id === canidateId
+                );
                 if (idx === -1) return prev;
 
                 selection.current_candidate_idx = idx;
@@ -280,7 +235,6 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         selections,
         status,
         startSession,
-        generateDummySelections,
         chooseCanidate,
     };
 

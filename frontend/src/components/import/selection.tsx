@@ -110,7 +110,7 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
                         value={selection.current_candidate_idx}
                         onChange={handleChange}
                     >
-                        {selection.candidates.map((choice) => {
+                        {selection.candidate_states.map((choice) => {
                             return (
                                 <FormControlLabel
                                     sx={{ marginRight: 0 }}
@@ -138,6 +138,7 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
 }
 
 function CandidateView({ candidate }: { candidate: CandidateState }) {
+    return <>Fix ME!</>;
     const match = candidate.track_match ?? candidate.album_match;
     // const artistIsSame = candidate.cur_artist === match.info.artist;
     // const albumIsSame = candidate.cur_album === match.info.album;
