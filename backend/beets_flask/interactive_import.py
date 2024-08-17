@@ -632,6 +632,9 @@ class MinimalItemAndTrackInfo:
             pass
         return cls(**kwargs)
 
+    # todo: explizit mapping for track and item to uniformize the fields
+    # with input type detection in a wrapper
+
 
 @dataclass
 class SelectionState:

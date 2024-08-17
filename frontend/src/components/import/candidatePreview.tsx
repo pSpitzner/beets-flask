@@ -13,12 +13,12 @@ import Ansi from "@curvenote/ansi-to-react";
 import Box from "@mui/material/Box";
 
 import { useConfig } from "../common/useConfig";
-import { CandidateChoice, MinimalItemAndTrackInfo } from "./context";
+import { CandidateState, MinimalItemAndTrackInfo } from "./context";
 import { useDiff } from "./diff";
 
 import styles from "./import.module.scss";
 
-export function BeetsDump({ candidate }: { candidate: CandidateChoice }) {
+export function BeetsDump({ candidate }: { candidate: CandidateState }) {
     const content = candidate.diff_preview ?? "No preview available";
     return (
         <div className={styles.beetsDump}>
@@ -27,7 +27,7 @@ export function BeetsDump({ candidate }: { candidate: CandidateChoice }) {
     );
 }
 
-export function CandidatePreview({ candidate }: { candidate: CandidateChoice }) {
+export function CandidatePreview({ candidate }: { candidate: CandidateState }) {
     const config = useConfig();
     const match = candidate.album_match ?? candidate.track_match;
     const info = match.info;
@@ -121,7 +121,7 @@ function AlbumChange({ prev, next }: { prev: string; next: string }) {
 /*                                    Track Changes                                   */
 /* ---------------------------------------------------------------------------------- */
 
-function TrackChanges({ candidate }: { candidate: CandidateChoice }) {
+function TrackChanges({ candidate }: { candidate: CandidateState }) {
     if (candidate.track_match) {
         return null;
     }
@@ -350,7 +350,7 @@ function _fmtTrackIndex(num?: number) {
 /*                                   Missing Tracks                                   */
 /* ---------------------------------------------------------------------------------- */
 
-function MissingTracks({ candidate }: { candidate: CandidateChoice }) {
+function MissingTracks({ candidate }: { candidate: CandidateState }) {
     if (candidate.track_match) {
         return null;
     }
@@ -396,7 +396,7 @@ function MissingTrack({
 /*                                  Unmatched Tracks                                  */
 /* ---------------------------------------------------------------------------------- */
 
-function UnmatchedTracks({ candidate }: { candidate: CandidateChoice }) {
+function UnmatchedTracks({ candidate }: { candidate: CandidateState }) {
     if (candidate.track_match) {
         return null;
     }

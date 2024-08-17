@@ -27,34 +27,35 @@ export interface ImportState {
 export interface SelectionState {
     id: string;
     current_candidate_idx: number | null;
-    candidates: CandidateChoice[];
+    candidates: CandidateState[];
     completed: boolean;
     toppath?: string; // folder supplied to import by user
     paths: string[]; // lowest level (album folders) of music
 }
 
-export type CandidateChoice =
-    | {
-          id: number;
-          diff_preview?: string;
-          cur_artist?: string;
-          cur_album?: string;
-          penalties?: string[];
-          items?: MinimalItemAndTrackInfo[];
-          // instead of sending items, we can resolve them from selection_state (ie. the task)
-          track_match: TrackMatch;
-          album_match?: never;
-      }
-    | {
-          id: number;
-          diff_preview?: string;
-          cur_artist?: string;
-          cur_album?: string;
-          penalties?: string[];
-          items?: MinimalItemAndTrackInfo[];
-          track_match?: never;
-          album_match: AlbumMatch;
-      };
+interface BaseCandidateState {
+    id: number;
+    cur_artist: string;
+    cur_album: string;
+    penalties: string[];
+    items?: MinimalItemAndTrackInfo[];
+    diff_preview?: string;
+}
+
+interface AlbumCandidateState extends BaseCandidateState {
+    info: AlbumInfo;
+    type: "album";
+    tracks: MinimalItemAndTrackInfo[];
+    extra_tracks: MinimalItemAndTrackInfo[];
+    extra_items: MinimalItemAndTrackInfo[];
+}
+
+interface TrackCandidateState extends BaseCandidateState {
+    info: MinimalItemAndTrackInfo;
+    type: "track";
+}
+
+export type CanditateState = AlbumCandidateState | TrackCandidateState;
 
 interface AlbumMatch {
     distance: number; // TODO: backend uses an object
@@ -197,12 +198,12 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
             },
         };
 
-        const dummyCandidateChoice1: CandidateChoice = {
+        const dummyCandidateChoice1: CandidateState = {
             id: 1,
             album_match: dummyAlbum, // or dummyTrack
         };
 
-        const dummyCandidateChoice2: CandidateChoice = {
+        const dummyCandidateChoice2: CandidateState = {
             id: 2,
             track_match: dummyTrack, // or dummyTrack
         };

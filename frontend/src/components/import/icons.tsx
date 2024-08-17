@@ -18,7 +18,7 @@ import mb from "@/assets/musicbrainz.webp";
 import spotify from "@/assets/spotify.png";
 import spotifyBw from "@/assets/spotifyBw.svg";
 
-import { CandidateChoice } from "./context";
+import { CandidateState } from "./context";
 
 import styles from "./import.module.scss";
 
@@ -63,7 +63,7 @@ export function PenaltyIconRow({
     candidate,
     showSource = true,
 }: {
-    candidate: CandidateChoice;
+    candidate: CandidateState;
     showSource?: boolean;
 }) {
     const penalties = useMemo(() => {

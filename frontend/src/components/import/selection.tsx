@@ -13,7 +13,7 @@ import * as HoverCard from "@radix-ui/react-hover-card";
 import { SimilarityBadgeWithHover } from "@/components/tags/similarityBadge";
 
 import { BeetsDump, CandidatePreview } from "./candidatePreview";
-import { CandidateChoice, SelectionState, useImportContext } from "./context";
+import { CandidateState, SelectionState, useImportContext } from "./context";
 import { PenaltyIconRow } from "./icons";
 
 import "@/main.css";
@@ -107,7 +107,14 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
                                     control={<Radio size="small" />}
                                     label={<CandidateView candidate={choice} />}
                                 />
-                                // <CandidatePreview candidate={choice} key={choice.id} />
+                                // division line
+                                // <Box sx={{ marginTop: "1rem", marginBottom: "1rem" }}>
+                                //     <hr />
+                                //     <CandidatePreview
+                                //         candidate={choice}
+                                //         key={choice.id}
+                                //     />
+                                // </Box>
                             );
                         })}
                     </RadioGroup>
@@ -117,16 +124,12 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
     );
 }
 
-function CandidateView({ candidate }: { candidate: CandidateChoice }) {
+function CandidateView({ candidate }: { candidate: CandidateState }) {
     const match = candidate.track_match ?? candidate.album_match;
-    const artist_is_same = candidate.cur_artist === match.info.artist;
-    const album_is_same = candidate.cur_album === match.info.album;
-
-    useEffect(() => {
-        console.log("CandidateView", candidate);
-        console.log("artist_is_same", artist_is_same);
-        console.log("album_is_same", album_is_same);
-    }, [candidate, artist_is_same, album_is_same]);
+    // const artistIsSame = candidate.cur_artist === match.info.artist;
+    // const albumIsSame = candidate.cur_album === match.info.album;
+    const artistIsSame = true;
+    const albumIsSame = true;
 
     return (
         <Box className={styles.candidateHeader} key={candidate.id}>
@@ -138,13 +141,9 @@ function CandidateView({ candidate }: { candidate: CandidateChoice }) {
             <HoverCard.Root openDelay={50} closeDelay={50}>
                 <HoverCard.Trigger>
                     <Box className={styles.headerGroup}>
-                        <Box className={artist_is_same ? "" : styles.changed}>
-                            {match.info.artist}
-                        </Box>
+                        <Box data-changed={!artistIsSame}>{match.info.artist}</Box>
                         <ChevronRight className={styles.fade} size={14} />
-                        <Box className={album_is_same ? "" : styles.changed}>
-                            {match.info.album}
-                        </Box>
+                        <Box data-changed={!albumIsSame}>{match.info.album}</Box>
                     </Box>
                 </HoverCard.Trigger>
                 <HoverCard.Content

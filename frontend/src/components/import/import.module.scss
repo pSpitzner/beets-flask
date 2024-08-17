@@ -41,7 +41,7 @@
         gap: 0.5rem;
         align-items: center;
 
-        > .changed {
+        > [data-changed="true"] {
             color: #ebcb8c;
         }
     }
