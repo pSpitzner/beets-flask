@@ -106,6 +106,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         if (!socket) return;
 
         function handleFullUpdate(data: ImportState) {
+            console.log("Full update", data);
             setSelections(data.selection_states);
             setStatus(data.status);
         }
@@ -158,7 +159,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
 
         socket.on("import_state", handleFullUpdate);
         socket.on("selection_state", handleSelecionState);
-        socket.on("candidate_choice", remoteCandidateChoice);
+        socket.on("candidate_state", remoteCandidateChoice);
         socket.on("import_state_status", handleStatusUpdate);
 
         return () => {

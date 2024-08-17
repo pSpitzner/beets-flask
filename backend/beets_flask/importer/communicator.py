@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Union
+from typing import Union
 from abc import ABC, abstractmethod
 
 from beets_flask.logger import log
@@ -14,9 +14,6 @@ from .types import (
 )
 
 from .states import ImportState, SelectionState, CandidateState
-
-if TYPE_CHECKING:
-    from socketio import Server
 
 
 class ImportCommunicator(ABC):
@@ -130,14 +127,3 @@ class ImportCommunicator(ABC):
         Emits the current state of the import session.
         """
         pass
-
-
-class WebsocketCommunicator(ImportCommunicator):
-    sio: Server
-
-    def __init__(self, state: ImportState, sio: Server):
-        self.sio = sio
-        super().__init__(state)
-
-    def _emit(self, req) -> None:
-        self.sio.emit(req["event"], req)

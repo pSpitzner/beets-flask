@@ -1,15 +1,14 @@
-"""
-All websocket routes for the interactive import session.
-"""
-
 from beets_flask.importer import (
     ImportState,
     InteractiveImportSession,
-    WebsocketCommunicator,
     types,
+    ImportCommunicator,
 )
 from beets_flask.logger import log
 from beets_flask.websocket import sio
+
+from socketio import Server
+
 
 log.debug("ImportSocket module loaded")
 namespace = "/import"
@@ -84,6 +83,19 @@ def completed(sid, req: types.CompleteRequest):
 
     if not session is None:
         session.communicator.received_request(req)
+
+
+class WebsocketCommunicator(ImportCommunicator):
+    sio: Server
+
+    def __init__(self, state: ImportState, sio: Server):
+        self.sio = sio
+        super().__init__(state)
+
+    def _emit(self, req) -> None:
+        log.debug(f"WebsocketCommunicator._emit {req=}")
+        # TODO Hardcoded namespace for now
+        self.sio.emit(req["event"], req, namespace=namespace)
 
 
 def register_importer():

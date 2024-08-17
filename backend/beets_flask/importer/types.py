@@ -126,7 +126,7 @@ class SerializedSelectionState(TypedDict):
     id: str
     candidate_states: List[SerializedCandidateState]
     current_candidate_idx: int | None
-    items: List[MinimalItemAndTrackInfo]
+    items: List[Dict]  #  MinimalItemAndTrackInfo
     completed: bool
     toppath: str | None
     paths: List[str]

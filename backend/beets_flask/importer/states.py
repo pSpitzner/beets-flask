@@ -161,7 +161,7 @@ class SelectionState:
             id=self.id,
             candidate_states=[c.serialize() for c in self.candidate_states],
             current_candidate_idx=self.current_candidate_idx,
-            items=self.items_minimal,
+            items=[i.serialize() for i in self.items_minimal],
             completed=self.completed,
             toppath=self.toppath,
             paths=self.paths,
