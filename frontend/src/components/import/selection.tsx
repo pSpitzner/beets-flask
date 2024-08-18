@@ -14,8 +14,9 @@ import * as HoverCard from "@radix-ui/react-hover-card";
 import { SimilarityBadgeWithHover } from "@/components/tags/similarityBadge";
 
 import { BeetsDump, CandidatePreview } from "./candidatePreview";
-import { CandidateState, SelectionState, useImportContext } from "./context";
+import { useImportContext } from "./context";
 import { PenaltyIconRow } from "./icons";
+import { CandidateState, SelectionState } from "./types";
 
 import "@/main.css";
 import styles from "./import.module.scss";

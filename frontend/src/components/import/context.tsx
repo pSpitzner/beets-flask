@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 import { useImportSocket } from "../common/useSocket";
+import { ImportState, SelectionState } from "./types";
 
 interface ImportContextI {
     // All selections for the current import
@@ -12,87 +13,11 @@ interface ImportContextI {
     completeAllSelections: () => void;
 }
 
-export interface ImportState {
-    selection_states: SelectionState[];
-    status: string;
-}
-
-export interface SelectionState {
-    id: string;
-    candidate_states: CandidateState[];
-    current_candidate_idx: number | null;
-    items: ItemInfo[];
-    completed: boolean;
-    toppath?: string; // folder supplied to import by user
-    paths: string[]; // lowest level (album folders) of music
-}
-
-interface BaseCandidateState {
-    id: number;
-    diff_preview?: string;
-    cur_artist: string;
-    cur_album: string;
-    penalties: string[];
-    distance: number;
-}
-
-interface AlbumCandidateState extends BaseCandidateState {
-    type: "album";
-    info: AlbumInfo;
-    tracks: TrackInfo[];
-    items: ItemInfo[];
-    extra_tracks: TrackInfo[];
-    extra_items: ItemInfo[];
-    mapping: Record<number, number>;
-}
-
-interface TrackCandidateState extends BaseCandidateState {
-    type: "track";
-    info: TrackInfo;
-}
-
-export type CandidateState = AlbumCandidateState | TrackCandidateState;
-
-export interface MusicInfo {
-    type: "item" | "track" | "album";
-    artist?: string;
-    album?: string;
-    data_url?: string;
-    data_source?: string;
-    year?: number;
-    genre?: string;
-    media?: string;
-}
-
-export interface AlbumInfo extends MusicInfo {
-    type: "album";
-    mediums?: number; // number of discs
-}
-
-export interface TrackInfo extends MusicInfo {
-    type: "track";
-    title?: string;
-    length?: number;
-    isrc?: string;
-    index?: number; // 1-based
-}
-
-export interface ItemInfo extends MusicInfo {
-    type: "item";
-    title?: string;
-    length?: number;
-    isrc?: string;
-    track?: number; // 1-based
-
-    bitrate?: number;
-    format?: string;
-}
-
 const ImportContext = createContext<ImportContextI | null>(null);
 
 export const ImportContextProvider = ({ children }: { children: React.ReactNode }) => {
-    /** Get data via socket */
     const { socket, isConnected } = useImportSocket("import");
+    // we want to allow partial updates to parts of the import state, so deconstruct here
     const [selections, setSelections] = useState<SelectionState[]>();
     const [status, setStatus] = useState<string>("waiting for socket");
 
@@ -105,20 +30,20 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
     }, [socket, isConnected, status, setStatus]);
 
     useEffect(() => {
+        console.log("useEffect status update: ", status);
+    }, [status]);
+
+    useEffect(() => {
         if (!socket) return;
 
-        function handleImportState(data: ImportState) {
-            console.log("Import state", data);
-            setSelections(data.selection_states);
-            setStatus(data.status);
+        function handleImportState({ data: state }: { data: ImportState }) {
+            console.log("Import state", state);
+            setSelections(state.selection_states);
+            setStatus(state.status);
         }
 
-        function handleSelectionState({
-            selection_state,
-        }: {
-            selection_state: SelectionState;
-        }) {
-            console.log("Selection state", selection_state);
+        function handleSelectionState({ data: state }: { data: SelectionState }) {
+            console.log("Selection state", state);
             setSelections((prev) => {
                 if (!prev) {
                     prev = [];
@@ -127,26 +52,26 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
                 // first candidate is the best match, and our default choice,
                 // and we want to set the default choice in the frontend (here!)
                 if (
-                    selection_state.current_candidate_idx === null ||
-                    selection_state.current_candidate_idx === undefined
+                    state.current_candidate_idx === null ||
+                    state.current_candidate_idx === undefined
                 ) {
-                    selection_state.current_candidate_idx =
-                        selection_state.candidate_states.length > 0 ? 0 : null;
+                    state.current_candidate_idx =
+                        state.candidate_states.length > 0 ? 0 : null;
                 }
 
-                const idx = prev.findIndex((s) => s.id === selection_state.id);
+                const idx = prev.findIndex((s) => s.id === state.id);
                 if (idx === -1) {
-                    return [...prev, selection_state];
+                    return [...prev, state];
                 } else {
-                    prev[idx] = selection_state;
+                    prev[idx] = state;
                     return [...prev];
                 }
             });
         }
 
-        function handleStatusUpdate(data: { status: string }) {
-            console.log("Status update", data);
-            setStatus(data.status);
+        function handleStatusUpdate({ data: status }: { data: string }) {
+            console.log("Status update", status);
+            setStatus(status);
         }
 
         // another client may make a choice, and the server informs us
@@ -202,8 +127,9 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
 
                 selection.current_candidate_idx = idx;
 
-                // EMIT
-                socket?.emit("choose_candidate", {
+                // for typing in python, we group all user actions and specify via `events` key
+                socket?.emit("user_action", {
+                    event: "candidate_choice",
                     selection_id: selectionId,
                     candidate_idx: selection.current_candidate_idx,
                 });
@@ -223,7 +149,8 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
                 selectionIds.push(selection.id);
             }
 
-            socket?.emit("complete_selections", {
+            socket?.emit("user_action", {
+                event: "selection_complete",
                 selection_ids: selectionIds,
                 are_completed: Array(selectionIds.length).fill(true),
             });

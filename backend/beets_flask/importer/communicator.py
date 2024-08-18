@@ -1,19 +1,26 @@
 from __future__ import annotations
-from typing import Union
+from typing import Any, Generic, List, Literal, TypeVar, TypedDict, Union
 from abc import ABC, abstractmethod
 
 from beets_flask.logger import log
 
-from .types import (
-    ImportStateUpdate,
-    StateUpdate,
-    SelectionStateUpdate,
-    CandidateStateUpdate,
-    ChoiceRequest,
-    CompleteRequest,
-)
-
 from .states import ImportState, SelectionState, CandidateState
+
+
+def default_events(state: Union[ImportState, SelectionState, CandidateState]):
+    """
+    assign the default emit events for commonly used states
+    """
+    event = None
+    if isinstance(state, ImportState):
+        event = "import_state"
+    elif isinstance(state, SelectionState):
+        event = "selection_state"
+    elif isinstance(state, CandidateState):
+        event = "candidate_state"
+    else:
+        raise ValueError(f"Unknown status type: {state}")
+    return event
 
 
 class ImportCommunicator(ABC):
@@ -23,66 +30,51 @@ class ImportCommunicator(ABC):
 
     def __init__(self, state: ImportState):
         self.state = state
-        self._emit(
-            ImportStateUpdate(
-                event="import_state",
-                selection_states=[
-                    selection_state.serialize()
-                    for selection_state in state.selection_states
-                ],
-            )
-        )
+        self.emit_current()
+
+    def emit_current(self):
+        """
+        Emits the current top-level state associated with the import session.
+        """
+        self.emit_state(self.state)
 
     def emit_state(
         self, state: Union[ImportState, SelectionState, CandidateState, None]
     ) -> None:
         """
-        Emits the current state of the import session. This can be a full import state, a selection state, or a candidate state.
+        Emits a (sub-) state of an import session.
+        This can be a full import state, a selection state, or a candidate state.
         """
 
         if state is None:
             return
 
-        elif isinstance(state, ImportState):
-            self._emit(
-                ImportStateUpdate(
-                    event="import_state",
-                    selection_states=[
-                        selection_state.serialize()
-                        for selection_state in state.selection_states
-                    ],
-                )
-            )
-        elif isinstance(state, SelectionState):
-            self._emit(
-                SelectionStateUpdate(
-                    event="selection_state", selection_state=state.serialize()
-                )
-            )
-        elif isinstance(state, CandidateState):
-            self._emit(
-                CandidateStateUpdate(
-                    event="candidate_state", candidate_state=state.serialize()
-                )
-            )
-        else:
-            raise ValueError(f"Unknown status type: {state}")
-
-    def emit_all(self):
-        """
-        Emits the current state of the import session.
-        """
         self._emit(
-            ImportStateUpdate(
-                event="import_state",
-                selection_states=[
-                    selection_state.serialize()
-                    for selection_state in self.state.selection_states
-                ],
+            EmitRequest(
+                event=default_events(state),
+                data=state.serialize(),
             )
         )
 
-    def received_request(self, req: Union[ChoiceRequest, CompleteRequest]):
+    def emit_custom(self, event: str, data: Any):
+        """
+        Emits a custom event. For the WebsocketCommunicator, this is equivalent to
+        `sio.emit(event, {"event" : event, "data": data}, namespace='xyz')`
+        using the communicator's namespace.
+
+        Example
+        -------
+        ```
+        status = "initializing"
+        communicator.emit_custom("import_state_status", status)
+        # will send {"event": "import_state_status", "data": "initializing"}
+        # consistent with the default emit format for StateUpdates
+        ```
+
+        """
+        self._emit(EmitRequest(event=event, data=data))
+
+    def received_request(self, req: Union[ChoiceReceive, CompleteReceive]):
         """
         Processes incoming requests related to the import session.
 
@@ -91,7 +83,7 @@ class ImportCommunicator(ABC):
         """
         log.debug(f"received_request {req=}")
         match req["event"]:
-            case "choice":
+            case "candidate_choice":
                 selection_id = req["selection_id"]
                 candidate_idx = req["candidate_idx"]
 
@@ -99,7 +91,8 @@ class ImportCommunicator(ABC):
                 if selection_state is None:
                     raise ValueError("No selection state found for task.")
                 selection_state.current_candidate_idx = candidate_idx
-            case "complete":
+                log.debug("selection_state.current_candidate_idx = %s", candidate_idx)
+            case "selection_complete":
 
                 # Validate the request
                 selection_ids = req["selection_ids"]
@@ -122,8 +115,34 @@ class ImportCommunicator(ABC):
         self._emit(req)
 
     @abstractmethod
-    def _emit(self, req: Union[ChoiceRequest, CompleteRequest, StateUpdate]) -> None:
+    def _emit(self, req: Union[ChoiceReceive, CompleteReceive, EmitRequest]) -> None:
         """
         Emits the current state of the import session.
         """
-        pass
+        raise NotImplementedError("Implement in subclass")
+
+
+# ------------------------------------------------------------------------------------ #
+#                                 Communicator requests                                #
+# ------------------------------------------------------------------------------------ #
+
+
+class ChoiceReceive(TypedDict):
+    event: Literal["candidate_choice"]
+    selection_id: str
+    candidate_idx: int
+
+
+class CompleteReceive(TypedDict):
+    event: Literal["selection_complete"]
+    selection_ids: List[str]
+    are_completed: List[bool]
+
+
+T = TypeVar("T")
+
+
+# class EmitRequest[T](TypedDict): # py 3.12
+class EmitRequest(TypedDict, Generic[T]):  # py 3.9
+    event: str
+    data: T

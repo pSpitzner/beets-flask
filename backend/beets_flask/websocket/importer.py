@@ -1,8 +1,10 @@
+from typing import Union
 from beets_flask.importer import (
     ImportState,
     InteractiveImportSession,
-    types,
     ImportCommunicator,
+    ChoiceReceive,
+    CompleteReceive,
 )
 from beets_flask.logger import log
 from beets_flask.websocket import sio
@@ -26,7 +28,7 @@ def connect(sid, environ):
 def after_connect(sid):
     """This needs to be invoked by a callback of the client"""
     if session is not None:
-        session.communicator.emit_all()
+        session.communicator.emit_current()
 
 
 @sio.on("disconnect", namespace=namespace)  # type: ignore
@@ -37,7 +39,7 @@ def disconnect(sid):
 
 @sio.on("*", namespace=namespace)  # type: ignore
 def any_event(event, sid, data):
-    log.debug(f"ImportSocket sid {sid} undhandled event {event} with data {data}")
+    log.error(f"ImportSocket sid {sid} unhandled event {event} with data {data}")
 
 
 @sio.on("start_import_session", namespace=namespace)  # type: ignore
@@ -63,23 +65,14 @@ def start_import_session(sid, data):
     session_ref = sio.start_background_task(session.run)
 
 
-@sio.on("choice", namespace=namespace)  # type: ignore
-def choice(sid, req: types.ChoiceRequest):
+@sio.on("user_action", namespace=namespace)  # type: ignore
+def choice(sid, req: Union[ChoiceReceive, CompleteReceive]):
     """
     User has made a choice. Pass it to the session.
     """
     global session
 
-    if not session is None:
-        session.communicator.received_request(req)
-
-
-@sio.on("complete", namespace=namespace)  # type: ignore
-def completed(sid, req: types.CompleteRequest):
-    """
-    User has completed a selection. Pass it to the session.
-    """
-    global session
+    log.debug(f"received user action {req=}")
 
     if not session is None:
         session.communicator.received_request(req)
@@ -93,7 +86,6 @@ class WebsocketCommunicator(ImportCommunicator):
         super().__init__(state)
 
     def _emit(self, req) -> None:
-        log.debug(f"WebsocketCommunicator._emit {req=}")
         # TODO Hardcoded namespace for now
         self.sio.emit(req["event"], req, namespace=namespace)
 

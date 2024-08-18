@@ -20,7 +20,7 @@ import mb from "@/assets/musicbrainz.webp";
 import spotify from "@/assets/spotify.png";
 import spotifyBw from "@/assets/spotifyBw.svg";
 
-import { CandidateState } from "./context";
+import { CandidateState } from "./types";
 
 import styles from "./import.module.scss";
 

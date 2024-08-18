@@ -3,6 +3,11 @@ import { useEffect, useState } from "react";
 
 import styles from "./import.module.scss";
 
+/**
+ * Custom hook that calculates (and color codes) the difference between two strings.
+
+ * @returns An object containing the left and right parts (old, new) as react componenents, and two booleans indicating if something was removed or added.
+ */
 export function useDiff(
     one?: string,
     other?: string,
@@ -44,7 +49,7 @@ export function useDiff(
                 ];
             }
         }
-        console.log("diff", diff);
+
         const leftParts: React.ReactNode[] = [];
         const rightParts: React.ReactNode[] = [];
         let wasAdded = false;

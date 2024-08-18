@@ -4,7 +4,16 @@ Typed versions of data classes that beets uses, and our own derivatives.
 
 from __future__ import annotations
 from dataclasses import dataclass, asdict
-from typing import Callable, List, Literal, NamedTuple, Union, Any, Dict, TypedDict
+from typing import (
+    Callable,
+    List,
+    Literal,
+    NamedTuple,
+    Union,
+    Any,
+    Dict,
+    TypedDict,
+)
 
 from beets import autotag
 
@@ -77,6 +86,13 @@ class MusicInfo:
 
         return cls(**kwargs)
 
+    def __repr__(self) -> str:
+        res = f"{self.__class__.__name__}"
+        res += f"{self.type=} "
+        res += f"{self.artist=} "
+        res += f"{self.album=}"
+        return res
+
 
 def _class_attributes_to_kwargs(cls, obj, keys=None) -> Dict[str, Any]:
     """
@@ -120,6 +136,9 @@ class TrackInfo(MusicInfo):
     isrc: str | None
     index: int | None  #  1-based
 
+    def __repr__(self) -> str:
+        return super().__repr__() + f" {self.title=}"
+
 
 @dataclass
 class ItemInfo(MusicInfo):
@@ -133,8 +152,24 @@ class ItemInfo(MusicInfo):
     isrc: str | None
     track: int | None  #  1-based, todo: make consistent with TrackInfo.index
 
+    path: str | None
     bitrate: int | None
     format: str | None
+
+    def __repr__(self) -> str:
+        return super().__repr__() + f" {self.title=} at {self.path}"
+
+
+# ------------------------------------------------------------------------------------ #
+#                   (serialized) state representations for fronntend                   #
+# ------------------------------------------------------------------------------------ #
+
+
+class SerializedImportState(TypedDict):
+    id: str
+    selection_states: List[SerializedSelectionState]
+    status: str
+    completed: bool
 
 
 class SerializedSelectionState(TypedDict):
@@ -145,6 +180,7 @@ class SerializedSelectionState(TypedDict):
     completed: bool
     toppath: str | None
     paths: List[str]
+    status: str
 
 
 class SerializedCandidateState(TypedDict):
@@ -163,37 +199,3 @@ class SerializedCandidateState(TypedDict):
     extra_items: List[Dict] | None  #  ItemInfo
 
     mapping: Dict[int, int] | None
-
-
-""" Communicator requests
-"""
-
-
-class ChoiceRequest(TypedDict):
-    event: Literal["choice"]
-    selection_id: str
-    candidate_idx: int
-
-
-class CompleteRequest(TypedDict):
-    event: Literal["complete"]
-    selection_ids: List[str]
-    are_completed: List[bool]
-
-
-class ImportStateUpdate(TypedDict):
-    event: Literal["import_state"]
-    selection_states: List[SerializedSelectionState]
-
-
-class SelectionStateUpdate(TypedDict):
-    event: Literal["selection_state"]
-    selection_state: SerializedSelectionState
-
-
-class CandidateStateUpdate(TypedDict):
-    event: Literal["candidate_state"]
-    candidate_state: SerializedCandidateState
-
-
-StateUpdate = Union[ImportStateUpdate, SelectionStateUpdate, CandidateStateUpdate]

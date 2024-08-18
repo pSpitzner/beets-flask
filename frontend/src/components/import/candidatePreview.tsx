@@ -10,7 +10,7 @@ import {
     TrackChanges,
     UnmatchedTracks,
 } from "./candidateDetails";
-import { CandidateState } from "./context";
+import { CandidateState } from "./types";
 
 import styles from "./import.module.scss";
 

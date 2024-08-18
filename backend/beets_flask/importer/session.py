@@ -23,6 +23,7 @@ class InteractiveImportSession(BaseSession):
 
     # current session state
     import_state: ImportState
+    # usually this is a WebsocketCommunicator inheriting from ImportCommunicator
     communicator: ImportCommunicator
 
     task: importer.ImportTask | None = None
@@ -98,7 +99,7 @@ class InteractiveImportSession(BaseSession):
         self.logger.info(f"import started {time.asctime()}")
         self.set_config(config["import"])
 
-        self.import_state.set_status("reading files")
+        set_status("reading files")
         stages = [
             # mutator stage does not work for first task, set status manually
             importer.read_tasks(self),
@@ -138,7 +139,7 @@ class InteractiveImportSession(BaseSession):
         except importer.ImportAbort:
             self.logger.debug(f"Interactive import session aborted by user")
 
-        self.import_state.set_status("completed")
+        set_status("completed")
 
 
 from .pipeline import mutator_stage
@@ -146,6 +147,12 @@ from .pipeline import mutator_stage
 
 @mutator_stage
 def offer_match(session: InteractiveImportSession, task: importer.ImportTask):
+    """
+    Mutator stage to offer a match to the user. This is non-blocking. Essentially
+    we split the `user_query` stage (which calls `choose_match`) into two stages.
+    The first is `offer_match` sending info to the frontend, while the second is
+    `choose_match` that waits until all user choices have been made.
+    """
     session.offer_match(task)
 
 
@@ -153,5 +160,11 @@ def offer_match(session: InteractiveImportSession, task: importer.ImportTask):
 def set_status(
     session: InteractiveImportSession, status: str, task: importer.ImportTask
 ):
+    """
+    Mutator stage to set the status of the import session, and communicate the
+    status change to the frontend.
+    Can also be called directly.
+    """
     log.debug(f"mutator_stage {status=}")
-    session.import_state.set_status(status)
+    session.import_state.status = status
+    session.communicator.emit_custom("import_state_status", status)

@@ -10,8 +10,8 @@ import {
 import Box from "@mui/material/Box";
 
 import { useConfig } from "../common/useConfig";
-import { CandidateState, ItemInfo, TrackInfo } from "./context";
 import { useDiff } from "./diff";
+import { CandidateState, ItemInfo, TrackInfo } from "./types";
 
 import styles from "./import.module.scss";
 

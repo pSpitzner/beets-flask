@@ -19,6 +19,7 @@ from beets_flask.utility import capture_stdout_stderr
 from .types import (
     MusicInfo,
     AlbumInfo,
+    SerializedImportState,
     TrackInfo,
     ItemInfo,
     SerializedCandidateState,
@@ -33,8 +34,9 @@ class ImportState:
     Contains selection states for each task.
     """
 
+    id: str = str(uuid())
     _selection_states: List[SelectionState] = field(default_factory=list)
-    _status: str = "initializing"
+    status: str = "initializing"
     # stages
     # tasks
 
@@ -50,19 +52,19 @@ class ImportState:
     def tasks(self):
         return [s.task for s in self.selection_states]
 
+    @property
+    def completed(self):
+        return all([s.completed for s in self.selection_states])
+
     def get_selection_state_for_task(
         self, task: importer.ImportTask
     ) -> SelectionState | None:
         state: SelectionState | None = None
-        log.debug(f"get_selection_state_for_task {task} {self.selection_states}")
         for s in self.selection_states:
             # TODO: are tasks really comparable?
-            log.debug(f"{task=}")
             if s.task == task:
-                log.debug("match!")
                 state = s
                 break
-        log.debug(f"{state=}")
         return state
 
     def get_selection_state_by_id(self, id: str) -> SelectionState | None:
@@ -88,21 +90,21 @@ class ImportState:
 
         return state
 
-    @property
-    def status(self):
-        return self._status
-
-    def set_status(
-        self,
-        status: str,
-    ):
-        log.debug(f"ImportState {status=}")
-        self._status = status
-
-    def await_completion_all(self):
-        while not all([s.completed for s in self.selection_states]):
+    def await_completion(self):
+        while not self.completed:
             time.sleep(0.5)
         return True
+
+    def serialize(self) -> SerializedImportState:
+        """
+        JSON representation to match the frontend types
+        """
+        return SerializedImportState(
+            id=self.id,
+            selection_states=[s.serialize() for s in self.selection_states],
+            status=self.status,
+            completed=self.completed,
+        )
 
 
 @dataclass
@@ -119,6 +121,7 @@ class SelectionState:
     # index of the current selection. None if user has not chosen yet (or the frontend marks a default selection)
     current_candidate_idx: int | None = None
     completed: bool = False
+    status: str = "initializing"
 
     @property
     def candidates(self) -> Union[List[autotag.AlbumMatch], List[autotag.TrackMatch]]:
@@ -166,6 +169,7 @@ class SelectionState:
             completed=self.completed,
             toppath=self.toppath,
             paths=self.paths,
+            status=self.status,
         )
 
     def await_completion(self):
@@ -289,12 +293,3 @@ class CandidateState:
         )
 
         return res
-
-
-def _enforce_dict(d):
-    """Helper to make sure we are serializable. This is a workaround for some
-    beets classes that have generators we could not pinpoint. (e.g. AlbumInfo)"""
-    # beets' AlbumInfo & TrackInfo is a custom implementation of AttributeDict,
-    # which has some generators breaking serialization (which i cannot find)
-    # I found no way to get around them, except recreating the dict.
-    return {k: v for k, v in d.items()}
