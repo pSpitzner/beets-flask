@@ -77,45 +77,58 @@ class InteractiveImportSession(BaseSession):
         returned one of the above.
         """
 
-        state = self.import_state.get_selection_state_for_task(task)
-        self.communicator.emit_state(state)
+        sel_state = self.import_state.get_selection_state_for_task(task)
+        self.communicator.emit_state(sel_state)
 
-        if state is None:
+        if sel_state is None:
             raise ValueError("No selection state found for task.")
 
         # BLOCKING
         # use communicator to receive user input
-        state.await_completion()
+        completed = sel_state.await_completion()
 
-        if state.current_candidate_idx is None:
-            raise ValueError("No candidate selected.")
+        if self.import_state.user_response == "abort":
+            return importer.action.SKIP
 
-        match = task.candidates[state.current_candidate_idx]
+        if sel_state.current_candidate_idx is None:
+            raise ValueError("No candidate selection found. This should not happen!")
+
+        match = task.candidates[sel_state.current_candidate_idx]
 
         return match
+
+    def set_status(self, status: str):
+        """
+        Set the status of the import session, and communicate the status change to the frontend.
+
+        Note: currently we only implement status on the level of the whole import session,
+        but should eventually do this per selection (task).
+        """
+        self.import_state.status = status
+        self.communicator.emit_custom("import_state_status", status)
 
     def run(self):
         """Run the import task. Customized version of ImportSession.run"""
         self.logger.info(f"import started {time.asctime()}")
         self.set_config(config["import"])
 
-        set_status("reading files")
+        # mutator stage does not work for first task, set status manually
+        self.set_status("reading files")
         stages = [
-            # mutator stage does not work for first task, set status manually
             importer.read_tasks(self),
         ]
 
         if self.config["group_albums"] and not self.config["singletons"]:
             stages += [
-                set_status(self, "grouping albums"),  # type: ignore
+                status_stage(self, "grouping albums"),  # type: ignore
                 importer.group_albums(self),
             ]
 
         stages += [
-            set_status(self, "looking up candidates"),
+            status_stage(self, "looking up candidates"),
             importer.lookup_candidates(self),  # type: ignore
             offer_match(self),  # type: ignore
-            set_status(self, "waiting for user selection"),  # type: ignore
+            status_stage(self, "waiting for user selection"),  # type: ignore
             importer.user_query(self),  # type: ignore
         ]
 
@@ -126,7 +139,7 @@ class InteractiveImportSession(BaseSession):
             stages.append(importer.plugin_stage(self, stage_func))  # type: ignore
 
         stages += [
-            set_status(self, "manipulating files"),  # type: ignore
+            status_stage(self, "manipulating files"),  # type: ignore
             importer.manipulate_files(self),  # type: ignore
         ]
 
@@ -139,7 +152,7 @@ class InteractiveImportSession(BaseSession):
         except importer.ImportAbort:
             self.logger.debug(f"Interactive import session aborted by user")
 
-        set_status("completed")
+        self.set_status("completed")
 
 
 from .pipeline import mutator_stage
@@ -157,14 +170,10 @@ def offer_match(session: InteractiveImportSession, task: importer.ImportTask):
 
 
 @mutator_stage
-def set_status(
+def status_stage(
     session: InteractiveImportSession, status: str, task: importer.ImportTask
 ):
     """
-    Mutator stage to set the status of the import session, and communicate the
-    status change to the frontend.
-    Can also be called directly.
+    Mutator stage to call sessions `set_status` method.
     """
-    log.debug(f"mutator_stage {status=}")
-    session.import_state.status = status
-    session.communicator.emit_custom("import_state_status", status)
+    session.set_status(status)

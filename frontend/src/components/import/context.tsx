@@ -49,16 +49,6 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
                     prev = [];
                 }
 
-                // first candidate is the best match, and our default choice,
-                // and we want to set the default choice in the frontend (here!)
-                if (
-                    state.current_candidate_idx === null ||
-                    state.current_candidate_idx === undefined
-                ) {
-                    state.current_candidate_idx =
-                        state.candidate_states.length > 0 ? 0 : null;
-                }
-
                 const idx = prev.findIndex((s) => s.id === state.id);
                 if (idx === -1) {
                     return [...prev, state];
@@ -115,6 +105,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
      */
     const chooseCanidate = useCallback(
         (selectionId: string, canidateId: number) => {
+            console.log("chooseCandidate", selectionId, canidateId);
             setSelections((prev) => {
                 if (!prev) return prev;
                 const selection = prev.find((s) => s.id === selectionId);

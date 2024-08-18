@@ -5,7 +5,7 @@ State classes to represent the current state of an import session.
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import List, Union
+from typing import List, Literal, Union
 from uuid import uuid4 as uuid
 import time
 
@@ -37,8 +37,8 @@ class ImportState:
     id: str = str(uuid())
     _selection_states: List[SelectionState] = field(default_factory=list)
     status: str = "initializing"
-    # stages
-    # tasks
+    # session-level buttons. continue from choose_match when not None
+    user_response: Literal["abort"] | Literal["apply"] | None = None
 
     @property
     def selection_states(self):
@@ -85,7 +85,7 @@ class ImportState:
         state = self.get_selection_state_for_task(task)
 
         if state is None:
-            state = SelectionState(task)
+            state = SelectionState(task, self)
             self._selection_states.append(state)
 
         return state
@@ -117,6 +117,7 @@ class SelectionState:
     """
 
     task: importer.ImportTask
+    import_state: ImportState
     id: str = str(uuid())
     # index of the current selection. None if user has not chosen yet (or the frontend marks a default selection)
     current_candidate_idx: int | None = None
@@ -175,7 +176,11 @@ class SelectionState:
     def await_completion(self):
         """Blocks until all associated candidated states have been marked as completed"""
         while not self.completed:
-            time.sleep(0.5)
+            # stop blocking if the user selects abort on the session-level
+            if self.import_state.user_response == "abort":
+                return False
+            time.sleep(3)
+            log.debug("awaiting completion")
         return True
 
 

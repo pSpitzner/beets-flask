@@ -1,5 +1,5 @@
 import { ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@mui/material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -100,6 +100,21 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
         console.log("Selected", selection.id, canidateIdx);
         chooseCanidate(selection.id, canidateIdx);
     }
+
+    useEffect(() => {
+        // set the default choice, but only once the user has seen something.
+        // first candidate is the best match
+        if (
+            selection.current_candidate_idx === null ||
+            selection.current_candidate_idx === undefined
+        ) {
+            selection.current_candidate_idx =
+                selection.candidate_states.length > 0 ? 0 : null;
+        }
+        if (selection.current_candidate_idx !== null) {
+            chooseCanidate(selection.id, selection.current_candidate_idx);
+        }
+    }, [selection, chooseCanidate]);
 
     return (
         <div className={styles.selection}>
