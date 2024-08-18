@@ -23,7 +23,7 @@ import {
 import { Typography } from "@mui/material";
 import Menu from "@mui/material/Menu";
 import MenuItem, { MenuItemOwnProps } from "@mui/material/MenuItem";
-import { useMutation,UseMutationOptions } from "@tanstack/react-query";
+import { useMutation, UseMutationOptions } from "@tanstack/react-query";
 
 import { queryClient, TagI } from "@/components/common/_query";
 import {
@@ -338,7 +338,9 @@ export function CopyPathAction(props: Partial<ActionProps>) {
     const text = useRef("");
 
     useEffect(() => {
-        text.current = "'" + getSelected().join("' '") + "'";
+        // text.current = "'" + getSelected().join("' '") + "'";
+        const selectedPaths = getSelected().map(_escapePathForBash);
+        text.current = selectedPaths.join(" ");
     }, [getSelected, text]);
 
     return (
@@ -360,21 +362,13 @@ export function TerminalImportAction(props: Partial<ActionProps>) {
     const { getSelected } = useSelection();
     const text = useRef("");
 
-    const escapeForBash = (str: string) => {
-        return str
-            .replace(/'/g, "'\\''")
-            .replace(/\\/g, "\\\\")
-            .replace(/ /g, "\\ ");
-    };
-
-
     useEffect(() => {
         // text.current = "'" + getSelected().join("' '") + "'";
-        const selectedPaths = getSelected().map(escapeForBash);
+        const selectedPaths = getSelected().map(_escapePathForBash);
         if (selectedPaths.length > 1) {
             text.current = "\\\n  " + selectedPaths.join(" \\\n  ");
         } else {
-            text.current = selectedPaths.join(" ")
+            text.current = selectedPaths.join(" ");
         }
     }, [getSelected, text]);
 
@@ -391,6 +385,10 @@ export function TerminalImportAction(props: Partial<ActionProps>) {
             text={"Terminal Import"}
         />
     );
+}
+
+function _escapePathForBash(path: string) {
+    return path.replace(/'/g, "'\\''").replace(/\\/g, "\\\\").replace(/ /g, "\\ ");
 }
 
 export function UndoImportAction(props: Partial<ActionProps>) {
