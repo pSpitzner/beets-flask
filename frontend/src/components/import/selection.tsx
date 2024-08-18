@@ -1,5 +1,5 @@
 import { ChevronRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Input } from "@mui/material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -49,7 +49,6 @@ export function ImportView() {
                         variant="outlined"
                         color="primary"
                         onClick={() => {
-                            // startSession("/music/inbox.nosync/Bad Company UK/");
                             startSession(path);
                         }}
                     >
@@ -138,8 +137,6 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
 }
 
 function CandidateView({ candidate }: { candidate: CandidateState }) {
-    return <>Fix ME!</>;
-    const match = candidate.track_match ?? candidate.album_match;
     // const artistIsSame = candidate.cur_artist === match.info.artist;
     // const albumIsSame = candidate.cur_album === match.info.album;
     const artistIsSame = true;
@@ -148,16 +145,16 @@ function CandidateView({ candidate }: { candidate: CandidateState }) {
     return (
         <Box className={styles.candidateHeader} key={candidate.id}>
             <Box className={styles.headerGroup}>
-                <SimilarityBadgeWithHover dist={match.distance}>
+                <SimilarityBadgeWithHover dist={candidate.distance}>
                     <BeetsDump candidate={candidate} />
                 </SimilarityBadgeWithHover>
             </Box>
             <HoverCard.Root openDelay={50} closeDelay={50}>
                 <HoverCard.Trigger>
                     <Box className={styles.headerGroup}>
-                        <Box data-changed={!artistIsSame}>{match.info.artist}</Box>
+                        <Box data-changed={!artistIsSame}>{candidate.info.artist}</Box>
                         <ChevronRight className={styles.fade} size={14} />
-                        <Box data-changed={!albumIsSame}>{match.info.album}</Box>
+                        <Box data-changed={!albumIsSame}>{candidate.info.album}</Box>
                     </Box>
                 </HoverCard.Trigger>
                 <HoverCard.Content

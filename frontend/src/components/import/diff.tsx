@@ -4,14 +4,17 @@ import { useEffect, useState } from "react";
 import styles from "./import.module.scss";
 
 export function useDiff(
-    one: string,
-    other: string,
+    one?: string,
+    other?: string,
     method?: "chars" | "words" | "wordsWithSpace" | "full"
 ) {
     const [left, setLeft] = useState<React.ReactNode[]>([]);
     const [right, setRight] = useState<React.ReactNode[]>([]);
     const [didRemove, setRemoved] = useState<boolean>(false);
     const [didAdd, setAdded] = useState<boolean>(false);
+
+    one = one ?? "";
+    other = other ?? "";
 
     useEffect(() => {
         let diff: Diff.Change[] = [];

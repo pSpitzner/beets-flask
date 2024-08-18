@@ -17,8 +17,10 @@ from beets_flask.logger import log
 from beets_flask.utility import capture_stdout_stderr
 
 from .types import (
-    MinimalAlbumInfo,
-    MinimalItemAndTrackInfo,
+    MusicInfo,
+    AlbumInfo,
+    TrackInfo,
+    ItemInfo,
     SerializedCandidateState,
     SerializedSelectionState,
 )
@@ -148,9 +150,9 @@ class SelectionState:
         return [item for item in self.task.items]
 
     @property
-    def items_minimal(self) -> List[MinimalItemAndTrackInfo]:
+    def items_minimal(self) -> List[MusicInfo]:
         """Items of the associated task as MinimalItemAndTrackInfo"""
-        return [MinimalItemAndTrackInfo.from_item_or_track(i) for i in self.task.items]
+        return [MusicInfo.from_instance(i) for i in self.task.items]
 
     def serialize(self) -> SerializedSelectionState:
         """
@@ -230,39 +232,34 @@ class CandidateState:
         self.match.info.decode()
 
         info = None
+        items = None
         tracks = None
         extra_tracks = None
         extra_items = None
         mapping = None
 
         if self.type == "track":
-            info = MinimalItemAndTrackInfo.from_item_or_track(
-                self.match.info
-            ).serialize()
-            # our frontend AlbumInfo and TrackInfo expect a name field
-            info["name"] = self.match.info.title
+            info = TrackInfo.from_instance(self.match.info).serialize()
 
         elif self.type == "album":
-            info = MinimalAlbumInfo.from_album_info(self.match.info).serialize()
+            info = AlbumInfo.from_instance(self.match.info).serialize()
 
             tracks = []
             for track in self.match.info.tracks or []:
                 track.decode()
-                tracks.append(
-                    MinimalItemAndTrackInfo.from_item_or_track(track).serialize()
-                )
-
-            extra_items = [
-                MinimalItemAndTrackInfo.from_item_or_track(i).serialize()
-                for i in self.match.extra_items or []  # type: ignore
-            ]
+                tracks.append(TrackInfo.from_instance(track).serialize())
 
             extra_tracks = []
             for track in self.match.extra_tracks or []:  # type: ignore
                 track.decode()
-                extra_tracks.append(
-                    MinimalItemAndTrackInfo.from_item_or_track(track).serialize()
-                )
+                extra_tracks.append(TrackInfo.from_instance(track).serialize())
+
+            items = [ItemInfo.from_instance(i).serialize() for i in self.items]
+
+            extra_items = [
+                ItemInfo.from_instance(i).serialize()
+                for i in self.match.extra_items or []  # type: ignore
+            ]
 
             # the mapping of a beets albummatch uses objects, but we don not want
             # to send them over redundantly. convert to an index mapping,
@@ -284,9 +281,11 @@ class CandidateState:
             type=self.type,
             distance=self.distance.distance,
             info=info,
+            items=items,
             tracks=tracks,
             extra_tracks=extra_tracks,
             extra_items=extra_items,
+            mapping=mapping,
         )
 
         return res

@@ -1,5 +1,6 @@
 import {
     AudioLines,
+    BadgeAlert,
     Brain,
     Calendar,
     CassetteTape,
@@ -7,6 +8,7 @@ import {
     Flag,
     GitPullRequestArrow,
     SearchX,
+    Tally5,
     UserRound,
     Variable,
 } from "lucide-react";
@@ -26,7 +28,7 @@ export const SourceIcon = ({
     source,
     color = false,
 }: {
-    source: string;
+    source?: string;
     color?: boolean;
 }) => {
     const render = (children: React.ReactNode, alt?: string) => (
@@ -34,6 +36,8 @@ export const SourceIcon = ({
             <Box className={styles.sourceIcon}>{children}</Box>
         </Tooltip>
     );
+
+    if (!source) return render(<BadgeAlert />, "undefined source");
 
     switch (source.toLowerCase()) {
         case "spotify":
@@ -55,6 +59,7 @@ const penaltyOrder = [
     "artist",
     "album",
     "media",
+    "mediums",
     "year",
     "country",
 ];
@@ -73,8 +78,6 @@ export function PenaltyIconRow({
                     // somewhat preferential. source is still punished by weight,
                     // but we display the source as an icon... id like not to think
                     // of the source as a penalty.
-                    case "mediums":
-                        return "media";
                     case "source":
                         return null;
                     default:
@@ -85,8 +88,7 @@ export function PenaltyIconRow({
     }, [candidate]);
 
     const [others, setOthers] = useState<string[]>([]);
-    const match = candidate.track_match ?? candidate.album_match;
-    const source = match.info.data_source!;
+    const source = candidate.info.data_source;
 
     useEffect(() => {
         const otherPenalties = penalties.filter((p) => !penaltyOrder.includes(p));
@@ -139,8 +141,10 @@ export function PenaltyIcon({ kind, className }: { kind: string; className?: str
             Icon = SearchX;
             break;
         case "media":
-        case "mediums":
             Icon = CassetteTape;
+            break;
+        case "mediums":
+            Icon = Tally5;
             break;
         case "country":
             Icon = Flag;
@@ -160,7 +164,8 @@ export function PenaltyIcon({ kind, className }: { kind: string; className?: str
         .replaceAll(" ", ", ")
         .replaceAll("_", " ")
         // rename for more verbose hover
-        .replace(/^tracks\b/, "track changes");
+        .replace(/^tracks\b/, "track changes")
+        .replace(/^mediums\b/, "number of discs");
 
     return (
         <Tooltip title={kind_title}>

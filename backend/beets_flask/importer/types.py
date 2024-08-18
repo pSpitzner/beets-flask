@@ -1,5 +1,5 @@
 """
-Typed versions of data classes that beets uses.
+Typed versions of data classes that beets uses, and our own derivatives.
 """
 
 from __future__ import annotations
@@ -39,73 +39,42 @@ class PromptChoice(NamedTuple):
 
 
 @dataclass
-class MinimalItemAndTrackInfo:
+class MusicInfo:
     """
-    Items (music files on disk) and tracks (trackinfo) are very similar, and share
-    many fields --- especially once music has been imported.
-    In beets there is no shared baseclass from which both inherit, but we need  it
-    in the frontend.
+    Items (music files on disk), tracks (trackinfo), and album info are somewhat similar.
+    They share many fields --- especially once music has been imported.
+    In beets there is no shared baseclass from which the three inherit, but such a common
+    base class helps in the frontend.
 
-    This is a minimal version of both, where inconsistent fields are renamed, and
-    fields exclsuive to one type are None for the other.
-    """
-
-    name: str
-    title: str
-    artist: str
-    album: str
-    length: int
-    # track info only
-    data_source: str
-    data_url: str
-    index: int  #  1-based
-    # item only (before import is done)
-    bitrate: int
-    format: str
-    track: int  #  1-based
-
-    def serialize(self):
-        return asdict(self)
-
-    @classmethod
-    def from_item_or_track(
-        cls, track: Union[autotag.TrackInfo, autotag.Item]
-    ) -> MinimalItemAndTrackInfo:
-        kwargs = _class_attributes_to_kwargs(cls, track)
-        try:
-            kwargs["name"] = getattr(track, "title", None)
-        except AttributeError:
-            pass
-        return cls(**kwargs)
-
-    # todo: explizit mapping for track and item to uniformize the fields
-    # with input type detection in a wrapper
-
-
-@dataclass
-class MinimalAlbumInfo:
-    """
-    Minimal version of AlbumInfo.
+    This is a minimal version of this, where fields exclsuive to one type are None for the
+    others. (and inconsistent fields could get renamed?)
     """
 
-    name: str | None
-    album: str | None
+    type: Literal["item", "track", "album"]
+
     artist: str | None
-    data_source: str | None
+    album: str | None
     data_url: str | None
+    data_source: str | None
     year: int | None
-    # we do not include tracks here, parse and lift manually!
+    genre: str | None
+    media: str | None
 
     def serialize(self):
         return asdict(self)
 
     @classmethod
-    def from_album_info(cls, info: autotag.AlbumInfo) -> MinimalAlbumInfo:
+    def from_instance(
+        cls, info: Union[autotag.TrackInfo, autotag.Item, autotag.AlbumInfo]
+    ) -> MusicInfo:
         kwargs = _class_attributes_to_kwargs(cls, info)
-        try:
-            kwargs["name"] = getattr(info, "album", None)
-        except AttributeError:
-            pass
+        if isinstance(info, autotag.TrackInfo):
+            kwargs["type"] = "track"
+        elif isinstance(info, autotag.Item):
+            kwargs["type"] = "item"
+        elif isinstance(info, autotag.AlbumInfo):
+            kwargs["type"] = "album"
+
         return cls(**kwargs)
 
 
@@ -115,18 +84,64 @@ def _class_attributes_to_kwargs(cls, obj, keys=None) -> Dict[str, Any]:
     for a class. If `keys` is provided, only include those keys.
     """
     if keys is None:
-        keys = cls.__annotations__.keys()
+        keys = cls.__dataclass_fields__.keys()
     kwargs = dict()
     for k in keys:
         kwargs[k] = getattr(obj, k, None)
     return kwargs
 
 
+@dataclass
+class AlbumInfo(MusicInfo):
+    """
+    A more specific version of MusicInfo for albums.
+    Attributes are an indicator of what might be available, and can be None.
+    """
+
+    # disambiguation
+    mediums: int | None  #  number of discs
+    country: str | None
+    label: str | None
+    catalognum: str | None
+    albumdisambig: str | None
+
+    # Note: dont add 'tracks' here, our candidate states lift them already from album matches
+
+
+@dataclass
+class TrackInfo(MusicInfo):
+    """
+    A more specific version of MusicInfo for tracks.
+    Attributes are an indicator of what might be available, and can be None.
+    """
+
+    title: str | None
+    length: float | None
+    isrc: str | None
+    index: int | None  #  1-based
+
+
+@dataclass
+class ItemInfo(MusicInfo):
+    """
+    A more specific version of MusicInfo for items.
+    Attributes are an indicator of what might be available, and can be None.
+    """
+
+    title: str | None
+    length: float | None
+    isrc: str | None
+    track: int | None  #  1-based, todo: make consistent with TrackInfo.index
+
+    bitrate: int | None
+    format: str | None
+
+
 class SerializedSelectionState(TypedDict):
     id: str
     candidate_states: List[SerializedCandidateState]
     current_candidate_idx: int | None
-    items: List[Dict]  #  MinimalItemAndTrackInfo
+    items: List[Dict]  #  ItemInfo
     completed: bool
     toppath: str | None
     paths: List[str]
@@ -140,11 +155,14 @@ class SerializedCandidateState(TypedDict):
     penalties: List[str]
     type: str
     distance: float
-    info: Dict  # MinimalAlbumInfo | MinimalItemAndTrackInfo
+    info: Dict  # AlbumInfo | TrackInfo
 
-    tracks: List[Dict] | None  #  MinimalItemAndTrackInfo
-    extra_tracks: List[Dict] | None  #  MinimalItemAndTrackInfo
-    extra_items: List[Dict] | None  #  MinimalItemAndTrackInfo
+    items: List[Dict] | None  #  ItemInfo TODO: infer in frontend from selection state
+    tracks: List[Dict] | None  #  TrackInfo
+    extra_tracks: List[Dict] | None  #  TrackInfo
+    extra_items: List[Dict] | None  #  ItemInfo
+
+    mapping: Dict[int, int] | None
 
 
 """ Communicator requests

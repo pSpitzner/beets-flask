@@ -13,7 +13,7 @@ import Ansi from "@curvenote/ansi-to-react";
 import Box from "@mui/material/Box";
 
 import { useConfig } from "../common/useConfig";
-import { CandidateState, MinimalItemAndTrackInfo } from "./context";
+import { CandidateState, ItemInfo, TrackInfo } from "./context";
 import { useDiff } from "./diff";
 
 import styles from "./import.module.scss";
@@ -29,25 +29,23 @@ export function BeetsDump({ candidate }: { candidate: CandidateState }) {
 
 export function CandidatePreview({ candidate }: { candidate: CandidateState }) {
     const config = useConfig();
-    const match = candidate.album_match ?? candidate.track_match;
-    const info = match.info;
-    const fields = candidate.album_match
-        ? config?.match.album_disambig_fields || []
-        : config?.match.singleton_disambig_fields || [];
 
-    console.log("info", info);
+    const info = candidate.info;
+    const fields =
+        candidate.type === "album"
+            ? config?.match.album_disambig_fields || []
+            : config?.match.singleton_disambig_fields || [];
 
     const disambigs = fields
         .map((field) => {
-            if (
-                Object.prototype.hasOwnProperty.call(info, field) &&
-                (info as Record<string, unknown>)[field]
-            ) {
-                return (info as Record<string, unknown>)[field];
+            if (field in info) {
+                return info[field as keyof typeof info];
             }
             return undefined;
         })
-        .filter((x) => x !== undefined);
+        .filter((x) => !!x) as string[];
+
+    console.log("disambigs", disambigs);
 
     return (
         <Box className={styles.candidatePreview}>
@@ -58,8 +56,8 @@ export function CandidatePreview({ candidate }: { candidate: CandidateState }) {
                     <span>{info.data_url}</span>
                 </Box>
             ) : null}
-            <ArtistChange prev={candidate.cur_artist!} next={info.artist!} />
-            <AlbumChange prev={candidate.cur_album!} next={info.album!} />
+            <ArtistChange prev={candidate.cur_artist} next={info.artist!} />
+            <AlbumChange prev={candidate.cur_album} next={info.album!} />
             <TrackChanges candidate={candidate} />
             <MissingTracks candidate={candidate} />
             <UnmatchedTracks candidate={candidate} />
@@ -122,12 +120,12 @@ function AlbumChange({ prev, next }: { prev: string; next: string }) {
 /* ---------------------------------------------------------------------------------- */
 
 function TrackChanges({ candidate }: { candidate: CandidateState }) {
-    if (candidate.track_match) {
+    if (candidate.type !== "album") {
         return null;
     }
-    const tracks = candidate.album_match.info.tracks as MinimalItemAndTrackInfo[];
-    const items = candidate.items!;
-    const mapping = candidate.album_match.mapping;
+    const tracks = candidate.tracks;
+    const items = candidate.items;
+    const mapping = candidate.mapping;
     // curious: when only capitalization changes in tracks, we do not get the
     // track change penalty. this leads to a bit of communication issue:
     // reading 'no changes' in the heading but having a bunch of them marked is confusing.
@@ -175,15 +173,15 @@ function TrackDiff({
     pdx,
     ndx,
 }: {
-    prev: MinimalItemAndTrackInfo;
-    next: MinimalItemAndTrackInfo;
+    prev: ItemInfo | TrackInfo;
+    next: ItemInfo | TrackInfo;
     pdx?: number; // previous index, 1-based
     ndx?: number; // next index, 1-based
 }) {
     const { left: lTitleD, right: rTitleD } = useDiff(prev.title, next.title);
 
-    const leftTime = prev.length;
-    const rightTime = next.length;
+    const leftTime = prev.length ?? 0;
+    const rightTime = next.length ?? 0;
 
     const leftIdx = pdx;
     const rightIdx = ndx;
@@ -259,7 +257,7 @@ function TrackDiff({
     return <Box className={styles.trackChange}>{inner}</Box>;
 }
 
-function TrackLength({ length, className }: { length: number; className?: string }) {
+function TrackLength({ length, className }: { length?: number; className?: string }) {
     return (
         <span
             className={
@@ -295,7 +293,10 @@ function TrackLengthChange({
     );
 }
 
-function _fmtLength(l: number) {
+function _fmtLength(l?: number) {
+    if (l === undefined) {
+        return "(?:??)";
+    }
     const hours = Math.floor(l / 3600);
     const minutes = Math.floor((l % 3600) / 60);
     const seconds = Math.floor(l % 60);
@@ -351,10 +352,10 @@ function _fmtTrackIndex(num?: number) {
 /* ---------------------------------------------------------------------------------- */
 
 function MissingTracks({ candidate }: { candidate: CandidateState }) {
-    if (candidate.track_match) {
+    if (candidate.type !== "album") {
         return null;
     }
-    const missingTracks = candidate.album_match.extra_tracks;
+    const missingTracks = candidate.extra_tracks;
     const tracksMissing = missingTracks.length > 0;
 
     if (!tracksMissing) {
@@ -376,13 +377,7 @@ function MissingTracks({ candidate }: { candidate: CandidateState }) {
     );
 }
 
-function MissingTrack({
-    track,
-    idx,
-}: {
-    track: MinimalItemAndTrackInfo;
-    idx?: number;
-}) {
+function MissingTrack({ track, idx }: { track: TrackInfo | ItemInfo; idx?: number }) {
     return (
         <Box className={styles.trackChange}>
             <TrackIndex idx={idx} />
@@ -397,10 +392,10 @@ function MissingTrack({
 /* ---------------------------------------------------------------------------------- */
 
 function UnmatchedTracks({ candidate }: { candidate: CandidateState }) {
-    if (candidate.track_match) {
+    if (candidate.type !== "album") {
         return null;
     }
-    const unmatchedTracks = candidate.album_match.extra_items;
+    const unmatchedTracks = candidate.extra_items;
     const tracksUnmatched = unmatchedTracks.length > 0;
 
     if (!tracksUnmatched) {
@@ -422,13 +417,7 @@ function UnmatchedTracks({ candidate }: { candidate: CandidateState }) {
     );
 }
 
-function UnmatchedTrack({
-    track,
-    idx,
-}: {
-    track: MinimalItemAndTrackInfo;
-    idx?: number;
-}) {
+function UnmatchedTrack({ track, idx }: { track: TrackInfo | ItemInfo; idx?: number }) {
     return (
         <Box className={styles.trackChange}>
             <TrackIndex idx={idx} />

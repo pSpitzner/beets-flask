@@ -1,11 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
-// in beets language, items are tracks in the database.
-// the info types are _very_ similar to what we get from our library queries
-// just that we have added a custom `name` field to albums and items.
-// annoying: albuminfo of candidates has a .artist, but albums from library dont.
-import { Album as AlbumInfo } from "@/components/common/_query";
-
 import { useImportSocket } from "../common/useSocket";
 
 interface ImportContextI {
@@ -27,7 +21,7 @@ export interface SelectionState {
     id: string;
     candidate_states: CandidateState[];
     current_candidate_idx: number | null;
-    items: MinimalItemAndTrackInfo[];
+    items: ItemInfo[];
     completed: boolean;
     toppath?: string; // folder supplied to import by user
     paths: string[]; // lowest level (album folders) of music
@@ -43,47 +37,55 @@ interface BaseCandidateState {
 }
 
 interface AlbumCandidateState extends BaseCandidateState {
-    info: AlbumInfo;
     type: "album";
-    tracks: MinimalItemAndTrackInfo[];
-    extra_tracks: MinimalItemAndTrackInfo[];
-    extra_items: MinimalItemAndTrackInfo[];
+    info: AlbumInfo;
+    tracks: TrackInfo[];
+    items: ItemInfo[];
+    extra_tracks: TrackInfo[];
+    extra_items: ItemInfo[];
+    mapping: Record<number, number>;
 }
 
 interface TrackCandidateState extends BaseCandidateState {
-    info: MinimalItemAndTrackInfo;
     type: "track";
+    info: TrackInfo;
 }
 
 export type CandidateState = AlbumCandidateState | TrackCandidateState;
 
-interface AlbumMatch {
-    distance: number; // TODO: backend uses an object
-    info: AlbumInfo; // Complete album info
-    extra_items: MinimalItemAndTrackInfo[]; // Items found on disk but not matched online
-    extra_tracks: MinimalItemAndTrackInfo[]; // Tracks found online but not on disk
-    mapping: Record<number, number>; // indices of candidatechoice.items to match.info.tracks
-}
-
-interface TrackMatch {
-    distance: number; // TODO: backend uses an object
-    info: MinimalItemAndTrackInfo;
-}
-
-export interface MinimalItemAndTrackInfo {
-    name: string;
-    title: string;
-    artist: string;
-    album: string;
-    length: number;
-    // track info only
-    data_source?: string;
+export interface MusicInfo {
+    type: "item" | "track" | "album";
+    artist?: string;
+    album?: string;
     data_url?: string;
+    data_source?: string;
+    year?: number;
+    genre?: string;
+    media?: string;
+}
+
+export interface AlbumInfo extends MusicInfo {
+    type: "album";
+    mediums?: number; // number of discs
+}
+
+export interface TrackInfo extends MusicInfo {
+    type: "track";
+    title?: string;
+    length?: number;
+    isrc?: string;
     index?: number; // 1-based
-    // item only (before import is done)
+}
+
+export interface ItemInfo extends MusicInfo {
+    type: "item";
+    title?: string;
+    length?: number;
+    isrc?: string;
+    track?: number; // 1-based
+
     bitrate?: number;
     format?: string;
-    track?: number; // 1-based
 }
 
 const ImportContext = createContext<ImportContextI | null>(null);
