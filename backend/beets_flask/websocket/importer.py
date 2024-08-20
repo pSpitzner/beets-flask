@@ -57,10 +57,15 @@ def start_import_session(sid, data):
     except AttributeError:
         pass
 
+    def cleanup():
+        global session, session_ref
+        session = None
+        session_ref = None
+
     # Create a new session
     state = ImportState()
     communicator = WebsocketCommunicator(state, sio)
-    session = InteractiveImportSession(state, communicator, path=path)
+    session = InteractiveImportSession(state, communicator, path=path, cleanup=cleanup)
 
     session_ref = sio.start_background_task(session.run)
 

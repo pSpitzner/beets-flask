@@ -15,15 +15,5 @@ export const Route = createFileRoute("/playground")({
 });
 
 function ImportPage() {
-    const { generateDummySelections } = useImportContext();
-    return (
-        <>
-            <div>
-                <Button onClick={generateDummySelections}>
-                    Generate dummy selections
-                </Button>
-            </div>
-            <ImportView />
-        </>
-    );
+    return <ImportView />;
 }

@@ -97,7 +97,6 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
 
     function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
         const canidateIdx = parseInt(event.target.value);
-        console.log("Selected", selection.id, canidateIdx);
         chooseCanidate(selection.id, canidateIdx);
     }
 
