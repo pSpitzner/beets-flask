@@ -7,12 +7,13 @@ import {
     Disc3,
     Flag,
     GitPullRequestArrow,
+    LucideProps,
     SearchX,
     Tally5,
     UserRound,
     Variable,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import Tooltip from "@mui/material/Tooltip";
 
@@ -23,34 +24,6 @@ import spotifyBw from "@/assets/spotifyBw.svg";
 import { CandidateState } from "./types";
 
 import styles from "./import.module.scss";
-
-export const SourceIcon = ({
-    source,
-    color = false,
-}: {
-    source?: string;
-    color?: boolean;
-}) => {
-    const render = (children: React.ReactNode, alt?: string) => (
-        <Tooltip title={alt}>
-            <Box className={styles.sourceIcon}>{children}</Box>
-        </Tooltip>
-    );
-
-    if (!source) return render(<BadgeAlert />, "undefined source");
-
-    switch (source.toLowerCase()) {
-        case "spotify":
-            if (color) return render(<img src={spotify} />, source);
-            return render(<img src={spotifyBw} />, source);
-        case "musicbrainz":
-            if (color) return render(<img src={mb} />, source);
-            return render(<Brain />, source);
-
-        default:
-            return null;
-    }
-};
 
 const penaltyOrder = [
     "missing_tracks",
@@ -64,6 +37,14 @@ const penaltyOrder = [
     "country",
 ];
 
+/**
+ * Renders a row of penalty icons for a given candidate, optionally including the source icon.
+ *
+ * @param {Object} props - The properties passed to the component.
+ * @param {CandidateState} props.candidate - The candidate state object containing penalty information.
+ * @param {boolean} [props.showSource=true] - Determines whether to display the source icon.
+ * @returns {JSX.Element} - The rendered row of penalty icons wrapped in a Box component.
+ */
 export function PenaltyIconRow({
     candidate,
     showSource = true,
@@ -111,19 +92,34 @@ export function PenaltyIconRow({
                     }
                 />
             ))}
-            {
-                <PenaltyIcon
-                    kind={others.join(" ")}
-                    className={others.length === 0 ? styles.inactive : styles.penalty}
-                />
-            }
+            <PenaltyIcon
+                kind={others.join(" ")}
+                className={others.length === 0 ? styles.inactive : styles.penalty}
+            />
         </Box>
     );
 }
 
-export function PenaltyIcon({ kind, className }: { kind: string; className?: string }) {
+type IonType = React.ForwardRefExoticComponent<
+    Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>
+>;
+
+/**
+ * Renders an icon representing a specific penalty kind.
+ *
+ * @param {Object} props - The properties passed to the component.
+ * @param {string} props.kind - The type of penalty, which determines the icon to be displayed.
+ * @param {string} [props.className] - An optional class name to be applied to the icon container.
+ * @param {Omit<LucideProps, "ref">} [props] - Additional properties to be passed to the icon component.
+ * @returns {JSX.Element} - The rendered icon wrapped in a Tooltip and Box component.
+ */
+function PenaltyIcon({
+    kind,
+    className,
+    ...props
+}: { kind: string; className?: string } & Omit<LucideProps, "ref">) {
     /** Determine the icon to use for a penalty kind */
-    let Icon: React.ComponentType | null = null;
+    let Icon: IonType | null = null;
     switch (kind) {
         case "artist":
             Icon = UserRound;
@@ -154,7 +150,6 @@ export function PenaltyIcon({ kind, className }: { kind: string; className?: str
             break;
         default:
             Icon = Variable;
-            console.warn("Unknown penalty kind", kind);
             break;
     }
 
@@ -170,8 +165,41 @@ export function PenaltyIcon({ kind, className }: { kind: string; className?: str
     return (
         <Tooltip title={kind_title}>
             <Box className={`${styles.penaltyIcon} ${className}`}>
-                <Icon />
+                <Icon {...props} />
             </Box>
+        </Tooltip>
+    );
+}
+
+/**
+ * Renders an icon representing the source of the candidate data.
+ *
+ * @param {Object} props - The properties passed to the component.
+ * @param {string} [props.source] - The source of the candidate data, e.g., "Spotify" or "MusicBrainz".
+ * @param {boolean} [props.color=false] - Determines whether to display the icon in color or in black and white.
+ * @returns {JSX.Element} - The rendered icon wrapped in a Tooltip and Box component.
+ */
+function SourceIcon({ source, color = false }: { source?: string; color?: boolean }) {
+    let Icon: React.ReactNode | null = null;
+
+    switch (source?.toLowerCase()) {
+        case "spotify":
+            if (color) Icon = <img src={spotify} />;
+            else Icon = <img src={spotifyBw} />;
+            break;
+        case "musicbrainz":
+            if (color) Icon = <img src={mb} />;
+            else Icon = <Brain />;
+            break;
+        default:
+            console.warn("Unknown source", source);
+            Icon = <BadgeAlert />;
+            break;
+    }
+
+    return (
+        <Tooltip title={source}>
+            <Box className={styles.sourceIcon}>{Icon}</Box>
         </Tooltip>
     );
 }

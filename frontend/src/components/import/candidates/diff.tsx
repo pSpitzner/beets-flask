@@ -1,7 +1,7 @@
 import * as Diff from "diff";
 import { useEffect, useState } from "react";
 
-import styles from "./import.module.scss";
+import styles from "./candidates.module.scss";
 
 /**
  * Custom hook that calculates (and color codes) the difference between two strings.

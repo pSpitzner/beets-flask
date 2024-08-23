@@ -1,0 +1,53 @@
+.trackIndex {
+    white-space: pre;
+    //TODO load our own font maybe even add to theme
+    font-family: monospace !important;
+    text-align: end;
+}
+
+/** Basically the table showing the
+* track changes
+*/
+.trackChanges {
+    display: grid;
+    width: 100%;
+    grid-template-columns: max-content max-content max-content max-content max-content;
+    font-size: 0.9rem;
+    column-gap: 0.5rem;
+    padding-left: 0.25rem;
+
+    // Lineheight adjusted as it takes up too much space
+    line-height: 1.18em;
+}
+
+/** Styling for from and to changed
+*/
+.added {
+    color: #a4bf8c;
+}
+.removed {
+    color: #c0626b;
+}
+.changed {
+    color: #ebcb8c;
+}
+.fade {
+    opacity: 0.4;
+}
+
+/** Styling for the different change items */
+
+.disambig {
+    font-style: italic;
+}
+.dataUrl {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+.preview {
+    display: flex;
+    flex-direction: column;
+}

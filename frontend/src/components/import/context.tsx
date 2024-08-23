@@ -9,7 +9,7 @@ interface ImportContextI {
     selections?: SelectionState[];
     status: string;
     startSession: (path: string) => void;
-    chooseCanidate: (selectionId: string, choiceIdx: number) => void;
+    chooseCandidate: (selectionId: string, choiceIdx: number) => void;
     completeAllSelections: () => void;
 }
 
@@ -28,10 +28,6 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
             setStatus("Socket connected");
         }
     }, [socket, isConnected, status, setStatus]);
-
-    useEffect(() => {
-        console.log("useEffect status update: ", status);
-    }, [status]);
 
     useEffect(() => {
         if (!socket) return;
@@ -101,18 +97,18 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
     /**
      * Updates the selected candidate for a specific selection.
      * @param {number} selectionIdx - The index of the selection.
-     * @param {number} choosenCanidateIdx - The index of the chosen candidate.
+     * @param {number} candidateId - The id of the candidate to select.
      */
-    const chooseCanidate = useCallback(
-        (selectionId: string, canidateId: number) => {
-            console.log("chooseCandidate", selectionId, canidateId);
+    const chooseCandidate = useCallback(
+        (selectionId: string, candidateId: number) => {
+            console.log("chooseCandidate", selectionId, candidateId);
             setSelections((prev) => {
                 if (!prev) return prev;
                 const selection = prev.find((s) => s.id === selectionId);
                 if (!selection) return prev;
 
                 const idx = selection.candidate_states.findIndex(
-                    (c) => c.id === canidateId
+                    (c) => c.id === candidateId
                 );
                 if (idx === -1) return prev;
 
@@ -130,6 +126,14 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         [socket]
     );
 
+    /**
+     * Marks all selections as completed and emits a user action event to the server.
+     *
+     * This function iterates through all the selections, marks them as completed,
+     * and then emits an event to the server with the IDs of the completed selections.
+     *
+     * @returns {void}
+     */
     const completeAllSelections = useCallback(() => {
         setSelections((prev) => {
             if (!prev) return prev;
@@ -155,7 +159,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         selections,
         status,
         startSession,
-        chooseCanidate,
+        chooseCandidate,
     };
 
     return <ImportContext.Provider value={ret}>{children}</ImportContext.Provider>;

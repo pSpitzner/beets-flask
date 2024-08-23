@@ -1,5 +1,5 @@
 import { ChevronRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Input } from "@mui/material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -13,7 +13,7 @@ import * as HoverCard from "@radix-ui/react-hover-card";
 
 import { SimilarityBadgeWithHover } from "@/components/tags/similarityBadge";
 
-import { BeetsDump, CandidatePreview } from "./candidatePreview";
+import { BeetsDump, CandidatePreview } from "./candidates/preview";
 import { useImportContext } from "./context";
 import { PenaltyIconRow } from "./icons";
 import { CandidateState, SelectionState } from "./types";
@@ -29,6 +29,7 @@ export function ImportView() {
     return (
         <div>
             <Selections />
+
             <Box
                 sx={{
                     display: "flex",
@@ -84,20 +85,34 @@ function Selections() {
         <div className={styles.wrapper}>
             {/* loading */}
             {/* {!selections && <Skeleton />} */}
-            {selections?.map((selection) => (
-                <ImportSelection key={selection.id} selection={selection} />
-            ))}
+            {selections?.map((selection) => {
+                // For debugging the hover state get current selected candidate
+                const canditate = selection.candidate_states.find(
+                    (c) => c.id === selection.current_candidate_idx
+                );
+
+                return (
+                    <Fragment key={selection.id}>
+                        <ImportSelection selection={selection} />
+                        {canditate && (
+                            <Paper className="p-3">
+                                <CandidatePreview candidate={canditate} />
+                            </Paper>
+                        )}
+                    </Fragment>
+                );
+            })}
         </div>
     );
 }
 
 function ImportSelection({ selection }: { selection: SelectionState }) {
-    const { chooseCanidate } = useImportContext();
+    const { chooseCandidate } = useImportContext();
     const folder = selection.paths.join("\n");
 
     function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
-        const canidateIdx = parseInt(event.target.value);
-        chooseCanidate(selection.id, canidateIdx);
+        const candidateIdx = parseInt(event.target.value);
+        chooseCandidate(selection.id, candidateIdx);
     }
 
     useEffect(() => {
@@ -111,9 +126,9 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
                 selection.candidate_states.length > 0 ? 0 : null;
         }
         if (selection.current_candidate_idx !== null) {
-            chooseCanidate(selection.id, selection.current_candidate_idx);
+            chooseCandidate(selection.id, selection.current_candidate_idx);
         }
-    }, [selection, chooseCanidate]);
+    }, [selection, chooseCandidate]);
 
     return (
         <div className={styles.selection}>
@@ -179,7 +194,7 @@ function CandidateView({ candidate }: { candidate: CandidateState }) {
                     align="start"
                     className={"HoverContent"}
                 >
-                    {<CandidatePreview candidate={candidate} />}
+                    <CandidatePreview candidate={candidate} />
                 </HoverCard.Content>
             </HoverCard.Root>
 
