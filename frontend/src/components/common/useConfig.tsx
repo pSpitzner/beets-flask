@@ -30,6 +30,8 @@ export interface MinimalConfig {
         tags: {
             recent_days: number;
             expand_tags: boolean;
+            order_by: string;
+            show_unchanged_tracks: boolean;
         };
     };
     match: {

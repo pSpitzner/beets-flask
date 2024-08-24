@@ -1,17 +1,10 @@
-import {
-    ArrowRight,
-    AudioLines,
-    Disc3,
-    GitPullRequestArrow,
-    Link2,
-    SearchX,
-    UserRound,
-} from "lucide-react";
+import { ArrowRight, Link2 } from "lucide-react";
 import { ReactNode } from "react";
-import { styled } from "@mui/material";
+import { BoxProps, styled } from "@mui/material";
 import Box from "@mui/material/Box";
 
 import { useConfig } from "../../common/useConfig";
+import { PenaltyIcon } from "../icons";
 import { CandidateState, ItemInfo, TrackInfo } from "../types";
 import { useDiff } from "./diff";
 
@@ -32,7 +25,7 @@ export function ArtistChange({ prev, next }: { prev: string; next: string }) {
         inner = (
             <Col>
                 <span>{left}</span>
-                <ArrowRight className={styles.changed} size={14} />
+                <ChangeArrow />
                 <span>{right}</span>
             </Col>
         );
@@ -41,7 +34,10 @@ export function ArtistChange({ prev, next }: { prev: string; next: string }) {
     return (
         <DetailBox>
             <Col>
-                <UserRound size={14} className={didChange ? styles.changed : ""} />
+                <PenaltyIcon
+                    kind={"artist"}
+                    className={didChange ? styles.changed : ""}
+                />
                 {inner}
             </Col>
         </DetailBox>
@@ -59,7 +55,7 @@ export function AlbumChange({ prev, next }: { prev: string; next: string }) {
         inner = (
             <Col>
                 <span>{left}</span>
-                <ArrowRight className={styles.changed} size={14} />
+                <ChangeArrow />
                 <span>{right}</span>
             </Col>
         );
@@ -68,7 +64,10 @@ export function AlbumChange({ prev, next }: { prev: string; next: string }) {
     return (
         <DetailBox>
             <Col>
-                <Disc3 size={14} className={didChange ? styles.changed : ""} />
+                <PenaltyIcon
+                    kind={"album"}
+                    className={didChange ? styles.changed : ""}
+                />
                 {inner}
             </Col>
         </DetailBox>
@@ -135,9 +134,13 @@ export function DataUrl({ candidate }: { candidate: CandidateState }) {
 /* ---------------------------------------------------------------------------------- */
 
 export function TrackChanges({ candidate }: { candidate: CandidateState }) {
+    const config = useConfig();
+    console.log(config);
+
     if (candidate.type !== "album") {
         return null;
     }
+
     const tracks = candidate.tracks;
     const items = candidate.items;
     const mapping = candidate.mapping;
@@ -151,18 +154,23 @@ export function TrackChanges({ candidate }: { candidate: CandidateState }) {
             <Col>
                 {tracksChanged ? (
                     <>
-                        <AudioLines size={14} className={styles.changed} />
+                        <PenaltyIcon kind={"tracks"} className={styles.changed} />
                         <span className={""}>Track changes</span>
                     </>
                 ) : (
                     <>
-                        <AudioLines size={14} />
+                        <PenaltyIcon kind={"tracks"} />
                         <span className={""}>No severe track changes</span>
                     </>
                 )}
             </Col>
-            <Box className={styles.trackChanges}>
+            <Box
+                className={styles.trackChanges}
+                data-show-unchanged-tracks={config?.gui.tags.show_unchanged_tracks}
+            >
                 {Object.entries(mapping).map(([idx, tdx]) => (
+                    // each row has 5 columns: index-old title-old arrow index-new title-new
+                    // the need to be provided as `grid-area` css property (or sx prop)
                     <TrackDiffRow
                         key={idx}
                         fromItem={items[parseInt(idx)]}
@@ -198,12 +206,14 @@ function TrackDiffRow({
         idx: fromIdx,
         data: fromNode,
         changedClassName: styles.removed,
+        type: "from",
     };
     const to = {
         time: toItem.length ?? 0,
         idx: toIdx,
         data: toNode,
         changedClassName: styles.added,
+        type: "to",
     };
     const changed = {
         title: fromItem.title !== toItem.title,
@@ -214,30 +224,38 @@ function TrackDiffRow({
         (x) => x
     ).length;
 
-    function _helper({
+    function _change_side_helper({
         data,
         time,
         idx,
         changedClassName,
+        type,
     }: {
         data: ReactNode | ReactNode[];
         time: number;
         changedClassName: string;
         idx?: number;
+        type: string;
     }) {
         return (
             <>
                 <TrackIndex
                     idx={idx}
                     className={changed.index ? changedClassName : styles.fade}
+                    sx={{ gridColumn: `index-${type}` }}
                 />
-                <div>
+                <Box
+                    sx={{
+                        display: "inline-block",
+                        gridColumn: `title-${type}`,
+                    }}
+                >
                     <span>{data}</span>{" "}
                     <TrackLength
                         length={time}
                         className={changed.time ? changedClassName : styles.fade}
                     />
-                </div>
+                </Box>
             </>
         );
     }
@@ -246,9 +264,11 @@ function TrackDiffRow({
         // 'big' change
         return (
             <>
-                {_helper(from)}
-                <ArrowRight className={styles.changed} size={14} />
-                {_helper(to)}
+                <Box className={styles.from}>{_change_side_helper(from)}</Box>
+                <Box className={styles.to}>
+                    <ChangeArrow />
+                    {_change_side_helper(to)}
+                </Box>
             </>
         );
     }
@@ -256,23 +276,29 @@ function TrackDiffRow({
     // small change / no change
     return (
         <>
-            {changed.index ? (
-                <TrackIndexChange fromIdx={from.idx} toIdx={to.idx} />
-            ) : (
-                <TrackIndex idx={from.idx} className={styles.fade} />
-            )}
-            <Col>
-                <span className={styles.fade}>{fromItem.title} </span>
-                {changed.time ? (
-                    <TrackLengthChange fromTime={from.time} toTime={to.time} />
+            <Box className={styles.noChange}>
+                {changed.index ? (
+                    <TrackIndexChange
+                        sx={{ gridColumn: "index-from" }}
+                        fromIdx={from.idx}
+                        toIdx={to.idx}
+                    />
                 ) : (
-                    <TrackLength length={from.time} className={styles.fade} />
+                    <TrackIndex
+                        sx={{ gridColumn: "index-from" }}
+                        idx={from.idx}
+                        className={styles.fade}
+                    />
                 )}
-            </Col>
-            {/* placeholder */}
-            <div />
-            <div />
-            <div />
+                <Col sx={{ gridColumn: "title-from" }}>
+                    <span className={styles.fade}>{fromItem.title} </span>
+                    {changed.time ? (
+                        <TrackLengthChange fromTime={from.time} toTime={to.time} />
+                    ) : (
+                        <TrackLength length={from.time} className={styles.fade} />
+                    )}
+                </Col>
+            </Box>
         </>
     );
 }
@@ -284,14 +310,11 @@ function TrackLength({
     return <span {...props}>{_fmtLength(length)}</span>;
 }
 
-function TrackIndex({
-    idx,
-    ...props
-}: { idx?: number } & React.HTMLAttributes<HTMLSpanElement>) {
+function TrackIndex({ idx, ...props }: { idx?: number } & BoxProps) {
     return (
-        <span {...props} className={styles.trackIndex + " " + props.className}>
+        <Box {...props} className={styles.trackIndex + " " + props.className}>
             {_leftPad(idx, 2, "")}
-        </span>
+        </Box>
     );
 }
 
@@ -299,15 +322,20 @@ function TrackLengthChange({ fromTime, toTime }: { fromTime: number; toTime: num
     return (
         <Col>
             <TrackLength length={fromTime} className={styles.removed} />
-            <ArrowRight className={styles.changed} size={14} />
+            <ChangeArrow />
             <TrackLength length={toTime} className={styles.added} />
         </Col>
     );
 }
 
-function TrackIndexChange({ fromIdx, toIdx }: { fromIdx?: number; toIdx?: number }) {
+function TrackIndexChange({
+    fromIdx,
+    toIdx,
+    ...props
+}: { fromIdx?: number; toIdx?: number } & BoxProps) {
     return (
         <Col
+            {...props}
             style={{
                 // This is a bit hacky but aligns the to track index
                 // with the normal track index
@@ -318,7 +346,7 @@ function TrackIndexChange({ fromIdx, toIdx }: { fromIdx?: number; toIdx?: number
             }}
         >
             <TrackIndex idx={fromIdx} className={styles.removed} />
-            <ArrowRight className={styles.changed} size={14} />
+            <ChangeArrow />
             <TrackIndex idx={toIdx} className={styles.added} />
         </Col>
     );
@@ -345,7 +373,7 @@ function _leftPad(num?: number, maxDigits = 2, padChar = "  ") {
 }
 
 /* ---------------------------------------------------------------------------------- */
-/*                                   Missing Tracks                                   */
+/*                            Missing and Unmatched Tracks                            */
 /* ---------------------------------------------------------------------------------- */
 
 export function MissingTracks({ candidate }: { candidate: CandidateState }) {
@@ -362,40 +390,34 @@ export function MissingTracks({ candidate }: { candidate: CandidateState }) {
     return (
         <DetailBox>
             <Col>
-                <SearchX size={14} className={styles.changed} />
+                <PenaltyIcon
+                    kind={"missing_tracks"}
+                    size={14}
+                    className={styles.changed}
+                />
                 <span className={""}>Missing tracks: {missingTracks.length}</span>
             </Col>
             <Box className={styles.trackChanges}>
                 {missingTracks.map((track, idx) => (
-                    <MissingTrackRow key={idx} track={track} idx={track.index} />
+                    <PlainTrackRow key={idx} track={track} idx={track.index} />
                 ))}
             </Box>
         </DetailBox>
     );
 }
 
-function MissingTrackRow({
-    track,
-    idx,
-}: {
-    track: TrackInfo | ItemInfo;
-    idx?: number;
-}) {
+function PlainTrackRow({ track, idx }: { track: TrackInfo | ItemInfo; idx?: number }) {
     return (
-        <>
+        <Box className={styles.noChange}>
             <TrackIndex idx={idx} />
             <span>{track.title}</span>
             <TrackLength length={track.length} />
             {/*Placeholder*/}
             <div />
             <div />
-        </>
+        </Box>
     );
 }
-
-/* ---------------------------------------------------------------------------------- */
-/*                                  Unmatched Tracks                                  */
-/* ---------------------------------------------------------------------------------- */
 
 export function UnmatchedTracks({ candidate }: { candidate: CandidateState }) {
     if (candidate.type !== "album") {
@@ -411,24 +433,18 @@ export function UnmatchedTracks({ candidate }: { candidate: CandidateState }) {
     return (
         <DetailBox>
             <Col>
-                <GitPullRequestArrow size={14} className={styles.changed} />
+                <PenaltyIcon
+                    kind={"unmatched_tracks"}
+                    size={14}
+                    className={styles.changed}
+                />
                 <span className={""}>Unmatched tracks: {unmatchedTracks.length}</span>
             </Col>
             <Box className={styles.trackChanges}>
                 {unmatchedTracks.map((track, idx) => (
-                    <UnmatchedTrack key={idx} track={track} idx={track.track} />
+                    <PlainTrackRow key={idx} track={track} idx={track.track} />
                 ))}
             </Box>
-        </DetailBox>
-    );
-}
-
-function UnmatchedTrack({ track, idx }: { track: TrackInfo | ItemInfo; idx?: number }) {
-    return (
-        <DetailBox>
-            <TrackIndex idx={idx} />
-            <span>{track.title}</span>
-            <TrackLength length={track.length} />
         </DetailBox>
     );
 }
@@ -460,3 +476,11 @@ const Col = styled(Box)({
     alignItems: "center",
     flexDirection: "row",
 });
+
+function ChangeArrow() {
+    return (
+        <Box sx={{ gridColumn: "change-arrow", display: "inline-block" }}>
+            <ArrowRight size={14} className={styles.changed} />
+        </Box>
+    );
+}

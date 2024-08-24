@@ -10,6 +10,15 @@
     padding: 1rem;
 }
 
+// we want the candidate preview, contained in the radix hover content to be no
+// wider than our container, plus some padding, but to always fill the same width.
+// container is set to maxwidth lg (1200px) in __root.tsx
+.hoverContent {
+    $paddingNeeded: 4.25rem;
+    width: calc(max(1200px, 100%) - $paddingNeeded) !important;
+    max-width: calc(min(1200px, 100dvw) - $paddingNeeded);
+}
+
 .selection {
     // Selection label shows current name of
     // the selection i.e. normally the folder name
@@ -95,106 +104,6 @@
         margin-left: 2rem;
         font-size: 0.9rem;
     }
-}
-
-.disambig {
-    font-style: italic;
-}
-
-.dataUrl {
-    gap: 0.5rem;
-    font-size: 0.9rem;
-    opacity: 0.7;
-}
-
-.artistChange {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-
-    .inner {
-        display: flex;
-        gap: 0.5rem;
-        align-items: center;
-    }
-}
-
-.albumChange {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-
-    .inner {
-        display: flex;
-        gap: 0.5rem;
-        align-items: center;
-    }
-}
-
-.trackChanges {
-    display: flex;
-    gap: 0.1rem;
-    align-items: start;
-    flex-direction: column;
-    font-size: 0.8rem;
-    margin-left: 1rem;
-
-    .diff {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.5rem;
-        align-items: center;
-        width: 100%;
-
-        .lhs,
-        .rhs {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-            width: 100%;
-
-            > svg {
-                flex-shrink: 0;
-            }
-        }
-    }
-
-    .trackChange {
-        display: flex;
-        flex-direction: row;
-        gap: 0.5rem;
-        align-items: center;
-        width: 100%;
-        border-radius: 0.3rem;
-        padding: 0.1rem 0.5rem 0.1rem 0.3rem;
-        &:nth-child(odd) {
-            background-color: #88888822;
-        }
-
-        .trackChangeSide {
-            // one side of a track change, where the title changed
-            display: flex;
-            gap: 0.4rem; // this corresponds to space e.g. between title and time
-            align-items: center;
-        }
-    }
-}
-
-.trackIndex {
-    white-space: pre;
-    font-size: 0.7rem;
-    font-family: monospace;
-    > .added {
-        white-space: normal !important;
-    }
-}
-
-.trackIndexChange,
-.trackLengthChange {
-    // time or track number change, e.g. (3:45) -> (3:46)
-    display: flex;
-    gap: 0.2rem;
-    align-items: center;
 }
 
 .added {

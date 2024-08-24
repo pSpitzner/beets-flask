@@ -1,6 +1,6 @@
 import { ChevronRight } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
-import { Input } from "@mui/material";
+import { Container, Input } from "@mui/material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import FormControl from "@mui/material/FormControl";
@@ -10,8 +10,12 @@ import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
 import Typography from "@mui/material/Typography";
 import * as HoverCard from "@radix-ui/react-hover-card";
+import { useTheme } from "@mui/material/styles";
 
-import { SimilarityBadgeWithHover } from "@/components/tags/similarityBadge";
+import {
+    SimilarityBadge,
+    SimilarityBadgeWithHover,
+} from "@/components/tags/similarityBadge";
 
 import { BeetsDump, CandidatePreview } from "./candidates/preview";
 import { useImportContext } from "./context";
@@ -174,13 +178,11 @@ function CandidateView({ candidate }: { candidate: CandidateState }) {
 
     return (
         <Box className={styles.candidateHeader} key={candidate.id}>
-            <Box className={styles.headerGroup}>
-                <SimilarityBadgeWithHover dist={candidate.distance}>
-                    <BeetsDump candidate={candidate} />
-                </SimilarityBadgeWithHover>
-            </Box>
             <HoverCard.Root openDelay={50} closeDelay={50}>
-                <HoverCard.Trigger>
+                <HoverCard.Trigger className={styles.headerGroup}>
+                    <Box className={styles.headerGroup}>
+                        <SimilarityBadge dist={candidate.distance} />
+                    </Box>
                     <Box className={styles.headerGroup}>
                         <Box data-changed={!artistIsSame}>{candidate.info.artist}</Box>
                         <ChevronRight className={styles.fade} size={14} />
@@ -189,10 +191,10 @@ function CandidateView({ candidate }: { candidate: CandidateState }) {
                 </HoverCard.Trigger>
                 <HoverCard.Content
                     side="bottom"
-                    sideOffset={0}
-                    alignOffset={0}
+                    sideOffset={5}
+                    alignOffset={-40}
                     align="start"
-                    className={"HoverContent"}
+                    className={`HoverContent ${styles.hoverContent}`}
                 >
                     <CandidatePreview candidate={candidate} />
                 </HoverCard.Content>

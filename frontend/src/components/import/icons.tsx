@@ -51,7 +51,7 @@ export function PenaltyIconRow({
 }: {
     candidate: CandidateState;
     showSource?: boolean;
-}) {
+}): JSX.Element {
     const penalties = useMemo(() => {
         return (candidate.penalties ?? [])
             .map((penalty) => {
@@ -100,7 +100,7 @@ export function PenaltyIconRow({
     );
 }
 
-type IonType = React.ForwardRefExoticComponent<
+type IconType = React.ForwardRefExoticComponent<
     Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>
 >;
 
@@ -113,13 +113,13 @@ type IonType = React.ForwardRefExoticComponent<
  * @param {Omit<LucideProps, "ref">} [props] - Additional properties to be passed to the icon component.
  * @returns {JSX.Element} - The rendered icon wrapped in a Tooltip and Box component.
  */
-function PenaltyIcon({
+export function PenaltyIcon({
     kind,
     className,
     ...props
-}: { kind: string; className?: string } & Omit<LucideProps, "ref">) {
+}: { kind: string; className?: string } & Omit<LucideProps, "ref">): JSX.Element {
     /** Determine the icon to use for a penalty kind */
-    let Icon: IonType | null = null;
+    let Icon: IconType | null = null;
     switch (kind) {
         case "artist":
             Icon = UserRound;
@@ -179,7 +179,13 @@ function PenaltyIcon({
  * @param {boolean} [props.color=false] - Determines whether to display the icon in color or in black and white.
  * @returns {JSX.Element} - The rendered icon wrapped in a Tooltip and Box component.
  */
-function SourceIcon({ source, color = false }: { source?: string; color?: boolean }) {
+export function SourceIcon({
+    source,
+    color = false,
+}: {
+    source?: string;
+    color?: boolean;
+}): JSX.Element {
     let Icon: React.ReactNode | null = null;
 
     switch (source?.toLowerCase()) {
