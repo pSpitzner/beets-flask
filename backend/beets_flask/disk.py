@@ -82,40 +82,72 @@ def tree(folder_structure) -> str:
     return res
 
 
-def album_folders_from_track_paths(track_paths: list):
+def album_folders_from_track_paths(
+    track_paths: List[str], subdirs: bool = False
+) -> List[str]:
     """Get all album folders from a list of paths to files.
-    Assumes the last folder-level to be album.
 
     Args:
-        track_paths (list): list of track paths, e.g. mp3 files
+        track_paths (List[str]): list of track paths, e.g. mp3 files
+        subdirs (bool, optional): Whether to return subfolders of an album that themselves would qualify. E.g. a `CD1` folder. Defaults to False.
 
     Returns:
-        list: album folders
+        List[str]: album folders
     """
 
-    album_folders = []
+    folders_to_check = set()
     for path in track_paths:
         if os.path.isfile(path):
-            album_folders.append(os.path.dirname(os.path.abspath(path)))
-        elif is_album_folder(path):
-            album_folders.append(os.path.abspath(path))
+            folders_to_check.add(os.path.dirname(os.path.abspath(path)))
+        else:
+            # just to be nice and manage directories instead of files
+            folders_to_check.add(os.path.abspath(path))
 
-    return sorted(
-        [str(folder) for folder in set(album_folders)], key=lambda s: s.lower()
-    )
+    album_folders = set()
+    for folder in folders_to_check:
+        afs = all_album_folders(folder, subdirs=subdirs)
+        for af in afs:
+            album_folders.add(af)
+
+    return sorted([str(folder) for folder in album_folders], key=lambda s: s.lower())
 
 
 def is_album_folder(path):
-    if os.path.isdir(path):
-        for file in os.listdir(path):
-            if file.lower().endswith(ut.AUDIO_EXTENSIONS):
-                return True
+    path = path.encode("utf-8")
+    for paths, _ in albums_in_dir(path):
+        if path in paths:
+            return True
     return False
 
 
-def all_album_folders(root_dir: str):
-    files = sorted(glob.glob(root_dir + "/**/*", recursive=True))
-    return album_folders_from_track_paths(files)
+def all_album_folders(root_dir: str, subdirs: bool = False) -> List[str]:
+    """
+    Get all album folders from a given root dir.
+
+    Args:
+        root_dir (str): toppath, highest level to start searching.
+        subdirs (bool, optional): Whether to return subfolders of an album that themselves would qualify. E.g. a `CD1` folder. Defaults to False.
+
+    Returns:
+        List[str]
+    """
+    folders = []
+    for paths, _ in albums_in_dir(root_dir):
+        if subdirs:
+            folders.extend(p for p in paths)
+        else:
+            # the top-level path is always the first in the list
+            # however, there is an edgecase, if we have a rogue element in a multi-disc folder:
+            # artist/album/should_not_be_here.mp3
+            # artist/album/CD1/track.mp3
+            # artist/album/CD2/track.mp3
+            # then albums_in_dir returns [album], [CD1, CD2] so that picking the first element is wrong. we would want all 3: album, CD1 and CD2. but in this case, the parent `album` should already be in our set when we check [CD1, CD2]
+            if os.path.dirname(paths[0]) in folders:
+                folders.extend(p for p in paths)
+            else:
+                folders.append(paths[0])
+
+    return [f.decode("utf-8") for f in folders]
 
 
 # cache data for no longer than one minutes
@@ -134,3 +166,24 @@ def dir_size(path: Path):
         # this happens e.g. if the directory does not exist.
         log.error(e)
         return -1
+
+
+def is_within_multi_dir(path) -> bool:
+    """
+    Minimal version of beets heuristic to check if a string matches a multi-disc pattern.
+
+    E.g. "CD1" or "Disc 2" will return True
+    """
+    try:
+        # basename gives '' if we have a trailing /
+        if path[-1] == os.sep:
+            path = path[:-1]
+    except:
+        pass
+    for marker in MULTIDISC_MARKERS:
+        p = MULTIDISC_PAT_FMT.replace(b"%s", marker)
+        marker_pat = re.compile(p, re.I)
+        match = marker_pat.match(os.path.basename(path).encode("utf-8"))
+        if match:
+            return True
+    return False
