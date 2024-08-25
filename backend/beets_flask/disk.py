@@ -83,13 +83,13 @@ def tree(folder_structure) -> str:
 
 
 def album_folders_from_track_paths(
-    track_paths: List[str], subdirs: bool = False
+    track_paths: List[str], use_parent_for_multidisc: bool = True
 ) -> List[str]:
     """Get all album folders from a list of paths to files.
 
     Args:
         track_paths (List[str]): list of track paths, e.g. mp3 files
-        subdirs (bool, optional): Whether to return subfolders of an album that themselves would qualify. E.g. a `CD1` folder. Defaults to False.
+        use_parent_for_multidisc: (bool, optional): when files are in an album folder that might be a multi-disc folder (e.g. `/album/cd1`), return the parent (`/album`) instead of the lowes-level-folder (`/cd1`). Defaults to True.
 
     Returns:
         List[str]: album folders
@@ -105,9 +105,21 @@ def album_folders_from_track_paths(
 
     album_folders = set()
     for folder in folders_to_check:
-        afs = all_album_folders(folder, subdirs=subdirs)
+        afs = all_album_folders(folder, subdirs=True)
         for af in afs:
             album_folders.add(af)
+
+    if use_parent_for_multidisc:
+        parents = set()
+        children = set()
+        for folder in album_folders:
+            if is_within_multi_dir(folder):
+                # remove trailing slash because dirname("/foo/bar/") -> "/foo/bar" not "/foo"
+                parents.add(os.path.dirname(folder.rstrip("/")))
+                children.add(folder)
+
+        album_folders = album_folders - children
+        album_folders = album_folders.union(parents)
 
     return sorted([str(folder) for folder in album_folders], key=lambda s: s.lower())
 
@@ -174,12 +186,9 @@ def is_within_multi_dir(path) -> bool:
 
     E.g. "CD1" or "Disc 2" will return True
     """
-    try:
-        # basename gives '' if we have a trailing /
-        if path[-1] == os.sep:
-            path = path[:-1]
-    except:
-        pass
+    # basename gives '' if we have a trailing /
+    path = path.rstrip("/")
+
     for marker in MULTIDISC_MARKERS:
         p = MULTIDISC_PAT_FMT.replace(b"%s", marker)
         marker_pat = re.compile(p, re.I)

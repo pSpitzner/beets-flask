@@ -117,7 +117,7 @@ def test_album_folders_from_track_path_2(base):
         [base + "/artist/album_multi/1/CD1/track_1.mp3"],
         # this is a bit of an edge-case: the subdirs arg has no effect here,
         # cos only one file (and therefore, no way to
-        subdirs=False,
+        use_parent_for_multidisc=False,
     )
     assert folders == [
         base + "/artist/album_multi/1/CD1",
@@ -130,10 +130,22 @@ def test_album_folders_from_track_path_3(base):
             base + "/artist/album_multi/1/CD1/track_1.mp3",
             base + "/artist/album_multi/1/CD2/track_1.mp3",
         ],
-        subdirs=True,
+        use_parent_for_multidisc=False,
+    )
+    assert folders == [
+        base + "/artist/album_multi/1/CD1",
+        base + "/artist/album_multi/1/CD2",
+    ]
+
+
+def test_album_folders_from_track_path_4(base):
+    folders = album_folders_from_track_paths(
+        [
+            base + "/artist/album_multi/1/CD1/track_1.mp3",
+            base + "/artist/album_multi/1/CD2/track_1.mp3",
+        ],
+        use_parent_for_multidisc=True,
     )
     assert folders == [
         base + "/artist/album_multi/1",
-        base + "/artist/album_multi/1/CD1",
-        base + "/artist/album_multi/1/CD2",
     ]
