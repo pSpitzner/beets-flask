@@ -12,7 +12,7 @@ from beets_flask.logger import log
 
 
 @cached(cache=TTLCache(maxsize=1024, ttl=900), info=True)
-def path_to_dict(root_dir, relative_to="/") -> dict:
+def path_to_dict(root_dir, relative_to="/", subdirs=True) -> dict:
     """
     Generate our nested dict structure for the specified path.
     Each level in the folder hierarchy is a dict with the following keys:
@@ -24,6 +24,7 @@ def path_to_dict(root_dir, relative_to="/") -> dict:
     # Args:
     - root_dir (str): The root directory to start from.
     - relative_to (str): The path to be stripped from the full path.
+    - subdirs (bool, optional): Whether to mark qualifying subfolders of an album as album folders themselves. If true, e.g. for `/album/CD1/track.mp3` both `/album/` and `/album/CD1/` are flagged. Defaults to True.
 
     # Returns:
     - dict: The nested dict structure.
@@ -32,30 +33,43 @@ def path_to_dict(root_dir, relative_to="/") -> dict:
     if not os.path.isdir(root_dir):
         raise FileNotFoundError(f"Path `{root_dir}` does not exist or is no directory.")
 
-    files = glob.glob(root_dir + "/**/*", recursive=True)
-    files = sorted(files, key=lambda s: s.lower())
-    album_folders = album_folders_from_track_paths(files)
+    album_folders = all_album_folders(root_dir, subdirs=subdirs)
+
     folder_structure = {
         "type": "directory",
         "is_album": relative_to in album_folders,
         "full_path": relative_to,
         "children": {},
     }
-    for file in files:
-        f = file[len(relative_to) :] if file.startswith(relative_to) else file
-        path_components = [p for p in f.split("/") if p]
-        current_dict = folder_structure
-        current_path = relative_to
-        for component in path_components:
-            current_path = os.path.join(current_path, component)
-            if component not in current_dict["children"]:
-                current_dict["children"][component] = {
-                    "type": "file" if os.path.isfile(file) else "directory",
-                    "is_album": current_path in album_folders,
-                    "full_path": current_path,
+
+    def add_to_structure(d, components, path):
+        for component in components:
+            if component == ".":
+                continue
+            path = os.path.join(path, component)
+            if component not in d["children"]:
+                d["children"][component] = {
+                    "type": "file" if os.path.isfile(path) else "directory",
+                    "is_album": path in album_folders,
+                    "full_path": path,
                     "children": {},
                 }
-            current_dict = current_dict["children"][component]
+            d = d["children"][component]
+
+    for dirpath, dirnames, filenames in os.walk(root_dir):
+
+        # Filter out hidden files and directories
+        dirnames[:] = [d for d in dirnames if not d.startswith(".")]
+        filenames = [f for f in filenames if not f.startswith(".")]
+
+        relative_path = os.path.relpath(dirpath, relative_to)
+        path_components = [p for p in relative_path.split(os.sep) if p]
+        current_dict = folder_structure
+
+        add_to_structure(current_dict, path_components, relative_to)
+
+        for filename in filenames:
+            add_to_structure(current_dict, path_components + [filename], relative_to)
 
     return folder_structure
 

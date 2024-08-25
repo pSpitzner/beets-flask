@@ -7,6 +7,8 @@ from pprint import pprint
 from copy import copy
 from collections import namedtuple
 
+from beets_flask.disk import is_album_folder
+
 from . import utility as ut
 from .logger import log
 
@@ -75,12 +77,8 @@ class BaseSession(importer.ImportSession):
 
         if not os.path.exists(path):
             raise FileNotFoundError(f"Path {path} does not exist.")
-        if os.path.isdir(path):
-            album_folders = []
-            for p, _ in importer.albums_in_dir(path):
-                album_folders.extend(p)
-            if len(album_folders) != 1:
-                raise ValueError(f"Path {path} seems to be no album folder")
+        if os.path.isdir(path) and not is_album_folder(path):
+            raise ValueError(f"Path {path} is not an album folder.")
         self.path = path
 
         super().__init__(
