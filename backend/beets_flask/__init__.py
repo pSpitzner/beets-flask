@@ -53,7 +53,7 @@ def create_app():
     register_tmux()
     register_importer()
 
-    from .disk import register_inboxes
+    from .inbox import register_inboxes
 
     register_inboxes()
 
