@@ -2,6 +2,9 @@ import os
 
 from flask import Flask
 from flask_cors import CORS
+
+# make sure to load our config first, because it modifies the beets config
+from .config import config
 from .redis import rq
 from .db_engine import setup_db
 

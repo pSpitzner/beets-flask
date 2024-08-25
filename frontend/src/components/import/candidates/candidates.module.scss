@@ -19,7 +19,7 @@
     padding-left: 1.1rem;
 
     // user config to hide unchanged tracks.
-    & [data-show-unchanged-tracks="false"] {
+    &[data-show-unchanged-tracks="false"] {
         .noChange {
             display: none !important;
         }
