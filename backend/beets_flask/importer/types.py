@@ -189,6 +189,7 @@ class SerializedCandidateState(TypedDict):
     cur_artist: str
     cur_album: str
     penalties: List[str]
+    duplicate_in_library: bool
     type: str
     distance: float
     info: Dict  # AlbumInfo | TrackInfo

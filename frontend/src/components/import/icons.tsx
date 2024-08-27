@@ -4,6 +4,7 @@ import {
     Brain,
     Calendar,
     CassetteTape,
+    Copy,
     Disc3,
     Flag,
     GitPullRequestArrow,
@@ -70,6 +71,7 @@ export function PenaltyIconRow({
 
     const [others, setOthers] = useState<string[]>([]);
     const source = candidate.info.data_source;
+    const is_duplicate = candidate.duplicate_in_library;
 
     useEffect(() => {
         const otherPenalties = penalties.filter((p) => !penaltyOrder.includes(p));
@@ -82,6 +84,11 @@ export function PenaltyIconRow({
                 <Box sx={{ marginRight: "0.75rem" }} className={styles.sourceIcon}>
                     <SourceIcon source={source} />
                 </Box>
+            )}
+            {is_duplicate ? (
+                <PenaltyIcon kind="duplicate" className={styles.penalty} />
+            ) : (
+                <PenaltyIcon kind="duplicate" className={styles.inactive} />
             )}
             {penaltyOrder.map((p) => (
                 <PenaltyIcon
@@ -147,6 +154,9 @@ export function PenaltyIcon({
             break;
         case "year":
             Icon = Calendar;
+            break;
+        case "duplicate":
+            Icon = Copy;
             break;
         default:
             Icon = Variable;

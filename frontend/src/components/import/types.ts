@@ -21,6 +21,7 @@ export interface BaseCandidateState {
     cur_artist: string;
     cur_album: string;
     penalties: string[];
+    duplicate_in_library: boolean;
     distance: number;
 }
 

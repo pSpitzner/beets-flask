@@ -1,15 +1,18 @@
 import time
-from typing import Callable, Type
+from typing import Callable, List, Optional, Type
 
-from beets import importer, plugins
+from beets import importer, plugins, library
+
 from beets.util import pipeline as beets_pipeline
 
 
 from beets_flask.beets_sessions import BaseSession, set_config_defaults
 from beets_flask.config import config
+from beets_flask.importer.types import AlbumMatch
 from beets_flask.logger import log
 
-from .states import ImportState
+from .pipeline import stage, mutator_stage
+from .states import ImportState, CandidateState
 from .communicator import ImportCommunicator
 
 
@@ -58,13 +61,66 @@ class InteractiveImportSession(BaseSession):
         self.import_state = import_state
         self.cleanup = cleanup
 
-    def offer_match(self, task: importer.ImportTask):
-
-        log.debug(f"Offering match for task: {task}")
+    def identify_duplicates(self, task: importer.ImportTask):
+        """
+        Identify which candidates of a task would be duplicates, and flag them as such.
+        """
 
         # Update state with new task. In parallel pipeline, user should be able to choose from all tasks simultaneously.
         # Emit the task to the user
         self.import_state.upsert_task(task)
+        # self.communicator.emit_state(self.import_state)
+
+        sel_state = self.import_state.get_selection_state_for_task(task)
+        if sel_state is None:
+            raise ValueError("No selection state found for task.")
+
+        def _is_duplicate(candidate_state: CandidateState):
+            """Copy of beets' `task.find_duplicate` but works on any candidates' match"""
+            info = candidate_state.match.info.copy()
+            info["albumartist"] = info["artist"]
+
+            if info["artist"] is None:
+                # As-is import with no artist. Skip check.
+                return []
+
+            # Construct a query to find duplicates with this metadata. We
+            # use a temporary Album object to generate any computed fields.
+            tmp_album = library.Album(self.lib, **info)
+            keys: List[str] = config["import"]["duplicate_keys"]["album"].as_str_seq() or []  # type: ignore
+            dup_query = library.Album.all_fields_query(
+                {key: tmp_album.get(key) for key in keys}
+            )
+
+            # Don't count albums with the same files as duplicates.
+            task_paths = {i.path for i in task.items if i}
+
+            duplicates = []
+            for album in self.lib.albums(dup_query):
+                # Check whether the album paths are all present in the task
+                # i.e. album is being completely re-imported by the task,
+                # in which case it is not a duplicate (will be replaced).
+                album_paths = {i.path for i in album.items()}
+                if not (album_paths <= task_paths):
+                    duplicates.append(album)
+
+            return duplicates
+
+        for idx, cs in enumerate(sel_state.candidate_states):
+            duplicates = _is_duplicate(cs)
+            if len(duplicates) > 0:
+                cs.duplicate_in_library = True
+
+    def offer_match(self, task: importer.ImportTask):
+        """
+        Triggers selection screen in the frontend. This is non-blocking.
+        """
+
+        log.debug(f"Offering match for task: {task}")
+
+        # # Update state with new task. In parallel pipeline, user should be able to choose from all tasks simultaneously.
+        # # Emit the task to the user
+        # self.import_state.upsert_task(task)
         self.communicator.emit_state(self.import_state)
 
         # tell plugins we are starting user_query
@@ -104,9 +160,9 @@ class InteractiveImportSession(BaseSession):
         if sel_state.current_candidate_idx is None:
             raise ValueError("No candidate selection found. This should not happen!")
 
-        match = task.candidates[sel_state.current_candidate_idx]
+        match: AlbumMatch = task.candidates[sel_state.current_candidate_idx]
 
-        log.debug(f"Returning {match=} for {task=}")
+        log.debug(f"Returning {match.info.album=} {match.info.album_id=} for {task=}")
 
         return match
 
@@ -141,8 +197,10 @@ class InteractiveImportSession(BaseSession):
         stages += [
             status_stage(self, "looking up candidates"),
             importer.lookup_candidates(self),  # type: ignore
-            offer_match(self),  # type: ignore
-            status_stage(self, "waiting for user selection"),  # type: ignore
+            status_stage(self, "identifying duplicates"),
+            identify_duplicates(self),
+            offer_match(self),
+            status_stage(self, "waiting for user selection"),
             importer.user_query(self),  # type: ignore
         ]
 
@@ -167,6 +225,8 @@ class InteractiveImportSession(BaseSession):
         plugins.send("import_begin", session=self)
         try:
             self.pipeline.run_sequential()
+            # parallel still broken. no attribute queue.mutex, no idea why
+            # self.pipeline.run_parallel()
         except importer.ImportAbort:
             self.logger.debug(f"Interactive import session aborted by user")
 
@@ -177,7 +237,14 @@ class InteractiveImportSession(BaseSession):
             self.cleanup()
 
 
-from .pipeline import mutator_stage
+@mutator_stage
+def identify_duplicates(session: InteractiveImportSession, task: importer.ImportTask):
+    """
+    Stage to identify which candidates would be duplicates if imported.
+    """
+    if task.skip:
+        return task
+    session.identify_duplicates(task)
 
 
 @mutator_stage

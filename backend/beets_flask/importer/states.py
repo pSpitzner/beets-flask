@@ -123,18 +123,19 @@ class SelectionState:
     current_candidate_idx: int | None = None
     completed: bool = False
     status: str = "initializing"
+    candidate_states: List[CandidateState] = field(default_factory=list)
+
+    def __post_init__(self):
+        # we might run into inconsistencies here, if candidates of the task
+        # change. but I do not know when or why they would.
+        self.candidate_states = [
+            CandidateState(i, c, self) for i, c in enumerate(self.task.candidates)
+        ]
 
     @property
     def candidates(self) -> Union[List[autotag.AlbumMatch], List[autotag.TrackMatch]]:
         """Task candidates, i.e. possible matches to choose from"""
         return self.task.candidates
-
-    @property
-    def candidate_states(self) -> List[CandidateState]:
-        """State representation of the candidates"""
-        if self.task is None:
-            return []
-        return [CandidateState(i, c, self) for i, c in enumerate(self.task.candidates)]
 
     @property
     def toppath(self) -> str | None:
@@ -198,6 +199,7 @@ class CandidateState:
     id: int
     match: Union[autotag.AlbumMatch, autotag.TrackMatch]
     selection_state: SelectionState
+    duplicate_in_library: bool = False
     type: str = "unset"
 
     diff_preview: str | None = None
@@ -283,10 +285,12 @@ class CandidateState:
 
         res = SerializedCandidateState(
             id=self.id,
-            diff_preview=self.diff_preview,
+            # diff_preview=self.diff_preview,
+            diff_preview="",  # dirty, but it spams frontend console.
             cur_artist=self.cur_artist,
             cur_album=self.cur_album,
             penalties=self.penalties,
+            duplicate_in_library=self.duplicate_in_library,
             type=self.type,
             distance=self.distance.distance,
             info=info,

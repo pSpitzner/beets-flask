@@ -135,7 +135,6 @@ export function DataUrl({ candidate }: { candidate: CandidateState }) {
 
 export function TrackChanges({ candidate }: { candidate: CandidateState }) {
     const config = useConfig();
-    console.log(config);
 
     if (candidate.type !== "album") {
         return null;
@@ -368,7 +367,6 @@ function _leftPad(num?: number, maxDigits = 2, padChar = "  ") {
         return ` ${padChar.repeat(maxDigits)} `;
     }
     const lPadNum = num.toString().padStart(maxDigits, padChar);
-    console.log(lPadNum.length);
     return `[${lPadNum}]`;
 }
 
