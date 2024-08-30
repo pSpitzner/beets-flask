@@ -29,6 +29,12 @@ def get_basic():
     return jsonify(
         {
             "gui": _serializable(config["gui"].flatten(redact=True)),
+            "import": {
+                k: config["import"][k].get()
+                for k in [
+                    "duplicate_action",
+                ]
+            },
             "match": {
                 k: config["match"][k].get()
                 for k in [

@@ -119,6 +119,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
                     event: "candidate_choice",
                     selection_id: selectionId,
                     candidate_idx: selection.current_candidate_idx,
+                    duplicate_action: selection.duplicate_action,
                 });
                 return [...prev];
             });

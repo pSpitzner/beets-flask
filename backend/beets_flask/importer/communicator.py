@@ -86,11 +86,13 @@ class ImportCommunicator(ABC):
             case "candidate_choice":
                 selection_id = req["selection_id"]
                 candidate_idx = req["candidate_idx"]
+                duplicate_action = req["duplicate_action"]
 
                 selection_state = self.state.get_selection_state_by_id(selection_id)
                 if selection_state is None:
                     raise ValueError("No selection state found for task.")
                 selection_state.current_candidate_idx = candidate_idx
+                selection_state.duplicate_action = duplicate_action
                 log.debug("selection_state.current_candidate_idx = %s", candidate_idx)
             case "selection_complete":
 
@@ -131,6 +133,7 @@ class ChoiceReceive(TypedDict):
     event: Literal["candidate_choice"]
     selection_id: str
     candidate_idx: int
+    duplicate_action: str
 
 
 class CompleteReceive(TypedDict):

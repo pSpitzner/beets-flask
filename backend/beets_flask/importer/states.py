@@ -121,6 +121,7 @@ class SelectionState:
     id: str = str(uuid())
     # index of the current selection. None if user has not chosen yet (or the frontend marks a default selection)
     current_candidate_idx: int | None = None
+    duplicate_action: str | None = None
     completed: bool = False
     status: str = "initializing"
     candidate_states: List[CandidateState] = field(default_factory=list)
@@ -167,6 +168,7 @@ class SelectionState:
             id=self.id,
             candidate_states=[c.serialize() for c in self.candidate_states],
             current_candidate_idx=self.current_candidate_idx,
+            duplicate_action=self.duplicate_action,
             items=[i.serialize() for i in self.items_minimal],
             completed=self.completed,
             toppath=self.toppath,

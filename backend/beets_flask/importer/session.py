@@ -166,6 +166,32 @@ class InteractiveImportSession(BaseSession):
 
         return match
 
+    def resolve_duplicate(self, task, found_duplicates):
+        """
+        Decide what to do when a new album or item seems
+        similar to one that's already in the library.
+        """
+        sel_state = self.import_state.get_selection_state_for_task(task)
+        if sel_state is None:
+            raise ValueError("No selection state found for task.")
+
+        sel = sel_state.duplicate_action
+        log.debug(f"Resolving duplicates for {sel_state.id=} with action '{sel}'")
+
+        if sel == "skip":
+            # Skip new.
+            task.set_choice(importer.action.SKIP)
+        elif sel == "keep":
+            # Keep both. Do nothing; leave the choice intact.
+            pass
+        elif sel == "remove":
+            # Remove old.
+            task.should_remove_duplicates = True
+        elif sel == "merge":
+            task.should_merge_duplicates = True
+        else:
+            raise ValueError(f"Unknown duplicate resolution action: {sel}")
+
     def set_status(self, status: str):
         """
         Set the status of the import session, and communicate the status change to the frontend.
@@ -190,7 +216,7 @@ class InteractiveImportSession(BaseSession):
 
         if self.config["group_albums"] and not self.config["singletons"]:
             stages += [
-                status_stage(self, "grouping albums"),  # type: ignore
+                status_stage(self, "grouping albums"),
                 importer.group_albums(self),
             ]
 
@@ -250,7 +276,7 @@ def identify_duplicates(session: InteractiveImportSession, task: importer.Import
 @mutator_stage
 def offer_match(session: InteractiveImportSession, task: importer.ImportTask):
     """
-    Mutator stage to offer a match to the user. This is non-blocking. Essentially
+    Stage to offer a match to the user. This is non-blocking. Essentially
     we split the `user_query` stage (which calls `choose_match`) into two stages.
     The first is `offer_match` sending info to the frontend, while the second is
     `choose_match` that waits until all user choices have been made.
@@ -266,7 +292,7 @@ def status_stage(
     session: InteractiveImportSession, status: str, task: importer.ImportTask
 ):
     """
-    Mutator stage to call sessions `set_status` method.
+    Stage to call sessions `set_status` method.
     """
     # sentinel tasks (this is what beets does in choose_match)
     if task.skip:

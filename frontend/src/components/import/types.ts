@@ -9,6 +9,7 @@ export interface SelectionState {
     id: string;
     candidate_states: CandidateState[];
     current_candidate_idx: number | null;
+    duplicate_action: "skip" | "merge" | "keep" | "remove";
     items: ItemInfo[];
     completed: boolean;
     toppath?: string; // folder supplied to import by user

@@ -34,6 +34,9 @@ export interface MinimalConfig {
             show_unchanged_tracks: boolean;
         };
     };
+    import: {
+        duplicate_action: string;
+    };
     match: {
         medium_rec_thresh: number;
         strong_rec_thresh: number;

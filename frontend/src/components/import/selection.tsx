@@ -1,6 +1,6 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, CopyMinus, CopyPlus, Merge, Trash2 } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
-import { Container, Input } from "@mui/material";
+import { Input, styled, ToggleButton, ToggleButtonGroup, Tooltip } from "@mui/material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import FormControl from "@mui/material/FormControl";
@@ -10,14 +10,11 @@ import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
 import Typography from "@mui/material/Typography";
 import * as HoverCard from "@radix-ui/react-hover-card";
-import { useTheme } from "@mui/material/styles";
 
-import {
-    SimilarityBadge,
-    SimilarityBadgeWithHover,
-} from "@/components/tags/similarityBadge";
+import { SimilarityBadge } from "@/components/tags/similarityBadge";
 
-import { BeetsDump, CandidatePreview } from "./candidates/preview";
+import { useConfig } from "../common/useConfig";
+import { CandidatePreview } from "./candidates/preview";
 import { useImportContext } from "./context";
 import { PenaltyIconRow } from "./icons";
 import { CandidateState, SelectionState } from "./types";
@@ -28,7 +25,9 @@ import styles from "./import.module.scss";
 export function ImportView() {
     const { completeAllSelections, startSession, status } = useImportContext();
 
-    const [path, setPath] = useState<string>("");
+    const [path, setPath] = useState<string>(
+        "/music/inbox.nosync/John B/Light Speed [ALBUM]/CD1"
+    );
 
     return (
         <div>
@@ -113,8 +112,18 @@ function Selections() {
 function ImportSelection({ selection }: { selection: SelectionState }) {
     const { chooseCandidate } = useImportContext();
     const folder = selection.paths.join("\n");
+    // for readability, only display 5 candidates by default
+    const numCandidatesToShow = 5;
+    const [showAll, setShowAll] = useState(false);
+    const displayedCandidates = showAll
+        ? selection.candidate_states
+        : selection.candidate_states.slice(0, numCandidatesToShow);
 
-    function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
+    function toggleShowAll() {
+        setShowAll(!showAll);
+    }
+
+    function handleCandidateChange(event: React.ChangeEvent<HTMLInputElement>) {
         const candidateIdx = parseInt(event.target.value);
         chooseCandidate(selection.id, candidateIdx);
     }
@@ -141,9 +150,9 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
                 <FormControl sx={{ width: "100%", marginRight: 0 }}>
                     <RadioGroup
                         value={selection.current_candidate_idx}
-                        onChange={handleChange}
+                        onChange={handleCandidateChange}
                     >
-                        {selection.candidate_states.map((choice) => {
+                        {displayedCandidates.map((choice) => {
                             return (
                                 <FormControlLabel
                                     sx={{ marginRight: 0 }}
@@ -153,20 +162,144 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
                                     control={<Radio size="small" />}
                                     label={<CandidateView candidate={choice} />}
                                 />
-                                // division line
-                                // <Box sx={{ marginTop: "1rem", marginBottom: "1rem" }}>
-                                //     <hr />
-                                //     <CandidatePreview
-                                //         candidate={choice}
-                                //         key={choice.id}
-                                //     />
-                                // </Box>
                             );
                         })}
                     </RadioGroup>
                 </FormControl>
             </Paper>
+            <Box
+                sx={{
+                    marginTop: "0.5rem",
+                    display: "flex",
+                    alignItems: "center",
+                    flexDirection: "row",
+                    gap: "1rem",
+                }}
+            >
+                {selection.candidate_states.length > numCandidatesToShow && (
+                    <Button variant="outlined" onClick={toggleShowAll}>
+                        {showAll ? "Show Less" : "Show All"}
+                    </Button>
+                )}
+                <DuplicateActions selection={selection} />
+            </Box>
         </div>
+    );
+}
+
+// override default styling so that the selected button in the buttongroup
+// does not look highlighted when the whole group is disabled.
+const DuplicateActionButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
+    "& .MuiToggleButtonGroup-grouped": {
+        "&.Mui-selected": {
+            backgroundColor: theme.palette.action.selected,
+            "&:hover": {
+                backgroundColor: theme.palette.action.selected,
+            },
+        },
+        "&.Mui-disabled": {
+            "&.Mui-selected": {
+                backgroundColor: "inherit",
+                color: theme.palette.text.disabled,
+                "&:hover": {
+                    backgroundColor: "inherit",
+                },
+            },
+        },
+    },
+}));
+
+function DuplicateActions({ selection }: { selection: SelectionState }) {
+    const config = useConfig();
+    const { chooseCandidate } = useImportContext();
+
+    const [enableDuplicateButton, setEnableDuplicateButton] = useState(false);
+    const [duplicateAction, setDuplicateAction] = useState(
+        config.import.duplicate_action
+    );
+
+    function handleDuplicateActionChange(event: React.MouseEvent<HTMLElement>) {
+        const value = event.currentTarget.getAttribute("value");
+        setDuplicateAction(value!);
+        selection.duplicate_action = value as "skip" | "merge" | "keep" | "remove";
+        // duplicate action and candidate choice are reported to backend through the
+        // same event. TODO: this should be more consistent.
+        if (selection.current_candidate_idx !== null) {
+            chooseCandidate(selection.id, selection.current_candidate_idx);
+        }
+        console.log("duplicate action", value);
+    }
+
+    useEffect(() => {
+        if (selection.current_candidate_idx == null) return;
+        const candidate = selection.candidate_states[selection.current_candidate_idx];
+        setEnableDuplicateButton(candidate.duplicate_in_library);
+    }, [selection, selection.current_candidate_idx, setEnableDuplicateButton]);
+
+    function _toggleButtonWithTooltip(disabled: boolean, action: string) {
+        let Icon = CopyMinus;
+        let title = "";
+        switch (action) {
+            case "skip":
+                Icon = CopyMinus;
+                title = "Skip new (don't import)";
+                break;
+            case "merge":
+                Icon = Merge;
+                title = "Merge new and old into one album";
+                break;
+            case "keep":
+                Icon = CopyPlus;
+                title = "Keep both, old and new";
+                break;
+            case "remove":
+                Icon = Trash2;
+                title = "Remove old items";
+                break;
+            default:
+                break;
+        }
+
+        if (disabled) {
+            return (
+                // mui complains about tooltips on disabled buttons
+                <ToggleButton value={action} aria-label={action}>
+                    <Icon size={14} />
+                </ToggleButton>
+            );
+        } else {
+            return (
+                <Tooltip title={title}>
+                    <ToggleButton value={action} aria-label={action}>
+                        <Icon size={14} />
+                    </ToggleButton>
+                </Tooltip>
+            );
+        }
+    }
+
+    return (
+        <Box sx={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <Typography
+                id="duplicate-action-label"
+                className={enableDuplicateButton ? "" : styles.fade}
+            >
+                Duplicate Action:
+            </Typography>
+            <DuplicateActionButtonGroup
+                value={duplicateAction}
+                exclusive
+                onChange={handleDuplicateActionChange}
+                aria-label="text alignment"
+                // size="small"
+                disabled={!enableDuplicateButton}
+            >
+                {_toggleButtonWithTooltip(!enableDuplicateButton, "skip")}
+                {_toggleButtonWithTooltip(!enableDuplicateButton, "merge")}
+                {_toggleButtonWithTooltip(!enableDuplicateButton, "keep")}
+                {_toggleButtonWithTooltip(!enableDuplicateButton, "remove")}
+            </DuplicateActionButtonGroup>
+        </Box>
     );
 }
 

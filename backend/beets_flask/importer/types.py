@@ -176,6 +176,7 @@ class SerializedSelectionState(TypedDict):
     id: str
     candidate_states: List[SerializedCandidateState]
     current_candidate_idx: int | None
+    duplicate_action: str | None
     items: List[Dict]  #  ItemInfo
     completed: bool
     toppath: str | None
