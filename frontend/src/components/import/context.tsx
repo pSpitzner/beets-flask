@@ -9,7 +9,7 @@ interface ImportContextI {
     selections?: SelectionState[];
     status: string;
     startSession: (path: string) => void;
-    chooseCandidate: (selectionId: string, choiceIdx: number) => void;
+    chooseCandidate: (selectionId: string, candidateId: string) => void;
     completeAllSelections: () => void;
 }
 
@@ -63,14 +63,14 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         // another client may make a choice, and the server informs us
         function remoteCandidateChoice(data: {
             selection_id: string;
-            candidate_idx: number;
+            candidate_id: string;
         }) {
             setSelections((prev) => {
                 if (!prev) return prev;
                 const selectionIdx = prev.findIndex((s) => s.id === data.selection_id);
                 if (selectionIdx === -1) return prev;
 
-                prev[selectionIdx].current_candidate_idx = data.candidate_idx;
+                prev[selectionIdx].current_candidate_id = data.candidate_id;
                 return prev;
             });
         }
@@ -96,29 +96,25 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
 
     /**
      * Updates the selected candidate for a specific selection.
-     * @param {number} selectionIdx - The index of the selection.
-     * @param {number} candidateId - The id of the candidate to select.
      */
     const chooseCandidate = useCallback(
-        (selectionId: string, candidateId: number) => {
+        (selectionId: string, candidateId: string) => {
             console.log("chooseCandidate", selectionId, candidateId);
             setSelections((prev) => {
                 if (!prev) return prev;
                 const selection = prev.find((s) => s.id === selectionId);
                 if (!selection) return prev;
 
-                const idx = selection.candidate_states.findIndex(
-                    (c) => c.id === candidateId
-                );
-                if (idx === -1) return prev;
+                if (!selection.candidate_states.some((c) => c.id === candidateId))
+                    return prev;
 
-                selection.current_candidate_idx = idx;
+                selection.current_candidate_id = candidateId;
 
                 // for typing in python, we group all user actions and specify via `events` key
                 socket?.emit("user_action", {
                     event: "candidate_choice",
                     selection_id: selectionId,
-                    candidate_idx: selection.current_candidate_idx,
+                    candidate_id: selection.current_candidate_id,
                     duplicate_action: selection.duplicate_action,
                 });
                 return [...prev];

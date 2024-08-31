@@ -34,11 +34,12 @@ class ImportState:
     Contains selection states for each task.
     """
 
-    id: str = str(uuid())
-    _selection_states: List[SelectionState] = field(default_factory=list)
-    status: str = "initializing"
-    # session-level buttons. continue from choose_match when not None
-    user_response: Literal["abort"] | Literal["apply"] | None = None
+    def __post_init__(self):
+        self.id = str(uuid())
+        self._selection_states: List[SelectionState] = []
+        self.status: str = "initializing"
+        # session-level buttons. continue from choose_match when not None
+        self.user_response: Literal["abort"] | Literal["apply"] | None = None
 
     @property
     def selection_states(self):
@@ -118,25 +119,37 @@ class SelectionState:
 
     task: importer.ImportTask
     import_state: ImportState
-    id: str = str(uuid())
-    # index of the current selection. None if user has not chosen yet (or the frontend marks a default selection)
-    current_candidate_idx: int | None = None
-    duplicate_action: str | None = None
-    completed: bool = False
-    status: str = "initializing"
-    candidate_states: List[CandidateState] = field(default_factory=list)
 
     def __post_init__(self):
+        self.id: str = str(uuid())
         # we might run into inconsistencies here, if candidates of the task
         # change. but I do not know when or why they would.
-        self.candidate_states = [
-            CandidateState(i, c, self) for i, c in enumerate(self.task.candidates)
+        self.candidate_states: List[CandidateState] = [
+            CandidateState(c, self) for c in self.task.candidates
         ]
+        # identifier of the currently selected candidate. None if user has not chosen yet (or the frontend has not marked the default selection)
+        self.current_candidate_id: str | None = None
+        self.duplicate_action: str | None = None
+        self.completed: bool = False
+        self.status: str = "initializing"
+        self.asis_candidate: CandidateState | None = None
 
     @property
     def candidates(self) -> Union[List[autotag.AlbumMatch], List[autotag.TrackMatch]]:
         """Task candidates, i.e. possible matches to choose from"""
         return self.task.candidates
+
+    @property
+    def current_candidate_state(self) -> CandidateState | None:
+        """Returns the CandidateState of the currently selected candidate"""
+        cid = self.current_candidate_id
+        if cid is None:
+            return None
+
+        for c in self.candidate_states:
+            if c.id == cid:
+                return c
+        return None
 
     @property
     def toppath(self) -> str | None:
@@ -167,7 +180,7 @@ class SelectionState:
         return SerializedSelectionState(
             id=self.id,
             candidate_states=[c.serialize() for c in self.candidate_states],
-            current_candidate_idx=self.current_candidate_idx,
+            current_candidate_id=self.current_candidate_id,
             duplicate_action=self.duplicate_action,
             items=[i.serialize() for i in self.items_minimal],
             completed=self.completed,
@@ -198,17 +211,14 @@ class CandidateState:
     Note: currently only tested for album matches.
     """
 
-    id: int
     match: Union[autotag.AlbumMatch, autotag.TrackMatch]
     selection_state: SelectionState
-    duplicate_in_library: bool = False
-    type: str = "unset"
-
-    diff_preview: str | None = None
-    penalties: List[str] = field(default_factory=list)
 
     def __post_init__(self):
+        self.id: str = str(uuid())
         self.type = "album" if hasattr(self.match, "extra_tracks") else "track"
+        self.duplicate_in_library: bool = False  # checked and set by session
+        self.penalties: List[str] = list(self.match.distance.keys())
 
         out, err, _ = capture_stdout_stderr(
             uicommands.show_change,
@@ -219,8 +229,7 @@ class CandidateState:
         self.diff_preview = out.lstrip("\n")
         if len(err) > 0:
             self.diff_preview += f"\n\nError: {err}"
-
-        self.penalties.extend(self.match.distance.keys())
+        self.diff_preview = ""  # dirty but spams console
 
     @property
     def cur_artist(self) -> str:
@@ -287,8 +296,7 @@ class CandidateState:
 
         res = SerializedCandidateState(
             id=self.id,
-            # diff_preview=self.diff_preview,
-            diff_preview="",  # dirty, but it spams frontend console.
+            diff_preview=self.diff_preview,
             cur_artist=self.cur_artist,
             cur_album=self.cur_album,
             penalties=self.penalties,
@@ -304,3 +312,13 @@ class CandidateState:
         )
 
         return res
+
+
+# class AsIsCandidateState(CandidateState):
+#     """
+#     Just a thin wrapper so we can preset the "as is" nicely in frontend, inlcuding
+#     a preview of tracks and meta data.
+#     """
+
+#     def __post_init__(self):
+#         super().__post_init__()

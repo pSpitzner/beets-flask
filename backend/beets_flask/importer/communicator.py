@@ -85,15 +85,14 @@ class ImportCommunicator(ABC):
         match req["event"]:
             case "candidate_choice":
                 selection_id = req["selection_id"]
-                candidate_idx = req["candidate_idx"]
+                candidate_id = req["candidate_id"]
                 duplicate_action = req["duplicate_action"]
 
-                selection_state = self.state.get_selection_state_by_id(selection_id)
-                if selection_state is None:
+                sel_state = self.state.get_selection_state_by_id(selection_id)
+                if sel_state is None:
                     raise ValueError("No selection state found for task.")
-                selection_state.current_candidate_idx = candidate_idx
-                selection_state.duplicate_action = duplicate_action
-                log.debug("selection_state.current_candidate_idx = %s", candidate_idx)
+                sel_state.current_candidate_id = candidate_id
+                sel_state.duplicate_action = duplicate_action
             case "selection_complete":
 
                 # Validate the request
@@ -105,10 +104,10 @@ class ImportCommunicator(ABC):
 
                 # Update the state
                 for id, completed in zip(selection_ids, are_completed):
-                    selection_state = self.state.get_selection_state_by_id(id)
-                    if selection_state is None:
+                    sel_state = self.state.get_selection_state_by_id(id)
+                    if sel_state is None:
                         raise ValueError("No selection state found for task.")
-                    selection_state.completed = completed
+                    sel_state.completed = completed
             case _:
                 log.error(f"Unknown event: {req['event']}")
                 return
@@ -132,7 +131,7 @@ class ImportCommunicator(ABC):
 class ChoiceReceive(TypedDict):
     event: Literal["candidate_choice"]
     selection_id: str
-    candidate_idx: int
+    candidate_id: str
     duplicate_action: str
 
 

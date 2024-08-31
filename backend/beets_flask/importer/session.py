@@ -157,11 +157,14 @@ class InteractiveImportSession(BaseSession):
         if self.import_state.user_response == "abort":
             return importer.action.SKIP
 
-        if sel_state.current_candidate_idx is None:
+        if sel_state.current_candidate_id is None:
             raise ValueError("No candidate selection found. This should not happen!")
 
-        match: AlbumMatch = task.candidates[sel_state.current_candidate_idx]
+        candidate = sel_state.current_candidate_state
+        if candidate is None:
+            raise ValueError("No candidate state found. This should not happen!")
 
+        match: AlbumMatch = candidate.match  # type: ignore
         log.debug(f"Returning {match.info.album=} {match.info.album_id=} for {task=}")
 
         return match

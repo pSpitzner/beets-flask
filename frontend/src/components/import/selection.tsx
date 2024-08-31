@@ -91,7 +91,7 @@ function Selections() {
             {selections?.map((selection) => {
                 // For debugging the hover state get current selected candidate
                 const canditate = selection.candidate_states.find(
-                    (c) => c.id === selection.current_candidate_idx
+                    (c) => c.id === selection.current_candidate_id
                 );
 
                 return (
@@ -124,22 +124,25 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
     }
 
     function handleCandidateChange(event: React.ChangeEvent<HTMLInputElement>) {
-        const candidateIdx = parseInt(event.target.value);
-        chooseCandidate(selection.id, candidateIdx);
+        const candidateId = event.target.value;
+        chooseCandidate(selection.id, candidateId);
     }
 
     useEffect(() => {
         // set the default choice, but only once the user has seen something.
         // first candidate is the best match
         if (
-            selection.current_candidate_idx === null ||
-            selection.current_candidate_idx === undefined
+            selection.current_candidate_id === null ||
+            selection.current_candidate_id === undefined
         ) {
-            selection.current_candidate_idx =
-                selection.candidate_states.length > 0 ? 0 : null;
+            if (selection.candidate_states.length > 0) {
+                selection.current_candidate_id = selection.candidate_states[0].id;
+            } else {
+                selection.current_candidate_id = null;
+            }
         }
-        if (selection.current_candidate_idx !== null) {
-            chooseCandidate(selection.id, selection.current_candidate_idx);
+        if (selection.current_candidate_id !== null) {
+            chooseCandidate(selection.id, selection.current_candidate_id);
         }
     }, [selection, chooseCandidate]);
 
@@ -149,7 +152,7 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
             <Paper className={styles.choices}>
                 <FormControl sx={{ width: "100%", marginRight: 0 }}>
                     <RadioGroup
-                        value={selection.current_candidate_idx}
+                        value={selection.current_candidate_id}
                         onChange={handleCandidateChange}
                     >
                         {displayedCandidates.map((choice) => {
@@ -224,17 +227,21 @@ function DuplicateActions({ selection }: { selection: SelectionState }) {
         selection.duplicate_action = value as "skip" | "merge" | "keep" | "remove";
         // duplicate action and candidate choice are reported to backend through the
         // same event. TODO: this should be more consistent.
-        if (selection.current_candidate_idx !== null) {
-            chooseCandidate(selection.id, selection.current_candidate_idx);
+        if (selection.current_candidate_id !== null) {
+            chooseCandidate(selection.id, selection.current_candidate_id);
         }
         console.log("duplicate action", value);
     }
 
     useEffect(() => {
-        if (selection.current_candidate_idx == null) return;
-        const candidate = selection.candidate_states[selection.current_candidate_idx];
-        setEnableDuplicateButton(candidate.duplicate_in_library);
-    }, [selection, selection.current_candidate_idx, setEnableDuplicateButton]);
+        if (selection.current_candidate_id == null) return;
+        const candidate = selection.candidate_states.find(
+            (c) => c.id === selection.current_candidate_id
+        );
+        if (candidate) {
+            setEnableDuplicateButton(candidate.duplicate_in_library);
+        }
+    }, [selection, selection.current_candidate_id, setEnableDuplicateButton]);
 
     function _toggleButtonWithTooltip(disabled: boolean, action: string) {
         let Icon = CopyMinus;

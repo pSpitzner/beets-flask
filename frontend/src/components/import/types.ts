@@ -8,7 +8,7 @@ export interface ImportState {
 export interface SelectionState {
     id: string;
     candidate_states: CandidateState[];
-    current_candidate_idx: number | null;
+    current_candidate_id: string | null;
     duplicate_action: "skip" | "merge" | "keep" | "remove";
     items: ItemInfo[];
     completed: boolean;
@@ -17,7 +17,7 @@ export interface SelectionState {
 }
 
 export interface BaseCandidateState {
-    id: number;
+    id: string;
     diff_preview?: string;
     cur_artist: string;
     cur_album: string;

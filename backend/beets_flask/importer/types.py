@@ -175,7 +175,7 @@ class SerializedImportState(TypedDict):
 class SerializedSelectionState(TypedDict):
     id: str
     candidate_states: List[SerializedCandidateState]
-    current_candidate_idx: int | None
+    current_candidate_id: str | None
     duplicate_action: str | None
     items: List[Dict]  #  ItemInfo
     completed: bool
@@ -185,7 +185,7 @@ class SerializedSelectionState(TypedDict):
 
 
 class SerializedCandidateState(TypedDict):
-    id: int
+    id: str
     diff_preview: str | None
     cur_artist: str
     cur_album: str
