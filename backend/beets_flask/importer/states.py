@@ -17,6 +17,8 @@ from beets_flask.logger import log
 from beets_flask.utility import capture_stdout_stderr
 
 from .types import (
+    AlbumMatch,
+    TrackMatch,
     MusicInfo,
     AlbumInfo,
     SerializedImportState,
@@ -127,15 +129,15 @@ class SelectionState:
         self.candidate_states: List[CandidateState] = [
             CandidateState(c, self) for c in self.task.candidates
         ]
+        self.candidate_states.append(CandidateState.asis_candidate(self))
         # identifier of the currently selected candidate. None if user has not chosen yet (or the frontend has not marked the default selection)
         self.current_candidate_id: str | None = None
         self.duplicate_action: str | None = None
         self.completed: bool = False
         self.status: str = "initializing"
-        self.asis_candidate: CandidateState | None = None
 
     @property
-    def candidates(self) -> Union[List[autotag.AlbumMatch], List[autotag.TrackMatch]]:
+    def candidates(self) -> Union[List[AlbumMatch], List[TrackMatch]]:
         """Task candidates, i.e. possible matches to choose from"""
         return self.task.candidates
 
@@ -171,7 +173,7 @@ class SelectionState:
     @property
     def items_minimal(self) -> List[MusicInfo]:
         """Items of the associated task as MinimalItemAndTrackInfo"""
-        return [MusicInfo.from_instance(i) for i in self.task.items]
+        return [ItemInfo.from_instance(i) for i in self.task.items]
 
     def serialize(self) -> SerializedSelectionState:
         """
@@ -211,8 +213,10 @@ class CandidateState:
     Note: currently only tested for album matches.
     """
 
-    match: Union[autotag.AlbumMatch, autotag.TrackMatch]
+    match: Union[AlbumMatch, TrackMatch]
     selection_state: SelectionState
+    # optional, indicating that this is a dummy candidate for the "asis" import action
+    asis: bool = False
 
     def __post_init__(self):
         self.id: str = str(uuid())
@@ -230,6 +234,40 @@ class CandidateState:
         if len(err) > 0:
             self.diff_preview += f"\n\nError: {err}"
         self.diff_preview = ""  # dirty but spams console
+
+    @classmethod
+    def asis_candidate(cls, selection_state: SelectionState) -> CandidateState:
+        """
+        Alternate constructor for creating a CandidateState to represent
+        the asis import option. We mock the album match to display
+        current meta data in the frontend.
+        This is pretty much duct-tape.
+        """
+        items = selection_state.task.items
+        info, _ = autotag.current_metadata(items)
+
+        def _generate_kwargs(item):
+            kwargs = {}
+            for key in item._dirty:
+                val = getattr(item, key)
+                if val is not None and val != "":
+                    kwargs[key] = val
+            # tracks use index, items use track, and beets diff preview crashes without index
+            kwargs["index"] = item.track or -1
+            return kwargs
+
+        tracks = [autotag.TrackInfo(**_generate_kwargs(i)) for i in items]
+        match = AlbumMatch(
+            distance=autotag.Distance(),
+            info=autotag.AlbumInfo(
+                tracks=tracks,
+                **info,
+            ),
+            extra_items=[],
+            extra_tracks=[],
+            mapping={i: tracks[idx] for idx, i in enumerate(items)},
+        )
+        return cls(match=match, selection_state=selection_state, asis=True)
 
     @property
     def cur_artist(self) -> str:
@@ -303,6 +341,7 @@ class CandidateState:
             duplicate_in_library=self.duplicate_in_library,
             type=self.type,
             distance=self.distance.distance,
+            asis=self.asis,
             info=info,
             items=items,
             tracks=tracks,

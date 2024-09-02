@@ -18,6 +18,7 @@ from typing import (
 from beets import autotag
 
 
+# some beets types, just typed ...
 class AlbumMatch(NamedTuple):
     distance: autotag.Distance
     info: autotag.AlbumInfo
@@ -76,7 +77,7 @@ class MusicInfo:
     def from_instance(
         cls, info: Union[autotag.TrackInfo, autotag.Item, autotag.AlbumInfo]
     ) -> MusicInfo:
-        kwargs = _class_attributes_to_kwargs(cls, info)
+        kwargs = class_attributes_to_kwargs(cls, info)
         if isinstance(info, autotag.TrackInfo):
             kwargs["type"] = "track"
         elif isinstance(info, autotag.Item):
@@ -94,7 +95,7 @@ class MusicInfo:
         return res
 
 
-def _class_attributes_to_kwargs(cls, obj, keys=None) -> Dict[str, Any]:
+def class_attributes_to_kwargs(cls, obj, keys=None) -> Dict[str, Any]:
     """
     Convert the attributes of an object to a dictionary of keyword arguments
     for a class. If `keys` is provided, only include those keys.
@@ -193,6 +194,7 @@ class SerializedCandidateState(TypedDict):
     duplicate_in_library: bool
     type: str
     distance: float
+    asis: bool
     info: Dict  # AlbumInfo | TrackInfo
 
     items: List[Dict] | None  #  ItemInfo TODO: infer in frontend from selection state
