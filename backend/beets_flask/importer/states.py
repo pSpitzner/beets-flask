@@ -215,8 +215,6 @@ class CandidateState:
 
     match: Union[AlbumMatch, TrackMatch]
     selection_state: SelectionState
-    # optional, indicating that this is the dummy candidate for the "asis" import action
-    asis: bool = False
 
     def __post_init__(self):
         self.id: str = str(uuid())
@@ -267,7 +265,9 @@ class CandidateState:
             extra_tracks=[],
             mapping={i: tracks[idx] for idx, i in enumerate(items)},
         )
-        return cls(match=match, selection_state=selection_state, asis=True)
+        candidate = cls(match=match, selection_state=selection_state)
+        candidate.id = "asis"
+        return candidate
 
     @property
     def cur_artist(self) -> str:
@@ -341,7 +341,6 @@ class CandidateState:
             duplicate_in_library=self.duplicate_in_library,
             type=self.type,
             distance=self.distance.distance,
-            asis=self.asis,
             info=info,
             items=items,
             tracks=tracks,

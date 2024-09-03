@@ -6,8 +6,8 @@ import { useConfig } from "@/components/common/useConfig";
 
 import { TagPreview } from "./tagView";
 
-import styles from "./similarityBadge.module.scss";
 import "@/main.css";
+import styles from "./similarityBadge.module.scss";
 
 export function TagSimilarityBadgeWithHover({
     tagId,
@@ -98,6 +98,42 @@ export function SimilarityBadge({
     return (
         <div className={styles.SimilarityBadgeOuter}>
             <span className={combinedClassName}>{simText}</span>
+        </div>
+    );
+}
+
+export function SimilarityBadgeWithText({
+    text,
+    color,
+    className,
+}: {
+    text?: string;
+    color?: "strong" | "medium" | "weak" | "tbd" | "custom";
+    className?: string;
+}) {
+    let simClass = styles.tbd;
+    switch (color) {
+        case "strong":
+            simClass = styles.strong;
+            break;
+        case "medium":
+            simClass = styles.medium;
+            break;
+        case "weak":
+            simClass = styles.weak;
+            break;
+        case "custom":
+            simClass = styles.custom;
+            break;
+        default:
+            simClass = styles.tbd;
+    }
+
+    const combinedClassName = `${className ? `${className} ` : ""}${styles.SimilarityBadgeInner} ${simClass}`;
+
+    return (
+        <div className={styles.SimilarityBadgeOuter}>
+            <span className={combinedClassName}>{text}</span>
         </div>
     );
 }

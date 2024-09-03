@@ -11,7 +11,10 @@ import RadioGroup from "@mui/material/RadioGroup";
 import Typography from "@mui/material/Typography";
 import * as HoverCard from "@radix-ui/react-hover-card";
 
-import { SimilarityBadge } from "@/components/tags/similarityBadge";
+import {
+    SimilarityBadge,
+    SimilarityBadgeWithText,
+} from "@/components/tags/similarityBadge";
 
 import { useConfig } from "../common/useConfig";
 import { CandidatePreview } from "./candidates/preview";
@@ -117,9 +120,15 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
     // for readability, only display 5 candidates by default
     const numCandidatesToShow = 5;
     const [showAll, setShowAll] = useState(false);
-    const displayedCandidates = showAll
+    let displayedCandidates = showAll
         ? selection.candidate_states
         : selection.candidate_states.slice(0, numCandidatesToShow);
+    // handle the asis dummy candidate. we always want to show that one on top?
+    const asisCandidate = selection.candidate_states.find((c) => c.id === "asis");
+    if (asisCandidate) {
+        displayedCandidates = displayedCandidates.filter((c) => c.id !== "asis");
+        displayedCandidates.unshift(asisCandidate);
+    }
 
     function toggleShowAll() {
         setShowAll(!showAll);
@@ -132,7 +141,8 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
 
     useEffect(() => {
         // set the default choice, but only once the user has seen something.
-        // first candidate is the best match
+        // first candidate is the best match, and we only
+        // move the asis candidate above on the display, so index 0 remains the right default
         if (
             selection.current_candidate_id === null ||
             selection.current_candidate_id === undefined
@@ -323,7 +333,11 @@ function CandidateView({ candidate }: { candidate: CandidateState }) {
             <HoverCard.Root openDelay={50} closeDelay={50}>
                 <HoverCard.Trigger className={styles.headerGroup}>
                     <Box className={styles.headerGroup}>
-                        <SimilarityBadge dist={candidate.distance} />
+                        {candidate.id == "asis" ? (
+                            <SimilarityBadgeWithText text={"asis"} color={"custom"} />
+                        ) : (
+                            <SimilarityBadge dist={candidate.distance} />
+                        )}
                     </Box>
                     <Box className={styles.headerGroup}>
                         <Box data-changed={!artistIsSame}>{candidate.info.artist}</Box>

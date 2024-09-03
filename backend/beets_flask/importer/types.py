@@ -194,7 +194,6 @@ class SerializedCandidateState(TypedDict):
     duplicate_in_library: bool
     type: str
     distance: float
-    asis: bool
     info: Dict  # AlbumInfo | TrackInfo
 
     items: List[Dict] | None  #  ItemInfo TODO: infer in frontend from selection state

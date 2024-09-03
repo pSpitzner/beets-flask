@@ -164,7 +164,8 @@ class InteractiveImportSession(BaseSession):
         if candidate is None:
             raise ValueError("No candidate state found. This should not happen!")
 
-        if candidate.asis:
+        # the dummmy candidate to signal we want to import `asis` has a hard-coded id:
+        if candidate.id == "asis":
             return importer.action.ASIS
 
         match: AlbumMatch = candidate.match  # type: ignore
