@@ -6,11 +6,12 @@ import { ImportState, SelectionState } from "./types";
 interface ImportContextI {
     // All selections for the current import
     // might be undefined if the data is not yet loaded
-    selections?: SelectionState[];
+    selStates?: SelectionState[];
     status: string;
     startSession: (path: string) => void;
     chooseCandidate: (selectionId: string, candidateId: string) => void;
     completeAllSelections: () => void;
+    allSelectionsValid: boolean;
 }
 
 const ImportContext = createContext<ImportContextI | null>(null);
@@ -18,8 +19,9 @@ const ImportContext = createContext<ImportContextI | null>(null);
 export const ImportContextProvider = ({ children }: { children: React.ReactNode }) => {
     const { socket, isConnected } = useImportSocket("import");
     // we want to allow partial updates to parts of the import state, so deconstruct here
-    const [selections, setSelections] = useState<SelectionState[]>();
+    const [selStates, setSelStates] = useState<SelectionState[]>();
     const [status, setStatus] = useState<string>("waiting for socket");
+    const [allSelectionsValid, setAllSelectionsValid] = useState<boolean>(false);
 
     useEffect(() => {
         if (status !== "waiting for socket") return;
@@ -34,13 +36,13 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
 
         function handleImportState({ data: state }: { data: ImportState }) {
             console.log("Import state", state);
-            setSelections(state.selection_states);
+            setSelStates(state.selection_states);
             setStatus(state.status);
         }
 
         function handleSelectionState({ data: state }: { data: SelectionState }) {
             console.log("Selection state", state);
-            setSelections((prev) => {
+            setSelStates((prev) => {
                 if (!prev) {
                     prev = [];
                 }
@@ -65,7 +67,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
             selection_id: string;
             candidate_id: string;
         }) {
-            setSelections((prev) => {
+            setSelStates((prev) => {
                 if (!prev) return prev;
                 const selectionIdx = prev.findIndex((s) => s.id === data.selection_id);
                 if (selectionIdx === -1) return prev;
@@ -88,7 +90,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
 
             socket.off("import_state_status", handleStatusUpdate);
         };
-    }, [socket, isConnected, setStatus, setSelections]);
+    }, [socket, isConnected, setStatus, setSelStates]);
 
     function startSession(path: string) {
         socket?.emit("start_import_session", { path });
@@ -100,7 +102,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
     const chooseCandidate = useCallback(
         (selectionId: string, candidateId: string) => {
             console.log("chooseCandidate", selectionId, candidateId);
-            setSelections((prev) => {
+            setSelStates((prev) => {
                 if (!prev) return prev;
                 const selection = prev.find((s) => s.id === selectionId);
                 if (!selection) return prev;
@@ -123,6 +125,29 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         [socket]
     );
 
+    // to enable the apply button, check that all selections have a valid candidate
+    useEffect(() => {
+        let allValid = true;
+        for (const selection of selStates ?? []) {
+            if (selection.current_candidate_id === null) {
+                allValid = false;
+                break;
+            }
+            const candidate = selection.candidate_states.find(
+                (c) => c.id === selection.current_candidate_id
+            );
+            if (
+                candidate &&
+                candidate.duplicate_in_library &&
+                !selection.duplicate_action
+            ) {
+                allValid = false;
+                break;
+            }
+        }
+        setAllSelectionsValid(allValid);
+    }, [selStates]);
+
     /**
      * Marks all selections as completed and emits a user action event to the server.
      *
@@ -132,7 +157,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
      * @returns {void}
      */
     const completeAllSelections = useCallback(() => {
-        setSelections((prev) => {
+        setSelStates((prev) => {
             if (!prev) return prev;
 
             const selectionIds = [];
@@ -153,10 +178,11 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
 
     const ret: ImportContextI = {
         completeAllSelections,
-        selections,
+        selStates,
         status,
         startSession,
         chooseCandidate,
+        allSelectionsValid,
     };
 
     return <ImportContext.Provider value={ret}>{children}</ImportContext.Provider>;

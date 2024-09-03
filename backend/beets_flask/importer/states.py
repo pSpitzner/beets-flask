@@ -132,7 +132,7 @@ class SelectionState:
         self.candidate_states.append(CandidateState.asis_candidate(self))
         # identifier of the currently selected candidate. None if user has not chosen yet (or the frontend has not marked the default selection)
         self.current_candidate_id: str | None = None
-        self.duplicate_action: str | None = None
+        self.duplicate_action: Literal["skip", "keep", "remove", "merge", None] = None
         self.completed: bool = False
         self.status: str = "initializing"
 
@@ -215,7 +215,7 @@ class CandidateState:
 
     match: Union[AlbumMatch, TrackMatch]
     selection_state: SelectionState
-    # optional, indicating that this is a dummy candidate for the "asis" import action
+    # optional, indicating that this is the dummy candidate for the "asis" import action
     asis: bool = False
 
     def __post_init__(self):

@@ -164,6 +164,9 @@ class InteractiveImportSession(BaseSession):
         if candidate is None:
             raise ValueError("No candidate state found. This should not happen!")
 
+        if candidate.asis:
+            return importer.action.ASIS
+
         match: AlbumMatch = candidate.match  # type: ignore
         log.debug(f"Returning {match.info.album=} {match.info.album_id=} for {task=}")
 

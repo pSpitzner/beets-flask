@@ -23,7 +23,8 @@ import "@/main.css";
 import styles from "./import.module.scss";
 
 export function ImportView() {
-    const { completeAllSelections, startSession, status } = useImportContext();
+    const { completeAllSelections, startSession, allSelectionsValid, status } =
+        useImportContext();
 
     const [path, setPath] = useState<string>(
         "/music/inbox.nosync/John B/Light Speed [ALBUM]/CD1"
@@ -65,6 +66,7 @@ export function ImportView() {
                         variant="outlined"
                         color="primary"
                         onClick={completeAllSelections}
+                        disabled={!allSelectionsValid}
                     >
                         Apply
                     </Button>
@@ -82,13 +84,13 @@ export function ImportView() {
  * with automatically wrapping or resizing the items.
  */
 function Selections() {
-    const { selections } = useImportContext();
+    const { selStates } = useImportContext();
 
     return (
         <div className={styles.wrapper}>
             {/* loading */}
             {/* {!selections && <Skeleton />} */}
-            {selections?.map((selection) => {
+            {selStates?.map((selection) => {
                 // For debugging the hover state get current selected candidate
                 const canditate = selection.candidate_states.find(
                     (c) => c.id === selection.current_candidate_id
