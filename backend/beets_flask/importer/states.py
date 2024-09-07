@@ -5,7 +5,7 @@ State classes to represent the current state of an import session.
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import List, Literal, Union
+from typing import List, Literal, Tuple, Union
 from uuid import uuid4 as uuid
 import time
 
@@ -133,7 +133,11 @@ class SelectionState:
         # identifier of the currently selected candidate. None if user has not chosen yet (or the frontend has not marked the default selection)
         self.current_candidate_id: str | None = None
         self.duplicate_action: Literal["skip", "keep", "remove", "merge", None] = None
+        # the completed state blocks the choose_match function
+        # of sessions via our await_completion method
         self.completed: bool = False
+        # searches
+        self.current_search_id: str | None = None
         self.status: str = "initializing"
 
     @property
@@ -152,6 +156,17 @@ class SelectionState:
             if c.id == cid:
                 return c
         return None
+
+    def add_candidates(
+        self, candidates: List[Union[AlbumMatch, TrackMatch]], insert_at: int = 0
+    ) -> List[CandidateState]:
+        """Adds new candidates to our associated task and self, and create candidates states."""
+        if len(self.task.candidates) == 0 or len(self.candidate_states) == 0:
+            insert_at = 0
+        self.task.candidates[insert_at:insert_at] = candidates
+        new_states = [CandidateState(c, self) for c in candidates]
+        self.candidate_states[insert_at:insert_at] = new_states
+        return new_states
 
     @property
     def toppath(self) -> str | None:

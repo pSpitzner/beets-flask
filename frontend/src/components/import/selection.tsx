@@ -197,6 +197,7 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
                     </Button>
                 )}
                 <DuplicateActions selection={selection} />
+                <AddCandidateById selection={selection} />
             </Box>
         </div>
     );
@@ -357,6 +358,43 @@ function CandidateView({ candidate }: { candidate: CandidateState }) {
             </HoverCard.Root>
 
             <PenaltyIconRow candidate={candidate} />
+        </Box>
+    );
+}
+
+function AddCandidateById({ selection }: { selection: SelectionState }) {
+    // id is a string where whitespaces are used as separators, implying multiple ids
+    const { addCandidateById } = useImportContext();
+    const [ids, setIds] = useState<string>("");
+
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                gap: "1rem",
+                justifyContent: "flex-start",
+                alignItems: "flex-start",
+                flexDirection: "column",
+            }}
+        >
+            <div className="flex gap-2">
+                <Input
+                    type="text"
+                    placeholder="Search id"
+                    className="w-96"
+                    value={ids}
+                    onChange={(e) => setIds(e.target.value)}
+                ></Input>
+                <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={() => {
+                        addCandidateById(selection.id, ids);
+                    }}
+                >
+                    Add
+                </Button>
+            </div>
         </Box>
     );
 }

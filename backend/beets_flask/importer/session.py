@@ -1,7 +1,7 @@
 import time
 from typing import Callable, List, Optional, Type
 
-from beets import importer, plugins, library
+from beets import importer, plugins, library, autotag
 
 from beets.util import pipeline as beets_pipeline
 
@@ -151,6 +151,28 @@ class InteractiveImportSession(BaseSession):
         # BLOCKING
         # use communicator to receive user input
         completed = sel_state.await_completion()
+
+        # SEARCHES
+        # deal with searches first. they need to stop the blocking, do their thing,
+        # and then recall choose_match (until we switch to async)
+        if sel_state.current_search_id is not None:
+            log.debug("adding candidate by id")
+            sel_state.status = f"adding candidate by id"
+            sel_state.completed = False
+            self.communicator.emit_state(sel_state)
+            _, _, proposal = autotag.tag_album(
+                task.items,
+                search_ids=sel_state.current_search_id.split(),
+            )
+            new_cand_states = sel_state.add_candidates(proposal.candidates, insert_at=0)
+            log.debug(f"found candidates {new_cand_states}")
+            sel_state.current_search_id = None
+            if len(new_cand_states) > 0:
+                sel_state.current_candidate_id = new_cand_states[0].id
+            else:
+                log.debug("no candidates found")
+                # TODO: TOAST!
+            return self.choose_match(task)
 
         log.debug(f"User selection completed: {completed}")
 

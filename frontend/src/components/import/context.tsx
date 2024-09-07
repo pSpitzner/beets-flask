@@ -10,6 +10,7 @@ interface ImportContextI {
     status: string;
     startSession: (path: string) => void;
     chooseCandidate: (selectionId: string, candidateId: string) => void;
+    addCandidateById: (selectionId: string, searchId: string) => void;
     completeAllSelections: () => void;
     allSelectionsValid: boolean;
 }
@@ -96,9 +97,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         socket?.emit("start_import_session", { path });
     }
 
-    /**
-     * Updates the selected candidate for a specific selection.
-     */
+    //Updates the selected candidate for a specific selection.
     const chooseCandidate = useCallback(
         (selectionId: string, candidateId: string) => {
             console.log("chooseCandidate", selectionId, candidateId);
@@ -120,6 +119,18 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
                     duplicate_action: selection.duplicate_action,
                 });
                 return [...prev];
+            });
+        },
+        [socket]
+    );
+
+    // We want the user to be able to add candidates via search
+    const addCandidateById = useCallback(
+        (selectionId: string, searchId: string) => {
+            socket?.emit("user_action", {
+                event: "candidate_search_by_id",
+                selection_id: selectionId,
+                search_id: searchId,
             });
         },
         [socket]
@@ -148,14 +159,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         setAllSelectionsValid(allValid);
     }, [selStates]);
 
-    /**
-     * Marks all selections as completed and emits a user action event to the server.
-     *
-     * This function iterates through all the selections, marks them as completed,
-     * and then emits an event to the server with the IDs of the completed selections.
-     *
-     * @returns {void}
-     */
+    // Marks all selections as completed and emits a user action event to the server.
     const completeAllSelections = useCallback(() => {
         setSelStates((prev) => {
             if (!prev) return prev;
@@ -182,6 +186,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         status,
         startSession,
         chooseCandidate,
+        addCandidateById,
         allSelectionsValid,
     };
 
