@@ -10,7 +10,12 @@ interface ImportContextI {
     status: string;
     startSession: (path: string) => void;
     chooseCandidate: (selectionId: string, candidateId: string) => void;
-    addCandidateById: (selectionId: string, searchId: string) => void;
+    addCandidate: (
+        selectionId: string,
+        searchId: string | null,
+        artist: string | null,
+        album: string | null
+    ) => void;
     completeAllSelections: () => void;
     allSelectionsValid: boolean;
 }
@@ -125,12 +130,19 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
     );
 
     // We want the user to be able to add candidates via search
-    const addCandidateById = useCallback(
-        (selectionId: string, searchId: string) => {
+    const addCandidate = useCallback(
+        (
+            selectionId: string,
+            searchId: string | null,
+            artist: string | null,
+            album: string | null
+        ) => {
             socket?.emit("user_action", {
-                event: "candidate_search_by_id",
+                event: "candidate_search",
                 selection_id: selectionId,
                 search_id: searchId,
+                artist: artist,
+                album: album,
             });
         },
         [socket]
@@ -186,7 +198,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         status,
         startSession,
         chooseCandidate,
-        addCandidateById,
+        addCandidate,
         allSelectionsValid,
     };
 

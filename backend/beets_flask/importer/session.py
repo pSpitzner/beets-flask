@@ -155,20 +155,37 @@ class InteractiveImportSession(BaseSession):
         # SEARCHES
         # deal with searches first. they need to stop the blocking, do their thing,
         # and then recall choose_match (until we switch to async)
-        if sel_state.current_search_id is not None:
-            log.debug("adding candidate by id")
-            sel_state.status = f"adding candidate by id"
+        if (
+            sel_state.current_search_id is not None
+            or sel_state.current_search_artist is not None
+        ):
+            log.debug("searching more candidates")
+            sel_state.status = f"adding candidates"
             sel_state.completed = False
-            self.communicator.emit_state(sel_state)
-            _, _, proposal = autotag.tag_album(
-                task.items,
-                search_ids=sel_state.current_search_id.split(),
-            )
-            new_cand_states = sel_state.add_candidates(proposal.candidates, insert_at=0)
-            log.debug(f"found candidates {new_cand_states}")
+            new_candidate_states = []
+            if sel_state.current_search_artist is not None:
+                assert sel_state.current_search_album is not None
+                _, _, proposal = autotag.tag_album(
+                    task.items,
+                    search_artist=sel_state.current_search_artist,
+                    search_album=sel_state.current_search_album,
+                )
+                new_candidate_states.extend(
+                    sel_state.add_candidates(proposal.candidates, insert_at=0)
+                )
+            if sel_state.current_search_id is not None:
+                self.communicator.emit_state(sel_state)
+                _, _, proposal = autotag.tag_album(
+                    task.items,
+                    search_ids=sel_state.current_search_id.split(),
+                )
+                new_candidate_states.extend(
+                    sel_state.add_candidates(proposal.candidates, insert_at=0)
+                )
+            log.debug(f"found candidates {new_candidate_states}")
             sel_state.current_search_id = None
-            if len(new_cand_states) > 0:
-                sel_state.current_candidate_id = new_cand_states[0].id
+            if len(new_candidate_states) > 0:
+                sel_state.current_candidate_id = new_candidate_states[0].id
             else:
                 log.debug("no candidates found")
                 # TODO: TOAST!

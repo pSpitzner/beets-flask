@@ -1,6 +1,15 @@
-import { ChevronRight, CopyMinus, CopyPlus, Merge, Trash2 } from "lucide-react";
-import { Fragment, useEffect, useState } from "react";
-import { Input, styled, ToggleButton, ToggleButtonGroup, Tooltip } from "@mui/material";
+import { ChevronRight, CopyMinus, CopyPlus, Merge, Plus, Trash2 } from "lucide-react";
+import { forwardRef, Fragment, useEffect, useState } from "react";
+import {
+    Container,
+    Input,
+    Modal,
+    styled,
+    TextField,
+    ToggleButton,
+    ToggleButtonGroup,
+    Tooltip,
+} from "@mui/material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import FormControl from "@mui/material/FormControl";
@@ -197,7 +206,7 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
                     </Button>
                 )}
                 <DuplicateActions selection={selection} />
-                <AddCandidateById selection={selection} />
+                <AddCandidatesModal selection={selection} />
             </Box>
         </div>
     );
@@ -362,39 +371,183 @@ function CandidateView({ candidate }: { candidate: CandidateState }) {
     );
 }
 
-function AddCandidateById({ selection }: { selection: SelectionState }) {
-    // id is a string where whitespaces are used as separators, implying multiple ids
-    const { addCandidateById } = useImportContext();
-    const [ids, setIds] = useState<string>("");
+function AddCandidatesModal({ selection }: { selection: SelectionState }) {
+    const [open, setOpen] = useState(false);
+    const handleOpen = () => setOpen(true);
+    const handleClose = () => setOpen(false);
+    const [id, setId] = useState<string>(""); // ids can be multiple, separated by whitespaces
+    const [artist, setArtist] = useState<string>("");
+    const [album, setAlbum] = useState<string>("");
+    const [error, setError] = useState("");
+    const { addCandidate: addCandidateById } = useImportContext();
+
+    const handleApply = () => {
+        // parse empty strings
+        addCandidateById(
+            selection.id,
+            id ? id : null,
+            artist ? artist : null,
+            album ? album : null
+        );
+        // TODO: suspend while waiting for status update from backend
+        handleClose();
+    };
+
+    const isApplyEnabled = () => {
+        return id.length > 0 || (artist.length > 0 && album.length > 0);
+    };
+
+    const validateArtistAlbum = () => {
+        if ((artist && !album) || (!artist && album)) {
+            setError("Provide an album with artist!");
+        } else {
+            setError("");
+        }
+    };
 
     return (
-        <Box
-            sx={{
-                display: "flex",
-                gap: "1rem",
-                justifyContent: "flex-start",
-                alignItems: "flex-start",
-                flexDirection: "column",
-            }}
-        >
-            <div className="flex gap-2">
-                <Input
-                    type="text"
-                    placeholder="Search id"
-                    className="w-96"
-                    value={ids}
-                    onChange={(e) => setIds(e.target.value)}
-                ></Input>
-                <Button
-                    variant="outlined"
-                    color="primary"
-                    onClick={() => {
-                        addCandidateById(selection.id, ids);
+        <>
+            <Tooltip title="Search for more candidates">
+                <Button variant="outlined" onClick={handleOpen}>
+                    <Plus size={14} />
+                </Button>
+            </Tooltip>
+            <Modal
+                aria-labelledby="unstyled-modal-title"
+                aria-describedby="unstyled-modal-description"
+                open={open}
+                onClose={handleClose}
+                slots={{ backdrop: Backdrop }}
+            >
+                {/* we mainly use the container to get nice auto-width */}
+                <Container
+                    maxWidth="sm"
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        pointerEvents: "none",
+                        "@media (min-height: 300px)": {
+                            alignItems: "flex-start",
+                            paddingTop: "25vh",
+                        },
                     }}
                 >
-                    Add
-                </Button>
-            </div>
-        </Box>
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            width: "100%",
+                            height: "100%",
+                            padding: "1rem",
+                            pointerEvents: "auto",
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            gap: "1rem",
+                        }}
+                    >
+                        <Typography variant="h5">Add Candidates</Typography>
+                        <SearchField
+                            sx={{ width: "100%" }}
+                            id="input-search-id"
+                            label="Seach by Id"
+                            placeholder="url or musicbrainz id"
+                            multiline
+                            onChange={(e) => setId(e.target.value)}
+                        />
+                        <Box
+                            sx={{
+                                width: "100%",
+                                display: "flex",
+                                flexDirection: "row",
+                                gap: "1rem",
+                            }}
+                        >
+                            <SearchField
+                                sx={{ width: "100%" }}
+                                id="input-search-artist"
+                                label="Seach by artist"
+                                placeholder="Artist"
+                                onChange={(e) => setArtist(e.target.value)}
+                                onBlur={validateArtistAlbum}
+                            />
+                            <SearchField
+                                sx={{ width: "100%" }}
+                                id="input-search-artist"
+                                label="and album"
+                                placeholder="Album"
+                                onChange={(e) => setAlbum(e.target.value)}
+                                error={error?.length > 0}
+                                onBlur={validateArtistAlbum}
+                                helperText={error}
+                            />
+                        </Box>
+                        <Box
+                            sx={{
+                                width: "100%",
+                                display: "flex",
+                                justifyContent: "flex-end",
+                                gap: "1rem",
+                                marginTop: "1rem",
+                            }}
+                        >
+                            <Button
+                                variant="outlined"
+                                color="warning"
+                                onClick={handleClose}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleApply}
+                                disabled={!isApplyEnabled()}
+                                variant="outlined"
+                                color="primary"
+                            >
+                                Apply
+                            </Button>
+                        </Box>
+                    </Paper>
+                </Container>
+            </Modal>
+        </>
     );
 }
+
+const Backdrop = forwardRef<HTMLDivElement, { open?: boolean; className: string }>(
+    ({ open, className, ...other }, ref) => (
+        <Box
+            className={className}
+            ref={ref}
+            {...other}
+            sx={{
+                display: open ? "block" : "none",
+                position: "fixed",
+                inset: 0,
+                backgroundColor: "#00000033",
+                backdropFilter: "blur(5px)",
+                zIndex: -1,
+                WebkitTapHighlightColor: "transparent",
+            }}
+        />
+    )
+);
+Backdrop.displayName = "Backdrop";
+
+const SearchField = styled(TextField)(({ theme }) => ({
+    // backgroundColor: theme.palette.background.default,
+    borderColor: theme.palette.divider,
+    borderRadius: theme.shape.borderRadius,
+    "& .MuiOutlinedInput-root": {
+        "& fieldset": {
+            borderColor: theme.palette.divider,
+        },
+        "&:hover fieldset": {
+            borderColor: theme.palette.primary.main,
+        },
+        "&.Mui-focused fieldset": {
+            borderColor: theme.palette.primary.main,
+        },
+    },
+}));

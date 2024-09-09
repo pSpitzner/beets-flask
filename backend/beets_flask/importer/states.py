@@ -138,6 +138,8 @@ class SelectionState:
         self.completed: bool = False
         # searches
         self.current_search_id: str | None = None
+        self.current_search_artist: str | None = None
+        self.current_search_album: str | None = None
         self.status: str = "initializing"
 
     @property

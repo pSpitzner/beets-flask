@@ -75,7 +75,7 @@ class ImportCommunicator(ABC):
         self._emit(EmitRequest(event=event, data=data))
 
     def received_request(
-        self, req: Union[ChoiceReceive, CompleteReceive, CandidateSearchById]
+        self, req: Union[ChoiceReceive, CompleteReceive, CandidateSearchReceive]
     ):
         """
         Processes incoming requests related to the import session.
@@ -111,15 +111,21 @@ class ImportCommunicator(ABC):
                         raise ValueError("No selection state found for task.")
                     sel_state.completed = completed
 
-            case "candidate_search_by_id":
+            case "candidate_search":
                 selection_id = req["selection_id"]
                 search_id = req["search_id"]
+                artist = req["artist"]
+                album = req["album"]
 
-                assert search_id is not None, "Search ID must not be None"
+                assert (
+                    search_id is not None or artist is not None
+                ), "Either Search ID or Artist + Album need to be given"
                 sel_state = self.state.get_selection_state_by_id(selection_id)
                 if sel_state is None:
                     raise ValueError("No selection state found for task.")
                 sel_state.current_search_id = search_id
+                sel_state.current_search_artist = artist
+                sel_state.current_search_album = album
                 # we need to set completed to true to unblock the session loop,
                 # and need to make sure there reset to false after we are done there.
                 sel_state.completed = True
@@ -132,7 +138,10 @@ class ImportCommunicator(ABC):
         self._emit(req)
 
     @abstractmethod
-    def _emit(self, req: Union[ChoiceReceive, CompleteReceive, EmitRequest]) -> None:
+    def _emit(
+        self,
+        req: Union[ChoiceReceive, CompleteReceive, CandidateSearchReceive, EmitRequest],
+    ) -> None:
         """
         Emits the current state of the import session.
         """
@@ -157,10 +166,12 @@ class CompleteReceive(TypedDict):
     are_completed: List[bool]
 
 
-class CandidateSearchById(TypedDict):
-    event: Literal["candidate_search_by_id"]
+class CandidateSearchReceive(TypedDict):
+    event: Literal["candidate_search"]
     selection_id: str
-    search_id: str
+    search_id: str | None
+    artist: str | None
+    album: str | None
 
 
 T = TypeVar("T")
