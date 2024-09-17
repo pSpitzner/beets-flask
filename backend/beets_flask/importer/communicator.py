@@ -126,9 +126,6 @@ class ImportCommunicator(ABC):
                 sel_state.current_search_id = search_id
                 sel_state.current_search_artist = artist
                 sel_state.current_search_album = album
-                # we need to set completed to true to unblock the session loop,
-                # and need to make sure there reset to false after we are done there.
-                sel_state.completed = True
 
             case _:
                 log.error(f"Unknown event: {req['event']}")

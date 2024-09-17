@@ -149,52 +149,67 @@ class InteractiveImportSession(BaseSession):
             raise ValueError("No selection state found for task.")
 
         # BLOCKING
-        # use communicator to receive user input
-        completed = sel_state.await_completion()
+        # We use the communicator to receive user input, which modifies the sel_state
+        while True:
+            if sel_state.completed:
+                break
+            if self.import_state.user_response == "abort":
+                return importer.action.SKIP
 
-        # SEARCHES
-        # deal with searches first. they need to stop the blocking, do their thing,
-        # and then recall choose_match (until we switch to async)
-        if (
-            sel_state.current_search_id is not None
-            or sel_state.current_search_artist is not None
-        ):
-            log.debug("searching more candidates")
-            sel_state.status = f"adding candidates"
-            sel_state.completed = False
-            new_candidate_states = []
-            if sel_state.current_search_artist is not None:
-                assert sel_state.current_search_album is not None
-                _, _, proposal = autotag.tag_album(
-                    task.items,
-                    search_artist=sel_state.current_search_artist,
-                    search_album=sel_state.current_search_album,
-                )
-                new_candidate_states.extend(
-                    sel_state.add_candidates(proposal.candidates, insert_at=0)
-                )
-            if sel_state.current_search_id is not None:
-                self.communicator.emit_state(sel_state)
-                _, _, proposal = autotag.tag_album(
-                    task.items,
-                    search_ids=sel_state.current_search_id.split(),
-                )
-                new_candidate_states.extend(
-                    sel_state.add_candidates(proposal.candidates, insert_at=0)
-                )
-            log.debug(f"found candidates {new_candidate_states}")
-            sel_state.current_search_id = None
-            if len(new_candidate_states) > 0:
-                sel_state.current_candidate_id = new_candidate_states[0].id
-            else:
-                log.debug("no candidates found")
+            # SEARCHES
+            if (
+                sel_state.current_search_id is not None
+                or sel_state.current_search_artist is not None
+            ):
+                log.debug("searching more candidates")
+                sel_state.status = f"adding candidates"
+                new_candidate_states = []
+                if sel_state.current_search_artist is not None:
+                    assert sel_state.current_search_album is not None
+                    _, _, proposal = autotag.tag_album(
+                        task.items,
+                        search_artist=sel_state.current_search_artist,
+                        search_album=sel_state.current_search_album,
+                    )
+                    new_candidate_states.extend(
+                        sel_state.add_candidates(proposal.candidates, insert_at=0)
+                    )
+                if sel_state.current_search_id is not None:
+                    self.communicator.emit_state(sel_state)
+                    _, _, proposal = autotag.tag_album(
+                        task.items,
+                        search_ids=sel_state.current_search_id.split(),
+                    )
+                    new_candidate_states.extend(
+                        sel_state.add_candidates(proposal.candidates, insert_at=0)
+                    )
+                log.debug(f"found candidates {new_candidate_states}")
+                sel_state.current_search_id = None
+                if len(new_candidate_states) > 0:
+                    sel_state.current_candidate_id = new_candidate_states[0].id
+                    self.communicator.emit_state(sel_state)
+                    self.communicator.emit_custom(
+                        "candidate_search_complete",
+                        {
+                            "status": "success",
+                            "selection_id": sel_state.id,
+                            "message": f"Found {len(new_candidate_states)} candidates",
+                        },
+                    )
+                else:
+                    log.debug("no candidates found")
+                    self.communicator.emit_custom(
+                        "candidate_search_complete",
+                        {
+                            "status": "failure",
+                            "selection_id": sel_state.id,
+                            "message": f"No candidates found",
+                        },
+                    )
                 # TODO: TOAST!
-            return self.choose_match(task)
+                continue
 
-        log.debug(f"User selection completed: {completed}")
-
-        if self.import_state.user_response == "abort":
-            return importer.action.SKIP
+            time.sleep(3)
 
         if sel_state.current_candidate_id is None:
             raise ValueError("No candidate selection found. This should not happen!")

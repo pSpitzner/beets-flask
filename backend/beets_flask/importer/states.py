@@ -208,16 +208,6 @@ class SelectionState:
             status=self.status,
         )
 
-    def await_completion(self):
-        """Blocks until all associated candidated states have been marked as completed"""
-        while not self.completed:
-            # stop blocking if the user selects abort on the session-level
-            if self.import_state.user_response == "abort":
-                return False
-            time.sleep(3)
-            log.debug("awaiting completion")
-        return True
-
 
 @dataclass
 class CandidateState:
@@ -283,6 +273,9 @@ class CandidateState:
             mapping={i: tracks[idx] for idx, i in enumerate(items)},
         )
         candidate = cls(match=match, selection_state=selection_state)
+        # the session checks the candidate id for this particular value.
+        # this saves us from defining an extra attribute
+        # (and passing back and forth to the frontend)
         candidate.id = "asis"
         return candidate
 

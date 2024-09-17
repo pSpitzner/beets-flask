@@ -88,6 +88,10 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         socket.on("candidate_state", remoteCandidateChoice);
 
         socket.on("import_state_status", handleStatusUpdate);
+        // @sm make this a mutation?
+        socket.on("candidate_search_complete", ({ data }) => {
+            console.log(data);
+        });
 
         return () => {
             socket.off("import_state", handleImportState);
