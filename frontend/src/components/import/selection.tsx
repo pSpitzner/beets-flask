@@ -1,7 +1,11 @@
 import { ChevronRight, CopyMinus, CopyPlus, Merge, Plus, Trash2 } from "lucide-react";
 import { forwardRef, Fragment, useEffect, useState } from "react";
 import {
+    CircularProgress,
     Container,
+    DialogProps,
+    FormHelperText,
+    IconButton,
     Input,
     Modal,
     styled,
@@ -372,25 +376,39 @@ function CandidateView({ candidate }: { candidate: CandidateState }) {
 }
 
 function AddCandidatesModal({ selection }: { selection: SelectionState }) {
+    const { searchForCandidates } = useImportContext();
+
     const [open, setOpen] = useState(false);
     const handleOpen = () => setOpen(true);
-    const handleClose = () => setOpen(false);
+    const handleClose: DialogProps["onClose"] = (_event, reason) => {
+        if (reason && reason === "backdropClick") return;
+        setOpen(false);
+    };
     const [id, setId] = useState<string>(""); // ids can be multiple, separated by whitespaces
     const [artist, setArtist] = useState<string>("");
     const [album, setAlbum] = useState<string>("");
     const [error, setError] = useState("");
-    const { addCandidate: addCandidateById } = useImportContext();
+    const [searching, setSearching] = useState(false);
 
     const handleApply = () => {
         // parse empty strings
-        addCandidateById(
+        setSearching(true);
+        searchForCandidates(
             selection.id,
             id ? id : null,
             artist ? artist : null,
             album ? album : null
-        );
-        // TODO: suspend while waiting for status update from backend
-        handleClose();
+        )
+            .then((message) => {
+                console.log(message);
+                setSearching(false);
+                setOpen(false);
+            })
+            .catch((message) => {
+                console.error(message);
+                setSearching(false);
+                setError(message as string);
+            });
     };
 
     const isApplyEnabled = () => {
@@ -408,9 +426,9 @@ function AddCandidatesModal({ selection }: { selection: SelectionState }) {
     return (
         <>
             <Tooltip title="Search for more candidates">
-                <Button variant="outlined" onClick={handleOpen}>
+                <IconButton onClick={handleOpen}>
                     <Plus size={14} />
-                </Button>
+                </IconButton>
             </Tooltip>
             <Modal
                 aria-labelledby="unstyled-modal-title"
@@ -447,42 +465,56 @@ function AddCandidatesModal({ selection }: { selection: SelectionState }) {
                             gap: "1rem",
                         }}
                     >
-                        <Typography variant="h5">Add Candidates</Typography>
+                        <Typography variant="h5">Search for candidates</Typography>
                         <SearchField
                             sx={{ width: "100%" }}
                             id="input-search-id"
                             label="Seach by Id"
-                            placeholder="url or musicbrainz id"
+                            placeholder=""
                             multiline
                             onChange={(e) => setId(e.target.value)}
+                            helperText="Identifier or URL to search for, can be musicbrainz id, spotify url, etc. depending on your configuration."
                         />
-                        <Box
-                            sx={{
-                                width: "100%",
-                                display: "flex",
-                                flexDirection: "row",
-                                gap: "1rem",
-                            }}
-                        >
-                            <SearchField
-                                sx={{ width: "100%" }}
-                                id="input-search-artist"
-                                label="Seach by artist"
-                                placeholder="Artist"
-                                onChange={(e) => setArtist(e.target.value)}
-                                onBlur={validateArtistAlbum}
-                            />
-                            <SearchField
-                                sx={{ width: "100%" }}
-                                id="input-search-artist"
-                                label="and album"
-                                placeholder="Album"
-                                onChange={(e) => setAlbum(e.target.value)}
-                                error={error?.length > 0}
-                                onBlur={validateArtistAlbum}
-                                helperText={error}
-                            />
-                        </Box>
+                        <div style={{ width: "100%" }}>
+                            <Box
+                                sx={{
+                                    width: "100%",
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    gap: "1rem",
+                                }}
+                            >
+                                <SearchField
+                                    sx={{ width: "100%" }}
+                                    id="input-search-artist"
+                                    label="Seach by artist"
+                                    placeholder="Artist"
+                                    onChange={(e) => setArtist(e.target.value)}
+                                    onBlur={validateArtistAlbum}
+                                />
+                                <SearchField
+                                    sx={{ width: "100%" }}
+                                    id="input-search-artist"
+                                    label="and album"
+                                    placeholder="Album"
+                                    onChange={(e) => setAlbum(e.target.value)}
+                                    onBlur={validateArtistAlbum}
+                                />
+                            </Box>
+                            <FormHelperText
+                                style={{
+                                    marginInline: "1rem",
+                                }}
+                            >
+                                Search by artist and album name to find more candidates.
+                                Might take a while.
+                            </FormHelperText>
+                        </div>
+                        {error && (
+                            <FormHelperText error={error?.length > 0}>
+                                {error}
+                            </FormHelperText>
+                        )}
                         <Box
                             sx={{
                                 width: "100%",
@@ -495,17 +527,23 @@ function AddCandidatesModal({ selection }: { selection: SelectionState }) {
                             <Button
                                 variant="outlined"
                                 color="warning"
-                                onClick={handleClose}
+                                onClick={() => setOpen(false)}
                             >
                                 Cancel
                             </Button>
                             <Button
                                 onClick={handleApply}
-                                disabled={!isApplyEnabled()}
+                                disabled={!isApplyEnabled() || searching}
                                 variant="outlined"
                                 color="primary"
                             >
-                                Apply
+                                Search{" "}
+                                {searching && (
+                                    <CircularProgress
+                                        size={"1rem"}
+                                        style={{ marginLeft: "0.5rem" }}
+                                    />
+                                )}
                             </Button>
                         </Box>
                     </Paper>

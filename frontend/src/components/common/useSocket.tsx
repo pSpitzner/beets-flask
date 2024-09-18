@@ -1,7 +1,7 @@
 // we use a single socket, currently only needed for the terminal connection
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { io, Socket } from "socket.io-client";
+import { io, ManagerOptions, Socket, SocketOptions } from "socket.io-client";
 import { QueryClient } from "@tanstack/react-query";
 
 import { TagI } from "../tags/_query";
@@ -57,7 +57,27 @@ export const useTerminalSocket = () => {
 /*                                 Interactive Import                                 */
 /* ---------------------------------------------------------------------------------- */
 
-export const useImportSocket = (namespace: string) => {
+/**
+ * Custom hook to manage a WebSocket connection for a specific namespace.
+ *
+ * @param namespace - The namespace for the WebSocket connection.
+ * @param options - Optional configuration options for the WebSocket connection.
+ *
+ * @returns An object containing the WebSocket instance and a boolean indicating whether the connection is active.
+ *
+ * This hook initializes a WebSocket connection to a specified namespace and manages its lifecycle.
+ * It handles connection and disconnection events, logs connection status, and provides a way to check the connection status.
+ * The WebSocket instance is created inline to allow multiple instances if needed.
+ *
+ * Usage:
+ * ```tsx
+ * const { socket, isConnected } = useSocket("myNamespace");
+ * ```
+ */
+export const useSocket = (
+    namespace: string,
+    options?: Partial<ManagerOptions & SocketOptions>
+) => {
     const url: string =
         import.meta.env.MODE === "development"
             ? `ws://localhost:5001/${namespace}`
@@ -66,23 +86,25 @@ export const useImportSocket = (namespace: string) => {
     const [socket, setSocket] = useState<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
 
+    // Create socket inline to allow multiple instances
     useEffect(() => {
         setSocket((prev) => {
             if (prev == null) {
                 return io(url, {
                     autoConnect: true,
                     transports: ["websocket"],
+                    ...options,
                 });
             }
             return prev;
         });
-    }, [url]);
+    }, [options, url]);
 
+    // Register minimal event handlers
     useEffect(() => {
         function handleConnect() {
             console.log(`${namespace}-socket connected`);
             setIsConnected(true);
-            socket?.emit("after_connect");
         }
         function handleDisconnect() {
             console.log(`${namespace}-socket disconnected`);
@@ -143,6 +165,7 @@ export const useStatusSocket = () => {
     return context;
 };
 
+// TODO: use the useSocket hook here
 export const StatusContextProvider = ({
     children,
     client,

@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
-import { useImportSocket } from "../common/useSocket";
+import { useSocket } from "../common/useSocket";
 import { ImportState, SelectionState } from "./types";
 
 interface ImportContextI {
@@ -10,12 +10,12 @@ interface ImportContextI {
     status: string;
     startSession: (path: string) => void;
     chooseCandidate: (selectionId: string, candidateId: string) => void;
-    addCandidate: (
+    searchForCandidates: (
         selectionId: string,
         searchId: string | null,
         artist: string | null,
         album: string | null
-    ) => void;
+    ) => Promise<string>;
     completeAllSelections: () => void;
     allSelectionsValid: boolean;
 }
@@ -23,45 +23,54 @@ interface ImportContextI {
 const ImportContext = createContext<ImportContextI | null>(null);
 
 export const ImportContextProvider = ({ children }: { children: React.ReactNode }) => {
-    const { socket, isConnected } = useImportSocket("import");
+    const { socket, isConnected } = useSocket("import");
     // we want to allow partial updates to parts of the import state, so deconstruct here
     const [selStates, setSelStates] = useState<SelectionState[]>();
     const [status, setStatus] = useState<string>("waiting for socket");
     const [allSelectionsValid, setAllSelectionsValid] = useState<boolean>(false);
 
+    /** Helper functions to update the state */
+
+    const handleImportState = useCallback((state: ImportState | undefined) => {
+        if (!state) return;
+        console.log("Got import state", state);
+        setSelStates(state.selection_states);
+        setStatus(state.status);
+    }, []);
+
+    const handleSelectionState = useCallback((state: SelectionState | undefined) => {
+        if (!state) return;
+        console.log("Got selection state", state);
+        setSelStates((prev) => {
+            if (!prev) {
+                prev = [];
+            }
+
+            const idx = prev.findIndex((s) => s.id === state.id);
+            if (idx === -1) {
+                return [...prev, state];
+            } else {
+                prev[idx] = state;
+                return [...prev];
+            }
+        });
+    }, []);
+
+    // On connect set status and get initial state
+    // i.e. sync state if another client is currently working on the import
     useEffect(() => {
         if (status !== "waiting for socket") return;
         if (!socket) return;
         if (isConnected) {
             setStatus("Socket connected");
+            socket.emit("get_state", handleImportState);
         }
-    }, [socket, isConnected, status, setStatus]);
+    }, [socket, isConnected, status, setStatus, handleImportState]);
 
+    // Register event handlers for import state updates
+    // This is where we update the state of the import
     useEffect(() => {
         if (!socket) return;
-
-        function handleImportState({ data: state }: { data: ImportState }) {
-            console.log("Import state", state);
-            setSelStates(state.selection_states);
-            setStatus(state.status);
-        }
-
-        function handleSelectionState({ data: state }: { data: SelectionState }) {
-            console.log("Selection state", state);
-            setSelStates((prev) => {
-                if (!prev) {
-                    prev = [];
-                }
-
-                const idx = prev.findIndex((s) => s.id === state.id);
-                if (idx === -1) {
-                    return [...prev, state];
-                } else {
-                    prev[idx] = state;
-                    return [...prev];
-                }
-            });
-        }
 
         function handleStatusUpdate({ data: status }: { data: string }) {
             console.log("Status update", status);
@@ -83,8 +92,12 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
             });
         }
 
-        socket.on("import_state", handleImportState);
-        socket.on("selection_state", handleSelectionState);
+        socket.on("import_state", ({ data }: { data: ImportState }) =>
+            handleImportState(data)
+        );
+        socket.on("selection_state", ({ data }: { data: SelectionState }) =>
+            handleSelectionState(data)
+        );
         socket.on("candidate_state", remoteCandidateChoice);
 
         socket.on("import_state_status", handleStatusUpdate);
@@ -100,7 +113,14 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
 
             socket.off("import_state_status", handleStatusUpdate);
         };
-    }, [socket, isConnected, setStatus, setSelStates]);
+    }, [
+        socket,
+        isConnected,
+        setStatus,
+        setSelStates,
+        handleImportState,
+        handleSelectionState,
+    ]);
 
     function startSession(path: string) {
         socket?.emit("start_import_session", { path });
@@ -134,23 +154,48 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
     );
 
     // We want the user to be able to add candidates via search
-    const addCandidate = useCallback(
-        (
-            selectionId: string,
-            searchId: string | null,
-            artist: string | null,
-            album: string | null
-        ) => {
-            socket?.emit("user_action", {
-                event: "candidate_search",
-                selection_id: selectionId,
-                search_id: searchId,
-                artist: artist,
-                album: album,
-            });
-        },
-        [socket]
-    );
+    async function searchForCandidates(
+        selectionId: string,
+        searchId: string | null,
+        artist: string | null,
+        album: string | null
+    ): Promise<string> {
+        if (!socket) throw new Error("Socket not connected");
+
+        return Promise.race([
+            new Promise<string>((resolve, reject) => {
+                socket.emit(
+                    "user_action",
+                    {
+                        event: "candidate_search",
+                        selection_id: selectionId,
+                        search_id: searchId,
+                        artist: artist,
+                        album: album,
+                    },
+                    ({
+                        data,
+                    }: {
+                        data: {
+                            success: boolean;
+                            message: string;
+                            state: SelectionState;
+                        };
+                    }) => {
+                        if (data.success) {
+                            handleSelectionState(data.state);
+                            resolve(data.message);
+                        } else {
+                            reject(data.message);
+                        }
+                    }
+                );
+            }),
+            new Promise<string>(
+                (_, reject) => setTimeout(() => reject("timeout"), 20000) // 20 seconds timeout
+            ),
+        ]);
+    }
 
     // to enable the apply button, check that all selections have a valid candidate
     useEffect(() => {
@@ -202,7 +247,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         status,
         startSession,
         chooseCandidate,
-        addCandidate,
+        searchForCandidates,
         allSelectionsValid,
     };
 

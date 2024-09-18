@@ -207,6 +207,10 @@ export function SourceIcon({
             if (color) Icon = <img src={mb} />;
             else Icon = <Brain />;
             break;
+        case undefined:
+        case null:
+            Icon = <BadgeAlert />;
+            break;
         default:
             console.warn("Unknown source", source);
             Icon = <BadgeAlert />;

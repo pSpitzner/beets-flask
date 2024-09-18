@@ -18,18 +18,18 @@
     line-height: 1.18em;
     padding-left: 1.1rem;
 
+    // mobile first
+    grid-template-columns:
+        [change-arrow] max-content
+        [index-from index-to] max-content
+        [title-from title-to] max-content;
+
     // user config to hide unchanged tracks.
     &[data-show-unchanged-tracks="false"] {
         .noChange {
             display: none !important;
         }
     }
-
-    // mobile first
-    grid-template-columns:
-        [change-arrow] max-content
-        [index-from index-to] max-content
-        [title-from title-to] max-content;
 
     .from,
     .to,
