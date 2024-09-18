@@ -7,7 +7,7 @@ def setup_logging() -> None:
     global log_file_for_web
     global log
 
-    log_file_for_web = os.environ.get("LOG_FILE_WEB", "/repo/log/for_web.log")
+    log_file_for_web = os.environ.get("LOG_FILE_WEB", "./web.log")
 
     logging.basicConfig(
         format="%(levelname)-8s %(name)s %(funcName)s : %(message)s",

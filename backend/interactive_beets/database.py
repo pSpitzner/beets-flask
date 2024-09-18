@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 
 from quart import Quart
-from sqlalchemy import Engine, create_engine
+from sqlalchemy import Engine, StaticPool, create_engine
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
 from interactive_beets.logger import log
@@ -29,11 +29,24 @@ def setup_database(app: Quart) -> None:
     global engine
     global session_factory
 
-    engine = create_engine(app.config["DATABASE_URI"])
-    session_factory = scoped_session(sessionmaker(bind=engine))
+    # Memory tables need a bit of special handling
+    # https://docs.sqlalchemy.org/en/20/dialects/sqlite.html#using-a-memory-database-in-multiple-threads
+    if (
+        app.config["DATABASE_URI"] == "sqlite:///:memory:"
+        or app.config["DATABASE_URI"] == "sqlite://"
+    ):
+        engine = create_engine(
+            app.config["DATABASE_URI"],
+            connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
+    else:
+        engine = create_engine(app.config["DATABASE_URI"])
+
+    session_factory = scoped_session(sessionmaker(bind=engine, expire_on_commit=False))
 
     if app.config["RESET_DB_ON_START"]:
-        log.warn("Resetting database due to RESET_DB=True in config")
+        log.warning("Resetting database due to RESET_DB=True in config")
         reset_database()
 
     create_tables(engine)
@@ -46,6 +59,13 @@ def setup_database(app: Quart) -> None:
 
 def create_tables(engine) -> None:
     Base.metadata.create_all(bind=engine)
+
+    # Add initial TagGroup
+    from interactive_beets.models import TagGroup
+
+    with db_session() as session:
+        tag_group = TagGroup(id="Unsorted")
+        session.merge(tag_group)
 
 
 def reset_database():

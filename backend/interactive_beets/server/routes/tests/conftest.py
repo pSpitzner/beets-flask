@@ -6,7 +6,7 @@ def fixture_testapp():
     from interactive_beets import create_app
 
     app = create_app("test")
-    return app
+    yield app
 
 
 @pytest.fixture(name="client")

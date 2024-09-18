@@ -2,7 +2,6 @@ import pytest
 
 
 class TestErrorHandling:
-
     @pytest.mark.asyncio
     async def test_invalid_usage(self, client):
         response = await client.get("/api_v1/error/invalidUsage")

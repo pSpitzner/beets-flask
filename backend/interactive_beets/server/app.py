@@ -38,7 +38,9 @@ def create_app(mode="dev_local"):
     }
 
     if mode not in switch:
-        raise ValueError(f"Invalid mode: {mode}")
+        raise ValueError(
+            f"Invalid IBEETS_MODE: '{mode}', choose from {list(switch.keys())}"
+        )
 
     app.config.from_object(switch[mode])
 

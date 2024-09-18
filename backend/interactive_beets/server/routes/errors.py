@@ -1,8 +1,8 @@
 import json
 import traceback
+
 from confuse import ConfigError
 from quart import Blueprint, Response, jsonify
-
 from werkzeug.exceptions import HTTPException
 
 error_bp = Blueprint("error", __name__)

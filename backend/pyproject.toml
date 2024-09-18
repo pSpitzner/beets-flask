@@ -15,7 +15,7 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest==8.2.2", "pytest-asyncio==0.23.8"]
+test = ["pytest==8.2.2", "pytest-asyncio==0.23.8", "pytest-dependency==0.6.0"]
 dev = ["isort==5.13.2"]
 
 [build-system]
@@ -33,3 +33,4 @@ skip = ["../.gitignore", "../.dockerignore"]
 
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
+filterwarnings = ["error", "ignore::sqlalchemy.exc.SAWarning"]

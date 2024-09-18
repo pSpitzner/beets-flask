@@ -40,7 +40,11 @@ class Tag(Base):
     # we could alternatively handle this by allowing multiple tag groups
     archived: Mapped[bool] = mapped_column(default=False)
 
-    _group_id: Mapped[str] = mapped_column(ForeignKey("tag_group.id"))
+    _group_id: Mapped[str] = mapped_column(
+        ForeignKey(
+            "tag_group.id",
+        )
+    )
     _tag_group: Mapped[TagGroup] = relationship(back_populates="tag_ids")
 
     distance: Mapped[Optional[float]]
@@ -142,7 +146,7 @@ class Tag(Base):
 
     @group_id.setter
     def group_id(self, group_id):
-        from beets_flask.db_engine import db_session
+        from interactive_beets.database import db_session
 
         with db_session() as session:
             tag_group = session.query(TagGroup).filter_by(id=group_id).first()
