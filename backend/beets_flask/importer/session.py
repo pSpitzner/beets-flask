@@ -1,5 +1,5 @@
 import time
-from typing import Callable, List, Optional, Type
+from typing import Any, Callable, List, Optional, Type
 
 from beets import importer, plugins, library, autotag
 
@@ -8,11 +8,11 @@ from beets.util import pipeline as beets_pipeline
 
 from beets_flask.beets_sessions import BaseSession, set_config_defaults
 from beets_flask.config import config
-from beets_flask.importer.types import AlbumMatch
+from beets_flask.importer.types import AlbumMatch, TrackMatch
 from beets_flask.logger import log
 
-from .pipeline import stage, mutator_stage
-from .states import ImportState, CandidateState
+from .pipeline import mutator_stage
+from .states import ImportState, CandidateState, SelectionState
 from .communicator import ImportCommunicator
 
 
@@ -161,51 +161,22 @@ class InteractiveImportSession(BaseSession):
                 sel_state.current_search_id is not None
                 or sel_state.current_search_artist is not None
             ):
-                log.debug("searching more candidates")
                 sel_state.status = f"adding candidates"
-                new_candidate_states = []
-                if sel_state.current_search_artist is not None:
-                    assert sel_state.current_search_album is not None
-                    _, _, proposal = autotag.tag_album(
-                        task.items,
-                        search_artist=sel_state.current_search_artist,
-                        search_album=sel_state.current_search_album,
-                    )
-                    new_candidate_states.extend(
-                        sel_state.add_candidates(proposal.candidates, insert_at=0)
-                    )
-                if sel_state.current_search_id is not None:
-                    self.communicator.emit_state(sel_state)
-                    _, _, proposal = autotag.tag_album(
-                        task.items,
-                        search_ids=sel_state.current_search_id.split(),
-                    )
-                    new_candidate_states.extend(
-                        sel_state.add_candidates(proposal.candidates, insert_at=0)
-                    )
-                log.debug(f"found candidates {new_candidate_states}")
+                candidates = self.search_candidates(
+                    task,
+                    sel_state.current_search_id,
+                    sel_state.current_search_artist,
+                    sel_state.current_search_album,
+                )
+
+                # Add the new candidates to the selection state
+                sel_state.add_candidates(candidates)
+
+                # Reset search
                 sel_state.current_search_id = None
-                if len(new_candidate_states) > 0:
-                    sel_state.current_candidate_id = new_candidate_states[0].id
-                    self.communicator.emit_state(sel_state)
-                    self.communicator.emit_custom(
-                        "candidate_search_complete",
-                        {
-                            "status": "success",
-                            "selection_id": sel_state.id,
-                            "message": f"Found {len(new_candidate_states)} candidates",
-                        },
-                    )
-                else:
-                    log.debug("no candidates found")
-                    self.communicator.emit_custom(
-                        "candidate_search_complete",
-                        {
-                            "status": "failure",
-                            "selection_id": sel_state.id,
-                            "message": f"No candidates found",
-                        },
-                    )
+                sel_state.current_search_artist = None
+                sel_state.current_search_album = None
+
                 # TODO: TOAST!
                 continue
 
@@ -226,6 +197,40 @@ class InteractiveImportSession(BaseSession):
         log.debug(f"Returning {match.info.album=} {match.info.album_id=} for {task=}")
 
         return match
+
+    def search_candidates(
+        self,
+        task: importer.ImportTask,
+        search_id: str | None,
+        search_artist: str | None,
+        search_album: str | None,
+    ) -> List[AlbumMatch | TrackMatch]:
+        """
+        Search for candidates for the current selection.
+        """
+        log.debug("searching more candidates")
+
+        candidates = []
+        if search_artist is not None:
+            # @ps: why is an assert here? This will error, no?
+            assert search_album is not None
+            _, _, proposal = autotag.tag_album(
+                task.items,
+                search_artist=search_artist,
+                search_album=search_album,
+            )
+            candidates = proposal.candidates + candidates
+
+        if search_id is not None:
+            _, _, proposal = autotag.tag_album(
+                task.items,
+                search_ids=search_id.split(),
+            )
+            candidates = proposal.candidates + candidates
+
+        log.debug(f"found {len(candidates)} new candidates")
+
+        return candidates
 
     def resolve_duplicate(self, task, found_duplicates):
         """

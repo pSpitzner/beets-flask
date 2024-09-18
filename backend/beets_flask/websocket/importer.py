@@ -24,17 +24,19 @@ def connect(sid, environ):
     log.debug(f"ImportSocket new client connected {sid}")
 
 
-@sio.on("after_connect", namespace=namespace)  # type: ignore
-def after_connect(sid):
-    """This needs to be invoked by a callback of the client"""
-    if session is not None:
-        session.communicator.emit_current()
-
-
 @sio.on("disconnect", namespace=namespace)  # type: ignore
 def disconnect(sid):
     """client disconnected"""
     log.debug(f"ImportSocket client disconnected {sid}")
+
+
+@sio.on("get_state", namespace=namespace)  # type: ignore
+def get_state(sid):
+    """This needs to be invoked by a callback of the client"""
+    if session is not None:
+        return session.communicator.state.serialize()
+    else:
+        return None
 
 
 @sio.on("*", namespace=namespace)  # type: ignore
@@ -80,7 +82,9 @@ def choice(sid, req: Union[ChoiceReceive, CompleteReceive]):
     log.debug(f"received user action {req=}")
 
     if not session is None:
-        session.communicator.received_request(req)
+        return session.communicator.received_request(req)
+    else:
+        return False
 
 
 class WebsocketCommunicator(ImportCommunicator):

@@ -1,4 +1,5 @@
 from __future__ import annotations
+import time
 from typing import Any, Generic, List, Literal, TypeVar, TypedDict, Union
 from abc import ABC, abstractmethod
 
@@ -84,6 +85,7 @@ class ImportCommunicator(ABC):
 
         """
         log.debug(f"received_request {req=}")
+        ret_val = {}
         match req["event"]:
             case "candidate_choice":
                 selection_id = req["selection_id"]
@@ -123,9 +125,38 @@ class ImportCommunicator(ABC):
                 sel_state = self.state.get_selection_state_by_id(selection_id)
                 if sel_state is None:
                     raise ValueError("No selection state found for task.")
+                nCandidatesPreSearch = len(sel_state.candidates)
+
+                # This triggers the search and updates the state
                 sel_state.current_search_id = search_id
                 sel_state.current_search_artist = artist
                 sel_state.current_search_album = album
+
+                # State gets set to None when the search is done
+                # Would be nice to await here... well
+                while (
+                    sel_state.current_search_id is not None
+                    or sel_state.current_search_artist is not None
+                    or sel_state.current_search_album is not None
+                ):
+                    time.sleep(1)
+
+                nCandidatesPostSearch = len(sel_state.candidates)
+                if nCandidatesPreSearch != nCandidatesPostSearch:
+                    ret_val["event"] = "candidate_search"
+                    ret_val["data"] = {
+                        "success": True,
+                        "selection_id": sel_state.id,
+                        "message": f"Found {nCandidatesPostSearch - nCandidatesPreSearch} new candidates",
+                        "state": sel_state.serialize(),
+                    }
+                else:
+                    ret_val["event"] = "candidate_search"
+                    ret_val["data"] = {
+                        "success": False,
+                        "selection_id": sel_state.id,
+                        "message": "No new candidates found",
+                    }
 
             case _:
                 log.error(f"Unknown event: {req['event']}")
@@ -133,6 +164,7 @@ class ImportCommunicator(ABC):
 
         # Emit to all (potential) clients
         self._emit(req)
+        return ret_val
 
     @abstractmethod
     def _emit(
