@@ -2,6 +2,9 @@ import os
 
 from flask import Flask
 from flask_cors import CORS
+
+# make sure to load our config first, because it modifies the beets config
+from .config import config
 from .redis import rq
 from .db_engine import setup_db
 
@@ -44,21 +47,19 @@ def create_app():
 
     register_socketio(app)
 
-    from .terminal import register_tmux
+    from .websocket.terminal import register_tmux
+    from .websocket.importer import register_importer
 
     register_tmux()
+    register_importer()
 
-    from .disk import register_inboxes
+    from .inbox import register_inboxes
 
     register_inboxes()
 
     from .invoker import delete_tags
 
     delete_tags(with_status=["pending", "tagging", "importing"])
-
-    from .interactive_import import register_import_socket
-
-    register_import_socket()
 
     log.debug("App created")
 

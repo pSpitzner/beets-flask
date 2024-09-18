@@ -15,6 +15,7 @@ gui:
         expand_tags: yes
         recent_days: 14
         order_by: "name"
+        show_unchanged_tracks: no
 
     terminal:
         start_path: "/repo"
@@ -22,5 +23,3 @@ gui:
     inbox:
         concat_nested_folders: yes
         expand_files: no
-
-

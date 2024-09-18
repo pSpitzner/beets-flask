@@ -1,252 +1,151 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
-// in beets language, items are tracks in the database.
-// the info types are _very_ similar to what we get from our library queries
-// just that we have added a custom `name` field to albums and items.
-// annoying: albuminfo of candidates has a .artist, but albums from library dont.
-import { Album as AlbumInfo, Item as TrackInfo } from "@/components/common/_query";
-
-import { useImportSocket } from "../common/useSocket";
+import { useSocket } from "../common/useSocket";
+import { ImportState, SelectionState } from "./types";
 
 interface ImportContextI {
     // All selections for the current import
     // might be undefined if the data is not yet loaded
-    selections?: SelectionState[];
+    selStates?: SelectionState[];
     status: string;
-    generateDummySelections: () => void;
     startSession: (path: string) => void;
-    chooseCanidate: (selectionId: string, choiceIdx: number) => void;
+    chooseCandidate: (selectionId: string, candidateId: string) => void;
+    searchForCandidates: (
+        selectionId: string,
+        searchId: string | null,
+        artist: string | null,
+        album: string | null
+    ) => Promise<string>;
     completeAllSelections: () => void;
-}
-
-export interface ImportState {
-    selection_states: SelectionState[];
-    status: string;
-}
-
-export interface SelectionState {
-    id: string;
-    current_candidate_idx: number | null;
-    candidates: CandidateChoice[];
-    completed: boolean;
-    toppath?: string; // folder supplied to import by user
-    paths: string[]; // lowest level (album folders) of music
-}
-
-export type CandidateChoice =
-    | {
-          id: number;
-          diff_preview?: string;
-          cur_artist?: string;
-          cur_album?: string;
-          penalties?: string[];
-          items?: MinimalItemAndTrackInfo[];
-          // instead of sending items, we can resolve them from selection_state (ie. the task)
-          track_match: TrackMatch;
-          album_match?: never;
-      }
-    | {
-          id: number;
-          diff_preview?: string;
-          cur_artist?: string;
-          cur_album?: string;
-          penalties?: string[];
-          items?: MinimalItemAndTrackInfo[];
-          track_match?: never;
-          album_match: AlbumMatch;
-      };
-
-interface AlbumMatch {
-    distance: number; // TODO: backend uses an object
-    info: AlbumInfo; // Complete album info
-    extra_items: MinimalItemAndTrackInfo[]; // Items found on disk but not matched online
-    extra_tracks: MinimalItemAndTrackInfo[]; // Tracks found online but not on disk
-    mapping: Record<number, number>; // indices of candidatechoice.items to match.info.tracks
-}
-
-interface TrackMatch {
-    distance: number; // TODO: backend uses an object
-    info: MinimalItemAndTrackInfo;
-}
-
-export interface MinimalItemAndTrackInfo {
-    name: string;
-    title: string;
-    artist: string;
-    album: string;
-    length: number;
-    // track info only
-    data_source?: string;
-    data_url?: string;
-    index?: number;
-    // item only (before import is done)
-    bitrate?: number;
-    format?: string;
-    track?: number; // note that trackinfo > index is 0-based, but item > track is 1-based
+    allSelectionsValid: boolean;
 }
 
 const ImportContext = createContext<ImportContextI | null>(null);
 
 export const ImportContextProvider = ({ children }: { children: React.ReactNode }) => {
-    /** Get data via socket */
-    const { socket, isConnected } = useImportSocket("import");
-    const [selections, setSelections] = useState<SelectionState[]>();
+    const { socket, isConnected } = useSocket("import");
+    // we want to allow partial updates to parts of the import state, so deconstruct here
+    const [selStates, setSelStates] = useState<SelectionState[]>();
     const [status, setStatus] = useState<string>("waiting for socket");
+    const [allSelectionsValid, setAllSelectionsValid] = useState<boolean>(false);
 
+    /** Helper functions to update the state */
+
+    const handleImportState = useCallback((state: ImportState | undefined) => {
+        if (!state) return;
+        console.log("Got import state", state);
+        setSelStates(state.selection_states);
+        setStatus(state.status);
+    }, []);
+
+    const handleSelectionState = useCallback((state: SelectionState | undefined) => {
+        if (!state) return;
+        console.log("Got selection state", state);
+        setSelStates((prev) => {
+            if (!prev) {
+                prev = [];
+            }
+
+            const idx = prev.findIndex((s) => s.id === state.id);
+            if (idx === -1) {
+                return [...prev, state];
+            } else {
+                prev[idx] = state;
+                return [...prev];
+            }
+        });
+    }, []);
+
+    // On connect set status and get initial state
+    // i.e. sync state if another client is currently working on the import
     useEffect(() => {
         if (status !== "waiting for socket") return;
         if (!socket) return;
         if (isConnected) {
             setStatus("Socket connected");
+            socket.emit("get_state", handleImportState);
         }
-    }, [socket, isConnected, status, setStatus]);
+    }, [socket, isConnected, status, setStatus, handleImportState]);
 
+    // Register event handlers for import state updates
+    // This is where we update the state of the import
     useEffect(() => {
         if (!socket) return;
 
-        function handleFullUpdate(data: ImportState) {
-            setSelections(data.selection_states);
-            setStatus(data.status);
-        }
-
-        function handleSelecionState(data: SelectionState) {
-            console.log("Selection state", data);
-            setSelections((prev) => {
-                if (!prev) {
-                    prev = [];
-                }
-
-                // first candidate is the best match, and our default choice,
-                // and we want to set the default choice in the frontend (here!)
-                if (
-                    data.current_candidate_idx === null ||
-                    data.current_candidate_idx === undefined
-                ) {
-                    data.current_candidate_idx = data.candidates.length > 0 ? 0 : null;
-                }
-
-                const idx = prev.findIndex((s) => s.id === data.id);
-                if (idx === -1) {
-                    return [...prev, data];
-                } else {
-                    prev[idx] = data;
-                    return [...prev];
-                }
-            });
-        }
-
-        function handleStatusUpdate(data: { status: string }) {
-            console.log("Status update", data);
-            setStatus(data.status);
+        function handleStatusUpdate({ data: status }: { data: string }) {
+            console.log("Status update", status);
+            setStatus(status);
         }
 
         // another client may make a choice, and the server informs us
         function remoteCandidateChoice(data: {
             selection_id: string;
-            candidate_idx: number;
+            candidate_id: string;
         }) {
-            setSelections((prev) => {
+            setSelStates((prev) => {
                 if (!prev) return prev;
                 const selectionIdx = prev.findIndex((s) => s.id === data.selection_id);
                 if (selectionIdx === -1) return prev;
 
-                prev[selectionIdx].current_candidate_idx = data.candidate_idx;
+                prev[selectionIdx].current_candidate_id = data.candidate_id;
                 return prev;
             });
         }
 
-        socket.on("import_state", handleFullUpdate);
-        socket.on("selection_state", handleSelecionState);
-        socket.on("candidate_choice", remoteCandidateChoice);
+        socket.on("import_state", ({ data }: { data: ImportState }) =>
+            handleImportState(data)
+        );
+        socket.on("selection_state", ({ data }: { data: SelectionState }) =>
+            handleSelectionState(data)
+        );
+        socket.on("candidate_state", remoteCandidateChoice);
+
         socket.on("import_state_status", handleStatusUpdate);
+        // @sm make this a mutation?
+        socket.on("candidate_search_complete", ({ data }) => {
+            console.log(data);
+        });
 
         return () => {
-            socket.off("import_state", handleFullUpdate);
-            socket.off("selection_state", handleSelecionState);
+            socket.off("import_state", handleImportState);
+            socket.off("selection_state", handleSelectionState);
             socket.off("candidate_choice", remoteCandidateChoice);
+
             socket.off("import_state_status", handleStatusUpdate);
         };
-    }, [socket, isConnected, setStatus, setSelections]);
-
-    function generateDummySelections() {
-        const dummyAlbum: AlbumMatch = {
-            distance: 0.1,
-            extra_tracks: [],
-            info: {
-                // Add necessary fields for AlbumInfo
-                name: "Dummy Album",
-                artist: "Dummy Artist",
-                id: 0,
-                albumartist: "Dummy Album Artist",
-                year: 0,
-            },
-        };
-
-        const dummyTrack: TrackMatch = {
-            distance: 0.1,
-            info: {
-                // Add necessary fields for TrackInfo
-                name: "Dummy Track",
-                id: 0,
-                artist: "Dummy Artist",
-                albumartist: "Dummy Album Artist",
-                album: "Dummy Album",
-                album_id: 0,
-                year: 0,
-                isrc: "Dummy ISRC",
-            },
-        };
-
-        const dummyCandidateChoice1: CandidateChoice = {
-            id: 1,
-            album_match: dummyAlbum, // or dummyTrack
-        };
-
-        const dummyCandidateChoice2: CandidateChoice = {
-            id: 2,
-            track_match: dummyTrack, // or dummyTrack
-        };
-
-        setSelections((prev) => {
-            const dummySelectionState: SelectionState = {
-                id: "1" + Math.random() * 10000 + "",
-                current_candidate_idx: 1,
-                candidates: [dummyCandidateChoice1, dummyCandidateChoice2],
-                completed: false,
-            };
-            if (prev) {
-                return [...prev, dummySelectionState];
-            } else {
-                return [dummySelectionState];
-            }
-        });
-    }
+    }, [
+        socket,
+        isConnected,
+        setStatus,
+        setSelStates,
+        handleImportState,
+        handleSelectionState,
+    ]);
 
     function startSession(path: string) {
         socket?.emit("start_import_session", { path });
     }
 
-    /**
-     * Updates the selected candidate for a specific selection.
-     * @param {number} selectionIdx - The index of the selection.
-     * @param {number} choosenCanidateIdx - The index of the chosen candidate.
-     */
-    const chooseCanidate = useCallback(
-        (selectionId: string, canidateId: number) => {
-            setSelections((prev) => {
+    //Updates the selected candidate for a specific selection.
+    const chooseCandidate = useCallback(
+        (selectionId: string, candidateId: string) => {
+            console.log("chooseCandidate", selectionId, candidateId);
+            setSelStates((prev) => {
                 if (!prev) return prev;
                 const selection = prev.find((s) => s.id === selectionId);
                 if (!selection) return prev;
 
-                const idx = selection.candidates.findIndex((c) => c.id === canidateId);
-                if (idx === -1) return prev;
+                if (!selection.candidate_states.some((c) => c.id === candidateId))
+                    return prev;
 
-                selection.current_candidate_idx = idx;
+                selection.current_candidate_id = candidateId;
 
-                // EMIT
-                socket?.emit("choose_candidate", {
+                // for typing in python, we group all user actions and specify via `events` key
+                socket?.emit("user_action", {
+                    event: "candidate_choice",
                     selection_id: selectionId,
-                    candidate_idx: selection.current_candidate_idx,
+                    candidate_id: selection.current_candidate_id,
+                    duplicate_action: selection.duplicate_action,
                 });
                 return [...prev];
             });
@@ -254,8 +153,76 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         [socket]
     );
 
+    // We want the user to be able to add candidates via search
+    async function searchForCandidates(
+        selectionId: string,
+        searchId: string | null,
+        artist: string | null,
+        album: string | null
+    ): Promise<string> {
+        if (!socket) throw new Error("Socket not connected");
+
+        return Promise.race([
+            new Promise<string>((resolve, reject) => {
+                socket.emit(
+                    "user_action",
+                    {
+                        event: "candidate_search",
+                        selection_id: selectionId,
+                        search_id: searchId,
+                        artist: artist,
+                        album: album,
+                    },
+                    ({
+                        data,
+                    }: {
+                        data: {
+                            success: boolean;
+                            message: string;
+                            state: SelectionState;
+                        };
+                    }) => {
+                        if (data.success) {
+                            handleSelectionState(data.state);
+                            resolve(data.message);
+                        } else {
+                            reject(data.message);
+                        }
+                    }
+                );
+            }),
+            new Promise<string>(
+                (_, reject) => setTimeout(() => reject("timeout"), 20000) // 20 seconds timeout
+            ),
+        ]);
+    }
+
+    // to enable the apply button, check that all selections have a valid candidate
+    useEffect(() => {
+        let allValid = true;
+        for (const selection of selStates ?? []) {
+            if (selection.current_candidate_id === null) {
+                allValid = false;
+                break;
+            }
+            const candidate = selection.candidate_states.find(
+                (c) => c.id === selection.current_candidate_id
+            );
+            if (
+                candidate &&
+                candidate.duplicate_in_library &&
+                !selection.duplicate_action
+            ) {
+                allValid = false;
+                break;
+            }
+        }
+        setAllSelectionsValid(allValid);
+    }, [selStates]);
+
+    // Marks all selections as completed and emits a user action event to the server.
     const completeAllSelections = useCallback(() => {
-        setSelections((prev) => {
+        setSelStates((prev) => {
             if (!prev) return prev;
 
             const selectionIds = [];
@@ -264,7 +231,8 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
                 selectionIds.push(selection.id);
             }
 
-            socket?.emit("complete_selections", {
+            socket?.emit("user_action", {
+                event: "selection_complete",
                 selection_ids: selectionIds,
                 are_completed: Array(selectionIds.length).fill(true),
             });
@@ -275,11 +243,12 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
 
     const ret: ImportContextI = {
         completeAllSelections,
-        selections,
+        selStates,
         status,
         startSession,
-        generateDummySelections,
-        chooseCanidate,
+        chooseCandidate,
+        searchForCandidates,
+        allSelectionsValid,
     };
 
     return <ImportContext.Provider value={ret}>{children}</ImportContext.Provider>;

@@ -3,10 +3,8 @@ from typing import Optional, TypedDict
 from urllib.parse import unquote
 from flask import Blueprint, request, jsonify, abort
 from beets_flask.db_engine import db_session
-from beets_flask.disk import (
-    get_inbox_folders,
-    is_album_folder,
-)
+from beets_flask.disk import is_album_folder
+from beets_flask.inbox import get_inbox_folders
 from beets_flask.models import Tag
 from beets_flask.logger import log
 

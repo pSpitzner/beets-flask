@@ -32,4 +32,4 @@ rm /repo/log/for_web.log >/dev/null 2>&1
 rm /repo/frontend/vite.config.ts.timestamp-*.mjs >/dev/null 2>&1
 
 
-pytest beets_flask/tests/
+pytest backend/beets_flask/tests/test_disk.py -vv

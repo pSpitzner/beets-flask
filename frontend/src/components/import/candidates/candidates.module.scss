@@ -1,0 +1,101 @@
+.trackIndex {
+    white-space: pre;
+    //TODO load our own font maybe even add to theme
+    font-family: monospace !important;
+    text-align: end;
+    // mimic span in Box
+    display: block;
+}
+
+/** Basically the table showing the
+* track changes
+*/
+.trackChanges {
+    display: grid;
+    width: 100%;
+    column-gap: 0.1rem;
+    font-size: 0.9rem;
+    line-height: 1.18em;
+    padding-left: 1.1rem;
+
+    // mobile first
+    grid-template-columns:
+        [change-arrow] max-content
+        [index-from index-to] max-content
+        [title-from title-to] max-content;
+
+    // user config to hide unchanged tracks.
+    &[data-show-unchanged-tracks="false"] {
+        .noChange {
+            display: none !important;
+        }
+    }
+
+    .from,
+    .to,
+    .noChange {
+        display: grid;
+        grid-template-columns: subgrid;
+        grid-column: span 5;
+    }
+
+    .from,
+    .to,
+    .noChange {
+        padding-top: 0.3rem;
+    }
+
+    .from + .to,
+    .noChange + .noChange {
+        padding-top: 0;
+    }
+
+    // desktop
+    @media (min-width: 768px) {
+        grid-template-columns:
+            [index-from] max-content
+            [title-from] max-content
+            [change-arrow] max-content
+            [index-to] max-content
+            [title-to] max-content;
+        column-gap: 0.5rem;
+        .from {
+            grid-column: span 2;
+        }
+        .to {
+            grid-column: span 3;
+        }
+        .from,
+        .to,
+        .noChange {
+            padding-top: 0;
+        }
+    }
+}
+
+/** Styling for from and to changed
+*/
+.added {
+    color: #a4bf8c;
+}
+.removed {
+    color: #c0626b;
+}
+.changed {
+    color: #ebcb8c;
+}
+.fade {
+    opacity: 0.4;
+}
+
+/** Styling for the different change items */
+
+.disambig {
+    font-style: italic;
+}
+.dataUrl {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    opacity: 0.7;
+}

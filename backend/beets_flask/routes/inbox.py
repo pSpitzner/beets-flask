@@ -3,12 +3,8 @@ import shutil
 from typing import Optional, TypedDict
 from flask import Blueprint, request, jsonify, abort
 from beets_flask.db_engine import db_session
-from beets_flask.disk import (
-    get_inbox_folders,
-    path_to_dict,
-    get_inbox_for_path,
-    retag_inbox,
-)
+from beets_flask.disk import path_to_dict
+from beets_flask.inbox import get_inbox_folders, get_inbox_for_path, retag_inbox
 from beets_flask.utility import AUDIO_EXTENSIONS
 from beets_flask.models import Tag
 from beets_flask.logger import log

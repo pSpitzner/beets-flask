@@ -10,7 +10,8 @@ from flask import Blueprint, request, jsonify, current_app
 from sqlalchemy import select
 from datetime import datetime, timedelta
 
-from beets_flask.disk import path_to_dict, get_inbox_folders
+from beets_flask.disk import path_to_dict
+from beets_flask.inbox import get_inbox_folders
 from beets_flask.models import Tag, TagGroup
 from beets_flask.db_engine import db_session, with_db_session, Session
 from beets_flask.routes.errors import InvalidUsage
@@ -129,7 +130,6 @@ def _order_by_clause():
         order_by = config["gui"]["tags"]["order_by"].as_str()
     except:
         order_by = ""
-
 
     match order_by:
         case "name":
