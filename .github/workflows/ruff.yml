@@ -1,0 +1,29 @@
+name: Ruff
+
+on:
+    # TODO move to master branch once migration is ready
+    push:
+        branches: ["quart"]
+    pull_request:
+        # The branches below must be a subset of the branches above
+        branches: ["quart"]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Install Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+            - name: Install dependencies
+              run: |
+                  cd ./backend
+                  python -m pip install --upgrade pip
+                  pip install ruff
+            # Update output format to enable automatic inline annotations.
+            - name: Run Ruff
+              run: |
+                  cd ./backend
+                  ruff check --output-format=github .
