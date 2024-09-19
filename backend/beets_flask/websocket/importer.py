@@ -64,7 +64,6 @@ def start_import_session(sid, data):
         session = None
         session_ref = None
 
-    # Create a new session
     state = ImportState()
     communicator = WebsocketCommunicator(state, sio)
     session = InteractiveImportSession(state, communicator, path=path, cleanup=cleanup)
@@ -82,7 +81,10 @@ def choice(sid, req: Union[ChoiceReceive, CompleteReceive]):
     log.debug(f"received user action {req=}")
 
     if not session is None:
-        return session.communicator.received_request(req)
+        ret_val = session.communicator.received_request(req)
+        # Remit state
+        session.communicator.emit_state(session.import_state, skip_sid=sid)
+        return ret_val
     else:
         return False
 
@@ -94,9 +96,9 @@ class WebsocketCommunicator(ImportCommunicator):
         self.sio = sio
         super().__init__(state)
 
-    def _emit(self, req) -> None:
+    def _emit(self, req, **kwargs) -> None:
         # TODO Hardcoded namespace for now
-        self.sio.emit(req["event"], req, namespace=namespace)
+        self.sio.emit(req["event"], req, namespace=namespace, **kwargs)
 
 
 def register_importer():
