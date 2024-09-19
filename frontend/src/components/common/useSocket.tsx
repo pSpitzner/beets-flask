@@ -6,57 +6,6 @@ import { QueryClient } from "@tanstack/react-query";
 
 import { TagI } from "../tags/_query";
 
-/* ---------------------------------------------------------------------------------- */
-/*                                      Terminal                                      */
-/* ---------------------------------------------------------------------------------- */
-
-const TERMINAL_URL =
-    import.meta.env.MODE === "development"
-        ? "ws://localhost:5001/terminal"
-        : "/terminal";
-
-const termSocket = io(TERMINAL_URL, {
-    autoConnect: true,
-    transports: ["websocket"],
-});
-
-export const useTerminalSocket = () => {
-    const [isConnected, setIsConnected] = useState(termSocket.connected);
-
-    useEffect(() => {
-        termSocket.connect();
-
-        return () => {
-            termSocket.disconnect();
-        };
-    }, []);
-
-    useEffect(() => {
-        function handleConnect() {
-            console.log("Terminal websocket connected");
-            setIsConnected(true);
-        }
-        function handleDisconnect() {
-            console.log("Terminal websocket disconnected");
-            setIsConnected(false);
-        }
-
-        termSocket.on("connect", handleConnect);
-        termSocket.on("disconnect", handleDisconnect);
-
-        return () => {
-            termSocket.off("connect", handleConnect);
-            termSocket.off("disconnect", handleDisconnect);
-        };
-    }, []);
-
-    return { socket: termSocket, isConnected };
-};
-
-/* ---------------------------------------------------------------------------------- */
-/*                                 Interactive Import                                 */
-/* ---------------------------------------------------------------------------------- */
-
 /**
  * Custom hook to manage a WebSocket connection for a specific namespace.
  *
@@ -88,20 +37,18 @@ export const useSocket = (
 
     // Create socket inline to allow multiple instances
     useEffect(() => {
-        setSocket((prev) => {
-            if (prev == null) {
-                return io(url, {
-                    autoConnect: true,
-                    transports: ["websocket"],
-                    ...options,
-                });
-            }
-            return prev;
+        const socket = io(url, {
+            autoConnect: false,
+            transports: ["websocket"],
+            ...options,
         });
+        setSocket(socket);
     }, [options, url]);
 
     // Register minimal event handlers
     useEffect(() => {
+        if (!socket) return;
+
         function handleConnect() {
             console.log(`${namespace}-socket connected`);
             setIsConnected(true);
@@ -114,13 +61,16 @@ export const useSocket = (
             console.error(e);
         }
 
-        socket?.on("connect", handleConnect);
-        socket?.on("disconnect", handleDisconnect);
-        socket?.on("connect_error", handleError);
+        socket.on("connect", handleConnect);
+        socket.on("disconnect", handleDisconnect);
+        socket.on("connect_error", handleError);
+        socket.connect();
 
         return () => {
-            socket?.off("connect", handleConnect);
-            socket?.off("disconnect", handleDisconnect);
+            socket.off("connect", handleConnect);
+            socket.off("disconnect", handleDisconnect);
+            socket.off("connect_error", handleError);
+            socket.disconnect();
         };
     }, [socket, namespace]);
 
@@ -130,6 +80,8 @@ export const useSocket = (
 /* ---------------------------------------------------------------------------------- */
 /*                           Status Updates, (previous SSE)                           */
 /* ---------------------------------------------------------------------------------- */
+// TODO: This should be moved into its own file / folder. Maybe a tags folder?
+// We also can use the generic useSocket hook here
 
 interface StatusInvalidationI {
     attributes: Record<string, string> | "all";
@@ -165,7 +117,6 @@ export const useStatusSocket = () => {
     return context;
 };
 
-// TODO: use the useSocket hook here
 export const StatusContextProvider = ({
     children,
     client,

@@ -8,11 +8,11 @@ import React, {
     useState,
 } from "react";
 import { Socket } from "socket.io-client";
-import { Button, IconButton,Portal, Slide } from "@mui/material";
+import { Button, IconButton, Portal, Slide } from "@mui/material";
 import { FitAddon as xTermFitAddon } from "@xterm/addon-fit";
 import { Terminal as xTerminal } from "@xterm/xterm";
 
-import { useTerminalSocket } from "@/components/common/useSocket";
+import { useSocket } from "@/components/common/useSocket";
 
 import "node_modules/@xterm/xterm/css/xterm.css";
 import styles from "./terminal.module.scss";
@@ -68,35 +68,36 @@ const SlideIn = ({ children }: { children: React.ReactNode }) => {
 
     return (
         <>
-        <Button
-        variant="outlined"
-        color="primary"
-        onClick={toggle}
-        className={styles.terminalExpandButton}
-        startIcon={<TerminalIcon size={14} />}
-    >
-        Terminal
-    </Button>
-        <Portal container={document.getElementById("app")}>
-            <div className={styles.slideIn} data-open={open}>
-                <Slide direction="up" in={open}>
-                    <div>
-                        <div className={styles.slideInHeader}>
-                            <IconButton
-                                onClick={toggle}
-                                color="primary"
-                                size="small"
-                                className={styles.terminalCollapseButton}
-                            >
-                                <ChevronDown size={14} />
-                            </IconButton>
+            <Button
+                variant="outlined"
+                color="primary"
+                onClick={toggle}
+                className={styles.terminalExpandButton}
+                startIcon={<TerminalIcon size={14} />}
+            >
+                Terminal
+            </Button>
+            <Portal container={document.getElementById("app")}>
+                <div className={styles.slideIn} data-open={open}>
+                    <Slide direction="up" in={open}>
+                        <div>
+                            <div className={styles.slideInHeader}>
+                                <IconButton
+                                    onClick={toggle}
+                                    color="primary"
+                                    size="small"
+                                    className={styles.terminalCollapseButton}
+                                >
+                                    <ChevronDown size={14} />
+                                </IconButton>
+                            </div>
+                            <div className={styles.terminalOuterContainer}>
+                                {children}
+                            </div>
                         </div>
-                        <div className={styles.terminalOuterContainer}>{children}</div>
-                    </div>
-                </Slide>
-            </div>
-
-        </Portal>
+                    </Slide>
+                </div>
+            </Portal>
         </>
     );
 };
@@ -125,9 +126,12 @@ function XTermBinding() {
                 const key = e.key.toLowerCase();
                 if (key === "v") {
                     // ctrl+shift+v: paste whatever is in the clipboard
-                    navigator.clipboard.readText().then((toPaste) => {
-                        term.write(toPaste);
-                    }).catch(console.error);
+                    navigator.clipboard
+                        .readText()
+                        .then((toPaste) => {
+                            term.write(toPaste);
+                        })
+                        .catch(console.error);
                     return false;
                 } else if (key === "c" || key === "x") {
                     // ctrl+shift+x: copy whatever is highlighted to clipboard
@@ -174,23 +178,17 @@ export interface TerminalContextI {
     setOpen: Dispatch<SetStateAction<boolean>>;
     inputText: (input: string) => void;
     clearInput: () => void;
-    socket?: Socket;
+    socket: Socket | null;
     term?: xTerminal;
 }
 
-const TerminalContext = createContext<TerminalContextI>({
-    open: false,
-    toggle: () => { },
-    setOpen: () => { },
-    inputText: () => { },
-    clearInput: () => { },
-});
+const TerminalContext = createContext<TerminalContextI | null>(null);
 
 export function TerminalContextProvider({ children }: { children: React.ReactNode }) {
+    const { socket, isConnected } = useSocket("terminal");
+
     const [open, setOpen] = useState(false);
     const [term, setTerm] = useState<xTerminal>();
-
-    const { socket, isConnected } = useTerminalSocket();
 
     useEffect(() => {
         // Create gui on mount
@@ -207,19 +205,23 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
         }
     }, [term]);
 
-    // Attatch socketio handler
+    // Attach socket handler
     useEffect(() => {
-        if (!term || !isConnected) return;
+        if (!term || !isConnected || !socket) return;
 
         term.writeln("\rConnected!   ");
 
         const onInput = term.onData((data) => {
-            // console.log("ptyInput", data);
             if (data === "\x01" || data === "\x04") {
                 // prevent ctrl+a because it can detach tmux, and ctrl+d because it can close the terminal
                 return;
             }
             socket.emit("ptyInput", { input: data });
+        });
+
+        const onResize = term.onResize(({ cols, rows }) => {
+            // console.log(`Terminal was resized to ${cols} cols and ${rows} rows.`);
+            socket.emit("ptyResize", { cols, rows: rows });
         });
 
         function onOutput(data: { output: string[] }) {
@@ -239,22 +241,17 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
                 }
             });
         }
-        socket.on("ptyOutput", onOutput);
 
         function onCursorUpdate(data: { x: number; y: number }) {
             // xterm uses 1-based indexing
             term!.write(`\x1b[${data.y + 1};${data.x + 1}H`);
         }
-        socket.on("ptyCursorPosition", onCursorUpdate);
 
-        const onResize = term.onResize(({ cols, rows }) => {
-            // console.log(`Terminal was resized to ${cols} cols and ${rows} rows.`);
-            socket.emit("ptyResize", { cols, rows: rows });
-        });
+        socket.on("ptyOutput", onOutput);
+        socket.on("ptyCursorPosition", onCursorUpdate);
 
         // resize once on connect (after we fitted size on mount)
         socket.emit("ptyResize", { cols: term.cols, rows: term.rows });
-
         // request server update, so show whats actually on the pty when connecting
         socket.emit("ptyResendOutput");
 
@@ -274,10 +271,20 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
     }, [open, term]);
 
     function inputText(t: string) {
+        if (!socket) {
+            console.error("No socket available");
+            return;
+        }
+
         socket.emit("ptyInput", { input: t });
     }
 
     function clearInput() {
+        if (!socket) {
+            console.error("No socket available");
+            return;
+        }
+
         socket.emit("ptyInput", { input: "\x15" });
     }
 
@@ -299,5 +306,12 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
 }
 
 export function useTerminalContext() {
-    return React.useContext(TerminalContext);
+    const context = React.useContext(TerminalContext);
+
+    if (!context) {
+        throw new Error(
+            "useTerminalContext must be used within a TerminalContextProvider"
+        );
+    }
+    return context;
 }
