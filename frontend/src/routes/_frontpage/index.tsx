@@ -1,4 +1,4 @@
-import Grid from "@mui/material/Unstable_Grid2";
+import Grid from "@mui/material/Grid2";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { InboxStatsGridItems } from "@/components/frontpage/inboxStats";
@@ -20,7 +20,14 @@ function Index() {
             <Outlet />
             <Grid container spacing={2} display="flex" justifyContent="center">
                 <InboxStatsGridItems />
-                <Grid xs={12} sm={8} md={8} lg={6}>
+                <Grid
+                    size={{
+                        xs: 12,
+                        sm: 8,
+                        md: 8,
+                        lg: 6,
+                    }}
+                >
                     <LibraryStats />
                 </Grid>
             </Grid>

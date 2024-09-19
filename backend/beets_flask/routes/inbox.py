@@ -18,6 +18,33 @@ from sqlalchemy import select
 inbox_bp = Blueprint("inbox", __name__, url_prefix="/inbox")
 
 
+@inbox_bp.route("/flatPaths", methods=["POST"])
+def get_tree():
+    """
+    Get all flat paths for the inbox folder
+
+    # Request args
+    files: bool = False
+    depth: int = 2
+    """
+    show_files = bool(request.args.get("files", False))
+    depth = int(request.args.get("depth", -1))
+
+    folders = get_inbox_folders()
+
+    paths = []
+    for folder in folders:
+        for root, dirnames, filenames in os.walk(folder):
+            if depth == -1 or root[len(folder) :].count(os.sep) < depth:
+                for dirname in dirnames:
+                    paths.append(os.path.join(root, dirname))
+                if show_files:
+                    for filename in filenames:
+                        paths.append(os.path.join(root, filename))
+
+    return jsonify(paths)
+
+
 @inbox_bp.route("/", methods=["GET"])
 def get_all():
     """

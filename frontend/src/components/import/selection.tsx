@@ -6,7 +6,6 @@ import {
     DialogProps,
     FormHelperText,
     IconButton,
-    Input,
     Modal,
     styled,
     TextField,
@@ -30,6 +29,7 @@ import {
 } from "@/components/tags/similarityBadge";
 
 import { useConfig } from "../common/useConfig";
+import { InboxPathSelector } from "../inbox/inboxPathSelector";
 import { CandidatePreview } from "./candidates/preview";
 import { useImportContext } from "./context";
 import { PenaltyIconRow } from "./icons";
@@ -42,9 +42,7 @@ export function ImportView() {
     const { completeAllSelections, startSession, allSelectionsValid, status } =
         useImportContext();
 
-    const [path, setPath] = useState<string>(
-        "/music/inbox.nosync/John B/Light Speed [ALBUM]/CD1"
-    );
+    const [path, setPath] = useState<string | null>(null);
 
     return (
         <div>
@@ -59,19 +57,18 @@ export function ImportView() {
                     flexDirection: "column",
                 }}
             >
-                <div className="flex gap-2">
-                    <Input
-                        type="text"
-                        placeholder="Enter path to start session"
-                        className="w-96"
+                <div className="flex gap-2 w-100">
+                    <InboxPathSelector
                         value={path}
-                        onChange={(e) => setPath(e.target.value)}
-                    ></Input>
+                        onChange={(_e, v) => setPath(v)}
+                        style={{ width: "500px" }}
+                    />
+
                     <Button
                         variant="outlined"
                         color="primary"
                         onClick={() => {
-                            startSession(path);
+                            if (path) startSession(path);
                         }}
                     >
                         (Re-)Start Session
@@ -559,15 +556,23 @@ const Backdrop = forwardRef<HTMLDivElement, { open?: boolean; className: string 
             className={className}
             ref={ref}
             {...other}
-            sx={{
-                display: open ? "block" : "none",
-                position: "fixed",
-                inset: 0,
-                backgroundColor: "#00000033",
-                backdropFilter: "blur(5px)",
-                zIndex: -1,
-                WebkitTapHighlightColor: "transparent",
-            }}
+            sx={[
+                {
+                    position: "fixed",
+                    inset: 0,
+                    backgroundColor: "#00000033",
+                    backdropFilter: "blur(5px)",
+                    zIndex: -1,
+                    WebkitTapHighlightColor: "transparent",
+                },
+                open
+                    ? {
+                          display: "block",
+                      }
+                    : {
+                          display: "none",
+                      },
+            ]}
         />
     )
 );

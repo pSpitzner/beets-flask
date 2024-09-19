@@ -259,7 +259,7 @@ export function SelectionSummary({ ...props }: Partial<ActionProps>) {
 
     return (
         // make this a non-clickable heading
-        <Heading {...props} text={N.current + " selected"} />
+        (<Heading {...props} text={N.current + " selected"} />)
     );
 }
 

@@ -180,7 +180,7 @@ export const IconTextButtonWithMutation = forwardRef(
 
         return (
             // PS 24-06-06 tailwind css did not seem to work, w-full had no effect for me.
-            <div style={{ width: "100%" }} ref={ref}>
+            (<div style={{ width: "100%" }} ref={ref}>
                 <Button
                     {...props}
                     onClick={(event: React.MouseEvent) => {
@@ -214,7 +214,7 @@ export const IconTextButtonWithMutation = forwardRef(
                 {isError && (
                     <ErrorDialog open={isError} error={error} onClose={reset} />
                 )}
-            </div>
+            </div>)
         );
     }
 );

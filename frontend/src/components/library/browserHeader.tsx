@@ -128,14 +128,12 @@ function LinkTypography({
     if (!params) {
         return <Typography sx={sx}>{label}</Typography>;
     }
-
     let to = `/library/browse`;
     if (target == "artist") {
         to = `/library/browse/${params.artist}`;
     } else if (target == "album") {
         to = `/library/browse/${params.artist}/${params.albumId}`;
     }
-
     return (
         <Link to={to} preload={"intent"} preloadDelay={2000}>
             <Typography sx={sx}>{label}</Typography>

@@ -103,9 +103,7 @@ interface StatusContextI {
     socket?: Socket;
 }
 
-const StatusContext = createContext<StatusContextI>({
-    isConnected: false,
-});
+const StatusContext = createContext<StatusContextI | null>(null);
 
 export const useStatusSocket = () => {
     const context = useContext(StatusContext);
