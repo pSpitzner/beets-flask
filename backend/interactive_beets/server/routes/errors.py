@@ -1,3 +1,8 @@
+"""Error handling for the server.
+
+Generally all errors are caught and handled here. This includes custom exceptions. Every exception is returned as a JSON response with the error message and status code.
+"""
+
 import json
 import traceback
 
@@ -9,6 +14,16 @@ error_bp = Blueprint("error", __name__)
 
 
 class InvalidUsage(Exception):
+    """Custom exception for bad requests.
+
+    Parameters
+    ----------
+    message : str
+        The error message to be returned.
+    status_code : int, optional
+        The status code to be returned, by default 400.
+    """
+
     status_code = 400
 
     def __init__(self, message, status_code=None, payload=None):
@@ -19,6 +34,7 @@ class InvalidUsage(Exception):
         self.payload = payload
 
     def to_dict(self):
+        """Return a dictionary representation of the exception."""
         rv = dict(self.payload or ())
         rv["error"] = "Bad request"
         rv["message"] = self.message

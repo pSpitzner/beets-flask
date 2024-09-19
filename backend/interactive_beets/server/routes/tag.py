@@ -1,10 +1,12 @@
+"""Define the routes for the tag database model."""
+
 from quart import Blueprint, abort, jsonify, request
 from sqlalchemy import select
 
 from interactive_beets.config import config
 from interactive_beets.database import db_session
 from interactive_beets.logger import log
-from interactive_beets.models import Tag, TagGroup
+from interactive_beets.models import Tag
 
 from .errors import InvalidUsage
 
@@ -13,7 +15,7 @@ tag_bp = Blueprint("tag", __name__, url_prefix="/tag")
 
 @tag_bp.route("/", methods=["GET"])
 async def get_all():
-    """Get all tags"""
+    """Get all tags."""
     with db_session() as session:
         stmt = select(Tag).order_by(Tag.created_at.desc())
         tags = session.execute(stmt).scalars().all()
@@ -22,7 +24,7 @@ async def get_all():
 
 @tag_bp.route("/id/<tag_id>", methods=["GET"])
 def get_tag_by_id(tag_id: str):
-    """Get a task by its id"""
+    """Get a task by its id."""
     try:
         with db_session() as session:
             tag = session.query(Tag).filter(Tag.id == tag_id).first()
@@ -34,7 +36,7 @@ def get_tag_by_id(tag_id: str):
 
 @tag_bp.route("/id/<tag_id>", methods=["DELETE"])
 async def delete_tag_by_id(tag_id: str):
-    """Delete a tag by its id"""
+    """Delete a tag by its id."""
     with db_session() as session:
         tag = Tag.get_by(Tag.id == tag_id, session=session)
         if not tag:
@@ -48,7 +50,7 @@ async def delete_tag_by_id(tag_id: str):
 @tag_bp.route("/path/<path:folder>", methods=["GET"])
 async def get_tag_by_folder_path(folder: str):
     print(folder)
-    """Get a tag by its folder path on disk"""
+    """Get a tag by its folder path on disk."""
     with db_session() as session:
         tag = Tag.get_by(Tag.album_folder == "/" + folder, session=session)
         return tag.to_dict() if tag else {}
@@ -56,7 +58,7 @@ async def get_tag_by_folder_path(folder: str):
 
 @tag_bp.route("/path/<path:folder>", methods=["DELETE"])
 async def delete_tag_by_folder_path(folder: str):
-    """Delete a tag by its folder path on disk"""
+    """Delete a tag by its folder path on disk."""
     with db_session() as session:
         tag = Tag.get_by(Tag.album_folder == "/" + folder, session=session)
         if not tag:
@@ -68,15 +70,22 @@ async def delete_tag_by_folder_path(folder: str):
 
 @tag_bp.route("/add", methods=["POST"])
 async def add_tag():
-    """
+    """Add a tag to the database.
+
     Add one or multiple tags. You need to specify the folder of the album,
     and it has to be a valid album folder.
 
-    # Params
-    - `kind` (str): The kind of the tag
-    - `folders` (list): A list of folders to tag
-    - OR `folder` (str): Single folder to tag
+    Parameters
+    ----------
+    kind : str
+        The kind of the tag
+    folder : str or list
+        The folder to tag
 
+    Returns
+    -------
+    dict
+        The added tag
     """
     data = await request.get_json()
     kind = data.get("kind", None)
@@ -103,6 +112,7 @@ async def add_tag():
             session.commit()
             tags.append(tag.to_dict())
 
+    # TODO
     # invoker.enqueue(tag.id, session=session)
     return jsonify(
         {

@@ -1,3 +1,9 @@
+"""
+The main entry point for creating the Interactive Beets server. 
+
+Here the Quart application initialized the database and registers the blueprints for all routes.
+"""
+
 import os
 from pprint import pformat
 
@@ -9,8 +15,7 @@ from interactive_beets.logger import log
 
 
 def create_app(mode="dev_local"):
-    """
-    Creates and configures the Quart application.
+    """Create and configure the Quart application.
 
     This function initializes the Quart app with necessary configurations,
     sets up database connections, registers blueprints, and initializes
@@ -18,11 +23,15 @@ def create_app(mode="dev_local"):
     and tag deletion. It also ensures that exceptions are propagated correctly
     and configures CORS for development purposes.
 
-    Parameters:
-        mode (str): The mode in which the app is running. Defaults to "dev".
+    Parameters
+    ----------
+    mode : str
+        The mode in which the app is running. Defaults to "dev".
 
-    Returns:
-        Quart: The configured Quart application instance.
+    Returns
+    -------
+    app : Quart
+        The configured Quart application instance.
     """
     app = Quart(__name__, instance_relative_config=True)
 

@@ -1,3 +1,5 @@
+"""Just some temporary tests"""
+
 import asyncio
 
 from quart import Blueprint, websocket
