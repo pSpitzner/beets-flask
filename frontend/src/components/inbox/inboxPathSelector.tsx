@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Autocomplete from "@mui/material/Autocomplete";
 import CircularProgress from "@mui/material/CircularProgress";
 import TextField from "@mui/material/TextField";
@@ -46,10 +46,6 @@ export function InboxPathSelector({
     function handleClose() {
         setOpen(false);
     }
-
-    useEffect(() => {
-        console.log(inputValue);
-    }, [inputValue]);
 
     const filteredPaths = useMemo(() => {
         if (!paths) return [];

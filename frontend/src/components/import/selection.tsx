@@ -105,16 +105,16 @@ function Selections() {
             {/* {!selections && <Skeleton />} */}
             {selStates?.map((selection) => {
                 // For debugging the hover state get current selected candidate
-                const canditate = selection.candidate_states.find(
+                const candidate = selection.candidate_states.find(
                     (c) => c.id === selection.current_candidate_id
                 );
 
                 return (
                     <Fragment key={selection.id}>
                         <ImportSelection selection={selection} />
-                        {canditate && (
+                        {candidate && (
                             <Paper className="p-3">
-                                <CandidatePreview candidate={canditate} />
+                                <CandidatePreview candidate={candidate} />
                             </Paper>
                         )}
                     </Fragment>
@@ -396,13 +396,11 @@ function AddCandidatesModal({ selection }: { selection: SelectionState }) {
             artist ? artist : null,
             album ? album : null
         )
-            .then((message) => {
-                console.log(message);
+            .then(() => {
                 setSearching(false);
                 setOpen(false);
             })
             .catch((message) => {
-                console.error(message);
                 setSearching(false);
                 setError(message as string);
             });

@@ -30,7 +30,6 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
     const [allSelectionsValid, setAllSelectionsValid] = useState<boolean>(false);
 
     /** Helper functions to update the state */
-
     const handleImportState = useCallback((state: ImportState | undefined) => {
         if (!state) return;
         console.log("Got import state", state);
@@ -126,7 +125,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         socket?.emit("start_import_session", { path });
     }
 
-    //Updates the selected candidate for a specific selection.
+    // Updates the selected candidate for a specific selection.
     const chooseCandidate = useCallback(
         (selectionId: string, candidateId: string) => {
             console.log("chooseCandidate", selectionId, candidateId);
@@ -184,6 +183,10 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
                     }) => {
                         if (data.success) {
                             handleSelectionState(data.state);
+                            chooseCandidate(
+                                selectionId,
+                                data.state.candidate_states[0].id
+                            );
                             resolve(data.message);
                         } else {
                             reject(data.message);

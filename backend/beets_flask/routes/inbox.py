@@ -12,7 +12,7 @@ from beets_flask.logger import log
 import os
 
 from pathlib import Path
-
+from beets_flask.disk import is_album_folder
 from sqlalchemy import select
 
 inbox_bp = Blueprint("inbox", __name__, url_prefix="/inbox")
@@ -37,7 +37,8 @@ def get_tree():
         for root, dirnames, filenames in os.walk(folder):
             if depth == -1 or root[len(folder) :].count(os.sep) < depth:
                 for dirname in dirnames:
-                    paths.append(os.path.join(root, dirname))
+                    if is_album_folder(os.path.join(root, dirname)):
+                        paths.append(os.path.join(root, dirname))
                 if show_files:
                     for filename in filenames:
                         paths.append(os.path.join(root, filename))
