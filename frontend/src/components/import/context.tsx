@@ -126,7 +126,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
 
     function startSession() {
         if (sessionPath) {
-            socket?.emit("start_import_session", { sessionPath });
+            socket?.emit("start_import_session", { path: sessionPath });
         } else {
             throw new Error("SessionPath needs to be set before starting a session");
         }

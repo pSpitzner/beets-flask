@@ -1,4 +1,4 @@
-import { Download, Home, Inbox, Library, Search, Tag } from "lucide-react";
+import { HardDriveDownload, Home, Inbox, Library, Search, Tag } from "lucide-react";
 import { ReactElement } from "react";
 import { Typography } from "@mui/material";
 import { styled } from "@mui/material/styles";
@@ -70,7 +70,7 @@ export default function NavTabs() {
         { label: "Home", icon: <Home />, to: "/" as const },
         { label: "Inbox", icon: <Inbox />, to: "/inbox" as const },
         { label: "Tags", icon: <Tag />, to: "/tags" as const },
-        { label: "Import", icon: <Download />, to: "/import" as const },
+        { label: "Import", icon: <HardDriveDownload />, to: "/import" as const },
         { label: "Library", icon: <Library />, to: "/library/browse" as const },
         { label: "Search", icon: <Search />, to: "/library/search" as const },
     ];

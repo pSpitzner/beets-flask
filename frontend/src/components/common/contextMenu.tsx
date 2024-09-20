@@ -5,6 +5,7 @@ import {
     LayoutList,
     ListChecks,
     Maximize,
+    MessageCircleQuestion,
     Minimize2,
     Tag,
     Terminal,
@@ -24,6 +25,7 @@ import { Typography } from "@mui/material";
 import Menu from "@mui/material/Menu";
 import MenuItem, { MenuItemOwnProps } from "@mui/material/MenuItem";
 import { useMutation, UseMutationOptions } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 
 import { queryClient, TagI } from "@/components/common/_query";
 import {
@@ -84,6 +86,7 @@ export const defaultActions = [
     <DeselectAllAction key="action-deselect-all" divider />,
     <RetagAction key="action-retag" />,
     <ImportAction key="action-import" />,
+    <InteractiveImportAction key="action-interactive-import" />,
     <TerminalImportAction key="action-terminal-import" />,
     <UndoImportAction key="action-undo-import" />,
     <CopyPathAction key="action-copy-path" />,
@@ -259,7 +262,7 @@ export function SelectionSummary({ ...props }: Partial<ActionProps>) {
 
     return (
         // make this a non-clickable heading
-        (<Heading {...props} text={N.current + " selected"} />)
+        <Heading {...props} text={N.current + " selected"} />
     );
 }
 
@@ -356,6 +359,41 @@ export function CopyPathAction(props: Partial<ActionProps>) {
     );
 }
 
+export function InteractiveImportAction(props: Partial<ActionProps>) {
+    const { closeMenu } = useContextMenu();
+    const { getSelected } = useSelection();
+    const navigate = useNavigate();
+    const selected = getSelected();
+    const sessionPath = useRef("");
+
+    if (selected.length == 1) {
+        sessionPath.current = encodeURIComponent(selected[0]);
+    } else {
+        return null;
+    }
+
+    return (
+        <Action
+            {...props}
+            onClick={() => {
+                navigate({
+                    to: `/import?sessionPath=${sessionPath.current}`,
+                })
+                    .then(() => {
+                        closeMenu();
+                    })
+                    .catch((error) => {
+                        console.error("Navigation error:", error);
+                        closeMenu();
+                    });
+                closeMenu();
+            }}
+            icon={<MessageCircleQuestion />}
+            text={"Import (interactive)"}
+        />
+    );
+}
+
 export function TerminalImportAction(props: Partial<ActionProps>) {
     const { closeMenu } = useContextMenu();
     const { setOpen, inputText, clearInput } = useTerminalContext();
@@ -382,7 +420,7 @@ export function TerminalImportAction(props: Partial<ActionProps>) {
                 inputText(`beet import -t ${text.current}`);
             }}
             icon={<Terminal />}
-            text={"Terminal Import"}
+            text={"Import (cli)"}
         />
     );
 }
@@ -517,7 +555,7 @@ export function ImportAction(props: Partial<ActionProps>) {
         <ActionWithMutation
             {...props}
             icon={<HardDriveDownload />}
-            text={"Import"}
+            text={"Import (auto)"}
             mutationOption={importOptions}
         />
     );
