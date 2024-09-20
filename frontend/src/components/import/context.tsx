@@ -8,7 +8,9 @@ interface ImportContextI {
     // might be undefined if the data is not yet loaded
     selStates?: SelectionState[];
     status: string;
-    startSession: (path: string) => void;
+    sessionPath: string | null;
+    setSessionPath: (path: string | null) => void;
+    startSession: () => void;
     chooseCandidate: (selectionId: string, candidateId: string) => void;
     searchForCandidates: (
         selectionId: string,
@@ -27,6 +29,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
     // we want to allow partial updates to parts of the import state, so deconstruct here
     const [selStates, setSelStates] = useState<SelectionState[]>();
     const [status, setStatus] = useState<string>("waiting for socket");
+    const [sessionPath, setSessionPath] = useState<string | null>(null);
     const [allSelectionsValid, setAllSelectionsValid] = useState<boolean>(false);
 
     /** Helper functions to update the state */
@@ -121,8 +124,12 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         handleSelectionState,
     ]);
 
-    function startSession(path: string) {
-        socket?.emit("start_import_session", { path });
+    function startSession() {
+        if (sessionPath) {
+            socket?.emit("start_import_session", { sessionPath });
+        } else {
+            throw new Error("SessionPath needs to be set before starting a session");
+        }
     }
 
     // Updates the selected candidate for a specific selection.
@@ -248,6 +255,8 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         completeAllSelections,
         selStates,
         status,
+        sessionPath,
+        setSessionPath,
         startSession,
         chooseCandidate,
         searchForCandidates,

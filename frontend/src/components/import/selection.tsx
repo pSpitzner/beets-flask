@@ -29,7 +29,6 @@ import {
 } from "@/components/tags/similarityBadge";
 
 import { useConfig } from "../common/useConfig";
-import { InboxPathSelector } from "../inbox/inboxPathSelector";
 import { CandidatePreview } from "./candidates/preview";
 import { useImportContext } from "./context";
 import { PenaltyIconRow } from "./icons";
@@ -38,65 +37,10 @@ import { CandidateState, SelectionState } from "./types";
 import "@/main.css";
 import styles from "./import.module.scss";
 
-export function ImportView() {
-    const { completeAllSelections, startSession, allSelectionsValid, status } =
-        useImportContext();
-
-    const [path, setPath] = useState<string | null>(null);
-
-    return (
-        <div>
-            <Selections />
-
-            <Box
-                sx={{
-                    display: "flex",
-                    gap: "1rem",
-                    justifyContent: "flex-start",
-                    alignItems: "flex-start",
-                    flexDirection: "column",
-                }}
-            >
-                <div className="flex gap-2 w-100">
-                    <InboxPathSelector
-                        value={path}
-                        onChange={(_e, v) => setPath(v)}
-                        style={{ width: "500px" }}
-                    />
-
-                    <Button
-                        variant="outlined"
-                        color="primary"
-                        onClick={() => {
-                            if (path) startSession(path);
-                        }}
-                    >
-                        (Re-)Start Session
-                    </Button>
-                </div>
-                <div className="flex gap-2">
-                    <Button
-                        variant="outlined"
-                        color="primary"
-                        onClick={completeAllSelections}
-                        disabled={!allSelectionsValid}
-                    >
-                        Apply
-                    </Button>
-                    <Button variant="outlined" color="warning">
-                        Abort
-                    </Button>
-                </div>
-                <Typography>Status: {status}</Typography>
-            </Box>
-        </div>
-    );
-}
-
 /** Wrapper for all selection to align them in a grid based on the view size
  * with automatically wrapping or resizing the items.
  */
-function Selections() {
+export function Selections() {
     const { selStates } = useImportContext();
 
     return (

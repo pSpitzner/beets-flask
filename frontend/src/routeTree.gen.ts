@@ -11,9 +11,9 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as PlaygroundImport } from './routes/playground'
 import { Route as TagsIndexImport } from './routes/tags/index'
 import { Route as InboxIndexImport } from './routes/inbox/index'
+import { Route as ImportIndexImport } from './routes/import/index'
 import { Route as FrontpageIndexImport } from './routes/_frontpage/index'
 import { Route as LibrarySearchImport } from './routes/library/search'
 import { Route as LibraryBrowseImport } from './routes/library/browse'
@@ -25,11 +25,6 @@ import { Route as LibraryBrowseArtistAlbumIdItemIdImport } from './routes/librar
 
 // Create/Update Routes
 
-const PlaygroundRoute = PlaygroundImport.update({
-  path: '/playground',
-  getParentRoute: () => rootRoute,
-} as any)
-
 const TagsIndexRoute = TagsIndexImport.update({
   path: '/tags/',
   getParentRoute: () => rootRoute,
@@ -37,6 +32,11 @@ const TagsIndexRoute = TagsIndexImport.update({
 
 const InboxIndexRoute = InboxIndexImport.update({
   path: '/inbox/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ImportIndexRoute = ImportIndexImport.update({
+  path: '/import/',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -87,13 +87,6 @@ const LibraryBrowseArtistAlbumIdItemIdRoute =
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/playground': {
-      id: '/playground'
-      path: '/playground'
-      fullPath: '/playground'
-      preLoaderRoute: typeof PlaygroundImport
-      parentRoute: typeof rootRoute
-    }
     '/_frontpage/_modal': {
       id: '/_frontpage/_modal'
       path: ''
@@ -120,6 +113,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof FrontpageIndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/import/': {
+      id: '/import/'
+      path: '/import'
+      fullPath: '/import'
+      preLoaderRoute: typeof ImportIndexImport
       parentRoute: typeof rootRoute
     }
     '/inbox/': {
@@ -170,7 +170,6 @@ declare module '@tanstack/react-router' {
 // Create and export the route tree
 
 export const routeTree = rootRoute.addChildren({
-  PlaygroundRoute,
   FrontpageModalRoute: FrontpageModalRoute.addChildren({
     FrontpageModalScheduleRoute,
   }),
@@ -184,6 +183,7 @@ export const routeTree = rootRoute.addChildren({
   }),
   LibrarySearchRoute,
   FrontpageIndexRoute,
+  ImportIndexRoute,
   InboxIndexRoute,
   TagsIndexRoute,
 })
@@ -196,17 +196,14 @@ export const routeTree = rootRoute.addChildren({
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
-        "/playground",
         "/_frontpage/_modal",
         "/library/browse",
         "/library/search",
         "/_frontpage/",
+        "/import/",
         "/inbox/",
         "/tags/"
       ]
-    },
-    "/playground": {
-      "filePath": "playground.tsx"
     },
     "/_frontpage/_modal": {
       "filePath": "_frontpage/_modal.tsx",
@@ -225,6 +222,9 @@ export const routeTree = rootRoute.addChildren({
     },
     "/_frontpage/": {
       "filePath": "_frontpage/index.tsx"
+    },
+    "/import/": {
+      "filePath": "import/index.tsx"
     },
     "/inbox/": {
       "filePath": "inbox/index.tsx"
