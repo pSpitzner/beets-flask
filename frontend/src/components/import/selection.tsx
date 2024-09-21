@@ -1,5 +1,14 @@
-import { ChevronRight, CopyMinus, CopyPlus, Merge, Plus, Trash2 } from "lucide-react";
-import { forwardRef, Fragment, useEffect, useState } from "react";
+import {
+    ChevronDown,
+    ChevronRight,
+    ChevronUp,
+    CopyMinus,
+    CopyPlus,
+    Merge,
+    Search,
+    Trash2,
+} from "lucide-react";
+import { forwardRef, useEffect, useState } from "react";
 import {
     CircularProgress,
     Container,
@@ -22,6 +31,7 @@ import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
 import Typography from "@mui/material/Typography";
 import * as HoverCard from "@radix-ui/react-hover-card";
+import { ReactNode } from "@tanstack/react-router";
 
 import {
     SimilarityBadge,
@@ -43,34 +53,55 @@ import styles from "./import.module.scss";
 export function AvailableSelections() {
     const { selStates } = useImportContext();
 
-    return (
-        <div className={styles.wrapper}>
-            {/* loading */}
-            {/* {!selections && <Skeleton />} */}
-            {selStates?.map((selection) => {
-                // For debugging the hover state get current selected candidate
-                const candidate = selection.candidate_states.find(
-                    (c) => c.id === selection.current_candidate_id
-                );
+    const components: ReactNode[] = [];
 
-                return (
-                    <Fragment key={selection.id}>
-                        <ImportSelection selection={selection} />
-                        {candidate && (
-                            <Paper className="p-3">
-                                <CandidatePreview candidate={candidate} />
-                            </Paper>
-                        )}
-                    </Fragment>
-                );
-            })}
-        </div>
+    for (const selection of selStates ?? []) {
+        const candidate = selection.candidate_states.find(
+            (c) => c.id === selection.current_candidate_id
+        );
+
+        components.push(
+            <SelectionActions key={selection.id + "act"} selection={selection} />
+        );
+
+        components.push(
+            <SelectionCandidateList
+                key={selection.id + "selec"}
+                selection={selection}
+            />
+        );
+
+        if (candidate) {
+            components.push(
+                <Paper key={selection.id + "cand"}>
+                    <span className={styles.name}>Currently selected candidate</span>
+                    <CandidatePreview
+                        candidate={candidate}
+                        sx={{
+                            paddingInline: "0.5rem",
+                            paddingBottom: "0.5rem",
+                        }}
+                    />
+                </Paper>
+            );
+        }
+    }
+
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+            }}
+        >
+            {components.length > 0 && components}
+        </Box>
     );
 }
 
-function ImportSelection({ selection }: { selection: SelectionState }) {
+function SelectionCandidateList({ selection }: { selection: SelectionState }) {
     const { chooseCandidate } = useImportContext();
-    const folder = selection.paths.join("\n");
     // for readability, only display 5 candidates by default
     const numCandidatesToShow = 5;
     const [showAll, setShowAll] = useState(false);
@@ -95,12 +126,19 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
 
     return (
         <div className={styles.selection}>
-            <span className={styles.folderName}>{folder}</span>
-            <Paper className={styles.choices}>
+            <Paper sx={{ display: "flex", flexDirection: "column" }}>
+                <span className={styles.name}>Available candidates</span>
                 <FormControl sx={{ width: "100%", marginRight: 0 }}>
                     <RadioGroup
                         value={selection.current_candidate_id}
+                        className={styles.choices}
                         onChange={handleCandidateChange}
+                        sx={{
+                            "& .MuiRadio-root": {
+                                padding: "0.35rem",
+                                marginLeft: "0.35rem",
+                            },
+                        }}
                     >
                         {displayedCandidates.map((choice) => {
                             return (
@@ -116,25 +154,35 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
                         })}
                     </RadioGroup>
                 </FormControl>
-            </Paper>
-            <Box
-                sx={{
-                    marginTop: "0.5rem",
-                    display: "flex",
-                    alignItems: "center",
-                    flexDirection: "row",
-                    gap: "1rem",
-                }}
-            >
                 {selection.candidate_states.length > numCandidatesToShow && (
-                    <Button variant="outlined" onClick={toggleShowAll}>
-                        {showAll ? "Show Less" : "Show All"}
+                    <Button
+                        className={styles.expandBtn}
+                        variant="text"
+                        onClick={toggleShowAll}
+                    >
+                        {showAll ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                     </Button>
                 )}
-                <DuplicateActions selection={selection} />
-                <AddCandidatesModal selection={selection} />
-            </Box>
+            </Paper>
         </div>
+    );
+}
+
+function SelectionActions({ selection }: { selection: SelectionState }) {
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                alignItems: "center",
+                flexDirection: "row",
+                gap: "1rem",
+                justifyContent: "space-between",
+                paddingInline: "0.5rem",
+            }}
+        >
+            <DuplicateActions selection={selection} />
+            <AddCandidatesModal selection={selection} />
+        </Box>
     );
 }
 
@@ -347,7 +395,7 @@ function AddCandidatesModal({ selection }: { selection: SelectionState }) {
         <>
             <Tooltip title="Search for more candidates">
                 <IconButton onClick={handleOpen}>
-                    <Plus size={14} />
+                    <Search size={18} />
                 </IconButton>
             </Tooltip>
             <Modal

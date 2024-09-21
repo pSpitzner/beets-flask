@@ -122,3 +122,18 @@ function StartAndAbortBtn({
         );
     }
 }
+
+export function ApplySelection() {
+    const { completeAllSelections, allSelectionsValid } = useImportContext();
+
+    return (
+        <Button
+            variant="outlined"
+            color="primary"
+            onClick={completeAllSelections}
+            disabled={!allSelectionsValid}
+        >
+            Apply
+        </Button>
+    );
+}

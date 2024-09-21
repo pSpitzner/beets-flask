@@ -1,13 +1,15 @@
 .choices {
     display: flex;
-    padding: 0.5rem 1rem;
+    flex-direction: column;
+    padding-inline: 1rem;
+    flex-grow: 1;
 }
 
-.wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    padding: 1rem;
+.expandBtn {
+    width: 100%;
+    height: 1rem;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
 }
 
 // we want the candidate preview, contained in the radix hover content to be no
@@ -19,15 +21,14 @@
     max-width: calc(min(1200px, 100dvw) - $paddingNeeded);
 }
 
-.selection {
-    // Selection label shows current name of
-    // the selection i.e. normally the folder name
-    .folderName {
-        margin-left: 0.5rem;
-        font-size: 0.87rem;
-        font-weight: thin;
-        color: dimgrey;
-    }
+// Selection label shows current name of
+// the selection i.e. normally the folder name
+.name {
+    padding: 0.1rem 0.05rem;
+    margin-left: 0.5rem;
+    font-size: 0.87rem;
+    font-weight: thin;
+    color: dimgrey;
 }
 
 // exact same style as tagPreview

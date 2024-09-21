@@ -311,11 +311,12 @@ class InteractiveImportSession(BaseSession):
         for stage_func in plugins.import_stages():
             stages.append(
                 status_stage(
+                    self,
                     ImportStatusMessage(
                         "plugin",
                         "import",
                         stage_func.__name__,
-                    )
+                    ),
                 )
             )
             stages.append(importer.plugin_stage(self, stage_func))  # type: ignore

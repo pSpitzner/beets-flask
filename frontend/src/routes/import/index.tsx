@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { ImportContextProvider } from "@/components/import/context";
 import { AvailableSelections } from "@/components/import/selection";
-import { ImportTargetSelector } from "@/components/import/selector";
+import { ApplySelection, ImportTargetSelector } from "@/components/import/selector";
 
 export const Route = createFileRoute("/import/")({
     component: ImportPage,
@@ -12,9 +12,10 @@ export const Route = createFileRoute("/import/")({
 function ImportPage() {
     return (
         <ImportContextProvider>
-            <ImportTargetSelector />
-            <Box>
+            <Box sx={{ gap: "1rem", display: "flex", flexDirection: "column" }}>
+                <ImportTargetSelector />
                 <AvailableSelections />
+                <ApplySelection />
             </Box>
         </ImportContextProvider>
     );
