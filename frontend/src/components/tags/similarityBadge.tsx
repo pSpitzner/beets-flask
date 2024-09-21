@@ -2,7 +2,7 @@ import * as HoverCard from "@radix-ui/react-hover-card";
 import { useQuery } from "@tanstack/react-query";
 
 import { tagQueryOptions } from "@/components/common/_query";
-import { useConfig } from "@/components/common/useConfig";
+import { useConfig } from "@/components/common/hooks/useConfig";
 
 import { TagPreview } from "./tagView";
 

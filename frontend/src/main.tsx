@@ -4,9 +4,9 @@ import Box from "@mui/material/Box";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 
 import { customizeFetch, queryClient } from "@/components/common/_query";
+import { PrefetchConfigQueryClientProvider } from "@/components/common/hooks/useConfig";
+import { StatusContextProvider } from "@/components/common/hooks/useSocket";
 import LoadingIndicator from "@/components/common/loadingIndicator";
-import { PrefetchConfigQueryClientProvider } from "@/components/common/useConfig";
-import { StatusContextProvider } from "@/components/common/useSocket";
 
 import { routeTree } from "./routeTree.gen";
 import ThemeProvider from "./theme";
@@ -30,7 +30,6 @@ const router = createRouter({
                 margin: "auto",
                 justifyContent: "center",
                 alignItems: "center",
-
             }}
         >
             <LoadingIndicator />

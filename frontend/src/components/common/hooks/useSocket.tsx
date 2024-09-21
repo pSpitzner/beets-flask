@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { io, ManagerOptions, Socket, SocketOptions } from "socket.io-client";
 import { QueryClient } from "@tanstack/react-query";
 
-import { TagI } from "../tags/_query";
+import { TagI } from "../../tags/_query";
 
 /**
  * Custom hook to manage a WebSocket connection for a specific namespace.

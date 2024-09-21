@@ -12,7 +12,7 @@ import { Button, IconButton, Portal, Slide } from "@mui/material";
 import { FitAddon as xTermFitAddon } from "@xterm/addon-fit";
 import { Terminal as xTerminal } from "@xterm/xterm";
 
-import { useSocket } from "@/components/common/useSocket";
+import { useSocket } from "@/components/common/hooks/useSocket";
 
 import "node_modules/@xterm/xterm/css/xterm.css";
 import styles from "./terminal.module.scss";

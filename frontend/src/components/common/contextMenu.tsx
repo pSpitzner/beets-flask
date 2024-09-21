@@ -31,8 +31,8 @@ import { queryClient, TagI } from "@/components/common/_query";
 import {
     useSelection,
     useSelectionLookupQueries,
-} from "@/components/common/useSelection";
-import { useSiblings } from "@/components/common/useSiblings";
+} from "@/components/common/hooks/useSelection";
+import { useSiblings } from "@/components/common/hooks/useSiblings";
 import { useTerminalContext } from "@/components/frontpage/terminal";
 import { ExpandableSib } from "@/components/tags/tagView";
 

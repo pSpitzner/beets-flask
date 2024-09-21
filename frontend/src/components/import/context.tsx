@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
-import { useSocket } from "../common/useSocket";
+import useQueryParamsState from "../common/hooks/useQueryParamsState";
+import { useSocket } from "../common/hooks/useSocket";
 import { ImportState, SelectionState } from "./types";
 
 interface ImportContextI {
@@ -29,7 +30,10 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
     // we want to allow partial updates to parts of the import state, so deconstruct here
     const [selStates, setSelStates] = useState<SelectionState[]>();
     const [status, setStatus] = useState<string>("waiting for socket");
-    const [sessionPath, setSessionPath] = useState<string | null>(null);
+    const [sessionPath, setSessionPath] = useQueryParamsState<string | null>(
+        "sessionPath",
+        null
+    );
     const [allSelectionsValid, setAllSelectionsValid] = useState<boolean>(false);
 
     /** Helper functions to update the state */

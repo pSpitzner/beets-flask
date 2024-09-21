@@ -28,7 +28,7 @@ import {
     SimilarityBadgeWithText,
 } from "@/components/tags/similarityBadge";
 
-import { useConfig } from "../common/useConfig";
+import { useConfig } from "../common/hooks/useConfig";
 import { CandidatePreview } from "./candidates/preview";
 import { useImportContext } from "./context";
 import { PenaltyIconRow } from "./icons";

@@ -11,8 +11,11 @@ import {
     defaultActions,
     SelectionSummary,
 } from "@/components/common/contextMenu";
-import { MinimalConfig, useConfig } from "@/components/common/useConfig";
-import { SelectionProvider, useSelection } from "@/components/common/useSelection";
+import { MinimalConfig, useConfig } from "@/components/common/hooks/useConfig";
+import {
+    SelectionProvider,
+    useSelection,
+} from "@/components/common/hooks/useSelection";
 import { TagSimilarityBadgeWithHover } from "@/components/tags/similarityBadge";
 import { TagStatusIcon } from "@/components/tags/statusIcon";
 

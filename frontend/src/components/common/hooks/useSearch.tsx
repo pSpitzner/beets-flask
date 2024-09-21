@@ -14,7 +14,7 @@ import {
     queryClient,
     searchQueryOptions,
 } from "@/components/common/_query";
-import { useDebounce } from "@/components/common/useDebounce";
+import { useDebounce } from "@/components/common/hooks/useDebounce";
 
 export type SearchType = "item" | "album";
 

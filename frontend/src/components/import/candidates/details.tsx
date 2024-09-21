@@ -3,7 +3,7 @@ import { ReactNode } from "react";
 import { BoxProps, styled } from "@mui/material";
 import Box from "@mui/material/Box";
 
-import { useConfig } from "../../common/useConfig";
+import { useConfig } from "../../common/hooks/useConfig";
 import { PenaltyIcon } from "../icons";
 import { CandidateState, ItemInfo, TrackInfo } from "../types";
 import { useDiff } from "./diff";
@@ -149,7 +149,7 @@ export function TrackChanges({ candidate }: { candidate: CandidateState }) {
     const tracksChanged = candidate.penalties?.includes("tracks");
 
     return (
-        (<DetailBox>
+        <DetailBox>
             <Col>
                 {tracksChanged ? (
                     <>
@@ -170,7 +170,7 @@ export function TrackChanges({ candidate }: { candidate: CandidateState }) {
                 {Object.entries(mapping).map(([idx, tdx]) => (
                     // each row has 5 columns: index-old title-old arrow index-new title-new
                     // the need to be provided as `grid-area` css property (or sx prop)
-                    (<TrackDiffRow
+                    <TrackDiffRow
                         key={idx}
                         fromItem={items[parseInt(idx)]}
                         toItem={tracks[tdx]}
@@ -180,10 +180,10 @@ export function TrackChanges({ candidate }: { candidate: CandidateState }) {
                         // (that is, iff every trackinfo has match url, and not just on the album-level)
                         fromIdx={parseInt(idx) + 1}
                         toIdx={tdx + 1}
-                    />)
+                    />
                 ))}
             </Box>
-        </DetailBox>)
+        </DetailBox>
     );
 }
 

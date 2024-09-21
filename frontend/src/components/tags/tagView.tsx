@@ -9,9 +9,9 @@ import { styled } from "@mui/material/styles";
 import { useQuery } from "@tanstack/react-query";
 
 import { APIError, tagQueryOptions } from "@/components/common/_query";
-import { useConfig } from "@/components/common/useConfig";
-import { useSelection } from "@/components/common/useSelection";
-import { useSiblings } from "@/components/common/useSiblings";
+import { useConfig } from "@/components/common/hooks/useConfig";
+import { useSelection } from "@/components/common/hooks/useSelection";
+import { useSiblings } from "@/components/common/hooks/useSiblings";
 
 import {
     CollapseAllAction,
