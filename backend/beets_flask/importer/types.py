@@ -169,7 +169,7 @@ class ItemInfo(MusicInfo):
 class SerializedImportState(TypedDict):
     id: str
     selection_states: List[SerializedSelectionState]
-    status: str
+    status: Dict[str, str]
     completed: bool
 
 
@@ -182,7 +182,6 @@ class SerializedSelectionState(TypedDict):
     completed: bool
     toppath: str | None
     paths: List[str]
-    status: str
 
 
 class SerializedCandidateState(TypedDict):

@@ -1,5 +1,6 @@
+from enum import Enum
 import time
-from typing import Any, Callable, List, Optional, Type
+from typing import Callable, List
 
 from beets import importer, plugins, library, autotag
 
@@ -12,7 +13,7 @@ from beets_flask.importer.types import AlbumMatch, TrackMatch
 from beets_flask.logger import log
 
 from .pipeline import mutator_stage
-from .states import ImportState, CandidateState, SelectionState
+from .states import ImportState, CandidateState, ImportStatusMessage
 from .communicator import ImportCommunicator
 
 
@@ -161,7 +162,6 @@ class InteractiveImportSession(BaseSession):
                 sel_state.current_search_id is not None
                 or sel_state.current_search_artist is not None
             ):
-                sel_state.status = f"adding candidates"
                 candidates = self.search_candidates(
                     task,
                     sel_state.current_search_id,
@@ -177,7 +177,6 @@ class InteractiveImportSession(BaseSession):
                 sel_state.current_search_artist = None
                 sel_state.current_search_album = None
 
-                # TODO: TOAST!
                 continue
 
             time.sleep(3)
@@ -258,16 +257,16 @@ class InteractiveImportSession(BaseSession):
         else:
             raise ValueError(f"Unknown duplicate resolution action: {sel}")
 
-    def set_status(self, status: str):
+    def set_status(self, status: ImportStatusMessage):
         """
         Set the status of the import session, and communicate the status change to the frontend.
 
         Note: currently we only implement status on the level of the whole import session,
         but should eventually do this per selection (task).
         """
-        log.debug(f"Setting status to {status}")
+        log.debug(f"Setting status to {status.value}")
         self.import_state.status = status
-        self.communicator.emit_custom("import_state_status", status)
+        self.communicator.emit_status(status)
 
     def run(self):
         """Run the import task. Customized version of ImportSession.run"""
@@ -275,37 +274,54 @@ class InteractiveImportSession(BaseSession):
         self.set_config(config["import"])
 
         # mutator stage does not work for first task, set status manually
-        self.set_status("reading files")
+        self.set_status(ImportStatusMessage("reading files"))
         stages = [
             importer.read_tasks(self),
         ]
 
         if self.config["group_albums"] and not self.config["singletons"]:
             stages += [
-                status_stage(self, "grouping albums"),
+                status_stage(self, ImportStatusMessage("grouping albums")),
                 importer.group_albums(self),
             ]
 
         stages += [
-            status_stage(self, "looking up candidates"),
+            status_stage(self, ImportStatusMessage("identifying duplicates")),
             importer.lookup_candidates(self),  # type: ignore
-            status_stage(self, "identifying duplicates"),
+            status_stage(self, ImportStatusMessage("identifying duplicates")),
             identify_duplicates(self),
             offer_match(self),
-            status_stage(self, "waiting for user selection"),
+            status_stage(self, ImportStatusMessage("waiting for user selection")),
             importer.user_query(self),  # type: ignore
         ]
 
         # Plugin stages.
         for stage_func in plugins.early_import_stages():
+            stages.append(
+                status_stage(
+                    self,
+                    ImportStatusMessage(
+                        "plugin",
+                        "early import",
+                        stage_func.__name__,
+                    ),
+                )
+            )
             stages.append(importer.plugin_stage(self, stage_func))  # type: ignore
-            stages.append(status_stage(self, f"early import plugin: {stage_func.__name__}"))  # type: ignore
         for stage_func in plugins.import_stages():
+            stages.append(
+                status_stage(
+                    ImportStatusMessage(
+                        "plugin",
+                        "import",
+                        stage_func.__name__,
+                    )
+                )
+            )
             stages.append(importer.plugin_stage(self, stage_func))  # type: ignore
-            stages.append(status_stage(self, f"import plugin: {stage_func.__name__}"))  # type: ignore
 
         stages += [
-            status_stage(self, "manipulating files"),  # type: ignore
+            status_stage(self, ImportStatusMessage("manipulating files")),
             importer.manipulate_files(self),  # type: ignore
         ]
 
@@ -324,7 +340,7 @@ class InteractiveImportSession(BaseSession):
 
         log.debug(f"Pipeline completed")
 
-        self.set_status("completed")
+        self.set_status(ImportStatusMessage("completed"))
         if self.cleanup:
             self.cleanup()
 
@@ -355,7 +371,9 @@ def offer_match(session: InteractiveImportSession, task: importer.ImportTask):
 
 @mutator_stage
 def status_stage(
-    session: InteractiveImportSession, status: str, task: importer.ImportTask
+    session: InteractiveImportSession,
+    status: ImportStatusMessage,
+    task: importer.ImportTask,
 ):
     """
     Stage to call sessions `set_status` method.

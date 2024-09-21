@@ -70,6 +70,25 @@ def start_import_session(sid, data):
 
     session_ref = sio.start_background_task(session.run)
 
+    return True
+
+
+@sio.on("abort_import_session", namespace=namespace)  # type: ignore
+def abort_session(sid):
+    global session, session_ref
+
+    try:
+        session_ref.kill()  # type: ignore
+    except AttributeError:
+        pass
+
+    if session is not None and session.cleanup is not None:
+        session.cleanup()
+
+    sio.emit("abort", namespace=namespace, skip_sid=sid)
+
+    return True
+
 
 @sio.on("user_action", namespace=namespace)  # type: ignore
 def choice(sid, req: Union[ChoiceReceive, CompleteReceive]):

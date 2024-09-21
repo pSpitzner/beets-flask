@@ -5,7 +5,7 @@ State classes to represent the current state of an import session.
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import List, Literal, Tuple, Union
+from typing import List, Literal, Union
 from uuid import uuid4 as uuid
 import time
 
@@ -30,6 +30,43 @@ from .types import (
 
 
 @dataclass
+class ImportStatusMessage:
+    """Simple dataclass to hold a status message and a status code"""
+
+    message: Literal[
+        "initializing",
+        "reading files",
+        "grouping albums",
+        "looking up candidates",
+        "identifying duplicates",
+        "waiting for user selection",
+        "manipulating files",
+        "completed",
+        "plugin",
+    ]
+
+    # Plugin specific
+    plugin_stage: str | None = None
+    plugin_name: str | None = None
+
+    @property
+    def value(self):
+        ret = self.message
+        if self.plugin_stage is not None:
+            ret += f" ({self.plugin_stage})"
+        if self.plugin_name is not None:
+            ret += f" ({self.plugin_name})"
+        return ret
+
+    def as_dict(self) -> dict:
+        return {
+            "message": self.message,
+            "plugin_stage": self.plugin_stage,
+            "plugin_name": self.plugin_name,
+        }
+
+
+@dataclass
 class ImportState:
     """
     Highest level state of an import session.
@@ -39,7 +76,7 @@ class ImportState:
     def __post_init__(self):
         self.id = str(uuid())
         self._selection_states: List[SelectionState] = []
-        self.status: str = "initializing"
+        self.status: ImportStatusMessage = ImportStatusMessage("initializing")
         # session-level buttons. continue from choose_match when not None
         self.user_response: Literal["abort"] | Literal["apply"] | None = None
 
@@ -105,7 +142,7 @@ class ImportState:
         return SerializedImportState(
             id=self.id,
             selection_states=[s.serialize() for s in self.selection_states],
-            status=self.status,
+            status=self.status.as_dict(),
             completed=self.completed,
         )
 
@@ -140,7 +177,6 @@ class SelectionState:
         self.current_search_id: str | None = None
         self.current_search_artist: str | None = None
         self.current_search_album: str | None = None
-        self.status: str = "initializing"
 
     @property
     def candidates(self) -> Union[List[AlbumMatch], List[TrackMatch]]:
@@ -196,16 +232,22 @@ class SelectionState:
         """
         JSON representation to match the frontend types
         """
+
+        # Workaround to show initial selection on frontend
+        # if no candidate has been selected yet
+        current_id = self.current_candidate_id
+        if current_id is None:
+            current_id = self.candidate_states[0].id
+
         return SerializedSelectionState(
             id=self.id,
             candidate_states=[c.serialize() for c in self.candidate_states],
-            current_candidate_id=self.current_candidate_id,
+            current_candidate_id=current_id,
             duplicate_action=self.duplicate_action,
             items=[i.serialize() for i in self.items_minimal],
             completed=self.completed,
             toppath=self.toppath,
             paths=self.paths,
-            status=self.status,
         )
 
 

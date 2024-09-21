@@ -40,7 +40,7 @@ import styles from "./import.module.scss";
 /** Wrapper for all selection to align them in a grid based on the view size
  * with automatically wrapping or resizing the items.
  */
-export function Selections() {
+export function AvailableSelections() {
     const { selStates } = useImportContext();
 
     return (
@@ -92,25 +92,6 @@ function ImportSelection({ selection }: { selection: SelectionState }) {
         const candidateId = event.target.value;
         chooseCandidate(selection.id, candidateId);
     }
-
-    useEffect(() => {
-        // set the default choice, but only once the user has seen something.
-        // first candidate is the best match, and we only
-        // move the asis candidate above on the display, so index 0 remains the right default
-        if (
-            selection.current_candidate_id === null ||
-            selection.current_candidate_id === undefined
-        ) {
-            if (selection.candidate_states.length > 0) {
-                selection.current_candidate_id = selection.candidate_states[0].id;
-            } else {
-                selection.current_candidate_id = null;
-            }
-        }
-        if (selection.current_candidate_id !== null) {
-            chooseCandidate(selection.id, selection.current_candidate_id);
-        }
-    }, [selection, chooseCandidate]);
 
     return (
         <div className={styles.selection}>

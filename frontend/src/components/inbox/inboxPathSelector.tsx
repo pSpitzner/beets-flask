@@ -13,8 +13,10 @@ import { inboxPathsQueryOptions } from "../common/_query";
  */
 export function InboxPathSelector({
     show_depth = 3,
+    label = "Select Path",
     ...props
 }: {
+    label?: string;
     show_depth?: number;
 } & Omit<
     React.ComponentProps<typeof Autocomplete<string>>,
@@ -49,13 +51,15 @@ export function InboxPathSelector({
 
     const filteredPaths = useMemo(() => {
         if (!paths) return [];
-        return paths.filter((path) => {
-            const optionDepth = path.includes("/") ? path.split("/").length : 0;
-            const inputDepth = inputValue.includes("/")
-                ? inputValue.split("/").length
-                : 1;
-            return optionDepth <= inputDepth + show_depth;
-        });
+        return paths
+            .filter((path) => {
+                const optionDepth = path.includes("/") ? path.split("/").length : 0;
+                const inputDepth = inputValue.includes("/")
+                    ? inputValue.split("/").length
+                    : 1;
+                return optionDepth <= inputDepth + show_depth;
+            })
+            .filter((path) => path.includes(inputValue));
     }, [inputValue, paths, show_depth]);
 
     return (
@@ -66,10 +70,11 @@ export function InboxPathSelector({
             inputValue={inputValue}
             onInputChange={(_e, value) => setInputValue(value)}
             filterOptions={(x) => x}
+            autoHighlight
             renderInput={(params) => (
                 <TextField
                     {...params}
-                    label="Enter Path"
+                    label={label}
                     slotProps={{
                         // Loading indicator if values are currently updated
                         input: {
@@ -78,12 +83,13 @@ export function InboxPathSelector({
                                 <>
                                     {isLoading ? (
                                         <CircularProgress color="inherit" size={20} />
-                                    ) : null}
+                                    ) : (
+                                        params.InputProps.endAdornment
+                                    )}
                                 </>
                             ),
                         },
                     }}
-                    variant="standard"
                     error={isError}
                     helperText={isError ? error.message : null}
                 />
