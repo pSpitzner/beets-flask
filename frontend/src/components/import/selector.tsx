@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Box, Button, FormHelperText } from "@mui/material";
 import Tooltip from "@mui/material/Tooltip";
 
@@ -124,16 +124,42 @@ function StartAndAbortBtn({
 }
 
 export function ApplySelection() {
-    const { completeAllSelections, allSelectionsValid } = useImportContext();
+    const { completeAllSelections, selectionsInvalidCause } = useImportContext();
+    const [tooltipText, setTooltipText] = useState<string | null>(null);
 
-    return (
-        <Button
-            variant="outlined"
-            color="primary"
-            onClick={completeAllSelections}
-            disabled={!allSelectionsValid}
-        >
-            Apply
-        </Button>
+    useEffect(() => {
+        if (selectionsInvalidCause === "no current candidate") {
+            setTooltipText("Pick a candidate to apply changes!");
+        } else if (selectionsInvalidCause === "no duplicate action") {
+            setTooltipText("Choose what to do with the duplciate candidates!");
+        } else {
+            setTooltipText(null);
+        }
+    }, [selectionsInvalidCause]);
+
+    if (selectionsInvalidCause === "no selections") {
+        // hide the apply button when the session has not started yet
+        return null;
+    }
+
+    const inner = (
+        // Wrap into a Box to enable Tooltips on disabled buttons
+        <Box>
+            <Button
+                variant="outlined"
+                color="primary"
+                onClick={completeAllSelections}
+                disabled={selectionsInvalidCause !== null}
+                sx={{ width: "100%" }}
+            >
+                Apply
+            </Button>
+        </Box>
     );
+
+    if (tooltipText) {
+        return <Tooltip title={tooltipText}>{inner}</Tooltip>;
+    } else {
+        return inner;
+    }
 }

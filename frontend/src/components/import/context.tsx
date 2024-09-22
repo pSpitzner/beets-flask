@@ -34,7 +34,7 @@ interface ImportContextI {
     status?: ImportStatus;
     pending: boolean;
     sessionPath: string | null;
-    allSelectionsValid: boolean;
+    selectionsInvalidCause: string | null;
     setSessionPath: (path: string | null) => void;
     startSession: () => Promise<void>;
     abortSession: () => Promise<void>;
@@ -69,6 +69,11 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
     // Current selection states for the import
     // none if the data is not yet loaded
     const [selStates, setSelStates] = useState<SelectionState[]>();
+
+    // Whether a valid user choice has been made for every selection
+    const [selectionsInvalidCause, setSelectionsInvalidCause] = useState<string | null>(
+        null
+    );
 
     // The status of the import in the backend, only backend status!
     const [status, setStatus] = useState<ImportStatus>();
@@ -125,10 +130,15 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
 
     /** Derived state */
     // to enable the apply button, check that all selections have a valid candidate
-    const allSelectionsValid = useMemo(() => {
+    useEffect(() => {
         let allValid = true;
+        if (!selStates || selStates?.length == 0) {
+            setSelectionsInvalidCause("no selections");
+            allValid = false;
+        }
         for (const selection of selStates ?? []) {
             if (selection.current_candidate_id === null) {
+                setSelectionsInvalidCause("no current candidate");
                 allValid = false;
                 break;
             }
@@ -140,11 +150,14 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
                 candidate.duplicate_in_library &&
                 !selection.duplicate_action
             ) {
+                setSelectionsInvalidCause("no duplicate action");
                 allValid = false;
                 break;
             }
         }
-        return allValid;
+        if (allValid) {
+            setSelectionsInvalidCause(null);
+        }
     }, [selStates]);
 
     /** Register event handler
@@ -370,7 +383,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         selStates,
         status,
         sessionPath,
-        allSelectionsValid,
+        selectionsInvalidCause,
         pending,
         completeAllSelections,
         setSessionPath,

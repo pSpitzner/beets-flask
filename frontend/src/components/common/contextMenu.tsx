@@ -377,7 +377,7 @@ export function InteractiveImportAction(props: Partial<ActionProps>) {
             {...props}
             onClick={() => {
                 navigate({
-                    to: `/import?sessionPath=${sessionPath.current}`,
+                    to: `/import?sessionPath="${sessionPath.current}"`,
                 })
                     .then(() => {
                         closeMenu();
