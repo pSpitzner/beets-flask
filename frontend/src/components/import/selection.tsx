@@ -318,9 +318,13 @@ function CandidateView({ candidate }: { candidate: CandidateState }) {
                 <HoverCard.Trigger className={styles.headerGroup}>
                     <Box className={styles.headerGroup}>
                         {candidate.id == "asis" ? (
-                            <SimilarityBadgeWithText text={"asis"} color={"custom"} />
+                            <SimilarityBadgeWithText
+                                text={"asis"}
+                                color={"custom"}
+                                charWidth={4}
+                            />
                         ) : (
-                            <SimilarityBadge dist={candidate.distance} />
+                            <SimilarityBadge dist={candidate.distance} charWidth={4} />
                         )}
                     </Box>
                     <Box className={styles.headerGroup}>

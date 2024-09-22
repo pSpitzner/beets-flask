@@ -1,16 +1,21 @@
 .SimilarityBadgeOuter {
     display: flex;
-    justify-content: center;
+    justify-content: flex-end;
     align-items: center;
+    font-size: 0.7rem;
+    font-weight: bolder;
+    font-family: monospace;
+    white-space: pre;
+    line-height: 1;
+    // we calculate the width in react depending
+    // on the needed number of chars
 }
 
 .SimilarityBadgeInner {
     background-color: #212529;
     border-radius: 0.3rem;
     border: var(--bs-border-width) solid var(--bs-border-color);
-    font-size: 0.7rem;
-    line-height: 1;
-    font-weight: bolder;
+    height: 1.1rem;
     padding: 0.1rem 0.3rem;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
@@ -18,8 +23,9 @@
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    font-family: monospace;
-    white-space: pre;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     &.tbd {
         color: #495057;
     }

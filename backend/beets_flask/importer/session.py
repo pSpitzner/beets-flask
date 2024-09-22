@@ -286,7 +286,7 @@ class InteractiveImportSession(BaseSession):
             ]
 
         stages += [
-            status_stage(self, ImportStatusMessage("identifying duplicates")),
+            status_stage(self, ImportStatusMessage("looking up candidates")),
             importer.lookup_candidates(self),  # type: ignore
             status_stage(self, ImportStatusMessage("identifying duplicates")),
             identify_duplicates(self),
