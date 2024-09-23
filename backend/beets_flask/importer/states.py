@@ -30,7 +30,7 @@ from .types import (
 
 
 @dataclass
-class ImportStatusMessage:
+class ImportStatus:
     """Simple dataclass to hold a status message and a status code"""
 
     message: Literal[
@@ -76,7 +76,7 @@ class ImportState:
     def __post_init__(self):
         self.id = str(uuid())
         self._selection_states: List[SelectionState] = []
-        self.status: ImportStatusMessage = ImportStatusMessage("initializing")
+        self.status: ImportStatus = ImportStatus("initializing")
         # session-level buttons. continue from choose_match when not None
         self.user_response: Literal["abort"] | Literal["apply"] | None = None
 

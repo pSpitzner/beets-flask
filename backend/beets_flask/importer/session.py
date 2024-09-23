@@ -13,7 +13,7 @@ from beets_flask.importer.types import AlbumMatch, TrackMatch
 from beets_flask.logger import log
 
 from .pipeline import mutator_stage
-from .states import ImportState, CandidateState, ImportStatusMessage
+from .states import ImportState, CandidateState, ImportStatus
 from .communicator import ImportCommunicator
 
 
@@ -257,7 +257,7 @@ class InteractiveImportSession(BaseSession):
         else:
             raise ValueError(f"Unknown duplicate resolution action: {sel}")
 
-    def set_status(self, status: ImportStatusMessage):
+    def set_status(self, status: ImportStatus):
         """
         Set the status of the import session, and communicate the status change to the frontend.
 
@@ -274,24 +274,24 @@ class InteractiveImportSession(BaseSession):
         self.set_config(config["import"])
 
         # mutator stage does not work for first task, set status manually
-        self.set_status(ImportStatusMessage("reading files"))
+        self.set_status(ImportStatus("reading files"))
         stages = [
             importer.read_tasks(self),
         ]
 
         if self.config["group_albums"] and not self.config["singletons"]:
             stages += [
-                status_stage(self, ImportStatusMessage("grouping albums")),
+                status_stage(self, ImportStatus("grouping albums")),
                 importer.group_albums(self),
             ]
 
         stages += [
-            status_stage(self, ImportStatusMessage("looking up candidates")),
+            status_stage(self, ImportStatus("looking up candidates")),
             importer.lookup_candidates(self),  # type: ignore
-            status_stage(self, ImportStatusMessage("identifying duplicates")),
+            status_stage(self, ImportStatus("identifying duplicates")),
             identify_duplicates(self),
             offer_match(self),
-            status_stage(self, ImportStatusMessage("waiting for user selection")),
+            status_stage(self, ImportStatus("waiting for user selection")),
             importer.user_query(self),  # type: ignore
         ]
 
@@ -300,10 +300,10 @@ class InteractiveImportSession(BaseSession):
             stages.append(
                 status_stage(
                     self,
-                    ImportStatusMessage(
-                        "plugin",
-                        "early import",
-                        stage_func.__name__,
+                    ImportStatus(
+                        message="plugin",
+                        plugin_stage="early import",
+                        plugin_name=stage_func.__name__,
                     ),
                 )
             )
@@ -312,17 +312,17 @@ class InteractiveImportSession(BaseSession):
             stages.append(
                 status_stage(
                     self,
-                    ImportStatusMessage(
-                        "plugin",
-                        "import",
-                        stage_func.__name__,
+                    ImportStatus(
+                        message="plugin",
+                        plugin_stage="import",
+                        plugin_name=stage_func.__name__,
                     ),
                 )
             )
             stages.append(importer.plugin_stage(self, stage_func))  # type: ignore
 
         stages += [
-            status_stage(self, ImportStatusMessage("manipulating files")),
+            status_stage(self, ImportStatus("manipulating files")),
             importer.manipulate_files(self),  # type: ignore
         ]
 
@@ -341,7 +341,7 @@ class InteractiveImportSession(BaseSession):
 
         log.debug(f"Pipeline completed")
 
-        self.set_status(ImportStatusMessage("completed"))
+        self.set_status(ImportStatus("completed"))
         if self.cleanup:
             self.cleanup()
 
@@ -373,7 +373,7 @@ def offer_match(session: InteractiveImportSession, task: importer.ImportTask):
 @mutator_stage
 def status_stage(
     session: InteractiveImportSession,
-    status: ImportStatusMessage,
+    status: ImportStatus,
     task: importer.ImportTask,
 ):
     """

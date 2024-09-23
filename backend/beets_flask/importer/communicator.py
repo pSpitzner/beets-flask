@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 
 from beets_flask.logger import log
 
-from .states import ImportState, SelectionState, CandidateState, ImportStatusMessage
+from .states import ImportState, SelectionState, CandidateState, ImportStatus
 
 
 def default_events(state: Union[ImportState, SelectionState, CandidateState]):
@@ -58,7 +58,7 @@ class ImportCommunicator(ABC):
             **kwargs,
         )
 
-    def emit_status(self, status: ImportStatusMessage, **kwargs):
+    def emit_status(self, status: ImportStatus, **kwargs):
         """Emits a status message."""
 
         self._emit(
