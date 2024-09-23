@@ -1,9 +1,12 @@
 import Box from "@mui/material/Box";
 import { createFileRoute } from "@tanstack/react-router";
 
+import { AvailableSelections } from "@/components/import/candidateSelection";
 import { ImportContextProvider } from "@/components/import/context";
-import { AvailableSelections } from "@/components/import/selection";
-import { ApplySelection, ImportTargetSelector } from "@/components/import/selector";
+import {
+    ApplySelection,
+    ImportTargetSelector,
+} from "@/components/import/targetSelector";
 
 export const Route = createFileRoute("/import/")({
     component: ImportPage,
