@@ -6,6 +6,7 @@ import {
     CassetteTape,
     Copy,
     Disc3,
+    FastForward,
     Flag,
     GitPullRequestArrow,
     LucideProps,
@@ -207,6 +208,9 @@ export function SourceIcon({
             if (color) Icon = <img src={mb} />;
             else Icon = <Brain />;
             break;
+        case "asis":
+            Icon = <FastForward />;
+            break;
         case undefined:
         case null:
             Icon = <BadgeAlert />;
@@ -218,7 +222,7 @@ export function SourceIcon({
     }
 
     return (
-        <Tooltip title={source}>
+        <Tooltip title={source === "asis" ? "Metadata from files" : source}>
             <Box className={styles.sourceIcon}>{Icon}</Box>
         </Tooltip>
     );

@@ -293,6 +293,7 @@ class CandidateState:
         """
         items = selection_state.task.items
         info, _ = autotag.current_metadata(items)
+        info["data_source"] = "asis"
 
         def _generate_kwargs(item):
             kwargs = {}
