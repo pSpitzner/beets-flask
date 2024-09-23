@@ -42,6 +42,7 @@ class ImportStatus:
         "waiting for user selection",
         "manipulating files",
         "completed",
+        "aborted",
         "plugin",
     ]
 

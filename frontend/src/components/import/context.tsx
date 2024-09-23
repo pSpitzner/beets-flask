@@ -14,10 +14,23 @@ export interface ImportStatus {
         | "waiting for user selection"
         | "manipulating files"
         | "completed"
+        | "aborted"
         | "plugin";
 
     plugin_stage?: string;
     plugin_name?: string;
+}
+
+export function importStatusMessage(status: ImportStatus) {
+    let ret = status.message;
+    if (status.plugin_stage ?? status.plugin_name) {
+        ret += " (";
+        if (status.plugin_stage) ret += `${status.plugin_stage}`;
+        if (status.plugin_stage && status.plugin_name) ret += " ";
+        if (status.plugin_name) ret += `${status.plugin_name}`;
+        ret += ")";
+    }
+    return ret;
 }
 
 interface ImportContextI {
@@ -126,7 +139,12 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
     useEffect(() => {
         let allValid = true;
         if (!selStates || selStates?.length == 0) {
+            // this happens when we initialize
+            // and causes the apply button to be hidden
             setSelectionsInvalidCause("no selections");
+            allValid = false;
+        } else if (pending || status?.message !== "waiting for user selection") {
+            setSelectionsInvalidCause("operation pending");
             allValid = false;
         }
         for (const selection of selStates ?? []) {
@@ -151,7 +169,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         if (allValid) {
             setSelectionsInvalidCause(null);
         }
-    }, [selStates]);
+    }, [selStates, pending, status]);
 
     /** Register event handler
      *
@@ -295,6 +313,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
 
     // Marks all selections as completed and emits a user action event to the server.
     const completeAllSelections = useCallback(() => {
+        setPending(true);
         setSelStates((prev) => {
             if (!prev) return prev;
 

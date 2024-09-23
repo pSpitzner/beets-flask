@@ -155,6 +155,7 @@ class InteractiveImportSession(BaseSession):
             if sel_state.completed:
                 break
             if self.import_state.user_response == "abort":
+                self.set_status(ImportStatus("aborted"))
                 return importer.action.SKIP
 
             # SEARCHES

@@ -3,7 +3,7 @@ import { Box, Button, FormHelperText } from "@mui/material";
 import Tooltip from "@mui/material/Tooltip";
 
 import { InboxPathSelector } from "../inbox/inboxPathSelector";
-import { useImportContext } from "./context";
+import { importStatusMessage, useImportContext } from "./context";
 
 /** Selector allows to select a target folder for import
  */
@@ -51,7 +51,7 @@ export function ImportTargetSelector() {
                             marginInline: "1rem",
                         }}
                     >
-                        Status: {status?.message}
+                        Status: {importStatusMessage(status)}
                     </FormHelperText>
                 )}
                 {error && (
@@ -133,7 +133,7 @@ export function ApplySelection() {
         } else if (selectionsInvalidCause === "no duplicate action") {
             setTooltipText("Choose what to do with the duplciate candidates!");
         } else {
-            setTooltipText(null);
+            setTooltipText(selectionsInvalidCause);
         }
     }, [selectionsInvalidCause]);
 
