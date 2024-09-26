@@ -18,8 +18,10 @@ const darkTheme = createTheme({
             main: "#7FFFD4",
             // muted: "#89a99e",
         },
+        // tried to add custom colors, but did not work. c.f:
+        // https://stackoverflow.com/questions/50069724/how-to-add-custom-material-ui-palette-colors
         secondary: {
-            main: "#C07351",
+            main: "#fff",
         },
         action: {
             hover: "#212529",

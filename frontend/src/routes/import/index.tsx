@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { CircularProgress, Typography } from "@mui/material";
+import { Button, CircularProgress, Typography } from "@mui/material";
 import Box from "@mui/material/Box";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { AvailableSelections } from "@/components/import/candidateSelection";
 import { ImportContextProvider, useImportContext } from "@/components/import/context";
-import {
-    ApplySelection,
-    ImportTargetSelector,
+import {ImportTargetSelector,
 } from "@/components/import/targetSelector";
+import { CheckIcon, X } from "lucide-react";
 
 export const Route = createFileRoute("/import/")({
     component: ImportPage,
@@ -35,11 +34,13 @@ function ImportPage() {
 }
 
 function SessionsView({ handleNewSession }: { handleNewSession: () => void }) {
-    const { status } = useImportContext();
+    const { selStates, status } = useImportContext();
     const [timeoutId, setTimeoutId] = useState<number | undefined>(undefined);
     const statusText = useRef("");
     const [remainingPercent, setRemainingPercent] = useState<number>(0);
+    const singleSelection = selStates?.length === 1;
 
+    // popup / info when session is completed.
     useEffect(() => {
         if (
             timeoutId === undefined &&
@@ -113,10 +114,53 @@ function SessionsView({ handleNewSession }: { handleNewSession: () => void }) {
         );
     }
 
+    if (singleSelection) {
+        return <AvailableSelections extraButtons={[<ApplyAbort key={"applySelection"} />]} />;
+    } else {
+        return (
+            <>
+                <AvailableSelections />
+                <ApplyAbort />
+            </>
+        );
+    }
+}
+
+export function ApplyAbort() {
+    const { completeAllSelections, selectionsInvalidCause, abortSession } =
+        useImportContext();
+
     return (
+        // Wrap into a Box to enable Tooltips on disabled buttons
         <>
-            <AvailableSelections />
-            <ApplySelection />
+            <Box
+                sx={{
+                    display: "flex",
+                    gap: "0.5rem",
+                    justifyContent: "flex-end",
+                    height: "36px",
+                }}
+            >
+                <Button
+                    variant="outlined"
+                    color="warning"
+                    startIcon={<X size={14} />}
+                    onClick={() => {
+                        abortSession().catch(console.error);
+                    }}
+                >
+                    Abort
+                </Button>
+                <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={completeAllSelections}
+                    disabled={selectionsInvalidCause !== null}
+                    startIcon={<CheckIcon size={14} />}
+                >
+                    Apply
+                </Button>
+            </Box>
         </>
     );
 }
