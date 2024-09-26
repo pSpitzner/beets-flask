@@ -2,10 +2,9 @@ import { CheckIcon } from "lucide-react";
 import { forwardRef, useState } from "react";
 import { Button, ButtonProps, CircularProgress } from "@mui/material";
 import IconButton from "@mui/material/IconButton";
-import { useMutation,UseMutationOptions } from "@tanstack/react-query";
+import { useMutation, UseMutationOptions } from "@tanstack/react-query";
 
 import { ConfirmDialog, ErrorDialog } from "./dialogs";
-
 
 /**
  * Renders an icon button with a mutation option.
@@ -80,10 +79,6 @@ export const IconButtonWithMutation = forwardRef(function IconButtonWithMutation
     );
 });
 
-
-
-
-
 /** A Icon button which also requires a confirmation */
 export const IconButtonWithMutationAndFeedback = forwardRef(
     function IconButtonWithMutationAndFeedback(
@@ -142,14 +137,6 @@ export const IconButtonWithMutationAndFeedback = forwardRef(
     }
 );
 
-
-
-
-
-
-
-
-
 export const IconTextButtonWithMutation = forwardRef(
     function IconTextButtonWithMutation(
         {
@@ -180,7 +167,7 @@ export const IconTextButtonWithMutation = forwardRef(
 
         return (
             // PS 24-06-06 tailwind css did not seem to work, w-full had no effect for me.
-            (<div style={{ width: "100%" }} ref={ref}>
+            <div style={{ width: "100%" }} ref={ref}>
                 <Button
                     {...props}
                     onClick={(event: React.MouseEvent) => {
@@ -214,7 +201,7 @@ export const IconTextButtonWithMutation = forwardRef(
                 {isError && (
                     <ErrorDialog open={isError} error={error} onClose={reset} />
                 )}
-            </div>)
+            </div>
         );
     }
 );

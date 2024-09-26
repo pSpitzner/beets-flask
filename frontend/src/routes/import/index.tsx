@@ -1,13 +1,14 @@
+
 import { useEffect, useRef, useState } from "react";
-import { Button, CircularProgress, Typography } from "@mui/material";
+import { CircularProgress, Typography } from "@mui/material";
 import Box from "@mui/material/Box";
 import { createFileRoute } from "@tanstack/react-router";
 
+import { ApplyAbort } from "@/components/import/buttons";
 import { AvailableSelections } from "@/components/import/candidateSelection";
 import { ImportContextProvider, useImportContext } from "@/components/import/context";
 import {ImportTargetSelector,
 } from "@/components/import/targetSelector";
-import { CheckIcon, X } from "lucide-react";
 
 export const Route = createFileRoute("/import/")({
     component: ImportPage,
@@ -126,41 +127,4 @@ function SessionsView({ handleNewSession }: { handleNewSession: () => void }) {
     }
 }
 
-export function ApplyAbort() {
-    const { completeAllSelections, selectionsInvalidCause, abortSession } =
-        useImportContext();
 
-    return (
-        // Wrap into a Box to enable Tooltips on disabled buttons
-        <>
-            <Box
-                sx={{
-                    display: "flex",
-                    gap: "0.5rem",
-                    justifyContent: "flex-end",
-                    height: "36px",
-                }}
-            >
-                <Button
-                    variant="outlined"
-                    color="warning"
-                    startIcon={<X size={14} />}
-                    onClick={() => {
-                        abortSession().catch(console.error);
-                    }}
-                >
-                    Abort
-                </Button>
-                <Button
-                    variant="outlined"
-                    color="primary"
-                    onClick={completeAllSelections}
-                    disabled={selectionsInvalidCause !== null}
-                    startIcon={<CheckIcon size={14} />}
-                >
-                    Apply
-                </Button>
-            </Box>
-        </>
-    );
-}

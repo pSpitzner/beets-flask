@@ -1,6 +1,7 @@
-import { CopyMinus, CopyPlus, Merge, Trash2 } from "lucide-react";
+import { CheckIcon, CopyMinus, CopyPlus, Merge, Trash2, X } from "lucide-react";
 import { ReactNode, useEffect, useState } from "react";
 import {
+    Button,
     styled,
     SxProps,
     Theme,
@@ -222,6 +223,45 @@ export function DuplicateActions({ selection }: { selection: SelectionState }) {
                 {_toggleButtonWithTooltip(!enableDuplicateButton, "remove")}
             </DuplicateActionButtonGroup>
         </FormControl>
+    );
+}
+
+export function ApplyAbort() {
+    const { completeAllSelections, selectionsInvalidCause, abortSession } =
+        useImportContext();
+
+    return (
+        // Wrap into a Box to enable Tooltips on disabled buttons
+        <>
+            <Box
+                sx={{
+                    display: "flex",
+                    gap: "0.5rem",
+                    justifyContent: "flex-end",
+                    height: "36px",
+                }}
+            >
+                <Button
+                    variant="outlined"
+                    color="warning"
+                    startIcon={<X size={14} />}
+                    onClick={() => {
+                        abortSession().catch(console.error);
+                    }}
+                >
+                    Abort
+                </Button>
+                <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={completeAllSelections}
+                    disabled={selectionsInvalidCause !== null}
+                    startIcon={<CheckIcon size={14} />}
+                >
+                    Apply
+                </Button>
+            </Box>
+        </>
     );
 }
 

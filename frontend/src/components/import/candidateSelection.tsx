@@ -39,10 +39,7 @@ export function AvailableSelections({ extraButtons }: { extraButtons?: ReactNode
         );
 
         components.push(
-            <SelectionCandidateList
-                key={selection.id + "selec"}
-                selection={selection}
-            />
+            <CandidateList key={selection.id + "selec"} selection={selection} />
         );
 
         if (candidate) {
@@ -85,7 +82,7 @@ export function AvailableSelections({ extraButtons }: { extraButtons?: ReactNode
     );
 }
 
-function SelectionCandidateList({ selection }: { selection: SelectionState }) {
+function CandidateList({ selection }: { selection: SelectionState }) {
     const { chooseCandidate } = useImportContext();
     // for readability, only display 5 candidates by default
     const numCandidatesToShow = 5;
@@ -115,7 +112,13 @@ function SelectionCandidateList({ selection }: { selection: SelectionState }) {
             <Paper
                 sx={{ display: "flex", flexDirection: "column", paddingTop: ".25rem" }}
             >
-                <FormControl sx={{ width: "100%", marginRight: 0 }}>
+                <FormControl
+                    sx={{
+                        marginRight: 0,
+                        marginTop: "0.4rem",
+                        overflow: "hidden",
+                    }}
+                >
                     <RadioGroup
                         value={selection.current_candidate_id}
                         className={styles.choices}
@@ -130,12 +133,17 @@ function SelectionCandidateList({ selection }: { selection: SelectionState }) {
                         {displayedCandidates.map((choice) => {
                             return (
                                 <FormControlLabel
-                                    sx={{ marginRight: 0 }}
+                                    sx={{ marginRight: 0, alignItems: "flex-start" }}
                                     disableTypography={true}
                                     value={choice.id}
                                     key={choice.id}
-                                    control={<Radio size="small" />}
-                                    label={<CandidateHoverPreview candidate={choice} />}
+                                    control={
+                                        <Radio
+                                            sx={{ marginTop: "-0.1rem" }}
+                                            size="small"
+                                        />
+                                    }
+                                    label={<CandidateListItem candidate={choice} />}
                                 />
                             );
                         })}
@@ -155,17 +163,23 @@ function SelectionCandidateList({ selection }: { selection: SelectionState }) {
     );
 }
 
-function CandidateHoverPreview({ candidate }: { candidate: CandidateState }) {
+function CandidateListItem({ candidate }: { candidate: CandidateState }) {
     // const artistIsSame = candidate.cur_artist === match.info.artist;
     // const albumIsSame = candidate.cur_album === match.info.album;
-    const artistIsSame = true;
-    const albumIsSame = true;
 
     return (
         <Box className={styles.candidateHeader} key={candidate.id}>
             <HoverCard.Root openDelay={50} closeDelay={50}>
                 <HoverCard.Trigger className={styles.headerGroup}>
-                    <Box className={styles.headerGroup}>
+                    <Box
+                        className={styles.headerGroup}
+                        sx={{
+                            // we to indent the album, but only when flexwrap occurs
+                            // -> substract the margin we add below
+                            marginRight: "-1.4rem",
+                            flexShrink: 0,
+                        }}
+                    >
                         {candidate.id == "asis" ? (
                             <SimilarityBadgeWithText
                                 text={"asis"}
@@ -175,11 +189,17 @@ function CandidateHoverPreview({ candidate }: { candidate: CandidateState }) {
                         ) : (
                             <SimilarityBadge dist={candidate.distance} charWidth={4} />
                         )}
+                        <Box>{candidate.info.artist}</Box>
                     </Box>
-                    <Box className={styles.headerGroup}>
-                        <Box data-changed={!artistIsSame}>{candidate.info.artist}</Box>
+                    <Box
+                        className={styles.headerGroup}
+                        sx={{
+                            marginLeft: "1.4rem",
+                            flexShrink: 0,
+                        }}
+                    >
                         <ChevronRight className={styles.fade} size={14} />
-                        <Box data-changed={!albumIsSame}>{candidate.info.album}</Box>
+                        <Box>{candidate.info.album}</Box>
                     </Box>
                 </HoverCard.Trigger>
                 <HoverCard.Content
@@ -193,12 +213,14 @@ function CandidateHoverPreview({ candidate }: { candidate: CandidateState }) {
                 </HoverCard.Content>
             </HoverCard.Root>
 
-            <PenaltyIconRow candidate={candidate} />
+            <Box className={styles.penaltyIconRowWrapper}>
+                <PenaltyIconRow candidate={candidate} />
+            </Box>
         </Box>
     );
 }
 
-function SectionHeader ({ text }: { text: string }) {
+function SectionHeader({ text }: { text: string }) {
     return (
         <StatusLabel
             sx={{
@@ -206,6 +228,7 @@ function SectionHeader ({ text }: { text: string }) {
                 marginLeft: "1rem",
                 paddingBottom: "0.1rem",
             }}
-        text={text} />
+            text={text}
+        />
     );
 }
