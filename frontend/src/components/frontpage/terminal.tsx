@@ -1,21 +1,19 @@
-import { ChevronDown, Terminal as TerminalIcon } from "lucide-react";
 import React, {
     createContext,
     Dispatch,
+    HtmlHTMLAttributes,
     SetStateAction,
     useEffect,
     useRef,
     useState,
 } from "react";
 import { Socket } from "socket.io-client";
-import { Button, IconButton, Portal, Slide } from "@mui/material";
 import { FitAddon as xTermFitAddon } from "@xterm/addon-fit";
 import { Terminal as xTerminal } from "@xterm/xterm";
 
 import { useSocket } from "@/components/common/hooks/useSocket";
 
 import "node_modules/@xterm/xterm/css/xterm.css";
-import styles from "./terminal.module.scss";
 
 // match our style - this is somewhat redundant with main.css
 const xTermTheme = {
@@ -34,83 +32,7 @@ const xTermTheme = {
     brightCyan: "#A3CDCD",
 };
 
-const SlideIn = ({ children }: { children: React.ReactNode }) => {
-    const { open, toggle, setOpen } = useTerminalContext();
-
-    // prevent scrolling of main content when terminal is open
-    // would be nicer to scroll depending on where the mouser cursor is, but that seems more difficult.
-    useEffect(() => {
-        if (open) {
-            document.body.style.overflow = "hidden";
-        } else {
-            document.body.style.overflow = "auto";
-        }
-    }, [open]);
-
-    // keyboard shortcut to toggle terminal
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.code === "Backquote" && e.ctrlKey) {
-                if (open) {
-                    setOpen(false);
-                } else {
-                    setOpen(true);
-                }
-            }
-        };
-
-        window.addEventListener("keydown", handleKeyDown);
-
-        return () => {
-            window.removeEventListener("keydown", handleKeyDown);
-        };
-    }, [open, setOpen]);
-
-    return (
-        <>
-            <Button
-                variant="outlined"
-                color="primary"
-                onClick={toggle}
-                className={styles.terminalExpandButton}
-                startIcon={<TerminalIcon size={14} />}
-            >
-                Terminal
-            </Button>
-            <Portal container={document.getElementById("app")}>
-                <div className={styles.slideIn} data-open={open}>
-                    <Slide direction="up" in={open}>
-                        <div>
-                            <div className={styles.slideInHeader}>
-                                <IconButton
-                                    onClick={toggle}
-                                    color="primary"
-                                    size="small"
-                                    className={styles.terminalCollapseButton}
-                                >
-                                    <ChevronDown size={14} />
-                                </IconButton>
-                            </div>
-                            <div className={styles.terminalOuterContainer}>
-                                {children}
-                            </div>
-                        </div>
-                    </Slide>
-                </div>
-            </Portal>
-        </>
-    );
-};
-
-export function Terminal() {
-    return (
-        <SlideIn>
-            <XTermBinding />
-        </SlideIn>
-    );
-}
-
-function XTermBinding() {
+export function Terminal(props: HtmlHTMLAttributes<HTMLDivElement>) {
     const ref = useRef<HTMLDivElement>(null);
     const { term } = useTerminalContext();
 
@@ -157,10 +79,10 @@ function XTermBinding() {
         term.open(ele);
         fitAddon.fit();
 
+        // Resize on window resize
         const resizeObserver = new ResizeObserver(() => {
             fitAddon.fit();
         });
-
         resizeObserver.observe(ele);
 
         return () => {
@@ -169,7 +91,7 @@ function XTermBinding() {
         };
     }, [term]);
 
-    return <div ref={ref} className={styles.xTermBindingContainer}></div>;
+    return <div ref={ref} {...props} />;
 }
 
 export interface TerminalContextI {
@@ -197,8 +119,7 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
                 theme: xTermTheme,
                 cursorBlink: true,
                 macOptionIsMeta: true,
-                rows: 12,
-                cols: 80,
+                allowTransparency: true,
             });
             term.write("Connecting...");
             setTerm(term);

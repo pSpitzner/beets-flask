@@ -11,6 +11,7 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as TerminalIndexImport } from './routes/terminal/index'
 import { Route as TagsIndexImport } from './routes/tags/index'
 import { Route as InboxIndexImport } from './routes/inbox/index'
 import { Route as ImportIndexImport } from './routes/import/index'
@@ -24,6 +25,11 @@ import { Route as LibraryBrowseArtistAlbumIdImport } from './routes/library/brow
 import { Route as LibraryBrowseArtistAlbumIdItemIdImport } from './routes/library/browse.$artist.$albumId.$itemId'
 
 // Create/Update Routes
+
+const TerminalIndexRoute = TerminalIndexImport.update({
+  path: '/terminal/',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const TagsIndexRoute = TagsIndexImport.update({
   path: '/tags/',
@@ -136,6 +142,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TagsIndexImport
       parentRoute: typeof rootRoute
     }
+    '/terminal/': {
+      id: '/terminal/'
+      path: '/terminal'
+      fullPath: '/terminal'
+      preLoaderRoute: typeof TerminalIndexImport
+      parentRoute: typeof rootRoute
+    }
     '/_frontpage/_modal/schedule': {
       id: '/_frontpage/_modal/schedule'
       path: '/schedule'
@@ -186,6 +199,7 @@ export const routeTree = rootRoute.addChildren({
   ImportIndexRoute,
   InboxIndexRoute,
   TagsIndexRoute,
+  TerminalIndexRoute,
 })
 
 /* prettier-ignore-end */
@@ -202,7 +216,8 @@ export const routeTree = rootRoute.addChildren({
         "/_frontpage/",
         "/import/",
         "/inbox/",
-        "/tags/"
+        "/tags/",
+        "/terminal/"
       ]
     },
     "/_frontpage/_modal": {
@@ -231,6 +246,9 @@ export const routeTree = rootRoute.addChildren({
     },
     "/tags/": {
       "filePath": "tags/index.tsx"
+    },
+    "/terminal/": {
+      "filePath": "terminal/index.tsx"
     },
     "/_frontpage/_modal/schedule": {
       "filePath": "_frontpage/_modal.schedule.tsx",
