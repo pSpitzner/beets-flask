@@ -39,6 +39,7 @@ import { ExpandableSib } from "@/components/tags/tagView";
 import { ErrorDialog } from "./dialogs";
 
 import styles from "./contextMenu.module.scss";
+import ImportAutoSvg from "@/assets/importAuto.svg?react";
 
 interface ContextMenuContextI {
     closeMenu: () => void;
@@ -388,7 +389,7 @@ export function InteractiveImportAction(props: Partial<ActionProps>) {
                     });
                 closeMenu();
             }}
-            icon={<MessageCircleQuestion />}
+            icon={<HardDriveDownload />}
             text={"Import (interactive)"}
         />
     );
@@ -554,7 +555,7 @@ export function ImportAction(props: Partial<ActionProps>) {
     return (
         <ActionWithMutation
             {...props}
-            icon={<HardDriveDownload />}
+            icon={<ImportAutoSvg />}
             text={"Import (auto)"}
             mutationOption={importOptions}
         />
