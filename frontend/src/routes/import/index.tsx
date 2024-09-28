@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import { CircularProgress, Typography } from "@mui/material";
 import Box from "@mui/material/Box";
@@ -7,8 +6,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ApplyAbort } from "@/components/import/buttons";
 import { AvailableSelections } from "@/components/import/candidateSelection";
 import { ImportContextProvider, useImportContext } from "@/components/import/context";
-import {ImportTargetSelector,
-} from "@/components/import/targetSelector";
+import { ImportTargetSelector } from "@/components/import/targetSelector";
 
 export const Route = createFileRoute("/import/")({
     component: ImportPage,
@@ -26,7 +24,14 @@ function ImportPage() {
 
     return (
         <ImportContextProvider key={importSessionKey}>
-            <Box sx={{ gap: "1rem", display: "flex", flexDirection: "column" }}>
+            <Box
+                sx={{
+                    gap: "1rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                }}
+            >
                 <ImportTargetSelector />
                 <SessionsView handleNewSession={handleNewSession} />
             </Box>
@@ -116,15 +121,17 @@ function SessionsView({ handleNewSession }: { handleNewSession: () => void }) {
     }
 
     if (singleSelection) {
-        return <AvailableSelections extraButtons={[<ApplyAbort key={"applySelection"} />]} />;
+        return (
+            <AvailableSelections
+                extraButtons={[<ApplyAbort key={"applySelection"} />]}
+            />
+        );
     } else {
         return (
             <>
                 <AvailableSelections />
-                <ApplyAbort />
+                {/* TODO: when we have multi-selection, show apply buttons globally */}
             </>
         );
     }
 }
-
-

@@ -82,17 +82,17 @@ export default function NavTabs() {
             textColor="inherit"
             value={currentIdx === -1 ? false : currentIdx}
             sx={{
-                boxShadow: "inset 0 1px 0 0 #efefef",
-                backgroundColor: "background.paper",
                 overflow: "visible",
                 [`& .${tabsClasses.indicator}`]: {
                     bottom: "unset",
-                    top: 0,
-                    height: "1px",
-                    backgroundColor: "background.paper",
+                    top: "16px",
+                    height: "15px",
+                    filter: "blur(20px)",
+                    backgroundColor: "#ffffff88",
+                    overflow: "visible",
                 },
-                [`& .${tabsClasses.flexContainer}`]: {
-                    justifyContent: "center",
+                [`& .MuiTabs-scroller`]: {
+                    overflow: "visible !important",
                 },
             }}
         >

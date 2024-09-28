@@ -15,7 +15,7 @@ export function ImportTargetSelector() {
     const currentPath = selStates?.[0]?.paths[0] ?? sessionPath;
 
     return (
-        <div>
+        <Box className={"ContainerWidth"}>
             <Box
                 component="form"
                 noValidate
@@ -39,8 +39,8 @@ export function ImportTargetSelector() {
                 />
                 <StartAndAbortBtn setError={setError} />
             </Box>
-            <div
-                style={{
+            <Box
+                sx={{
                     display: "flex",
                     gap: "1rem",
                     justifyContent: "space-between",
@@ -65,8 +65,8 @@ export function ImportTargetSelector() {
                         {error}
                     </FormHelperText>
                 )}
-            </div>
-        </div>
+            </Box>
+        </Box>
     );
 }
 

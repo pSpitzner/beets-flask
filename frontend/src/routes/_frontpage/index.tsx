@@ -3,6 +3,7 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { InboxStatsGridItems } from "@/components/frontpage/inboxStats";
 import { LibraryStats } from "@/components/frontpage/libraryStats";
+import Box from "@mui/material/Box";
 
 export const Route = createFileRoute("/_frontpage/")({
     component: Index,
@@ -16,9 +17,9 @@ export const Route = createFileRoute("/_frontpage/")({
  */
 function Index() {
     return (
-        <div>
+        <Box sx={{ padding: "0.5rem" }}>
             <Outlet />
-            <Grid container spacing={2} display="flex" justifyContent="center">
+            <Grid container spacing={1} display="flex" justifyContent="center">
                 <InboxStatsGridItems />
                 <Grid
                     size={{
@@ -31,6 +32,6 @@ function Index() {
                     <LibraryStats />
                 </Grid>
             </Grid>
-        </div>
+        </Box>
     );
 }

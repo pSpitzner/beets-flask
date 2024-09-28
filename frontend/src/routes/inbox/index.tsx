@@ -34,7 +34,7 @@ function Inboxes() {
     }
 
     return (
-        <Box>
+        <Box className={"ContainerWidth"} sx={{ marginTop: "0.5rem" }}>
             {Object.values(inboxes).map((inbox, i) => {
                 return <Inbox key={i} name={inbox.name} path={inbox.path} />;
             })}

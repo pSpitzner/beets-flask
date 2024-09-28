@@ -76,6 +76,7 @@ export function AvailableSelections({ extraButtons }: { extraButtons?: ReactNode
                 flexDirection: "column",
                 gap: "0.5rem",
             }}
+            className={"ContainerWidth"}
         >
             {components.length > 0 && components}
         </Box>
