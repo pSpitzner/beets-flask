@@ -27,12 +27,43 @@ export function ButtonBar({
     selection: SelectionState;
     extraButtons?: ReactNode[];
 }) {
-    const { selectionsInvalidCause } = useImportContext();
+    const { selectionsInvalidCause, currentCandidates } = useImportContext();
     const [statusText, setStatusText] = useState<string | null>(null);
 
     useEffect(() => {
         if (selectionsInvalidCause === null) {
-            setStatusText("Great choice!");
+            // Get the lowest distance candidate
+            let distance = 0;
+            if (currentCandidates && currentCandidates.length > 0) {
+                currentCandidates.forEach((candidate) => {
+                    if (candidate && candidate.distance > distance) {
+                        distance = candidate.distance;
+                    }
+                });
+            }
+
+            const match = 1 - distance;
+            if (match > 0.95) {
+                setStatusText("This is a perfect match!");
+            } else if (match > 0.9) {
+                setStatusText("Great choice!");
+            } else if (match > 0.8) {
+                setStatusText("Not bad, this could work.");
+            } else if (match > 0.7) {
+                setStatusText("It's fine, I guess...");
+            } else if (match > 0.6) {
+                setStatusText("Sure, if you're okay with 'average'.");
+            } else if (match > 0.5) {
+                setStatusText("I mean, you could do better, but okay.");
+            } else if (match > 0.3) {
+                setStatusText("Really? This is what you're going with?");
+            } else if (match > 0.2) {
+                setStatusText("I don't even know why you're considering this.");
+            } else if (match > 0.1) {
+                setStatusText("You might want to rethink your choices.");
+            } else {
+                setStatusText("This... is a disaster.");
+            }
         } else if (selectionsInvalidCause === "no current candidate") {
             setStatusText("Pick a candidate!");
         } else if (selectionsInvalidCause === "no duplicate action") {
@@ -40,7 +71,7 @@ export function ButtonBar({
         } else {
             setStatusText(selectionsInvalidCause);
         }
-    }, [selectionsInvalidCause]);
+    }, [selectionsInvalidCause, currentCandidates]);
 
     return (
         <>

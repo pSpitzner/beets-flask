@@ -1,8 +1,15 @@
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
+} from "react";
 
 import useQueryParamsState from "../common/hooks/useQueryParamsState";
 import { useSocket } from "../common/hooks/useSocket";
-import { ImportState, SelectionState } from "./types";
+import { CandidateState, ImportState, SelectionState } from "./types";
 
 export interface ImportStatus {
     message:
@@ -37,6 +44,7 @@ interface ImportContextI {
     // All selections for the current import
     // might be undefined if the data is not yet loaded
     selStates?: SelectionState[];
+    currentCandidates?: (CandidateState | undefined)[];
     status?: ImportStatus;
     pending: boolean;
     sessionPath: string | null;
@@ -391,8 +399,26 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         [socket, updateSelectionState, chooseCandidate]
     );
 
+    /** Helper to get the current candidates */
+    const currentCandidates = useMemo(() => {
+        if (!selStates) return undefined;
+        const current = [];
+        for (const sel of selStates) {
+            if (sel.current_candidate_id) {
+                const candidate = sel.candidate_states.find(
+                    (c) => c.id === sel.current_candidate_id
+                );
+                if (candidate) current.push(candidate);
+            } else {
+                current.push(undefined);
+            }
+        }
+        return current;
+    }, [selStates]);
+
     const ret: ImportContextI = {
         selStates,
+        currentCandidates,
         status,
         sessionPath,
         selectionsInvalidCause,
