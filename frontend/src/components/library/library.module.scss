@@ -8,6 +8,7 @@ $column_gap: 0.5rem;
     display: flex;
     // @sm I hard-coded the col height cos I did not manage dynamically (but only the track details view causes height issues)
     max-height: calc(100dvh - 48px);
+    height: 100%;
     column-gap: $column_gap;
     padding: 0.5rem;
 }

@@ -1,6 +1,6 @@
 import { HardDriveDownload, Home, Inbox, Library, Search, Tag } from "lucide-react";
-import { ReactElement } from "react";
-import { Typography } from "@mui/material";
+import { MouseEvent, ReactElement, useRef } from "react";
+import { Box, darken, Typography } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import Tab, { tabClasses, TabProps } from "@mui/material/Tab";
 import Tabs, { tabsClasses } from "@mui/material/Tabs";
@@ -21,6 +21,8 @@ const StyledTab = createLink(
         justifyContent: "center",
         gap: "0.5rem",
         textTransform: "uppercase",
+        overflow: "visible",
+        transition: "color 0.3s linear",
         "& svg": {
             fontSize: 16,
             width: 16,
@@ -34,6 +36,14 @@ const StyledTab = createLink(
         },
         [`& .${tabClasses.icon}`]: {
             marginBottom: 0,
+        },
+        [`&:hover`]: {
+            color: darken(theme.palette.secondary.main, 0.2),
+            transition: "color 1s linear, text-shadow 5s ease-in",
+            textShadow: `0 0 50px ${theme.palette.secondary.main}`,
+        },
+        [`&[data-status="active"]`]: {
+            color: theme.palette.secondary.main,
         },
     }))
 );
@@ -70,23 +80,30 @@ export default function NavTabs() {
     ];
 
     const currentIdx = navItems.findIndex((item) => item.to === "/" + basePath);
+    const ref = useRef<HTMLDivElement>(null);
+
+    const handleMouseMove = (e: MouseEvent) => {
+        ref.current?.style.setProperty("--mouse-x", `${e.clientX}px`);
+        ref.current?.style.setProperty("--mouse-y", `${e.clientY}px`);
+    };
 
     return (
         <Tabs
-            textColor="inherit"
+            ref={ref}
             value={currentIdx === -1 ? false : currentIdx}
             sx={(theme) => ({
+                color: "inherit",
                 overflow: "hidden",
                 display: "flex",
                 width: "100%",
                 justifyContent: "center",
                 [`& .${tabsClasses.indicator}`]: {
-                    bottom: "unset",
-                    top: "16px",
-                    height: "15px",
-                    filter: "blur(25px)",
-                    backgroundColor: "#ffffff88",
-                    overflow: "visible",
+                    position: "absolute",
+                    top: `calc(50% - 8px)`,
+                    height: "16px",
+                    filter: "blur(50px)",
+                    backgroundColor: theme.palette.secondary.main,
+                    zIndex: -1,
                 },
                 [`& .MuiTabs-scroller`]: {
                     width: "100%",
@@ -101,11 +118,33 @@ export default function NavTabs() {
                         gap: "30px",
                     },
                 },
+                [`&:hover .mouse-trail`]: {
+                    opacity: 1,
+                },
             })}
+            onMouseMove={handleMouseMove}
         >
             {navItems.map((item) => (
                 <NavItem key={item.to} {...item} />
             ))}
+            {/* Mouse hover effect */}
+            <Box
+                className="mouse-trail"
+                sx={(theme) => ({
+                    top: "var(--mouse-y)",
+                    left: "var(--mouse-x)",
+                    width: "10px",
+                    height: "10px",
+                    backgroundColor: theme.palette.secondary.main,
+                    filter: "blur(25px)",
+                    pointerEvents: "none",
+                    transition: "opacity 0.3s ease-in-out",
+                    transform: "translate(-50%, -50%)",
+                    position: "absolute",
+                    opacity: 0,
+                    zIndex: -1,
+                })}
+            />
         </Tabs>
     );
 }

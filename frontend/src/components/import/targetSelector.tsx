@@ -1,4 +1,3 @@
-
 import { Dispatch, SetStateAction, useState } from "react";
 import { Box, Button, FormHelperText } from "@mui/material";
 import Tooltip from "@mui/material/Tooltip";
@@ -15,7 +14,7 @@ export function ImportTargetSelector() {
     const currentPath = selStates?.[0]?.paths[0] ?? sessionPath;
 
     return (
-        <Box className={"ContainerWidth"}>
+        <Box sx={{ width: "100%" }}>
             <Box
                 component="form"
                 noValidate

@@ -1,6 +1,6 @@
 import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Box, Card, Typography } from "@mui/material";
+import { Card, Typography } from "@mui/material";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -16,13 +16,14 @@ import {
     SelectionProvider,
     useSelection,
 } from "@/components/common/hooks/useSelection";
+import { PageWrapper } from "@/components/common/page";
 import { TagSimilarityBadgeWithHover } from "@/components/tags/similarityBadge";
 import { TagStatusIcon } from "@/components/tags/statusIcon";
 
 import styles from "@/components/inbox/inbox.module.scss";
 
 export const Route = createFileRoute("/inbox/")({
-    component: () => <Inboxes />,
+    component: Inboxes,
 });
 
 function Inboxes() {
@@ -34,11 +35,11 @@ function Inboxes() {
     }
 
     return (
-        <Box className={"ContainerWidth"} sx={{ marginTop: "0.5rem" }}>
+        <PageWrapper>
             {Object.values(inboxes).map((inbox, i) => {
                 return <Inbox key={i} name={inbox.name} path={inbox.path} />;
             })}
-        </Box>
+        </PageWrapper>
     );
 }
 

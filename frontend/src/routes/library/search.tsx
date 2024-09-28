@@ -15,6 +15,7 @@ import {
     useSearchContext,
 } from "@/components/common/hooks/useSearch";
 import { JSONPretty } from "@/components/common/json";
+import { PageWrapper } from "@/components/common/page";
 import CoverArt from "@/components/library/coverArt";
 import { AlbumView, ItemView } from "@/components/library/itemAlbumDetails";
 import List from "@/components/library/list";
@@ -28,13 +29,13 @@ export const Route = createFileRoute("/library/search")({
 function SearchPage() {
     return (
         <SearchContextProvider>
-            <Box className={styles.SearchPageOuter}>
+            <PageWrapper className={styles.SearchPageOuter}>
                 <SearchBar />
                 <Box className={styles.SearchResultsWrapper}>
                     <SearchResults />
                     <SearchResultDetails />
                 </Box>
-            </Box>
+            </PageWrapper>
         </SearchContextProvider>
     );
 }

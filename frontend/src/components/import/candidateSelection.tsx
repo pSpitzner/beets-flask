@@ -44,9 +44,9 @@ export function AvailableSelections({ extraButtons }: { extraButtons?: ReactNode
 
         if (candidate) {
             components.push(
-                <Box>
+                <Box key={selection.id + "cand"}>
                     <SectionHeader text={"Selected candidate"} />
-                    <Paper key={selection.id + "cand"}>
+                    <Paper>
                         <CandidatePreview
                             candidate={candidate}
                             sx={{
@@ -75,8 +75,8 @@ export function AvailableSelections({ extraButtons }: { extraButtons?: ReactNode
                 display: "flex",
                 flexDirection: "column",
                 gap: "0.5rem",
+                width: "100%",
             }}
-            className={"ContainerWidth"}
         >
             {components.length > 0 && components}
         </Box>

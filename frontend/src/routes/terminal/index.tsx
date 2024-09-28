@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { PageWrapper } from "@/components/common/page";
 import { Terminal, TerminalContextProvider } from "@/components/frontpage/terminal";
 
 export const Route = createFileRoute("/terminal/")({
@@ -9,7 +10,11 @@ export const Route = createFileRoute("/terminal/")({
 function TerminalPage() {
     return (
         <TerminalContextProvider>
-            <Terminal style={{ height: "100%" }} />
+            <PageWrapper
+                sx={{ display: "flex", flexDirection: "column", height: "100%" }}
+            >
+                <Terminal style={{ height: "100%" }} />
+            </PageWrapper>
         </TerminalContextProvider>
     );
 }

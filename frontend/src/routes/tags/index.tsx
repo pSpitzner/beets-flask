@@ -7,9 +7,9 @@ import {
     tagGroupIdQueryOptions,
 } from "@/components/common/_query";
 import { SiblingRefsProvider } from "@/components/common/hooks/useSiblings";
+import { PageWrapper } from "@/components/common/page";
 import TagGroupView from "@/components/tags/tagGroupView";
 import { TagView } from "@/components/tags/tagView";
-import Box from "@mui/material/Box";
 
 export const Route = createFileRoute("/tags/")({
     loader: (opts) =>
@@ -32,7 +32,7 @@ export function TagGroupOverview() {
     }
 
     return (
-        <Box className={"ContainerWidth"} sx={{ paddingTop: "0.5rem" }}>
+        <PageWrapper>
             <PredefinedTagGroup id="inbox" defaultExpanded />
             <PredefinedTagGroup id="recent" />
             <PredefinedTagGroup id="archive" />
@@ -40,7 +40,7 @@ export function TagGroupOverview() {
             {manualTagGroups.map((group, i) => {
                 return <ManualTagGroup key={i} id={group.id} tag_ids={group.tag_ids} />;
             })}
-        </Box>
+        </PageWrapper>
     );
 }
 
