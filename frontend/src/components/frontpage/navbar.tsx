@@ -13,8 +13,8 @@ interface StyledTabProps extends Omit<LinkProps, "children">, Omit<TabProps, "re
 const StyledTab = createLink(
     styled(Tab)<StyledTabProps>(({ theme }) => ({
         lineHeight: "inherit",
+        marginTop: 7,
         minHeight: 32,
-        marginTop: 8,
         minWidth: 0,
         flexDirection: "row",
         letterSpacing: "1px",
@@ -26,19 +26,13 @@ const StyledTab = createLink(
             width: 16,
             height: 16,
         },
-        "&:not(:last-child)": {
-            marginRight: 24,
-            [theme.breakpoints.up("sm")]: {
-                marginRight: 60,
-            },
-        },
         [theme.breakpoints.up("md")]: {
             minWidth: 0,
         },
         [`& .${tabClasses.labelIcon}`]: {
             minHeight: 53,
         },
-        [`& .${tabClasses.iconWrapper}`]: {
+        [`& .${tabClasses.icon}`]: {
             marginBottom: 0,
         },
     }))
@@ -81,20 +75,33 @@ export default function NavTabs() {
         <Tabs
             textColor="inherit"
             value={currentIdx === -1 ? false : currentIdx}
-            sx={{
-                overflow: "visible",
+            sx={(theme) => ({
+                overflow: "hidden",
+                display: "flex",
+                width: "100%",
+                justifyContent: "center",
                 [`& .${tabsClasses.indicator}`]: {
                     bottom: "unset",
                     top: "16px",
                     height: "15px",
-                    filter: "blur(20px)",
+                    filter: "blur(25px)",
                     backgroundColor: "#ffffff88",
                     overflow: "visible",
                 },
                 [`& .MuiTabs-scroller`]: {
-                    overflow: "visible !important",
+                    width: "100%",
+                    overflow: "visible",
                 },
-            }}
+                // Spacing of tabs for different breakpoints
+                [`& .MuiTabs-flexContainer`]: {
+                    width: "100%",
+                    gap: "24px",
+                    justifyContent: "center",
+                    [theme.breakpoints.up("md")]: {
+                        gap: "30px",
+                    },
+                },
+            })}
         >
             {navItems.map((item) => (
                 <NavItem key={item.to} {...item} />
