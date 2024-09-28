@@ -34,12 +34,22 @@ export function ButtonBar({
         if (selectionsInvalidCause === null) {
             // Get the lowest distance candidate
             let distance = 0;
+            let includesAsis = false;
             if (currentCandidates && currentCandidates.length > 0) {
                 currentCandidates.forEach((candidate) => {
                     if (candidate && candidate.distance > distance) {
                         distance = candidate.distance;
                     }
+                    if (candidate && candidate.id === "asis") {
+                        includesAsis = true;
+                    }
                 });
+            }
+
+            // Special case asis
+            if (includesAsis) {
+                setStatusText("Fear of the unknown?");
+                return;
             }
 
             const match = 1 - distance;
