@@ -1,5 +1,5 @@
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { useLocation } from "@tanstack/react-router";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 
 type UseQueryParamsStateReturnType<T> = [T, Dispatch<SetStateAction<T>>];
 
@@ -20,6 +20,7 @@ export default function useQueryParamsState<T>(
     initialState: T
 ): UseQueryParamsStateReturnType<T> {
     const location = useLocation();
+    const navigate = useNavigate();
 
     // State for managing the value derived from the query parameter
     const [value, setValue] = useState<T>(() => {
@@ -44,14 +45,13 @@ export default function useQueryParamsState<T>(
             currentSearchParams.delete(param);
         }
 
-        // Update the URL with the modified search parameters
-        const newUrl = [window.location.pathname, currentSearchParams.toString()]
-            .filter(Boolean)
-            .join("?");
-
-        // Update the browser's history without triggering a page reload
-        window.history.replaceState(window.history.state, "", newUrl);
-    }, [param, value, location.pathname]);
+        // Update the current URL is not different
+        if (window.location.pathname === location.pathname) {
+            navigate({
+                search: Object.fromEntries(currentSearchParams),
+            }).catch(console.error);
+        }
+    }, [param, value, location.pathname, navigate]);
 
     return [value, setValue];
 }
