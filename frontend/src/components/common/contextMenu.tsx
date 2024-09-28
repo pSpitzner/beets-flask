@@ -87,8 +87,8 @@ export const defaultActions = [
     <RetagAction key="action-retag" />,
     <ImportAction key="action-import" />,
     <InteractiveImportAction key="action-interactive-import" />,
-    <TerminalImportAction key="action-terminal-import" />,
-    <UndoImportAction key="action-undo-import" />,
+    // <TerminalImportAction key="action-terminal-import" />,
+    // <UndoImportAction key="action-undo-import" />,
     <CopyPathAction key="action-copy-path" />,
     <DeleteAction key="action-delete" />,
 ];
