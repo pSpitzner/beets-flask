@@ -5,7 +5,6 @@ from flask_cors import CORS
 
 # make sure to load our config first, because it modifies the beets config
 from .config import config
-from .redis import rq
 from .db_engine import setup_db
 
 from .logger import log
@@ -30,7 +29,7 @@ def create_app():
     setup_db(app)
 
     # redis, workers
-    rq.init_app(app)
+    # rq.init_app(app)
     # we want to update the tag table only when needed.
     # redis connection also needed for sse
     app.config["REDIS_URL"] = "redis://localhost"

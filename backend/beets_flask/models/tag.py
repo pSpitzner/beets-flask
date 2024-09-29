@@ -16,8 +16,6 @@ from .tag_group import TagGroup
 from beets_flask.utility import log, AUDIO_EXTENSIONS
 from beets_flask.beets_sessions import PreviewSession, MatchedImportSession
 
-from beets_flask.redis import rq
-
 
 class Tag(Base):
     __tablename__ = "tag"
@@ -30,7 +28,14 @@ class Tag(Base):
 
     status: Mapped[str]
     kind: Mapped[str]
-    _valid_statuses = ["dummy", "pending", "tagging", "failed", "unmatched", "duplicate"]
+    _valid_statuses = [
+        "dummy",
+        "pending",
+        "tagging",
+        "failed",
+        "unmatched",
+        "duplicate",
+    ]
     _valid_kind = ["preview", "import"]
 
     # we could alternatively handle this by allowing multiple tag groups
@@ -136,10 +141,10 @@ class Tag(Base):
     def group_id(self):
         return self._group_id
 
-
     @group_id.setter
     def group_id(self, group_id):
         from beets_flask.db_engine import db_session
+
         with db_session() as session:
             tag_group = session.query(TagGroup).filter_by(id=group_id).first()
             if not tag_group:
@@ -149,7 +154,6 @@ class Tag(Base):
 
             self._group_id = group_id
             self._tag_group = tag_group
-
 
     def to_dict(self):
         data = {c.name: getattr(self, c.name) for c in self.__table__.columns}  # type: ignore
@@ -162,5 +166,3 @@ class Tag(Base):
     def make_transient(self):
         make_transient(self)
         return self
-
-

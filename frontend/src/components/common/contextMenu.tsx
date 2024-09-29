@@ -5,7 +5,6 @@ import {
     LayoutList,
     ListChecks,
     Maximize,
-    MessageCircleQuestion,
     Minimize2,
     Tag,
     Terminal,
