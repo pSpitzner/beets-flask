@@ -1,62 +1,87 @@
 // we use a single socket, currently only needed for the terminal connection
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { io,Socket } from "socket.io-client";
 import { QueryClient } from "@tanstack/react-query";
 
-import { TagI } from "../tags/_query";
+import { TagI } from "../../tags/_query";
+import { io, ManagerOptions, Socket, SocketOptions } from "socket.io-client";
 
-/* ---------------------------------------------------------------------------------- */
-/*                                      Terminal                                      */
-/* ---------------------------------------------------------------------------------- */
+/**
+ * Custom hook to manage a WebSocket connection for a specific namespace.
+ *
+ * @param namespace - The namespace for the WebSocket connection.
+ * @param options - Optional configuration options for the WebSocket connection.
+ *
+ * @returns An object containing the WebSocket instance and a boolean indicating whether the connection is active.
+ *
+ * This hook initializes a WebSocket connection to a specified namespace and manages its lifecycle.
+ * It handles connection and disconnection events, logs connection status, and provides a way to check the connection status.
+ * The WebSocket instance is created inline to allow multiple instances if needed.
+ *
+ * Usage:
+ * ```tsx
+ * const { socket, isConnected } = useSocket("myNamespace");
+ * ```
+ */
+export const useSocket = (
+    namespace: string,
+    options?: Partial<ManagerOptions & SocketOptions>
+) => {
+    const url: string =
+        import.meta.env.MODE === "development"
+            ? `ws://localhost:5001/${namespace}`
+            : namespace;
 
-// "undefined" means the URL will be computed from the `window.location` object
-const TERMINAL_URL =
-    import.meta.env.MODE === "development"
-        ? "ws://localhost:5001/terminal"
-        : "/terminal";
+    const [socket, setSocket] = useState<Socket | null>(null);
+    const [isConnected, setIsConnected] = useState(false);
 
-const termSocket = io(TERMINAL_URL, {
-    autoConnect: true,
-    transports: ["websocket"],
-});
-
-export const useTerminalSocket = () => {
-    const [isConnected, setIsConnected] = useState(termSocket.connected);
-
+    // Create socket inline to allow multiple instances
     useEffect(() => {
-        termSocket.connect();
+        const socket = io(url, {
+            autoConnect: false,
+            transports: ["websocket"],
+            ...options,
+        });
+        setSocket(socket);
+    }, [options, url]);
 
-        return () => {
-            termSocket.disconnect();
-        };
-    }, []);
-
+    // Register minimal event handlers
     useEffect(() => {
+        if (!socket) return;
+
         function handleConnect() {
-            console.log("Terminal websocket connected");
+            console.log(`${namespace}-socket connected`);
             setIsConnected(true);
         }
         function handleDisconnect() {
-            console.log("Terminal websocket disconnected");
+            console.log(`${namespace}-socket disconnected`);
             setIsConnected(false);
         }
+        function handleError(e: unknown) {
+            console.error(e);
+        }
 
-        termSocket.on("connect", handleConnect);
-        termSocket.on("disconnect", handleDisconnect);
+        socket.on("connect", handleConnect);
+        socket.on("disconnect", handleDisconnect);
+        socket.on("connect_error", handleError);
+        socket.connect();
 
         return () => {
-            termSocket.off("connect", handleConnect);
-            termSocket.off("disconnect", handleDisconnect);
+            socket.off("connect", handleConnect);
+            socket.off("disconnect", handleDisconnect);
+            socket.off("connect_error", handleError);
+            socket.disconnect();
         };
-    }, []);
+    }, [socket, namespace]);
 
-    return { socket: termSocket, isConnected };
+    return { socket, isConnected };
 };
 
 /* ---------------------------------------------------------------------------------- */
 /*                           Status Updates, (previous SSE)                           */
 /* ---------------------------------------------------------------------------------- */
+// TODO: This should be moved into its own file / folder. Maybe a tags folder?
+// We also can use the generic useSocket hook here
 
 interface StatusInvalidationI {
     attributes: Record<string, string> | "all";
@@ -78,11 +103,9 @@ interface StatusContextI {
     socket?: Socket;
 }
 
-const StatusContext = createContext<StatusContextI>({
-    isConnected: false,
-});
+const StatusContext = createContext<StatusContextI | null>(null);
 
-const useStatusSocket = () => {
+export const useStatusSocket = () => {
     const context = useContext(StatusContext);
     if (!context) {
         throw new Error(
@@ -92,7 +115,7 @@ const useStatusSocket = () => {
     return context;
 };
 
-const StatusContextProvider = ({
+export const StatusContextProvider = ({
     children,
     client,
 }: {
@@ -119,9 +142,13 @@ const StatusContextProvider = ({
 
             if (data.attributes === "all") {
                 if (data.tagId)
-                    client.invalidateQueries({ queryKey: ["tag", data.tagId] }).catch(console.error);
+                    client
+                        .invalidateQueries({ queryKey: ["tag", data.tagId] })
+                        .catch(console.error);
                 if (data.tagPath)
-                    client.invalidateQueries({ queryKey: ["tag", data.tagPath] }).catch(console.error);
+                    client
+                        .invalidateQueries({ queryKey: ["tag", data.tagPath] })
+                        .catch(console.error);
             } else {
                 const attrs = data.attributes;
                 if (data.tagId)
@@ -137,9 +164,11 @@ const StatusContextProvider = ({
 
         function handleInboxUpdates(data: StatusInvalidationI) {
             if (data.attributes === "all") {
-                client.invalidateQueries({
-                    queryKey: ["inbox"],
-                }).catch(console.error);
+                client
+                    .invalidateQueries({
+                        queryKey: ["inbox"],
+                    })
+                    .catch(console.error);
             } else {
                 throw new Error(
                     "Inbox update with partial attributes is not supported"
@@ -169,5 +198,3 @@ const StatusContextProvider = ({
         <StatusContext.Provider value={socketState}>{children}</StatusContext.Provider>
     );
 };
-
-export { useStatusSocket, StatusContextProvider };

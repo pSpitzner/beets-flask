@@ -9,12 +9,13 @@
 .Action {
     // those are mui menu-items
     padding: 0.2rem 0.5rem;
-    &:hover {
-        background-color:#6F7B8555;
-    }
     display: flex;
     flex-direction: row;
     gap: 0.5rem;
+
+    &:hover {
+        background-color: #6f7b8555;
+    }
 }
 
 .Heading {
@@ -23,7 +24,7 @@
     padding-top: 0.6rem;
     padding-bottom: 0.6rem;
     // padding-bottom: 0.8rem;
-    justify-content:center;
+    justify-content: center;
 }
 
 .ActionText {

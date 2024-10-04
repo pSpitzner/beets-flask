@@ -3,12 +3,8 @@ import shutil
 from typing import Optional, TypedDict
 from flask import Blueprint, request, jsonify, abort
 from beets_flask.db_engine import db_session
-from beets_flask.disk import (
-    get_inbox_folders,
-    path_to_dict,
-    get_inbox_for_path,
-    retag_inbox,
-)
+from beets_flask.disk import path_to_dict
+from beets_flask.inbox import get_inbox_folders, get_inbox_for_path, retag_inbox
 from beets_flask.utility import AUDIO_EXTENSIONS
 from beets_flask.models import Tag
 from beets_flask.logger import log
@@ -16,10 +12,38 @@ from beets_flask.logger import log
 import os
 
 from pathlib import Path
-
+from beets_flask.disk import is_album_folder
 from sqlalchemy import select
 
 inbox_bp = Blueprint("inbox", __name__, url_prefix="/inbox")
+
+
+@inbox_bp.route("/flatPaths", methods=["POST"])
+def get_tree():
+    """
+    Get all flat paths for the inbox folder
+
+    # Request args
+    files: bool = False
+    depth: int = 2
+    """
+    show_files = bool(request.args.get("files", False))
+    depth = int(request.args.get("depth", -1))
+
+    folders = get_inbox_folders()
+
+    paths = []
+    for folder in folders:
+        for root, dirnames, filenames in os.walk(folder):
+            if depth == -1 or root[len(folder) :].count(os.sep) < depth:
+                for dirname in dirnames:
+                    if is_album_folder(os.path.join(root, dirname)):
+                        paths.append(os.path.join(root, dirname))
+                if show_files:
+                    for filename in filenames:
+                        paths.append(os.path.join(root, filename))
+
+    return jsonify(paths)
 
 
 @inbox_bp.route("/", methods=["GET"])

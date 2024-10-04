@@ -1,11 +1,8 @@
 from flask import Blueprint
 
-from beets_flask.redis import rq
-
+from beets_flask.redis import queues, redis_conn
 from rq.worker import Worker
-from rq.queue import Queue
-from rq.utils import import_attribute
-from rq.registry import FailedJobRegistry, clean_registries
+from rq.registry import clean_registries
 from rq.worker_registration import clean_worker_registry
 
 monitor_bp = Blueprint("monitor", __name__, url_prefix="/monitor")
@@ -20,7 +17,6 @@ def get_queue_status():
         dict: A dictionary containing the status of each job queue.
 
     """
-    queues: list[Queue] = import_attribute(rq.queue_class).all(connection=rq.connection)  # type: ignore
 
     for q in queues:
         clean_registries(q)
@@ -49,7 +45,7 @@ def get_worker_status():
         dict: A dictionary containing the status of each worker.
 
     """
-    workers: list[Worker] = import_attribute(rq.worker_class).all(connection=rq.connection)  # type: ignore
+    workers: list[Worker] = Worker.all(connection=redis_conn)
 
     ret_dict = {}
     for w in workers:

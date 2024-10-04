@@ -1,23 +1,22 @@
-import { ChevronDown, Terminal as TerminalIcon } from "lucide-react";
 import React, {
     createContext,
     Dispatch,
+    HtmlHTMLAttributes,
     SetStateAction,
+    useCallback,
     useEffect,
     useRef,
     useState,
 } from "react";
-import { Socket } from "socket.io-client";
-import { Button, IconButton,Portal, Slide } from "@mui/material";
 import { FitAddon as xTermFitAddon } from "@xterm/addon-fit";
 import { Terminal as xTerminal } from "@xterm/xterm";
 
-import { useTerminalSocket } from "@/components/common/useSocket";
+import { useSocket } from "@/components/common/hooks/useSocket";
 
 import "node_modules/@xterm/xterm/css/xterm.css";
-import styles from "./terminal.module.scss";
+import { Socket } from "socket.io-client";
 
-// match our style - this is somewhat redundant with index.css
+// match our style - this is somewhat redundant with main.css
 const xTermTheme = {
     red: "#C0626B",
     green: "#A4BF8C",
@@ -34,85 +33,15 @@ const xTermTheme = {
     brightCyan: "#A3CDCD",
 };
 
-const SlideIn = ({ children }: { children: React.ReactNode }) => {
-    const { open, toggle, setOpen } = useTerminalContext();
-
-    // prevent scrolling of main content when terminal is open
-    // would be nicer to scroll depending on where the mouser cursor is, but that seems more difficult.
-    useEffect(() => {
-        if (open) {
-            document.body.style.overflow = "hidden";
-        } else {
-            document.body.style.overflow = "auto";
-        }
-    }, [open]);
-
-    // keyboard shortcut to toggle terminal
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.code === "Backquote" && e.ctrlKey) {
-                if (open) {
-                    setOpen(false);
-                } else {
-                    setOpen(true);
-                }
-            }
-        };
-
-        window.addEventListener("keydown", handleKeyDown);
-
-        return () => {
-            window.removeEventListener("keydown", handleKeyDown);
-        };
-    }, [open, setOpen]);
-
-    return (
-        <>
-        <Button
-        variant="outlined"
-        color="primary"
-        onClick={toggle}
-        className={styles.terminalExpandButton}
-        startIcon={<TerminalIcon size={14} />}
-    >
-        Terminal
-    </Button>
-        <Portal container={document.getElementById("app")}>
-            <div className={styles.slideIn} data-open={open}>
-                <Slide direction="up" in={open}>
-                    <div>
-                        <div className={styles.slideInHeader}>
-                            <IconButton
-                                onClick={toggle}
-                                color="primary"
-                                size="small"
-                                className={styles.terminalCollapseButton}
-                            >
-                                <ChevronDown size={14} />
-                            </IconButton>
-                        </div>
-                        <div className={styles.terminalOuterContainer}>{children}</div>
-                    </div>
-                </Slide>
-            </div>
-
-        </Portal>
-        </>
-    );
-};
-
-export function Terminal() {
-    return (
-        <SlideIn>
-            <XTermBinding />
-        </SlideIn>
-    );
-}
-
-function XTermBinding() {
+export function Terminal(props: HtmlHTMLAttributes<HTMLDivElement>) {
     const ref = useRef<HTMLDivElement>(null);
-    const { term } = useTerminalContext();
+    const { term, resetTerm } = useTerminalContext();
 
+    // we have to recreate the terminal on every mount of the component.
+    // not sure why we cannot restore.
+    useEffect(resetTerm, [resetTerm]);
+
+    // resetting term also retriggers this guy:
     useEffect(() => {
         if (!ref.current || !term) return;
         const ele = ref.current;
@@ -125,9 +54,12 @@ function XTermBinding() {
                 const key = e.key.toLowerCase();
                 if (key === "v") {
                     // ctrl+shift+v: paste whatever is in the clipboard
-                    navigator.clipboard.readText().then((toPaste) => {
-                        term.write(toPaste);
-                    }).catch(console.error);
+                    navigator.clipboard
+                        .readText()
+                        .then((toPaste) => {
+                            term.write(toPaste);
+                        })
+                        .catch(console.error);
                     return false;
                 } else if (key === "c" || key === "x") {
                     // ctrl+shift+x: copy whatever is highlighted to clipboard
@@ -152,20 +84,24 @@ function XTermBinding() {
         term.loadAddon(fitAddon);
         term.open(ele);
         fitAddon.fit();
+        console.log(term.rows);
 
+        // Resize on window resize
         const resizeObserver = new ResizeObserver(() => {
             fitAddon.fit();
         });
-
         resizeObserver.observe(ele);
 
+        // On visibility change rerender terminal
+        console.log("Term mounted");
         return () => {
-            term.dispose();
+            // term.dispose();
             if (ele) resizeObserver.unobserve(ele);
+            console.log("Term unmounted");
         };
     }, [term]);
 
-    return <div ref={ref} className={styles.xTermBindingContainer}></div>;
+    return <div ref={ref} {...props} />;
 }
 
 export interface TerminalContextI {
@@ -174,47 +110,44 @@ export interface TerminalContextI {
     setOpen: Dispatch<SetStateAction<boolean>>;
     inputText: (input: string) => void;
     clearInput: () => void;
-    socket?: Socket;
+    resetTerm: () => void;
+    socket: Socket | null;
     term?: xTerminal;
 }
 
-const TerminalContext = createContext<TerminalContextI>({
-    open: false,
-    toggle: () => { },
-    setOpen: () => { },
-    inputText: () => { },
-    clearInput: () => { },
-});
+const TerminalContext = createContext<TerminalContextI | null>(null);
 
 export function TerminalContextProvider({ children }: { children: React.ReactNode }) {
+    const { socket, isConnected } = useSocket("terminal");
+
     const [open, setOpen] = useState(false);
     const [term, setTerm] = useState<xTerminal>();
 
-    const { socket, isConnected } = useTerminalSocket();
-
-    useEffect(() => {
-        // Create gui on mount
-        if (!term) {
-            const term = new xTerminal({
+    const resetTerm = useCallback(() => {
+        /** Creates a new terminal and disposes the old one
+         */
+        setTerm((old) => {
+            if (old) old.dispose();
+            const t2 = new xTerminal({
                 theme: xTermTheme,
                 cursorBlink: true,
                 macOptionIsMeta: true,
-                rows: 12,
-                cols: 80,
+                allowTransparency: true,
             });
-            term.write("Connecting...");
-            setTerm(term);
-        }
-    }, [term]);
+            t2.write("Connecting...");
+            return t2;
+        });
+    }, []);
 
-    // Attatch socketio handler
+    useEffect(resetTerm, [resetTerm]);
+
+    // Attach socket handler
     useEffect(() => {
-        if (!term || !isConnected) return;
+        if (!term || !isConnected || !socket) return;
 
         term.writeln("\rConnected!   ");
 
         const onInput = term.onData((data) => {
-            console.log("ptyInput", data);
             if (data === "\x01" || data === "\x04") {
                 // prevent ctrl+a because it can detach tmux, and ctrl+d because it can close the terminal
                 return;
@@ -222,11 +155,16 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
             socket.emit("ptyInput", { input: data });
         });
 
+        const onResize = term.onResize(({ cols, rows }) => {
+            // console.log(`Terminal was resized to ${cols} cols and ${rows} rows.`);
+            socket.emit("ptyResize", { cols, rows: rows });
+        });
+
         function onOutput(data: { output: string[] }) {
             // term!.clear(); seems to be preferred from the documentation,
             // but it leaves the prompt on the first line in place - which we here do not want
             // ideally we would directly access the buffer.
-            console.log("ptyOutput", data);
+            // console.log("ptyOutput", data);
             term!.reset();
             data.output.forEach((line, index) => {
                 if (index < data.output.length - 1) {
@@ -239,22 +177,17 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
                 }
             });
         }
-        socket.on("ptyOutput", onOutput);
 
         function onCursorUpdate(data: { x: number; y: number }) {
             // xterm uses 1-based indexing
             term!.write(`\x1b[${data.y + 1};${data.x + 1}H`);
         }
-        socket.on("ptyCursorPosition", onCursorUpdate);
 
-        const onResize = term.onResize(({ cols, rows }) => {
-            console.log(`Terminal was resized to ${cols} cols and ${rows} rows.`);
-            socket.emit("ptyResize", { cols, rows: rows });
-        });
+        socket.on("ptyOutput", onOutput);
+        socket.on("ptyCursorPosition", onCursorUpdate);
 
         // resize once on connect (after we fitted size on mount)
         socket.emit("ptyResize", { cols: term.cols, rows: term.rows });
-
         // request server update, so show whats actually on the pty when connecting
         socket.emit("ptyResendOutput");
 
@@ -274,16 +207,27 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
     }, [open, term]);
 
     function inputText(t: string) {
+        if (!socket) {
+            console.error("No socket available");
+            return;
+        }
+
         socket.emit("ptyInput", { input: t });
     }
 
     function clearInput() {
+        if (!socket) {
+            console.error("No socket available");
+            return;
+        }
+
         socket.emit("ptyInput", { input: "\x15" });
     }
 
     const terminalState: TerminalContextI = {
         open,
         toggle: () => setOpen(!open),
+        resetTerm,
         setOpen,
         inputText,
         clearInput,
@@ -299,5 +243,12 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
 }
 
 export function useTerminalContext() {
-    return React.useContext(TerminalContext);
+    const context = React.useContext(TerminalContext);
+
+    if (!context) {
+        throw new Error(
+            "useTerminalContext must be used within a TerminalContextProvider"
+        );
+    }
+    return context;
 }

@@ -11,8 +11,10 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as TerminalIndexImport } from './routes/terminal/index'
 import { Route as TagsIndexImport } from './routes/tags/index'
 import { Route as InboxIndexImport } from './routes/inbox/index'
+import { Route as ImportIndexImport } from './routes/import/index'
 import { Route as FrontpageIndexImport } from './routes/_frontpage/index'
 import { Route as LibrarySearchImport } from './routes/library/search'
 import { Route as LibraryBrowseImport } from './routes/library/browse'
@@ -24,6 +26,11 @@ import { Route as LibraryBrowseArtistAlbumIdItemIdImport } from './routes/librar
 
 // Create/Update Routes
 
+const TerminalIndexRoute = TerminalIndexImport.update({
+  path: '/terminal/',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const TagsIndexRoute = TagsIndexImport.update({
   path: '/tags/',
   getParentRoute: () => rootRoute,
@@ -31,6 +38,11 @@ const TagsIndexRoute = TagsIndexImport.update({
 
 const InboxIndexRoute = InboxIndexImport.update({
   path: '/inbox/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ImportIndexRoute = ImportIndexImport.update({
+  path: '/import/',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -109,6 +121,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FrontpageIndexImport
       parentRoute: typeof rootRoute
     }
+    '/import/': {
+      id: '/import/'
+      path: '/import'
+      fullPath: '/import'
+      preLoaderRoute: typeof ImportIndexImport
+      parentRoute: typeof rootRoute
+    }
     '/inbox/': {
       id: '/inbox/'
       path: '/inbox'
@@ -121,6 +140,13 @@ declare module '@tanstack/react-router' {
       path: '/tags'
       fullPath: '/tags'
       preLoaderRoute: typeof TagsIndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/terminal/': {
+      id: '/terminal/'
+      path: '/terminal'
+      fullPath: '/terminal'
+      preLoaderRoute: typeof TerminalIndexImport
       parentRoute: typeof rootRoute
     }
     '/_frontpage/_modal/schedule': {
@@ -156,23 +182,173 @@ declare module '@tanstack/react-router' {
 
 // Create and export the route tree
 
-export const routeTree = rootRoute.addChildren({
-  FrontpageModalRoute: FrontpageModalRoute.addChildren({
-    FrontpageModalScheduleRoute,
-  }),
-  LibraryBrowseRoute: LibraryBrowseRoute.addChildren({
-    LibraryBrowseArtistRoute: LibraryBrowseArtistRoute.addChildren({
-      LibraryBrowseArtistAlbumIdRoute:
-        LibraryBrowseArtistAlbumIdRoute.addChildren({
-          LibraryBrowseArtistAlbumIdItemIdRoute,
-        }),
-    }),
-  }),
-  LibrarySearchRoute,
-  FrontpageIndexRoute,
-  InboxIndexRoute,
-  TagsIndexRoute,
-})
+interface FrontpageModalRouteChildren {
+  FrontpageModalScheduleRoute: typeof FrontpageModalScheduleRoute
+}
+
+const FrontpageModalRouteChildren: FrontpageModalRouteChildren = {
+  FrontpageModalScheduleRoute: FrontpageModalScheduleRoute,
+}
+
+const FrontpageModalRouteWithChildren = FrontpageModalRoute._addFileChildren(
+  FrontpageModalRouteChildren,
+)
+
+interface LibraryBrowseArtistAlbumIdRouteChildren {
+  LibraryBrowseArtistAlbumIdItemIdRoute: typeof LibraryBrowseArtistAlbumIdItemIdRoute
+}
+
+const LibraryBrowseArtistAlbumIdRouteChildren: LibraryBrowseArtistAlbumIdRouteChildren =
+  {
+    LibraryBrowseArtistAlbumIdItemIdRoute:
+      LibraryBrowseArtistAlbumIdItemIdRoute,
+  }
+
+const LibraryBrowseArtistAlbumIdRouteWithChildren =
+  LibraryBrowseArtistAlbumIdRoute._addFileChildren(
+    LibraryBrowseArtistAlbumIdRouteChildren,
+  )
+
+interface LibraryBrowseArtistRouteChildren {
+  LibraryBrowseArtistAlbumIdRoute: typeof LibraryBrowseArtistAlbumIdRouteWithChildren
+}
+
+const LibraryBrowseArtistRouteChildren: LibraryBrowseArtistRouteChildren = {
+  LibraryBrowseArtistAlbumIdRoute: LibraryBrowseArtistAlbumIdRouteWithChildren,
+}
+
+const LibraryBrowseArtistRouteWithChildren =
+  LibraryBrowseArtistRoute._addFileChildren(LibraryBrowseArtistRouteChildren)
+
+interface LibraryBrowseRouteChildren {
+  LibraryBrowseArtistRoute: typeof LibraryBrowseArtistRouteWithChildren
+}
+
+const LibraryBrowseRouteChildren: LibraryBrowseRouteChildren = {
+  LibraryBrowseArtistRoute: LibraryBrowseArtistRouteWithChildren,
+}
+
+const LibraryBrowseRouteWithChildren = LibraryBrowseRoute._addFileChildren(
+  LibraryBrowseRouteChildren,
+)
+
+export interface FileRoutesByFullPath {
+  '': typeof FrontpageModalRouteWithChildren
+  '/library/browse': typeof LibraryBrowseRouteWithChildren
+  '/library/search': typeof LibrarySearchRoute
+  '/': typeof FrontpageIndexRoute
+  '/import': typeof ImportIndexRoute
+  '/inbox': typeof InboxIndexRoute
+  '/tags': typeof TagsIndexRoute
+  '/terminal': typeof TerminalIndexRoute
+  '/schedule': typeof FrontpageModalScheduleRoute
+  '/library/browse/$artist': typeof LibraryBrowseArtistRouteWithChildren
+  '/library/browse/$artist/$albumId': typeof LibraryBrowseArtistAlbumIdRouteWithChildren
+  '/library/browse/$artist/$albumId/$itemId': typeof LibraryBrowseArtistAlbumIdItemIdRoute
+}
+
+export interface FileRoutesByTo {
+  '': typeof FrontpageModalRouteWithChildren
+  '/library/browse': typeof LibraryBrowseRouteWithChildren
+  '/library/search': typeof LibrarySearchRoute
+  '/': typeof FrontpageIndexRoute
+  '/import': typeof ImportIndexRoute
+  '/inbox': typeof InboxIndexRoute
+  '/tags': typeof TagsIndexRoute
+  '/terminal': typeof TerminalIndexRoute
+  '/schedule': typeof FrontpageModalScheduleRoute
+  '/library/browse/$artist': typeof LibraryBrowseArtistRouteWithChildren
+  '/library/browse/$artist/$albumId': typeof LibraryBrowseArtistAlbumIdRouteWithChildren
+  '/library/browse/$artist/$albumId/$itemId': typeof LibraryBrowseArtistAlbumIdItemIdRoute
+}
+
+export interface FileRoutesById {
+  __root__: typeof rootRoute
+  '/_frontpage/_modal': typeof FrontpageModalRouteWithChildren
+  '/library/browse': typeof LibraryBrowseRouteWithChildren
+  '/library/search': typeof LibrarySearchRoute
+  '/_frontpage/': typeof FrontpageIndexRoute
+  '/import/': typeof ImportIndexRoute
+  '/inbox/': typeof InboxIndexRoute
+  '/tags/': typeof TagsIndexRoute
+  '/terminal/': typeof TerminalIndexRoute
+  '/_frontpage/_modal/schedule': typeof FrontpageModalScheduleRoute
+  '/library/browse/$artist': typeof LibraryBrowseArtistRouteWithChildren
+  '/library/browse/$artist/$albumId': typeof LibraryBrowseArtistAlbumIdRouteWithChildren
+  '/library/browse/$artist/$albumId/$itemId': typeof LibraryBrowseArtistAlbumIdItemIdRoute
+}
+
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | ''
+    | '/library/browse'
+    | '/library/search'
+    | '/'
+    | '/import'
+    | '/inbox'
+    | '/tags'
+    | '/terminal'
+    | '/schedule'
+    | '/library/browse/$artist'
+    | '/library/browse/$artist/$albumId'
+    | '/library/browse/$artist/$albumId/$itemId'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | ''
+    | '/library/browse'
+    | '/library/search'
+    | '/'
+    | '/import'
+    | '/inbox'
+    | '/tags'
+    | '/terminal'
+    | '/schedule'
+    | '/library/browse/$artist'
+    | '/library/browse/$artist/$albumId'
+    | '/library/browse/$artist/$albumId/$itemId'
+  id:
+    | '__root__'
+    | '/_frontpage/_modal'
+    | '/library/browse'
+    | '/library/search'
+    | '/_frontpage/'
+    | '/import/'
+    | '/inbox/'
+    | '/tags/'
+    | '/terminal/'
+    | '/_frontpage/_modal/schedule'
+    | '/library/browse/$artist'
+    | '/library/browse/$artist/$albumId'
+    | '/library/browse/$artist/$albumId/$itemId'
+  fileRoutesById: FileRoutesById
+}
+
+export interface RootRouteChildren {
+  FrontpageModalRoute: typeof FrontpageModalRouteWithChildren
+  LibraryBrowseRoute: typeof LibraryBrowseRouteWithChildren
+  LibrarySearchRoute: typeof LibrarySearchRoute
+  FrontpageIndexRoute: typeof FrontpageIndexRoute
+  ImportIndexRoute: typeof ImportIndexRoute
+  InboxIndexRoute: typeof InboxIndexRoute
+  TagsIndexRoute: typeof TagsIndexRoute
+  TerminalIndexRoute: typeof TerminalIndexRoute
+}
+
+const rootRouteChildren: RootRouteChildren = {
+  FrontpageModalRoute: FrontpageModalRouteWithChildren,
+  LibraryBrowseRoute: LibraryBrowseRouteWithChildren,
+  LibrarySearchRoute: LibrarySearchRoute,
+  FrontpageIndexRoute: FrontpageIndexRoute,
+  ImportIndexRoute: ImportIndexRoute,
+  InboxIndexRoute: InboxIndexRoute,
+  TagsIndexRoute: TagsIndexRoute,
+  TerminalIndexRoute: TerminalIndexRoute,
+}
+
+export const routeTree = rootRoute
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
 
 /* prettier-ignore-end */
 
@@ -186,8 +362,10 @@ export const routeTree = rootRoute.addChildren({
         "/library/browse",
         "/library/search",
         "/_frontpage/",
+        "/import/",
         "/inbox/",
-        "/tags/"
+        "/tags/",
+        "/terminal/"
       ]
     },
     "/_frontpage/_modal": {
@@ -208,11 +386,17 @@ export const routeTree = rootRoute.addChildren({
     "/_frontpage/": {
       "filePath": "_frontpage/index.tsx"
     },
+    "/import/": {
+      "filePath": "import/index.tsx"
+    },
     "/inbox/": {
       "filePath": "inbox/index.tsx"
     },
     "/tags/": {
       "filePath": "tags/index.tsx"
+    },
+    "/terminal/": {
+      "filePath": "terminal/index.tsx"
     },
     "/_frontpage/_modal/schedule": {
       "filePath": "_frontpage/_modal.schedule.tsx",

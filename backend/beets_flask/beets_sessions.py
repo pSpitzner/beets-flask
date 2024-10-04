@@ -7,20 +7,23 @@ from pprint import pprint
 from copy import copy
 from collections import namedtuple
 
+from beets_flask.disk import is_album_folder
+
 from . import utility as ut
 from .logger import log
 
-from beets import config, plugins, importer, IncludeLazyConfig
+from beets import plugins, importer, IncludeLazyConfig
 from beets.ui import _open_library, print_, colorize, UserError
 from beets.ui.commands import show_change, dist_string, summarize_items
 from beets.util import displayable_path
 from beets.autotag import Recommendation, AlbumMatch, TrackMatch, Distance
 
+from beets_flask.config import config
+
 
 # config overwrites that are required for generating the right previews
 def set_config_defaults():
-    config.clear()
-    config.read()
+    config.reset()
     config["import"]["detail"] = True
     config["import"]["resume"] = False
     config["import"]["incremental"] = False
@@ -29,8 +32,8 @@ def set_config_defaults():
     # config parsing of plugins is done by the plugins, force re-init without cache.
     plugins._instances = {}
     plugins.load_plugins(config["plugins"].as_str_seq())
-    loaded_plugins = ", ".join([p.name for p in plugins.find_plugins()])
-    log.debug(f"resetting config to defaults. {loaded_plugins=}")
+    # loaded_plugins = ", ".join([p.name for p in plugins.find_plugins()])
+    # log.debug(f"resetting config to defaults. {loaded_plugins=}")
 
 
 set_config_defaults()
@@ -64,7 +67,7 @@ class BaseSession(importer.ImportSession):
             config.set_file(config_overlay)
         elif isinstance(config_overlay, dict):
             config.set_args(config_overlay)
-        # self.run() sets self.config to dict(config['import'])
+        # super.run() sets self.config to dict(config['import'])
 
         handler = logging.StreamHandler()
         handler.setFormatter(
@@ -74,12 +77,8 @@ class BaseSession(importer.ImportSession):
 
         if not os.path.exists(path):
             raise FileNotFoundError(f"Path {path} does not exist.")
-        if os.path.isdir(path):
-            album_folders = []
-            for p, _ in importer.albums_in_dir(path):
-                album_folders.extend(p)
-            if len(album_folders) != 1:
-                raise ValueError(f"Path {path} seems to be no album folder")
+        if os.path.isdir(path) and not is_album_folder(path):
+            raise ValueError(f"Path {path} is not an album folder.")
         self.path = path
 
         super().__init__(

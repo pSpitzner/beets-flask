@@ -11,7 +11,7 @@ from datetime import datetime
 import requests
 
 from beets_flask.models import Tag
-from beets_flask.redis import rq
+from beets_flask.redis import tag_queue, preview_queue, import_queue
 from beets_flask.beets_sessions import PreviewSession, MatchedImportSession, colorize
 from beets_flask.utility import log
 from beets_flask.db_engine import (
@@ -21,6 +21,7 @@ from beets_flask.db_engine import (
 from beets_flask.routes.errors import InvalidUsage
 from beets_flask.routes.sse import update_client_view
 from sqlalchemy import delete
+from rq.decorators import job
 
 
 def enqueue(id: str, session: Session | None = None):
@@ -52,9 +53,9 @@ def enqueue(id: str, session: Session | None = None):
         log.info(f"Enqueued {tag.id=} {tag.album_folder=} {tag.kind=}")
 
         if tag.kind == "preview":
-            rq.get_queue("preview").enqueue(runPreview, id)
+            preview_queue.enqueue(runPreview, id)
         elif tag.kind == "import":
-            rq.get_queue("import").enqueue(runImport, id)
+            import_queue.enqueue(runImport, id)
         else:
             raise ValueError(f"Unknown kind {tag.kind}")
 
@@ -74,7 +75,7 @@ def enqueue_tag_path(path: str, kind: str, session: Session | None = None):
         enqueue(tag.id, session=s)
 
 
-@rq.job(timeout=600)
+@job(timeout=600, queue=tag_queue)
 def runPreview(tagId: str, callback_url: str | None = None) -> str | None:
     """
     Run a PreviewSession on an existing tag.
@@ -157,7 +158,7 @@ def runPreview(tagId: str, callback_url: str | None = None) -> str | None:
         return bt.match_url
 
 
-@rq.job(timeout=600)
+@job(timeout=600, queue=import_queue)
 def runImport(
     tagId: str, match_url: str | None = None, callback_url: str | None = None
 ) -> list[str]:
@@ -227,7 +228,7 @@ def runImport(
             log.debug(f"tried import {bt.status=}")
         except Exception as e:
             log.debug(e)
-            bt.distance = 1.0;
+            bt.distance = 1.0
             bt.preview = colorize("text_error", str(e))
             bt.track_paths_after = []
             bt.status = "failed"

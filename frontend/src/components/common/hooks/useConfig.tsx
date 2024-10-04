@@ -30,11 +30,18 @@ export interface MinimalConfig {
         tags: {
             recent_days: number;
             expand_tags: boolean;
+            order_by: string;
+            show_unchanged_tracks: boolean;
         };
+    };
+    import: {
+        duplicate_action: string;
     };
     match: {
         medium_rec_thresh: number;
         strong_rec_thresh: number;
+        album_disambig_fields: string[];
+        singleton_disambig_fields: string[];
     };
 }
 

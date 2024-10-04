@@ -1,6 +1,14 @@
-import { Home, Inbox, Library, Search, Tag } from "lucide-react";
-import { ReactElement } from "react";
-import { Typography } from "@mui/material";
+import {
+    HardDriveDownload,
+    Home,
+    Inbox,
+    Library,
+    Search,
+    Tag,
+    Terminal,
+} from "lucide-react";
+import { MouseEvent, ReactElement, useRef } from "react";
+import { Box, darken, Typography, useTheme } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import Tab, { tabClasses, TabProps } from "@mui/material/Tab";
 import Tabs, { tabsClasses } from "@mui/material/Tabs";
@@ -13,33 +21,37 @@ interface StyledTabProps extends Omit<LinkProps, "children">, Omit<TabProps, "re
 const StyledTab = createLink(
     styled(Tab)<StyledTabProps>(({ theme }) => ({
         lineHeight: "inherit",
+        marginTop: 7,
         minHeight: 32,
-        marginTop: 8,
         minWidth: 0,
         flexDirection: "row",
         letterSpacing: "1px",
         justifyContent: "center",
         gap: "0.5rem",
         textTransform: "uppercase",
+        overflow: "visible",
+        transition: "color 0.3s linear",
         "& svg": {
             fontSize: 16,
             width: 16,
             height: 16,
         },
-        "&:not(:last-child)": {
-            marginRight: 24,
-            [theme.breakpoints.up("sm")]: {
-                marginRight: 60,
-            },
-        },
-        [theme.breakpoints.up("md")]: {
+        [theme.breakpoints.up(960)]: {
             minWidth: 0,
         },
         [`& .${tabClasses.labelIcon}`]: {
             minHeight: 53,
         },
-        [`& .${tabClasses.iconWrapper}`]: {
+        [`& .${tabClasses.icon}`]: {
             marginBottom: 0,
+        },
+        [`&:hover`]: {
+            color: darken(theme.palette.secondary.main, 0.2),
+            transition: "color 1s linear, text-shadow 5s ease-in",
+            textShadow: `0 0 50px ${theme.palette.secondary.main}`,
+        },
+        [`&[data-status="active"]`]: {
+            color: theme.palette.secondary.main,
         },
     }))
 );
@@ -47,17 +59,19 @@ const StyledTab = createLink(
 const TabLabel = styled(Typography)(({ theme }) => ({
     marginLeft: 8,
     lineHeight: "12px",
-    [theme.breakpoints.down("md")]: {
+    [theme.breakpoints.down(960)]: {
         marginLeft: 0,
         display: "none",
     },
 }));
 
 function NavItem({ label, ...props }: StyledTabProps) {
+    // @ts-expect-error: WTF is happening here. MUI-Update broke typing!
     return <StyledTab label={<TabLabel>{label}</TabLabel>} disableRipple {...props} />;
 }
 
 export default function NavTabs() {
+    const theme = useTheme();
     const location = useRouterState({ select: (s) => s.location });
     let basePath = location.pathname.split("/")[1];
 
@@ -66,59 +80,85 @@ export default function NavTabs() {
         basePath += "/" + location.pathname.split("/")[2];
     }
 
+    const navItems = [
+        { label: "Home", icon: <Home />, to: "/" as const },
+        { label: "Inbox", icon: <Inbox />, to: "/inbox" as const },
+        { label: "Tags", icon: <Tag />, to: "/tags" as const },
+        { label: "Import", icon: <HardDriveDownload />, to: "/import" as const },
+        { label: "Library", icon: <Library />, to: "/library/browse" as const },
+        { label: "Search", icon: <Search />, to: "/library/search" as const },
+        {
+            label: "",
+            icon: <Terminal stroke={theme.palette.primary.main} />,
+            to: "/terminal" as const,
+        },
+    ];
+
+    const currentIdx = navItems.findIndex((item) => item.to === "/" + basePath);
+    const ref = useRef<HTMLDivElement>(null);
+
+    const handleMouseMove = (e: MouseEvent) => {
+        ref.current?.style.setProperty("--mouse-x", `${e.clientX}px`);
+        ref.current?.style.setProperty("--mouse-y", `${e.clientY}px`);
+    };
+
     return (
         <Tabs
-            textColor="inherit"
-            value={"/" + basePath}
-            sx={{
-                boxShadow: "inset 0 1px 0 0 #efefef",
-                backgroundColor: "background.paper",
-                overflow: "visible",
+            ref={ref}
+            value={currentIdx === -1 ? false : currentIdx}
+            sx={(theme) => ({
+                color: "inherit",
+                overflow: "hidden",
+                display: "flex",
+                width: "100%",
+                justifyContent: "center",
                 [`& .${tabsClasses.indicator}`]: {
-                    bottom: "unset",
-                    top: 0,
-                    height: "1px",
-                    backgroundColor: "background.paper",
+                    position: "absolute",
+                    top: `calc(50% - 8px)`,
+                    height: "16px",
+                    filter: "blur(50px)",
+                    backgroundColor: theme.palette.secondary.main,
+                    zIndex: -1,
                 },
-                [`& .${tabsClasses.flexContainer}`]: {
+                [`& .MuiTabs-scroller`]: {
+                    width: "100%",
+                    overflow: "visible",
+                },
+                // Spacing of tabs for different breakpoints
+                [`& .MuiTabs-flexContainer`]: {
+                    width: "100%",
+                    gap: "12px",
                     justifyContent: "center",
+                    [theme.breakpoints.up("sm")]: {
+                        gap: "30px",
+                    },
                 },
-            }}
+                [`&:hover .mouse-trail`]: {
+                    opacity: 1,
+                },
+            })}
+            onMouseMove={handleMouseMove}
         >
-            <NavItem
-                value={"/"}
-                to="/"
-                label={"Home"}
-                icon={<Home />}
-                //
-            />
-            <NavItem
-                to="/inbox"
-                value={"/inbox"}
-                label={"Inbox"}
-                icon={<Inbox />}
-                //
-            />
-            <NavItem
-                to="/tags"
-                value={"/tags"}
-                label={"Tags"}
-                icon={<Tag />}
-                //
-            />
-            <NavItem
-                to="/library/browse"
-                value={"/library/browse"}
-                label={"Library"}
-                icon={<Library />}
-                //
-            />
-            <NavItem
-                to="/library/search"
-                value={"/library/search"}
-                label={"Search"}
-                icon={<Search />}
-                //
+            {navItems.map((item) => (
+                <NavItem key={item.to} {...item} />
+            ))}
+            {/* Mouse hover effect */}
+            <Box
+                className="mouse-trail"
+                sx={(theme) => ({
+                    top: "var(--mouse-y)",
+                    left: "var(--mouse-x)",
+                    width: "10px",
+                    height: "10px",
+                    backgroundColor: theme.palette.secondary.main,
+                    filter: "blur(25px)",
+                    pointerEvents: "none",
+                    transition: "opacity 0.3s ease-in-out",
+                    transform: "translate(-50%, -50%)",
+                    position: "absolute",
+                    opacity: 0,
+                    zIndex: -1,
+                })}
             />
         </Tabs>
     );

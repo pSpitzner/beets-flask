@@ -2,7 +2,9 @@ import os
 
 from flask import Flask
 from flask_cors import CORS
-from .redis import rq
+
+# make sure to load our config first, because it modifies the beets config
+from .config import config
 from .db_engine import setup_db
 
 from .logger import log
@@ -27,7 +29,7 @@ def create_app():
     setup_db(app)
 
     # redis, workers
-    rq.init_app(app)
+    # rq.init_app(app)
     # we want to update the tag table only when needed.
     # redis connection also needed for sse
     app.config["REDIS_URL"] = "redis://localhost"
@@ -44,11 +46,13 @@ def create_app():
 
     register_socketio(app)
 
-    from .terminal import register_tmux
+    from .websocket.terminal import register_tmux
+    from .websocket.importer import register_importer
 
     register_tmux()
+    register_importer()
 
-    from .disk import register_inboxes
+    from .inbox import register_inboxes
 
     register_inboxes()
 

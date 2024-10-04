@@ -17,6 +17,7 @@ def get_all():
     """
     return jsonify(_serializable(config.flatten(redact=True)))
 
+
 @config_bp.route("/", methods=["GET"])
 def get_basic():
     """
@@ -25,14 +26,31 @@ def get_basic():
 
     log.debug(config["gui"]["inbox"]["folders"].as_pairs())
 
-    return jsonify({
-        "gui": _serializable(config["gui"].flatten(redact=True)),
-        "match": {
-            "strong_rec_thresh": config["match"]["strong_rec_thresh"].get(),
-            "medium_rec_thresh": config["match"]["medium_rec_thresh"].get(),
+    return jsonify(
+        {
+            "gui": _serializable(config["gui"].flatten(redact=True)),
+            "import": {
+                k: config["import"][k].get()
+                for k in [
+                    "duplicate_action",
+                ]
+            },
+            "match": {
+                k: config["match"][k].get()
+                for k in [
+                    "strong_rec_thresh",
+                    "medium_rec_thresh",
+                ]
+            }
+            | {
+                k: config["match"][k].as_str_seq()
+                for k in [
+                    "album_disambig_fields",
+                    "singleton_disambig_fields",
+                ]
+            },
         }
-    })
-
+    )
 
 
 def _serializable(input):

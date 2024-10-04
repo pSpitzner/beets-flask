@@ -28,22 +28,8 @@ $border-color: #495057;
     flex-direction: column;
     height: 100%;
     width: auto;
-    margin: 0 auto 1rem auto;
     padding: 1rem 1.5rem;
-
-    @media (min-width: 576px) {
-        max-width: 540px;
-    }
-
-    @media (min-width: 768px) {
-        max-width: 720px;
-    }
-
-    @media (min-width: 992px) {
-        max-width: 960px;
-    }
 }
-
 
 .folder {
     text-overflow: ellipsis;
@@ -79,7 +65,7 @@ $border-color: #495057;
     padding-right: 0.5rem;
     border-radius: 0.3rem;
     &[data-selected="true"] {
-        background-color: #6F7B8533;
+        background-color: #6f7b8533;
     }
     &:hover {
         // background-color: #6F7B8555;
@@ -127,7 +113,7 @@ $border-color: #495057;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    margin-left: 0.0rem;
+    margin-left: 0rem;
     margin-right: 0.5rem;
 }
 

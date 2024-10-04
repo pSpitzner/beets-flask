@@ -23,20 +23,22 @@ import {
 import { Typography } from "@mui/material";
 import Menu from "@mui/material/Menu";
 import MenuItem, { MenuItemOwnProps } from "@mui/material/MenuItem";
-import { useMutation,UseMutationOptions } from "@tanstack/react-query";
+import { useMutation, UseMutationOptions } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 
 import { queryClient, TagI } from "@/components/common/_query";
 import {
     useSelection,
     useSelectionLookupQueries,
-} from "@/components/common/useSelection";
-import { useSiblings } from "@/components/common/useSiblings";
+} from "@/components/common/hooks/useSelection";
+import { useSiblings } from "@/components/common/hooks/useSiblings";
 import { useTerminalContext } from "@/components/frontpage/terminal";
 import { ExpandableSib } from "@/components/tags/tagView";
 
 import { ErrorDialog } from "./dialogs";
 
 import styles from "./contextMenu.module.scss";
+import ImportAutoSvg from "@/assets/importAuto.svg?react";
 
 interface ContextMenuContextI {
     closeMenu: () => void;
@@ -84,6 +86,7 @@ export const defaultActions = [
     <DeselectAllAction key="action-deselect-all" divider />,
     <RetagAction key="action-retag" />,
     <ImportAction key="action-import" />,
+    <InteractiveImportAction key="action-interactive-import" />,
     <TerminalImportAction key="action-terminal-import" />,
     <UndoImportAction key="action-undo-import" />,
     <CopyPathAction key="action-copy-path" />,
@@ -338,7 +341,9 @@ export function CopyPathAction(props: Partial<ActionProps>) {
     const text = useRef("");
 
     useEffect(() => {
-        text.current = "'" + getSelected().join("' '") + "'";
+        // text.current = "'" + getSelected().join("' '") + "'";
+        const selectedPaths = getSelected().map(_escapePathForBash);
+        text.current = selectedPaths.join(" ");
     }, [getSelected, text]);
 
     return (
@@ -354,27 +359,55 @@ export function CopyPathAction(props: Partial<ActionProps>) {
     );
 }
 
+export function InteractiveImportAction(props: Partial<ActionProps>) {
+    const { closeMenu } = useContextMenu();
+    const { getSelected } = useSelection();
+    const navigate = useNavigate();
+    const selected = getSelected();
+
+    if (selected.length != 1) {
+        return null;
+    }
+
+    return (
+        <Action
+            {...props}
+            onClick={() => {
+                navigate({
+                    to: `/import`,
+                    search: {
+                        sessionPath: encodeURIComponent(selected[0]),
+                    },
+                })
+                    .then(() => {
+                        closeMenu();
+                    })
+                    .catch((error) => {
+                        console.error("Navigation error:", error);
+                        closeMenu();
+                    });
+                closeMenu();
+            }}
+            icon={<HardDriveDownload />}
+            text={"Import (interactive)"}
+        />
+    );
+}
+
 export function TerminalImportAction(props: Partial<ActionProps>) {
     const { closeMenu } = useContextMenu();
-    const { setOpen, inputText, clearInput } = useTerminalContext();
+    const { inputText, clearInput } = useTerminalContext();
     const { getSelected } = useSelection();
     const text = useRef("");
-
-    const escapeForBash = (str: string) => {
-        return str
-            .replace(/'/g, "'\\''")
-            .replace(/\\/g, "\\\\")
-            .replace(/ /g, "\\ ");
-    };
-
+    const navigate = useNavigate();
 
     useEffect(() => {
         // text.current = "'" + getSelected().join("' '") + "'";
-        const selectedPaths = getSelected().map(escapeForBash);
+        const selectedPaths = getSelected().map(_escapePathForBash);
         if (selectedPaths.length > 1) {
             text.current = "\\\n  " + selectedPaths.join(" \\\n  ");
         } else {
-            text.current = selectedPaths.join(" ")
+            text.current = selectedPaths.join(" ");
         }
     }, [getSelected, text]);
 
@@ -383,20 +416,28 @@ export function TerminalImportAction(props: Partial<ActionProps>) {
             {...props}
             onClick={() => {
                 closeMenu();
-                setOpen(true);
                 clearInput();
                 inputText(`beet import -t ${text.current}`);
+                // Redirect to term
+                navigate({
+                    to: "/terminal",
+                }).catch(console.error);
             }}
             icon={<Terminal />}
-            text={"Terminal Import"}
+            text={"Import (cli)"}
         />
     );
 }
 
+function _escapePathForBash(path: string) {
+    return path.replace(/'/g, "'\\''").replace(/\\/g, "\\\\").replace(/ /g, "\\ ");
+}
+
 export function UndoImportAction(props: Partial<ActionProps>) {
     const { closeMenu } = useContextMenu();
-    const { setOpen, inputText, clearInput } = useTerminalContext();
+    const { inputText, clearInput } = useTerminalContext();
     const { getSelected } = useSelection();
+    const navigate = useNavigate();
 
     const [cmd, setCmd] = useState("");
     const [label, setLabel] = useState("Undo Import ...");
@@ -428,9 +469,11 @@ export function UndoImportAction(props: Partial<ActionProps>) {
             {...props}
             onClick={() => {
                 closeMenu();
-                setOpen(true);
                 clearInput();
                 inputText(cmd);
+                navigate({
+                    to: "/terminal",
+                }).catch(console.error);
             }}
             icon={<Terminal />}
             text={label}
@@ -518,8 +561,8 @@ export function ImportAction(props: Partial<ActionProps>) {
     return (
         <ActionWithMutation
             {...props}
-            icon={<HardDriveDownload />}
-            text={"Import"}
+            icon={<ImportAutoSvg />}
+            text={"Import (auto)"}
             mutationOption={importOptions}
         />
     );

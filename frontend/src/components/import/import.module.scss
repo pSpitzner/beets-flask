@@ -1,0 +1,159 @@
+.choices {
+    display: flex;
+    flex-direction: column;
+    padding-inline: 1rem;
+    flex-grow: 1;
+}
+
+.expandBtn {
+    width: 100%;
+    height: 1rem;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+// we want the candidate preview, contained in the radix hover content to be no
+// wider than our container, plus some padding, but to always fill the same width.
+// container is set to maxwidth lg (1200px) in __root.tsx
+.hoverContent {
+    $paddingNeeded: 4.25rem;
+    width: calc(max(1200px, 100%) - $paddingNeeded) !important;
+    max-width: calc(min(1200px, 100dvw) - $paddingNeeded);
+}
+
+// Selection label shows current name of
+// the selection i.e. normally the folder name
+.name {
+    padding: 0.1rem 0.05rem;
+    margin-left: 0.5rem;
+    font-size: 0.87rem;
+    font-weight: thin;
+    color: dimgrey;
+}
+
+// exact same style as tagPreview
+.beetsDump {
+    white-space: pre-wrap;
+    overflow-wrap: break-workd; // this allows wrapping e.g. spotify urls
+    font-family: monospace;
+    font-size: 0.7rem;
+}
+
+.candidateHeader {
+    display: flex;
+    column-gap: 1rem;
+    row-gap: 0.5rem;
+    align-items: top;
+    margin-left: 0.5rem;
+    margin-top: 0.1rem;
+    margin-bottom: 0.8rem;
+    width: 100%;
+    flex-wrap: wrap;
+
+    .headerGroup {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+
+        > [data-changed="true"] {
+            color: #ebcb8c;
+        }
+    }
+
+    // not working yet! candidate header is overflowing its container
+    // and i did not manage to fix that.
+    .artstAlbumLabel {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .penaltyIconRow {
+        display: flex;
+        gap: 0.25rem;
+        align-items: center;
+    }
+
+    .penaltyIconRowWrapper {
+        flex-basis: auto;
+        margin-left: auto;
+
+        @media (max-width: 800px) {
+            display: none;
+            // gets too crowded, imho.
+            // width: 100%;
+            // margin-left: 0.9rem;
+            // margin-bottom: 0.2rem;
+        }
+    }
+}
+
+.sourceIcon,
+.penaltyIcon {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    height: 1rem;
+    width: 1rem;
+    color: "inherit";
+
+    &.inactive {
+        color: #403b31;
+    }
+
+    &.penalty {
+        color: #ebcb8c;
+    }
+
+    svg {
+        height: 100%;
+        width: 100%;
+        stroke-width: 1.75;
+    }
+}
+
+.candidatePreview {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+
+    .previewHeading,
+    .previewSubHeading {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .previewSubHeading {
+        // 2rem margin and 0.9 size align well with track indices and titles
+        margin-left: 2rem;
+        font-size: 0.9rem;
+    }
+}
+
+.added {
+    color: #a4bf8c;
+}
+.removed {
+    color: #c0626b;
+}
+.changed {
+    color: #ebcb8c;
+}
+.fade {
+    opacity: 0.4;
+}
+
+/**ButtonBar related styles */
+
+.buttonBar {
+    @media only screen and (max-device-width: 480px) {
+        position: fixed;
+    }
+}
+
+.sticky {
+    border-top: 1px solid;
+    border-color: rgba(255, 255, 255, 0.12);
+}

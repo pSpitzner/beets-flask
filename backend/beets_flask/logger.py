@@ -9,8 +9,9 @@ def setup_logging() -> None:
 
     log_file_for_web = os.environ.get("LOG_FILE_WEB", "/repo/log/for_web.log")
 
+    # https://docs.python.org/3/library/logging.html#logrecord-attributes
     logging.basicConfig(
-        format="%(levelname)-8s %(name)s %(funcName)s : %(message)s",
+        format="%(relativeCreated)d [%(levelname)-4s] %(name)s - %(message)s %(filename)s:%(lineno)d",
         level=os.getenv("LOG_LEVEL_OTHERS", logging.WARNING),
     )
 

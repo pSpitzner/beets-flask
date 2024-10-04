@@ -28,6 +28,19 @@
     stroke-width: 2px;
 }
 
+/* applied to all custom hover cards that use radix */
+.HoverContent {
+    border-radius: 0.3rem;
+    padding: 1rem;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.DefaultBlurBg,
+.HoverContent {
+    background-color: #21252933;
+    backdrop-filter: blur(25px);
+}
 
 /* Ansi colors, opiniated, for https: //github.com/nteract/ansi-to-react */
 
@@ -44,59 +57,59 @@
 }
 
 .ansi-red-fg {
-    color: #C0626B;
+    color: #c0626b;
 }
 
 .ansi-red-bg {
-    background-color: #C0626B;
+    background-color: #c0626b;
 }
 
 .ansi-green-fg {
-    color: #A4BF8C;
+    color: #a4bf8c;
 }
 
 .ansi-green-bg {
-    background-color: #A4BF8C;
+    background-color: #a4bf8c;
 }
 
 .ansi-yellow-fg {
-    color: #EBCB8C;
+    color: #ebcb8c;
 }
 
 .ansi-yellow-bg {
-    background-color: #EBCB8C;
+    background-color: #ebcb8c;
 }
 
 .ansi-blue-fg {
-    color: #7EA2BF;
+    color: #7ea2bf;
 }
 
 .ansi-blue-bg {
-    background-color: #7EA2BF;
+    background-color: #7ea2bf;
 }
 
 .ansi-magenta-fg {
-    color: #B48EAD;
+    color: #b48ead;
 }
 
 .ansi-magenta-bg {
-    background-color: #B48EAD;
+    background-color: #b48ead;
 }
 
 .ansi-cyan-fg {
-    color: #8FBCBB;
+    color: #8fbcbb;
 }
 
 .ansi-cyan-bg {
-    background-color: #8FBCBB;
+    background-color: #8fbcbb;
 }
 
 .ansi-white-fg {
-    color: #FFFFFF;
+    color: #ffffff;
 }
 
 .ansi-white-bg {
-    background-color: #FFFFFF;
+    background-color: #ffffff;
 }
 
 .ansi-bright-black-fg {
@@ -104,33 +117,32 @@
 }
 
 .ansi-bright-red-fg {
-    color: #D0737F;
+    color: #d0737f;
 }
 
 .ansi-bright-green-fg {
-    color: #B5D0A0;
+    color: #b5d0a0;
 }
 
 .ansi-bright-yellow-fg {
-    color: #F0D9A6;
+    color: #f0d9a6;
 }
 
 .ansi-bright-blue-fg {
-    color: #8FB8D1;
+    color: #8fb8d1;
 }
 
 .ansi-bright-magenta-fg {
-    color: #C79EC4;
+    color: #c79ec4;
 }
 
 .ansi-bright-cyan-fg {
-    color: #A3CDCD;
+    color: #a3cdcd;
 }
 
 .ansi-bright-white-fg {
-    color: #FFFFFF;
+    color: #ffffff;
 }
-
 
 main {
     height: 100dvh;

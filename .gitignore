@@ -5,7 +5,7 @@ tinker/*
 static/bootstrap/*
 static/bootstrap-icons/*
 docker-compose-custom.yaml
-
+local
 
 **/package-lock.json
 **/vite.config.ts.timestamp-*.mjs
