@@ -7,9 +7,10 @@ import {
     useState,
 } from "react";
 
+import { CandidateState, ImportState, SelectionState } from "./types";
+
 import useQueryParamsState from "../common/hooks/useQueryParamsState";
 import { useSocket } from "../common/hooks/useSocket";
-import { CandidateState, ImportState, SelectionState } from "./types";
 
 export interface ImportStatus {
     message:

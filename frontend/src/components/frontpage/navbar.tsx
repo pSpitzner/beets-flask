@@ -1,6 +1,14 @@
-import { HardDriveDownload, Home, Inbox, Library, Search, Tag } from "lucide-react";
+import {
+    HardDriveDownload,
+    Home,
+    Inbox,
+    Library,
+    Search,
+    Tag,
+    Terminal,
+} from "lucide-react";
 import { MouseEvent, ReactElement, useRef } from "react";
-import { Box, darken, Typography } from "@mui/material";
+import { Box, darken, Typography, useTheme } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import Tab, { tabClasses, TabProps } from "@mui/material/Tab";
 import Tabs, { tabsClasses } from "@mui/material/Tabs";
@@ -28,7 +36,7 @@ const StyledTab = createLink(
             width: 16,
             height: 16,
         },
-        [theme.breakpoints.up("md")]: {
+        [theme.breakpoints.up(960)]: {
             minWidth: 0,
         },
         [`& .${tabClasses.labelIcon}`]: {
@@ -51,17 +59,19 @@ const StyledTab = createLink(
 const TabLabel = styled(Typography)(({ theme }) => ({
     marginLeft: 8,
     lineHeight: "12px",
-    [theme.breakpoints.down("md")]: {
+    [theme.breakpoints.down(960)]: {
         marginLeft: 0,
         display: "none",
     },
 }));
 
 function NavItem({ label, ...props }: StyledTabProps) {
+    // @ts-expect-error: WTF is happening here. MUI-Update broke typing!
     return <StyledTab label={<TabLabel>{label}</TabLabel>} disableRipple {...props} />;
 }
 
 export default function NavTabs() {
+    const theme = useTheme();
     const location = useRouterState({ select: (s) => s.location });
     let basePath = location.pathname.split("/")[1];
 
@@ -77,6 +87,11 @@ export default function NavTabs() {
         { label: "Import", icon: <HardDriveDownload />, to: "/import" as const },
         { label: "Library", icon: <Library />, to: "/library/browse" as const },
         { label: "Search", icon: <Search />, to: "/library/search" as const },
+        {
+            label: "",
+            icon: <Terminal stroke={theme.palette.primary.main} />,
+            to: "/terminal" as const,
+        },
     ];
 
     const currentIdx = navItems.findIndex((item) => item.to === "/" + basePath);
@@ -112,9 +127,9 @@ export default function NavTabs() {
                 // Spacing of tabs for different breakpoints
                 [`& .MuiTabs-flexContainer`]: {
                     width: "100%",
-                    gap: "24px",
+                    gap: "12px",
                     justifyContent: "center",
-                    [theme.breakpoints.up("md")]: {
+                    [theme.breakpoints.up("sm")]: {
                         gap: "30px",
                     },
                 },

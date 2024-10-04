@@ -3,17 +3,18 @@ import React, {
     Dispatch,
     HtmlHTMLAttributes,
     SetStateAction,
+    useCallback,
     useEffect,
     useRef,
     useState,
 } from "react";
-import { Socket } from "socket.io-client";
 import { FitAddon as xTermFitAddon } from "@xterm/addon-fit";
 import { Terminal as xTerminal } from "@xterm/xterm";
 
 import { useSocket } from "@/components/common/hooks/useSocket";
 
 import "node_modules/@xterm/xterm/css/xterm.css";
+import { Socket } from "socket.io-client";
 
 // match our style - this is somewhat redundant with main.css
 const xTermTheme = {
@@ -34,8 +35,13 @@ const xTermTheme = {
 
 export function Terminal(props: HtmlHTMLAttributes<HTMLDivElement>) {
     const ref = useRef<HTMLDivElement>(null);
-    const { term } = useTerminalContext();
+    const { term, resetTerm } = useTerminalContext();
 
+    // we have to recreate the terminal on every mount of the component.
+    // not sure why we cannot restore.
+    useEffect(resetTerm, [resetTerm]);
+
+    // resetting term also retriggers this guy:
     useEffect(() => {
         if (!ref.current || !term) return;
         const ele = ref.current;
@@ -78,6 +84,7 @@ export function Terminal(props: HtmlHTMLAttributes<HTMLDivElement>) {
         term.loadAddon(fitAddon);
         term.open(ele);
         fitAddon.fit();
+        console.log(term.rows);
 
         // Resize on window resize
         const resizeObserver = new ResizeObserver(() => {
@@ -85,9 +92,12 @@ export function Terminal(props: HtmlHTMLAttributes<HTMLDivElement>) {
         });
         resizeObserver.observe(ele);
 
+        // On visibility change rerender terminal
+        console.log("Term mounted");
         return () => {
-            term.dispose();
+            // term.dispose();
             if (ele) resizeObserver.unobserve(ele);
+            console.log("Term unmounted");
         };
     }, [term]);
 
@@ -100,6 +110,7 @@ export interface TerminalContextI {
     setOpen: Dispatch<SetStateAction<boolean>>;
     inputText: (input: string) => void;
     clearInput: () => void;
+    resetTerm: () => void;
     socket: Socket | null;
     term?: xTerminal;
 }
@@ -112,19 +123,23 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
     const [open, setOpen] = useState(false);
     const [term, setTerm] = useState<xTerminal>();
 
-    useEffect(() => {
-        // Create gui on mount
-        if (!term) {
-            const term = new xTerminal({
+    const resetTerm = useCallback(() => {
+        /** Creates a new terminal and disposes the old one
+         */
+        setTerm((old) => {
+            if (old) old.dispose();
+            const t2 = new xTerminal({
                 theme: xTermTheme,
                 cursorBlink: true,
                 macOptionIsMeta: true,
                 allowTransparency: true,
             });
-            term.write("Connecting...");
-            setTerm(term);
-        }
-    }, [term]);
+            t2.write("Connecting...");
+            return t2;
+        });
+    }, []);
+
+    useEffect(resetTerm, [resetTerm]);
 
     // Attach socket handler
     useEffect(() => {
@@ -212,6 +227,7 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
     const terminalState: TerminalContextI = {
         open,
         toggle: () => setOpen(!open),
+        resetTerm,
         setOpen,
         inputText,
         clearInput,

@@ -3,12 +3,12 @@ import { ReactNode } from "react";
 import { BoxProps, styled } from "@mui/material";
 import Box from "@mui/material/Box";
 
-import { useConfig } from "../../common/hooks/useConfig";
-import { PenaltyIcon } from "../icons";
-import { CandidateState, ItemInfo, TrackInfo } from "../types";
 import { useDiff } from "./diff";
 
 import styles from "./candidates.module.scss";
+import { useConfig } from "../../common/hooks/useConfig";
+import { PenaltyIcon } from "../icons";
+import { CandidateState, ItemInfo, TrackInfo } from "../types";
 
 /* ---------------------------------------------------------------------------------- */
 /*                                       Basics                                       */

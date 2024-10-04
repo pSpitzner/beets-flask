@@ -1,9 +1,9 @@
+import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid2";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { InboxStatsGridItems } from "@/components/frontpage/inboxStats";
 import { LibraryStats } from "@/components/frontpage/libraryStats";
-import Box from "@mui/material/Box";
 
 export const Route = createFileRoute("/_frontpage/")({
     component: Index,

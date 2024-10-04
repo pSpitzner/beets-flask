@@ -13,16 +13,16 @@ import { useConfig } from "@/components/common/hooks/useConfig";
 import { useSelection } from "@/components/common/hooks/useSelection";
 import { useSiblings } from "@/components/common/hooks/useSiblings";
 
+import { SimilarityBadge } from "./similarityBadge";
+import { TagStatusIcon } from "./statusIcon";
+
+import styles from "./tagView.module.scss";
 import {
     CollapseAllAction,
     ContextMenu,
     defaultActions,
     ExpandAllAction,
 } from "../common/contextMenu";
-import { SimilarityBadge } from "./similarityBadge";
-import { TagStatusIcon } from "./statusIcon";
-
-import styles from "./tagView.module.scss";
 
 const StyledTagAccordion = styled(Accordion)(({ theme }) => ({
     // borderTop: `1px solid ${theme.palette.divider}`,

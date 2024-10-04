@@ -2,9 +2,10 @@ import { Dispatch, SetStateAction, useState } from "react";
 import { Box, Button, FormHelperText } from "@mui/material";
 import Tooltip from "@mui/material/Tooltip";
 
-import { InboxPathSelector } from "../inbox/inboxPathSelector";
 import { importStatusMessage, useImportContext } from "./context";
+
 import { PageWrapper } from "../common/page";
+import { InboxPathSelector } from "../inbox/inboxPathSelector";
 
 /** Selector allows to select a target folder for import
  */
@@ -70,8 +71,13 @@ export function ImportTargetSelector() {
     );
 }
 
-function StartAndAbortBtn({ setError }: { setError: Dispatch<SetStateAction<string | null>> }) {
-    const { sessionPath, startSession, pending, status, abortSession } = useImportContext();
+function StartAndAbortBtn({
+    setError,
+}: {
+    setError: Dispatch<SetStateAction<string | null>>;
+}) {
+    const { sessionPath, startSession, pending, status, abortSession } =
+        useImportContext();
 
     function catchError(e: unknown) {
         if (e instanceof Error) {
@@ -97,6 +103,7 @@ function StartAndAbortBtn({ setError }: { setError: Dispatch<SetStateAction<stri
                     onClick={() => {
                         startSession().catch(catchError);
                     }}
+                    type="submit"
                 >
                     Import
                 </Button>

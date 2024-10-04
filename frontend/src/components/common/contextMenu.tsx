@@ -87,8 +87,8 @@ export const defaultActions = [
     <RetagAction key="action-retag" />,
     <ImportAction key="action-import" />,
     <InteractiveImportAction key="action-interactive-import" />,
-    // <TerminalImportAction key="action-terminal-import" />,
-    // <UndoImportAction key="action-undo-import" />,
+    <TerminalImportAction key="action-terminal-import" />,
+    <UndoImportAction key="action-undo-import" />,
     <CopyPathAction key="action-copy-path" />,
     <DeleteAction key="action-delete" />,
 ];
@@ -396,9 +396,10 @@ export function InteractiveImportAction(props: Partial<ActionProps>) {
 
 export function TerminalImportAction(props: Partial<ActionProps>) {
     const { closeMenu } = useContextMenu();
-    const { setOpen, inputText, clearInput } = useTerminalContext();
+    const { inputText, clearInput } = useTerminalContext();
     const { getSelected } = useSelection();
     const text = useRef("");
+    const navigate = useNavigate();
 
     useEffect(() => {
         // text.current = "'" + getSelected().join("' '") + "'";
@@ -415,9 +416,12 @@ export function TerminalImportAction(props: Partial<ActionProps>) {
             {...props}
             onClick={() => {
                 closeMenu();
-                setOpen(true);
                 clearInput();
                 inputText(`beet import -t ${text.current}`);
+                // Redirect to term
+                navigate({
+                    to: "/terminal",
+                }).catch(console.error);
             }}
             icon={<Terminal />}
             text={"Import (cli)"}
@@ -431,8 +435,9 @@ function _escapePathForBash(path: string) {
 
 export function UndoImportAction(props: Partial<ActionProps>) {
     const { closeMenu } = useContextMenu();
-    const { setOpen, inputText, clearInput } = useTerminalContext();
+    const { inputText, clearInput } = useTerminalContext();
     const { getSelected } = useSelection();
+    const navigate = useNavigate();
 
     const [cmd, setCmd] = useState("");
     const [label, setLabel] = useState("Undo Import ...");
@@ -464,9 +469,11 @@ export function UndoImportAction(props: Partial<ActionProps>) {
             {...props}
             onClick={() => {
                 closeMenu();
-                setOpen(true);
                 clearInput();
                 inputText(cmd);
+                navigate({
+                    to: "/terminal",
+                }).catch(console.error);
             }}
             icon={<Terminal />}
             text={label}

@@ -1,6 +1,6 @@
 import Box, { BoxProps } from "@mui/material/Box";
 import Skeleton from "@mui/material/Skeleton";
-import { SxProps } from "@mui/system";
+import { SxProps } from "@mui/material/styles";
 import { useQuery } from "@tanstack/react-query";
 
 import { artQueryOptions } from "@/components/common/_query";
@@ -65,24 +65,19 @@ function CoverArtPlaceholder({
 }: {
     animation: false | "pulse" | "wave" | undefined;
 } & Partial<BoxProps>) {
-
     return (
         <Box {...props}>
             <Skeleton
                 variant="rectangular"
                 animation={animation}
                 // @sm: any way to get dimensions from sx without type-errors?
-                width={(props.sx as {"width": number | undefined})?.width ?? 100}
-                height={(props.sx as {"height": number | undefined})?.height ?? 100}
+                width={(props.sx as { width: number | undefined })?.width ?? 100}
+                height={(props.sx as { height: number | undefined })?.height ?? 100}
             />
         </Box>
     );
 }
 
-function CoverArtContent({
-    src,
-    ...props
-}: {src:string} & Partial<BoxProps>
-) {
+function CoverArtContent({ src, ...props }: { src: string } & Partial<BoxProps>) {
     return <Box component="img" src={src} {...props} />;
 }

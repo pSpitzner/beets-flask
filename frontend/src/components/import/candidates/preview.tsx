@@ -2,7 +2,6 @@ import Ansi from "@curvenote/ansi-to-react";
 import { SxProps, Theme } from "@mui/material";
 import Box from "@mui/material/Box";
 
-import { CandidateState } from "../types";
 import {
     AlbumChange,
     ArtistChange,
@@ -14,6 +13,7 @@ import {
 } from "./details";
 
 import styles from "./candidates.module.scss";
+import { CandidateState } from "../types";
 
 export function BeetsDump({ candidate }: { candidate: CandidateState }) {
     const content = candidate.diff_preview ?? "No preview available";

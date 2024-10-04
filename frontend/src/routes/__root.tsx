@@ -1,8 +1,9 @@
+import Box from "@mui/material/Box";
 import { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 
 import NavTabs from "@/components/frontpage/navbar";
-import Box from "@mui/material/Box";
+import { TerminalContextProvider } from "@/components/frontpage/terminal";
 
 export const Route = createRootRouteWithContext<{
     queryClient: QueryClient;
@@ -41,7 +42,9 @@ function RootComponent() {
                     // marginTop: { xs: 0, md: "64px" },
                 }}
             >
-                <Outlet />
+                <TerminalContextProvider>
+                    <Outlet />
+                </TerminalContextProvider>
             </Box>
         </main>
     );

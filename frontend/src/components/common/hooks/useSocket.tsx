@@ -1,10 +1,10 @@
 // we use a single socket, currently only needed for the terminal connection
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { io, ManagerOptions, Socket, SocketOptions } from "socket.io-client";
 import { QueryClient } from "@tanstack/react-query";
 
 import { TagI } from "../../tags/_query";
+import { io, ManagerOptions, Socket, SocketOptions } from "socket.io-client";
 
 /**
  * Custom hook to manage a WebSocket connection for a specific namespace.

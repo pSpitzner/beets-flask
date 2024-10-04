@@ -8,8 +8,9 @@ import { PrefetchConfigQueryClientProvider } from "@/components/common/hooks/use
 import { StatusContextProvider } from "@/components/common/hooks/useSocket";
 import LoadingIndicator from "@/components/common/loadingIndicator";
 
-import { routeTree } from "./routeTree.gen";
 import ThemeProvider from "./theme";
+
+import { routeTree } from "./routeTree.gen";
 
 // we tweak the backend-route on the dev server
 customizeFetch();
