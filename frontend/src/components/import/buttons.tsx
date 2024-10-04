@@ -113,10 +113,8 @@ export function ButtonBar({
                 ref={ref}
                 sx={{
                     position: "sticky",
-                    height: "120px",
                     width: "100%",
-                    borderTop: "1px solid",
-                    borderColor: "divider",
+                    height: "max-content",
                     // -1px needed for intersection observer to trigger at 1 ratio
                     bottom: "-1px",
                 }}
@@ -124,13 +122,12 @@ export function ButtonBar({
                 <PageWrapper
                     sx={{
                         display: "flex",
-                        flexDirection: "row",
+                        flexDirection: "column",
                         alignItems: "flex-end",
                         justifyContent: "flex-end",
-                        bottom: 0,
-                        paddingTop: "0.5rem",
-                        paddingBottom: "0.5rem",
+                        paddingBlock: "0.5rem",
                         flexWrap: "wrap",
+                        gap: "0.2rem",
                     }}
                 >
                     <StatusLabel
@@ -138,10 +135,11 @@ export function ButtonBar({
                         sx={{ width: "100%", textAlign: "right" }}
                         color="textSecondary"
                     />
-                    <CandidateSearch selection={selection} />
-                    <Box sx={{ flexGrow: 1 }} />
-                    <DuplicateActions selection={selection} />
-                    {extraButtons}
+                    <Box sx={{ display: "flex", justifyContent: "space-between", gap: "1rem" }}>
+                        <CandidateSearch selection={selection} />
+                        <DuplicateActions selection={selection} />
+                        {extraButtons}
+                    </Box>
                 </PageWrapper>
             </Box>
         </>
