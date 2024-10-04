@@ -114,6 +114,7 @@ export function ButtonBar({
         <>
             <Box
                 ref={ref}
+                className={styles.buttonBar}
                 sx={{
                     position: "sticky",
                     width: "100%",
