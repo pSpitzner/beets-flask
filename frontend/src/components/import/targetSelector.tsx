@@ -4,6 +4,7 @@ import Tooltip from "@mui/material/Tooltip";
 
 import { InboxPathSelector } from "../inbox/inboxPathSelector";
 import { importStatusMessage, useImportContext } from "./context";
+import { PageWrapper } from "../common/page";
 
 /** Selector allows to select a target folder for import
  */
@@ -14,7 +15,7 @@ export function ImportTargetSelector() {
     const currentPath = selStates?.[0]?.paths[0] ?? sessionPath;
 
     return (
-        <Box sx={{ width: "100%" }}>
+        <PageWrapper>
             <Box
                 component="form"
                 noValidate
@@ -65,17 +66,12 @@ export function ImportTargetSelector() {
                     </FormHelperText>
                 )}
             </Box>
-        </Box>
+        </PageWrapper>
     );
 }
 
-function StartAndAbortBtn({
-    setError,
-}: {
-    setError: Dispatch<SetStateAction<string | null>>;
-}) {
-    const { sessionPath, startSession, pending, status, abortSession } =
-        useImportContext();
+function StartAndAbortBtn({ setError }: { setError: Dispatch<SetStateAction<string | null>> }) {
+    const { sessionPath, startSession, pending, status, abortSession } = useImportContext();
 
     function catchError(e: unknown) {
         if (e instanceof Error) {

@@ -25,12 +25,10 @@ function ImportPage() {
 
     return (
         <ImportContextProvider key={importSessionKey}>
-            <PageWrapper
-                sx={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-            >
+            <Box sx={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 <ImportTargetSelector />
                 <SessionsView handleNewSession={handleNewSession} />
-            </PageWrapper>
+            </Box>
         </ImportContextProvider>
     );
 }
@@ -117,11 +115,7 @@ function SessionsView({ handleNewSession }: { handleNewSession: () => void }) {
     }
 
     if (singleSelection) {
-        return (
-            <AvailableSelections
-                extraButtons={[<ApplyAbort key={"applySelection"} />]}
-            />
-        );
+        return <AvailableSelections extraButtons={[<ApplyAbort key={"applySelection"} />]} />;
     } else {
         return (
             <>

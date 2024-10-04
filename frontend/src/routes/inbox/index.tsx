@@ -6,16 +6,9 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { FsPath, inboxQueryByPathOptions } from "@/components/common/_query";
-import {
-    ContextMenu,
-    defaultActions,
-    SelectionSummary,
-} from "@/components/common/contextMenu";
+import { ContextMenu, defaultActions, SelectionSummary } from "@/components/common/contextMenu";
 import { MinimalConfig, useConfig } from "@/components/common/hooks/useConfig";
-import {
-    SelectionProvider,
-    useSelection,
-} from "@/components/common/hooks/useSelection";
+import { SelectionProvider, useSelection } from "@/components/common/hooks/useSelection";
 import { PageWrapper } from "@/components/common/page";
 import { TagSimilarityBadgeWithHover } from "@/components/tags/similarityBadge";
 import { TagStatusIcon } from "@/components/tags/statusIcon";
@@ -44,9 +37,7 @@ function Inboxes() {
 }
 
 function Inbox({ name, path }: { name: string; path: string }) {
-    const { data, isLoading, isPending, isError, error } = useQuery(
-        inboxQueryByPathOptions(path)
-    );
+    const { data, isLoading, isPending, isError, error } = useQuery(inboxQueryByPathOptions(path));
 
     const heading = (
         <Typography gutterBottom variant="h6" component="div">
@@ -92,8 +83,7 @@ function FolderTreeView({
     level?: number;
 }): React.ReactNode {
     const config = useConfig();
-    const defaultExpandState =
-        fp.is_album && !config.gui.inbox.expand_files ? false : true;
+    const defaultExpandState = fp.is_album && !config.gui.inbox.expand_files ? false : true;
     const [expanded, setExpanded] = useState<boolean>(defaultExpandState);
     const numChildren = Object.keys(fp.children).length;
     const uid = `collapsible-${fp.full_path}`;
@@ -122,10 +112,7 @@ function FolderTreeView({
                     identifier={fp.full_path}
                     actions={[<SelectionSummary key={0} />, ...defaultActions]}
                 >
-                    <Folder
-                        fp={fp}
-                        label={label ?? fp.full_path.replaceAll("/", " / ")}
-                    />
+                    <Folder fp={fp} label={label ?? fp.full_path.replaceAll("/", " / ")} />
                 </ContextMenu>
                 <Collapsible.Content className={styles.content}>
                     <SubFolders fp={fp} level={level} />
@@ -141,11 +128,7 @@ function SubFolders({ fp, level }: { fp: FsPath; level: number }) {
         <>
             {Object.keys(fp.children).map((name) => {
                 const child = fp.children[name];
-                const [subFp, subName, mergedName] = concatSubFolderNames(
-                    fp,
-                    name,
-                    config
-                );
+                const [subFp, subName, mergedName] = concatSubFolderNames(fp, name, config);
                 // enable line wrapping
                 return (
                     <FolderTreeView
@@ -202,10 +185,7 @@ function Folder({ fp, label }: { fp: FsPath; label: string }) {
 
             {fp.is_album && (
                 <div className={styles.albumIcons}>
-                    <TagStatusIcon
-                        className={styles.albumIcon}
-                        tagPath={fp.full_path}
-                    />
+                    <TagStatusIcon className={styles.albumIcon} tagPath={fp.full_path} />
                     <TagSimilarityBadgeWithHover tagPath={fp.full_path} />
                 </div>
             )}

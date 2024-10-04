@@ -1,5 +1,5 @@
 import { CheckIcon, CopyMinus, CopyPlus, Merge, Trash2, X } from "lucide-react";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import {
     Button,
     styled,
@@ -19,6 +19,7 @@ import { useImportContext } from "./context";
 import { SelectionState } from "./types";
 
 import "@/main.css";
+import { PageWrapper } from "../common/page";
 
 export function ButtonBar({
     selection,
@@ -29,6 +30,7 @@ export function ButtonBar({
 }) {
     const { selectionsInvalidCause, currentCandidates } = useImportContext();
     const [statusText, setStatusText] = useState<string | null>(null);
+    const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (selectionsInvalidCause === null) {
@@ -83,46 +85,64 @@ export function ButtonBar({
         }
     }, [selectionsInvalidCause, currentCandidates]);
 
+    useEffect(() => {
+        if (!ref.current) return;
+
+        // Callback for when the sticky element intersects
+        const observerCallback: IntersectionObserverCallback = (entries) => {
+            entries.forEach((entry) => {
+                entry.target.classList.toggle("DefaultBlurBg", !entry.isIntersecting);
+            });
+        };
+
+        const intersectionObserver = new IntersectionObserver(observerCallback, {
+            threshold: [1],
+            root: null,
+        });
+
+        intersectionObserver.observe(ref.current);
+
+        return () => {
+            intersectionObserver.disconnect();
+        };
+    }, [ref.current]);
+
     return (
         <>
-            {/* for now we hardcode the blur bar until we moved the terminal */}
             <Box
+                ref={ref}
                 sx={{
-                    position: "fixed",
+                    position: "sticky",
                     height: "120px",
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
+                    width: "100%",
                     borderTop: "1px solid",
                     borderColor: "divider",
-                }}
-                className={"DefaultBlurBg"}
-            />
-            <Box
-                sx={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "flex-end",
-                    justifyContent: "flex-end",
-                    gap: "1rem",
-                    position: "sticky",
-                    // terminal bar is some 40px
-                    height: "75px",
-                    bottom: 0,
-                    paddingTop: "0.5rem",
-                    paddingBottom: "0.5rem",
-                    flexWrap: "wrap",
+                    // -1px needed for intersection observer to trigger at 1 ratio
+                    bottom: "-1px",
                 }}
             >
-                <StatusLabel
-                    text={statusText ? statusText : ""}
-                    sx={{ position: "absolute", right: "0.2rem", top: "0.5rem" }}
-                    color="textSecondary"
-                />
-                <CandidateSearch selection={selection} />
-                <Box sx={{ flexGrow: 1 }} />
-                <DuplicateActions selection={selection} />
-                {extraButtons}
+                <PageWrapper
+                    sx={{
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "flex-end",
+                        justifyContent: "flex-end",
+                        bottom: 0,
+                        paddingTop: "0.5rem",
+                        paddingBottom: "0.5rem",
+                        flexWrap: "wrap",
+                    }}
+                >
+                    <StatusLabel
+                        text={statusText ? statusText : ""}
+                        sx={{ width: "100%", textAlign: "right" }}
+                        color="textSecondary"
+                    />
+                    <CandidateSearch selection={selection} />
+                    <Box sx={{ flexGrow: 1 }} />
+                    <DuplicateActions selection={selection} />
+                    {extraButtons}
+                </PageWrapper>
             </Box>
         </>
     );
@@ -155,9 +175,7 @@ export function DuplicateActions({ selection }: { selection: SelectionState }) {
     const { chooseCandidate } = useImportContext();
 
     const [enableDuplicateButton, setEnableDuplicateButton] = useState(false);
-    const [duplicateAction, setDuplicateAction] = useState(
-        config.import.duplicate_action
-    );
+    const [duplicateAction, setDuplicateAction] = useState(config.import.duplicate_action);
 
     function handleDuplicateActionChange(event: React.MouseEvent<HTMLElement>) {
         const value = event.currentTarget.getAttribute("value");
@@ -208,22 +226,14 @@ export function DuplicateActions({ selection }: { selection: SelectionState }) {
         if (disabled) {
             return (
                 // mui complains about tooltips on disabled buttons
-                <ToggleButton
-                    sx={{ height: "36px" }}
-                    value={action}
-                    aria-label={action}
-                >
+                <ToggleButton sx={{ height: "36px" }} value={action} aria-label={action}>
                     <Icon size={14} />
                 </ToggleButton>
             );
         } else {
             return (
                 <Tooltip title={title} placement="top">
-                    <ToggleButton
-                        sx={{ height: "36px" }}
-                        value={action}
-                        aria-label={action}
-                    >
+                    <ToggleButton sx={{ height: "36px" }} value={action} aria-label={action}>
                         <Icon size={14} />
                     </ToggleButton>
                 </Tooltip>
@@ -268,8 +278,7 @@ export function DuplicateActions({ selection }: { selection: SelectionState }) {
 }
 
 export function ApplyAbort() {
-    const { completeAllSelections, selectionsInvalidCause, abortSession } =
-        useImportContext();
+    const { completeAllSelections, selectionsInvalidCause, abortSession } = useImportContext();
 
     return (
         // Wrap into a Box to enable Tooltips on disabled buttons
