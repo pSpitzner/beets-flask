@@ -15,31 +15,29 @@ type UseQueryParamsStateReturnType<T> = [T, Dispatch<SetStateAction<T>>];
  * const [value, setValue] = useQueryParamsState<string>("myParam", "default");
  *
  */
-export default function useQueryParamsState<T>(
+export default function useQueryParamsState(
     param: string,
-    initialState: T
-): UseQueryParamsStateReturnType<T> {
+    initialState: string | null
+): UseQueryParamsStateReturnType<string | null> {
     const location = useLocation();
     const navigate = useNavigate();
 
-    // State for managing the value derived from the query parameter
-    const [value, setValue] = useState<T>(() => {
-        if (typeof window === "undefined") return initialState;
-
+    // initialize on mount to current url, or passed init state
+    const [value, setValue] = useState<string | null>(() => {
         // Parse query parameter value from the URL
-        const { search } = window.location;
-        const searchParams = new URLSearchParams(search);
+        const searchParams = new URLSearchParams(location.search);
         const paramValue = searchParams.get(param);
 
-        return paramValue !== null ? (JSON.parse(paramValue) as T) : initialState;
+        return paramValue !== null ? decodeURIComponent(paramValue) : initialState;
     });
 
+    // write to navbar, using navigate when the value changes
     useEffect(() => {
         const currentSearchParams = new URLSearchParams(window.location.search);
 
         // Update the query parameter with the current state value
         if (value !== null && value !== "") {
-            currentSearchParams.set(param, JSON.stringify(value));
+            currentSearchParams.set(param, encodeURIComponent(value));
         } else {
             // Remove the query parameter if the value is null or empty
             currentSearchParams.delete(param);
@@ -48,6 +46,7 @@ export default function useQueryParamsState<T>(
         // Update the current URL is not different
         if (window.location.pathname === location.pathname) {
             navigate({
+                // @ts-expect-error: Search is not defined as we do not set from and to in useNavigate!
                 search: Object.fromEntries(currentSearchParams),
             }).catch(console.error);
         }

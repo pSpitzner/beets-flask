@@ -7,20 +7,20 @@ import {
     Theme,
     ToggleButton,
     ToggleButtonGroup,
+    ToggleButtonGroupProps,
     Tooltip,
     Typography,
 } from "@mui/material";
 import Box from "@mui/material/Box";
 import FormControl from "@mui/material/FormControl";
 
-import { useConfig } from "../common/hooks/useConfig";
 import { CandidateSearch } from "./candidates/search";
 import { useImportContext } from "./context";
 import { SelectionState } from "./types";
 
-import { PageWrapper } from "../common/page";
-
 import styles from "./import.module.scss";
+import { useConfig } from "../common/hooks/useConfig";
+import { PageWrapper } from "../common/page";
 
 export function ButtonBar({
     selection,
@@ -108,7 +108,7 @@ export function ButtonBar({
         return () => {
             intersectionObserver.disconnect();
         };
-    }, [ref.current]);
+    }, [ref]);
 
     return (
         <>
@@ -129,8 +129,6 @@ export function ButtonBar({
                         flexDirection: "column",
                         alignItems: "flex-end",
                         justifyContent: "flex-end",
-                        paddingBlock: "0.5rem",
-                        flexWrap: "wrap",
                         gap: "0.2rem",
                     }}
                 >
@@ -145,11 +143,25 @@ export function ButtonBar({
                             justifyContent: "space-between",
                             gap: "1rem",
                             width: "100%",
+                            flexWrap: "wrap",
+                            flexDirection: { xs: "column", sm: "row" },
                         }}
                     >
-                        <CandidateSearch selection={selection} />
-                        <DuplicateActions selection={selection} />
-                        {extraButtons}
+                        <Box sx={{ order: { xs: 2, sm: 1 } }}>
+                            <CandidateSearch selection={selection} />
+                        </Box>
+                        <Box
+                            sx={{
+                                order: { xs: 1, sm: 2 },
+                                display: "flex",
+                                flexDirection: "row",
+                                gap: "1rem",
+                                justifyContent: "flex-end",
+                            }}
+                        >
+                            <DuplicateActions selection={selection} />
+                            {extraButtons}
+                        </Box>
                     </Box>
                 </PageWrapper>
             </Box>
@@ -179,12 +191,17 @@ const DuplicateActionButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
     },
 }));
 
-export function DuplicateActions({ selection }: { selection: SelectionState }) {
+export function DuplicateActions({
+    selection,
+    ...props
+}: { selection: SelectionState } & ToggleButtonGroupProps) {
     const config = useConfig();
     const { chooseCandidate } = useImportContext();
 
     const [enableDuplicateButton, setEnableDuplicateButton] = useState(false);
-    const [duplicateAction, setDuplicateAction] = useState(config.import.duplicate_action);
+    const [duplicateAction, setDuplicateAction] = useState(
+        config.import.duplicate_action
+    );
 
     function handleDuplicateActionChange(event: React.MouseEvent<HTMLElement>) {
         const value = event.currentTarget.getAttribute("value");
@@ -235,14 +252,22 @@ export function DuplicateActions({ selection }: { selection: SelectionState }) {
         if (disabled) {
             return (
                 // mui complains about tooltips on disabled buttons
-                <ToggleButton sx={{ height: "36px" }} value={action} aria-label={action}>
+                <ToggleButton
+                    sx={{ height: "36px" }}
+                    value={action}
+                    aria-label={action}
+                >
                     <Icon size={14} />
                 </ToggleButton>
             );
         } else {
             return (
                 <Tooltip title={title} placement="top">
-                    <ToggleButton sx={{ height: "36px" }} value={action} aria-label={action}>
+                    <ToggleButton
+                        sx={{ height: "36px" }}
+                        value={action}
+                        aria-label={action}
+                    >
                         <Icon size={14} />
                     </ToggleButton>
                 </Tooltip>
@@ -276,6 +301,7 @@ export function DuplicateActions({ selection }: { selection: SelectionState }) {
                 aria-label="duplicate action"
                 // size="small"
                 disabled={!enableDuplicateButton}
+                {...props}
             >
                 {_toggleButtonWithTooltip(!enableDuplicateButton, "skip")}
                 {_toggleButtonWithTooltip(!enableDuplicateButton, "merge")}
@@ -287,7 +313,8 @@ export function DuplicateActions({ selection }: { selection: SelectionState }) {
 }
 
 export function ApplyAbort() {
-    const { completeAllSelections, selectionsInvalidCause, abortSession } = useImportContext();
+    const { completeAllSelections, selectionsInvalidCause, abortSession } =
+        useImportContext();
 
     return (
         // Wrap into a Box to enable Tooltips on disabled buttons

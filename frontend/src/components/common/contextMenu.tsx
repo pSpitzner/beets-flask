@@ -364,11 +364,8 @@ export function InteractiveImportAction(props: Partial<ActionProps>) {
     const { getSelected } = useSelection();
     const navigate = useNavigate();
     const selected = getSelected();
-    const sessionPath = useRef("");
 
-    if (selected.length == 1) {
-        sessionPath.current = encodeURIComponent(selected[0]);
-    } else {
+    if (selected.length != 1) {
         return null;
     }
 
@@ -377,7 +374,10 @@ export function InteractiveImportAction(props: Partial<ActionProps>) {
             {...props}
             onClick={() => {
                 navigate({
-                    to: `/import?sessionPath="${sessionPath.current}"`,
+                    to: `/import`,
+                    search: {
+                        sessionPath: encodeURIComponent(selected[0]),
+                    },
                 })
                     .then(() => {
                         closeMenu();
