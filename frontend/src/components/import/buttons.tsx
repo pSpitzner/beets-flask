@@ -18,8 +18,9 @@ import { CandidateSearch } from "./candidates/search";
 import { useImportContext } from "./context";
 import { SelectionState } from "./types";
 
-import "@/main.css";
 import { PageWrapper } from "../common/page";
+
+import styles from "./import.module.scss";
 
 export function ButtonBar({
     selection,
@@ -92,6 +93,8 @@ export function ButtonBar({
         const observerCallback: IntersectionObserverCallback = (entries) => {
             entries.forEach((entry) => {
                 entry.target.classList.toggle("DefaultBlurBg", !entry.isIntersecting);
+                //Add topdivider style
+                entry.target.classList.toggle(styles.sticky, !entry.isIntersecting);
             });
         };
 
@@ -135,7 +138,14 @@ export function ButtonBar({
                         sx={{ width: "100%", textAlign: "right" }}
                         color="textSecondary"
                     />
-                    <Box sx={{ display: "flex", justifyContent: "space-between", gap: "1rem" }}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: "1rem",
+                            width: "100%",
+                        }}
+                    >
                         <CandidateSearch selection={selection} />
                         <DuplicateActions selection={selection} />
                         {extraButtons}

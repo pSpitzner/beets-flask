@@ -58,7 +58,7 @@ function Inbox({ name, path }: { name: string; path: string }) {
         return (
             <Card className={styles.inboxView}>
                 {heading}
-                <>Error: {error}</>
+                Error: {error.message}
             </Card>
         );
     }
