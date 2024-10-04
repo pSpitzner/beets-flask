@@ -1,7 +1,7 @@
 {
     "name": "frontend",
     "private": true,
-    "version": "0.0.3",
+    "version": "0.0.4",
     "type": "module",
     "scripts": {
         "dev": "vite --host --cors",
@@ -57,5 +57,5 @@
         "vite-plugin-svgr": "^4.2.0",
         "vite-tsconfig-paths": "^4.3.2"
     },
-    "packageManager": "pnpm@9.11.0"
+    "packageManager": "pnpm@9.12.0"
 }
