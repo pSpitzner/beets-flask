@@ -25,8 +25,10 @@ class ServerConfig:
     # Database URI
     DATABASE_URI = "sqlite:///beets-flask-sqlite.db"
 
+
     # Not sure if this is even used!
     SECRET_KEY = "secret"
+
 
     def as_dict(self) -> dict:
         return {

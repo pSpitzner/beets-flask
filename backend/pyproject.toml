@@ -17,7 +17,12 @@ dependencies = [
     "flask-cors>=5.0.0",
     "confuse>=2.0.1",
     "beets==2.0.0",
+    "sqlalchemy>=2.0.35",
     "rq>=1.16.2",
+    "watchdog>=5.0.3",
+    "requests>=2.32.3",
+    "python-socketio>=5.11.4",
+    "pillow>=10.4.0",
 ]
 
 [project.optional-dependencies]
@@ -54,12 +59,16 @@ convention = "numpy"
 
 
 [tool.pytest.ini_options]
-addopts = ["--import-mode=importlib", "--cov=interactive_beets"]
+addopts = ["--import-mode=importlib", "--cov=beets_flask"]
 filterwarnings = [
     "error",
     "ignore::sqlalchemy.exc.SAWarning",
     "ignore::DeprecationWarning",
 ]
+pythonpath = [
+  "."
+]
 
 [tool.coverage.report]
 omit = ["*/tests/*"]
+
