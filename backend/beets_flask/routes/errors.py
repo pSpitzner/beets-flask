@@ -89,7 +89,7 @@ def handle_generic_error(error):
 
 
 # ---------------------------------------------------------------------------- #
-#                            Test the error handling                           #
+#                      Test the error handling endpoints                       #
 # ---------------------------------------------------------------------------- #
 
 
@@ -101,3 +101,18 @@ def error():
 @error_bp.route("/error/notImplemented", methods=["GET"])
 def not_implemented():
     raise NotImplementedError("This is not implemented")
+
+
+@error_bp.route("/error/configError", methods=["GET"])
+def config_error():
+    raise ConfigError("This is a config error")
+
+
+@error_bp.route("/error/fileNotFound", methods=["GET"])
+def file_not_found():
+    raise FileNotFoundError("This is a file not found error")
+
+
+@error_bp.route("/error/genericError", methods=["GET"])
+def generic_error():
+    raise Exception("This is a generic error")
