@@ -1,0 +1,30 @@
+name: Ruff
+
+on:
+    push:
+        branches: ["main"]
+    pull_request:
+        # The branches below must be a subset of the branches above
+        branches: ["main"]
+
+jobs:
+    ruff:
+        name: Ruff check and linting
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Install Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+            - name: Install dependencies
+              run: |
+                  cd ./backend
+                  python -m pip install --upgrade pip
+                  pip install ruff
+
+            # Update output format to enable automatic inline annotations.
+            - name: Run Ruff
+              run: |
+                  cd ./backend
+                  ruff check --output-format=github .
