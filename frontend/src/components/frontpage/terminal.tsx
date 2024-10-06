@@ -35,7 +35,7 @@ const xTermTheme = {
 
 export function Terminal(props: HtmlHTMLAttributes<HTMLDivElement>) {
     const ref = useRef<HTMLDivElement>(null);
-    const { term, resetTerm } = useTerminalContext();
+    const { term, resetTerm, socket } = useTerminalContext();
 
     // we have to recreate the terminal on every mount of the component.
     // not sure why we cannot restore.
@@ -43,7 +43,8 @@ export function Terminal(props: HtmlHTMLAttributes<HTMLDivElement>) {
 
     // resetting term also retriggers this guy:
     useEffect(() => {
-        if (!ref.current || !term) return;
+        console.log("Term changed");
+        if (!ref.current || !term || !socket) return;
         const ele = ref.current;
         function copyPasteHandler(e: KeyboardEvent) {
             if (!term) return false;
@@ -83,6 +84,7 @@ export function Terminal(props: HtmlHTMLAttributes<HTMLDivElement>) {
         const fitAddon = new xTermFitAddon();
         term.loadAddon(fitAddon);
         term.open(ele);
+        term.focus();
         fitAddon.fit();
         console.log(term.rows);
 
@@ -95,11 +97,11 @@ export function Terminal(props: HtmlHTMLAttributes<HTMLDivElement>) {
         // On visibility change rerender terminal
         console.log("Term mounted");
         return () => {
-            // term.dispose();
+            term.dispose();
             if (ele) resizeObserver.unobserve(ele);
             console.log("Term unmounted");
         };
-    }, [term]);
+    }, [term, ref, socket]);
 
     return <div ref={ref} {...props} />;
 }
@@ -139,13 +141,54 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
         });
     }, []);
 
-    useEffect(resetTerm, [resetTerm]);
+    // useEffect(resetTerm, [resetTerm]);
+
+    const onCursorUpdate = useCallback(
+        (data: { x: number; y: number }) => {
+            if (!term) {
+                console.log("Cursor update no term!", data);
+                return;
+            }
+            // xterm uses 1-based indexing
+            console.log("Cursor update", data);
+            term.write(`\x1b[${data.y + 1};${data.x + 1}H`);
+        },
+        [term]
+    );
+
+    const onOutput = useCallback(
+        (data: { output: string[] }) => {
+            if (!term) {
+                console.log("ptyOutput no term!", data);
+                return;
+            }
+            // term!.clear(); seems to be preferred from the documentation,
+            // but it leaves the prompt on the first line in place - which we here do not want
+            // ideally we would directly access the buffer.
+            console.log("ptyOutput", data);
+            term.reset();
+            data.output.forEach((line, index) => {
+                if (index < data.output.length - 1) {
+                    term.writeln(line);
+                } else {
+                    // Workaround: strip all trailing whitespaces except for one
+                    // not a perfect fix (one wrong space remains when backspacing)
+                    const stripped_line = line.replace(/\s+$/, " ");
+                    term.write(stripped_line);
+                }
+            });
+        },
+        [term]
+    );
 
     // Attach socket handler
     useEffect(() => {
+        console.log(`Term attachment handler`);
+        console.log(term, isConnected, socket);
         if (!term || !isConnected || !socket) return;
 
         term.writeln("\rConnected!   ");
+        console.log("Write ln");
 
         const onInput = term.onData((data) => {
             if (data === "\x01" || data === "\x04") {
@@ -156,40 +199,31 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
         });
 
         const onResize = term.onResize(({ cols, rows }) => {
-            // console.log(`Terminal was resized to ${cols} cols and ${rows} rows.`);
+            console.log(`Terminal was resized to ${cols} cols and ${rows} rows.`);
             socket.emit("ptyResize", { cols, rows: rows });
         });
 
-        function onOutput(data: { output: string[] }) {
-            // term!.clear(); seems to be preferred from the documentation,
-            // but it leaves the prompt on the first line in place - which we here do not want
-            // ideally we would directly access the buffer.
-            // console.log("ptyOutput", data);
-            term!.reset();
-            data.output.forEach((line, index) => {
-                if (index < data.output.length - 1) {
-                    term!.writeln(line);
-                } else {
-                    // Workaround: strip all trailing whitespaces except for one
-                    // not a perfect fix (one wrong space remains when backspacing)
-                    const stripped_line = line.replace(/\s+$/, " ");
-                    term!.write(stripped_line);
+        setTimeout(() => {
+            console.log("Attaching output handler");
+            console.log(socket, term);
+            socket.on("ptyOutput", onOutput);
+            socket.on("ptyCursorPosition", onCursorUpdate);
+
+            // resize once on connect (after we fitted size on mount)
+            socket.emit("ptyResize", { cols: term.cols, rows: term.rows });
+            // request server update, so show whats actually on the pty when connecting
+            setTimeout(() => {
+                console.log("emitting ptyResendOutput");
+                socket.emit("ptyResendOutput");
+            }, 300);
+
+            console.log("Socket event handlers:");
+            for (const event in socket._callbacks) {
+                if (socket._callbacks.hasOwnProperty(event)) {
+                    console.log(event, socket._callbacks[event]);
                 }
-            });
-        }
-
-        function onCursorUpdate(data: { x: number; y: number }) {
-            // xterm uses 1-based indexing
-            term!.write(`\x1b[${data.y + 1};${data.x + 1}H`);
-        }
-
-        socket.on("ptyOutput", onOutput);
-        socket.on("ptyCursorPosition", onCursorUpdate);
-
-        // resize once on connect (after we fitted size on mount)
-        socket.emit("ptyResize", { cols: term.cols, rows: term.rows });
-        // request server update, so show whats actually on the pty when connecting
-        socket.emit("ptyResendOutput");
+            }
+        }, 3000);
 
         return () => {
             onResize.dispose();
@@ -197,7 +231,7 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
             socket.off("ptyOutput", onOutput);
             socket.off("ptyCursorPosition", onCursorUpdate);
         };
-    }, [isConnected, term, socket]);
+    }, [isConnected, term, socket, onOutput, onCursorUpdate]);
 
     // make first responder directly after opening
     useEffect(() => {
@@ -211,7 +245,6 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
             console.error("No socket available");
             return;
         }
-
         socket.emit("ptyInput", { input: t });
     }
 
@@ -220,7 +253,6 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
             console.error("No socket available");
             return;
         }
-
         socket.emit("ptyInput", { input: "\x15" });
     }
 
