@@ -30,7 +30,7 @@ export const useSocket = (
     const url: string =
         import.meta.env.MODE === "development"
             ? `ws://localhost:5001/${namespace}`
-            : namespace;
+            : `/${namespace}`;
 
     const [socket, setSocket] = useState<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);

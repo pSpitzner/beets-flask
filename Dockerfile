@@ -66,10 +66,13 @@ FROM deps AS prod
 
 WORKDIR /repo
 COPY --from=deps /repo /repo
-COPY --chown=beetle:beetle . . 
+COPY --chown=beetle:beetle . .
 RUN chmod +x ./entrypoint.sh
 
 WORKDIR /repo/frontend
+RUN rm -rf node_modules
+RUN rm -rf dist
+RUN rm -rf .pnpm-store
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install
 RUN pnpm run build
