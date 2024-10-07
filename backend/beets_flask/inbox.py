@@ -145,7 +145,7 @@ def retag_folder(
 
     # Args
     path: str, full path to the folder
-    kind: str, 'preview' or 'import'
+    kind: str or None (default). If None, the configured autotag kind from the inbox this folder is in will be used.
     with_status: None or list of strings. If None (default), always retag, no matter what. If list of strings, only retag if the tag for the folder matches one of the supplied statuses.
     """
 
@@ -181,7 +181,7 @@ def retag_inbox(
 
     # Args
     path: str, full path to the inbox
-    kind: str, 'preview' or 'import'
+    kind: str or None (default). If None, the configured autotag kind from the inbox in will be used.
     with_status: None or list of strings. If None (default), always retag, no matter what. If list of strings, only retag if the tag for the folder matches one of the supplied statuses.
     """
 

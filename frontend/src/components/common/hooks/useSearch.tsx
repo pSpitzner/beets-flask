@@ -73,7 +73,7 @@ export function SearchContextProvider({ children }: { children: React.ReactNode 
     } = useQuery({
         ...searchQueryOptions<MinimalItem | MinimalAlbum>({
             searchFor: sentQuery,
-            kind: type,
+            type,
         }),
         enabled: sentQuery.length > 0,
     });

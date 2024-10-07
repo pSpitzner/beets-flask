@@ -24,7 +24,7 @@
 // to get the color codes working, you will need the ansi css classes form our main.css
 .tagPreview {
     white-space: pre-wrap;
-    overflow-wrap: break-workd; // this allows wrapping e.g. spotify urls
+    overflow-wrap: break-word; // this allows wrapping e.g. spotify urls
     font-family: monospace;
     font-size: 0.7rem;
 }
@@ -35,7 +35,7 @@
     display: inline-flex;
     flex-direction: row;
     align-items: flex-start;
-    justify-content: begin;
+    justify-content: start;
     width: auto;
 }
 .albumIcons {

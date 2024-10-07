@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Upcoming]
+
+### Fixed
+
+-  Renamed `kind` to `type` in search frontend code to be consistent with backend.
+   Using kind for tags (preview, import, auto), and types for search (album, track).
+
+### Added
+
+-  Auto-import: automatically import folders that are added to the inbox if the match is good enough.
+   After a preview, import will start if the match quality is above the configured.
+   Enable via the config.yaml, set the `autotag` field of a configred inbox folders to `"auto"`.
+
 ## [0.0.4] - 24-10-04
 
 ### Fixed

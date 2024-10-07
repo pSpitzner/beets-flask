@@ -28,15 +28,23 @@ class Tag(Base):
 
     status: Mapped[str]
     kind: Mapped[str]
+    kind: Mapped[str]
     _valid_statuses = [
         "dummy",
         "pending",
         "tagging",
+        "tagged",
+        "importing",
+        "imported",
         "failed",
         "unmatched",
         "duplicate",
     ]
-    _valid_kind = ["preview", "import"]
+    _valid_kinds = [
+        "preview",
+        "import",
+        "auto",  # generates a preview, and depending on user config, imports if good match
+    ]
 
     # we could alternatively handle this by allowing multiple tag groups
     archived: Mapped[bool] = mapped_column(default=False)
