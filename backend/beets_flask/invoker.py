@@ -59,7 +59,7 @@ def enqueue(id: str, session: Session | None = None):
             import_queue.enqueue(runImport, id)
         elif tag.kind == "auto":
             preview_job = preview_queue.enqueue(runPreview, id)
-            import_queue.get_queue("import").enqueue(
+            import_queue.enqueue(
                 AutoImport, id, depends_on=preview_job
             )
         else:
@@ -263,7 +263,7 @@ def runImport(
         return bt.track_paths_after
 
 
-@job(timeout=600)
+@job(timeout=600, queue=import_queue)
 def AutoImport(tagId: str, callback_url: str | None = None) -> list[str] | None:
     """
     Automatically run an import session for a tag after a preview has been generated.
