@@ -30,7 +30,7 @@ export const useSocket = (
     const url: string =
         import.meta.env.MODE === "development"
             ? `ws://localhost:5001/${namespace}`
-            : namespace;
+            : `/${namespace}`;
 
     const [socket, setSocket] = useState<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);
@@ -94,7 +94,9 @@ const STATUS_URL =
     import.meta.env.MODE === "development" ? "ws://localhost:5001/status" : "/status";
 
 const statusSocket = io(STATUS_URL, {
-    autoConnect: true,
+    // Setting autoConnect to true causes issues in production mode.
+    // Seems the connection is attempted before dependencies are ready.
+    autoConnect: false,
     transports: ["websocket"],
 });
 
