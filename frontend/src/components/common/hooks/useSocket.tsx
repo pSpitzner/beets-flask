@@ -94,7 +94,9 @@ const STATUS_URL =
     import.meta.env.MODE === "development" ? "ws://localhost:5001/status" : "/status";
 
 const statusSocket = io(STATUS_URL, {
-    autoConnect: true,
+    // Setting autoConnect to true causes issues in production mode.
+    // Seems the connection is attempted before dependencies are ready.
+    autoConnect: false,
     transports: ["websocket"],
 });
 

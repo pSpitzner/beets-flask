@@ -41,9 +41,10 @@ export function Terminal(props: HtmlHTMLAttributes<HTMLDivElement>) {
     // not sure why we cannot restore.
     useEffect(resetTerm, [resetTerm]);
 
-    // resetting term also retriggers this guy:
+    // resetting term also retriggers this guy.
+    // having socket as a dependencies should make sure we retrigger when
+    // the if socket had connection issues.
     useEffect(() => {
-        console.log("Term changed");
         if (!ref.current || !term || !socket) return;
         const ele = ref.current;
         function copyPasteHandler(e: KeyboardEvent) {
@@ -86,20 +87,15 @@ export function Terminal(props: HtmlHTMLAttributes<HTMLDivElement>) {
         term.open(ele);
         term.focus();
         fitAddon.fit();
-        console.log(term.rows);
 
-        // Resize on window resize
         const resizeObserver = new ResizeObserver(() => {
             fitAddon.fit();
         });
         resizeObserver.observe(ele);
 
-        // On visibility change rerender terminal
-        console.log("Term mounted");
         return () => {
             term.dispose();
             if (ele) resizeObserver.unobserve(ele);
-            console.log("Term unmounted");
         };
     }, [term, ref, socket]);
 
@@ -145,12 +141,9 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
 
     const onCursorUpdate = useCallback(
         (data: { x: number; y: number }) => {
-            if (!term) {
-                console.log("Cursor update no term!", data);
-                return;
-            }
+            if (!term) return;
             // xterm uses 1-based indexing
-            console.log("Cursor update", data);
+            // console.log("Cursor update", data);
             term.write(`\x1b[${data.y + 1};${data.x + 1}H`);
         },
         [term]
@@ -158,14 +151,11 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
 
     const onOutput = useCallback(
         (data: { output: string[] }) => {
-            if (!term) {
-                console.log("ptyOutput no term!", data);
-                return;
-            }
+            if (!term) return;
             // term!.clear(); seems to be preferred from the documentation,
             // but it leaves the prompt on the first line in place - which we here do not want
             // ideally we would directly access the buffer.
-            console.log("ptyOutput", data);
+            // console.log("ptyOutput", data);
             term.reset();
             data.output.forEach((line, index) => {
                 if (index < data.output.length - 1) {
@@ -183,12 +173,10 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
 
     // Attach socket handler
     useEffect(() => {
-        console.log(`Term attachment handler`);
-        console.log(term, isConnected, socket);
         if (!term || !isConnected || !socket) return;
 
+        // spaces are needed to clear out the longer "Connecting..."
         term.writeln("\rConnected!   ");
-        console.log("Write ln");
 
         const onInput = term.onData((data) => {
             if (data === "\x01" || data === "\x04") {
@@ -203,27 +191,13 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
             socket.emit("ptyResize", { cols, rows: rows });
         });
 
-        setTimeout(() => {
-            console.log("Attaching output handler");
-            console.log(socket, term);
-            socket.on("ptyOutput", onOutput);
-            socket.on("ptyCursorPosition", onCursorUpdate);
+        socket.on("ptyOutput", onOutput);
+        socket.on("ptyCursorPosition", onCursorUpdate);
 
-            // resize once on connect (after we fitted size on mount)
-            socket.emit("ptyResize", { cols: term.cols, rows: term.rows });
-            // request server update, so show whats actually on the pty when connecting
-            setTimeout(() => {
-                console.log("emitting ptyResendOutput");
-                socket.emit("ptyResendOutput");
-            }, 300);
-
-            console.log("Socket event handlers:");
-            for (const event in socket._callbacks) {
-                if (socket._callbacks.hasOwnProperty(event)) {
-                    console.log(event, socket._callbacks[event]);
-                }
-            }
-        }, 3000);
+        // resize once on connect (after we fitted size on mount)
+        socket.emit("ptyResize", { cols: term.cols, rows: term.rows });
+        // request server update, so show whats actually on the pty when connecting
+        socket.emit("ptyResendOutput");
 
         return () => {
             onResize.dispose();
