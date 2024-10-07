@@ -16,7 +16,11 @@ from beets_flask import invoker
 from beets_flask.logger import log
 from beets_flask.config import config
 from beets_flask.routes.sse import update_client_view
-from beets_flask.disk import all_album_folders, album_folders_from_track_paths
+from beets_flask.disk import (
+    all_album_folders,
+    album_folders_from_track_paths,
+    path_to_dict,
+)
 
 
 # ------------------------------------------------------------------------------------ #
