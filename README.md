@@ -107,7 +107,7 @@ gui:
             Inbox:
                 name: "Inbox"
                 path: "/music/inbox"
-                autotag: no # no | "preview" | "import"
+                autotag: no # no | "preview" | "import" | "auto"
 ```
 
 ## Terminal
