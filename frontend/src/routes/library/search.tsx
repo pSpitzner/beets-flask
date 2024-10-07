@@ -96,7 +96,7 @@ function SearchBar() {
                 value={type}
                 exclusive
                 onChange={handleTypeChange}
-                aria-label="Search Kind"
+                aria-label="Search Type"
             >
                 <ToggleButton value="item">Item</ToggleButton>
                 <ToggleButton value="album">Album</ToggleButton>
