@@ -1,6 +1,4 @@
-"""
-This provides the glue between the compiled vite frontend and our backend.
-"""
+"""The glue between the compiled vite frontend and our backend."""
 
 from flask import Blueprint, send_from_directory
 

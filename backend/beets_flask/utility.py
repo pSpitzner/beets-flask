@@ -210,9 +210,11 @@ AUDIO_EXTENSIONS = (
 
 
 class DummyObject:
-    """
-    If you need an object that has every attribute defined but set to None, use this. e.g. for beets.ui._load_plugin options.
+    """Object that returns None for any attribute accessed.
+
+    You may use this. e.g. for beets.ui._load_plugin options.
     """
 
     def __getattr__(self, name):
+        """Return None for any attribute accessed."""
         return None

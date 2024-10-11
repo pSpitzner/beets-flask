@@ -15,7 +15,8 @@ from .states import CandidateState, ImportState, ImportStatus
 
 
 class InteractiveImportSession(BaseSession):
-    """
+    """Interactive Import Session
+
     The interactive import session is used to parallely tag a directory and
     choose the correct match for each album via external input. The current state
     of the import is communicated to the user via an emitter.
@@ -39,8 +40,9 @@ class InteractiveImportSession(BaseSession):
         config_overlay: str | dict | None = None,
         cleanup: Callable | None = None,
     ):
-        """
-        Create a new interactive import session. Automatically sets the default config values.
+        """Create a new interactive import session.
+
+        Automatically sets the default config values.
 
         Parameters
         ----------

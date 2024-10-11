@@ -35,14 +35,18 @@ set_config_defaults()
 
 
 class BaseSession(importer.ImportSession):
-    """
-    Base class for our GUI-based ImportSessions.
+    """Base class for our GUI-based ImportSessions.
+
     Operates on single Albums / files.
 
-    # Args
-    paths: list[str] -- list of album folders to import
-    config_overlay: str or dict -- path to a config file to overlay on top of the default config.
-        Note that if `dict`, the lazyconfig notation e.g. `{import.default_action: skip}` wont work reliably. Better nest the dicts: `{import: {default_action: skip}}`
+    Parameters
+    ----------
+    path : list[str]
+        list of album folders to import
+    config_overlay : str or dict
+        path to a config file to overlay on top of the default config.
+        Note that if `dict`, the lazyconfig notation e.g. `{import.default_action: skip}`
+        wont work reliably. Better nest the dicts: `{import: {default_action: skip}}`
     """
 
     # some attributes we need to create a beetsTag instance for our database
@@ -84,7 +88,7 @@ class BaseSession(importer.ImportSession):
         )
 
     def resolve_duplicate(self, task: importer.ImportTask, found_duplicates):
-        """
+        """ 
         This session should not reach this stage.
         """
         self.logger.debug(f"skipping resolve_duplicates {task}")

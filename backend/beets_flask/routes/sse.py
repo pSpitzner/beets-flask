@@ -1,7 +1,11 @@
-"""
+"""Status update blueprint.
+
 Use this blueprint to send status updates to the client.
 We used to use SeverSideEvents but moved to websocket.
+
+TODO: We should move this to the websocket folder and rename!
 """
+
 from typing import Literal
 
 import requests
@@ -43,24 +47,20 @@ def publish():
         type: Literal["tag", "inbox"] = data.get("type")
         body: dict = data.get("body")
         log.debug(f"Sending status update: {type=} {body=}")
-        sio.emit(
-            type,
-            body,
-            namespace="/status"
-        )
+        sio.emit(type, body, namespace="/status")
 
         return {"message": "Message sent"}, 200
 
 
 @sio.on("connect", namespace="/status")  # type: ignore
 def connect(sid, environ):
-    """New client connected"""
+    """Handle new client connected."""
     log.debug(f"StatusSocket new client connected {sid}")
 
 
 @sio.on("disconnect", namespace="/status")  # type: ignore
 def disconnect(sid):
-    """Handle client disconnect"""
+    """Handle client disconnect."""
     log.debug(f"StatusSocket client disconnected {sid}")
 
 
