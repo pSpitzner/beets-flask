@@ -1,11 +1,12 @@
 from __future__ import annotations
+
 import time
-from typing import Any, Generic, List, Literal, TypeVar, TypedDict, Union
 from abc import ABC, abstractmethod
+from typing import Any, Generic, List, Literal, TypedDict, TypeVar, Union
 
 from beets_flask.logger import log
 
-from .states import ImportState, SelectionState, CandidateState, ImportStatus
+from .states import CandidateState, ImportState, ImportStatus, SelectionState
 
 
 def default_events(state: Union[ImportState, SelectionState, CandidateState]):
@@ -46,7 +47,6 @@ class ImportCommunicator(ABC):
         Emits a (sub-) state of an import session.
         This can be a full import state, a selection state, or a candidate state.
         """
-
         if state is None:
             return
 
@@ -60,7 +60,6 @@ class ImportCommunicator(ABC):
 
     def emit_status(self, status: ImportStatus, **kwargs):
         """Emits a status message."""
-
         self._emit(
             EmitRequest(event="status", data=status.as_dict()),
             **kwargs,

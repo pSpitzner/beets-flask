@@ -4,28 +4,27 @@ State classes to represent the current state of an import session.
 """
 
 from __future__ import annotations
-from dataclasses import dataclass, field
+
+import time
+from dataclasses import dataclass
 from typing import List, Literal, Union
 from uuid import uuid4 as uuid
-import time
-
 
 import beets.ui.commands as uicommands
 from beets import autotag, importer
 
-from beets_flask.logger import log
 from beets_flask.utility import capture_stdout_stderr
 
 from .types import (
-    AlbumMatch,
-    TrackMatch,
-    MusicInfo,
     AlbumInfo,
-    SerializedImportState,
-    TrackInfo,
+    AlbumMatch,
     ItemInfo,
+    MusicInfo,
     SerializedCandidateState,
+    SerializedImportState,
     SerializedSelectionState,
+    TrackInfo,
+    TrackMatch,
 )
 
 
@@ -233,7 +232,6 @@ class SelectionState:
         """
         JSON representation to match the frontend types
         """
-
         # Workaround to show initial selection on frontend
         # if no candidate has been selected yet
         current_id = self.current_candidate_id
@@ -341,7 +339,6 @@ class CandidateState:
 
     def serialize(self) -> SerializedCandidateState:
         """JSON representation to match the frontend types"""
-
         # we lift the match.info from to reduce nesting in the frontend.
         self.match.info.decode()
 

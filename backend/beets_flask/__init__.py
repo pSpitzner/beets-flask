@@ -1,15 +1,16 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
-import os
 
-from beets_flask.config.flask_config import ServerConfig
+import os
+from typing import TYPE_CHECKING
+
 from flask import Flask
 from flask_cors import CORS
+
+from beets_flask.config.flask_config import ServerConfig
 
 # make sure to load our config first, because it modifies the beets config
 from .database import setup_database
 from .logger import log
-
 
 if TYPE_CHECKING:
     from .config.flask_config import ServerConfig
@@ -45,6 +46,7 @@ def create_app(config: str | ServerConfig = "dev_local") -> Flask:
 
     # Register blueprints
     from beets_flask.routes import backend_bp
+
     from .routes import frontend_bp
 
     app.register_blueprint(backend_bp)
@@ -55,8 +57,8 @@ def create_app(config: str | ServerConfig = "dev_local") -> Flask:
 
     register_socketio(app)
 
-    from .websocket.terminal import register_tmux
     from .websocket.importer import register_importer
+    from .websocket.terminal import register_tmux
 
     register_tmux()
     register_importer()

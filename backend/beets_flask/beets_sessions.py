@@ -1,24 +1,19 @@
-import os
-import logging
-import sys
 import io
+import logging
+import os
+import sys
 
-from pprint import pprint
-from copy import copy
-from collections import namedtuple
+from beets import importer, plugins
+from beets.autotag import AlbumMatch, TrackMatch
+from beets.ui import UserError, _open_library, colorize, print_
+from beets.ui.commands import show_change, summarize_items
+from beets.util import displayable_path
 
+from beets_flask.config import config
 from beets_flask.disk import is_album_folder
 
 from . import utility as ut
 from .logger import log
-
-from beets import plugins, importer, IncludeLazyConfig
-from beets.ui import _open_library, print_, colorize, UserError
-from beets.ui.commands import show_change, dist_string, summarize_items
-from beets.util import displayable_path
-from beets.autotag import Recommendation, AlbumMatch, TrackMatch, Distance
-
-from beets_flask.config import config
 
 
 # config overwrites that are required for generating the right previews
@@ -131,7 +126,8 @@ class BaseSession(importer.ImportSession):
         Run the import session and capture the output.
         Sets self.preivew to output and error messages occuring during run.
 
-        Returns:
+        Returns
+        -------
             tuple[str, str]: out, err
         """
         self.logger.debug(f"{self.paths}")
@@ -404,10 +400,10 @@ def cli_command(beets_args: list[str], key: str = "s") -> tuple[str, str]:
             ["import", "/music/inbox/album_folder", "-t", "--search-id='https://musicbrainz.org/release/...'"]
         key: str: the key to simulate pressing when the suer would be prompted by beets cli.
 
-    Returns:
+    Returns
+    -------
         out, err: tuple: stdout and stderr
     """
-
     import beets.ui
 
     log.debug(f"Running beets with args: {beets_args}")

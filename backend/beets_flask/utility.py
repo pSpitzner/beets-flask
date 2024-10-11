@@ -1,12 +1,12 @@
-import os
+import io
 import re
 import sys
-import io
 from functools import wraps
-from flask import Flask, current_app
-from rq import Worker
-from flask_sse import sse
 from math import floor
+
+from flask import current_app
+from flask_sse import sse
+from rq import Worker
 
 from .logger import log
 
@@ -53,7 +53,8 @@ def capture_stdout_stderr(func, *args, **kwargs):
         *args: positional arguments to pass to `func`
         **kwargs: keyword arguments to pass to `func`
 
-    Returns:
+    Returns
+    -------
         tuple: (str, str, any) -- stdout, stderr, return value of `func`
     """
     original_stdout = sys.stdout

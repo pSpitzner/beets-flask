@@ -2,12 +2,11 @@
 Use this blueprint to send status updates to the client.
 We used to use SeverSideEvents but moved to websocket.
 """
-from flask import Blueprint, Response, current_app, request, jsonify
-from flask_sse import sse
-from flask_cors import cross_origin
 from typing import Literal
-import json
+
 import requests
+from flask import Blueprint, current_app, request
+
 from beets_flask.logger import log
 from beets_flask.websocket import sio
 
@@ -55,7 +54,7 @@ def publish():
 
 @sio.on("connect", namespace="/status")  # type: ignore
 def connect(sid, environ):
-    """new client connected"""
+    """New client connected"""
     log.debug(f"StatusSocket new client connected {sid}")
 
 

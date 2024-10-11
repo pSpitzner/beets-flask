@@ -3,16 +3,17 @@ Typed versions of data classes that beets uses, and our own derivatives.
 """
 
 from __future__ import annotations
-from dataclasses import dataclass, asdict
+
+from dataclasses import asdict, dataclass
 from typing import (
+    Any,
     Callable,
+    Dict,
     List,
     Literal,
     NamedTuple,
-    Union,
-    Any,
-    Dict,
     TypedDict,
+    Union,
 )
 
 from beets import autotag

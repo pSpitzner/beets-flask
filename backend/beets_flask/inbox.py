@@ -1,27 +1,21 @@
 import os
-import glob
-import subprocess
-from typing import List, OrderedDict
-from cachetools import cached, LRUCache, TTLCache
 import threading
-from time import time
 from datetime import datetime
-from pathlib import Path
-from watchdog.observers import Observer
+from time import time
+from typing import List, OrderedDict
+
+from watchdog.events import FileMovedEvent, FileSystemEvent, FileSystemEventHandler
 from watchdog.observers.polling import PollingObserver
-from watchdog.events import FileSystemEventHandler, FileSystemEvent, FileMovedEvent
 
 from beets_flask import invoker
-
-from beets_flask.logger import log
 from beets_flask.config import config
-from beets_flask.routes.sse import update_client_view
 from beets_flask.disk import (
-    all_album_folders,
     album_folders_from_track_paths,
+    all_album_folders,
     path_to_dict,
 )
-
+from beets_flask.logger import log
+from beets_flask.routes.sse import update_client_view
 
 # ------------------------------------------------------------------------------------ #
 #                                   init and watchdog                                  #
@@ -148,7 +142,6 @@ def retag_folder(
     kind: str or None (default). If None, the configured autotag kind from the inbox this folder is in will be used.
     with_status: None or list of strings. If None (default), always retag, no matter what. If list of strings, only retag if the tag for the folder matches one of the supplied statuses.
     """
-
     inbox = get_inbox_for_path(path)
 
     if inbox and kind is None:
@@ -184,7 +177,6 @@ def retag_inbox(
     kind: str or None (default). If None, the configured autotag kind from the inbox in will be used.
     with_status: None or list of strings. If None (default), always retag, no matter what. If list of strings, only retag if the tag for the folder matches one of the supplied statuses.
     """
-
     inbox = get_inbox_for_path(inbox_dir)
 
     if inbox and kind is None:

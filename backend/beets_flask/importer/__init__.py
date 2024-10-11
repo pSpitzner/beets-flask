@@ -1,12 +1,12 @@
+from . import types
 from .communicator import (
-    ImportCommunicator,
-    EmitRequest,
     ChoiceReceive,
     CompleteReceive,
+    EmitRequest,
+    ImportCommunicator,
 )
 from .session import InteractiveImportSession
 from .states import ImportState
-from . import types
 
 __all__ = [
     "ImportCommunicator",

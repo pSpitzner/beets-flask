@@ -1,9 +1,9 @@
 from flask import Blueprint
+from rq.registry import clean_registries
+from rq.worker import Worker
+from rq.worker_registration import clean_worker_registry
 
 from beets_flask.redis import queues, redis_conn
-from rq.worker import Worker
-from rq.registry import clean_registries
-from rq.worker_registration import clean_worker_registry
 
 monitor_bp = Blueprint("monitor", __name__, url_prefix="/monitor")
 
@@ -13,11 +13,11 @@ def get_queue_status():
     """
     Get the status of the job queues.
 
-    Returns:
+    Returns
+    -------
         dict: A dictionary containing the status of each job queue.
 
     """
-
     for q in queues:
         clean_registries(q)
         clean_worker_registry(q)
@@ -41,7 +41,8 @@ def get_worker_status():
     """
     Get the status of the RQ workers.
 
-    Returns:
+    Returns
+    -------
         dict: A dictionary containing the status of each worker.
 
     """
@@ -65,7 +66,8 @@ def reset_database():
     """
     Reset the sql database.
 
-    Returns:
+    Returns
+    -------
         dict: A dictionary containing the status of the reset operation.
 
     """
