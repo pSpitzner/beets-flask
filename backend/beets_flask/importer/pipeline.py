@@ -1,16 +1,11 @@
-""" Added type hints to decorators because it is annopying to have to look up the type of the function usage. """
+"""Added type hints to decorators because it is annopying to have to look up the type of the function usage."""
 
 import inspect
 from typing import (
     Callable,
-    Concatenate,
-    Protocol,
-    TypeVar,
-    ParamSpec,
     Generator,
-    Tuple,
-    Any,
-    TypedDict,
+    ParamSpec,
+    TypeVar,
 )
 
 from beets import importer

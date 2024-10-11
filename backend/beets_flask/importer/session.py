@@ -1,20 +1,17 @@
-from enum import Enum
 import time
 from typing import Callable, List
 
-from beets import importer, plugins, library, autotag
-
+from beets import autotag, importer, library, plugins
 from beets.util import pipeline as beets_pipeline
-
 
 from beets_flask.beets_sessions import BaseSession, set_config_defaults
 from beets_flask.config import config
 from beets_flask.importer.types import AlbumMatch, TrackMatch
 from beets_flask.logger import log
 
-from .pipeline import mutator_stage
-from .states import ImportState, CandidateState, ImportStatus
 from .communicator import ImportCommunicator
+from .pipeline import mutator_stage
+from .states import CandidateState, ImportState, ImportStatus
 
 
 class InteractiveImportSession(BaseSession):
@@ -45,8 +42,8 @@ class InteractiveImportSession(BaseSession):
         """
         Create a new interactive import session. Automatically sets the default config values.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         path : str
             The path to the directory to import.
         config_overlay : str | dict | None
@@ -55,7 +52,6 @@ class InteractiveImportSession(BaseSession):
         cleanup : Callable | None
             Called after the import session is done.
         """
-
         set_config_defaults()
         super(InteractiveImportSession, self).__init__(path, config_overlay)
         self.communicator = communicator
@@ -66,7 +62,6 @@ class InteractiveImportSession(BaseSession):
         """
         Identify which candidates of a task would be duplicates, and flag them as such.
         """
-
         # Update state with new task. In parallel pipeline, user should be able to choose from all tasks simultaneously.
         # Emit the task to the user
         self.import_state.upsert_task(task)
@@ -116,7 +111,6 @@ class InteractiveImportSession(BaseSession):
         """
         Triggers selection screen in the frontend. This is non-blocking.
         """
-
         log.debug(f"Offering match for task: {task}")
 
         # # Update state with new task. In parallel pipeline, user should be able to choose from all tasks simultaneously.
@@ -140,7 +134,6 @@ class InteractiveImportSession(BaseSession):
         this blocks the stages pipeline, until choose_match invoked by each task has
         returned one of the above.
         """
-
         log.debug(f"Waiting for user selection for task: {task}")
 
         sel_state = self.import_state.get_selection_state_for_task(task)

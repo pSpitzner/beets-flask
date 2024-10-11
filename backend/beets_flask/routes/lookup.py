@@ -1,17 +1,14 @@
-from datetime import datetime
-from typing import Optional, TypedDict
+import os
+from typing import TypedDict
 from urllib.parse import unquote
-from flask import Blueprint, request, jsonify, abort
+
+from flask import Blueprint, abort, jsonify, request
+from sqlalchemy import select
+
+from beets_flask.database import Tag, db_session
 from beets_flask.disk import is_album_folder
 from beets_flask.inbox import get_inbox_folders
-from beets_flask.database import Tag, db_session
 from beets_flask.logger import log
-
-import os
-
-from pathlib import Path
-
-from sqlalchemy import select
 
 lookup_bp = Blueprint("lookup", __name__, url_prefix="/lookup")
 

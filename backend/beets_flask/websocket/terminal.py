@@ -19,10 +19,10 @@ https://stackoverflow.com/questions/44447473/how-to-make-xterm-js-accept-input
 
 import libtmux
 from libtmux import Pane, Session, Window
+
+from beets_flask.config import config
 from beets_flask.logger import log
 from beets_flask.websocket import sio
-from beets_flask.config import config
-
 
 session: Session
 window: Window
@@ -129,7 +129,7 @@ def pty_input(sid, data):
 
 @sio.on("ptyResize", namespace="/terminal")  # type: ignore
 def resize(sid, data):
-    """resize the pty"""
+    """Resize the pty"""
     log.debug(f"{sid} resize pty to {data['cols']} {data['rows']}")
     window.resize(width=data["cols"], height=data["rows"])
     # we might want to resend the output:
@@ -138,14 +138,14 @@ def resize(sid, data):
 
 @sio.on("ptyResendOutput", namespace="/terminal")  # type: ignore
 def resend_output(sid):
-    """resend the output"""
+    """Resend the output"""
     log.debug(f"{sid} resend output")
     emit_output()
 
 
 @sio.on("connect", namespace="/terminal")  # type: ignore
 def connect(sid, environ):
-    """new client connected"""
+    """New client connected"""
     log.debug(f"TerminalSocket new client connected {sid}")
     register_tmux()
 

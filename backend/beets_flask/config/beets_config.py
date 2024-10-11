@@ -26,7 +26,6 @@ from confuse import ConfigReadError, YamlSource
 
 from beets_flask.logger import log
 
-
 # Config location from environment or default
 BEETS_CONFIG_PATH = os.getenv(
     "BEETS_CONFIG_PATH",

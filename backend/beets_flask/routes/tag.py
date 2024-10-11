@@ -4,14 +4,13 @@ Tag related API endpoints
 Tags are our database represenation of a look-up or import performed by beets. can be created by the user or automatically by the system.
 """
 
-from flask import Blueprint, request, jsonify, current_app, abort
+from flask import Blueprint, abort, jsonify, request
 from sqlalchemy import select
 
-from beets_flask.database import db_session, Tag
-from beets_flask.routes.errors import InvalidUsage
-from beets_flask.utility import log
 import beets_flask.invoker as invoker
 from beets_flask.config import config
+from beets_flask.database import Tag, db_session
+from beets_flask.routes.errors import InvalidUsage
 
 tag_bp = Blueprint("tag", __name__, url_prefix="/tag")
 

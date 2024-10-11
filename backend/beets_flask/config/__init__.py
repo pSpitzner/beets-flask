@@ -1,10 +1,10 @@
 from .beets_config import config
 from .flask_config import (
+    DeploymentDocker,
+    DevelopmentDocker,
+    DevelopmentLocal,
     ServerConfig,
     Testing,
-    DevelopmentLocal,
-    DevelopmentDocker,
-    DeploymentDocker,
 )
 
 __all__ = [

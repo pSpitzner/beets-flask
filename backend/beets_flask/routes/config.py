@@ -3,7 +3,8 @@ we need some of our settings in the frontend. proposed solution:
 fetch settings once from the backend on first page-load.
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, jsonify
+
 from beets_flask.config import config
 from beets_flask.logger import log
 
@@ -23,7 +24,6 @@ def get_basic():
     """
     Get the config settings needed for the gui.
     """
-
     log.debug(config["gui"]["inbox"]["folders"].as_pairs())
 
     return jsonify(

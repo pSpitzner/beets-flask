@@ -6,16 +6,16 @@ TagGroups are just a way to group tags together. A typical use case would be a p
 We might just merge this into tag.py blueprint?
 """
 
-from flask import Blueprint, request, jsonify, current_app
-from sqlalchemy import select
 from datetime import datetime, timedelta
 
+from flask import Blueprint
+from sqlalchemy import select
+
+from beets_flask.config import config
+from beets_flask.database import Tag, TagGroup, db_session
 from beets_flask.disk import path_to_dict
 from beets_flask.inbox import get_inbox_folders
-from beets_flask.database import db_session, Tag, TagGroup
 from beets_flask.routes.errors import InvalidUsage
-from beets_flask.utility import log
-from beets_flask.config import config
 
 group_bp = Blueprint("tagGroup", __name__, url_prefix="/tagGroup")
 
@@ -38,7 +38,6 @@ def get_tag_by_id(group_id: str):
     - archive: tags that are tagged as archived
     - inbox: tags for folders still in the inbox
     """
-
     group_id = group_id.rstrip("/")
 
     if group_id == "recent":
@@ -72,7 +71,6 @@ def get_tag_by_id(group_id: str):
 
 def get_recent_tags() -> list[str]:
     """Get the most recent tags. Number of days can be set in the config file."""
-
     recent_days: int = config["gui"]["tags"]["recent_days"].as_number()  # type: ignore
 
     with db_session() as session:
@@ -87,7 +85,6 @@ def get_recent_tags() -> list[str]:
 
 def get_archived_tags() -> list[str]:
     """Get all tags that are tagged as archived"""
-
     with db_session() as session:
         stmt = select(Tag).where(Tag.status == "imported").order_by(_order_by_clause())
         tags = session.execute(stmt).scalars().all()
@@ -124,7 +121,6 @@ def get_inbox_tags() -> list[str]:
 
 def _order_by_clause():
     """Convert the user config to an order clause to use with sqlalchemy"""
-
     try:
         order_by = config["gui"]["tags"]["order_by"].as_str()
     except:

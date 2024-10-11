@@ -19,30 +19,28 @@
 import base64
 import json
 import os
+from io import BytesIO
 from pathlib import Path
 from typing import Optional, TypedDict, cast
-from io import BytesIO
-from PIL import Image as PILImage
-import time
 
+import beets.library
+from beets import util
+from beets.ui import _open_library
 from flask import (
     Blueprint,
     Response,
-    request,
-    jsonify,
-    current_app,
     abort,
-    make_response,
-    send_file,
     g,
+    jsonify,
+    make_response,
+    request,
+    send_file,
 )
+from mediafile import MediaFile  # comes with the beets install
+from PIL import Image as PILImage
 from unidecode import unidecode
 from werkzeug.routing import BaseConverter, PathConverter
 
-import beets.library
-from mediafile import MediaFile  # comes with the beets install
-from beets import ui, util
-from beets.ui import _open_library
 from beets_flask.config import config
 from beets_flask.disk import dir_size
 from beets_flask.logger import log
@@ -137,7 +135,6 @@ def is_expand():
     Returns whether the current request is for an expanded response.
 
     """
-
     return request.args.get("expand") is not None
 
 
@@ -152,7 +149,6 @@ def is_delete():
     """Returns whether the current delete request should remove the selected
     files.
     """
-
     return request.args.get("delete") is not None
 
 
@@ -306,7 +302,7 @@ def resource_list(name):
 
 
 def _get_unique_table_field_values(model, field, sort_field):
-    """retrieve all unique values belonging to a key from a model"""
+    """Retrieve all unique values belonging to a key from a model"""
     if field not in model.all_keys() or sort_field not in model.all_keys():
         raise KeyError
     with g.lib.transaction() as tx:

@@ -1,4 +1,5 @@
 from flask import Blueprint
+
 from .config import config_bp
 from .errors import error_bp
 from .frontend import frontend_bp

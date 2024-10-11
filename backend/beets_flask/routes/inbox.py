@@ -1,18 +1,16 @@
-from datetime import datetime
-import shutil
-from typing import Optional, TypedDict
-from flask import Blueprint, request, jsonify, abort
-from beets_flask.disk import path_to_dict
-from beets_flask.inbox import get_inbox_folders, get_inbox_for_path, retag_inbox
-from beets_flask.utility import AUDIO_EXTENSIONS
-from beets_flask.database import Tag, db_session
-from beets_flask.logger import log
-
 import os
-
+import shutil
 from pathlib import Path
-from beets_flask.disk import is_album_folder
+from typing import Optional, TypedDict
+
+from flask import Blueprint, abort, jsonify, request
 from sqlalchemy import select
+
+from beets_flask.database import Tag, db_session
+from beets_flask.disk import is_album_folder, path_to_dict
+from beets_flask.inbox import get_inbox_folders, get_inbox_for_path, retag_inbox
+from beets_flask.logger import log
+from beets_flask.utility import AUDIO_EXTENSIONS
 
 inbox_bp = Blueprint("inbox", __name__, url_prefix="/inbox")
 
@@ -53,7 +51,6 @@ def get_all():
     # Request args
     use_cache: bool = True
     """
-
     use_cache = bool(request.args.get("use_cache", False))
     if not use_cache:
         path_to_dict.cache.clear()  # type: ignore
@@ -127,7 +124,6 @@ def delete_inbox(folder):
 
     !This is not reversible
     """
-
     data = request.get_json()
     with_status = data.get("with_status", [])
 
@@ -169,7 +165,6 @@ def _delete_folder_and_parents_until(delete_path: str, stop_before: str):
     """
     Delete the folder and its parent folders up until (but excluding) the stop_before folder. Only traverses up the hierarchy if the child-folder is the only content. Dotfiles are ignored and do not prevent deletion.
     """
-
     if delete_path == stop_before:
         log.debug(f"Skipping deletion of {delete_path} (its a configured inbox)")
         return
@@ -271,7 +266,8 @@ def parse_file(path: Path, map: Stats, session=None):
     """
     Parse a file and return the stats dict
 
-    Parameters:
+    Parameters
+    ----------
     - path (Path): The path to the file
     - map (Stats): The current stats dict
     - session (Session): Optional a session for tagged lookup

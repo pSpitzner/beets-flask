@@ -1,20 +1,19 @@
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
-from datetime import datetime
+
 import glob
 import os
-from uuid import uuid4 as uuid
 from datetime import datetime
+from typing import Optional
+from uuid import uuid4 as uuid
 
-from sqlalchemy import ForeignKey, select
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.orm.session import make_transient
 
+from beets_flask.utility import AUDIO_EXTENSIONS
+
 from .base import Base
 from .tag_group import TagGroup
-
-from beets_flask.utility import log, AUDIO_EXTENSIONS
-from beets_flask.beets_sessions import PreviewSession, MatchedImportSession
 
 
 class Tag(Base):

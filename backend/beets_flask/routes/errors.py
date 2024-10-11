@@ -5,9 +5,9 @@ This module contains the error handling logic for the Flask application. It prov
 
 import json
 import traceback
+
 from confuse import ConfigError
 from flask import Blueprint, jsonify
-
 from werkzeug.exceptions import HTTPException
 
 error_bp = Blueprint("error", __name__)

@@ -6,23 +6,21 @@ This module is the glue between three concepts:
 """
 
 from __future__ import annotations
+
 from datetime import datetime
 from typing import TYPE_CHECKING
 
 import requests
+from rq.decorators import job
+from sqlalchemy import delete
 
-from beets_flask.database import Tag
-from beets_flask.redis import tag_queue, preview_queue, import_queue
-from beets_flask.beets_sessions import PreviewSession, MatchedImportSession, colorize
-from beets_flask.utility import log
-from beets_flask.database import (
-    db_session
-)
+from beets_flask.beets_sessions import MatchedImportSession, PreviewSession, colorize
 from beets_flask.config import config
+from beets_flask.database import Tag, db_session
+from beets_flask.redis import import_queue, preview_queue, tag_queue
 from beets_flask.routes.errors import InvalidUsage
 from beets_flask.routes.sse import update_client_view
-from sqlalchemy import delete
-from rq.decorators import job
+from beets_flask.utility import log
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -32,7 +30,6 @@ def enqueue(id: str, session: Session | None = None):
     """
     Delegate an existing tag to a redis worker, depending on its kind.
     """
-
     with db_session(session) as s:
         tag = Tag.get_by(Tag.id == id, session=s)
 
@@ -71,7 +68,6 @@ def enqueue_tag_path(path: str, kind: str, session: Session | None = None):
     """
     For a given path that is taggable, update the existing tag or create a new one.
     """
-
     with db_session(session) as s:
         tag = Tag.get_by(Tag.album_folder == path, session=s) or Tag(
             album_folder=path, kind=kind
@@ -90,7 +86,8 @@ def runPreview(tagId: str, callback_url: str | None = None) -> str | None:
     Args:
         callback_url (str, optional): called on success/failure. Defaults to None.
 
-    Returns:
+    Returns
+    -------
         str: the match url, if we found one, else None.
     """
     with db_session() as session:
@@ -176,7 +173,8 @@ def runImport(
     Args:
         callback_url (str | None, optional): called on status change. Defaults to None.
 
-    Returns:
+    Returns
+    -------
         List of track paths after import, as strings. (empty if nothing imported)
 
     """
@@ -273,7 +271,9 @@ def AutoImport(tagId: str, callback_url: str | None = None) -> list[str] | None:
     Args:
         tagId (str): The ID of the tag to be imported.
         callback_url (str | None, optional): URL to call on status change. Defaults to None.
-    Returns:
+
+    Returns
+    -------
         List of track paths after import, as strings. (empty if nothing imported)
     """
     with db_session() as session:

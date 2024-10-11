@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 from typing import Self
+
 from sqlalchemy import select
 from sqlalchemy.orm import DeclarativeBase, Session
 

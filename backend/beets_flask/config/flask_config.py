@@ -1,4 +1,4 @@
-""" Server configuration for flask app
+"""Server configuration for flask app
 
 We have different configurations classes for 
 different environments further you may create

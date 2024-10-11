@@ -1,11 +1,12 @@
-from flask import Flask
-from sqlalchemy import Engine, create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session, Session
 from contextlib import contextmanager
 from functools import wraps
 
-from .models import Base, Tag, TagGroup
+from flask import Flask
+from sqlalchemy import Engine, create_engine
+from sqlalchemy.orm import Session, scoped_session, sessionmaker
+
 from ..logger import log
+from .models import Base, Tag, TagGroup
 
 engine: Engine
 session_factory: scoped_session[Session]
@@ -23,7 +24,8 @@ def setup_database(app: Flask) -> None:
     Args:
         app (Quart): The Quart application instance.
 
-    Returns:
+    Returns
+    -------
         None
     """
     global engine

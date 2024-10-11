@@ -1,16 +1,16 @@
 from typing import Union
-from beets_flask.importer import (
-    ImportState,
-    InteractiveImportSession,
-    ImportCommunicator,
-    ChoiceReceive,
-    CompleteReceive,
-)
-from beets_flask.logger import log
-from beets_flask.websocket import sio
 
 from socketio import Server
 
+from beets_flask.importer import (
+    ChoiceReceive,
+    CompleteReceive,
+    ImportCommunicator,
+    ImportState,
+    InteractiveImportSession,
+)
+from beets_flask.logger import log
+from beets_flask.websocket import sio
 
 log.debug("ImportSocket module loaded")
 namespace = "/import"
@@ -20,13 +20,13 @@ session_ref = None
 
 @sio.on("connect", namespace=namespace)  # type: ignore
 def connect(sid, environ):
-    """new client connected"""
+    """New client connected"""
     log.debug(f"ImportSocket new client connected {sid}")
 
 
 @sio.on("disconnect", namespace=namespace)  # type: ignore
 def disconnect(sid):
-    """client disconnected"""
+    """Client disconnected"""
     log.debug(f"ImportSocket client disconnected {sid}")
 
 
