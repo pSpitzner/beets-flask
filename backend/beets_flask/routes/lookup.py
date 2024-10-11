@@ -25,9 +25,7 @@ class SelectionLookup(TypedDict):
 
 @lookup_bp.route("/<path:folder>", methods=["GET"])
 def lookup_folder_type(folder):
-    """
-    Lookup one folder.
-    """
+    """Lookup one folder."""
     decoded_folder = unquote(folder)
     log.debug(decoded_folder)
 
@@ -36,7 +34,8 @@ def lookup_folder_type(folder):
 
 @lookup_bp.route("/", methods=["POST"])
 def lookup_folder_types():
-    """
+    """Lookup information of multiple folders for input.
+
     This is a helper to allow the frontend to take the right action for a particular selected folder.
     - an (album) folder corresponding to a tag
     - a folder that does not correspond to a tag

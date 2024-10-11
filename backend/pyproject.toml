@@ -51,7 +51,10 @@ select = [
     # Unused imports
     "F401",
 ]
-ignore = ["D103"]
+ignore = [
+    # Ignore req. for public facing functions docstrings
+    "D10",
+]
 fixable = ["ALL"]
 
 [tool.ruff.lint.pydocstyle]

@@ -54,8 +54,9 @@ library_bp = Blueprint("library", __name__, url_prefix="/library")
 
 
 def _rep(obj, expand=False, minimal=False):
-    """Get a flat -- i.e., JSON-ish -- representation of a beets Item or
-    Album object. For Albums, `expand` dictates whether tracks are
+    """Get a flat -- i.e., JSON-ish -- representation of a beets Item/Album object.
+
+    For Albums, `expand` dictates whether tracks are
     included.
     """
     out = dict(obj)
@@ -111,13 +112,17 @@ def _rep(obj, expand=False, minimal=False):
 
 
 def json_generator(items, root, expand=False, minimal=False):
-    """Generator that dumps list of beets Items or Albums as JSON
+    """Generate JSON from a list of beets Items or Albums.
 
-    :param root:  root key for JSON
-    :param items: list of :class:`Item` or :class:`Album` to dump
-    :param expand: If true every :class:`Album` contains its items in the json
-                   representation
-    :returns:     generator that yields strings
+    Parameters
+    ----------
+    root : str
+        root key for JSON
+    items : list of beets.library.Item or beets.library.Album
+        list of items to dump
+    expand : bool
+        If true every :class:`Album` contains its items in the json
+        representation
     """
     yield '{"%s":[' % root
     first = True
@@ -131,34 +136,33 @@ def json_generator(items, root, expand=False, minimal=False):
 
 
 def is_expand():
-    """
-    Returns whether the current request is for an expanded response.
+    """Check if request is for an expanded response.
 
+    Return whether the current request is for an expanded response.
     """
     return request.args.get("expand") is not None
 
 
 def is_minimal():
-    """
-    Normal requests have full info, minimal ones only have item ids and names.
+    """Check if request is for a minimal response.
+
+    Normal requests contain full info, minimal ones only have item ids and names.
     """
     return request.args.get("minimal") is not None
 
 
 def is_delete():
-    """Returns whether the current delete request should remove the selected
-    files.
-    """
+    """Return whether the current delete request should remove the selected files."""
     return request.args.get("delete") is not None
 
 
 def get_method():
-    """Returns the HTTP method of the current request."""
+    """Return the HTTP method of the current request."""
     return request.method
 
 
 def resource(name, patchable=False):
-    """Decorates a function to handle RESTful HTTP requests for a resource."""
+    """Decorate a function to handle RESTful HTTP requests for a resource."""
 
     def make_responder(retriever):
         def responder(ids):
@@ -219,7 +223,7 @@ def resource(name, patchable=False):
 
 
 def resource_query(name, patchable=False):
-    """Decorates a function to handle RESTful HTTP queries for resources."""
+    """Decorate a function to handle RESTful HTTP queries for resources."""
 
     def make_responder(query_func):
         def responder(queries):
@@ -282,9 +286,7 @@ def resource_query(name, patchable=False):
 
 
 def resource_list(name):
-    """Decorates a function to handle RESTful HTTP request for a list of
-    resources.
-    """
+    """Return a JSON response for a given resource."""
 
     def make_responder(list_all):
         def responder():
@@ -302,7 +304,7 @@ def resource_list(name):
 
 
 def _get_unique_table_field_values(model, field, sort_field):
-    """Retrieve all unique values belonging to a key from a model"""
+    """Retrieve all unique values belonging to a key from a model."""
     if field not in model.all_keys() or sort_field not in model.all_keys():
         raise KeyError
     with g.lib.transaction() as tx:
