@@ -12,8 +12,8 @@ from beets_flask.logger import log
 
 @cached(cache=TTLCache(maxsize=1024, ttl=900), info=True)
 def path_to_dict(root_dir, relative_to="/", subdirs=True) -> dict:
-    """
-    Generate our nested dict structure for the specified path.
+    """Generate our nested dict structure for the specified path.
+
     Each level in the folder hierarchy is a dict with the following keys:
         * "type": "directory" | "file"
         * "is_album": bool
@@ -55,7 +55,6 @@ def path_to_dict(root_dir, relative_to="/", subdirs=True) -> dict:
             d = d["children"][component]
 
     for dirpath, dirnames, filenames in os.walk(root_dir):
-
         # Filter out hidden files and directories
         dirnames[:] = [d for d in dirnames if not d.startswith(".")]
         filenames = [f for f in filenames if not f.startswith(".")]
@@ -73,7 +72,7 @@ def path_to_dict(root_dir, relative_to="/", subdirs=True) -> dict:
 
 
 def tree(folder_structure) -> str:
-    """Simple tree-like string representation of our nested dict structure that reflects file paths.
+    """Tree-like string to represent our nested dict structure and reflects file paths.
 
     # Args:
         folder_structure (dict): The nested dict structure.

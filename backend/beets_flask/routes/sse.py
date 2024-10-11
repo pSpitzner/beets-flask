@@ -24,7 +24,6 @@ def update_client_view(
     tagId: str | None = None,
     tagPath: str | None = None,
 ):
-
     payload = {
         "type": type,
         "body": {

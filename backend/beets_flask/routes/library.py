@@ -574,7 +574,6 @@ def all_artists():
 
 @library_bp.route("/artist/<path:artist_name>")
 def albums_by_artist(artist_name):
-
     log.debug(f"Album query for artist '{artist_name}'")
 
     with g.lib.transaction() as tx:

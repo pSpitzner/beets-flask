@@ -13,8 +13,7 @@ session_factory: scoped_session[Session]
 
 
 def setup_database(app: Flask) -> None:
-    """
-    Sets up the database connection and session factory for the Quart application.
+    """Set up the database connection and session factory for the FLask application.
 
     This function initializes the global `engine` and `session_factory` variables
     using the database URI specified in the application's configuration. It also
@@ -48,8 +47,9 @@ def setup_database(app: Flask) -> None:
 
 @contextmanager
 def db_session(session: Session | None = None):
-    """
-    Use a db session as context, making sure sessions are closed at the end.
+    """Databases session as context.
+
+    Makes sure sessions are closed at the end.
     If an existing session is provided, it will not be closed at the end.
     This allows to wrap multiple `with db_session()` blocks around each other without closing the outer session.
 
@@ -82,8 +82,7 @@ def db_session(session: Session | None = None):
 
 
 def with_db_session(func):
-    """
-    Decorator to provide a db session as a keyword argument to the function.
+    """Decorate a function with a db session as a keyword argument to the function.
 
     Example
     ```

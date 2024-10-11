@@ -10,7 +10,6 @@ frontend_bp = Blueprint("frontend", __name__)
 @frontend_bp.route("/", defaults={"path": "index.html"})
 @frontend_bp.route("/<path:path>")
 def reverse_proxy(path):
-
     # not include assets
     if (
         not "assets" in path

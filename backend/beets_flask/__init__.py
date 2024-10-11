@@ -16,7 +16,6 @@ if TYPE_CHECKING:
 
 
 def create_app(config: str | ServerConfig = "dev_local") -> Flask:
-
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
     # CORS needed for Dev so vite can talk to the backend

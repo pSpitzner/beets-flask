@@ -89,7 +89,6 @@ def heading(heading: str):
 
 
 def ansi_to_html(text: str):
-
     if not text:
         return text
 

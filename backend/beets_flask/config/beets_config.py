@@ -1,5 +1,5 @@
-"""
-Configuration.
+"""Overload for beets configuration.
+
 We support setting config values either via your beets config file, under the `gui` section, or via environment variables in the Docker compose.
 
 Use double underscore to separate nested values:
@@ -37,27 +37,31 @@ class Singleton(type):
     _instances = {}
 
     def __call__(cls, *args, **kwargs):
-        """Singleton pattern implementation"""
+        """Singleton pattern implementation."""
         if cls not in cls._instances:
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
 
 
 class InteractiveBeetsConfig(BeetsConfig, metaclass=Singleton):
-    """
-    Singleton class to handle the beets config. This class is a subclass of the beets config and adds some interactive beets specific functionality.
+    """Singleton class to handle the beets config.
+
+    This class is a subclass of the beets config and adds some
+    interactive beets specific functionality.
     """
 
     def __init__(self):
-        """
-        Initialize the config object with the default config and some interactive beets specific tweaks.
+        """Initialize the config object with the default values.
+
+        Loads config and some interactive beets specific tweaks.
         """
         super().__init__("beets", "beets")
         self.reset()
 
     def reset(self):
-        """
-        Recreate the config object as if the app was just started.
+        """Recreate the config object.
+
+        As if the app was just started.
         """
         # vanilla beets reset
         self.clear()

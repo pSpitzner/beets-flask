@@ -88,30 +88,29 @@ class BaseSession(importer.ImportSession):
         )
 
     def resolve_duplicate(self, task: importer.ImportTask, found_duplicates):
-        """ 
-        This session should not reach this stage.
+        """Overload default resolve duplicate and skip it.
+
+        This basically skis this stage.
         """
         self.logger.debug(f"skipping resolve_duplicates {task}")
         task.set_choice(importer.action.SKIP)
 
     def choose_item(self, task: importer.ImportTask):
-        """
+        """Overload default choose item and skip it.
+
         This session should not reach this stage.
         """
         self.logger.debug(f"skipping choose_item {task}")
         return importer.action.SKIP
 
     def should_resume(self, path):
-        """
-        This session should not reach this stage.
-        """
         self.logger.debug(f"skipping should_resume {path}")
         return False
 
     @property
     def track_paths_before_import(self, from_disk=False) -> list[str]:
-        """
-        Returns the paths to all media files that would be imported.
+        """Returns the paths to all media files that would be imported.
+
         Relies on `self.path` pointing to an album or single track.
         """
         # im not sure if beets rescans the directory on task creation / run.
@@ -126,8 +125,8 @@ class BaseSession(importer.ImportSession):
         return [i.decode("utf-8") for i in items]
 
     def run_and_capture_output(self) -> tuple[str, str]:
-        """
-        Run the import session and capture the output.
+        """Run the import session and capture the output.
+
         Sets self.preivew to output and error messages occuring during run.
 
         Returns
@@ -141,8 +140,9 @@ class BaseSession(importer.ImportSession):
 
 
 class PreviewSession(BaseSession):
-    """
-    Mocks an Import to gather the info displayed to the user - close to what the CLI would display.
+    """Mocks an Import to gather the info displayed to the user.
+
+    Close to the CLI display.
     Only fetches matches and potential library duplicates, if we were to import this.
 
     We hijack choose_match() to capture the output.
@@ -165,9 +165,10 @@ class PreviewSession(BaseSession):
         super(PreviewSession, self).__init__(path, config_overlay)
 
     def choose_match(self, task: importer.ImportTask):
-        """
-        Called after inital tagging candidates were found. We only use this to
-        generate the preview, and return importer.action.SKIP to skip further stages.
+        """Find initial tagging candidates.
+
+        We only use this to generate the preview,
+        and return importer.action.SKIP to skip further stages.
         """
         self.logger.debug(f"choose_match {task}")
 
@@ -232,9 +233,7 @@ class PreviewSession(BaseSession):
 
 
 class MatchedImportSession(BaseSession):
-    """
-    Import session that assumes we already have a match-id.
-    """
+    """Import session that assumes we already have a match-id."""
 
     duplicate_action: str
     import_task: importer.ImportTask | None = None
@@ -307,8 +306,10 @@ class MatchedImportSession(BaseSession):
         return match
 
     def resolve_duplicate(self, task: importer.ImportTask, found_duplicates):
-        """
+        """Resolve duplicates.
+
         What do to with duplicates?
+
         We again recreate the output of a TerminalImportSession,
         but act according to the duplicate action specified in the
         config or config_overlay.
@@ -383,20 +384,19 @@ class MatchedImportSession(BaseSession):
 
     @property
     def track_paths_after_import(self) -> list[str]:
-        """
-        Returns the paths of the tracks after a successful import.
-        """
+        """Returns the paths of the tracks after a successful import."""
         try:
             return [
-                item.path.decode("utf-8") for item in self.import_task.imported_items()  # type: ignore
+                item.path.decode("utf-8")
+                for item in self.import_task.imported_items()  # type: ignore
             ]
         except:
             return []
 
 
 def cli_command(beets_args: list[str], key: str = "s") -> tuple[str, str]:
-    """
-    Simulate a cli interaction.
+    """Simulate a cli interaction.
+
     Runs `beets.ui._raw_main` while catching output.
 
     Args:

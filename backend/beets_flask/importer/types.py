@@ -1,5 +1,6 @@
-"""
-Typed versions of data classes that beets uses, and our own derivatives.
+"""Typed versions of data classes that beets uses.
+
+Also includes and our own derivatives.
 """
 
 from __future__ import annotations
@@ -51,7 +52,8 @@ class PromptChoice(NamedTuple):
 
 @dataclass
 class MusicInfo:
-    """
+    """Shared info for tracks, items and albums.
+
     Items (music files on disk), tracks (trackinfo), and album info are somewhat similar.
     They share many fields --- especially once music has been imported.
     In beets there is no shared baseclass from which the three inherit, but such a common
@@ -59,6 +61,8 @@ class MusicInfo:
 
     This is a minimal version of this, where fields exclsuive to one type are None for the
     others. (and inconsistent fields could get renamed?)
+
+    @PS: Shouldn't this be an abstract class?
     """
 
     type: Literal["item", "track", "album"]
@@ -97,9 +101,9 @@ class MusicInfo:
 
 
 def class_attributes_to_kwargs(cls, obj, keys=None) -> Dict[str, Any]:
-    """
-    Convert the attributes of an object to a dictionary of keyword arguments
-    for a class. If `keys` is provided, only include those keys.
+    """Convert the attributes of an object to a dictionary of keyword arguments.
+
+    May be used for any class. If `keys` is provided, only those keys are used.
     """
     if keys is None:
         keys = cls.__dataclass_fields__.keys()
@@ -111,8 +115,8 @@ def class_attributes_to_kwargs(cls, obj, keys=None) -> Dict[str, Any]:
 
 @dataclass
 class AlbumInfo(MusicInfo):
-    """
-    A more specific version of MusicInfo for albums.
+    """Mre specific version of MusicInfo for albums.
+
     Attributes are an indicator of what might be available, and can be None.
     """
 
@@ -128,8 +132,8 @@ class AlbumInfo(MusicInfo):
 
 @dataclass
 class TrackInfo(MusicInfo):
-    """
-    A more specific version of MusicInfo for tracks.
+    """More specific version of MusicInfo for tracks.
+
     Attributes are an indicator of what might be available, and can be None.
     """
 
@@ -144,8 +148,8 @@ class TrackInfo(MusicInfo):
 
 @dataclass
 class ItemInfo(MusicInfo):
-    """
-    A more specific version of MusicInfo for items.
+    """More specific version of MusicInfo for items.
+
     Attributes are an indicator of what might be available, and can be None.
     """
 
