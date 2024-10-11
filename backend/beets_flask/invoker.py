@@ -7,22 +7,25 @@ This module is the glue between three concepts:
 
 from __future__ import annotations
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import requests
 
-from beets_flask.models import Tag
+from beets_flask.database import Tag
 from beets_flask.redis import tag_queue, preview_queue, import_queue
 from beets_flask.beets_sessions import PreviewSession, MatchedImportSession, colorize
 from beets_flask.utility import log
-from beets_flask.db_engine import (
-    db_session,
-    Session,
+from beets_flask.database import (
+    db_session
 )
 from beets_flask.config import config
 from beets_flask.routes.errors import InvalidUsage
 from beets_flask.routes.sse import update_client_view
 from sqlalchemy import delete
 from rq.decorators import job
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
 
 
 def enqueue(id: str, session: Session | None = None):
@@ -59,9 +62,7 @@ def enqueue(id: str, session: Session | None = None):
             import_queue.enqueue(runImport, id)
         elif tag.kind == "auto":
             preview_job = preview_queue.enqueue(runPreview, id)
-            import_queue.enqueue(
-                AutoImport, id, depends_on=preview_job
-            )
+            import_queue.enqueue(AutoImport, id, depends_on=preview_job)
         else:
             raise ValueError(f"Unknown kind {tag.kind}")
 

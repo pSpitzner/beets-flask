@@ -9,9 +9,12 @@ def fixture_testapp():
 
     yield app
 
-    # Cleanup goes here if needed
-
 
 @pytest.fixture(name="client")
 def fixture_client(testapp):
     return testapp.test_client()
+
+
+@pytest.fixture(name="runner")
+def fixture_runner(app):
+    return app.test_cli_runner()

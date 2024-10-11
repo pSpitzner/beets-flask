@@ -151,7 +151,7 @@ class Tag(Base):
 
     @group_id.setter
     def group_id(self, group_id):
-        from beets_flask.db_engine import db_session
+        from beets_flask.database import db_session
 
         with db_session() as session:
             tag_group = session.query(TagGroup).filter_by(id=group_id).first()

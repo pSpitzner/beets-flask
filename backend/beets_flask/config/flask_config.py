@@ -8,6 +8,10 @@ The configuration classes are parse in the `create_app`
 function in the `__init__.py` file.
 """
 
+import os
+
+cwd = os.getcwd()
+
 
 class ServerConfig:
     DEBUG = False
@@ -25,10 +29,8 @@ class ServerConfig:
     # Database URI
     DATABASE_URI = "sqlite:///beets-flask-sqlite.db"
 
-
     # Not sure if this is even used!
     SECRET_KEY = "secret"
-
 
     def as_dict(self) -> dict:
         return {
@@ -51,7 +53,7 @@ class Testing(ServerConfig):
 class DevelopmentLocal(ServerConfig):
     RESET_DB_ON_START = True
     DEBUG = True
-    DATABASE_URI = "sqlite:///beets-flask-sqlite.db"
+    DATABASE_URI = f"sqlite:///{cwd}/beets-flask-sqlite.db"
 
 
 class DevelopmentDocker(ServerConfig):

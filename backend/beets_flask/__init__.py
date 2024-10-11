@@ -7,8 +7,7 @@ from flask import Flask
 from flask_cors import CORS
 
 # make sure to load our config first, because it modifies the beets config
-from .db_engine import setup_database
-
+from .database import setup_database
 from .logger import log
 
 
