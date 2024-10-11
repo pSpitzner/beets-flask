@@ -44,6 +44,6 @@ class TagGroup(Base):
         return self
 
     @staticmethod
-    def as_dict_from_list(id:str, tag_ids: List[str]):
+    def as_dict_from_list(id: str, tag_ids: List[str]):
         # not doing much for now, but its good to keep it here if taggroups grow.
         return {"id": id, "tag_ids": tag_ids}

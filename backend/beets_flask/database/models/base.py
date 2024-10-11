@@ -13,7 +13,6 @@ class Base(DeclarativeBase):
 
     @classmethod
     def get_by(cls, *whereclause, session: Session | None = None) -> Self | None:
-
         close_after = False
         if session is None:
             log.debug(

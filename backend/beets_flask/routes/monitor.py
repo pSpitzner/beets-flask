@@ -24,7 +24,6 @@ def get_queue_status():
 
     ret_dict = {}
     for q in queues:
-
         ret_dict[q.name] = {
             "name": q.name,
             "queued": q.count,

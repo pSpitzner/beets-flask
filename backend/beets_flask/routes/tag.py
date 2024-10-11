@@ -1,13 +1,12 @@
 """Tag related API endpoints.
 
-Tags are our database representation of a look-up or import performed by beets. 
+Tags are our database representation of a look-up or import performed by beets.
 Can be created by the user or automatically by the system.
 """
 
 from flask import Blueprint, abort, jsonify, request
 from sqlalchemy import select
 
-import beets_flask.invoker as invoker
 from beets_flask.config import config
 from beets_flask.database import Tag, db_session
 from beets_flask.routes.errors import InvalidUsage
@@ -73,45 +72,35 @@ def add_tag():
     - OR `folder` (str): Single folder to tag
 
     """
-    with db_session() as session:
-        data = request.get_json()
-        kind = data.get("kind")
-        folder = data.get("folder", None)
-        folders = data.get("folders", [])
+    data = request.get_json()
+    kind = data.get("kind", None)
+    folder = data.get("folder", None)
 
-        if kind == "import" and config["gui"]["library"]["readonly"].get(bool):
-            return abort(
-                405,
-                description={"error": "Library is configured as readonly"},
-            )
+    if not folder or not kind:
+        raise InvalidUsage("You need to specify at least a folder and kind of the tag")
 
-        if folder is not None and len(folders) > 0:
-            raise InvalidUsage("You can't specify both `folder` and `folders`")
+    # Check if folder is array
+    if not isinstance(folder, list):
+        folder = [folder]
 
-        if not (folders or folder) or not kind:
-            raise InvalidUsage(
-                "You need to specify at least a folder and kind of the tag"
-            )
-
-        if len(folders) == 0:
-            folders = [folder]
-
-        tags = []
-        for folder in folders:
-            tag = Tag.get_by(Tag.album_folder == folder, session=session) or Tag(
-                album_folder=folder, kind=kind
-            )
-            session.merge(tag)
-
-            tag.kind = kind
-            tags.append(tag)
-            session.commit()
-
-            invoker.enqueue(tag.id, session=session)
-
-        return jsonify(
-            {
-                "message": f"{len(tags)} tags added as kind: {kind}",
-                "tags": [tag.to_dict() for tag in tags],
-            }
+    if kind == "import" and config["gui"]["library"]["readonly"].get(bool):
+        return abort(
+            405,
+            description={"error": "Library is configured as readonly"},
         )
+
+    tags = []
+    with db_session() as session:
+        for f in folder:
+            tag = Tag(album_folder=f, kind=kind)
+            session.merge(tag)
+            session.commit()
+            tags.append(tag.to_dict())
+
+    # invoker.enqueue(tag.id, session=session)
+    return jsonify(
+        {
+            "message": f"{len(tags)} tags added as kind: {kind}",
+            "tags": tags,
+        }
+    )

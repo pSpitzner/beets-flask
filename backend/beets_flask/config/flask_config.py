@@ -1,6 +1,6 @@
-"""Server configuration for flask app
+"""Server configuration for flask app.
 
-We have different configurations classes for 
+We have different configurations classes for
 different environments further you may create
 a custom configuration class for your own needs.
 

@@ -25,7 +25,6 @@ _inboxes: List[OrderedDict] = []
 
 
 def register_inboxes():
-
     global _inboxes
     _inboxes = config["gui"]["inbox"]["folders"].get().values()  # type: ignore
 
@@ -84,7 +83,6 @@ def register_inboxes():
 
 
 class InboxHandler(FileSystemEventHandler):
-
     def __init__(self):
         self.debounce = {}
         self.debounce_window = 30  # seconds
@@ -92,8 +90,8 @@ class InboxHandler(FileSystemEventHandler):
         super().__init__()
 
     def try_to_import(self):
-        """
-        Import paths that had no event for a few seconds (following DEBOUNCE_WINDOW).
+        """Import paths that had no event for a few seconds (following DEBOUNCE_WINDOW).
+
         Cleanup paths that have been imported.
         """
         if self.debounce:
@@ -110,9 +108,9 @@ class InboxHandler(FileSystemEventHandler):
         log.debug("got %r", event)
 
         if isinstance(event, FileMovedEvent):
-            fullpath = event.dest_path
+            fullpath = str(event.dest_path)
         else:
-            fullpath = event.src_path
+            fullpath = str(event.src_path)
         if os.path.basename(fullpath).startswith("."):
             return
 
@@ -134,13 +132,16 @@ class InboxHandler(FileSystemEventHandler):
 def retag_folder(
     path: str, kind: str | None = None, with_status: None | list[str] = None
 ):
-    """
-    Retag a (taggable) folder.
+    """Retag a (taggable) folder.
 
-    # Args
-    path: str, full path to the folder
-    kind: str or None (default). If None, the configured autotag kind from the inbox this folder is in will be used.
-    with_status: None or list of strings. If None (default), always retag, no matter what. If list of strings, only retag if the tag for the folder matches one of the supplied statuses.
+    Parameters
+    ----------
+    path: str
+        Full path to the folder
+    kind: str, optional
+        If None, the configured autotag kind from the inbox this folder is in will be used.
+    with_status: list[str], optional
+        If None (default), always retag, no matter what. If list of strings, only retag if the tag for the folder matches one of the supplied statuses.
     """
     inbox = get_inbox_for_path(path)
 
@@ -169,8 +170,7 @@ def retag_inbox(
     with_status: None | list[str] = None,
     kind: str | None = None,
 ):
-    """
-    Refresh an inbox folder, retagging all its subfolders.
+    """Refresh an inbox folder, retagging all its subfolders.
 
     # Args
     path: str, full path to the inbox

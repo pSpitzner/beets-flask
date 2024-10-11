@@ -15,9 +15,9 @@ from .states import CandidateState, ImportState, ImportStatus
 
 
 class InteractiveImportSession(BaseSession):
-    """Interactive Import Session
+    """Interactive Import Session.
 
-    The interactive import session is used to parallely tag a directory and
+    The interactive import session is used to parallel tag a directory and
     choose the correct match for each album via external input. The current state
     of the import is communicated to the user via an emitter.
     Feel free to implement your own emitter by subclassing the `Emitter` abc.
@@ -61,9 +61,7 @@ class InteractiveImportSession(BaseSession):
         self.cleanup = cleanup
 
     def identify_duplicates(self, task: importer.ImportTask):
-        """
-        Identify which candidates of a task would be duplicates, and flag them as such.
-        """
+        """Identify and flag candidates of a task that are duplicates."""
         # Update state with new task. In parallel pipeline, user should be able to choose from all tasks simultaneously.
         # Emit the task to the user
         self.import_state.upsert_task(task)
@@ -74,7 +72,10 @@ class InteractiveImportSession(BaseSession):
             raise ValueError("No selection state found for task.")
 
         def _is_duplicate(candidate_state: CandidateState):
-            """Copy of beets' `task.find_duplicate` but works on any candidates' match"""
+            """Find duplicates.
+
+            Copy of beets' `task.find_duplicate` but works on any candidates' match.
+            """
             info = candidate_state.match.info.copy()
             info["albumartist"] = info["artist"]
 
@@ -85,7 +86,9 @@ class InteractiveImportSession(BaseSession):
             # Construct a query to find duplicates with this metadata. We
             # use a temporary Album object to generate any computed fields.
             tmp_album = library.Album(self.lib, **info)
-            keys: List[str] = config["import"]["duplicate_keys"]["album"].as_str_seq() or []  # type: ignore
+            keys: List[str] = (
+                config["import"]["duplicate_keys"]["album"].as_str_seq() or []
+            )  # type: ignore
             dup_query = library.Album.all_fields_query(
                 {key: tmp_album.get(key) for key in keys}
             )
@@ -110,8 +113,9 @@ class InteractiveImportSession(BaseSession):
                 cs.duplicate_in_library = True
 
     def offer_match(self, task: importer.ImportTask):
-        """
-        Triggers selection screen in the frontend. This is non-blocking.
+        """Triggers selection update using communicator.
+
+        This is non-blocking.
         """
         log.debug(f"Offering match for task: {task}")
 
@@ -200,9 +204,7 @@ class InteractiveImportSession(BaseSession):
         search_artist: str | None,
         search_album: str | None,
     ) -> List[AlbumMatch | TrackMatch]:
-        """
-        Search for candidates for the current selection.
-        """
+        """Search for candidates for the current selection."""
         log.debug("searching more candidates")
 
         candidates = []
@@ -228,7 +230,8 @@ class InteractiveImportSession(BaseSession):
         return candidates
 
     def resolve_duplicate(self, task, found_duplicates):
-        """
+        """Handle duplicates.
+
         Decide what to do when a new album or item seems
         similar to one that's already in the library.
         """
@@ -254,8 +257,7 @@ class InteractiveImportSession(BaseSession):
             raise ValueError(f"Unknown duplicate resolution action: {sel}")
 
     def set_status(self, status: ImportStatus):
-        """
-        Set the status of the import session, and communicate the status change to the frontend.
+        """Set the status of the import session, and communicate the status changes.
 
         Note: currently we only implement status on the level of the whole import session,
         but should eventually do this per selection (task).
@@ -265,7 +267,10 @@ class InteractiveImportSession(BaseSession):
         self.communicator.emit_status(status)
 
     def run(self):
-        """Run the import task. Customized version of ImportSession.run"""
+        """Run the import task.
+
+        Basically a customized version of `ImportSession.run`.
+        """
         self.logger.info(f"import started {time.asctime()}")
         self.set_config(config["import"])
 
@@ -344,9 +349,7 @@ class InteractiveImportSession(BaseSession):
 
 @mutator_stage
 def identify_duplicates(session: InteractiveImportSession, task: importer.ImportTask):
-    """
-    Stage to identify which candidates would be duplicates if imported.
-    """
+    """Stage to identify which candidates would be duplicates if imported."""
     if task.skip:
         return task
     session.identify_duplicates(task)
@@ -354,9 +357,9 @@ def identify_duplicates(session: InteractiveImportSession, task: importer.Import
 
 @mutator_stage
 def offer_match(session: InteractiveImportSession, task: importer.ImportTask):
-    """
-    Stage to offer a match to the user. This is non-blocking. Essentially
-    we split the `user_query` stage (which calls `choose_match`) into two stages.
+    """Stage to offer a match to the user.
+
+    This is non-blocking. Essentially we split the `user_query` stage (which calls `choose_match`) into two stages.
     The first is `offer_match` sending info to the frontend, while the second is
     `choose_match` that waits until all user choices have been made.
     """
@@ -372,9 +375,7 @@ def status_stage(
     status: ImportStatus,
     task: importer.ImportTask,
 ):
-    """
-    Stage to call sessions `set_status` method.
-    """
+    """Stage to call sessions `set_status` method."""
     # sentinel tasks (this is what beets does in choose_match)
     if task.skip:
         return task
