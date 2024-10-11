@@ -12,8 +12,7 @@ from datetime import datetime, timedelta
 
 from beets_flask.disk import path_to_dict
 from beets_flask.inbox import get_inbox_folders
-from beets_flask.models import Tag, TagGroup
-from beets_flask.db_engine import db_session, with_db_session, Session
+from beets_flask.database import db_session, Tag, TagGroup
 from beets_flask.routes.errors import InvalidUsage
 from beets_flask.utility import log
 from beets_flask.config import config

@@ -1,3 +1,8 @@
+"""How errors are propagated to the user.
+
+This module contains the error handling logic for the Flask application. It provides a way to handle errors in a consistent way and return JSON responses to the user.
+"""
+
 import json
 import traceback
 from confuse import ConfigError

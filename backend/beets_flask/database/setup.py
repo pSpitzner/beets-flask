@@ -1,11 +1,11 @@
 from flask import Flask
-from .models import Base
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session, Session
 from contextlib import contextmanager
 from functools import wraps
 
-from .logger import log
+from .models import Base, Tag, TagGroup
+from ..logger import log
 
 engine: Engine
 session_factory: scoped_session[Session]
@@ -34,9 +34,9 @@ def setup_database(app: Flask) -> None:
 
     if app.config["RESET_DB_ON_START"]:
         log.warning("Resetting database due to RESET_DB=True in config")
-        reset_database()
+        _reset_database()
 
-    create_tables(engine)
+    _create_tables(engine)
 
     # Gracefully shutdown the database session
     @app.teardown_appcontext
@@ -102,14 +102,15 @@ def with_db_session(func):
     return wrapper
 
 
-def create_tables(engine) -> None:
+def _create_tables(engine) -> None:
     Base.metadata.create_all(bind=engine)
 
 
-def reset_database():
-    from beets_flask.models import Tag, TagGroup
-
+def _reset_database():
     with db_session() as session:
-        session.query(TagGroup).delete()
-        session.query(Tag).delete()
-        session.commit()
+        try:
+            session.query(TagGroup).delete()
+            session.query(Tag).delete()
+            session.commit()
+        except Exception as e:
+            log.warning(f"Error resetting database: {e}")

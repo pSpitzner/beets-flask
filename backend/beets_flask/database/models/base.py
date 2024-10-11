@@ -2,7 +2,8 @@ from __future__ import annotations
 from typing import Self
 from sqlalchemy import select
 from sqlalchemy.orm import DeclarativeBase, Session
-from beets_flask.utility import log
+
+from beets_flask.logger import log
 
 
 class Base(DeclarativeBase):
@@ -13,10 +14,13 @@ class Base(DeclarativeBase):
 
         close_after = False
         if session is None:
-            log.debug("No session provided, you will not be able to make changes to the database.")
+            log.debug(
+                "No session provided, you will not be able to make changes to the database."
+            )
             close_after = True
-            from beets_flask.db_engine import db_session_factory
-            session = db_session_factory()
+            from beets_flask.database.setup import session_factory
+
+            session = session_factory()
 
         try:
             stmt = select(cls).where(*whereclause)
@@ -27,4 +31,3 @@ class Base(DeclarativeBase):
         finally:
             if close_after:
                 session.close()
-

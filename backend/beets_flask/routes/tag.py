@@ -7,8 +7,7 @@ Tags are our database represenation of a look-up or import performed by beets. c
 from flask import Blueprint, request, jsonify, current_app, abort
 from sqlalchemy import select
 
-from beets_flask.models import Tag, TagGroup
-from beets_flask.db_engine import db_session, with_db_session, Session
+from beets_flask.database import db_session, Tag
 from beets_flask.routes.errors import InvalidUsage
 from beets_flask.utility import log
 import beets_flask.invoker as invoker
@@ -83,9 +82,7 @@ def add_tag():
         if kind == "import" and config["gui"]["library"]["readonly"].get(bool):
             return abort(
                 405,
-                description={
-                    "error": "Library is configured as readonly"
-                },
+                description={"error": "Library is configured as readonly"},
             )
 
         if folder is not None and len(folders) > 0:
