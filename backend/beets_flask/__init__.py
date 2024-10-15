@@ -15,19 +15,24 @@ if TYPE_CHECKING:
     from .config.flask_config import ServerConfig
 
 
-def create_app(config: str | ServerConfig = "dev_local") -> Flask:
+def create_app(config: str | ServerConfig = None) -> Flask:
+
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
     # CORS needed for Dev so vite can talk to the backend
     CORS(app)
 
     # Parse config
+    if config is None:
+        config = os.environ.get("IB_SERVER_CONFIG", "dev_local")
     switch = {
         "dev_local": "beets_flask.config.DevelopmentLocal",
         "dev_docker": "beets_flask.config.DevelopmentDocker",
         "test": "beets_flask.config.Testing",
         "prod": "beets_flask.config.DeploymentDocker",
     }
+
+    log.info(f"Creating app with config '{config}'")
 
     if isinstance(config, str) and config not in switch:
         raise ValueError(f"Invalid config: {config}")

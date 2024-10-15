@@ -35,6 +35,7 @@ COPY --from=deps /repo /repo
 COPY entrypoint_dev.sh .
 RUN chown -R beetle:beetle /repo
 RUN chmod +x ./entrypoint_dev.sh
+ENV IB_SERVER_CONFIG="dev_docker"
 
 # we copy config files in the script, so they can be put into mounted volumes
 WORKDIR /repo
@@ -55,6 +56,7 @@ RUN mkdir -p /music/inbox
 RUN chown -R beetle:beetle /music/inbox
 RUN chown -R beetle:beetle /repo
 RUN chmod +x ./entrypoint_test.sh
+ENV IB_SERVER_CONFIG="test"
 USER beetle
 ENTRYPOINT ["./entrypoint_test.sh"]
 
@@ -68,6 +70,7 @@ WORKDIR /repo
 COPY --from=deps /repo /repo
 COPY --chown=beetle:beetle . .
 RUN chmod +x ./entrypoint.sh
+ENV IB_SERVER_CONFIG="prod"
 
 WORKDIR /repo/frontend
 RUN rm -rf node_modules
