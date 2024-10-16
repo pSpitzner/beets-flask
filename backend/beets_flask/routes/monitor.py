@@ -70,8 +70,8 @@ def reset_database():
         dict: A dictionary containing the status of the reset operation.
 
     """
-    from beets_flask.db_engine import reset_database
+    from beets_flask.database.setup import _reset_database
 
-    reset_database()
+    _reset_database()
 
     return {"status": "success"}
