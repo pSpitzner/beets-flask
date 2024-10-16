@@ -3,8 +3,8 @@ name = "interactive-beets"
 description = "An opinionated web-interface around the music organizer [beets](https://beets.io/)"
 version = "0.4.0"
 authors = [
-    {name = "F. Paul Spitzner", email = "todo@todo.de"},
-    {name = "Sebastian B. Mohr", email = "sebastian@mohrenclan.de"}
+    { name = "F. Paul Spitzner", email = "todo@todo.de" },
+    { name = "Sebastian B. Mohr", email = "sebastian@mohrenclan.de" },
 ]
 requires-python = ">= 3.11"
 readme = "../README.md"
@@ -49,10 +49,10 @@ select = [
     # Augment the convention by requiring an imperative mood for all docstrings.
     "D401",
     # Unused imports
-    "F401",
 ]
 ignore = [
     # Ignore req. for public facing functions docstrings
+    "F401",
     "D10",
 ]
 fixable = ["ALL"]
@@ -68,10 +68,7 @@ filterwarnings = [
     "ignore::sqlalchemy.exc.SAWarning",
     "ignore::DeprecationWarning",
 ]
-pythonpath = [
-  "."
-]
+pythonpath = ["."]
 
 [tool.coverage.report]
 omit = ["*/tests/*"]
-
