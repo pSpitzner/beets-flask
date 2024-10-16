@@ -9,6 +9,9 @@ We prefix all environment variables with `IB` to avoid conflicts with other serv
 
 To set a custom file path to a yaml that gets inserted into (and overwrites) the
 beets config, set the `IB_GUI_CONFIGPATH` environment variable.
+Note that this does not remove list keys from the lower priority default config
+(e.g. if you configure different inbox folders in your beets config, and the ib config,
+all of them will be added).
 
 # Example:
 
