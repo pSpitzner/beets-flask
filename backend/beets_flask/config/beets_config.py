@@ -8,7 +8,7 @@ https://confuse.readthedocs.io/en/latest/usage.html#environment-variables
 We prefix all environment variables with `IB` to avoid conflicts with other services.
 
 To set a custom file path to a yaml that gets inserted into (and overwrites) the
-beets config, set the `IB_GUI__CONFIGPATH` environment variable.
+beets config, set the `IB_GUI_CONFIGPATH` environment variable.
 
 # Example:
 
@@ -78,8 +78,8 @@ class InteractiveBeetsConfig(BeetsConfig, metaclass=Singleton):
         # enable env variables
         self.set_env(prefix="IB")
 
-        ib_custom_path = self["gui"]["configpath"].as_path()
-        if ib_defaults_path is not None:
+        ib_custom_path = os.getenv("IB_GUI_CONFIGPATH")
+        if ib_custom_path is not None:
             # set inserts at highest priority
             log.debug(f"Reading IB custom config from {ib_custom_path}")
             self.set(YamlSource(ib_custom_path, default=False))
