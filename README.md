@@ -2,7 +2,6 @@
 
 An opinionated docker container for a web-interface around the music organizer [beets](https://beets.io/)
 
-
 ## Motivation
 
 Autotagging music with beets is great. Beets identifies metadata correctly _most_ of the time, and if you are not a control-freak, there is hardly any reason to check the found metadata.
@@ -13,29 +12,30 @@ This is the main idea with beets-flask: For all folders in your inbox, we genera
 
 ## Features
 
-- Autogenerate previews before importing
-- Import via GUI (if found matches are okay)
-- Import via Web-Terminal using beets as you know it (to correct matches)
-- Undo imports
-- Monitor multiple inboxes
-- A basic library view and search
-- Most File/Tag actions sit in a context menu (right-click, or long-press on touch)
+-   Autogenerate previews before importing
+-   Import via GUI (if found matches are okay)
+-   Import via Web-Terminal using beets as you know it (to correct matches)
+-   Undo imports
+-   Monitor multiple inboxes
+-   A basic library view and search
+-   Most File/Tag actions sit in a context menu (right-click, or long-press on touch)
 
 ![demo gif](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcDZmZjJ0NzA0Z3h4Z2tycnBlMG1mbm9mMXFoMWM1bjJwdDBsOXR1NiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Z3lL2fo5m6UNf85dZT/giphy.gif)
 
 ## Setup
 
-- Make a backup of your beets configs and library. This project is **early work in progress!**
-- Clone the repo
-- Adjust config files
-- Place a folder with music files into your inbox
-- Build and run `docker compose up --build`
-- Check the webinterface, by default at `http://localhost:5001`
-- Once happy, you can run the container as a daemon with `docker compose up -d --build`
+-   Make a backup of your beets configs and library. This project is **early work in progress!**
+-   Clone the repo
+-   Adjust config files
+-   Place a folder with music files into your inbox
+-   Build and run `docker compose up --build`
+-   Check the webinterface, by default at `http://localhost:5001`
+-   Once happy, you can run the container as a daemon with `docker compose up -d --build`
 
 ### Config
 
 This is the container path layout, created with the default configs:
+
 ```
 ├── music
 │   ├── inbox
@@ -50,33 +50,46 @@ This is the container path layout, created with the default configs:
 
 ```
 
+#### Environment Variables
+
+```
+IB_CONFIG_PATH # path to a yaml, to overwrite / add to the beets config in /home/beetle/.config/beets/config.yaml
+IB_SERVER_CONFIG # prod | dev_local | dev_docker | test
+```
+
 #### To use your existing beets library
 
-- Make a backup!
-- Create volume mappings for beets config & library and music folders. Assuming your beets config sits at `/home/user/.config/beets/config.yaml` and contains:
+-   Make a backup!
+-   Create volume mappings for beets config & library and music folders. Assuming your beets config sits at `/home/user/.config/beets/config.yaml` and contains:
+
 ```yaml
 directory: /path/to/music/beets_data/
-library: /home/user/.config/beets/library.db    # default location
+library: /home/user/.config/beets/library.db # default location
 ```
+
 then the volume mappings in the docker-compose file would need to be
+
 ```yaml
 volumes:
     - /home/user/.config/beets/:/home/beetle/.config/beets/
     - /path/to/music/:/path/to/music/
 ```
-- Note that `/path/to/music/` needs to be consistent inside and outside of the container (and with your `directory` beets config) if you want to use the same beets library.
-- To test the container, the easiest is to volume map the `beetle` user and copy your `~/.config/beets/` folder there (the container works with default locations for beets config and library). Then you have all in one place for troubleshooting:
+
+-   Note that `/path/to/music/` needs to be consistent inside and outside of the container (and with your `directory` beets config) if you want to use the same beets library.
+-   To test the container, the easiest is to volume map the `beetle` user and copy your `~/.config/beets/` folder there (the container works with default locations for beets config and library). Then you have all in one place for troubleshooting:
+
 ```yaml
 volumes:
     - /desired/path/containeruser/:/home/beetle/
     - /path/to/music/:/path/to/music/
 ```
-- Because the GUI provides easy ways to clean your inbox, we suggest to set the beets import setting to `copy`. Also needed if you want to undo an import to correct it (which deletes files from the library).
+
+-   Because the GUI provides easy ways to clean your inbox, we suggest to set the beets import setting to `copy`. Also needed if you want to undo an import to correct it (which deletes files from the library).
+
 ```yaml
 import:
     copy: yes
 ```
-
 
 ### GUI Config
 
@@ -112,13 +125,15 @@ gui:
 
 ## Terminal
 
-The container runs a tmux session that you can connect to from the host, or from the webgui (bottom-right button or ``cmd/ctrl + ` ``).
+The container runs a tmux session that you can connect to from the host, or from the webgui (bottom-right button or `` cmd/ctrl + `  ``).
 To access the tmux from the host:
+
 ```
 docker exec -it beets-flask /usr/bin/tmux attach-session -t beets-socket-term
 ```
 
 If you use iTerm on macOS and want to create a profile for connecting to the tmux session natively:
+
 ```
 ssh -t yourserver "/usr/bin/docker exec -it beets-flask /usr/bin/tmux -CC new -A -s beets-socket-term"
 ```
@@ -129,10 +144,9 @@ For the current state, there is a [KanBan board](https://github.com/users/pSpitz
 
 Major things that are planned:
 
-- Better library view, improved cover handling and audio preview.
-- Push the image to dockerhub
-- Mobile friendly (started)
-
+-   Better library view, improved cover handling and audio preview.
+-   Push the image to dockerhub
+-   Mobile friendly (started)
 
 # Developing
 
@@ -140,28 +154,28 @@ The current state is pretty much a playground. Only essential features are inclu
 
 ## Tech Stack
 
-- Backend:
-    - [Flask](https://flask.palletsprojects.com/en/3.0.x/) with some plugins
-    - [Gunicorn](https://gunicorn.org/)
-    - [Redis Queue](https://python-rq.org/)
-    - [SQLite via SQLAlchemy](https://docs.sqlalchemy.org/en/20/)
-- Frontend:
-    - [React](https://react.dev/)
-    - [Vite](https://vitejs.dev/)
-    - [Tanstack router](https://tanstack.com/router/latest)
-    - [MUI Core](https://mui.com/material-ui/all-components/)
-    - [Radix-ui primitives](https://www.radix-ui.com/primitives/docs/overview/introduction)
-    - [Lucide icons](https://lucide.dev/icons/)
-- Terminal:
-    - [xtermjs](https://xtermjs.org/)
-    - [tmux](https://github.com/tmux/tmux/wiki)
+-   Backend:
+    -   [Flask](https://flask.palletsprojects.com/en/3.0.x/) with some plugins
+    -   [Gunicorn](https://gunicorn.org/)
+    -   [Redis Queue](https://python-rq.org/)
+    -   [SQLite via SQLAlchemy](https://docs.sqlalchemy.org/en/20/)
+-   Frontend:
+    -   [React](https://react.dev/)
+    -   [Vite](https://vitejs.dev/)
+    -   [Tanstack router](https://tanstack.com/router/latest)
+    -   [MUI Core](https://mui.com/material-ui/all-components/)
+    -   [Radix-ui primitives](https://www.radix-ui.com/primitives/docs/overview/introduction)
+    -   [Lucide icons](https://lucide.dev/icons/)
+-   Terminal:
+    -   [xtermjs](https://xtermjs.org/)
+    -   [tmux](https://github.com/tmux/tmux/wiki)
 
 ## Notes, Design Choices and Ideas
 
-- See [docker-compose-dev.yaml](/docker-compose-dev.yaml) to createe the dev container:
-    - maps `.repo` to edit the source from the host.
-    - runs `entrypoint_dev.sh`, starting redis workers, flask, and the vite dev server
-- It seems that our vite dev setup **does not work with safari** because it uses CORS
+-   See [docker-compose-dev.yaml](/docker-compose-dev.yaml) to createe the dev container:
+    -   maps `.repo` to edit the source from the host.
+    -   runs `entrypoint_dev.sh`, starting redis workers, flask, and the vite dev server
+-   It seems that our vite dev setup **does not work with safari** because it uses CORS
 
 ### Previews and Imports
 
@@ -173,7 +187,6 @@ Therefore, here, we automatically generate a `preview` for every album in the in
 For each we have subclassed the beets ImportSession (see [beets_sessions.py](/backend/beets_flask/beets_sessions.py) and [invoker.py](/backend/beets_flask/invoker.py)). They overwrite some methods and the config to grab the data needed for the webinterface. Currently, we mainly keep a status and the preview that closely resembles the cli output. Finegrained details and web rendering should be easy to add as needed.
 
 Both are delegated to separate redis queues / workers, so previews can be generated while an import session runs.
-
 
 ### Tags
 
@@ -188,10 +201,10 @@ Currently we can at least undo an import. We add a `gui_import_id` field to the 
 
 The aim of tag groups is to get some order into the previews / imports. Currently we have:
 
-- Inbox: still have a folder in an inbox
-- Recent: have been modified recently
-- Archive: Tags that have been imported already
-- Unsorted: currently corresponds to all tags (we have 'manual tag groups' in the backend, but no way to set them yet)
+-   Inbox: still have a folder in an inbox
+-   Recent: have been modified recently
+-   Archive: Tags that have been imported already
+-   Unsorted: currently corresponds to all tags (we have 'manual tag groups' in the backend, but no way to set them yet)
 
 ### Status updates
 
@@ -203,17 +216,16 @@ The websocket should also allow for a GUI import-session, where in the simplest 
 
 The library view backend is adapted from the existing beets webplugin that is also built on flask.
 
-
 ### Testing
 
 We have started on a version of the container that runs some (backend) tests, but coverage is pretty non-existent.
-
 
 ### Convention for typescript imports
 
 We have an eslint sorting rule for imports:
 
 Order:
+
 1. other modules/components
 2. our modules/components
 3. css (first others, then ours)

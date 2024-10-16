@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING
 
 from flask import Flask
@@ -15,7 +16,7 @@ if TYPE_CHECKING:
     from .config.flask_config import ServerConfig
 
 
-def create_app(config: str | ServerConfig = None) -> Flask:
+def create_app(config: str | ServerConfig | None = None) -> Flask:
 
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
