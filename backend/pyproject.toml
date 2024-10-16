@@ -3,7 +3,7 @@ name = "interactive-beets"
 description = "An opinionated web-interface around the music organizer [beets](https://beets.io/)"
 version = "0.4.0"
 authors = [
-    { name = "F. Paul Spitzner", email = "todo@todo.de" },
+    { name = "F. Paul Spitzner", email = "paul.spitzner@gmail.com" },
     { name = "Sebastian B. Mohr", email = "sebastian@mohrenclan.de" },
 ]
 requires-python = ">= 3.11"
@@ -23,12 +23,20 @@ dependencies = [
     "requests>=2.32.3",
     "python-socketio>=5.11.4",
     "pillow>=10.4.0",
+    "cachetools>=5.3.3",
+    "libtmux>=0.37.0",
+    # Temp
+    "Flask_SSE==1.0.0",
+    # Used for hosting the web-interface & api
+    "gunicorn>=22.0.0",
+    "eventlet>=0.32.0",
 ]
 
 [project.optional-dependencies]
 # Can be install with e.g. `pip install -e .[dev]`
 test = ["pytest>=8.2.2", "pytest-asyncio>=0.23.8", "pytest-cov>=5.0.0"]
-dev = ["ruff>=0.6.5", "pre-commit>=3.8.0"]
+dev = ["ruff>=0.6.5", "pre-commit>=3.8.0", "types-cachetools"]
+all = ["beets_flask[dev,test]"]
 
 [build-system]
 requires = ["hatchling"]

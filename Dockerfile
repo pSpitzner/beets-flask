@@ -9,15 +9,28 @@ ENV GROUP_ID=$GROUP_ID
 RUN addgroup -g $GROUP_ID beetle && adduser -D -u $USER_ID -G beetle beetle
 
 # dependencies
-WORKDIR /repo
-COPY requirements.txt .
 RUN --mount=type=cache,target=/var/cache/apk \
-    apk --no-cache update
+    apk update
 RUN --mount=type=cache,target=/var/cache/apk \
-    apk --no-cache add imagemagick redis git bash keyfinder-cli npm tmux yq
+    apk add \
+    imagemagick \  
+    redis  \
+    git \
+    bash \ 
+    keyfinder-cli \
+    npm \ 
+    tmux \                  
+    yq          # YAML processor needed for parsing config in entrypoint.sh
+
+# Install our package (backend)
+COPY ./backend /repo/backend
+COPY ./README.md /repo/README.md
+WORKDIR /repo/backend
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip3 install -r requirements.txt
-RUN corepack enable && corepack prepare pnpm@9.4.0 --activate
+    pip install .
+
+# Install frontend
+RUN corepack enable && corepack prepare pnpm@9.x.x --activate
 
 # our default folders they should not be used in production
 RUN mkdir -p /music/inbox
