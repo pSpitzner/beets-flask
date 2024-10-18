@@ -20,7 +20,7 @@ from beets_flask.config import config
 from beets_flask.database import Tag, db_session
 from beets_flask.redis import import_queue, preview_queue, tag_queue
 from beets_flask.routes.errors import InvalidUsage
-from beets_flask.routes.sse import update_client_view
+from beets_flask.routes.status import update_client_view
 from beets_flask.utility import log
 
 if TYPE_CHECKING:

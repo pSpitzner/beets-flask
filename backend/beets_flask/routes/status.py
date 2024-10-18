@@ -3,7 +3,7 @@
 Use this blueprint to send status updates to the client.
 We used to use SeverSideEvents but moved to websocket.
 
-TODO: We should move this to the websocket folder and rename!
+see also /websocket/status
 """
 
 from typing import Literal
@@ -14,7 +14,7 @@ from flask import Blueprint, current_app, request
 from beets_flask.logger import log
 from beets_flask.websocket import sio
 
-sse_bp = Blueprint("sse", __name__, url_prefix="/sse")
+sse_bp = Blueprint("status", __name__, url_prefix="/status")
 
 
 def update_client_view(
@@ -34,7 +34,9 @@ def update_client_view(
         },
     }
 
-    response = requests.post("http://localhost:5001/api_v1/sse/publish", json=payload)
+    response = requests.post(
+        "http://localhost:5001/api_v1/status/publish", json=payload
+    )
     if response.status_code != 200:
         log.debug(f"Failed to update client view: {response.json()}")
 
@@ -49,20 +51,3 @@ def publish():
         sio.emit(type, body, namespace="/status")
 
         return {"message": "Message sent"}, 200
-
-
-@sio.on("connect", namespace="/status")  # type: ignore
-def connect(sid, environ):
-    """Handle new client connected."""
-    log.debug(f"StatusSocket new client connected {sid}")
-
-
-@sio.on("disconnect", namespace="/status")  # type: ignore
-def disconnect(sid):
-    """Handle client disconnect."""
-    log.debug(f"StatusSocket client disconnected {sid}")
-
-
-@sio.on("*", namespace="/status")  # type: ignore
-def any_event(event, sid, data):
-    log.debug(f"StatusSocket sid {sid} undhandled event {event} with data {data}")

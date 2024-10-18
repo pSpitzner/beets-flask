@@ -5,7 +5,6 @@ from functools import wraps
 from math import floor
 
 from flask import current_app
-from flask_sse import sse
 from rq import Worker
 
 from .logger import log
@@ -22,11 +21,6 @@ def with_app_context(f):
             return f(*args, **kwargs)
 
     return wrapper
-
-
-@with_app_context
-def update_client_view(type: str, msg: str = "Data updated"):
-    sse.publish({"message": msg}, type=type)
 
 
 def get_running_jobs():
