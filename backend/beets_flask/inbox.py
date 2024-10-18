@@ -15,7 +15,7 @@ from beets_flask.disk import (
     path_to_dict,
 )
 from beets_flask.logger import log
-from beets_flask.routes.sse import update_client_view
+from beets_flask.routes.status import update_client_view
 
 # ------------------------------------------------------------------------------------ #
 #                                   init and watchdog                                  #

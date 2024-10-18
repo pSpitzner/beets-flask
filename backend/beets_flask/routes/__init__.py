@@ -7,7 +7,7 @@ from .inbox import inbox_bp
 from .library import library_bp
 from .lookup import lookup_bp
 from .monitor import monitor_bp
-from .sse import sse_bp
+from .status import sse_bp
 from .tag import tag_bp
 from .tag_group import group_bp
 
