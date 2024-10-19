@@ -63,9 +63,11 @@ def create_app(config: str | ServerConfig | None = None) -> Flask:
 
     from .websocket.importer import register_importer
     from .websocket.terminal import register_tmux
+    from .websocket.status import register_status
 
     register_tmux()
     register_importer()
+    register_status()
 
     from .inbox import register_inboxes
 

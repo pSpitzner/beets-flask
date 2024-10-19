@@ -90,19 +90,9 @@ interface StatusInvalidationI {
     tagPath?: string;
 }
 
-const STATUS_URL =
-    import.meta.env.MODE === "development" ? "ws://localhost:5001/status" : "/status";
-
-const statusSocket = io(STATUS_URL, {
-    // Setting autoConnect to true causes issues in production mode.
-    // Seems the connection is attempted before dependencies are ready.
-    autoConnect: false,
-    transports: ["websocket"],
-});
-
 interface StatusContextI {
     isConnected: boolean;
-    socket?: Socket;
+    socket: Socket | null;
 }
 
 const StatusContext = createContext<StatusContextI | null>(null);
@@ -124,20 +114,10 @@ export const StatusContextProvider = ({
     children: React.ReactNode;
     client: QueryClient;
 }) => {
-    const [isConnected, setIsConnected] = useState(statusSocket.connected);
+    const { socket, isConnected } = useSocket("status");
 
     useEffect(() => {
-        statusSocket.connect();
-
-        function handleConnect() {
-            console.log("Status websocket connected");
-            setIsConnected(true);
-        }
-
-        function handleDisconnect() {
-            console.log("Status websocket disconnected");
-            setIsConnected(false);
-        }
+        if (!socket) return;
 
         function handleTagUpdate(data: StatusInvalidationI) {
             console.log("Tag Update", data);
@@ -178,21 +158,17 @@ export const StatusContextProvider = ({
             }
         }
 
-        statusSocket.on("connect", handleConnect);
-        statusSocket.on("disconnect", handleDisconnect);
-        statusSocket.on("tag", handleTagUpdate);
-        statusSocket.on("inbox", handleInboxUpdates);
+        socket.on("tag", handleTagUpdate);
+        socket.on("inbox", handleInboxUpdates);
 
         return () => {
-            statusSocket.off("connect", handleConnect);
-            statusSocket.off("disconnect", handleDisconnect);
-            statusSocket.off("tag", handleTagUpdate);
-            statusSocket.off("inbox", handleInboxUpdates);
+            socket.off("tag", handleTagUpdate);
+            socket.off("inbox", handleInboxUpdates);
         };
-    }, [client]);
+    }, [socket, client]);
 
     const socketState: StatusContextI = {
-        socket: statusSocket,
+        socket,
         isConnected,
     };
 

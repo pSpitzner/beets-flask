@@ -18,3 +18,8 @@ def disconnect(sid):
 @sio.on("*", namespace="/status")  # type: ignore
 def any_event(event, sid, data):
     log.debug(f"StatusSocket sid {sid} undhandled event {event} with data {data}")
+
+
+def register_status():
+    # we need this to at least allow loading the module at the right time
+    pass
