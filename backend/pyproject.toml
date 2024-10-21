@@ -28,6 +28,8 @@ dependencies = [
     # Used for hosting the web-interface & api
     "gunicorn>=22.0.0",
     "eventlet>=0.32.0",
+    # beets plugin dependencies
+    "pylast>=5.2.0",
 ]
 
 [project.optional-dependencies]
