@@ -74,14 +74,16 @@ def add_tag():
     """
     data = request.get_json()
     kind = data.get("kind", None)
+    # 24-10-21 PS@SM: lets talk about how we prefer the endpoint!
     folder = data.get("folder", None)
+    folders = data.get("folders", None)
 
-    if not folder or not kind:
+    if not ((folder and kind) or (folders and kind)):
         raise InvalidUsage("You need to specify at least a folder and kind of the tag")
 
     # Check if folder is array
-    if not isinstance(folder, list):
-        folder = [folder]
+    if not folders:
+        folders = [folder]
 
     if kind == "import" and config["gui"]["library"]["readonly"].get(bool):
         return abort(
@@ -91,7 +93,7 @@ def add_tag():
 
     tags = []
     with db_session() as session:
-        for f in folder:
+        for f in folders:
             tag = Tag(album_folder=f, kind=kind)
             session.merge(tag)
             session.commit()
