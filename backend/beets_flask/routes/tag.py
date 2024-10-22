@@ -36,6 +36,9 @@ def delete_tag_by_id(tag_id: str):
     """Delete a tag by its id."""
     with db_session() as session:
         tag = Tag.get_by(Tag.id == tag_id, session=session)
+        if not tag:
+            return {"message": "Tag not found"}, 404
+
         session.delete(tag)
         session.commit()
         return {"message": "Tag deleted"}
@@ -54,6 +57,9 @@ def delete_tag_by_folder_path(folder: str):
     """Delete a tag by its folder path on disk."""
     with db_session() as session:
         tag = Tag.get_by(Tag.album_folder == "/" + folder, session=session)
+        if not tag:
+            return {"message": "Tag not found"}, 404
+
         session.delete(tag)
         session.commit()
         return {"message": "Tag deleted"}
