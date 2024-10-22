@@ -21,6 +21,7 @@ import json
 import os
 from io import BytesIO
 from pathlib import Path
+import shutil
 from typing import Optional, TypedDict, cast
 
 import beets.library
@@ -608,6 +609,8 @@ class Stats(TypedDict):
     size: int
     lastItemAdded: Optional[int]  # UTC timestamp
     lastItemModified: Optional[int]  # UTC timestamp
+    runtime: int  # seconds
+    freeSpace: int  # bytes
 
 
 @library_bp.route("/stats")
@@ -616,10 +619,15 @@ def stats():
         album_stats = tx.query(
             "SELECT COUNT(*), COUNT(DISTINCT genre), COUNT(DISTINCT label), COUNT(DISTINCT albumartist) FROM albums"
         )
-        items_stats = tx.query("SELECT COUNT(*), MAX(added), MAX(mtime) FROM items")
+        items_stats = tx.query(
+            "SELECT COUNT(*), MAX(added), MAX(mtime), SUM(length) FROM items"
+        )
 
     lib_path = cast(str, config["directory"].get())
     lib_path = Path(lib_path)
+
+    # Get available disk space
+    disk_space = shutil.disk_usage(lib_path)
 
     ret: Stats = {
         "libraryPath": str(config["directory"].as_str()),
@@ -635,6 +643,8 @@ def stats():
         "lastItemModified": (
             round(items_stats[0][2] * 1000) if items_stats[0][2] is not None else None
         ),
+        "runtime": items_stats[0][3],
+        "freeSpace": disk_space.free,
     }
 
     return jsonify(ret)

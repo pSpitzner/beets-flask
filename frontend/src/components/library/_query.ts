@@ -324,6 +324,8 @@ export interface LibraryStats {
     size: number;
     lastItemAdded?: Date;
     lastItemModified?: Date;
+    runtime: number;
+    freeSpace: number;
 }
 
 export const libraryStatsQueryOptions = () => {
