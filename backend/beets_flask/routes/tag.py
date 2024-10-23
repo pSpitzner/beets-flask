@@ -7,6 +7,7 @@ Can be created by the user or automatically by the system.
 from flask import Blueprint, abort, jsonify, request
 from sqlalchemy import select
 
+from beets_flask import invoker
 from beets_flask.config import config
 from beets_flask.database import Tag, db_session
 from beets_flask.routes.errors import InvalidUsage
@@ -103,9 +104,9 @@ def add_tag():
             tag = Tag(album_folder=f, kind=kind)
             session.merge(tag)
             session.commit()
+            invoker.enqueue(tag.id, session=session)
             tags.append(tag.to_dict())
 
-    # invoker.enqueue(tag.id, session=session)
     return jsonify(
         {
             "message": f"{len(tags)} tags added as kind: {kind}",
