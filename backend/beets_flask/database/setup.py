@@ -5,6 +5,7 @@ from flask import Flask
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
+from ..config.flask_config import config
 from ..logger import log
 from .models import Base, Tag, TagGroup
 
@@ -27,13 +28,9 @@ def setup_database(app: Flask) -> None:
     -------
         None
     """
-    global engine
-    global session_factory
+    __setup_factory()
 
-    engine = create_engine(app.config["DATABASE_URI"])
-    session_factory = scoped_session(sessionmaker(bind=engine))
-
-    if app.config["RESET_DB_ON_START"]:
+    if config["RESET_DB_ON_START"]:
         log.warning("Resetting database due to RESET_DB=True in config")
         _reset_database()
 
@@ -43,6 +40,14 @@ def setup_database(app: Flask) -> None:
     @app.teardown_appcontext
     def shutdown_session(exception=None) -> None:
         session_factory.remove()
+
+
+def __setup_factory():
+    global engine
+    global session_factory
+
+    engine = create_engine(config["DATABASE_URI"])
+    session_factory = scoped_session(sessionmaker(bind=engine))
 
 
 @contextmanager
@@ -69,7 +74,12 @@ def db_session(session: Session | None = None):
     """
     is_outermost = session is None
     if is_outermost:
-        session = session_factory()
+        try:
+            session = session_factory()
+        except NameError:
+            __setup_factory()
+            session = session_factory()
+
     try:
         yield session
         session.commit()

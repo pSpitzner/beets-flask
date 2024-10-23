@@ -6,9 +6,7 @@ from typing import TYPE_CHECKING
 from flask import Flask
 from flask_cors import CORS
 
-from beets_flask.config.flask_config import ServerConfig
-
-# make sure to load our config first, because it modifies the beets config
+from .config.flask_config import ServerConfig, init_server_config
 from .database import setup_database
 from .logger import log
 
@@ -23,24 +21,8 @@ def create_app(config: str | ServerConfig | None = None) -> Flask:
     # CORS needed for Dev so vite can talk to the backend
     CORS(app)
 
-    # Parse config
-    if config is None:
-        config = os.environ.get("IB_SERVER_CONFIG", "dev_local")
-    switch = {
-        "dev_local": "beets_flask.config.DevelopmentLocal",
-        "dev_docker": "beets_flask.config.DevelopmentDocker",
-        "test": "beets_flask.config.Testing",
-        "prod": "beets_flask.config.DeploymentDocker",
-    }
-
-    log.info(f"Creating app with config '{config}'")
-
-    if isinstance(config, str) and config not in switch:
-        raise ValueError(f"Invalid config: {config}")
-    elif isinstance(config, ServerConfig):
-        app.config.from_object(config)
-    else:
-        app.config.from_object(switch[config])
+    config = init_server_config(config)
+    app.config.from_object(config)
 
     global socketio
     # app.wsgi_app = socketio.WSGIApp(sio, app.wsgi_app)
