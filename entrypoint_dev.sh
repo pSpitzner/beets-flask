@@ -16,6 +16,9 @@ mkdir -p /repo/log
 rm /repo/log/for_web.log >/dev/null 2>&1
 rm /repo/frontend/vite.config.ts.timestamp-*.mjs >/dev/null 2>&1
 
+mkdir -p /config/beets
+mkdir -p /config/beets-flask
+
 export FLASK_ENV=development
 export FLASK_DEBUG=1
 

@@ -5,6 +5,8 @@ id
 cd /repo
 
 mkdir -p /repo/log
+mkdir -p /config/beets
+mkdir -p /config/beets-flask
 
 # ------------------------------------------------------------------------------------ #
 #                                     start backend                                    #

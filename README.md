@@ -41,52 +41,66 @@ This is the container path layout, created with the default configs:
 │   ├── inbox
 │   └── imported
 ├── repo
-└── home
-    └── beetle
-        ├── beets-flask-sqlite.db
-        └── .config
-            └── beets
-                └── config.yaml
-
+├── home
+│   └── beetle
+└── config
+    ├── beets
+    │   ├── config.yaml
+    │   └── library.db
+    └── beets-flask
+        ├── config.yaml
+        └── beets-flask-sqlite.db
 ```
 
 #### Environment Variables
 
 ```
-IB_CONFIG_PATH # path to a yaml, to overwrite / add to the beets config in /home/beetle/.config/beets/config.yaml
+IB_GUI_CONFIG_PATH # path to gui yaml, should you desire to place it config elsewhere than in the BEETSFLASKDIR
+
+# set by in the container, should not be changed
 IB_SERVER_CONFIG # prod | dev_local | dev_docker | test
+BEETSDIR="/config/beets"
+BEETSFLASKDIR="/config/beets-flask"
 ```
 
 #### To use your existing beets library
 
--   Make a backup!
--   Create volume mappings for beets config & library and music folders. Assuming your beets config sits at `/home/user/.config/beets/config.yaml` and contains:
+-   **Make a backup!** Your config folder `~/.config/beets/` should be the minimum.
+-   In your docker compose, create volume mappings for config and media folders.
 
 ```yaml
-directory: /path/to/music/beets_data/
-library: /home/user/.config/beets/library.db # default location
-```
-
-then the volume mappings in the docker-compose file would need to be
-
-```yaml
+# docker-compose.yml
 volumes:
-    - /home/user/.config/beets/:/home/beetle/.config/beets/
-    - /path/to/music/:/path/to/music/
+    - ~/.config/beets/:/config/beets/
+    - ~/.config/beets-flask/:/config/beets-flask/
+    - /path_to_your/music/inbox/:/path_to_your/music/inbox/
+    - /path_to_your/music/imported/:/path_to_your/music/imported/
 ```
 
--   Note that `/path/to/music/` needs to be consistent inside and outside of the container (and with your `directory` beets config) if you want to use the same beets library.
--   To test the container, the easiest is to volume map the `beetle` user and copy your `~/.config/beets/` folder there (the container works with default locations for beets config and library). Then you have all in one place for troubleshooting:
+-  Make sure that the `library` location in your beets `config.yaml` is either set to the path _inside_ the container, or not specified (the default will work).
+-  Note that `/path/to/music/` needs to be consistent inside and outside of the container. Otherwise beets will not be able to manage files consistently.
+
+#### To start from scratch or with a copy of your existing library
+
+-  In your docker compose, mount a fresh config folder
 
 ```yaml
+# docker-compose.yml
 volumes:
-    - /desired/path/containeruser/:/home/beetle/
-    - /path/to/music/:/path/to/music/
+    - /path_to_your/music/config/:/config/
+    - /path_to_your/music/inbox/:/path_to_your/music/inbox/
+    - /path_to_your/music/imported/:/path_to_your/music/imported/
 ```
+-  Start the container, and you will find some files placed in the mounted config folder.
+-  Either start customizing a config here, or copy over content from `~/.config/beets/` to `/path_to_your/music/config/beets/`
+-  (GUI) settings can be placed either in the `beets/config.yaml` or `beets-flask/config.yaml`. The latter takes precedence. This might be useful when you want different settings for beets in your host vs the beets GUI. See below for available settings.
 
--   Because the GUI provides easy ways to clean your inbox, we suggest to set the beets import setting to `copy`. Also needed if you want to undo an import to correct it (which deletes files from the library).
+#### misc
+
+-   Because the GUI provides easy ways to clean your inbox, we suggest to set the beets import setting to `copy`. Also needed if you want to undo one of our import to correct it (which deletes files from the library).
 
 ```yaml
+# /config/beets/config.yaml or /config/beets-flask/config.yaml
 import:
     copy: yes
 ```
