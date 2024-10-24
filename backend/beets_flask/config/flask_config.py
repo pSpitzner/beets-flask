@@ -61,7 +61,7 @@ class DevelopmentLocal(ServerConfig):
 
 
 class DevelopmentDocker(ServerConfig):
-    DATABASE_URI = "sqlite://///home/beetle/beets-flask-sqlite.db?timeout=5"
+    DATABASE_URI = f'sqlite:////{os.getenv("BEETSFLASKDIR")}/beets-flask-sqlite.db?timeout=5'
     DEBUG = True
 
 

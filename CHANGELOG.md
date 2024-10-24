@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -  Renamed `kind` to `type` in search frontend code to be consistent with backend.
    Using kind for tags (preview, import, auto), and types for search (album, track).
 
+### Changed
+
+-  Mountpoint to persist config files and databases changed to `/config` (was `/home/beetle/.config/beets/`)
+   We create the `/config/beets` and `/config/beets-flask` folders on startup if they do not exist. Library files are placed there, and you can drop a `config.yaml` either or both of these folders. Settings in `/config/beets-flask/config.yaml` take precedence over `/config/beets/config.yaml`.
+   **You will need to update your docker-compose!**
+
 ### Added
 
 -  Auto-import: automatically import folders that are added to the inbox if the match is good enough.

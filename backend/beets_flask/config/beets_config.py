@@ -81,19 +81,33 @@ class InteractiveBeetsConfig(BeetsConfig, metaclass=Singleton):
         # enable env variables
         self.set_env(prefix="IB")
 
-        ib_custom_path = os.getenv("IB_GUI_CONFIGPATH")
-        if ib_custom_path is not None:
+        # print all os variables
+        log.debug("All environment variables:")
+        for key, value in os.environ.items():
+            log.debug(f"{key}: {value}")
+
+        # do we still want the IB_GUI_CONFIGPATH var? e.g. for tests?
+        ib_config_path = os.getenv("IB_GUI_CONFIGPATH")
+        ib_folder = os.getenv("BEETSFLASKDIR")
+        if ib_config_path is None and ib_folder is not None:
+            ib_config_path = os.path.join(ib_folder, "config.yaml")
+
+        if os.path.exists(ib_config_path):
             # set inserts at highest priority
-            log.debug(f"Reading IB custom config from {ib_custom_path}")
-            self.set(YamlSource(ib_custom_path, default=False))
+            log.debug(f"Reading IB custom config from {ib_config_path}")
+            self.set(YamlSource(ib_config_path, default=False))
+        else:
+            log.debug("No dedicated gui config found")
 
         # add placeholders for required keys if they are not configured,
         # so the docker container starts and can show some help.
 
-
         # beets does not create a config file automatically for the user. Customizations are added as extra layers on the config.
         sources = [s for s in beets.config["directory"].resolve()]
         if len(sources) == 1:
+            log.debug(
+                "Beets is not using a user config. Overwriting the default `directory`."
+            )
             self["directory"] = "/music/imported"
 
         # TODO: would be nice to have this in the default config,
