@@ -87,12 +87,13 @@ class InteractiveBeetsConfig(BeetsConfig, metaclass=Singleton):
             log.debug(f"Reading IB custom config from {ib_custom_path}")
             self.set(YamlSource(ib_custom_path, default=False))
 
-        # TODO: check if beets created the config if it does not exist
-        # and what the default directory is. -> should be consistent with out container
-
         # add placeholders for required keys if they are not configured,
         # so the docker container starts and can show some help.
-        if not os.path.exists("/home/beetle/.config/beets/config.yaml"):
+
+
+        # beets does not create a config file automatically for the user. Customizations are added as extra layers on the config.
+        sources = [s for s in beets.config["directory"].resolve()]
+        if len(sources) == 1:
             self["directory"] = "/music/imported"
 
         # TODO: would be nice to have this in the default config,
