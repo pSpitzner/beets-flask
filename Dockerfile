@@ -8,18 +8,25 @@ ENV USER_ID=$USER_ID
 ENV GROUP_ID=$GROUP_ID
 RUN addgroup -g $GROUP_ID beetle && adduser -D -u $USER_ID -G beetle beetle
 
+# map beets directory and our configs to /config
+RUN mkdir -p /config/beets
+RUN mkdir -p /config/beets-flask
+RUN chown -R beetle:beetle /config
+ENV BEETSDIR="/config/beets"
+ENV BEETSFLASKDIR="/config/beets-flask"
+
 # dependencies
 RUN --mount=type=cache,target=/var/cache/apk \
     apk update
 RUN --mount=type=cache,target=/var/cache/apk \
     apk add \
-    imagemagick \  
+    imagemagick \
     redis  \
     git \
-    bash \ 
+    bash \
     keyfinder-cli \
-    npm \ 
-    tmux \                  
+    npm \
+    tmux \
     yq          # YAML processor needed for parsing config in entrypoint.sh
 
 # Install our package (backend)
