@@ -1,12 +1,32 @@
-.conda/
-venv/
-.venv/
-.git
-node_modules/
-.pnpm-store/
+# following this reference suggesting to exclude everything, and only
+# manually include whats needed
+# https://markbirbeck.com/2018/12/07/getting-control-of-your-dockerignore-files/
 
-__pycache__/
-*.pyc
-.pytest_cache/
+# Let's taylor the docker ignore only for the production image, there is no real
+# need to push the dev image to the registry
 
+*
 
+!backend/beets_flask
+!backend/pyproject.toml
+!backend/main.py
+!backend/launch_redis_workers.py
+
+!configs/
+
+!frontend/src/
+!frontend/public/
+!frontend/dist/
+
+!frontend/.eslintrc.js
+!frontend/index.html
+!frontend/package.json
+!frontend/pnpm-lock.yaml
+!frontend/postcss.config.js
+!frontend/tailwind.config.js
+!frontend/tsconfig.json
+!frontend/vite.config.ts
+
+!README.md
+!LICENSE
+!entrypoint.sh

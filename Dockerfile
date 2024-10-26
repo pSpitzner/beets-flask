@@ -15,6 +15,11 @@ RUN chown -R beetle:beetle /config
 ENV BEETSDIR="/config/beets"
 ENV BEETSFLASKDIR="/config/beets-flask"
 
+# our default folders they should not be used in production
+RUN mkdir -p /music/inbox
+RUN mkdir -p /music/imported
+RUN chown -R beetle:beetle /music
+
 # dependencies
 RUN --mount=type=cache,target=/var/cache/apk \
     apk update
@@ -26,8 +31,7 @@ RUN --mount=type=cache,target=/var/cache/apk \
     bash \
     keyfinder-cli \
     npm \
-    tmux \
-    yq          # YAML processor needed for parsing config in entrypoint.sh
+    tmux
 
 # Install our package (backend)
 COPY ./backend /repo/backend
@@ -39,28 +43,17 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 # Install frontend
 RUN corepack enable && corepack prepare pnpm@9.x.x --activate
 
-# our default folders they should not be used in production
-RUN mkdir -p /music/inbox
-RUN mkdir -p /music/imported
-RUN chown -R beetle:beetle /music
-
 # ------------------------------------------------------------------------------------ #
 #                                      Development                                     #
 # ------------------------------------------------------------------------------------ #
 
 FROM deps AS dev
 
-WORKDIR /repo
-COPY --from=deps /repo /repo
-COPY entrypoint_dev.sh .
-RUN chown -R beetle:beetle /repo
-RUN chmod +x ./entrypoint_dev.sh
 ENV IB_SERVER_CONFIG="dev_docker"
 
-# we copy config files in the script, so they can be put into mounted volumes
+# relies on mounting this volume
 WORKDIR /repo
 USER beetle
-
 ENTRYPOINT ["./entrypoint_dev.sh"]
 
 # ------------------------------------------------------------------------------------ #
@@ -70,12 +63,8 @@ ENTRYPOINT ["./entrypoint_dev.sh"]
 FROM deps AS test
 
 WORKDIR /repo
-COPY --from=deps /repo /repo
+COPY --from=deps --chown=beetle:beetle /repo /repo
 COPY entrypoint_test.sh .
-RUN mkdir -p /music/inbox
-RUN chown -R beetle:beetle /music/inbox
-RUN chown -R beetle:beetle /repo
-RUN chmod +x ./entrypoint_test.sh
 ENV IB_SERVER_CONFIG="test"
 USER beetle
 ENTRYPOINT ["./entrypoint_test.sh"]
@@ -86,16 +75,17 @@ ENTRYPOINT ["./entrypoint_test.sh"]
 
 FROM deps AS prod
 
-WORKDIR /repo
-COPY --from=deps /repo /repo
-COPY --chown=beetle:beetle . .
-RUN chmod +x ./entrypoint.sh
 ENV IB_SERVER_CONFIG="prod"
 
+COPY --from=deps /repo /repo
+
+WORKDIR /repo
+COPY entrypoint.sh .
+COPY ./frontend ./frontend/
+COPY ./configs ./configs/
+RUN chown -R beetle:beetle /repo
+
 WORKDIR /repo/frontend
-RUN rm -rf node_modules
-RUN rm -rf dist
-RUN rm -rf .pnpm-store
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install
 RUN pnpm run build
