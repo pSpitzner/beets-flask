@@ -81,11 +81,6 @@ class InteractiveBeetsConfig(BeetsConfig, metaclass=Singleton):
         # enable env variables
         self.set_env(prefix="IB")
 
-        # print all os variables
-        log.debug("All environment variables:")
-        for key, value in os.environ.items():
-            log.debug(f"{key}: {value}")
-
         # do we still want the IB_GUI_CONFIGPATH var? e.g. for tests?
         ib_config_path = os.getenv("IB_GUI_CONFIGPATH")
         ib_folder = os.getenv("BEETSFLASKDIR")
