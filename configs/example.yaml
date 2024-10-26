@@ -1,4 +1,10 @@
-# opinionated config that assumes that your music sits in `/music/imported`
+# ------------------------------------------------------------------------------------ #
+#                                   BEETS GUI CONFIG                                   #
+# ------------------------------------------------------------------------------------ #
+#                 Example file, this gets overwritten on every restart.                #
+#             Changes to this file have no effect unless you make a copy as            #
+#                          `/config/beets-flask/config.yaml`.                          #
+# ------------------------------------------------------------------------------------ #
 
 gui:
     num_workers_preview: 4 # how many previews to generate in parallel
@@ -18,7 +24,7 @@ gui:
         concat_nested_folders: yes # show multiple folders in one line if they only have one child
         expand_files: no # on page load, show files in (album) folders, or collapse them
 
-        folders: # keep in mind to volume-map these folders in your docker-compose.yml
+        folders: # dont forget to volume-map these folders in your docker-compose.yml
             Lorem:
                 name: "Awesome Inbox"
                 path: "/music/inbox"
@@ -27,6 +33,13 @@ gui:
                 name: "Dummy inbox"
                 path: "/music/dummy"
                 autotag: no
+
+
+# ------------------------------------------------------------------------------------ #
+#                                         BEETS                                        #
+#                  Overwrites settings in `/config/beets/config.yaml`                  #
+#            Useful if you want different settings for cli and gui imports.            #
+# ------------------------------------------------------------------------------------ #
 
 plugins: [
         info,
@@ -49,7 +62,7 @@ plugins: [
     ]
 
 directory: /music/imported
-# library: /home/user/.config/beets/library.db # default location
+# library: /config/beets/library.db # default location in the container
 
 import:
     move: no
@@ -63,6 +76,7 @@ import:
 ui:
     color: yes
 
+# fix up output file paths
 replace:
     '[\\]': ""
     "[_]": "-"
@@ -80,42 +94,12 @@ replace:
     "‐": "-"
 
 per_disc_numbering: no
-threaded: yes
 asciify_paths: yes
 
-albumtypes:
-    types:
-        - ep: "EP"
-        - single: "Single"
-        - soundtrack: "OST"
-        - live: "Live"
-        - compilation: "Compilation"
-        - remix: "Remix"
-    ignore_va: compilation # list of (album)types that should not be output for Various Artists albums
-    bracket: "[]"
-
-item_fields:
-    disc_and_track: u'%02i-%02i' % (disc, track) if disctotal > 1 else u'%02i' % (track)
-
-paths:
-    default: >
-        "%the{$albumartist}/
-        $album/
-        %ifdef{ignoretrackorder,$title [$bitrate],$disc_and_track $title [$bitrate]}"
-    # soundtracks are usually compilations, so put this rule first.
-    albumtype:soundtrack: >
-        "Soundtracks/
-        $album/
-        %ifdef{ignoretrackorder,$title [$bitrate],$disc_and_track $title [$bitrate]}"
-    comp: >
-        "Various Artists/
-        $album/
-        %ifdef{ignoretrackorder,$title [$bitrate],$disc_and_track $title [$bitrate]}"
-    # singleton rule might not be respected if the compilation-flag is set
-    # we can set a special field for tricky cases via e.g. `--set homegrown=1 --set ingoretrackorder=1`
-    singleton: >
-        "%the{$artist}/
-        misc/$title [$bitrate]"
+# adjusting the `threaded` setting of beets should currently have no effect.
+# we launch our own workers for previews and only have one
+# import worker that runs one import (file moving) at a time.
+threaded: no
 
 fetchart:
     midwidth: 500
@@ -140,47 +124,13 @@ lastgenre: # get genres from last fm
     separator: "; "
     fallback: ""
 
-# for the list command
-format_item: $albumartist - $album - $title [$format, $bitrate] - $artist
-
-missing: # finds and lists, for every album in your collection, which or how many tracks are missing
-    format: $albumartist - $album - $title - $artist
-    count: yes
-    total: no
-
-scrub:
-    auto: no # `yes` removes traktor cue points etc!
-
-zero:
-    fields: comments
-    auto: yes
-
-va_name: "Various Artists" # 'Various Artists' is the default name for the albumartist on musicbrainz
-
-# A directory is considered empty (and removed after import) if it only contains files whose names match the glob patterns
-clutter: ["Thumbs.DB", ".DS_Store", "*.pdf", "*.png", "*.jpg"]
-
 match:
-    #.1 = 90% similarity required. automatically matches above the threshold.
-    #even at the chosen threshold, can be unintuitive and not automatically select the choice that meets the threshold.
-    #There is a GitHub issue for this that I can't find.
-    strong_rec_thresh: 0.1 # autotagger tolerance [0, 1], default 0.04
-    #see https://beets.readthedocs.io/en/v1.4.3/reference/config.html#preferred
-    ignored_media:
-        [
-            "Data CD",
-            "DVD",
-            "DVD-Video",
-            "Blu-ray",
-            "HD-DVD",
-            "VCD",
-            "SVCD",
-            "UMD",
-            "VHS",
-        ]
-    preferred:
-        media: ["CD", "Digital Media|File", "Digital Media"]
-        countries: ["US", "GB|UK", "DE"]
+    # autotagger tolerance [0, 1], default 0.04
+    # for example, 0.1 means 90% similarity required.
+    # inbox-folder autotag setting 'auto' respects this and imports above the threshold (like the beets cli would)
+    strong_rec_thresh: 0.1
+
+    # customize how penalties affect the match score
     distance_weights:
         # source: 2.0
         # artist: 3.0
@@ -194,8 +144,7 @@ match:
         # albumdisambig: 0.5
         # album_id: 5.0
         # tracks: 2.0
-        # missing_tracks: 0.9
-        missing_tracks: 0.2 # If your prefer not being so picky about missing tracks.
+        missing_tracks: 0.2 # If your prefer not being so picky about missing tracks. default 0.9
         # unmatched_tracks: 0.6
         # track_title: 3.0
         # track_artist: 2.0
@@ -205,4 +154,5 @@ match:
 
 
 spotify:
-    source_weight: 0.0 # 0.0 gives spotify the same priority as musicbrainz
+    # 0.0 gives spotify the same priority as musicbrainz
+    source_weight: 0.0

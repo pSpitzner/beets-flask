@@ -8,6 +8,8 @@ mkdir -p /repo/log
 mkdir -p /config/beets
 mkdir -p /config/beets-flask
 
+cp -f /repo/configs/example.yaml /config/beets-flask/example_config.yaml
+
 # ------------------------------------------------------------------------------------ #
 #                                     start backend                                    #
 # ------------------------------------------------------------------------------------ #
