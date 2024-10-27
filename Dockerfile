@@ -85,11 +85,11 @@ COPY ./frontend ./frontend/
 COPY ./configs ./configs/
 RUN chown -R beetle:beetle /repo
 
+USER beetle
 WORKDIR /repo/frontend
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install
 RUN pnpm run build
 
 WORKDIR /repo
-USER beetle
 ENTRYPOINT ["./entrypoint.sh"]
