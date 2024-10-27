@@ -649,6 +649,22 @@ const ActionWithMutation = forwardRef(function ActionWithMutation(
 ) {
     const { isSuccess, isPending, mutate, isError, error, reset } =
         useMutation(mutationOption);
+    const { closeMenu } = useContextMenu();
+    const [open, setOpen] = useState(false);
+    const [hasMutated, setHasMutated] = useState(false);
+
+
+    useEffect(() => {
+        if (isError) {
+            setOpen(true);
+        }
+    }, [isError]);
+
+    function handleErrorClose() {
+        reset();
+        setOpen(false);
+        closeMenu();
+    }
 
     return (
         <MenuItem
@@ -657,8 +673,10 @@ const ActionWithMutation = forwardRef(function ActionWithMutation(
                 event.stopPropagation();
                 if (isSuccess) {
                     reset();
-                } else {
+                    closeMenu();
+                } else if (!hasMutated) {
                     mutate();
+                    setHasMutated(true);
                 }
             }}
             {...props}
@@ -674,7 +692,7 @@ const ActionWithMutation = forwardRef(function ActionWithMutation(
             )}
             <div className={styles.ActionText}>{isPending ? <>{text}...</> : text}</div>
 
-            {isError && <ErrorDialog open={isError} error={error} onClose={reset} />}
+            {open && <ErrorDialog open={open} error={error} onClose={handleErrorClose} />}
         </MenuItem>
     );
 });
