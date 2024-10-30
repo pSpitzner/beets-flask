@@ -18,7 +18,7 @@ from sqlalchemy import delete
 from beets_flask.beets_sessions import MatchedImportSession, PreviewSession, colorize
 from beets_flask.config import config
 from beets_flask.database import Tag, db_session
-from beets_flask.redis import import_queue, preview_queue, tag_queue
+from beets_flask.redis import import_queue, preview_queue, redis_conn, tag_queue
 from beets_flask.routes.errors import InvalidUsage
 from beets_flask.routes.status import update_client_view
 from beets_flask.utility import log
@@ -78,7 +78,7 @@ def enqueue_tag_path(path: str, kind: str, session: Session | None = None):
         enqueue(tag.id, session=s)
 
 
-@job(timeout=600, queue=tag_queue)
+@job(timeout=600, queue=tag_queue, connection=redis_conn)
 def runPreview(
     tagId: str,
     callback_url: str | None = None,
@@ -164,7 +164,7 @@ def runPreview(
         return bt.match_url
 
 
-@job(timeout=600, queue=import_queue)
+@job(timeout=600, queue=import_queue, connection=redis_conn)
 def runImport(
     tagId: str,
     match_url: str | None = None,
@@ -270,7 +270,7 @@ def runImport(
         return bt.track_paths_after
 
 
-@job(timeout=600, queue=import_queue)
+@job(timeout=600, queue=import_queue, connection=redis_conn)
 def AutoImport(tagId: str, callback_url: str | None = None) -> list[str] | None:
     """Automatically run an import session.
 
@@ -290,7 +290,7 @@ def AutoImport(tagId: str, callback_url: str | None = None) -> list[str] | None:
     """
     with db_session() as session:
         log.debug(f"AutoImport task on {tagId}")
-        bt = Tag.get_by(Tag.id == tagId)
+        bt = Tag.get_by(Tag.id == tagId, session=session)
         if bt is None:
             raise InvalidUsage(f"Tag {tagId} not found in database")
 

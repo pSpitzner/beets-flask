@@ -82,6 +82,7 @@ class InteractiveBeetsConfig(BeetsConfig, metaclass=Singleton):
         self.set_env(prefix="IB")
 
         # do we still want the IB_GUI_CONFIGPATH var? e.g. for tests?
+        # SM: I would still prefer to load the file from '/config/gui.yaml' in the container
         ib_config_path = os.getenv("IB_GUI_CONFIGPATH")
         ib_folder = os.getenv("BEETSFLASKDIR")
         if ib_config_path is None and ib_folder is not None:

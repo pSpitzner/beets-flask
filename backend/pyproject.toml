@@ -19,7 +19,7 @@ dependencies = [
     "confuse>=2.0.1",
     "beets==2.0.0",
     "sqlalchemy>=2.0.35",
-    "rq>=1.16.2",
+    "rq>=2.0.0",
     "watchdog>=5.0.3",
     "requests>=2.32.3",
     "python-socketio>=5.11.4",
