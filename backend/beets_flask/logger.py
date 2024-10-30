@@ -13,8 +13,11 @@ def setup_logging() -> None:
         format="%(relativeCreated)d [%(levelname)-4s] %(name)s - %(message)s %(filename)s:%(lineno)d",
         level=os.getenv("LOG_LEVEL_OTHERS", logging.WARNING),
     )
-
-    log = logging.getLogger("beets-flask")
+    rq_name = os.getenv("RQ_JOB_ID", None)
+    if rq_name:
+        log = logging.getLogger(f"beets-flask.{rq_name[0:8]}")
+    else:
+        log = logging.getLogger("beets-flask")
     log.setLevel(os.getenv("LOG_LEVEL_BEETSFLASK", logging.INFO))
 
     log.info("Logging initialized")

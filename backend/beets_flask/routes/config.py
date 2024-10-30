@@ -21,8 +21,6 @@ def get_all():
 @config_bp.route("/", methods=["GET"])
 def get_basic():
     """Get the config settings needed for the gui."""
-    log.debug(config["gui"]["inbox"]["folders"].as_pairs())
-
     return jsonify(
         {
             "gui": _serializable(config["gui"].flatten(redact=True)),
