@@ -1,4 +1,4 @@
-import { ChevronRightIcon, Library, RefreshCcw } from "lucide-react";
+import { ChevronRightIcon, Inbox, RefreshCcw } from "lucide-react";
 import {
     Avatar,
     Box,
@@ -13,19 +13,36 @@ import {
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
-import { LibraryStats, libraryStatsQueryOptions } from "./_query";
+import { InboxStats, inboxStatsQueryOptions } from "./_query";
 
-import styles from "./stats.module.scss";
+import styles from "../library/stats.module.scss";
 import { humanizeBytes } from "../common/bytes";
-import { humanizeDuration, RelativeTime } from "../common/time";
+import { RelativeTime } from "../common/time";
 
-/** A component for general library
+/** A component for general inbox
  * statistics, such as the number of
  * items. Their runtime, etc.
+ *
+ * As this might hold multiple inboxes
+ * this is a wrapper component for the
+ * InboxStatsItem.
  */
-export function LibraryStatsComponent() {
-    const librariesQuery = useSuspenseQuery(libraryStatsQueryOptions());
+export function InboxStatsComponent() {
+    const inboxQuery = useSuspenseQuery(inboxStatsQueryOptions());
 
+    return (
+        <Box>
+            {inboxQuery.data?.map((stats, i) => (
+                <InboxStatsItem key={i} data={stats} />
+            ))}
+        </Box>
+    );
+}
+
+/** A component for displaying the stats
+ * of a single inbox.
+ */
+function InboxStatsItem({ data }: { data: InboxStats }) {
     return (
         <Card
             sx={{
@@ -35,7 +52,7 @@ export function LibraryStatsComponent() {
             }}
         >
             <CardContent sx={{ pr: 2, width: "100%" }}>
-                <Header data={librariesQuery.data} />
+                <Header data={data} />
                 <Divider variant="inset" component="div" sx={{ marginBlock: 0.5 }} />
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                     <Box
@@ -49,22 +66,12 @@ export function LibraryStatsComponent() {
                             alignItems: "center",
                         }}
                     >
+                        <div>Number of files: {data.nFiles}</div>
+                        <div>Tagged files: {data.nTagged}</div>
+                        <div>Size of inbox: {humanizeBytes(data.size)}</div>
                         <div>
-                            Total Runtime:{" "}
-                            {humanizeDuration(librariesQuery.data?.runtime)}
+                            Size of tagged files: {humanizeBytes(data.sizeTagged)}
                         </div>
-                        <div>
-                            Disk Usage: {humanizeBytes(librariesQuery.data?.size)} /{" "}
-                            {humanizeBytes(
-                                librariesQuery.data?.size +
-                                    librariesQuery.data?.freeSpace
-                            )}
-                        </div>
-                        <div>Number of tracks: {librariesQuery.data?.items}</div>
-                        <div>Number of albums: {librariesQuery.data?.albums}</div>
-                        <div>Number of artists: {librariesQuery.data?.artists}</div>
-                        <div>Number of genres: {librariesQuery.data?.genres}</div>
-                        <div>Number of labels: {librariesQuery.data?.labels}</div>
                     </Box>
                 </Box>
                 <Divider variant="inset" component="div" sx={{ marginBlock: 0.5 }} />
@@ -86,9 +93,9 @@ export function LibraryStatsComponent() {
                             alignItems: "center",
                         }}
                         component={Link}
-                        to="/library/browse"
+                        to="/inbox"
                     >
-                        Show my library <ChevronRightIcon size={"1rem"} />
+                        Show my inbox <ChevronRightIcon size={"1rem"} />
                     </MUILink>
                 </Box>
             </CardContent>
@@ -100,7 +107,7 @@ export function LibraryStatsComponent() {
     );
 }
 
-function Header({ data }: { data?: LibraryStats }) {
+function Header({ data }: { data: InboxStats }) {
     return (
         <Box sx={{ display: "flex", alignItems: "center" }}>
             <Avatar
@@ -110,7 +117,7 @@ function Header({ data }: { data?: LibraryStats }) {
                 }}
                 variant="rounded"
             >
-                <Library size="100%" />
+                <Inbox size="100%" />
             </Avatar>
 
             <Box
@@ -131,7 +138,7 @@ function Header({ data }: { data?: LibraryStats }) {
                             display: "inline-block",
                         }}
                     >
-                        Your Library
+                        {data.inboxName}
                     </h3>
                     <h4
                         style={{
@@ -147,7 +154,7 @@ function Header({ data }: { data?: LibraryStats }) {
                                 color: "grey.500",
                             }}
                         >
-                            {data?.libraryPath ?? "Loading..."}
+                            {data.inboxPath}
                         </Box>
                     </h4>
                 </Box>
@@ -170,7 +177,7 @@ function Header({ data }: { data?: LibraryStats }) {
                             textAlign: "right",
                         }}
                     >
-                        last import <RelativeTime date={data?.lastItemAdded} />
+                        last tag <RelativeTime date={data.lastTagged} />
                     </Box>
                 </Box>
             </Box>

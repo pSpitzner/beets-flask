@@ -4,7 +4,8 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { libraryStatsQueryOptions } from "@/components/common/_query";
 import { PageWrapper } from "@/components/common/page";
 import { InboxStatsGridItems } from "@/components/frontpage/inboxStats";
-import { LibraryStats } from "@/components/library/stats";
+import { InboxStatsComponent } from "@/components/inbox/stats";
+import { LibraryStatsComponent } from "@/components/library/stats";
 
 export const Route = createFileRoute("/_frontpage/")({
     component: Index,
@@ -27,18 +28,8 @@ function Index() {
     return (
         <PageWrapper>
             <Outlet />
-            <LibraryStats />
-            <Grid container spacing={1} display="flex" justifyContent="center">
-                <InboxStatsGridItems />
-                <Grid
-                    size={{
-                        xs: 12,
-                        sm: 8,
-                        md: 8,
-                        lg: 6,
-                    }}
-                ></Grid>
-            </Grid>
+            <LibraryStatsComponent />
+            <InboxStatsComponent />
         </PageWrapper>
     );
 }
