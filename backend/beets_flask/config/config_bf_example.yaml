@@ -1,0 +1,36 @@
+# ------------------------------------------------------------------------------------ #
+#                                   BEETS GUI CONFIG                                   #
+# ------------------------------------------------------------------------------------ #
+# Example file, this file was automatically copied to /config/beets-flask/config.yaml.
+# Feel free to edit this file to customize the gui configuration.
+# Especially the `folders` section in the `inbox` section are important to set up your inbox
+# folders. You can add as many folders as you like, but don't forget to volume-map them in
+# your docker-compose.yml.
+
+gui:
+    num_workers_preview: 4 # how many previews to generate in parallel
+
+    library:
+        readonly: no
+
+    tags:
+        expand_tags: yes # for tag groups, on page load, show tag details?
+        recent_days: 14 # Number of days to consider for the "recent" tag group
+        order_by: "name" # how to sort tags within the trag groups: "name" (the album folder basename) | "date_created" | "date_modified"
+
+    terminal:
+        start_path: "/music/inbox" # the directory where to start new terminal sessions
+
+    inbox:
+        concat_nested_folders: yes # show multiple folders in one line if they only have one child
+        expand_files: no # on page load, show files in (album) folders, or collapse them
+
+        folders: # dont forget to volume-map these folders in your docker-compose.yml
+            Lorem:
+                name: "Awesome Inbox"
+                path: "/music/inbox"
+                autotag: no # no | "preview" | "import"
+            Ipsum:
+                name: "Dummy inbox"
+                path: "/music/dummy"
+                autotag: no

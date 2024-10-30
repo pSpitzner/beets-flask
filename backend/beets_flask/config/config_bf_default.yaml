@@ -3,7 +3,7 @@
 # ------------------------------------------------------------------------------------ #
 # these are the defaults for the gui.
 # you must provide your own config and map it to /config/beets-flask/config.yaml
-# to get started, see the example.yaml
+# to get started, see the auto-generated examples in /config/beets-flask/
 
 gui:
     num_workers_preview: 4

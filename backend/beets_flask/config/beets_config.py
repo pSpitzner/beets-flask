@@ -28,9 +28,14 @@ print(config["gui"]["tags"].get(default="default_value"))
 import os
 
 from beets import IncludeLazyConfig as BeetsConfig
-from confuse import ConfigReadError, YamlSource
+from confuse import YamlSource
 
 from beets_flask.logger import log
+
+
+def _copy_file(src, dest):
+    with open(src, "r") as src_file, open(dest, "w") as dest_file:
+        dest_file.write(src_file.read())
 
 
 class Singleton(type):
@@ -68,12 +73,12 @@ class InteractiveBeetsConfig(BeetsConfig, metaclass=Singleton):
         self.clear()
         self.read()
 
-        # these are defaults!
+        # read the default config just in case the user config is missing
+        # or malformed
         ib_defaults_path = os.path.join(
-            os.path.dirname(__file__), "config_default.yaml"
+            os.path.dirname(__file__), "config_bf_default.yaml"
         )
         log.debug(f"Reading IB config defaults from {ib_defaults_path}")
-
         default_source = YamlSource(ib_defaults_path, default=True)
         self.add(default_source)  # .add inserts with lowest priority
 
@@ -81,19 +86,43 @@ class InteractiveBeetsConfig(BeetsConfig, metaclass=Singleton):
         # enable env variables
         self.set_env(prefix="IB")
 
-        # do we still want the IB_GUI_CONFIGPATH var? e.g. for tests?
-        # SM: I would still prefer to load the file from '/config/gui.yaml' in the container
-        ib_config_path = os.getenv("IB_GUI_CONFIGPATH")
+        # Load config from default location (set via env var)
+        # if it is set otherwise use the default location
         ib_folder = os.getenv("BEETSFLASKDIR")
-        if ib_config_path is None and ib_folder is not None:
-            ib_config_path = os.path.join(ib_folder, "config.yaml")
+        if ib_folder is None:
+            ib_folder = os.path.expanduser("~/.config/beets-flask")
+        ib_config_path = os.path.join(ib_folder, "config.yaml")
 
-        if os.path.exists(ib_config_path):
-            # set inserts at highest priority
-            log.debug(f"Reading IB custom config from {ib_config_path}")
-            self.set(YamlSource(ib_config_path, default=False))
-        else:
-            log.debug("No dedicated gui config found")
+        # Check if the user config exists
+        # if not, copy the example config to the user config location
+        if not os.path.exists(ib_config_path):
+            # Copy the default config to the user config location
+            log.debug(f"Beets-flask config not found at {ib_config_path}")
+            log.debug(f"Copying default config to {ib_config_path}")
+            os.makedirs(ib_folder, exist_ok=True)
+            ib_example_path = os.path.join(
+                os.path.dirname(__file__), "config_bf_example.yaml"
+            )
+            _copy_file(ib_example_path, ib_config_path)
+
+        # Same check for beets config and copy our default
+        # if it does not exist
+        # TODO: maybe there is a beets function to get the path
+        beets_folder = os.getenv("BEETSDIR")
+        if beets_folder is None:
+            beets_folder = os.path.expanduser("~/.config/beets")
+        beets_config_path = os.path.join(beets_folder, "config.yaml")
+        if not os.path.exists(beets_config_path):
+            log.debug(f"Beets config not found at {beets_config_path}")
+            log.debug(f"Copying default config to {beets_config_path}")
+            beets_example_path = os.path.join(
+                os.path.dirname(__file__), "config_b_example.yaml"
+            )
+            _copy_file(beets_example_path, beets_config_path)
+
+        # Inserts user config at highest priority
+        log.debug(f"Reading beets-flask config from {ib_config_path}")
+        self.set(YamlSource(ib_config_path, default=False))
 
         # add placeholders for required keys if they are not configured,
         # so the docker container starts and can show some help.

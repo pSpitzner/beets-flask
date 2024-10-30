@@ -1,45 +1,10 @@
 # ------------------------------------------------------------------------------------ #
-#                                   BEETS GUI CONFIG                                   #
+#                                      BEETS CONFIG                                    #
 # ------------------------------------------------------------------------------------ #
-#                 Example file, this gets overwritten on every restart.                #
-#             Changes to this file have no effect unless you make a copy as            #
-#                          `/config/beets-flask/config.yaml`.                          #
-# ------------------------------------------------------------------------------------ #
-
-gui:
-    num_workers_preview: 4 # how many previews to generate in parallel
-
-    library:
-        readonly: no
-
-    tags:
-        expand_tags: yes # for tag groups, on page load, show tag details?
-        recent_days: 14 # Number of days to consider for the "recent" tag group
-        order_by: "name" # how to sort tags within the trag groups: "name" (the album folder basename) | "date_created" | "date_modified"
-
-    terminal:
-        start_path: "/music/inbox" # the directory where to start new terminal sessions
-
-    inbox:
-        concat_nested_folders: yes # show multiple folders in one line if they only have one child
-        expand_files: no # on page load, show files in (album) folders, or collapse them
-
-        folders: # dont forget to volume-map these folders in your docker-compose.yml
-            Lorem:
-                name: "Awesome Inbox"
-                path: "/music/inbox"
-                autotag: no # no | "preview" | "import"
-            Ipsum:
-                name: "Dummy inbox"
-                path: "/music/dummy"
-                autotag: no
-
-
-# ------------------------------------------------------------------------------------ #
-#                                         BEETS                                        #
-#                  Overwrites settings in `/config/beets/config.yaml`                  #
-#            Useful if you want different settings for cli and gui imports.            #
-# ------------------------------------------------------------------------------------ #
+# Opinionated example beets configuration. This file was automatically copied to
+# /config/beets/config.yaml. Feel free to edit this file to customize the beets
+# configuration. For more information on the beets configuration, see
+# https://beets.readthedocs.io/en/stable/reference/config.html
 
 plugins: [
         info,
@@ -151,7 +116,6 @@ match:
         # track_index: 1.0
         # track_length: 2.0
         # track_id: 5.0
-
 
 spotify:
     # 0.0 gives spotify the same priority as musicbrainz
