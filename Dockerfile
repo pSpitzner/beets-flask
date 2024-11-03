@@ -73,16 +73,12 @@ ENTRYPOINT ["./entrypoint_test.sh"]
 #                                      Production                                      #
 # ------------------------------------------------------------------------------------ #
 
-FROM deps AS prod
-
-ENV IB_SERVER_CONFIG="prod"
+FROM deps AS build
 
 COPY --from=deps /repo /repo
 
 WORKDIR /repo
-COPY entrypoint.sh .
 COPY ./frontend ./frontend/
-COPY ./configs ./configs/
 RUN chown -R beetle:beetle /repo
 
 USER beetle
@@ -91,5 +87,17 @@ RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install
 RUN pnpm run build
 
+# ------------------------------------------------------------------------------------ #
+
+FROM deps AS prod
+
+ENV IB_SERVER_CONFIG="prod"
+
 WORKDIR /repo
+COPY --from=deps /repo /repo
+COPY --from=build /repo/frontend/dist /repo/frontend/dist
+COPY entrypoint.sh .
+RUN chown -R beetle:beetle /repo
+
+USER beetle
 ENTRYPOINT ["./entrypoint.sh"]
