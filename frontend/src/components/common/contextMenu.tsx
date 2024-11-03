@@ -77,7 +77,7 @@ const ContextMenuContext = createContext<ContextMenuContextI>({
 interface ContextMenuProps
     extends Omit<React.HTMLAttributes<HTMLDivElement>, "onContextMenu"> {
     children: React.ReactNode;
-    actions?: JSX.Element[];
+    actions?: React.ReactNode[];
     identifier?: string;
 }
 
@@ -144,12 +144,15 @@ export function ContextMenu({
     };
 
     const openMenuTouch = (event: TouchEvent) => {
+        // TODO: consolidate with openMenuMouse
         event.preventDefault();
         cancelLongPressTimer();
-
+        if (identifier && selection.has(identifier)) {
+            prevState.current = selection.get(identifier);
+            addToSelection(identifier);
+        }
         const touch = event.touches[0];
         const { clientX, clientY } = touch;
-
         setPosition({
             left: clientX + 2,
             top: clientY - 6,

@@ -2,12 +2,20 @@ import os
 import re
 import subprocess
 from pathlib import Path
-from typing import List
+from typing import Dict, List, TypedDict, Union
 
 from beets.importer import MULTIDISC_MARKERS, MULTIDISC_PAT_FMT, albums_in_dir
 from cachetools import TTLCache, cached
 
 from beets_flask.logger import log
+
+
+class FolderStructure(TypedDict):
+    type: str
+    is_album: bool
+    is_inbox: bool | None = None
+    full_path: str
+    children: Dict[str, Union['FolderStructure', dict]]
 
 
 @cached(cache=TTLCache(maxsize=1024, ttl=900), info=True)
@@ -33,7 +41,7 @@ def path_to_dict(root_dir, relative_to="/", subdirs=True) -> dict:
 
     album_folders = all_album_folders(root_dir, subdirs=subdirs)
 
-    folder_structure = {
+    folder_structure: FolderStructure = {
         "type": "directory",
         "is_album": relative_to in album_folders,
         "full_path": relative_to,

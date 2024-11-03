@@ -6,9 +6,16 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { FsPath, inboxQueryByPathOptions } from "@/components/common/_query";
-import { ContextMenu, defaultActions, SelectionSummary } from "@/components/common/contextMenu";
+import {
+    ContextMenu,
+    defaultActions,
+    SelectionSummary,
+} from "@/components/common/contextMenu";
 import { MinimalConfig, useConfig } from "@/components/common/hooks/useConfig";
-import { SelectionProvider, useSelection } from "@/components/common/hooks/useSelection";
+import {
+    SelectionProvider,
+    useSelection,
+} from "@/components/common/hooks/useSelection";
 import { PageWrapper } from "@/components/common/page";
 import { TagSimilarityBadgeWithHover } from "@/components/tags/similarityBadge";
 import { TagStatusIcon } from "@/components/tags/statusIcon";
@@ -37,7 +44,9 @@ function Inboxes() {
 }
 
 function Inbox({ name, path }: { name: string; path: string }) {
-    const { data, isLoading, isPending, isError, error } = useQuery(inboxQueryByPathOptions(path));
+    const { data, isLoading, isPending, isError, error } = useQuery(
+        inboxQueryByPathOptions(path)
+    );
 
     const heading = (
         <Typography gutterBottom variant="h6" component="div">
@@ -83,7 +92,8 @@ function FolderTreeView({
     level?: number;
 }): React.ReactNode {
     const config = useConfig();
-    const defaultExpandState = fp.is_album && !config.gui.inbox.expand_files ? false : true;
+    const defaultExpandState =
+        fp.is_album && !config.gui.inbox.expand_files ? false : true;
     const [expanded, setExpanded] = useState<boolean>(defaultExpandState);
     const numChildren = Object.keys(fp.children).length;
     const uid = `collapsible-${fp.full_path}`;
@@ -104,16 +114,25 @@ function FolderTreeView({
         return <File fp={fp} />;
     }
 
+    let folder_element = (
+        <Folder fp={fp} label={label ?? fp.full_path.replaceAll("/", " / ")} />
+    );
+    if (!fp.is_inbox) {
+        folder_element = (
+            <ContextMenu
+                className={styles.contextMenuHeaderWrapper}
+                identifier={fp.full_path}
+                actions={[<SelectionSummary key={0} />, ...defaultActions]}
+            >
+                {folder_element}
+            </ContextMenu>
+        );
+    }
+
     return (
         <div className={styles.folder} data-empty={numChildren < 1}>
             <Collapsible.Root open={expanded} onOpenChange={handleExpandedChange}>
-                <ContextMenu
-                    className={styles.contextMenuHeaderWrapper}
-                    identifier={fp.full_path}
-                    actions={[<SelectionSummary key={0} />, ...defaultActions]}
-                >
-                    <Folder fp={fp} label={label ?? fp.full_path.replaceAll("/", " / ")} />
-                </ContextMenu>
+                {folder_element}
                 <Collapsible.Content className={styles.content}>
                     <SubFolders fp={fp} level={level} />
                 </Collapsible.Content>
@@ -128,7 +147,11 @@ function SubFolders({ fp, level }: { fp: FsPath; level: number }) {
         <>
             {Object.keys(fp.children).map((name) => {
                 const child = fp.children[name];
-                const [subFp, subName, mergedName] = concatSubFolderNames(fp, name, config);
+                const [subFp, subName, mergedName] = concatSubFolderNames(
+                    fp,
+                    name,
+                    config
+                );
                 // enable line wrapping
                 return (
                     <FolderTreeView
@@ -155,6 +178,10 @@ function Folder({ fp, label }: { fp: FsPath; label: string }) {
 
     useEffect(() => {
         // Register as selectable
+        // this needs a lot more work:
+        // - selectable and right-clickable should not be the same.
+        // - inboxes should not be selected with "select all"
+        // - inboxes should show different context menu items (no tagging, but select items within, or tag all children...)
         if (fp.is_album && numChildren > 0) {
             markSelectable(fp.full_path);
         }
@@ -185,7 +212,10 @@ function Folder({ fp, label }: { fp: FsPath; label: string }) {
 
             {fp.is_album && (
                 <div className={styles.albumIcons}>
-                    <TagStatusIcon className={styles.albumIcon} tagPath={fp.full_path} />
+                    <TagStatusIcon
+                        className={styles.albumIcon}
+                        tagPath={fp.full_path}
+                    />
                     <TagSimilarityBadgeWithHover tagPath={fp.full_path} />
                 </div>
             )}

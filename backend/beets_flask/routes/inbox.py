@@ -8,7 +8,12 @@ from sqlalchemy import select
 
 from beets_flask.database import Tag, db_session
 from beets_flask.disk import is_album_folder, path_to_dict
-from beets_flask.inbox import get_inbox_folders, get_inbox_for_path, retag_inbox
+from beets_flask.inbox import (
+    get_inbox_folders,
+    get_inbox_for_path,
+    mark_inbox_folder,
+    retag_inbox,
+)
 from beets_flask.logger import log
 from beets_flask.utility import AUDIO_EXTENSIONS
 
@@ -54,7 +59,7 @@ def get_all():
         path_to_dict.cache.clear()  # type: ignore
     inboxes = []
     for path in get_inbox_folders():
-        inboxes.append(path_to_dict(path))
+        inboxes.append(mark_inbox_folder(path_to_dict(path)))
 
     return inboxes
 
@@ -65,7 +70,9 @@ def get_folder(folder):
     use_cache = bool(request.args.get("use_cache", False))
     if not use_cache:
         path_to_dict.cache.clear()  # type: ignore
-    return path_to_dict("/" + folder, relative_to="/" + folder)
+    path = path_to_dict("/" + folder, relative_to="/" + folder)
+    path = mark_inbox_folder(path)
+    return path
 
 
 @inbox_bp.route("/autotag", methods=["POST"])
