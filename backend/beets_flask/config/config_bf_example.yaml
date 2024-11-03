@@ -29,7 +29,13 @@ gui:
             Lorem:
                 name: "Awesome Inbox"
                 path: "/music/inbox"
-                autotag: no # no | "preview" | "import"
+                autotag: no # no | "preview" | "import" | "auto"
+                # autotag controls what should happen with newly added album folders.
+                # no: do nothing
+                # "preview": fetch data but do not import (recommended)
+                # "import": fetch data and always import (not recommended)
+                # "auto": fetch data and import if a good match is found (recommended for established libraries,
+                #         but not for a big initial import when you start with beets for the first time)
             Ipsum:
                 name: "Dummy inbox"
                 path: "/music/dummy"

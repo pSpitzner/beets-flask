@@ -52,7 +52,12 @@ This is the container path layout, created with the default configs:
         └── beets-flask-sqlite.db
 ```
 
-#### Environment Variables
+#### Configuration Files and Environment Variables
+
+-  We added a `gui` section in the beets config to tweak the container and webfrontend.
+-  (GUI and other) settings can be placed either in the `beets/config.yaml` or `beets-flask/config.yaml`. The latter takes precedence. This might be useful when you want different settings for beets in your host vs the beets GUI. See the [example config](./backend/beets_flask/config/config_bf_example.yaml) for available settings.
+-  Config changes require a container restart.
+
 
 ```
 IB_GUI_CONFIG_PATH # path to gui yaml, should you desire to place it config elsewhere than in the BEETSFLASKDIR
@@ -93,49 +98,7 @@ volumes:
 ```
 -  Start the container, and you will find some files placed in the mounted config folder.
 -  Either start customizing a config here, or copy over content from `~/.config/beets/` to `/path_to_your/music/config/beets/`
--  (GUI) settings can be placed either in the `beets/config.yaml` or `beets-flask/config.yaml`. The latter takes precedence. This might be useful when you want different settings for beets in your host vs the beets GUI. See below for available settings.
 
-#### misc
-
--   Because the GUI provides easy ways to clean your inbox, we suggest to set the beets import setting to `copy`. Also needed if you want to undo one of our import to correct it (which deletes files from the library).
-
-```yaml
-# /config/beets/config.yaml or /config/beets-flask/config.yaml
-import:
-    copy: yes
-```
-
-### GUI Config
-
-We added a `gui` section in the beets config to tweak the container and webfrontend.
-
-Config changes currently require a container restart.
-
-```yaml
-gui:
-    num_workers_preview: 4 # how many previews to generate in parallel
-
-    library:
-        readonly: no
-
-    tags:
-        expand_tags: yes # for tag groups, on page load, show tag details?
-        recent_days: 14 # Number of days to consider for the "recent" tag group
-        order_by: "name" # how to sort tags within the trag groups: "name" (the album folder basename) | "date_created" | "date_modified"
-
-    terminal:
-        start_path: "/music/inbox" # the directory where to start new terminal sessions
-
-    inbox:
-        concat_nested_folders: yes # show multiple folders in one line if they only have one child
-        expand_files: no # on page load, show files in (album) folders, or collapse them
-
-        folders: # keep in mind to volume-map these folders in your docker-compose.yml
-            Inbox:
-                name: "Inbox"
-                path: "/music/inbox"
-                autotag: no # no | "preview" | "import" | "auto"
-```
 
 ## Terminal
 
@@ -158,9 +121,8 @@ For the current state, there is a [KanBan board](https://github.com/users/pSpitz
 
 Major things that are planned:
 
--   Better library view, improved cover handling and audio preview.
--   Push the image to dockerhub
--   Mobile friendly (started)
+-   Better library view, audio preview, and actions.
+-   Rewrite for async backend (quart)
 
 # Developing
 
