@@ -5,10 +5,9 @@ id
 pwd
 
 cd /repo/frontend
-# npm install
-# npm run build:dev &
-npm run dev &
-# npm run build:watch &
+
+# pnpm run build:dev &  # use this for debugging with ios, port 5001 (no cors allowed)
+pnpm run dev & # normal dev, port 5173
 
 cd /repo
 

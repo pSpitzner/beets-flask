@@ -164,6 +164,17 @@ Major things that are planned:
 
 # Developing
 
+- Launch Dev container using `docker-compose -f docker-compose-dev.yaml up --build`
+- This mounts `./` to `/repo` in the container
+- Connect to the container, install vite dependencies and start dev server
+```bash
+docker exec -it beets-flask bash
+cd /repo/frontend
+pnpm install
+npm run dev
+```
+- The frontend is served at `http://localhost:5173`
+
 The current state is pretty much a playground. Only essential features are included, but most tools are in place to easily add whatever you feel like.
 
 ## Tech Stack
