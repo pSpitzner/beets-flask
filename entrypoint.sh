@@ -1,4 +1,5 @@
 #!/bin/sh
+
 echo "Running as"
 id
 

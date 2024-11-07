@@ -6,15 +6,14 @@ services:
             context: .
             dockerfile: Dockerfile
             target: prod
-            args:
-                # 502 is default on macos, 1000 on linux
-                USER_ID: 1000
-                GROUP_ID: 1000
         image: beets-flask
         restart: unless-stopped
         ports:
             - "5001:5001" # production and backend
         environment:
+            # 502 is default on macos, 1000 on linux
+            USER_ID: 1000
+            GROUP_ID: 1000
             LOG_LEVEL_BEETSFLASK: INFO # this is used for our own logs. (set beets level via the config)
             LOG_LEVEL_OTHERS: WARNING # this is passed python logging basic config (all other modules)
         volumes:

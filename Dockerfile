@@ -2,11 +2,8 @@ FROM python:3.11-alpine AS base
 
 FROM base AS deps
 
-ARG USER_ID
-ARG GROUP_ID
-ENV USER_ID=$USER_ID
-ENV GROUP_ID=$GROUP_ID
-RUN addgroup -g $GROUP_ID beetle && adduser -D -u $USER_ID -G beetle beetle
+RUN addgroup -g 1000 beetle && \ 
+    adduser -D -u 1000 -G beetle beetle
 
 # map beets directory and our configs to /config
 RUN mkdir -p /config/beets
@@ -31,7 +28,8 @@ RUN --mount=type=cache,target=/var/cache/apk \
     bash \
     keyfinder-cli \
     npm \
-    tmux
+    tmux \ 
+    shadow 
 
 # Install our package (backend)
 COPY ./backend /repo/backend
@@ -53,7 +51,7 @@ ENV IB_SERVER_CONFIG="dev_docker"
 
 # relies on mounting this volume
 WORKDIR /repo
-USER beetle
+USER root
 ENTRYPOINT ["./entrypoint_dev.sh"]
 
 # ------------------------------------------------------------------------------------ #
@@ -66,7 +64,7 @@ WORKDIR /repo
 COPY --from=deps --chown=beetle:beetle /repo /repo
 COPY entrypoint_test.sh .
 ENV IB_SERVER_CONFIG="test"
-USER beetle
+USER root
 ENTRYPOINT ["./entrypoint_test.sh"]
 
 # ------------------------------------------------------------------------------------ #
@@ -97,7 +95,8 @@ WORKDIR /repo
 COPY --from=deps /repo /repo
 COPY --from=build /repo/frontend/dist /repo/frontend/dist
 COPY entrypoint.sh .
+COPY entrypoint_fix_permissions.sh .
 RUN chown -R beetle:beetle /repo
 
-USER beetle
-ENTRYPOINT ["./entrypoint.sh"]
+USER root
+ENTRYPOINT ["/bin/sh", "-c", "./entrypoint_fix_permissions.sh && su beetle -c ./entrypoint.sh"]
