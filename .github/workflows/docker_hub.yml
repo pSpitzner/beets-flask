@@ -29,7 +29,7 @@ jobs:
                       type=ref,event=tag
                       type=semver,pattern={{raw}}
                       type=sha
-                      type=raw,value=latest,enable={{contains(github.ref, 'refs/tags/v')}}
+                      type=raw,value=latest,enable={{contains(refs.tags, 'v')}}
                   # type=raw,value=latest,enable={{is_default_branch}}
 
             - name: Checkout
