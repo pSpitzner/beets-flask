@@ -27,11 +27,10 @@ jobs:
                   # generate Docker tags based on the following events/attributes
                   tags: |
                       type=ref,event=tag
-                      type=semver,pattern={{version}}
-                      type=semver,pattern={{major}}.{{minor}}
-                      type=semver,pattern={{major}}
+                      type=semver,pattern={{raw}}
                       type=sha
-                      type=raw,value=latest,enable={{is_default_branch}}
+                      type=raw,value=latest,enable={{contains(github.ref, 'refs/tags/v')}}
+                  # type=raw,value=latest,enable={{is_default_branch}}
 
             - name: Checkout
               uses: actions/checkout@v4
