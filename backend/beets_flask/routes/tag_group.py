@@ -1,29 +1,27 @@
-"""
-TagGroup related API endpoints
+"""TagGroup related API endpoints.
 
-TagGroups are just a way to group tags together. A typical use case would be a playlist that has some indvidual tracks from various albums (but all full albums should be imported)
+TagGroups are just a way to group tags together. A typical use case would be a playlist that has some individual tracks from various albums (but all full albums should be imported)
 
 We might just merge this into tag.py blueprint?
 """
 
-from flask import Blueprint, request, jsonify, current_app
-from sqlalchemy import select
 from datetime import datetime, timedelta
 
+from flask import Blueprint
+from sqlalchemy import select
+
+from beets_flask.config import config
+from beets_flask.database import Tag, TagGroup, db_session
 from beets_flask.disk import path_to_dict
 from beets_flask.inbox import get_inbox_folders
-from beets_flask.models import Tag, TagGroup
-from beets_flask.db_engine import db_session, with_db_session, Session
 from beets_flask.routes.errors import InvalidUsage
-from beets_flask.utility import log
-from beets_flask.config import config
 
 group_bp = Blueprint("tagGroup", __name__, url_prefix="/tagGroup")
 
 
 @group_bp.route("/", methods=["GET"])
 def get_all():
-    """Get all tag Groups"""
+    """Get all tag groups."""
     with db_session() as session:
         # for now, group ids are just their name
         stmt = select(TagGroup).order_by(TagGroup.id)
@@ -33,13 +31,13 @@ def get_all():
 
 @group_bp.route("/id/<path:group_id>", methods=["GET"])
 def get_tag_by_id(group_id: str):
-    """
-    Get a group by its id (name). There are a few pre-defined groups:
+    """Get a group by its id (name).
+
+    There are a few pre-defined groups:
     - recent: the most recent tags
     - archive: tags that are tagged as archived
     - inbox: tags for folders still in the inbox
     """
-
     group_id = group_id.rstrip("/")
 
     if group_id == "recent":
@@ -72,8 +70,11 @@ def get_tag_by_id(group_id: str):
 
 
 def get_recent_tags() -> list[str]:
-    """Get the most recent tags. Number of days can be set in the config file."""
+    """Get the most recent tags.
 
+    Number of days can be set in the config file.
+    TODO: We may want to allow a parameter to be passed in the request.
+    """
     recent_days: int = config["gui"]["tags"]["recent_days"].as_number()  # type: ignore
 
     with db_session() as session:
@@ -87,8 +88,7 @@ def get_recent_tags() -> list[str]:
 
 
 def get_archived_tags() -> list[str]:
-    """Get all tags that are tagged as archived"""
-
+    """Get all tags that have the archived status."""
     with db_session() as session:
         stmt = select(Tag).where(Tag.status == "imported").order_by(_order_by_clause())
         tags = session.execute(stmt).scalars().all()
@@ -96,7 +96,7 @@ def get_archived_tags() -> list[str]:
 
 
 def get_inbox_tags() -> list[str]:
-    """Get all tags that correspond to folders that are still in the inbox"""
+    """Get all tags that correspond to folders that are still in the inbox."""
 
     def get_album_folders(d):
         if d["type"] == "directory":
@@ -124,8 +124,7 @@ def get_inbox_tags() -> list[str]:
 
 
 def _order_by_clause():
-    """Convert the user config to an order clause to use with sqlalchemy"""
-
+    """Convert the user config to an order clause to use with sqlalchemy."""
     try:
         order_by = config["gui"]["tags"]["order_by"].as_str()
     except:

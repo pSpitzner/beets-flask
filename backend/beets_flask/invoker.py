@@ -1,35 +1,34 @@
-"""
-This module is the glue between three concepts:
+"""The invoker module is the glue between three concepts.
+
+It combines:
 - the BeetSessions (interacting with beets, implementing core functions)
 - the Tags (our sql database model, grabbed by the gui to display everything static)
 - the Redis Queue (to run the tasks in the background)
 """
 
 from __future__ import annotations
+
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import requests
-
-from beets_flask.models import Tag
-from beets_flask.redis import tag_queue, preview_queue, import_queue
-from beets_flask.beets_sessions import PreviewSession, MatchedImportSession, colorize
-from beets_flask.utility import log
-from beets_flask.db_engine import (
-    db_session,
-    Session,
-)
-from beets_flask.config import config
-from beets_flask.routes.errors import InvalidUsage
-from beets_flask.routes.sse import update_client_view
-from sqlalchemy import delete
 from rq.decorators import job
+from sqlalchemy import delete
+
+from beets_flask.beets_sessions import MatchedImportSession, PreviewSession, colorize
+from beets_flask.config import config
+from beets_flask.database import Tag, db_session
+from beets_flask.redis import import_queue, preview_queue, redis_conn, tag_queue
+from beets_flask.routes.errors import InvalidUsage
+from beets_flask.routes.status import update_client_view
+from beets_flask.utility import log
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
 
 
 def enqueue(id: str, session: Session | None = None):
-    """
-    Delegate an existing tag to a redis worker, depending on its kind.
-    """
-
+    """Delegate an existing tag to a redis worker, depending on its kind."""
     with db_session(session) as s:
         tag = Tag.get_by(Tag.id == id, session=s)
 
@@ -59,18 +58,16 @@ def enqueue(id: str, session: Session | None = None):
             import_queue.enqueue(runImport, id)
         elif tag.kind == "auto":
             preview_job = preview_queue.enqueue(runPreview, id)
-            import_queue.enqueue(
-                AutoImport, id, depends_on=preview_job
-            )
+            import_queue.enqueue(AutoImport, id, depends_on=preview_job)
         else:
             raise ValueError(f"Unknown kind {tag.kind}")
 
 
 def enqueue_tag_path(path: str, kind: str, session: Session | None = None):
-    """
+    """Create or update a tag by a given path.
+
     For a given path that is taggable, update the existing tag or create a new one.
     """
-
     with db_session(session) as s:
         tag = Tag.get_by(Tag.album_folder == path, session=s) or Tag(
             album_folder=path, kind=kind
@@ -81,15 +78,20 @@ def enqueue_tag_path(path: str, kind: str, session: Session | None = None):
         enqueue(tag.id, session=s)
 
 
-@job(timeout=600, queue=tag_queue)
-def runPreview(tagId: str, callback_url: str | None = None) -> str | None:
-    """
-    Run a PreviewSession on an existing tag.
+@job(timeout=600, queue=tag_queue, connection=redis_conn)
+def runPreview(
+    tagId: str,
+    callback_url: str | None = None,
+) -> str | None:
+    """Start a preview Session on an existing tag.
 
-    Args:
-        callback_url (str, optional): called on success/failure. Defaults to None.
+    Parameters
+    ----------
+    callback_url: str, optional
+        Called on success/failure of preview.
 
-    Returns:
+    Returns
+    -------
         str: the match url, if we found one, else None.
     """
     with db_session() as session:
@@ -162,20 +164,25 @@ def runPreview(tagId: str, callback_url: str | None = None) -> str | None:
         return bt.match_url
 
 
-@job(timeout=600, queue=import_queue)
+@job(timeout=600, queue=import_queue, connection=redis_conn)
 def runImport(
-    tagId: str, match_url: str | None = None, callback_url: str | None = None
+    tagId: str,
+    match_url: str | None = None,
+    callback_url: str | None = None,
 ) -> list[str]:
-    """
-    Run an ImportSession for our tag.
+    """Start Import session for a tag.
+
     Relies on a preview to have been generated before.
     If it was not, we do it here (blocking the import thread).
     We do not import if no match is found according to your beets config.
 
-    Args:
-        callback_url (str | None, optional): called on status change. Defaults to None.
+    Parameters
+    ----------
+    callback_url: str, optional
+        Called when the import status changes.
 
-    Returns:
+    Returns
+    -------
         List of track paths after import, as strings. (empty if nothing imported)
 
     """
@@ -263,21 +270,27 @@ def runImport(
         return bt.track_paths_after
 
 
-@job(timeout=600, queue=import_queue)
+@job(timeout=600, queue=import_queue, connection=redis_conn)
 def AutoImport(tagId: str, callback_url: str | None = None) -> list[str] | None:
-    """
-    Automatically run an import session for a tag after a preview has been generated.
+    """Automatically run an import session.
+
+    Runs an import on a tag after a preview has been generated.
     We check preview quality and user settings before running the import.
 
-    Args:
-        tagId (str): The ID of the tag to be imported.
-        callback_url (str | None, optional): URL to call on status change. Defaults to None.
-    Returns:
+    Parameters
+    ----------
+    tagId:str
+        The ID of the tag to be imported.
+    callback_url: str, optional
+        URL to call on status change
+
+    Returns
+    -------
         List of track paths after import, as strings. (empty if nothing imported)
     """
     with db_session() as session:
         log.debug(f"AutoImport task on {tagId}")
-        bt = Tag.get_by(Tag.id == tagId)
+        bt = Tag.get_by(Tag.id == tagId, session=session)
         if bt is None:
             raise InvalidUsage(f"Tag {tagId} not found in database")
 
@@ -335,7 +348,8 @@ def _get_or_gen_match_url(tagId, session: Session) -> str | None:
 def tag_status(
     id: str | None = None, path: str | None = None, session: Session | None = None
 ):
-    """
+    """Get a tags status.
+
     Get the status of a tag by its id or path.
     Returns "untagged" if the tag does not exist or the path was not tagged yet.
     """
@@ -352,13 +366,11 @@ def tag_status(
 
 
 def delete_tags(with_status: list[str]):
-    """
+    """Delete tags by status.
+
     Delete all tags that have a certain status from the database.
     We call this during container launch, to clear up things that
-    went were not finished.
-
-    # Args:
-    with_status : list
+    did not finish.
     """
     with db_session() as session:
         stmt = delete(Tag).where(Tag.status.in_(with_status))

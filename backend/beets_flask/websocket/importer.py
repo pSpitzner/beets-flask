@@ -1,16 +1,16 @@
 from typing import Union
-from beets_flask.importer import (
-    ImportState,
-    InteractiveImportSession,
-    ImportCommunicator,
-    ChoiceReceive,
-    CompleteReceive,
-)
-from beets_flask.logger import log
-from beets_flask.websocket import sio
 
 from socketio import Server
 
+from beets_flask.importer import (
+    ChoiceReceive,
+    CompleteReceive,
+    ImportCommunicator,
+    ImportState,
+    InteractiveImportSession,
+)
+from beets_flask.logger import log
+from beets_flask.websocket import sio
 
 log.debug("ImportSocket module loaded")
 namespace = "/import"
@@ -20,19 +20,22 @@ session_ref = None
 
 @sio.on("connect", namespace=namespace)  # type: ignore
 def connect(sid, environ):
-    """new client connected"""
+    """Handle new client connected."""
     log.debug(f"ImportSocket new client connected {sid}")
 
 
 @sio.on("disconnect", namespace=namespace)  # type: ignore
 def disconnect(sid):
-    """client disconnected"""
+    """Handle client disconnect."""
     log.debug(f"ImportSocket client disconnected {sid}")
 
 
 @sio.on("get_state", namespace=namespace)  # type: ignore
 def get_state(sid):
-    """This needs to be invoked by a callback of the client"""
+    """Get the current state of the import session.
+
+    Returns data via callback
+    """
     if session is not None:
         return session.communicator.state.serialize()
     else:
@@ -46,8 +49,10 @@ def any_event(event, sid, data):
 
 @sio.on("start_import_session", namespace=namespace)  # type: ignore
 def start_import_session(sid, data):
-    """
-    Start a new interactive import session. We shall only have one running at a time.
+    """Start a new interactive import session.
+
+    We shall only have one running at a time (for now).
+    This will kill any existing session.
     """
     global session, session_ref
 
@@ -92,8 +97,9 @@ def abort_session(sid):
 
 @sio.on("user_action", namespace=namespace)  # type: ignore
 def choice(sid, req: Union[ChoiceReceive, CompleteReceive]):
-    """
-    User has made a choice. Pass it to the session.
+    """Handle user action.
+
+    Triggers when a user has made a choice via the frontend -> Pass it to the session.
     """
     global session
 
@@ -109,6 +115,12 @@ def choice(sid, req: Union[ChoiceReceive, CompleteReceive]):
 
 
 class WebsocketCommunicator(ImportCommunicator):
+    """Communicator for the websocket.
+
+    Forwards imports via websockets from the frontend to our
+    backend import logic.
+    """
+
     sio: Server
 
     def __init__(self, state: ImportState, sio: Server):

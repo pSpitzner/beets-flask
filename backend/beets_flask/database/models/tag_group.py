@@ -1,11 +1,12 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, List
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.orm.session import make_transient
 from uuid import uuid4 as uuid
 
-from .base import Base
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm.session import make_transient
 
+from .base import Base
 
 if TYPE_CHECKING:
     from .tag import Tag
@@ -43,6 +44,6 @@ class TagGroup(Base):
         return self
 
     @staticmethod
-    def as_dict_from_list(id:str, tag_ids: List[str]):
+    def as_dict_from_list(id: str, tag_ids: List[str]):
         # not doing much for now, but its good to keep it here if taggroups grow.
         return {"id": id, "tag_ids": tag_ids}

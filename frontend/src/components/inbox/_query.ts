@@ -6,6 +6,7 @@ import { queryClient } from "@/components/common/_query";
 export interface FsPath {
     full_path: string;
     is_album: boolean;
+    is_inbox?: boolean;
     type: "directory" | "file";
     children: Record<string, FsPath>;
 }

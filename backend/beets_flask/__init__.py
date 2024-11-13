@@ -1,41 +1,38 @@
+from __future__ import annotations
+
 import os
+from typing import TYPE_CHECKING
 
 from flask import Flask
 from flask_cors import CORS
 
-# make sure to load our config first, because it modifies the beets config
-from .config import config
-from .db_engine import setup_db
-
+from .config.flask_config import ServerConfig, init_server_config
+from .database import setup_database
 from .logger import log
 
+if TYPE_CHECKING:
+    from .config.flask_config import ServerConfig
 
-def create_app():
+
+def create_app(config: str | ServerConfig | None = None) -> Flask:
 
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
     # CORS needed for Dev so vite can talk to the backend
     CORS(app)
 
+    config = init_server_config(config)
+    app.config.from_object(config)
+
     global socketio
-    app.config["SECRET_KEY"] = "your-secret-key"
     # app.wsgi_app = socketio.WSGIApp(sio, app.wsgi_app)
 
-    # Setting this is important otherwise your raised
-    # exception will just generate a regular exception
-    app.config["PROPAGATE_EXCEPTIONS"] = True
-
     # sqlite
-    setup_db(app)
-
-    # redis, workers
-    # rq.init_app(app)
-    # we want to update the tag table only when needed.
-    # redis connection also needed for sse
-    app.config["REDIS_URL"] = "redis://localhost"
+    setup_database(app)
 
     # Register blueprints
-    from .routes import backend_bp
+    from beets_flask.routes import backend_bp
+
     from .routes import frontend_bp
 
     app.register_blueprint(backend_bp)
@@ -46,11 +43,13 @@ def create_app():
 
     register_socketio(app)
 
-    from .websocket.terminal import register_tmux
     from .websocket.importer import register_importer
+    from .websocket.terminal import register_tmux
+    from .websocket.status import register_status
 
     register_tmux()
     register_importer()
+    register_status()
 
     from .inbox import register_inboxes
 

@@ -1,16 +1,15 @@
-""" Added type hints to decorators because it is annopying to have to look up the type of the function usage. """
+"""Beets pipeline overloads.
+
+Added type hints to decorators because it is annoying to have to look up
+the type of the function usage.
+"""
 
 import inspect
 from typing import (
     Callable,
-    Concatenate,
-    Protocol,
-    TypeVar,
-    ParamSpec,
     Generator,
-    Tuple,
-    Any,
-    TypedDict,
+    ParamSpec,
+    TypeVar,
 )
 
 from beets import importer
@@ -25,8 +24,7 @@ def mutator_stage(
     ...,
     Generator[importer.ImportTask | None, importer.ImportTask | None, None],
 ]:
-    """Decorate a function that manipulates items in a coroutine to
-    become a simple stage.
+    """Decorate a function to become a simple stage.
 
     >>> @mutator_stage
     ... def setkey(key, item):

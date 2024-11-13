@@ -19,30 +19,29 @@
 import base64
 import json
 import os
-from pathlib import Path
-from typing import Optional, TypedDict, cast
 from io import BytesIO
-from PIL import Image as PILImage
-import time
+from pathlib import Path
+import shutil
+from typing import Optional, TypedDict, cast
 
+import beets.library
+from beets import util
+from beets.ui import _open_library
 from flask import (
     Blueprint,
     Response,
-    request,
-    jsonify,
-    current_app,
     abort,
-    make_response,
-    send_file,
     g,
+    jsonify,
+    make_response,
+    request,
+    send_file,
 )
+from mediafile import MediaFile  # comes with the beets install
+from PIL import Image as PILImage
 from unidecode import unidecode
 from werkzeug.routing import BaseConverter, PathConverter
 
-import beets.library
-from mediafile import MediaFile  # comes with the beets install
-from beets import ui, util
-from beets.ui import _open_library
 from beets_flask.config import config
 from beets_flask.disk import dir_size
 from beets_flask.logger import log
@@ -56,8 +55,9 @@ library_bp = Blueprint("library", __name__, url_prefix="/library")
 
 
 def _rep(obj, expand=False, minimal=False):
-    """Get a flat -- i.e., JSON-ish -- representation of a beets Item or
-    Album object. For Albums, `expand` dictates whether tracks are
+    """Get a flat -- i.e., JSON-ish -- representation of a beets Item/Album object.
+
+    For Albums, `expand` dictates whether tracks are
     included.
     """
     out = dict(obj)
@@ -113,13 +113,17 @@ def _rep(obj, expand=False, minimal=False):
 
 
 def json_generator(items, root, expand=False, minimal=False):
-    """Generator that dumps list of beets Items or Albums as JSON
+    """Generate JSON from a list of beets Items or Albums.
 
-    :param root:  root key for JSON
-    :param items: list of :class:`Item` or :class:`Album` to dump
-    :param expand: If true every :class:`Album` contains its items in the json
-                   representation
-    :returns:     generator that yields strings
+    Parameters
+    ----------
+    root : str
+        root key for JSON
+    items : list of beets.library.Item or beets.library.Album
+        list of items to dump
+    expand : bool
+        If true every :class:`Album` contains its items in the json
+        representation
     """
     yield '{"%s":[' % root
     first = True
@@ -133,36 +137,33 @@ def json_generator(items, root, expand=False, minimal=False):
 
 
 def is_expand():
-    """
-    Returns whether the current request is for an expanded response.
+    """Check if request is for an expanded response.
 
+    Return whether the current request is for an expanded response.
     """
-
     return request.args.get("expand") is not None
 
 
 def is_minimal():
-    """
-    Normal requests have full info, minimal ones only have item ids and names.
+    """Check if request is for a minimal response.
+
+    Normal requests contain full info, minimal ones only have item ids and names.
     """
     return request.args.get("minimal") is not None
 
 
 def is_delete():
-    """Returns whether the current delete request should remove the selected
-    files.
-    """
-
+    """Return whether the current delete request should remove the selected files."""
     return request.args.get("delete") is not None
 
 
 def get_method():
-    """Returns the HTTP method of the current request."""
+    """Return the HTTP method of the current request."""
     return request.method
 
 
 def resource(name, patchable=False):
-    """Decorates a function to handle RESTful HTTP requests for a resource."""
+    """Decorate a function to handle RESTful HTTP requests for a resource."""
 
     def make_responder(retriever):
         def responder(ids):
@@ -223,7 +224,7 @@ def resource(name, patchable=False):
 
 
 def resource_query(name, patchable=False):
-    """Decorates a function to handle RESTful HTTP queries for resources."""
+    """Decorate a function to handle RESTful HTTP queries for resources."""
 
     def make_responder(query_func):
         def responder(queries):
@@ -286,9 +287,7 @@ def resource_query(name, patchable=False):
 
 
 def resource_list(name):
-    """Decorates a function to handle RESTful HTTP request for a list of
-    resources.
-    """
+    """Return a JSON response for a given resource."""
 
     def make_responder(list_all):
         def responder():
@@ -306,7 +305,7 @@ def resource_list(name):
 
 
 def _get_unique_table_field_values(model, field, sort_field):
-    """retrieve all unique values belonging to a key from a model"""
+    """Retrieve all unique values belonging to a key from a model."""
     if field not in model.all_keys() or sort_field not in model.all_keys():
         raise KeyError
     with g.lib.transaction() as tx:
@@ -576,7 +575,6 @@ def all_artists():
 
 @library_bp.route("/artist/<path:artist_name>")
 def albums_by_artist(artist_name):
-
     log.debug(f"Album query for artist '{artist_name}'")
 
     with g.lib.transaction() as tx:
@@ -611,6 +609,8 @@ class Stats(TypedDict):
     size: int
     lastItemAdded: Optional[int]  # UTC timestamp
     lastItemModified: Optional[int]  # UTC timestamp
+    runtime: int  # seconds
+    freeSpace: int  # bytes
 
 
 @library_bp.route("/stats")
@@ -619,10 +619,15 @@ def stats():
         album_stats = tx.query(
             "SELECT COUNT(*), COUNT(DISTINCT genre), COUNT(DISTINCT label), COUNT(DISTINCT albumartist) FROM albums"
         )
-        items_stats = tx.query("SELECT COUNT(*), MAX(added), MAX(mtime) FROM items")
+        items_stats = tx.query(
+            "SELECT COUNT(*), MAX(added), MAX(mtime), SUM(length) FROM items"
+        )
 
     lib_path = cast(str, config["directory"].get())
     lib_path = Path(lib_path)
+
+    # Get available disk space
+    disk_space = shutil.disk_usage(lib_path)
 
     ret: Stats = {
         "libraryPath": str(config["directory"].as_str()),
@@ -638,6 +643,8 @@ def stats():
         "lastItemModified": (
             round(items_stats[0][2] * 1000) if items_stats[0][2] is not None else None
         ),
+        "runtime": items_stats[0][3],
+        "freeSpace": disk_space.free,
     }
 
     return jsonify(ret)

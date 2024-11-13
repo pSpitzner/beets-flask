@@ -1,27 +1,22 @@
 import os
-import glob
-import subprocess
-from typing import List, OrderedDict
-from cachetools import cached, LRUCache, TTLCache
 import threading
-from time import time
 from datetime import datetime
-from pathlib import Path
-from watchdog.observers import Observer
+from time import time
+from typing import List, OrderedDict
+
+from watchdog.events import FileMovedEvent, FileSystemEvent, FileSystemEventHandler
 from watchdog.observers.polling import PollingObserver
-from watchdog.events import FileSystemEventHandler, FileSystemEvent, FileMovedEvent
 
 from beets_flask import invoker
-
-from beets_flask.logger import log
 from beets_flask.config import config
-from beets_flask.routes.sse import update_client_view
 from beets_flask.disk import (
-    all_album_folders,
+    FolderStructure,
     album_folders_from_track_paths,
+    all_album_folders,
     path_to_dict,
 )
-
+from beets_flask.logger import log
+from beets_flask.routes.status import update_client_view
 
 # ------------------------------------------------------------------------------------ #
 #                                   init and watchdog                                  #
@@ -31,9 +26,8 @@ _inboxes: List[OrderedDict] = []
 
 
 def register_inboxes():
-
     global _inboxes
-    _inboxes = config["gui"]["inbox"]["folders"].get().values()  # type: ignore
+    _inboxes = config["gui"]["inbox"]["folders"].flatten().values()  # type: ignore
 
     for i in _inboxes:
         i["last_tagged"] = None
@@ -90,7 +84,6 @@ def register_inboxes():
 
 
 class InboxHandler(FileSystemEventHandler):
-
     def __init__(self):
         self.debounce = {}
         self.debounce_window = 30  # seconds
@@ -98,8 +91,8 @@ class InboxHandler(FileSystemEventHandler):
         super().__init__()
 
     def try_to_import(self):
-        """
-        Import paths that had no event for a few seconds (following DEBOUNCE_WINDOW).
+        """Import paths that had no event for a few seconds (following DEBOUNCE_WINDOW).
+
         Cleanup paths that have been imported.
         """
         if self.debounce:
@@ -116,9 +109,9 @@ class InboxHandler(FileSystemEventHandler):
         log.debug("got %r", event)
 
         if isinstance(event, FileMovedEvent):
-            fullpath = event.dest_path
+            fullpath = str(event.dest_path)
         else:
-            fullpath = event.src_path
+            fullpath = str(event.src_path)
         if os.path.basename(fullpath).startswith("."):
             return
 
@@ -140,15 +133,17 @@ class InboxHandler(FileSystemEventHandler):
 def retag_folder(
     path: str, kind: str | None = None, with_status: None | list[str] = None
 ):
-    """
-    Retag a (taggable) folder.
+    """Retag a (taggable) folder.
 
-    # Args
-    path: str, full path to the folder
-    kind: str or None (default). If None, the configured autotag kind from the inbox this folder is in will be used.
-    with_status: None or list of strings. If None (default), always retag, no matter what. If list of strings, only retag if the tag for the folder matches one of the supplied statuses.
+    Parameters
+    ----------
+    path: str
+        Full path to the folder
+    kind: str, optional
+        If None, the configured autotag kind from the inbox this folder is in will be used.
+    with_status: list[str], optional
+        If None (default), always retag, no matter what. If list of strings, only retag if the tag for the folder matches one of the supplied statuses.
     """
-
     inbox = get_inbox_for_path(path)
 
     if inbox and kind is None:
@@ -176,15 +171,13 @@ def retag_inbox(
     with_status: None | list[str] = None,
     kind: str | None = None,
 ):
-    """
-    Refresh an inbox folder, retagging all its subfolders.
+    """Refresh an inbox folder, retagging all its subfolders.
 
     # Args
     path: str, full path to the inbox
     kind: str or None (default). If None, the configured autotag kind from the inbox in will be used.
     with_status: None or list of strings. If None (default), always retag, no matter what. If list of strings, only retag if the tag for the folder matches one of the supplied statuses.
     """
-
     inbox = get_inbox_for_path(inbox_dir)
 
     if inbox and kind is None:
@@ -230,6 +223,18 @@ def get_inbox_for_path(path):
 def get_inbox_folders() -> List[str]:
     return [i["path"] for i in _inboxes]
 
+def is_inbox_folder(path: str) -> bool:
+    return path in get_inbox_folders()
 
 def get_inboxes():
     return _inboxes
+
+def mark_inbox_folder(fspath: FolderStructure) -> FolderStructure:
+    """Given a FolderStructure, mark the highest level folder as inbox if it actually is one."""
+    # we would want to do this directly in path_to_dict() in disk.py, but
+    # then we'd have circular imports.
+    # since we go top-down, and there should be nothing higher up than an inbox (?)
+    # no need to check children.
+    if is_inbox_folder(fspath["full_path"]):
+        fspath["is_inbox"] = True
+    return fspath

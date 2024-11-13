@@ -1,37 +1,33 @@
-"""
-State classes to represent the current state of an import session.
-
-"""
+"""State classes represent the current state of an import session."""
 
 from __future__ import annotations
-from dataclasses import dataclass, field
+
+import time
+from dataclasses import dataclass
 from typing import List, Literal, Union
 from uuid import uuid4 as uuid
-import time
-
 
 import beets.ui.commands as uicommands
 from beets import autotag, importer
 
-from beets_flask.logger import log
 from beets_flask.utility import capture_stdout_stderr
 
 from .types import (
-    AlbumMatch,
-    TrackMatch,
-    MusicInfo,
     AlbumInfo,
-    SerializedImportState,
-    TrackInfo,
+    AlbumMatch,
     ItemInfo,
+    MusicInfo,
     SerializedCandidateState,
+    SerializedImportState,
     SerializedSelectionState,
+    TrackInfo,
+    TrackMatch,
 )
 
 
 @dataclass
 class ImportStatus:
-    """Simple dataclass to hold a status message and a status code"""
+    """Simple dataclass to hold a status message and a status code."""
 
     message: Literal[
         "initializing",
@@ -69,8 +65,8 @@ class ImportStatus:
 
 @dataclass
 class ImportState:
-    """
-    Highest level state of an import session.
+    """Highest level state of an import session.
+
     Contains selection states for each task.
     """
 
@@ -120,8 +116,10 @@ class ImportState:
         self,
         task: importer.ImportTask,
     ) -> SelectionState:
-        """Adds selection state if it does not exist yet or updates
-        existitng entry.
+        """Upsert selection state.
+
+        If it does not exist yet it is created or updated
+        if entry exists.
         """
         state = self.get_selection_state_for_task(task)
 
@@ -137,9 +135,7 @@ class ImportState:
         return True
 
     def serialize(self) -> SerializedImportState:
-        """
-        JSON representation to match the frontend types
-        """
+        """JSON representation to match the frontend types."""
         return SerializedImportState(
             id=self.id,
             selection_states=[s.serialize() for s in self.selection_states],
@@ -150,10 +146,10 @@ class ImportState:
 
 @dataclass
 class SelectionState:
-    """
-    State to represent one beets ImportTask in the frontend, for which a selection
-    of the available candidates is needed from the user.
-    Exposes some (typed) attributes of the task (e.g. toppath, paths, items)
+    """State representation of a beets ImportTask.
+
+    In the frontend, a selection of the available candidates may be needed
+    from the user. Exposes some (typed) attributes of the task (e.g. toppath, paths, items)
     Has a list of associated CandidateStates, that represent `matches` in beets.
     """
 
@@ -181,12 +177,12 @@ class SelectionState:
 
     @property
     def candidates(self) -> Union[List[AlbumMatch], List[TrackMatch]]:
-        """Task candidates, i.e. possible matches to choose from"""
+        """Task candidates, i.e. possible matches to choose from."""
         return self.task.candidates
 
     @property
     def current_candidate_state(self) -> CandidateState | None:
-        """Returns the CandidateState of the currently selected candidate"""
+        """Returns the CandidateState of the currently selected candidate."""
         cid = self.current_candidate_id
         if cid is None:
             return None
@@ -199,7 +195,7 @@ class SelectionState:
     def add_candidates(
         self, candidates: List[Union[AlbumMatch, TrackMatch]], insert_at: int = 0
     ) -> List[CandidateState]:
-        """Adds new candidates to our associated task and self, and create candidates states."""
+        """Add a new candidates to the selection state."""
         if len(self.task.candidates) == 0 or len(self.candidate_states) == 0:
             insert_at = 0
         self.task.candidates[insert_at:insert_at] = candidates
@@ -209,31 +205,28 @@ class SelectionState:
 
     @property
     def toppath(self) -> str | None:
-        """Highest-level (common) folder holding music files"""
+        """Highest-level (common) folder holding music files."""
         if self.task.toppath is not None:
             return self.task.toppath.decode("utf-8")
         return None
 
     @property
     def paths(self) -> List[str]:
-        """Lowest-level folders holding music files"""
+        """Lowest-level folders holding music files."""
         return [p.decode("utf-8") for p in self.task.paths]
 
     @property
     def items(self) -> List[autotag.Item]:
-        """Items (representing music files on disk) of the associated task"""
+        """Items (representing music files on disk) of the associated task."""
         return [item for item in self.task.items]
 
     @property
     def items_minimal(self) -> List[MusicInfo]:
-        """Items of the associated task as MinimalItemAndTrackInfo"""
+        """Items of the associated task as MinimalItemAndTrackInfo."""
         return [ItemInfo.from_instance(i) for i in self.task.items]
 
     def serialize(self) -> SerializedSelectionState:
-        """
-        JSON representation to match the frontend types
-        """
-
+        """JSON representation to match the frontend types."""
         # Workaround to show initial selection on frontend
         # if no candidate has been selected yet
         current_id = self.current_candidate_id
@@ -286,8 +279,9 @@ class CandidateState:
     @classmethod
     def asis_candidate(cls, selection_state: SelectionState) -> CandidateState:
         """
-        Alternate constructor for creating a CandidateState to represent
-        the asis import option. We mock the album match to display
+        Alternate constructor for an asis import option.
+
+        We mock the album match to display
         current meta data in the frontend.
         This is pretty much duct-tape.
         """
@@ -340,8 +334,7 @@ class CandidateState:
         return self.match.distance
 
     def serialize(self) -> SerializedCandidateState:
-        """JSON representation to match the frontend types"""
-
+        """JSON representation to match the frontend types."""
         # we lift the match.info from to reduce nesting in the frontend.
         self.match.info.decode()
 

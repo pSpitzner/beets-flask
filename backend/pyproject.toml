@@ -1,0 +1,83 @@
+[project]
+name = "interactive-beets"
+description = "An opinionated web-interface around the music organizer [beets](https://beets.io/)"
+version = "0.1.0"
+authors = [
+    { name = "F. Paul Spitzner", email = "paul.spitzner@gmail.com" },
+    { name = "Sebastian B. Mohr", email = "sebastian@mohrenclan.de" },
+]
+requires-python = ">= 3.11"
+readme = "../README.md"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Web Environment",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "flask>=3.0.3",
+    "flask-cors>=5.0.0",
+    "confuse>=2.0.1",
+    "beets==2.0.0",
+    "sqlalchemy>=2.0.35",
+    "rq>=2.0.0",
+    "watchdog>=5.0.3",
+    "requests>=2.32.3",
+    "python-socketio>=5.11.4",
+    "pillow>=10.4.0",
+    "cachetools>=5.3.3",
+    "libtmux>=0.37.0",
+    # Used for hosting the web-interface & api
+    "gunicorn>=22.0.0",
+    "eventlet>=0.32.0",
+    # beets plugin dependencies
+    "pylast>=5.2.0",
+]
+
+[project.optional-dependencies]
+# Can be install with e.g. `pip install -e .[dev]`
+test = ["pytest>=8.2.2", "pytest-asyncio>=0.23.8", "pytest-cov>=5.0.0"]
+dev = ["ruff>=0.6.5", "pre-commit>=3.8.0", "types-cachetools"]
+all = ["beets_flask[dev,test]"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+package = "./beets_flask"
+packages = ["beets_flask"]
+
+[tool.ruff]
+exclude = ["*tests*"]
+include = ["pyproject.toml", "beets_flask/**/*.py"]
+
+[tool.ruff.lint]
+select = [
+    "I",
+    "D",
+    # Augment the convention by requiring an imperative mood for all docstrings.
+    "D401",
+    # Unused imports
+]
+ignore = [
+    # Ignore req. for public facing functions docstrings
+    "F401",
+    "D10",
+]
+fixable = ["ALL"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib", "--cov=beets_flask"]
+filterwarnings = [
+    "error",
+    "ignore::sqlalchemy.exc.SAWarning",
+    "ignore::DeprecationWarning",
+]
+pythonpath = ["."]
+
+[tool.coverage.report]
+omit = ["*/tests/*"]

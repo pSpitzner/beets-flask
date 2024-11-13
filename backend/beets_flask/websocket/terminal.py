@@ -1,8 +1,7 @@
-"""
-SocketIO for terminal emulation. Adapted from the excellent tutorial by cs01:
-https://github.com/cs01/pyxtermjs
+"""SocketIO for terminal emulation.
 
-Note: With flask_socketio we could not work around invalid session errors.
+Adapted from the excellent tutorial by cs01:
+https://github.com/cs01/pyxtermjs
 
 Notes on tmux:
 - To manually connect to the session used for the web:
@@ -19,10 +18,10 @@ https://stackoverflow.com/questions/44447473/how-to-make-xterm-js-accept-input
 
 import libtmux
 from libtmux import Pane, Session, Window
+
+from beets_flask.config import config
 from beets_flask.logger import log
 from beets_flask.websocket import sio
-from beets_flask.config import config
-
 
 session: Session
 window: Window
@@ -119,9 +118,7 @@ def emit_cursor_position():
 
 @sio.on("ptyInput", namespace="/terminal")  # type: ignore
 def pty_input(sid, data):
-    """
-    Write to the child pty.
-    """
+    """Write to the child pty."""
     log.debug(f"{sid} input {data}")
     pane.send_keys(data["input"], enter=False)
     emit_cursor_position()
@@ -129,7 +126,7 @@ def pty_input(sid, data):
 
 @sio.on("ptyResize", namespace="/terminal")  # type: ignore
 def resize(sid, data):
-    """resize the pty"""
+    """Resize the pty."""
     log.debug(f"{sid} resize pty to {data['cols']} {data['rows']}")
     window.resize(width=data["cols"], height=data["rows"])
     # we might want to resend the output:
@@ -138,21 +135,21 @@ def resize(sid, data):
 
 @sio.on("ptyResendOutput", namespace="/terminal")  # type: ignore
 def resend_output(sid):
-    """resend the output"""
+    """Resend the output."""
     log.debug(f"{sid} resend output")
     emit_output()
 
 
 @sio.on("connect", namespace="/terminal")  # type: ignore
 def connect(sid, environ):
-    """new client connected"""
+    """Handle new client connected."""
     log.debug(f"TerminalSocket new client connected {sid}")
     register_tmux()
 
 
 @sio.on("disconnect", namespace="/terminal")  # type: ignore
 def disconnect(sid):
-    """Handle client disconnect"""
+    """Handle client disconnect."""
     log.debug(f"TerminalSocket client disconnected {sid}")
 
 

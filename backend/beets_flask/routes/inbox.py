@@ -1,27 +1,28 @@
-from datetime import datetime
-import shutil
-from typing import Optional, TypedDict
-from flask import Blueprint, request, jsonify, abort
-from beets_flask.db_engine import db_session
-from beets_flask.disk import path_to_dict
-from beets_flask.inbox import get_inbox_folders, get_inbox_for_path, retag_inbox
-from beets_flask.utility import AUDIO_EXTENSIONS
-from beets_flask.models import Tag
-from beets_flask.logger import log
-
 import os
-
+import shutil
 from pathlib import Path
-from beets_flask.disk import is_album_folder
+from typing import Optional, TypedDict
+
+from flask import Blueprint, abort, jsonify, request
 from sqlalchemy import select
+
+from beets_flask.database import Tag, db_session
+from beets_flask.disk import is_album_folder, path_to_dict
+from beets_flask.inbox import (
+    get_inbox_folders,
+    get_inbox_for_path,
+    mark_inbox_folder,
+    retag_inbox,
+)
+from beets_flask.logger import log
+from beets_flask.utility import AUDIO_EXTENSIONS
 
 inbox_bp = Blueprint("inbox", __name__, url_prefix="/inbox")
 
 
 @inbox_bp.route("/flatPaths", methods=["POST"])
 def get_tree():
-    """
-    Get all flat paths for the inbox folder
+    """Get all flat paths for the inbox folder.
 
     # Request args
     files: bool = False
@@ -48,38 +49,35 @@ def get_tree():
 
 @inbox_bp.route("/", methods=["GET"])
 def get_all():
-    """
-    Get nested dict structures for the inbox folder
+    """Get nested dict structures for the inbox folder.
 
     # Request args
     use_cache: bool = True
     """
-
     use_cache = bool(request.args.get("use_cache", False))
     if not use_cache:
         path_to_dict.cache.clear()  # type: ignore
     inboxes = []
     for path in get_inbox_folders():
-        inboxes.append(path_to_dict(path))
+        inboxes.append(mark_inbox_folder(path_to_dict(path)))
 
     return inboxes
 
 
 @inbox_bp.route("/path/<path:folder>", methods=["GET"])
 def get_folder(folder):
-    """
-    Get all subfolders from of the specified one
-    """
+    """Get all subfolders from of the specified folder."""
     use_cache = bool(request.args.get("use_cache", False))
     if not use_cache:
         path_to_dict.cache.clear()  # type: ignore
-    return path_to_dict("/" + folder, relative_to="/" + folder)
+    path = path_to_dict("/" + folder, relative_to="/" + folder)
+    path = mark_inbox_folder(path)
+    return path
 
 
 @inbox_bp.route("/autotag", methods=["POST"])
 def autotag_inbox_folder():
-    """
-    Trigger a tagging process on all subfolders of a given inbox folder.
+    """Trigger a tagging process on all subfolders of a given inbox folder.
 
     By default, tags folders that were not tagged yet.
     To retag existing folders use `with_status` to provide a list of statuses
@@ -123,12 +121,10 @@ def delete_folders():
 
 @inbox_bp.route("/path/<path:folder>", methods=["DELETE"])
 def delete_inbox(folder):
-    """
-    Delete the specified inbox folder and all its contents.
+    """Delete the specified inbox folder and all its contents.
 
     !This is not reversible
     """
-
     data = request.get_json()
     with_status = data.get("with_status", [])
 
@@ -141,9 +137,11 @@ def delete_inbox(folder):
 
 
 def _delete_folder(folder, with_status=[]):
-    """Helper to delete a folder from a configured inbox. If `with_status` is given,
-    only album_folders that correspond to tags of the given statuses are deleted (and
-    any parent folders, if the folder requested for deletion was the only child)
+    """Delete a folder from a configured inbox.
+
+    If `with_status` is given, only album_folders that correspond to tags of
+    the given statuses are deleted (and any parent folders, if the folder
+    requested for deletion was the only child).
     """
     if not folder.startswith("/"):
         folder = "/" + folder
@@ -168,9 +166,10 @@ def _delete_folder(folder, with_status=[]):
 
 def _delete_folder_and_parents_until(delete_path: str, stop_before: str):
     """
-    Delete the folder and its parent folders up until (but excluding) the stop_before folder. Only traverses up the hierarchy if the child-folder is the only content. Dotfiles are ignored and do not prevent deletion.
-    """
+    Delete the folder and its parent folders up until (but excluding) the stop_before folder.
 
+    Only traverses up the hierarchy if the child-folder is the only content. Dotfiles are ignored and do not prevent deletion.
+    """
     if delete_path == stop_before:
         log.debug(f"Skipping deletion of {delete_path} (its a configured inbox)")
         return
@@ -217,9 +216,7 @@ class Stats(TypedDict):
 
 @inbox_bp.route("/stats", methods=["GET"])
 def stats_for_all():
-    """
-    Get the stats for all inbox folders
-    """
+    """Get the stats for all inbox folders."""
     folders = get_inbox_folders()
     stats = [compute_stats(f) for f in folders]
     return jsonify(stats)
@@ -227,9 +224,7 @@ def stats_for_all():
 
 @inbox_bp.route("/stats/<path:folder>", methods=["GET"])
 def stats_for_folder(folder: str):
-    """
-    Get the stats for a specific inbox folder
-    """
+    """Get the stats for a specific inbox folder."""
     if not folder.startswith("/"):
         folder = "/" + folder
     stats = compute_stats(folder)
@@ -237,8 +232,7 @@ def stats_for_folder(folder: str):
 
 
 def compute_stats(folder: str):
-    """
-    Compute the stats for the inbox folder
+    """Compute the stats for the inbox folder.
 
     # Path parameters
     folder: str (optional) - The folder to compute stats for
@@ -269,13 +263,16 @@ def compute_stats(folder: str):
 
 
 def parse_file(path: Path, map: Stats, session=None):
-    """
-    Parse a file and return the stats dict
+    """Parse a file and return the stats dict.
 
-    Parameters:
-    - path (Path): The path to the file
-    - map (Stats): The current stats dict
-    - session (Session): Optional a session for tagged lookup
+    Parameters
+    ----------
+    path: Path
+        The path to the file
+    map: Stats
+         The current stats dict
+    session: Session
+        Optional a session for tagged lookup
     """
     if path.suffix.lower() not in AUDIO_EXTENSIONS:
         return

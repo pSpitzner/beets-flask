@@ -1,15 +1,13 @@
 #!/bin/sh
+
 echo "Running as"
 id
 
 cd /repo
 
-NUM_WORKERS_PREVIEW=$(yq e '.gui.num_workers_preview' /home/beetle/.config/beets/config.yaml)
-if ! [[ "$NUM_WORKERS_PREVIEW" =~ ^[0-9]+$ ]]; then
-    NUM_WORKERS_PREVIEW=4
-fi
-
 mkdir -p /repo/log
+mkdir -p /config/beets
+mkdir -p /config/beets-flask
 
 # ------------------------------------------------------------------------------------ #
 #                                     start backend                                    #
@@ -20,17 +18,7 @@ cd /repo/backend
 
 redis-server --daemonize yes
 
-for i in $(seq 1 $NUM_WORKERS_PREVIEW)
-do
-  rq worker preview --log-format "Preview worker $i: %(message)s" > /dev/null &
-done
-
-# imports are fast, because they use previously fetched previews. one worker should be enough.
-NUM_WORKERS_IMPORT=1
-for i in $(seq 1 $NUM_WORKERS_IMPORT)
-do
-  rq worker import --log-format "Import worker $i: %(message)s" > /dev/null &
-done
+python ./launch_redis_workers.py
 
 redis-cli FLUSHALL
 

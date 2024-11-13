@@ -1,17 +1,16 @@
 from __future__ import annotations
+
 import time
-from typing import Any, Generic, List, Literal, TypeVar, TypedDict, Union
 from abc import ABC, abstractmethod
+from typing import Any, Generic, List, Literal, TypedDict, TypeVar, Union
 
 from beets_flask.logger import log
 
-from .states import ImportState, SelectionState, CandidateState, ImportStatus
+from .states import CandidateState, ImportState, ImportStatus, SelectionState
 
 
 def default_events(state: Union[ImportState, SelectionState, CandidateState]):
-    """
-    assign the default emit events for commonly used states
-    """
+    """Assign the default emit events for commonly used states."""
     event = None
     if isinstance(state, ImportState):
         event = "import_state"
@@ -25,7 +24,6 @@ def default_events(state: Union[ImportState, SelectionState, CandidateState]):
 
 
 class ImportCommunicator(ABC):
-
     # Ref to the current import state
     state: ImportState
 
@@ -34,19 +32,16 @@ class ImportCommunicator(ABC):
         self.emit_current()
 
     def emit_current(self):
-        """
-        Emits the current top-level state associated with the import session.
-        """
+        """Emit the current top-level state associated with the import session."""
         self.emit_state(self.state)
 
     def emit_state(
         self, state: Union[ImportState, SelectionState, CandidateState, None], **kwargs
     ) -> None:
-        """
-        Emits a (sub-) state of an import session.
+        """Emit a (sub-) state of an import session.
+
         This can be a full import state, a selection state, or a candidate state.
         """
-
         if state is None:
             return
 
@@ -59,16 +54,16 @@ class ImportCommunicator(ABC):
         )
 
     def emit_status(self, status: ImportStatus, **kwargs):
-        """Emits a status message."""
-
+        """Emit a status message."""
         self._emit(
             EmitRequest(event="status", data=status.as_dict()),
             **kwargs,
         )
 
     def emit_custom(self, event: str, data: Any, **kwargs):
-        """
-        Emits a custom event. For the WebsocketCommunicator, this is equivalent to
+        """Emit a custom event.
+
+        For the WebsocketCommunicator, this is equivalent to
         `sio.emit(event, {"event" : event, "data": data}, namespace='xyz')`
         using the communicator's namespace.
 
@@ -87,8 +82,7 @@ class ImportCommunicator(ABC):
     def received_request(
         self, req: Union[ChoiceReceive, CompleteReceive, CandidateSearchReceive]
     ):
-        """
-        Processes incoming requests related to the import session.
+        """Process incoming requests related to the import session.
 
         If an unknown event type is received, it logs an error and returns without further action.
 
@@ -181,9 +175,7 @@ class ImportCommunicator(ABC):
         req: Union[ChoiceReceive, CompleteReceive, CandidateSearchReceive, EmitRequest],
         **kwargs,
     ) -> None:
-        """
-        Emits the current state of the import session.
-        """
+        """Emit the current state of the import session."""
         raise NotImplementedError("Implement in subclass")
 
 
