@@ -19,7 +19,8 @@
 -   Monitor multiple inboxes
 -   Library view and search
 
-![demo](./demo.mp4)
+
+https://github.com/user-attachments/assets/dd526b9d-9351-4f7c-9034-1071e4ff66e6
 
 ## Quickstart
 
