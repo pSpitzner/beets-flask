@@ -33,8 +33,10 @@ We provide a docker image with the full beeets-flask setup. You can run it with 
 docker run -d -p 5001:5001 \
     -e USER_ID=1000 \
     -e GROUP_ID=1000 \
-    -v ./config/:/config \
+    -v /wherever/config/:/config \
     -v /music_path/inbox/:/music_path/inbox/ \
+    -v /music_path/clean/:/music_path/clean/ \
+    --name beets-flask \
     pspitzner/beets-flask:stable
 ```
 
