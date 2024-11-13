@@ -9,7 +9,7 @@ on:
         tags:
             - "v*.*.*"
             - "test-*"
-            - "antitest-*
+            - "antitest-*"
     workflow_dispatch:
 
 jobs:
