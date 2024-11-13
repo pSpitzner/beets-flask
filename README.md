@@ -58,11 +58,26 @@ services:
             - /music_path/clean/:/music_path/clean/
 ```
 
+This will create a container with the following folder structure:
+
+```
+├── music_path
+│   ├── inbox
+│   └── clean
+└── config
+    ├── beets
+    │   ├── config.yaml
+    │   └── library.db
+    └── beets-flask
+        ├── config.yaml
+        └── beets-flask-sqlite.db
+```
+
 ### Edit configs
 
 On first container launch, config files are automatically generated in the specified config folder.
 As the minimum, you need to update the information about your music folders.
-Pick either the `config/beets/config.yaml` or `config/beets-flask/config.yaml` (the latter takes precedence).
+Configurations are read from `config/beets/config.yaml` and `config/beets-flask/config.yaml` (the latter takes precedence).
 
 ```yaml
 # config/beets/config.yaml
@@ -87,10 +102,10 @@ This is the main idea with beets-flask: For all folders in your inbox, we genera
 
 ## Configuration
 
--   We added a `gui` section in the beets config to tweak the container and webfrontend.
--   GUI (and other) settings can be placed either in the `beets/config.yaml` or `beets-flask/config.yaml`. The latter takes precedence. This might be useful when you want different settings for beets CLI vs the beets GUI.
--   An [example](./backend/beets_flask/config/config_bf_example.yaml) is copied to `config/` on container launch.
--   Config changes require a container restart.
+-   We have a `gui` section in the beets-flask config to tweak the container and webfrontend.
+-   Place GUI settings in `config/beets-flask/config.yaml`. If you configure other fields (out of the parent `gui`) they take precedence over the beets config. This might be useful when you want different settings for beets CLI vs the beets GUI.
+-   Opinionated [examples](./backend/beets_flask/config/config_bf_example.yaml) are copied to `config/beets/config.yaml` and `config/beets-flask/config.yaml` on container launch.
+-   Config changes require a container restart to take effect.
 
 ### To use your existing beets library
 
@@ -139,13 +154,9 @@ Currently planned:
 
 We appriciate any help! If you want to contribute, here is how to get started:
 
-Launch Dev container with docker-compose:
-
-`docker-compose -f docker-compose-dev.yaml up --build`
-
-This mounts `./` to `/repo` in the container for live reloading and enhanced development experience.
-
-For platform agnostic development, login to the container and install dependencies:
+-   Launch Dev container with docker-compose: `docker-compose -f docker-compose-dev.yaml up --build`
+-   This mounts `./` to `/repo` in the container for live reloading and enhanced development experience.
+-   For platform agnostic development, login to the container and install dependencies:
 
 ```bash
 docker exec -it beets-flask bash
