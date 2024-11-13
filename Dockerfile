@@ -2,8 +2,10 @@ FROM python:3.11-alpine AS base
 
 FROM base AS deps
 
-RUN addgroup -g 1000 beetle && \ 
+RUN addgroup -g 1000 beetle && \
     adduser -D -u 1000 -G beetle beetle
+
+ENV HOSTNAME="beets-container"
 
 # map beets directory and our configs to /config
 RUN mkdir -p /config/beets
@@ -28,8 +30,8 @@ RUN --mount=type=cache,target=/var/cache/apk \
     bash \
     keyfinder-cli \
     npm \
-    tmux \ 
-    shadow 
+    tmux \
+    shadow
 
 # Install our package (backend)
 COPY ./backend /repo/backend
