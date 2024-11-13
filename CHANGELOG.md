@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Upcoming]
+## [0.1.0] - 24-11-13
 
 ### Fixed
 
@@ -14,12 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+
+-  Improved readme and onboarding experience
 -  Mountpoint to persist config files and databases changed to `/config` (was `/home/beetle/.config/beets/`)
-   We create the `/config/beets` and `/config/beets-flask` folders on startup if they do not exist. Library files are placed there, and you can drop a `config.yaml` either or both of these folders. Settings in `/config/beets-flask/config.yaml` take precedence over `/config/beets/config.yaml`.
+   We create the `/config/beets` and `/config/beets-flask` folders on startup if they do not exist.
+   Library files are placed there, and you can drop a `config.yaml` either or both of these folders. Settings in `/config/beets-flask/config.yaml` take precedence over `/config/beets/config.yaml`.
    **You will need to update your docker-compose!**
 
 ### Added
 
+-  Logo and favicon
+-  Image now on docker hub: `pspitzner/beets-flask:stable`
 -  Auto-import: automatically import folders that are added to the inbox if the match is good enough.
    After a preview, import will start if the match quality is above the configured.
    Enable via the config.yaml, set the `autotag` field of a configred inbox folders to `"auto"`.
@@ -73,6 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   initial commit
 
+[0.1.0]: https://github.com/pSpitzner/beets-flask/compare/v0.0.4...v0.1.0
 [0.0.4]: https://github.com/pSpitzner/beets-flask/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/pSpitzner/beets-flask/compare/v0.0.2...v0.0.3
 [0.0.2]: https://github.com/pSpitzner/beets-flask/compare/v0.0.1...v0.0.2
