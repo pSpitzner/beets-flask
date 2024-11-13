@@ -29,9 +29,8 @@ jobs:
                       type=ref,event=tag
                       type=semver,pattern={{raw}}
                       type=sha
-                      type=edge,branch=35-improve-onboarding-experience
-                      type=raw,value=stable,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
-                      type=raw,value=latest,enable={{is_default_branch}}
+                      type=raw,value=stable,enable=${{ startsWith(github.ref, 'refs/tags/test') }}
+                      type=raw,value=latest,enable=true
 
             - name: Checkout
               uses: actions/checkout@v4
