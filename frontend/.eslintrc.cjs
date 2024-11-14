@@ -34,7 +34,8 @@ module.exports = {
                     ["^src"],
                     ["^\\."],
                     // Styles (ending with .css, .scss, .sass, or .less)
-                    ["^.+\\.(css|scss|sass|less)$"],
+                    // image imports might also have a media query
+                    ["^.+\\.(css|scss|sass|less)$", "^.+\\.(jpg|jpeg|png|gif|svg)*\\?*"],
                 ],
             },
         ],

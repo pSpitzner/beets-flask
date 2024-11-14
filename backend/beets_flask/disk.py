@@ -1,20 +1,27 @@
 import os
 import re
-import glob
 import subprocess
-from typing import List, OrderedDict
-from cachetools import cached, LRUCache, TTLCache
 from pathlib import Path
+from typing import Dict, List, TypedDict, Union
 
-from beets.importer import albums_in_dir, MULTIDISC_PAT_FMT, MULTIDISC_MARKERS
+from beets.importer import MULTIDISC_MARKERS, MULTIDISC_PAT_FMT, albums_in_dir
+from cachetools import TTLCache, cached
 
 from beets_flask.logger import log
 
 
+class FolderStructure(TypedDict):
+    type: str
+    is_album: bool
+    is_inbox: bool | None = None
+    full_path: str
+    children: Dict[str, Union['FolderStructure', dict]]
+
+
 @cached(cache=TTLCache(maxsize=1024, ttl=900), info=True)
 def path_to_dict(root_dir, relative_to="/", subdirs=True) -> dict:
-    """
-    Generate our nested dict structure for the specified path.
+    """Generate our nested dict structure for the specified path.
+
     Each level in the folder hierarchy is a dict with the following keys:
         * "type": "directory" | "file"
         * "is_album": bool
@@ -29,13 +36,12 @@ def path_to_dict(root_dir, relative_to="/", subdirs=True) -> dict:
     # Returns:
     - dict: The nested dict structure.
     """
-
     if not os.path.isdir(root_dir):
         raise FileNotFoundError(f"Path `{root_dir}` does not exist or is no directory.")
 
     album_folders = all_album_folders(root_dir, subdirs=subdirs)
 
-    folder_structure = {
+    folder_structure: FolderStructure = {
         "type": "directory",
         "is_album": relative_to in album_folders,
         "full_path": relative_to,
@@ -57,7 +63,6 @@ def path_to_dict(root_dir, relative_to="/", subdirs=True) -> dict:
             d = d["children"][component]
 
     for dirpath, dirnames, filenames in os.walk(root_dir):
-
         # Filter out hidden files and directories
         dirnames[:] = [d for d in dirnames if not d.startswith(".")]
         filenames = [f for f in filenames if not f.startswith(".")]
@@ -75,7 +80,7 @@ def path_to_dict(root_dir, relative_to="/", subdirs=True) -> dict:
 
 
 def tree(folder_structure) -> str:
-    """Simple tree-like string representation of our nested dict structure that reflects file paths.
+    """Tree-like string to represent our nested dict structure and reflects file paths.
 
     # Args:
         folder_structure (dict): The nested dict structure.
@@ -105,10 +110,10 @@ def album_folders_from_track_paths(
         track_paths (List[str]): list of track paths, e.g. mp3 files
         use_parent_for_multidisc: (bool, optional): when files are in an album folder that might be a multi-disc folder (e.g. `/album/cd1`), return the parent (`/album`) instead of the lowes-level-folder (`/cd1`). Defaults to True.
 
-    Returns:
+    Returns
+    -------
         List[str]: album folders
     """
-
     folders_to_check = set()
     for path in track_paths:
         if os.path.isfile(path):
@@ -154,7 +159,8 @@ def all_album_folders(root_dir: str, subdirs: bool = False) -> List[str]:
         root_dir (str): toppath, highest level to start searching.
         subdirs (bool, optional): Whether to return subfolders of an album that themselves would qualify. E.g. a `CD1` folder. Defaults to False.
 
-    Returns:
+    Returns
+    -------
         List[str]
     """
     folders = []

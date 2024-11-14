@@ -6,9 +6,11 @@ $column_gap: 0.5rem;
 
 .columnBrowser {
     display: flex;
+    // @sm I hard-coded the col height cos I did not manage dynamically (but only the track details view causes height issues)
+    max-height: calc(100dvh - 48px);
     height: 100%;
     column-gap: $column_gap;
-    padding-bottom: 0;
+    padding: 0.5rem;
 }
 
 .column {
@@ -140,9 +142,11 @@ $column_gap: 0.5rem;
 }
 
 .SearchBarOuter {
+    // position: sticky;
+    // top: 0;
+    padding-block: 0.5rem;
     display: flex;
     flex-direction: row;
-    margin-top: 0.5rem;
     flex-shrink: 0;
 }
 
@@ -163,7 +167,7 @@ $column_gap: 0.5rem;
     flex-direction: row;
     justify-content: flex-start;
     flex-grow: 1;
-    overflow: hidden;
+    // overflow: hidden;
     column-gap: $column_gap;
 }
 
@@ -180,7 +184,8 @@ $column_gap: 0.5rem;
     width: 33%;
     overflow: hidden;
 
-    .ItemResultArtist, .AlbumResultArtist {
+    .ItemResultArtist,
+    .AlbumResultArtist {
         display: none;
 
         @media (min-width: 768px) {
@@ -195,8 +200,6 @@ $column_gap: 0.5rem;
     }
     // .ItemResultName, .AlbumResultName {
     // }
-
-
 }
 
 .SearchResultInfoOuter {
@@ -234,12 +237,12 @@ $column_gap: 0.5rem;
 }
 
 .BeetsSearchHelp {
-    position: relative;
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-    padding-bottom: 1.5rem;
-    height: 100%;
-    overflow-y: auto;
+    // position: relative;
+    // padding-left: 1.5rem;
+    // padding-right: 1.5rem;
+    // padding-bottom: 1.5rem;
+    // height: 100%;
+    // overflow-y: auto;
 
     h1 {
         font-size: 1.2em;
@@ -255,26 +258,4 @@ $column_gap: 0.5rem;
     li {
         margin-bottom: 8px;
     }
-}
-
-// fade-out of explanations
-.BeetsSearchHelpOuter::before,
-.BeetsSearchHelpOuter::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 2.5rem;
-    pointer-events: none; // Ensure the overlays don't interfere with interactions
-    z-index: 1;
-}
-
-.BeetsSearchHelpOuter::before {
-    top: 0;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
-}
-
-.BeetsSearchHelpOuter::after {
-    bottom: 0;
-    background: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
 }

@@ -1,6 +1,4 @@
-"""
-This provides the glue between the compiled vite frontend and our backend.
-"""
+"""The glue between the compiled vite frontend and our backend."""
 
 from flask import Blueprint, send_from_directory
 
@@ -12,7 +10,6 @@ frontend_bp = Blueprint("frontend", __name__)
 @frontend_bp.route("/", defaults={"path": "index.html"})
 @frontend_bp.route("/<path:path>")
 def reverse_proxy(path):
-
     # not include assets
     if (
         not "assets" in path

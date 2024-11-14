@@ -1,14 +1,11 @@
 // Show an info box where the user is currently navigating
 
 import { Box, Typography } from "@mui/material";
-import { SxProps } from "@mui/system";
+import { SxProps } from "@mui/material/styles";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 
-import {
-    albumQueryOptions,
-    itemQueryOptions,
-} from "@/components/common/_query";
+import { albumQueryOptions, itemQueryOptions } from "@/components/common/_query";
 
 import CoverArt from "./coverArt";
 
@@ -93,7 +90,7 @@ export function BrowserHeader({ ...props }: React.HTMLAttributes<HTMLDivElement>
             </Box>
             {(album ?? track) && (
                 <CoverArt
-                    sx={{marginBottom: "auto"}}
+                    sx={{ marginBottom: "auto" }}
                     type={coverType}
                     itemId={params.itemId}
                     albumId={params.albumId}
@@ -128,14 +125,12 @@ function LinkTypography({
     if (!params) {
         return <Typography sx={sx}>{label}</Typography>;
     }
-
     let to = `/library/browse`;
     if (target == "artist") {
         to = `/library/browse/${params.artist}`;
     } else if (target == "album") {
         to = `/library/browse/${params.artist}/${params.albumId}`;
     }
-
     return (
         <Link to={to} preload={"intent"} preloadDelay={2000}>
             <Typography sx={sx}>{label}</Typography>

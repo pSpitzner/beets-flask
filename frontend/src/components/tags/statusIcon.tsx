@@ -51,12 +51,12 @@ export function StatusIcon({
         icon = (
             // could not make the mui spinner smaller, so used custom css.
             // the extra divs are needed.
-            <div className={styles.spinner}>
+            (<div className={styles.spinner}>
                 <div></div>
                 <div></div>
                 <div></div>
                 <div></div>
-            </div>
+            </div>)
         );
     } else if (status.toLocaleLowerCase() === "pending") {
         icon = (

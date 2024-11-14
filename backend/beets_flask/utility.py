@@ -1,15 +1,11 @@
-import os
+import io
 import re
 import sys
-import io
 from functools import wraps
-from flask import Flask, current_app
-from flask_rq2 import RQ
-from rq import Worker
-from flask_sse import sse
-from logging.handlers import RotatingFileHandler
-from flask_sqlalchemy import SQLAlchemy
 from math import floor
+
+from flask import current_app
+from rq import Worker
 
 from .logger import log
 
@@ -25,11 +21,6 @@ def with_app_context(f):
             return f(*args, **kwargs)
 
     return wrapper
-
-
-@with_app_context
-def update_client_view(type: str, msg: str = "Data updated"):
-    sse.publish({"message": msg}, type=type)
 
 
 def get_running_jobs():
@@ -56,7 +47,8 @@ def capture_stdout_stderr(func, *args, **kwargs):
         *args: positional arguments to pass to `func`
         **kwargs: keyword arguments to pass to `func`
 
-    Returns:
+    Returns
+    -------
         tuple: (str, str, any) -- stdout, stderr, return value of `func`
     """
     original_stdout = sys.stdout
@@ -91,7 +83,6 @@ def heading(heading: str):
 
 
 def ansi_to_html(text: str):
-
     if not text:
         return text
 
@@ -212,9 +203,11 @@ AUDIO_EXTENSIONS = (
 
 
 class DummyObject:
-    """
-    If you need an object that has every attribute defined but set to None, use this. e.g. for beets.ui._load_plugin options.
+    """Object that returns None for any attribute accessed.
+
+    You may use this. e.g. for beets.ui._load_plugin options.
     """
 
     def __getattr__(self, name):
+        """Return None for any attribute accessed."""
         return None

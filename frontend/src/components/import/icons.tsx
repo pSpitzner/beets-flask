@@ -6,6 +6,7 @@ import {
     CassetteTape,
     Copy,
     Disc3,
+    FastForward,
     Flag,
     GitPullRequestArrow,
     LucideProps,
@@ -18,13 +19,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import Tooltip from "@mui/material/Tooltip";
 
-import mb from "@/assets/musicbrainz.webp";
-import spotify from "@/assets/spotify.png";
-import spotifyBw from "@/assets/spotifyBw.svg";
-
 import { CandidateState } from "./types";
 
 import styles from "./import.module.scss";
+import mb from "@/assets/musicbrainz.webp";
+import spotify from "@/assets/spotify.png";
+import spotifyBw from "@/assets/spotifyBw.svg";
 
 const penaltyOrder = [
     "missing_tracks",
@@ -207,6 +207,9 @@ export function SourceIcon({
             if (color) Icon = <img src={mb} />;
             else Icon = <Brain />;
             break;
+        case "asis":
+            Icon = <FastForward />;
+            break;
         case undefined:
         case null:
             Icon = <BadgeAlert />;
@@ -218,7 +221,7 @@ export function SourceIcon({
     }
 
     return (
-        <Tooltip title={source}>
+        <Tooltip title={source === "asis" ? "Metadata from files" : source}>
             <Box className={styles.sourceIcon}>{Icon}</Box>
         </Tooltip>
     );

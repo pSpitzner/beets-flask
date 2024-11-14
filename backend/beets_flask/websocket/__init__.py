@@ -1,7 +1,6 @@
 import socketio
 
 sio: socketio.Server = socketio.Server(
-    async_mode="eventlet",
     logger=False,
     engineio_logger=False,
     cors_allowed_origins="*",

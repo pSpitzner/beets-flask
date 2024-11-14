@@ -6,7 +6,7 @@ import AccordionSummary from "@mui/material/AccordionSummary";
 import { styled } from "@mui/material/styles";
 import Typography from "@mui/material/Typography";
 
-import { SelectionProvider } from "@/components/common/useSelection";
+import { SelectionProvider } from "@/components/common/hooks/useSelection";
 
 const StyledGroupAccordion = styled(Accordion)(({ theme }) => ({
     // border: `1px solid ${theme.palette.divider}`,

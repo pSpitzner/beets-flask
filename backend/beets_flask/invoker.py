@@ -1,33 +1,34 @@
-"""
-This module is the glue between three concepts:
+"""The invoker module is the glue between three concepts.
+
+It combines:
 - the BeetSessions (interacting with beets, implementing core functions)
 - the Tags (our sql database model, grabbed by the gui to display everything static)
 - the Redis Queue (to run the tasks in the background)
 """
 
 from __future__ import annotations
+
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import requests
-
-from beets_flask.models import Tag
-from beets_flask.redis import rq
-from beets_flask.beets_sessions import PreviewSession, MatchedImportSession, colorize
-from beets_flask.utility import log
-from beets_flask.db_engine import (
-    db_session,
-    Session,
-)
-from beets_flask.routes.errors import InvalidUsage
-from beets_flask.routes.sse import update_client_view
+from rq.decorators import job
 from sqlalchemy import delete
+
+from beets_flask.beets_sessions import MatchedImportSession, PreviewSession, colorize
+from beets_flask.config import config
+from beets_flask.database import Tag, db_session
+from beets_flask.redis import import_queue, preview_queue, redis_conn, tag_queue
+from beets_flask.routes.errors import InvalidUsage
+from beets_flask.routes.status import update_client_view
+from beets_flask.utility import log
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
 
 
 def enqueue(id: str, session: Session | None = None):
-    """
-    Delegate an existing tag to a redis worker, depending on its kind.
-    """
-
+    """Delegate an existing tag to a redis worker, depending on its kind."""
     with db_session(session) as s:
         tag = Tag.get_by(Tag.id == id, session=s)
 
@@ -52,18 +53,21 @@ def enqueue(id: str, session: Session | None = None):
         log.info(f"Enqueued {tag.id=} {tag.album_folder=} {tag.kind=}")
 
         if tag.kind == "preview":
-            rq.get_queue("preview").enqueue(runPreview, id)
+            preview_queue.enqueue(runPreview, id)
         elif tag.kind == "import":
-            rq.get_queue("import").enqueue(runImport, id)
+            import_queue.enqueue(runImport, id)
+        elif tag.kind == "auto":
+            preview_job = preview_queue.enqueue(runPreview, id)
+            import_queue.enqueue(AutoImport, id, depends_on=preview_job)
         else:
             raise ValueError(f"Unknown kind {tag.kind}")
 
 
 def enqueue_tag_path(path: str, kind: str, session: Session | None = None):
-    """
+    """Create or update a tag by a given path.
+
     For a given path that is taggable, update the existing tag or create a new one.
     """
-
     with db_session(session) as s:
         tag = Tag.get_by(Tag.album_folder == path, session=s) or Tag(
             album_folder=path, kind=kind
@@ -74,28 +78,31 @@ def enqueue_tag_path(path: str, kind: str, session: Session | None = None):
         enqueue(tag.id, session=s)
 
 
-@rq.job(timeout=600)
-def runPreview(tagId: str, callback_url: str | None = None) -> str | None:
-    """
-    Run a PreviewSession on an existing tag.
+@job(timeout=600, queue=tag_queue, connection=redis_conn)
+def runPreview(
+    tagId: str,
+    callback_url: str | None = None,
+) -> str | None:
+    """Start a preview Session on an existing tag.
 
-    Args:
-        callback_url (str, optional): called on success/failure. Defaults to None.
+    Parameters
+    ----------
+    callback_url: str, optional
+        Called on success/failure of preview.
 
-    Returns:
+    Returns
+    -------
         str: the match url, if we found one, else None.
     """
     with db_session() as session:
         log.debug(f"Preview task on {tagId}")
         bt = Tag.get_by(Tag.id == tagId, session=session)
-
         if bt is None:
             raise InvalidUsage(f"Tag {tagId} not found in database")
 
-        session.merge(bt)
-        bt.kind = "preview"
         bt.status = "tagging"
         bt.updated_at = datetime.now()
+        session.merge(bt)
         session.commit()
         update_client_view(
             type="tag",
@@ -157,31 +164,34 @@ def runPreview(tagId: str, callback_url: str | None = None) -> str | None:
         return bt.match_url
 
 
-@rq.job(timeout=600)
+@job(timeout=600, queue=import_queue, connection=redis_conn)
 def runImport(
-    tagId: str, match_url: str | None = None, callback_url: str | None = None
+    tagId: str,
+    match_url: str | None = None,
+    callback_url: str | None = None,
 ) -> list[str]:
-    """
-    Run an ImportSession for our tag.
+    """Start Import session for a tag.
+
     Relies on a preview to have been generated before.
     If it was not, we do it here (blocking the import thread).
     We do not import if no match is found according to your beets config.
 
-    Args:
-        callback_url (str | None, optional): called on status change. Defaults to None.
+    Parameters
+    ----------
+    callback_url: str, optional
+        Called when the import status changes.
 
-    Returns:
-        The folder all imported files share in common. Empty list if nothing was imported.
+    Returns
+    -------
+        List of track paths after import, as strings. (empty if nothing imported)
+
     """
     with db_session() as session:
         log.debug(f"Import task on {tagId}")
-
         bt = Tag.get_by(Tag.id == tagId)
-
         if bt is None:
             raise InvalidUsage(f"Tag {tagId} not found in database")
 
-        bt.kind = "import"
         bt.status = "importing"
         bt.updated_at = datetime.now()
         session.merge(bt)
@@ -227,7 +237,7 @@ def runImport(
             log.debug(f"tried import {bt.status=}")
         except Exception as e:
             log.debug(e)
-            bt.distance = 1.0;
+            bt.distance = 1.0
             bt.preview = colorize("text_error", str(e))
             bt.track_paths_after = []
             bt.status = "failed"
@@ -260,12 +270,64 @@ def runImport(
         return bt.track_paths_after
 
 
+@job(timeout=600, queue=import_queue, connection=redis_conn)
+def AutoImport(tagId: str, callback_url: str | None = None) -> list[str] | None:
+    """Automatically run an import session.
+
+    Runs an import on a tag after a preview has been generated.
+    We check preview quality and user settings before running the import.
+
+    Parameters
+    ----------
+    tagId:str
+        The ID of the tag to be imported.
+    callback_url: str, optional
+        URL to call on status change
+
+    Returns
+    -------
+        List of track paths after import, as strings. (empty if nothing imported)
+    """
+    with db_session() as session:
+        log.debug(f"AutoImport task on {tagId}")
+        bt = Tag.get_by(Tag.id == tagId, session=session)
+        if bt is None:
+            raise InvalidUsage(f"Tag {tagId} not found in database")
+
+        if bt.status != "tagged":
+            log.info(
+                f"Skipping auto import, we only import after a successfull preview (status 'tagged' not '{bt.status}'). {bt.album_folder=}"
+            )
+            # we should consider to do an explicit duplicate check here
+            # because two previews yielding the same match might finish at the same time
+            return []
+
+        if bt.kind != "auto":
+            log.debug(
+                f"For auto importing, tag kind needs to be 'auto' not '{bt.kind}'. {bt.album_folder=}"
+            )
+            return []
+
+        if config["import"]["timid"].get(bool):
+            log.info(
+                "Auto importing is disabled if `import:timid=yes` is set in config"
+            )
+            return []
+
+        strong_rec_thresh = config["match"]["strong_rec_thresh"].get(float)
+        if bt.distance is None or bt.distance > strong_rec_thresh:  # type: ignore
+            log.info(
+                f"Skipping auto import of {bt.album_folder=} with {bt.distance=} > {strong_rec_thresh=}"
+            )
+            return []
+
+        return runImport(tagId, callback_url=callback_url)
+
+
 def _get_or_gen_match_url(tagId, session: Session) -> str | None:
     bt = Tag.get_by(Tag.id == tagId, session=session)
-
     if bt is None:
         raise InvalidUsage(f"Tag {tagId} not found in database")
-
     if bt.match_url is not None:
         log.debug(f"Match url already exists for {bt.album_folder}: {bt.match_url}")
         return bt.match_url
@@ -279,24 +341,24 @@ def _get_or_gen_match_url(tagId, session: Session) -> str | None:
     )
     bs = PreviewSession(path=bt.album_folder)
     bs.run_and_capture_output()
+
     return bs.match_url
 
 
 def tag_status(
     id: str | None = None, path: str | None = None, session: Session | None = None
 ):
-    """
+    """Get a tags status.
+
     Get the status of a tag by its id or path.
     Returns "untagged" if the tag does not exist or the path was not tagged yet.
     """
-
     with db_session(session) as s:
         bt = None
         if id is not None:
             bt = Tag.get_by(Tag.id == id, session=s)
         elif path is not None:
             bt = Tag.get_by(Tag.album_folder == path, session=s)
-
         if bt is None or bt.status is None:
             return "untagged"
 
@@ -304,13 +366,11 @@ def tag_status(
 
 
 def delete_tags(with_status: list[str]):
-    """
+    """Delete tags by status.
+
     Delete all tags that have a certain status from the database.
     We call this during container launch, to clear up things that
-    went were not finished.
-
-    # Args:
-    with_status : list
+    did not finish.
     """
     with db_session() as session:
         stmt = delete(Tag).where(Tag.status.in_(with_status))

@@ -288,18 +288,18 @@ export interface SearchResult<T extends MinimalItem | MinimalAlbum> {
 
 export const searchQueryOptions = <T extends MinimalItem | MinimalAlbum>({
     searchFor,
-    kind,
+    type,
 }: {
     searchFor: string;
-    kind: "item" | "album";
+    type: "item" | "album";
 }) =>
     queryOptions({
-        queryKey: ["search", kind, searchFor],
+        queryKey: ["search", type, searchFor],
         queryFn: async ({ signal }) => {
             const expand = false;
             const minimal = true;
             const url = _url_parse_minimal_expand(
-                `/library/${kind}/query/${encodeURIComponent(searchFor)}`,
+                `/library/${type}/query/${encodeURIComponent(searchFor)}`,
                 {
                     expand,
                     minimal,
@@ -324,6 +324,8 @@ export interface LibraryStats {
     size: number;
     lastItemAdded?: Date;
     lastItemModified?: Date;
+    runtime: number;
+    freeSpace: number;
 }
 
 export const libraryStatsQueryOptions = () => {

@@ -11,7 +11,12 @@ import TableRow from "@mui/material/TableRow";
 import Tooltip from "@mui/material/Tooltip";
 import { useQuery } from "@tanstack/react-query";
 
-import { Album, albumQueryOptions, Item, itemQueryOptions } from "@/components/common/_query";
+import {
+    Album,
+    albumQueryOptions,
+    Item,
+    itemQueryOptions,
+} from "@/components/common/_query";
 import { JSONPretty } from "@/components/common/json";
 
 export function ItemView({ itemId }: { itemId?: number }) {
@@ -69,13 +74,9 @@ export function ItemView({ itemId }: { itemId?: number }) {
 // for now this is the same as ItemView.
 export function AlbumView({ albumId }: { albumId?: number }) {
     const [detailed, setDetailed] = useState(false);
-    const {
-        data,
-        isFetching,
-        isError,
-        error,
-        isSuccess,
-    } = useQuery(albumQueryOptions({ id: albumId, minimal: false, expand: false }));
+    const { data, isFetching, isError, error, isSuccess } = useQuery(
+        albumQueryOptions({ id: albumId, minimal: false, expand: false })
+    );
     const album = data as Album;
 
     return (

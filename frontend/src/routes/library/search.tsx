@@ -9,12 +9,13 @@ import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { MinimalAlbum, MinimalItem } from "@/components/common/_query";
-import { JSONPretty } from "@/components/common/json";
 import {
     SearchContextProvider,
     SearchType,
     useSearchContext,
-} from "@/components/common/useSearch";
+} from "@/components/common/hooks/useSearch";
+import { JSONPretty } from "@/components/common/json";
+import { PageWrapper } from "@/components/common/page";
 import CoverArt from "@/components/library/coverArt";
 import { AlbumView, ItemView } from "@/components/library/itemAlbumDetails";
 import List from "@/components/library/list";
@@ -28,13 +29,13 @@ export const Route = createFileRoute("/library/search")({
 function SearchPage() {
     return (
         <SearchContextProvider>
-            <Box className={styles.SearchPageOuter}>
+            <PageWrapper className={styles.SearchPageOuter}>
                 <SearchBar />
                 <Box className={styles.SearchResultsWrapper}>
                     <SearchResults />
                     <SearchResultDetails />
                 </Box>
-            </Box>
+            </PageWrapper>
         </SearchContextProvider>
     );
 }
@@ -95,7 +96,7 @@ function SearchBar() {
                 value={type}
                 exclusive
                 onChange={handleTypeChange}
-                aria-label="Search Kind"
+                aria-label="Search Type"
             >
                 <ToggleButton value="item">Item</ToggleButton>
                 <ToggleButton value="album">Album</ToggleButton>

@@ -1,6 +1,6 @@
 import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Box, Card, Typography } from "@mui/material";
+import { Card, Typography } from "@mui/material";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -11,15 +11,19 @@ import {
     defaultActions,
     SelectionSummary,
 } from "@/components/common/contextMenu";
-import { MinimalConfig, useConfig } from "@/components/common/useConfig";
-import { SelectionProvider, useSelection } from "@/components/common/useSelection";
+import { MinimalConfig, useConfig } from "@/components/common/hooks/useConfig";
+import {
+    SelectionProvider,
+    useSelection,
+} from "@/components/common/hooks/useSelection";
+import { PageWrapper } from "@/components/common/page";
 import { TagSimilarityBadgeWithHover } from "@/components/tags/similarityBadge";
 import { TagStatusIcon } from "@/components/tags/statusIcon";
 
 import styles from "@/components/inbox/inbox.module.scss";
 
 export const Route = createFileRoute("/inbox/")({
-    component: () => <Inboxes />,
+    component: Inboxes,
 });
 
 function Inboxes() {
@@ -31,11 +35,11 @@ function Inboxes() {
     }
 
     return (
-        <Box>
+        <PageWrapper>
             {Object.values(inboxes).map((inbox, i) => {
                 return <Inbox key={i} name={inbox.name} path={inbox.path} />;
             })}
-        </Box>
+        </PageWrapper>
     );
 }
 
@@ -63,7 +67,7 @@ function Inbox({ name, path }: { name: string; path: string }) {
         return (
             <Card className={styles.inboxView}>
                 {heading}
-                <>Error: {error}</>
+                Error: {error.message}
             </Card>
         );
     }
@@ -110,19 +114,25 @@ function FolderTreeView({
         return <File fp={fp} />;
     }
 
+    let folder_element = (
+        <Folder fp={fp} label={label ?? fp.full_path.replaceAll("/", " / ")} />
+    );
+    if (!fp.is_inbox) {
+        folder_element = (
+            <ContextMenu
+                className={styles.contextMenuHeaderWrapper}
+                identifier={fp.full_path}
+                actions={[<SelectionSummary key={0} />, ...defaultActions]}
+            >
+                {folder_element}
+            </ContextMenu>
+        );
+    }
+
     return (
         <div className={styles.folder} data-empty={numChildren < 1}>
             <Collapsible.Root open={expanded} onOpenChange={handleExpandedChange}>
-                <ContextMenu
-                    className={styles.contextMenuHeaderWrapper}
-                    identifier={fp.full_path}
-                    actions={[<SelectionSummary key={0} />, ...defaultActions]}
-                >
-                    <Folder
-                        fp={fp}
-                        label={label ?? fp.full_path.replaceAll("/", " / ")}
-                    />
-                </ContextMenu>
+                {folder_element}
                 <Collapsible.Content className={styles.content}>
                     <SubFolders fp={fp} level={level} />
                 </Collapsible.Content>
@@ -168,6 +178,10 @@ function Folder({ fp, label }: { fp: FsPath; label: string }) {
 
     useEffect(() => {
         // Register as selectable
+        // this needs a lot more work:
+        // - selectable and right-clickable should not be the same.
+        // - inboxes should not be selected with "select all"
+        // - inboxes should show different context menu items (no tagging, but select items within, or tag all children...)
         if (fp.is_album && numChildren > 0) {
             markSelectable(fp.full_path);
         }

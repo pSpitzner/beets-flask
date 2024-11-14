@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="24"
+   height="24"
+   viewBox="0 0 24 24"
+   fill="none"
+   stroke="currentColor"
+   stroke-width="2"
+   stroke-linecap="round"
+   stroke-linejoin="round"
+   class="lucide lucide-hard-drive-download"
+   version="1.1"
+   id="svg12"
+   sodipodi:docname="importAuto.svg"
+   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs16" />
+  <sodipodi:namedview
+     id="namedview14"
+     pagecolor="#505050"
+     bordercolor="#ffffff"
+     borderopacity="1"
+     inkscape:pageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     showgrid="false"
+     inkscape:zoom="15.782552"
+     inkscape:cx="-5.0688887"
+     inkscape:cy="18.628166"
+     inkscape:window-width="2500"
+     inkscape:window-height="1385"
+     inkscape:window-x="60"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg12"
+     showguides="true"
+     inkscape:guide-bbox="true">
+    <sodipodi:guide
+       position="20.971597,6.7336986"
+       orientation="0,-1"
+       id="guide4442" />
+    <sodipodi:guide
+       position="22.997052,6.7336986"
+       orientation="1,0"
+       id="guide4444" />
+    <sodipodi:guide
+       position="2.8400997,6.7336986"
+       orientation="0,-1"
+       id="guide4446" />
+    <sodipodi:guide
+       position="3.0093772,11.793214"
+       orientation="1,0"
+       id="guide4448" />
+  </sodipodi:namedview>
+  <g
+     id="g4368"
+     transform="translate(-3.9767007)">
+    <path
+       d="m 12,2 v 8"
+       id="path2" />
+    <path
+       d="M 16,6 12,10 8,6"
+       id="path4" />
+  </g>
+  <rect
+     width="20"
+     height="8"
+     x="2"
+     y="14"
+     rx="2"
+     id="rect6" />
+  <path
+     d="M6 18h.01"
+     id="path8" />
+  <path
+     d="M10 18h.01"
+     id="path10" />
+  <g
+     id="g4364"
+     transform="translate(-9.6659915,-1.5096737)">
+    <path
+       d="m 31.66237,7.5096726 h -5"
+       id="path6" />
+    <path
+       d="m 26.66237,9.5096726 v -3.5 a 2.5,2.5 0 0 1 5,0 v 3.5"
+       id="path8-6" />
+  </g>
+</svg>

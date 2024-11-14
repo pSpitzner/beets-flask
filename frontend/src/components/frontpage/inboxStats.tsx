@@ -1,8 +1,8 @@
 import { FolderSearch, FolderSync, Inbox, Recycle, Trash2 } from "lucide-react";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
+import Grid from "@mui/material/Grid2";
 import Tooltip from "@mui/material/Tooltip";
-import Grid from "@mui/material/Unstable_Grid2";
 import { useQuery } from "@tanstack/react-query";
 
 import {
@@ -50,7 +50,15 @@ export function InboxStatsGridItems() {
     return (
         <>
             {data.map((stats, i) => (
-                <Grid xs={12} sm={8} md={8} lg={6} key={i}>
+                <Grid
+                    size={{
+                        xs: 12,
+                        sm: 8,
+                        md: 8,
+                        lg: 6,
+                    }}
+                    key={i}
+                >
                     <InboxCardView stats={stats} />
                 </Grid>
             ))}
@@ -135,15 +143,11 @@ function InboxCardView({ stats }: { stats: InboxStats }) {
 }
 
 function InboxTable({ stats }: { stats: InboxStats }) {
-
-
     const size = stats?.size ?? 0;
     const sizeTagged = stats?.sizeTagged ?? 0;
 
     const files = stats?.nFiles ?? 0;
     const filesTagged = stats?.nTagged ?? 0;
-
-
 
     return (
         <table className="table-info text-gray-100 text-sm">
@@ -167,15 +171,8 @@ function InboxTable({ stats }: { stats: InboxStats }) {
                     <td>files</td>
                 </tr>
                 <tr>
-                    <td>
-                        {
-                            _to_mb(size - sizeTagged)
-                        }
-                    </td>
-                    <td>{
-                        _to_mb(sizeTagged)
-                    }
-                    </td>
+                    <td>{_to_mb(size - sizeTagged)}</td>
+                    <td>{_to_mb(sizeTagged)}</td>
                     <td>{_to_mb(size)} </td>
                     <td>mb</td>
                 </tr>
@@ -184,8 +181,6 @@ function InboxTable({ stats }: { stats: InboxStats }) {
     );
 }
 
-
 function _to_mb(bytes: number) {
-    return Math.round(bytes / 1024 / 1024)
+    return Math.round(bytes / 1024 / 1024);
 }
-

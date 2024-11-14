@@ -6,25 +6,23 @@ services:
             context: .
             dockerfile: Dockerfile
             target: prod
-            args:
-                # 502 is default on macos, 1000 on linux
-                USER_ID: 1000
-                GROUP_ID: 1000
         image: beets-flask
         restart: unless-stopped
         ports:
             - "5001:5001" # production and backend
         environment:
+            # 502 is default on macos, 1000 on linux
+            USER_ID: 1000
+            GROUP_ID: 1000
             LOG_LEVEL_BEETSFLASK: INFO # this is used for our own logs. (set beets level via the config)
             LOG_LEVEL_OTHERS: WARNING # this is passed python logging basic config (all other modules)
-        # volumes:
-        #     # if you want to use the same beets-library inside and out:
-        #     # YOU NEED TO MAP YOUR MUSIC FOLDER IN THE CONTAINER TO THE SAME PATH AS OUTSIDE
-        #     # and make sure the config used in the container has the right path!
-        #     - /music/:/music/
+        volumes:
+            #     # if you want to use the same beets-library inside and out:
+            #     # YOU NEED TO MAP YOUR MUSIC FOLDER IN THE CONTAINER TO THE SAME PATH AS OUTSIDE
+            #     # and make sure the config used in the container has the right path!
+            #     - /music/:/music/
 
-        #     # beets puts its config files into the home directory
-        #     # We dont use the home directory for anything else, so its easy to
-        #     # make the configs persistent that way.
-        #     # create these folders before starting the container! otherwise you get permission issues.
-        #     - /outise/path/to/desired/folder/user/:/home/beetle/
+            # we put the beets and our beets-flask config into the /config directory
+            # create these folders before starting the container! otherwise you might
+            # get permission issues.
+            - ./config/:/config

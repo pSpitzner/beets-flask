@@ -6,10 +6,10 @@ import {
     tagGroupAllQueryOptions,
     tagGroupIdQueryOptions,
 } from "@/components/common/_query";
-import { SiblingRefsProvider } from "@/components/common/useSiblings";
+import { SiblingRefsProvider } from "@/components/common/hooks/useSiblings";
+import { PageWrapper } from "@/components/common/page";
 import TagGroupView from "@/components/tags/tagGroupView";
 import { TagView } from "@/components/tags/tagView";
-
 
 export const Route = createFileRoute("/tags/")({
     loader: (opts) =>
@@ -32,7 +32,7 @@ export function TagGroupOverview() {
     }
 
     return (
-        <>
+        <PageWrapper>
             <PredefinedTagGroup id="inbox" defaultExpanded />
             <PredefinedTagGroup id="recent" />
             <PredefinedTagGroup id="archive" />
@@ -40,8 +40,7 @@ export function TagGroupOverview() {
             {manualTagGroups.map((group, i) => {
                 return <ManualTagGroup key={i} id={group.id} tag_ids={group.tag_ids} />;
             })}
-
-        </>
+        </PageWrapper>
     );
 }
 
@@ -78,7 +77,10 @@ function TagGroup({
     );
 }
 
-function PredefinedTagGroup({ id, ...props }: { id: string; } & Partial<ComponentProps<typeof TagGroup>>) {
+function PredefinedTagGroup({
+    id,
+    ...props
+}: { id: string } & Partial<ComponentProps<typeof TagGroup>>) {
     const query = useSuspenseQuery(tagGroupIdQueryOptions(id));
     const group = query.data;
     const tag_ids = group.tag_ids;

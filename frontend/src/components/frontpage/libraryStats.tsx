@@ -14,6 +14,8 @@ import {
     CardTopInfo,
 } from "@/components/frontpage/card";
 
+import { humanizeBytes } from "../common/bytes";
+
 export function LibraryStats() {
     const { data } = useQuery(libraryStatsQueryOptions());
 
@@ -98,7 +100,7 @@ function LibraryTable() {
                     </tr>
                     <tr>
                         <th>Size</th>
-                        <td>{_humanize(data.size)}</td>
+                        <td>{humanizeBytes(data.size)}</td>
                     </tr>
                 </tbody>
             </table>
@@ -123,14 +125,4 @@ function LastAddedInfo() {
             Last added: <RelativeTime date={data.lastItemAdded} />
         </CardTopInfo>
     );
-}
-
-function _humanize(bytes: number): string {
-    const units = ["bytes", "kb", "mb", "gb", "tb"];
-    if (bytes === 0) return "0 bytes";
-
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    const value = bytes / Math.pow(1024, i);
-
-    return `${parseFloat(value.toFixed(1))} ${units[i]}`;
 }

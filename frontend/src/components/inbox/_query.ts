@@ -1,4 +1,4 @@
-import { queryOptions,UseMutationOptions } from "@tanstack/react-query";
+import { queryOptions, UseMutationOptions } from "@tanstack/react-query";
 
 import { queryClient } from "@/components/common/_query";
 
@@ -6,6 +6,7 @@ import { queryClient } from "@/components/common/_query";
 export interface FsPath {
     full_path: string;
     is_album: boolean;
+    is_inbox?: boolean;
     type: "directory" | "file";
     children: Record<string, FsPath>;
 }
@@ -52,6 +53,22 @@ export const inboxStatsQueryOptions = () => {
             }
 
             return res;
+        },
+    });
+};
+
+// A flat array of paths in the inbox
+export const inboxPathsQueryOptions = (show_files = false) => {
+    return queryOptions({
+        queryKey: ["inbox", "paths", show_files],
+        queryFn: async () => {
+            const response = await fetch(`/inbox/flatPaths`, {
+                method: "POST",
+                body: JSON.stringify({
+                    show_files,
+                }),
+            });
+            return (await response.json()) as string[];
         },
     });
 };

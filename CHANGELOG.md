@@ -5,11 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.0.4] - in prep
+## [0.1.0] - 24-11-13
+
+### Fixed
+
+-  Renamed `kind` to `type` in search frontend code to be consistent with backend.
+   Using kind for tags (preview, import, auto), and types for search (album, track).
+
+### Changed
+
+
+-  Improved readme and onboarding experience
+-  Mountpoint to persist config files and databases changed to `/config` (was `/home/beetle/.config/beets/`)
+   We create the `/config/beets` and `/config/beets-flask` folders on startup if they do not exist.
+   Library files are placed there, and you can drop a `config.yaml` either or both of these folders. Settings in `/config/beets-flask/config.yaml` take precedence over `/config/beets/config.yaml`.
+   **You will need to update your docker-compose!**
+
+### Added
+
+-  Logo and favicon
+-  Image now on docker hub: `pspitzner/beets-flask:stable`
+-  Auto-import: automatically import folders that are added to the inbox if the match is good enough.
+   After a preview, import will start if the match quality is above the configured.
+   Enable via the config.yaml, set the `autotag` field of a configred inbox folders to `"auto"`.
+
+## [0.0.4] - 24-10-04
+
+### Fixed
+
+-   Config parsing should now work [@16af9d02](16af9d02bb59555177790bbccde93af26f15e8c7)
 
 ### Added
 
 -   multi-disc albums are now supported
+-   Interactive import using a custom beets pipeline
+
+### Changed
+
+-   Moved terminal to its own page, had to temporarily remove keyboard trigger
+-   Reworked the album folder detection algorithm, now uses more native beets code and is a bit faster
+-   Navbar styling and items overhaul
 
 ## [0.0.3] - 24-08-01
 
@@ -43,5 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   initial commit
 
+[0.1.0]: https://github.com/pSpitzner/beets-flask/compare/v0.0.4...v0.1.0
+[0.0.4]: https://github.com/pSpitzner/beets-flask/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/pSpitzner/beets-flask/compare/v0.0.2...v0.0.3
 [0.0.2]: https://github.com/pSpitzner/beets-flask/compare/v0.0.1...v0.0.2
