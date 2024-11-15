@@ -44,8 +44,8 @@ def create_app(config: str | ServerConfig | None = None) -> Flask:
     register_socketio(app)
 
     from .websocket.importer import register_importer
-    from .websocket.terminal import register_tmux
     from .websocket.status import register_status
+    from .websocket.terminal import register_tmux
 
     register_tmux()
     register_importer()

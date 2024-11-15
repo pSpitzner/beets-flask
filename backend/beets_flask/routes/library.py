@@ -19,9 +19,9 @@
 import base64
 import json
 import os
+import shutil
 from io import BytesIO
 from pathlib import Path
-import shutil
 from typing import Optional, TypedDict, cast
 
 import beets.library
