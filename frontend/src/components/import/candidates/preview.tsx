@@ -34,14 +34,17 @@ export function CandidatePreview({
     sx?: SxProps<Theme>;
 }) {
     return (
-        <Box
-            sx={{ display: "flex", flexDirection: "column", ...sx }}
-            className={className}
-        >
+        <Box sx={{ display: "flex", flexDirection: "column", ...sx }} className={className}>
             <Disambiguation candidate={candidate} />
             <DataUrl candidate={candidate} />
-            <ArtistChange prev={candidate.cur_artist} next={candidate.info.artist!} />
-            <AlbumChange prev={candidate.cur_album} next={candidate.info.album!} />
+            <ArtistChange
+                prev={candidate.cur_artist}
+                next={candidate.info.artist || "Unknown artist"}
+            />
+            <AlbumChange
+                prev={candidate.cur_album}
+                next={candidate.info.album || "Unknown album"}
+            />
             {/* Allow track changes to wrap */}
             <Box
                 sx={{

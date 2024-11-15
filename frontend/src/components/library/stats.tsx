@@ -51,20 +51,20 @@ export function LibraryStatsComponent() {
                     >
                         <div>
                             Total Runtime:{" "}
-                            {humanizeDuration(librariesQuery.data?.runtime)}
+                            {humanizeDuration(librariesQuery.data.runtime)}
                         </div>
                         <div>
-                            Disk Usage: {humanizeBytes(librariesQuery.data?.size)} /{" "}
+                            Disk Usage: {humanizeBytes(librariesQuery.data.size)} /{" "}
                             {humanizeBytes(
-                                librariesQuery.data?.size +
-                                    librariesQuery.data?.freeSpace
+                                librariesQuery.data.size +
+                                    librariesQuery.data.freeSpace
                             )}
                         </div>
-                        <div>Number of tracks: {librariesQuery.data?.items}</div>
-                        <div>Number of albums: {librariesQuery.data?.albums}</div>
-                        <div>Number of artists: {librariesQuery.data?.artists}</div>
-                        <div>Number of genres: {librariesQuery.data?.genres}</div>
-                        <div>Number of labels: {librariesQuery.data?.labels}</div>
+                        <div>Number of tracks: {librariesQuery.data.items}</div>
+                        <div>Number of albums: {librariesQuery.data.albums}</div>
+                        <div>Number of artists: {librariesQuery.data.artists}</div>
+                        <div>Number of genres: {librariesQuery.data.genres}</div>
+                        <div>Number of labels: {librariesQuery.data.labels}</div>
                     </Box>
                 </Box>
                 <Divider variant="inset" component="div" sx={{ marginBlock: 0.5 }} />

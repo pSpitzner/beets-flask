@@ -32,7 +32,7 @@ export function InboxStatsComponent() {
 
     return (
         <Box>
-            {inboxQuery.data?.map((stats, i) => (
+            {inboxQuery.data.map((stats, i) => (
                 <InboxStatsItem key={i} data={stats} />
             ))}
         </Box>

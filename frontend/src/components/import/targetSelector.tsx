@@ -61,7 +61,7 @@ export function ImportTargetSelector() {
                         style={{
                             marginInline: "1rem",
                         }}
-                        error={error?.length > 0}
+                        error={error.length > 0}
                     >
                         {error}
                     </FormHelperText>

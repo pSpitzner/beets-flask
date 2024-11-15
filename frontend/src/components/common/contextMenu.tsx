@@ -27,10 +27,7 @@ import { useMutation, UseMutationOptions } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
 import { queryClient, TagI } from "@/components/common/_query";
-import {
-    useSelection,
-    useSelectionLookupQueries,
-} from "@/components/common/hooks/useSelection";
+import { useSelection, useSelectionLookupQueries } from "@/components/common/hooks/useSelection";
 import { useSiblings } from "@/components/common/hooks/useSiblings";
 import { useTerminalContext } from "@/components/frontpage/terminal";
 import { ExpandableSib } from "@/components/tags/tagView";
@@ -74,8 +71,7 @@ const ContextMenuContext = createContext<ContextMenuContextI>({
  * </SelectionProvider>
  */
 
-interface ContextMenuProps
-    extends Omit<React.HTMLAttributes<HTMLDivElement>, "onContextMenu"> {
+interface ContextMenuProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "onContextMenu"> {
     children: React.ReactNode;
     actions?: React.ReactNode[];
     identifier?: string;
@@ -101,9 +97,7 @@ export function ContextMenu({
 }: ContextMenuProps) {
     const { addToSelection, removeFromSelection, selection } = useSelection();
 
-    const [position, setPosition] = useState<{ left: number; top: number } | undefined>(
-        undefined
-    );
+    const [position, setPosition] = useState<{ left: number; top: number } | undefined>(undefined);
 
     const prevState = useRef<undefined | boolean>();
     const openMenuMouse = (event: React.MouseEvent) => {
@@ -137,10 +131,7 @@ export function ContextMenu({
             x: event.touches[0].clientX,
             y: event.touches[0].clientY,
         };
-        touchTimeoutRef.current = setTimeout(
-            () => openMenuTouch(event),
-            LONG_PRESS_DURATION
-        );
+        touchTimeoutRef.current = setTimeout(() => openMenuTouch(event), LONG_PRESS_DURATION);
     };
 
     const openMenuTouch = (event: TouchEvent) => {
@@ -172,10 +163,7 @@ export function ContextMenu({
         const currentX = event.touches[0].clientX;
         const currentY = event.touches[0].clientY;
 
-        if (
-            Math.abs(currentX - x) > moveThreshold ||
-            Math.abs(currentY - y) > moveThreshold
-        ) {
+        if (Math.abs(currentX - x) > moveThreshold || Math.abs(currentY - y) > moveThreshold) {
             cancelLongPressTimer();
         }
     };
@@ -229,12 +217,8 @@ function useContextMenu() {
 }
 
 function Trigger({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-    const {
-        openMenuMouse,
-        startLongPressTimer,
-        handleTouchMove,
-        cancelLongPressTimer,
-    } = useContextMenu();
+    const { openMenuMouse, startLongPressTimer, handleTouchMove, cancelLongPressTimer } =
+        useContextMenu();
 
     return (
         <div
@@ -265,7 +249,7 @@ export function SelectionSummary({ ...props }: Partial<ActionProps>) {
 
     return (
         // make this a non-clickable heading
-        <Heading {...props} text={N.current + " selected"} />
+        <Heading {...props} text={`${N.current} selected`} />
     );
 }
 
@@ -452,14 +436,11 @@ export function UndoImportAction(props: Partial<ActionProps>) {
         .map((sel) => sel?.tag?.id);
 
     useEffect(() => {
-        setCmd(
-            "beet remove -d gui_import_id:" + undoableTags.join(" , gui_import_id:")
-        );
+        setCmd("beet remove -d gui_import_id:" + undoableTags.join(" , gui_import_id:"));
     }, [undoableTags]);
 
     useEffect(() => {
-        const tagDesc =
-            undoableTags.length === 1 ? "1 tag" : `${undoableTags.length} tags`;
+        const tagDesc = undoableTags.length === 1 ? "1 tag" : `${undoableTags.length} tags`;
         setLabel(`Undo Import (${tagDesc})`);
     }, [undoableTags]);
 
@@ -591,9 +572,7 @@ export function DeleteAction(props: Partial<ActionProps>) {
         onSuccess: () => {
             closeMenu();
             queryClient.invalidateQueries({ queryKey: ["inbox"] }).catch(console.error);
-            queryClient
-                .invalidateQueries({ queryKey: ["tagGroup"] })
-                .catch(console.error);
+            queryClient.invalidateQueries({ queryKey: ["tagGroup"] }).catch(console.error);
         },
         onError: (error: Error) => {
             console.error(error);
@@ -650,12 +629,10 @@ const ActionWithMutation = forwardRef(function ActionWithMutation(
     { mutationOption, icon, text, className, ...props }: ActionWithMutationProps,
     ref?: React.Ref<HTMLDivElement>
 ) {
-    const { isSuccess, isPending, mutate, isError, error, reset } =
-        useMutation(mutationOption);
+    const { isSuccess, isPending, mutate, isError, error, reset } = useMutation(mutationOption);
     const { closeMenu } = useContextMenu();
     const [open, setOpen] = useState(false);
     const [hasMutated, setHasMutated] = useState(false);
-
 
     useEffect(() => {
         if (isError) {

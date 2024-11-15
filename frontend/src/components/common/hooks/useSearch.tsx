@@ -1,11 +1,4 @@
-import {
-    createContext,
-    Dispatch,
-    SetStateAction,
-    useCallback,
-    useContext,
-    useState,
-} from "react";
+import { createContext, Dispatch, SetStateAction, useCallback, useContext, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import {
@@ -34,20 +27,7 @@ interface SearchContextType {
     resetSearch: () => void;
 }
 
-const SearchContext = createContext<SearchContextType>({
-    query: "",
-    setQuery: () => {},
-    type: "item",
-    setType: () => {},
-    setSelectedResult: () => {},
-    results: [],
-    sentQuery: "",
-    isFetching: true,
-    isError: true,
-    error: null,
-    cancelSearch: () => {},
-    resetSearch: () => {},
-});
+const SearchContext = createContext<SearchContextType | null>(null);
 
 export function SearchContextProvider({ children }: { children: React.ReactNode }) {
     const [query, setQuery] = useState<string>("");
@@ -81,9 +61,7 @@ export function SearchContextProvider({ children }: { children: React.ReactNode 
     // Cancel a currently running query
     // reactquery also does this on demount if abort signals are set
     const cancelSearch = useCallback(() => {
-        queryClient
-            .cancelQueries({ queryKey: ["search", type, query] })
-            .catch(console.error);
+        queryClient.cancelQueries({ queryKey: ["search", type, query] }).catch(console.error);
         setSelectedResult(undefined);
     }, [type, query, setSelectedResult]);
 

@@ -34,10 +34,7 @@ export function ArtistChange({ prev, next }: { prev: string; next: string }) {
     return (
         <DetailBox>
             <Col>
-                <PenaltyIcon
-                    kind={"artist"}
-                    className={didChange ? styles.changed : ""}
-                />
+                <PenaltyIcon kind={"artist"} className={didChange ? styles.changed : ""} />
                 {inner}
             </Col>
         </DetailBox>
@@ -64,10 +61,7 @@ export function AlbumChange({ prev, next }: { prev: string; next: string }) {
     return (
         <DetailBox>
             <Col>
-                <PenaltyIcon
-                    kind={"album"}
-                    className={didChange ? styles.changed : ""}
-                />
+                <PenaltyIcon kind={"album"} className={didChange ? styles.changed : ""} />
                 {inner}
             </Col>
         </DetailBox>
@@ -87,8 +81,8 @@ export function Disambiguation({
     if (!fields) {
         fields =
             candidate.type === "album"
-                ? config?.match.album_disambig_fields || []
-                : config?.match.singleton_disambig_fields || [];
+                ? config.match.album_disambig_fields || []
+                : config.match.singleton_disambig_fields || [];
     }
 
     const info = candidate.info;
@@ -146,7 +140,7 @@ export function TrackChanges({ candidate }: { candidate: CandidateState }) {
     // curious: when only capitalization changes in tracks, we do not get the
     // track change penalty. this leads to a bit of communication issue:
     // reading 'no changes' in the heading but having a bunch of them marked is confusing.
-    const tracksChanged = candidate.penalties?.includes("tracks");
+    const tracksChanged = candidate.penalties.includes("tracks");
 
     return (
         <DetailBox>
@@ -165,7 +159,7 @@ export function TrackChanges({ candidate }: { candidate: CandidateState }) {
             </Col>
             <Box
                 className={styles.trackChanges}
-                data-show-unchanged-tracks={config?.gui.tags.show_unchanged_tracks}
+                data-show-unchanged-tracks={config.gui.tags.show_unchanged_tracks}
             >
                 {Object.entries(mapping).map(([idx, tdx]) => (
                     // each row has 5 columns: index-old title-old arrow index-new title-new
@@ -219,9 +213,7 @@ function TrackDiffRow({
         time: Math.abs(to.time - from.time) > 1,
         index: fromIdx !== toIdx,
     };
-    const numChanges = [changed.title, changed.time, changed.index].filter(
-        (x) => x
-    ).length;
+    const numChanges = [changed.title, changed.time, changed.index].filter((x) => x).length;
 
     function _change_side_helper({
         data,
@@ -311,7 +303,7 @@ function TrackLength({
 
 function TrackIndex({ idx, ...props }: { idx?: number } & BoxProps) {
     return (
-        <Box {...props} className={styles.trackIndex + " " + props.className}>
+        <Box {...props} className={`$${styles.trackIndex} ${props.className}`}>
             {_leftPad(idx, 2, "")}
         </Box>
     );
@@ -388,11 +380,7 @@ export function MissingTracks({ candidate }: { candidate: CandidateState }) {
     return (
         <DetailBox>
             <Col>
-                <PenaltyIcon
-                    kind={"missing_tracks"}
-                    size={14}
-                    className={styles.changed}
-                />
+                <PenaltyIcon kind={"missing_tracks"} size={14} className={styles.changed} />
                 <span className={""}>Missing tracks: {missingTracks.length}</span>
             </Col>
             <Box className={styles.trackChanges}>
@@ -431,11 +419,7 @@ export function UnmatchedTracks({ candidate }: { candidate: CandidateState }) {
     return (
         <DetailBox>
             <Col>
-                <PenaltyIcon
-                    kind={"unmatched_tracks"}
-                    size={14}
-                    className={styles.changed}
-                />
+                <PenaltyIcon kind={"unmatched_tracks"} size={14} className={styles.changed} />
                 <span className={""}>Unmatched tracks: {unmatchedTracks.length}</span>
             </Col>
             <Box className={styles.trackChanges}>

@@ -21,20 +21,7 @@ interface SelectionContextType {
     deselectAll: () => void;
 }
 
-const SelectionContext = createContext<SelectionContextType>({
-    selection: new Map(),
-    setSelection: () => {},
-    addToSelection: () => {},
-    removeFromSelection: () => {},
-    toggleSelection: () => false,
-    clearSelection: () => {},
-    isSelected: () => false,
-    numSelected: () => 0,
-    getSelected: () => [],
-    markSelectable: () => {},
-    selectAll: () => {},
-    deselectAll: () => {},
-});
+const SelectionContext = createContext<SelectionContextType | null>(null);
 
 export const SelectionProvider = ({ children }: { children: React.ReactNode }) => {
     // item to selected
@@ -88,10 +75,7 @@ export const SelectionProvider = ({ children }: { children: React.ReactNode }) =
         setSelection(new Map());
     }, []);
 
-    const isSelected = useCallback(
-        (item: string) => selection.get(item) ?? false,
-        [selection]
-    );
+    const isSelected = useCallback((item: string) => selection.get(item) ?? false, [selection]);
 
     const numSelected = () => {
         let count = 0;

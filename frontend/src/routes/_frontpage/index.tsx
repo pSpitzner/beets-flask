@@ -1,9 +1,7 @@
-import Grid from "@mui/material/Grid2";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { libraryStatsQueryOptions } from "@/components/common/_query";
 import { PageWrapper } from "@/components/common/page";
-import { InboxStatsGridItems } from "@/components/frontpage/inboxStats";
 import { InboxStatsComponent } from "@/components/inbox/stats";
 import { LibraryStatsComponent } from "@/components/library/stats";
 

@@ -35,6 +35,7 @@ export function customizeFetch() {
             try {
                 await response.clone().json();
             } catch (e) {
+                console.error("Failed to parse response as JSON in fetch()", e);
                 throw new Error("Failed to parse response as JSON in fetch()");
             }
         }

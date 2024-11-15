@@ -163,7 +163,7 @@ export function CandidateSearch({ selection }: { selection: SelectionState }) {
                             </FormHelperText>
                         </div>
                         {error && (
-                            <FormHelperText error={error?.length > 0}>
+                            <FormHelperText error={error.length > 0}>
                                 {error}
                             </FormHelperText>
                         )}

@@ -27,7 +27,7 @@ export const IconButtonWithMutation = forwardRef(function IconButtonWithMutation
         ...props
     }: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        mutationOption?: UseMutationOptions<unknown, Error, any, unknown>;
+        mutationOption?: UseMutationOptions<unknown, Error, any>;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mutateArgs?: any;
     } & ButtonProps,
@@ -38,9 +38,11 @@ export const IconButtonWithMutation = forwardRef(function IconButtonWithMutation
             mutationFn: async () => {
                 return new Promise((resolve, reject) => {
                     setTimeout(() => {
-                        Math.random() > 0.5
-                            ? reject(new Error("Random error occurred."))
-                            : resolve("success");
+                        if (Math.random() > 0.5) {
+                            reject(new Error("Random error occurred."));
+                        } else {
+                            resolve("success");
+                        }
                     }, 1000);
                 });
             },
@@ -90,15 +92,14 @@ export const IconButtonWithMutationAndFeedback = forwardRef(
             ...props
         }: {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            mutationOption: UseMutationOptions<unknown, Error, any, unknown>;
+            mutationOption: UseMutationOptions<unknown, Error, any>;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             mutateArgs: any;
             confirmTitle: string;
         } & ButtonProps,
         ref?: React.Ref<HTMLDivElement>
     ) {
-        const { isSuccess, isPending, mutate, isError, error, reset } =
-            useMutation(mutationOption);
+        const { isSuccess, isPending, mutate, isError, error, reset } = useMutation(mutationOption);
         const [show, setShow] = useState(false); // show confirm state
 
         return (
@@ -137,71 +138,69 @@ export const IconButtonWithMutationAndFeedback = forwardRef(
     }
 );
 
-export const IconTextButtonWithMutation = forwardRef(
-    function IconTextButtonWithMutation(
-        {
-            mutationOption,
-            icon,
-            text,
-            ...props
-        }: {
-            mutationOption?: UseMutationOptions;
-            icon: React.ReactNode;
-            text: React.ReactNode;
-        } & ButtonProps,
-        ref: React.Ref<HTMLDivElement>
-    ) {
-        const { isSuccess, isPending, mutate, isError, error, reset } = useMutation(
-            mutationOption ?? {
-                mutationFn: async () => {
-                    return new Promise((resolve, reject) => {
-                        setTimeout(() => {
-                            Math.random() > 0.5
-                                ? reject(new Error("Random error occurred."))
-                                : resolve("success");
-                        }, 1000);
-                    });
-                },
-            }
-        );
-
-        return (
-            // PS 24-06-06 tailwind css did not seem to work, w-full had no effect for me.
-            <div style={{ width: "100%" }} ref={ref}>
-                <Button
-                    {...props}
-                    onClick={(event: React.MouseEvent) => {
-                        event.stopPropagation();
-                        if (isSuccess) {
-                            reset();
+export const IconTextButtonWithMutation = forwardRef(function IconTextButtonWithMutation(
+    {
+        mutationOption,
+        icon,
+        text,
+        ...props
+    }: {
+        mutationOption?: UseMutationOptions;
+        icon: React.ReactNode;
+        text: React.ReactNode;
+    } & ButtonProps,
+    ref: React.Ref<HTMLDivElement>
+) {
+    const { isSuccess, isPending, mutate, isError, error, reset } = useMutation(
+        mutationOption ?? {
+            mutationFn: async () => {
+                return new Promise((resolve, reject) => {
+                    setTimeout(() => {
+                        if (Math.random() > 0.5) {
+                            reject(new Error("Random error occurred."));
                         } else {
-                            mutate();
+                            resolve("success");
                         }
-                    }}
-                    variant="text"
+                    }, 1000);
+                });
+            },
+        }
+    );
+
+    return (
+        // PS 24-06-06 tailwind css did not seem to work, w-full had no effect for me.
+        <div style={{ width: "100%" }} ref={ref}>
+            <Button
+                {...props}
+                onClick={(event: React.MouseEvent) => {
+                    event.stopPropagation();
+                    if (isSuccess) {
+                        reset();
+                    } else {
+                        mutate();
+                    }
+                }}
+                variant="text"
+                sx={{
+                    width: "100%",
+                }}
+            >
+                {isSuccess ? <CheckIcon /> : icon}
+                <span style={{ marginLeft: "0.5rem" }}>{text}</span>
+            </Button>
+            {isPending ? (
+                <CircularProgress
+                    color={props.color}
                     sx={{
-                        width: "100%",
+                        position: "absolute",
+                        top: "0",
+                        left: "0",
+                        padding: "2px",
+                        zIndex: 1,
                     }}
-                >
-                    {isSuccess ? <CheckIcon /> : icon}
-                    <span style={{ marginLeft: "0.5rem" }}>{text}</span>
-                </Button>
-                {isPending ? (
-                    <CircularProgress
-                        color={props.color}
-                        sx={{
-                            position: "absolute",
-                            top: "0",
-                            left: "0",
-                            padding: "2px",
-                            zIndex: 1,
-                        }}
-                    />
-                ) : null}
-                {isError && (
-                    <ErrorDialog open={isError} error={error} onClose={reset} />
-                )}
-            </div>
-        );
-    }
-);
+                />
+            ) : null}
+            {isError && <ErrorDialog open={isError} error={error} onClose={reset} />}
+        </div>
+    );
+});

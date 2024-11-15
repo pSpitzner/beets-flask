@@ -143,11 +143,11 @@ function InboxCardView({ stats }: { stats: InboxStats }) {
 }
 
 function InboxTable({ stats }: { stats: InboxStats }) {
-    const size = stats?.size ?? 0;
-    const sizeTagged = stats?.sizeTagged ?? 0;
+    const size = stats.size ?? 0;
+    const sizeTagged = stats.sizeTagged ?? 0;
 
-    const files = stats?.nFiles ?? 0;
-    const filesTagged = stats?.nTagged ?? 0;
+    const files = stats.nFiles ?? 0;
+    const filesTagged = stats.nTagged ?? 0;
 
     return (
         <table className="table-info text-gray-100 text-sm">

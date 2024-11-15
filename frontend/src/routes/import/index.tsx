@@ -45,10 +45,10 @@ function SessionsView({ handleNewSession }: { handleNewSession: () => void }) {
             timeoutId === undefined &&
             (status?.message === "completed" || status?.message === "aborted")
         ) {
-            if (status?.message === "aborted") {
+            if (status.message === "aborted") {
                 statusText.current = "Import aborted!";
             }
-            if (status?.message === "completed") {
+            if (status.message === "completed") {
                 statusText.current = "Import completed!";
             }
 

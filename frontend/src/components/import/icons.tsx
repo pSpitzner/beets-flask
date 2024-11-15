@@ -52,7 +52,7 @@ export function PenaltyIconRow({
 }: {
     candidate: CandidateState;
     showSource?: boolean;
-}): JSX.Element {
+}): React.JSX.Element {
     const penalties = useMemo(() => {
         return (candidate.penalties ?? [])
             .map((penalty) => {
@@ -94,9 +94,7 @@ export function PenaltyIconRow({
                 <PenaltyIcon
                     key={p}
                     kind={p}
-                    className={
-                        penalties.indexOf(p) === -1 ? styles.inactive : styles.penalty
-                    }
+                    className={penalties.indexOf(p) === -1 ? styles.inactive : styles.penalty}
                 />
             ))}
             <PenaltyIcon
@@ -124,7 +122,7 @@ export function PenaltyIcon({
     kind,
     className,
     ...props
-}: { kind: string; className?: string } & Omit<LucideProps, "ref">): JSX.Element {
+}: { kind: string; className?: string } & Omit<LucideProps, "ref">): JReact.JSX.Element {
     /** Determine the icon to use for a penalty kind */
     let Icon: IconType | null = null;
     switch (kind) {
@@ -195,7 +193,7 @@ export function SourceIcon({
 }: {
     source?: string;
     color?: boolean;
-}): JSX.Element {
+}): React.JSX.Element {
     let Icon: React.ReactNode | null = null;
 
     switch (source?.toLowerCase()) {

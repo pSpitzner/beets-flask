@@ -34,7 +34,7 @@ export const tagQueryOptions = (tagId?: string, tagPath?: string) => {
             if (tagId) {
                 return fetchTagById(tagId);
             } else {
-                return fetchTagByPath(tagPath!);
+                return fetchTagByPath(tagPath as string);
             }
         },
     });

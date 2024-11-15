@@ -71,8 +71,8 @@ function CoverArtPlaceholder({
                 variant="rectangular"
                 animation={animation}
                 // @sm: any way to get dimensions from sx without type-errors?
-                width={(props.sx as { width: number | undefined })?.width ?? 100}
-                height={(props.sx as { height: number | undefined })?.height ?? 100}
+                width={(props.sx as { width: number | undefined }).width ?? 100}
+                height={(props.sx as { height: number | undefined }).height ?? 100}
             />
         </Box>
     );

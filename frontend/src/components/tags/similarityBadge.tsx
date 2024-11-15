@@ -36,11 +36,11 @@ export function TagSimilarityBadgeWithHover({
         );
     }
 
-    if (!data?.preview) {
+    if (!data.preview) {
         // without preview, hover makes no sense
         return (
             <SimilarityBadge
-                dist={data?.distance}
+                dist={data.distance}
                 className={className}
                 charWidth={charWidth}
             />
@@ -101,8 +101,8 @@ export function SimilarityBadge({
     charWidth?: number;
 }) {
     const config = useConfig();
-    const strong_rec_thresh = config?.match.strong_rec_thresh || 0.04;
-    const medium_rec_thresh = config?.match.medium_rec_thresh || 0.025;
+    const strong_rec_thresh = config.match.strong_rec_thresh || 0.04;
+    const medium_rec_thresh = config.match.medium_rec_thresh || 0.025;
 
     let simClass = styles.tbd; // Default class
     let simText = "tbd"; // Default text

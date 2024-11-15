@@ -199,13 +199,11 @@ export function DuplicateActions({
     const { chooseCandidate } = useImportContext();
 
     const [enableDuplicateButton, setEnableDuplicateButton] = useState(false);
-    const [duplicateAction, setDuplicateAction] = useState(
-        config.import.duplicate_action
-    );
+    const [duplicateAction, setDuplicateAction] = useState(config.import.duplicate_action);
 
     function handleDuplicateActionChange(event: React.MouseEvent<HTMLElement>) {
         const value = event.currentTarget.getAttribute("value");
-        setDuplicateAction(value!);
+        setDuplicateAction(value as "skip" | "merge" | "keep" | "remove");
         selection.duplicate_action = value as "skip" | "merge" | "keep" | "remove";
         // duplicate action and candidate choice are reported to backend through the
         // same event. TODO: this should be more consistent.
@@ -252,22 +250,14 @@ export function DuplicateActions({
         if (disabled) {
             return (
                 // mui complains about tooltips on disabled buttons
-                <ToggleButton
-                    sx={{ height: "36px" }}
-                    value={action}
-                    aria-label={action}
-                >
+                <ToggleButton sx={{ height: "36px" }} value={action} aria-label={action}>
                     <Icon size={14} />
                 </ToggleButton>
             );
         } else {
             return (
                 <Tooltip title={title} placement="top">
-                    <ToggleButton
-                        sx={{ height: "36px" }}
-                        value={action}
-                        aria-label={action}
-                    >
+                    <ToggleButton sx={{ height: "36px" }} value={action} aria-label={action}>
                         <Icon size={14} />
                     </ToggleButton>
                 </Tooltip>
@@ -313,8 +303,7 @@ export function DuplicateActions({
 }
 
 export function ApplyAbort() {
-    const { completeAllSelections, selectionsInvalidCause, abortSession } =
-        useImportContext();
+    const { completeAllSelections, selectionsInvalidCause, abortSession } = useImportContext();
 
     return (
         // Wrap into a Box to enable Tooltips on disabled buttons

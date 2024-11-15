@@ -69,10 +69,8 @@ export function TagView({ tagId, tagPath }: { tagId?: string; tagPath?: string }
     if (!tagId && !tagPath) {
         throw new Error("TagView requires either a tagId or tagPath");
     }
-    const identifier: string = tagId ?? tagPath!;
-    const { data, isLoading, isPending, isError } = useQuery(
-        tagQueryOptions(tagId, tagPath)
-    );
+    const identifier: string = tagId ?? tagPath ?? Math.random().toString();
+    const { data, isLoading, isPending, isError } = useQuery(tagQueryOptions(tagId, tagPath));
     const { isSelected, toggleSelection, markSelectable } = useSelection();
     const { register: registerSibling, unregister: unregisterSibling } =
         useSiblings<ExpandableSib>();
@@ -104,7 +102,7 @@ export function TagView({ tagId, tagPath }: { tagId?: string; tagPath?: string }
     }, [identifier, registerSibling, unregisterSibling]);
 
     useEffect(() => {
-        if (data?.album_folder) markSelectable(data?.album_folder);
+        if (data?.album_folder) markSelectable(data.album_folder);
     }, [markSelectable, data?.album_folder]);
 
     if (isLoading || isPending || isError) {
@@ -150,9 +148,7 @@ export function TagView({ tagId, tagPath }: { tagId?: string; tagPath?: string }
                         />
                         <SimilarityBadge dist={data.distance} />
                     </div>
-                    <Typography fontSize={"0.9rem"}>
-                        {data.album_folder_basename}
-                    </Typography>
+                    <Typography fontSize={"0.9rem"}>{data.album_folder_basename}</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
                     <TagPreview tagId={tagId} tagPath={tagPath} />
@@ -162,13 +158,7 @@ export function TagView({ tagId, tagPath }: { tagId?: string; tagPath?: string }
     );
 }
 
-export const TagPreview = ({
-    tagId,
-    tagPath,
-}: {
-    tagId?: string;
-    tagPath?: string;
-}) => {
+export const TagPreview = ({ tagId, tagPath }: { tagId?: string; tagPath?: string }) => {
     const { data, isLoading, isPending, isError, error } = useQuery(
         tagQueryOptions(tagId, tagPath)
     );

@@ -50,10 +50,7 @@ function SearchBar() {
         }
     }, [searchFieldRef]);
 
-    function handleTypeChange(
-        _e: React.MouseEvent<HTMLElement>,
-        newType: SearchType | null
-    ) {
+    function handleTypeChange(_e: React.MouseEvent<HTMLElement>, newType: SearchType | null) {
         if (newType !== null && newType !== type) {
             setType(newType);
             setSelectedResult(undefined);
@@ -84,9 +81,7 @@ function SearchBar() {
                 type="search"
                 onInput={handleInput}
                 InputProps={{
-                    endAdornment: (
-                        <CancelSearchButton searchFieldRef={searchFieldRef} />
-                    ),
+                    endAdornment: <CancelSearchButton searchFieldRef={searchFieldRef} />,
                 }}
             />
 
@@ -263,26 +258,30 @@ function SearchResultDetails() {
 
     console.log(type);
     let art = <></>;
-    if (type === "item") {
-        console.log("1");
-        art = (
-            <CoverArt
-                itemId={selectedResult}
-                type={type}
-                showPlaceholder={false}
-                className={styles.SearchResultCover}
-            />
-        );
-    } else if (type === "album") {
-        console.log("2");
-        art = (
-            <CoverArt
-                albumId={selectedResult}
-                type={type}
-                showPlaceholder={false}
-                className={styles.SearchResultCover}
-            />
-        );
+
+    switch (type) {
+        case "item":
+            console.log("1");
+            art = (
+                <CoverArt
+                    itemId={selectedResult}
+                    type={type}
+                    showPlaceholder={false}
+                    className={styles.SearchResultCover}
+                />
+            );
+            break;
+        case "album":
+            console.log("2");
+            art = (
+                <CoverArt
+                    albumId={selectedResult}
+                    type={type}
+                    showPlaceholder={false}
+                    className={styles.SearchResultCover}
+                />
+            );
+            break;
     }
 
     return (
@@ -305,8 +304,7 @@ function BeetsSearchHelp() {
                 <h1>Search uses beets&apos; query syntax</h1>
                 <ul>
                     <li>
-                        combine keywords with a space (AND):{" "}
-                        <code>magnetic tomorrow</code>
+                        combine keywords with a space (AND): <code>magnetic tomorrow</code>
                     </li>
                     <li>
                         combine keywords with a comma (OR):{" "}
@@ -349,8 +347,8 @@ function BeetsSearchHelp() {
                 </h1>
                 <ul>
                     <li>
-                        <code>&quot;artist::Ann(a|ie)&quot;</code> finds artists Anna
-                        Calvi and Annie but not Annuals
+                        <code>&quot;artist::Ann(a|ie)&quot;</code> finds artists Anna Calvi and
+                        Annie but not Annuals
                     </li>
                     <li>
                         <code>&quot;:Ho[pm]eless&quot;</code> to search all fields
@@ -360,8 +358,8 @@ function BeetsSearchHelp() {
                 <h1>Common fields</h1>
                 <ul>
                     <li>
-                        <code>title</code> <code>album</code> <code>genre</code>{" "}
-                        <code>label</code> <code>isrc</code>
+                        <code>title</code> <code>album</code> <code>genre</code> <code>label</code>{" "}
+                        <code>isrc</code>
                     </li>
                     <li>
                         <code>artist</code> (only for items, not albums)

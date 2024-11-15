@@ -11,12 +11,7 @@ import TableRow from "@mui/material/TableRow";
 import Tooltip from "@mui/material/Tooltip";
 import { useQuery } from "@tanstack/react-query";
 
-import {
-    Album,
-    albumQueryOptions,
-    Item,
-    itemQueryOptions,
-} from "@/components/common/_query";
+import { Album, albumQueryOptions, Item, itemQueryOptions } from "@/components/common/_query";
 import { JSONPretty } from "@/components/common/json";
 
 export function ItemView({ itemId }: { itemId?: number }) {
@@ -44,15 +39,12 @@ export function ItemView({ itemId }: { itemId?: number }) {
                 {isSuccess && (
                     <>
                         <Tooltip title="Toggle Details" className="ml-auto mt-1">
-                            <IconButton
-                                color="primary"
-                                onClick={() => setDetailed(!detailed)}
-                            >
+                            <IconButton color="primary" onClick={() => setDetailed(!detailed)}>
                                 {detailed && <BugOff size="1em" />}
                                 {!detailed && <BugOn size="1em" />}
                             </IconButton>
                         </Tooltip>
-                        <DetailsTable obj={item!} keys={detailed ? "all" : "basic"} />
+                        <DetailsTable obj={item as Item} keys={detailed ? "all" : "basic"} />
                     </>
                 )}
                 {!isSuccess && isFetching && (
@@ -94,10 +86,7 @@ export function AlbumView({ albumId }: { albumId?: number }) {
                 {isSuccess && (
                     <>
                         <Tooltip title="Toggle Details" className="ml-auto mt-1">
-                            <IconButton
-                                color="primary"
-                                onClick={() => setDetailed(!detailed)}
-                            >
+                            <IconButton color="primary" onClick={() => setDetailed(!detailed)}>
                                 {detailed && <BugOff size="1em" />}
                                 {!detailed && <BugOn size="1em" />}
                             </IconButton>
@@ -153,13 +142,7 @@ const basicAlbumKeys = [
     "added",
 ];
 
-export function DetailsTable({
-    obj,
-    keys,
-}: {
-    obj: Item | Album;
-    keys?: string | string[];
-}) {
+export function DetailsTable({ obj, keys }: { obj: Item | Album; keys?: string | string[] }) {
     // albums only have an albumartist (not artist), so we can use this to distinguish
     const isItem = (item: unknown): item is Item => {
         return (item as Item).artist !== undefined;
@@ -202,9 +185,7 @@ export function DetailsTable({
                                 >
                                     {key}
                                 </TableCell>
-                                <TableCell align="left">
-                                    {parse(key, obj[key])}
-                                </TableCell>
+                                <TableCell align="left">{parse(key, obj[key])}</TableCell>
                             </TableRow>
                         );
                     })}
