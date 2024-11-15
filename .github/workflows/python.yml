@@ -1,4 +1,4 @@
-name: Ruff
+name: Python checks
 
 on:
     push:
@@ -24,7 +24,15 @@ jobs:
                   pip install ruff
 
             # Update output format to enable automatic inline annotations.
-            - name: Run Ruff
+            - name: Check style with Ruff
               run: |
                   cd ./backend
                   ruff check --output-format=github .
+            - name: Test with pytest
+              run: |
+                  cd ./backend
+                  pip install .[test]
+                  coverage run -m pytest  -v -s
+            - name: Generate Coverage Report
+              run: |
+                  coverage report -m
