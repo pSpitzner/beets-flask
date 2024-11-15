@@ -34,11 +34,14 @@ def update_client_view(
         },
     }
 
-    response = requests.post(
-        "http://localhost:5001/api_v1/status/publish", json=payload
-    )
-    if response.status_code != 200:
-        log.debug(f"Failed to update client view: {response.json()}")
+    try:
+        response = requests.post(
+            "http://localhost:5001/api_v1/status/publish", json=payload
+        )
+        if response.status_code != 200:
+            log.debug(f"Failed to update client view: {response.json()}")
+    except requests.exceptions.ConnectionError:
+        log.debug("Failed to update client view: Connection refused")
 
 
 @sse_bp.route("/publish", methods=["POST"])

@@ -52,15 +52,18 @@ def enqueue(id: str, session: Session | None = None):
 
         log.info(f"Enqueued {tag.id=} {tag.album_folder=} {tag.kind=}")
 
-        if tag.kind == "preview":
-            preview_queue.enqueue(runPreview, id)
-        elif tag.kind == "import":
-            import_queue.enqueue(runImport, id)
-        elif tag.kind == "auto":
-            preview_job = preview_queue.enqueue(runPreview, id)
-            import_queue.enqueue(AutoImport, id, depends_on=preview_job)
-        else:
-            raise ValueError(f"Unknown kind {tag.kind}")
+        try:
+            if tag.kind == "preview":
+                preview_queue.enqueue(runPreview, id)
+            elif tag.kind == "import":
+                import_queue.enqueue(runImport, id)
+            elif tag.kind == "auto":
+                preview_job = preview_queue.enqueue(runPreview, id)
+                import_queue.enqueue(AutoImport, id, depends_on=preview_job)
+            else:
+                raise ValueError(f"Unknown kind {tag.kind}")
+        except Exception as e:
+            log.error(f"Failed to enqueue {tag.id=} {tag.album_folder=} {tag.kind=}")
 
 
 def enqueue_tag_path(path: str, kind: str, session: Session | None = None):
