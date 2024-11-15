@@ -3,6 +3,8 @@ name: Python checks
 on:
     push:
         branches: ["main"]
+        paths:
+          - backend/**
     pull_request:
         # The branches below must be a subset of the branches above
         branches: ["main"]
@@ -33,6 +35,3 @@ jobs:
                   cd ./backend
                   pip install .[test]
                   coverage run -m pytest  -v -s
-            - name: Generate Coverage Report
-              run: |
-                  coverage report -m
