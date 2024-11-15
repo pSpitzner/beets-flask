@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import z from "zod";
 import { Box, Paper } from "@mui/material";
-import { createFileRoute,Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useParams } from "@tanstack/react-router";
 
-import { Album, albumQueryOptions,LIB_BROWSE_ROUTE } from "@/components/common/_query";
+import { Album, albumQueryOptions, LIB_BROWSE_ROUTE } from "@/components/common/_query";
 import LoadingIndicator from "@/components/common/loadingIndicator";
 import { BrowserHeader } from "@/components/library/browserHeader";
 import List from "@/components/library/list";
@@ -25,15 +25,9 @@ export const Route = createFileRoute(`${LIB_BROWSE_ROUTE}/$artist/$albumId`)({
     component: AlbumOverview,
 });
 
-interface RouteParams {
-    artist: string;
-    albumId: number;
-    itemId?: number;
-}
-
 function AlbumOverview() {
     const album = Route.useLoaderData();
-    const params = Route.useParams<RouteParams>();
+    const params = useParams({ from: "/library/browse/$artist/$albumId/$itemId" });
 
     const data = useMemo(() => {
         return (album as Album).items?.map((item) => ({
@@ -50,9 +44,7 @@ function AlbumOverview() {
 
     return (
         <>
-            <Paper
-                className={`${styles.column} ${isSecondary ? styles.isSecondary : ""}`}
-            >
+            <Paper className={`${styles.column} ${isSecondary ? styles.isSecondary : ""}`}>
                 <Box className={styles.columnLabel}>Item</Box>
                 <BrowserHeader className={styles.browserHeader} />
                 {album && data ? (

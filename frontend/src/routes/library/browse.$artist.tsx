@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import z from "zod";
 import { Box, Paper } from "@mui/material";
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useParams } from "@tanstack/react-router";
 
 import { artistQueryOptions, LIB_BROWSE_ROUTE } from "@/components/common/_query";
 import LoadingIndicator from "@/components/common/loadingIndicator";
@@ -11,9 +11,6 @@ import List from "@/components/library/list";
 import styles from "@/components/library/library.module.scss";
 
 export const Route = createFileRoute(`${LIB_BROWSE_ROUTE}/$artist`)({
-    parseParams: (params) => ({
-        artist: z.string().parse(params.artist),
-    }),
     loader: (opts) =>
         opts.context.queryClient.ensureQueryData(
             artistQueryOptions({
@@ -23,16 +20,16 @@ export const Route = createFileRoute(`${LIB_BROWSE_ROUTE}/$artist`)({
             })
         ),
     component: ArtistOverview,
+    params: {
+        parse: (params) => ({
+            artist: z.string().parse(params.artist),
+        }),
+    },
 });
-
-interface RouteParams {
-    artist: string;
-    albumId?: number;
-}
 
 function ArtistOverview() {
     const artist = Route.useLoaderData();
-    const params = Route.useParams<RouteParams>();
+    const params = useParams({ from: "/library/browse/$artist/$albumId" });
 
     const data = useMemo(() => {
         return artist.albums.map((album) => ({
@@ -51,9 +48,7 @@ function ArtistOverview() {
 
     return (
         <>
-            <Paper
-                className={`${styles.column} ${isSecondary ? styles.isSecondary : ""}`}
-            >
+            <Paper className={`${styles.column} ${isSecondary ? styles.isSecondary : ""}`}>
                 <Box className={styles.columnLabel}>Album</Box>
                 <BrowserHeader className={styles.browserHeader} />
                 {artist && data ? (

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Paper } from "@mui/material";
 import Box from "@mui/material/Box";
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useParams } from "@tanstack/react-router";
 
 import { artistsQueryOptions, LIB_BROWSE_ROUTE } from "@/components/common/_query";
 import { BrowserHeader } from "@/components/library/browserHeader";
@@ -14,13 +14,9 @@ export const Route = createFileRoute(LIB_BROWSE_ROUTE)({
     component: () => <AllArtists />,
 });
 
-interface RouteParams {
-    artist?: string;
-}
-
 function AllArtists() {
     const artists = Route.useLoaderData();
-    const params = Route.useParams<RouteParams>();
+    const params = useParams({ from: "/library/browse/$artist" });
 
     const data = useMemo(() => {
         return artists.map((artist) => ({
@@ -40,9 +36,7 @@ function AllArtists() {
     return (
         <>
             <Box className={styles.columnBrowser}>
-                <Paper
-                    className={`${styles.column} ${isSecondary ? styles.isSecondary : ""}`}
-                >
+                <Paper className={`${styles.column} ${isSecondary ? styles.isSecondary : ""}`}>
                     <Box className={styles.columnLabel}>Artist</Box>
                     <BrowserHeader className={styles.browserHeader} />
                     <Box className={styles.listBox}>

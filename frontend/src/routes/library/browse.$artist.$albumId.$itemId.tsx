@@ -25,21 +25,13 @@ export const Route = createFileRoute("/library/browse/$artist/$albumId/$itemId")
     component: TrackPage,
 });
 
-interface RouteParams {
-    artist: string;
-    albumId: number;
-    itemId: number;
-}
-
 function TrackPage() {
-    const params = Route.useParams<RouteParams>();
+    const params = Route.useParams();
     return (
         <>
             <Paper className={styles.column}>
                 <Box className={styles.columnLabel}>Info</Box>
-                <BrowserHeader
-                    className={styles.browserHeader + " " + styles.alwaysShow}
-                />
+                <BrowserHeader className={styles.browserHeader + " " + styles.alwaysShow} />
                 <ItemView itemId={params.itemId} />
             </Paper>
         </>
