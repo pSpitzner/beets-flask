@@ -162,12 +162,25 @@ We appriciate any help! If you want to contribute, here is how to get started:
 -   For platform agnostic development, login to the container and install dependencies:
 
 ```bash
-docker exec -it beets-flask bash
-cd /repo/backend
+docker exec -it beets-flask-dev bash
+cd /repo/frontend
+
 pnpm install
 pnpm run dev
 ```
 
 The frontend is served at `http://localhost:5173`
+
+If you are having issues installing dependencies with pnpm, try:
+
+```bash
+rm -rf /repo/frontend/node_modules
+rm -rf /repo/frontend/dist
+rm -rf /repo/.pnpm-store
+pnpm store prune
+
+# and/or reset the lockfile
+rm -rf /frontend/pnpm-lock.json
+```
 
 See also [Resources.md](./RESOURCES.md) for some background information and design choices.

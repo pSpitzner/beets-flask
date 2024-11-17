@@ -17,6 +17,7 @@ gui:
         expand_tags: yes # for tag groups, on page load, show tag details?
         recent_days: 14 # Number of days to consider for the "recent" tag group
         order_by: "name" # how to sort tags within the trag groups: "name" (the album folder basename) | "date_created" | "date_modified"
+        show_unchanged_tracks: no # whether to show even unchanged tracks in the preview (interactve import sessions)
 
     terminal:
         start_path: "/music/inbox" # the directory where to start new terminal sessions
