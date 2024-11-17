@@ -139,7 +139,7 @@ function SmallScreenPaddingFix() {
     return (
         <Box
             sx={{
-                height: "120px",
+                height: "112px",
                 width: "100%",
                 // not sure why exactly this happens, and why at 480px width,
                 // just measured this out for one example.

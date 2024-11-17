@@ -141,13 +141,18 @@ export function ButtonBar({
                         sx={{
                             display: "flex",
                             justifyContent: "space-between",
-                            gap: "1rem",
+                            gap: { xs: "0.5rem", sm: "1rem" },
                             width: "100%",
                             flexWrap: "wrap",
                             flexDirection: { xs: "column", sm: "row" },
                         }}
                     >
-                        <Box sx={{ order: { xs: 2, sm: 1 } }}>
+                        <Box
+                            sx={{
+                                order: { xs: 2, sm: 1 },
+                                marginLeft: { xs: "auto", sm: "0" },
+                            }}
+                        >
                             <CandidateSearch selection={selection} />
                         </Box>
                         <Box
@@ -199,7 +204,9 @@ export function DuplicateActions({
     const { chooseCandidate } = useImportContext();
 
     const [enableDuplicateButton, setEnableDuplicateButton] = useState(false);
-    const [duplicateAction, setDuplicateAction] = useState(config.import.duplicate_action);
+    const [duplicateAction, setDuplicateAction] = useState(
+        config.import.duplicate_action
+    );
 
     function handleDuplicateActionChange(event: React.MouseEvent<HTMLElement>) {
         const value = event.currentTarget.getAttribute("value");
@@ -250,14 +257,22 @@ export function DuplicateActions({
         if (disabled) {
             return (
                 // mui complains about tooltips on disabled buttons
-                <ToggleButton sx={{ height: "36px" }} value={action} aria-label={action}>
+                <ToggleButton
+                    sx={{ height: "36px" }}
+                    value={action}
+                    aria-label={action}
+                >
                     <Icon size={14} />
                 </ToggleButton>
             );
         } else {
             return (
                 <Tooltip title={title} placement="top">
-                    <ToggleButton sx={{ height: "36px" }} value={action} aria-label={action}>
+                    <ToggleButton
+                        sx={{ height: "36px" }}
+                        value={action}
+                        aria-label={action}
+                    >
                         <Icon size={14} />
                     </ToggleButton>
                 </Tooltip>
@@ -303,7 +318,8 @@ export function DuplicateActions({
 }
 
 export function ApplyAbort() {
-    const { completeAllSelections, selectionsInvalidCause, abortSession } = useImportContext();
+    const { completeAllSelections, selectionsInvalidCause, abortSession } =
+        useImportContext();
 
     return (
         // Wrap into a Box to enable Tooltips on disabled buttons
