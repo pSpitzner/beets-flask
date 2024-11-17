@@ -127,7 +127,7 @@ export default function NavTabs() {
                 // Spacing of tabs for different breakpoints
                 [`& .MuiTabs-flexContainer`]: {
                     width: "100%",
-                    gap: "12px",
+                    gap: "4px",
                     justifyContent: "center",
                     [theme.breakpoints.up("sm")]: {
                         gap: "30px",

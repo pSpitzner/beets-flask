@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CircularProgress, Typography } from "@mui/material";
+import { CircularProgress, Typography, useTheme } from "@mui/material";
 import Box from "@mui/material/Box";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -114,13 +114,39 @@ function SessionsView({ handleNewSession }: { handleNewSession: () => void }) {
     }
 
     if (singleSelection) {
-        return <AvailableSelections extraButtons={[<ApplyAbort key={"applySelection"} />]} />;
+        return (
+            <>
+                <AvailableSelections
+                    extraButtons={[<ApplyAbort key={"applySelection"} />]}
+                />
+                <SmallScreenPaddingFix />
+            </>
+        );
     } else {
         return (
             <>
                 <AvailableSelections />
                 {/* TODO: when we have multi-selection, show apply buttons globally */}
+                <SmallScreenPaddingFix />
             </>
         );
     }
+}
+
+function SmallScreenPaddingFix() {
+    const theme = useTheme();
+
+    return (
+        <Box
+            sx={{
+                height: "120px",
+                width: "100%",
+                // not sure why exactly this happens, and why at 480px width,
+                // just measured this out for one example.
+                [theme.breakpoints.up(480)]: {
+                    height: 0,
+                },
+            }}
+        />
+    );
 }
