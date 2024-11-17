@@ -16,7 +16,7 @@ export const Route = createFileRoute(LIB_BROWSE_ROUTE)({
 
 function AllArtists() {
     const artists = Route.useLoaderData();
-    const params = useParams({ from: "/library/browse/$artist" });
+    const params = useParams({ strict: false });
 
     const data = useMemo(() => {
         return artists.map((artist) => ({
@@ -36,7 +36,9 @@ function AllArtists() {
     return (
         <>
             <Box className={styles.columnBrowser}>
-                <Paper className={`${styles.column} ${isSecondary ? styles.isSecondary : ""}`}>
+                <Paper
+                    className={`${styles.column} ${isSecondary ? styles.isSecondary : ""}`}
+                >
                     <Box className={styles.columnLabel}>Artist</Box>
                     <BrowserHeader className={styles.browserHeader} />
                     <Box className={styles.listBox}>

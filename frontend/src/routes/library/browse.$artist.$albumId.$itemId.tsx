@@ -3,13 +3,13 @@ import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { itemQueryOptions } from "@/components/library/_query";
+import { itemQueryOptions, LIB_BROWSE_ROUTE } from "@/components/common/_query";
 import { BrowserHeader } from "@/components/library/browserHeader";
 import { ItemView } from "@/components/library/itemAlbumDetails";
 
 import styles from "@/components/library/library.module.scss";
 
-export const Route = createFileRoute("/library/browse/$artist/$albumId/$itemId")({
+export const Route = createFileRoute(`${LIB_BROWSE_ROUTE}/$artist/$albumId/$itemId`)({
     parseParams: (params) => ({
         itemId: z.number().int().parse(parseInt(params.itemId)),
     }),
@@ -31,7 +31,9 @@ function TrackPage() {
         <>
             <Paper className={styles.column}>
                 <Box className={styles.columnLabel}>Info</Box>
-                <BrowserHeader className={styles.browserHeader + " " + styles.alwaysShow} />
+                <BrowserHeader
+                    className={styles.browserHeader + " " + styles.alwaysShow}
+                />
                 <ItemView itemId={params.itemId} />
             </Paper>
         </>
