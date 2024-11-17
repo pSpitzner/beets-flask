@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight, ChevronUp } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import FormControl from "@mui/material/FormControl";
@@ -102,6 +102,11 @@ function CandidateList({ selection }: { selection: SelectionState }) {
         const candidateId = event.target.value;
         chooseCandidate(selection.id, candidateId);
     }
+
+    // on mount, make sure to trigger a selection event so we have a candidate selected in the backend
+    useEffect(() => {
+        chooseCandidate(selection.id, selection.candidate_states[0].id);
+    }, []);
 
     return (
         <PageWrapper>
