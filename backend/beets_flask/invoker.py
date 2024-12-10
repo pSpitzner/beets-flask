@@ -97,8 +97,9 @@ def runPreview(
     -------
         str: the match url, if we found one, else None.
     """
+    match_url = None
     with db_session() as session:
-        log.debug(f"Preview task on {tagId}")
+        log.info(f"Preview task on {tagId}")
         bt = Tag.get_by(Tag.id == tagId, session=session)
         if bt is None:
             raise InvalidUsage(f"Tag {tagId} not found in database")
@@ -147,6 +148,7 @@ def runPreview(
             return None
         finally:
             bt.updated_at = datetime.now()
+            session.merge(bt)
             session.commit()
             update_client_view(
                 type="tag",
@@ -163,8 +165,15 @@ def runPreview(
             )
 
         log.debug(f"preview done. {bt.status=}, {bt.match_url=}")
+        match_url = bt.match_url
 
-        return bt.match_url
+    # log what was commited, and use a new session handle to make sure
+    # it works in other threads.
+    with db_session() as session:
+        bt = Tag.get_by(Tag.id == tagId, session=session)
+        log.debug(f"Tag commited to database: {bt.to_dict() if bt else None}")
+
+    return match_url
 
 
 @job(timeout=600, queue=import_queue, connection=redis_conn)
@@ -190,11 +199,11 @@ def runImport(
 
     """
     with db_session() as session:
-        log.debug(f"Import task on {tagId}")
-        bt = Tag.get_by(Tag.id == tagId)
+        log.info(f"Import task on {tagId}")
+        bt = Tag.get_by(Tag.id == tagId, session=session)
         if bt is None:
             raise InvalidUsage(f"Tag {tagId} not found in database")
-
+        log.debug(f"Import task on {bt.to_dict()}")
         bt.status = "importing"
         bt.updated_at = datetime.now()
         session.merge(bt)
@@ -292,7 +301,7 @@ def AutoImport(tagId: str, callback_url: str | None = None) -> list[str] | None:
         List of track paths after import, as strings. (empty if nothing imported)
     """
     with db_session() as session:
-        log.debug(f"AutoImport task on {tagId}")
+        log.info(f"AutoImport task on {tagId}")
         bt = Tag.get_by(Tag.id == tagId, session=session)
         if bt is None:
             raise InvalidUsage(f"Tag {tagId} not found in database")
@@ -329,6 +338,7 @@ def AutoImport(tagId: str, callback_url: str | None = None) -> list[str] | None:
 
 def _get_or_gen_match_url(tagId, session: Session) -> str | None:
     bt = Tag.get_by(Tag.id == tagId, session=session)
+    log.debug(f"Getting match url for {bt.to_dict() if bt else None}")
     if bt is None:
         raise InvalidUsage(f"Tag {tagId} not found in database")
     if bt.match_url is not None:

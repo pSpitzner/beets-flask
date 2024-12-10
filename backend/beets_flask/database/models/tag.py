@@ -27,7 +27,6 @@ class Tag(Base):
 
     status: Mapped[str]
     kind: Mapped[str]
-    kind: Mapped[str]
     _valid_statuses = [
         "dummy",
         "pending",

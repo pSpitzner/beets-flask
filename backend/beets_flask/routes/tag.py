@@ -101,7 +101,11 @@ def add_tag():
     tags = []
     with db_session() as session:
         for f in folders:
-            tag = Tag(album_folder=f, kind=kind)
+            tag = Tag.get_by(Tag.album_folder == f, session=session)
+            if tag is not None:
+                tag.kind = kind
+            else:
+                tag = Tag(album_folder=f, kind=kind)
             session.merge(tag)
             session.commit()
             invoker.enqueue(tag.id, session=session)
