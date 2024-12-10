@@ -41,7 +41,9 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     pip install .
 
 # Install frontend
+RUN npm i -g corepack
 RUN corepack enable && corepack prepare pnpm@9.x.x --activate
+RUN pnpm config set store-dir /repo/frontend/.pnpm-store
 
 # ------------------------------------------------------------------------------------ #
 #                                      Development                                     #
@@ -83,8 +85,8 @@ RUN chown -R beetle:beetle /repo
 
 USER beetle
 WORKDIR /repo/frontend
-RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
-    pnpm install
+# RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
+RUN pnpm install
 RUN pnpm run build
 
 # ------------------------------------------------------------------------------------ #
