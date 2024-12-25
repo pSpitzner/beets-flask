@@ -23,6 +23,8 @@ def create_app(config: str | ServerConfig | None = None) -> Flask:
 
     config = init_server_config(config)
     app.config.from_object(config)
+    # make routes with and without trailing slahes the same
+    app.url_map.strict_slashes = False
 
     global socketio
     # app.wsgi_app = socketio.WSGIApp(sio, app.wsgi_app)
