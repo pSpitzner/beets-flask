@@ -41,6 +41,7 @@ class Tag(Base):
     _valid_kinds = [
         "preview",
         "import",
+        "import_as_is",
         "auto",  # generates a preview, and depending on user config, imports if good match
     ]
 

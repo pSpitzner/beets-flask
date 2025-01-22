@@ -83,6 +83,7 @@ export const defaultActions = [
     <RetagAction key="action-retag" />,
     <ImportAction key="action-import" />,
     <InteractiveImportAction key="action-interactive-import" />,
+    <ImportAsIsAction key="action-import-as-is" />,
     <TerminalImportAction key="action-terminal-import" />,
     <UndoImportAction key="action-undo-import" />,
     <CopyPathAction key="action-copy-path" />,
@@ -547,6 +548,46 @@ export function ImportAction(props: Partial<ActionProps>) {
             {...props}
             icon={<ImportAutoSvg />}
             text={"Import (auto)"}
+            mutationOption={importOptions}
+        />
+    );
+}
+
+export function ImportAsIsAction(props: Partial<ActionProps>) {
+    const { closeMenu } = useContextMenu();
+    const { getSelected } = useSelection();
+    const importOptions: UseMutationOptions = {
+        mutationFn: async () => {
+            await fetch(`/tag/add`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    folders: getSelected(),
+                    kind: "import_as_is",
+                }),
+            });
+        },
+        onSuccess: async () => {
+            closeMenu();
+            const selected = getSelected();
+            for (const tagPath of selected) {
+                await queryClient.setQueryData(["tag", tagPath], (old: TagI) => {
+                    return { ...old, status: "pending" };
+                });
+            }
+        },
+        onError: (error: Error) => {
+            console.error(error);
+        },
+    };
+
+    return (
+        <ActionWithMutation
+            {...props}
+            icon={<ImportAutoSvg />}
+            text={"Import (as is)"}
             mutationOption={importOptions}
         />
     );

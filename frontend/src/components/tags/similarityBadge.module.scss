@@ -17,6 +17,7 @@
     border: var(--bs-border-width) solid var(--bs-border-color);
     height: 1.1rem;
     padding: 0.1rem 0.3rem;
+    min-width: 2.1rem; // this is roughly 4 chars
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     -khtml-user-select: none;

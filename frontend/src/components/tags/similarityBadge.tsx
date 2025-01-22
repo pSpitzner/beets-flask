@@ -14,7 +14,7 @@ export function TagSimilarityBadgeWithHover({
     tagId,
     tagPath,
     className,
-    charWidth = 3,
+    charWidth = 4,
 }: {
     tagId?: string;
     tagPath?: string;
@@ -47,6 +47,19 @@ export function TagSimilarityBadgeWithHover({
         );
     }
 
+    if (data.kind === "import_as_is") {
+        return (
+            <SimilarityBadgeWithHover
+                text={"asis"}
+                color={"custom"}
+                className={className}
+                charWidth={charWidth}
+            >
+                <TagPreview tagId={tagId} tagPath={tagPath} />
+            </SimilarityBadgeWithHover>
+        );
+    }
+
     return (
         <SimilarityBadgeWithHover
             dist={data.distance}
@@ -58,25 +71,39 @@ export function TagSimilarityBadgeWithHover({
     );
 }
 
+// specify either dist or text + color
 export function SimilarityBadgeWithHover({
     dist,
+    text,
     className,
     children,
-    charWidth = 3,
+    charWidth = 4,
+    color = "custom",
 }: {
     dist?: number;
+    text?: string;
     className?: string;
     children: React.ReactNode;
     charWidth?: number;
+    color?: "strong" | "medium" | "weak" | "tbd" | "custom";
 }) {
     return (
         <HoverCard.Root openDelay={300}>
             <HoverCard.Trigger>
-                <SimilarityBadge
-                    dist={dist}
-                    className={className}
-                    charWidth={charWidth}
-                />
+                {text ? (
+                    <SimilarityBadgeWithText
+                        text={text}
+                        color={color}
+                        className={className}
+                        charWidth={charWidth}
+                    />
+                ) : (
+                    <SimilarityBadge
+                        dist={dist}
+                        className={className}
+                        charWidth={charWidth}
+                    />
+                )}
             </HoverCard.Trigger>
             <HoverCard.Content
                 side="right"
@@ -94,7 +121,7 @@ export function SimilarityBadgeWithHover({
 export function SimilarityBadge({
     dist,
     className,
-    charWidth = 3,
+    charWidth = 4,
 }: {
     dist?: number;
     className?: string;
@@ -138,7 +165,7 @@ export function SimilarityBadgeWithText({
     text,
     color,
     className,
-    charWidth = 3,
+    charWidth = 4,
 }: {
     text?: string;
     color?: "strong" | "medium" | "weak" | "tbd" | "custom";

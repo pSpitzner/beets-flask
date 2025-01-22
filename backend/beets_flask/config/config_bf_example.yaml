@@ -30,11 +30,15 @@ gui:
             Lorem:
                 name: "Awesome Inbox"
                 path: "/music/inbox"
-                autotag: no # no | "preview" | "import" | "auto"
+                autotag: no # no | "preview" | "import" | "import_as_is" | "auto"
                 # autotag controls what should happen with newly added album folders.
                 # no: do nothing
                 # "preview": fetch data but do not import (recommended)
                 # "import": fetch data and always import (not recommended)
+                # "import_as_is": import as is, do not fetch data, but groups albums
+                #                 useful for bootlegs, where you manually clean metadata
+                #                 and beets wont be able to find any online
+                #                 same as `beet import --group-albums -A`
                 # "auto": fetch data and import if a good match is found (recommended for established libraries,
                 #         but not for a big initial import when you start with beets for the first time)
             Ipsum:

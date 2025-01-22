@@ -2,6 +2,7 @@ import io
 import logging
 import os
 import sys
+import taglib
 
 from beets import importer, plugins
 from beets.autotag import AlbumMatch, TrackMatch
@@ -216,7 +217,7 @@ class PreviewSession(BaseSession):
         duplicates = task.find_duplicates(self.lib)
         if duplicates:
             print_(
-                f'\nThis {"album" if task.is_album else "item"} is already in the library!'
+                f"\nThis {'album' if task.is_album else 'item'} is already in the library!"
             )
             self.status = "duplicate"
         for duplicate in duplicates:
@@ -246,13 +247,14 @@ class MatchedImportSession(BaseSession):
         tag_id: str | None = None,
     ):
         # make sure to start with clean slate
+        # apply all tweaks to global config before initializing the basesession!
         set_config_defaults()
         config["import"]["search_ids"].set([match_url])
 
         if tag_id is not None:
             config["import"]["set_fields"]["gui_import_id"] = tag_id
 
-        # this also merged config_overlay into the global config
+        # this also merges config_overlay into the global config
         super(MatchedImportSession, self).__init__(path, config_overlay)
 
         # inconvenient: beets does not invoke a sessions resolve_duplicates() method if config["import"]["duplicate_action"] is set meaningfully (anything except 'ask'?).
@@ -315,7 +317,7 @@ class MatchedImportSession(BaseSession):
         config or config_overlay.
         """
         print_(
-            f'\nThis {"album" if task.is_album else "item"} is already in the library!'
+            f"\nThis {'album' if task.is_album else 'item'} is already in the library!"
         )
         for duplicate in found_duplicates:
             old_dir = colorize("import_path", duplicate.item_dir().decode("utf-8"))
@@ -392,6 +394,92 @@ class MatchedImportSession(BaseSession):
             ]
         except:
             return []
+
+
+class AsIsImportSession(MatchedImportSession):
+    """
+    Import session to import without modifyin metadata.
+
+    Essentially `beet import --group-albums -A`, ideal for bootlegs and
+    just getting a folder into your library where you are sure the metadata is correct.
+
+    This is a quick-and-dirty version before we rework with the newer sessions that
+    are used for interactive imports.
+    I derived this from MatchedImportSession, because it has some bits we need,
+    but yeah, we should rethink this.
+
+    """
+
+    def __init__(
+        self,
+        path: str,
+        tag_id: str | None = None,
+    ):
+
+        config_overlay = {
+            "import": {
+                "group_albums": True,
+                "autotag": False,
+                "search_ids": [],
+            }
+        }
+
+        super().__init__(
+            path=path,
+            match_url=None,
+            config_overlay=config_overlay,
+            tag_id=tag_id,
+        )
+
+        self.match_url = None
+        self.match_album = None
+        self.match_artist = None
+        self.match_dist = None
+
+        # getting track_paths_after_import does not work, because
+        # afaik the import_task only gives paths when we _copied_
+        # so, because with as_is data its more likely that people
+        # _move_ the files, we keep track of the paths before import
+        self.track_paths_before_import = list(self.track_paths_before_import)
+        self.taglib_tags = [
+            taglib.File(fp).tags for fp in self.track_paths_before_import
+        ]
+
+    def debug(self):
+        return config
+
+    def choose_match(self, task: importer.ImportTask):
+        raise NotImplementedError(
+            "AsIsImportSession should not need to choose matches."
+        )
+
+    def run_and_capture_output(self) -> tuple[str, str]:
+        err, out = super().run_and_capture_output()
+
+        # add some basic info of the added items to the preview
+        # I do not know how to get a quick dump of file metadata using beets,
+        # so we simply use taglib for now
+        self.preview += "\n\n"
+        if len(self.track_paths_before_import) == 0:
+            self.preview += "No files to import."
+        else:
+            self.preview += f"Metadata in {len(self.track_paths_before_import)} file(s)\n\n"
+            for fp in self.track_paths_before_import:
+                self.preview += f"  {fp}\n"
+                tags = taglib.File(fp).tags
+                for tag in tags.keys():
+                    self.preview += f"  {tag.lower()}: {tags[tag][0]}\n"
+                self.preview += "--------------------------------------------\n"
+
+
+        self.preview += "\n\n (This is no guarantee the import worked)"
+        # ... and this is a major TODO. How to get track paths _after_ an import,
+        # even when using as is?
+        self.preview = self.preview.strip()
+
+        return out, err
+
+
 
 
 def cli_command(beets_args: list[str], key: str = "s") -> tuple[str, str]:

@@ -92,6 +92,7 @@ class InteractiveBeetsConfig(BeetsConfig, metaclass=Singleton):
         if ib_folder is None:
             ib_folder = os.path.expanduser("~/.config/beets-flask")
         ib_config_path = os.path.join(ib_folder, "config.yaml")
+        print(f"{ib_config_path=}")
 
         # Check if the user config exists
         # if not, copy the example config to the user config location

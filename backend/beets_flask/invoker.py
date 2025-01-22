@@ -15,7 +15,12 @@ import requests
 from rq.decorators import job
 from sqlalchemy import delete
 
-from beets_flask.beets_sessions import MatchedImportSession, PreviewSession, colorize
+from beets_flask.beets_sessions import (
+    AsIsImportSession,
+    MatchedImportSession,
+    PreviewSession,
+    colorize,
+)
 from beets_flask.config import config
 from beets_flask.database import Tag, db_session
 from beets_flask.redis import import_queue, preview_queue, redis_conn, tag_queue
@@ -57,6 +62,8 @@ def enqueue(id: str, session: Session | None = None):
                 preview_queue.enqueue(runPreview, id)
             elif tag.kind == "import":
                 import_queue.enqueue(runImport, id)
+            elif tag.kind == "import_as_is":
+                import_queue.enqueue(runImport, id, as_is=True)
             elif tag.kind == "auto":
                 preview_job = preview_queue.enqueue(runPreview, id)
                 import_queue.enqueue(AutoImport, id, depends_on=preview_job)
@@ -180,6 +187,7 @@ def runPreview(
 def runImport(
     tagId: str,
     match_url: str | None = None,
+    as_is: bool = False,
     callback_url: str | None = None,
 ) -> list[str]:
     """Start Import session for a tag.
@@ -190,6 +198,14 @@ def runImport(
 
     Parameters
     ----------
+    tagId:str
+        The ID of the tag to be imported, used to load info from db.
+    as_is: bool, optional
+        If true, we import as-is, **grouping albums** and ignoring the match_url.
+        Effectively like `beet import --group-albums -A`.
+        Default False.
+    match_url: str, optional
+        The match url to use for import, if we have it.
     callback_url: str, optional
         Called when the import status changes.
 
@@ -199,7 +215,7 @@ def runImport(
 
     """
     with db_session() as session:
-        log.info(f"Import task on {tagId}")
+        log.info(f"Import task: {as_is=} {tagId=}")
         bt = Tag.get_by(Tag.id == tagId, session=session)
         if bt is None:
             raise InvalidUsage(f"Tag {tagId} not found in database")
@@ -220,22 +236,31 @@ def runImport(
             message="Importing started",
         )
 
-        match_url = match_url or _get_or_gen_match_url(tagId, session)
-        if not match_url:
-            if callback_url:
-                requests.post(
-                    callback_url,
-                    json={
-                        "status": "beets import failed: no match url found.",
-                        "tag": bt.to_dict(),
-                    },
-                )
-            return []
+        if not as_is:
+            match_url = match_url or _get_or_gen_match_url(tagId, session)
+            if not match_url:
+                if callback_url:
+                    requests.post(
+                        callback_url,
+                        json={
+                            "status": "beets import failed: no match url found.",
+                            "tag": bt.to_dict(),
+                        },
+                    )
+                return []
 
         try:
-            bs = MatchedImportSession(
-                path=bt.album_folder, match_url=match_url, tag_id=bt.id
-            )
+            if as_is:
+                bs = AsIsImportSession(
+                    path=bt.album_folder,
+                    tag_id=bt.id,
+                )
+            else:
+                bs = MatchedImportSession(
+                    path=bt.album_folder,
+                    match_url=match_url,
+                    tag_id=bt.id,
+                )
             bs.run_and_capture_output()
 
             bt.preview = bs.preview
@@ -244,7 +269,7 @@ def runImport(
             bt.match_album = bs.match_album
             bt.match_artist = bs.match_artist
             bt.num_tracks = bs.match_num_tracks
-            bt.track_paths_after = bs.track_paths_after_import
+            bt.track_paths_after = bs.track_paths_before_import
             bt.status = "imported" if bs.status == "ok" else bs.status
             log.debug(f"tried import {bt.status=}")
         except Exception as e:

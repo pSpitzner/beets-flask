@@ -13,7 +13,7 @@ import { useConfig } from "@/components/common/hooks/useConfig";
 import { useSelection } from "@/components/common/hooks/useSelection";
 import { useSiblings } from "@/components/common/hooks/useSiblings";
 
-import { SimilarityBadge } from "./similarityBadge";
+import { SimilarityBadge, SimilarityBadgeWithText } from "./similarityBadge";
 import { TagStatusIcon } from "./statusIcon";
 
 import styles from "./tagView.module.scss";
@@ -146,9 +146,16 @@ export function TagView({ tagId, tagPath }: { tagId?: string; tagPath?: string }
                             tagPath={tagPath}
                             tagId={tagId}
                         />
-                        <SimilarityBadge dist={data.distance} />
+
+                        {data.kind === "import_as_is" ? (
+                            <SimilarityBadgeWithText text={"asis"} color={"custom"} />
+                        ) : (
+                            <SimilarityBadge dist={data.distance} />
+                        )}
                     </div>
-                    <Typography fontSize={"0.9rem"}>{data.album_folder_basename}</Typography>
+                    <Typography fontSize={"0.9rem"}>
+                        {data.album_folder_basename}
+                    </Typography>
                 </AccordionSummary>
                 <AccordionDetails>
                     <TagPreview tagId={tagId} tagPath={tagPath} />
