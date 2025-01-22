@@ -2,8 +2,8 @@ import io
 import logging
 import os
 import sys
-import taglib
 
+import taglib
 from beets import importer, plugins
 from beets.autotag import AlbumMatch, TrackMatch
 from beets.ui import UserError, _open_library, colorize, print_
@@ -415,7 +415,6 @@ class AsIsImportSession(MatchedImportSession):
         path: str,
         tag_id: str | None = None,
     ):
-
         config_overlay = {
             "import": {
                 "group_albums": True,
@@ -463,7 +462,9 @@ class AsIsImportSession(MatchedImportSession):
         if len(self.track_paths_before_import) == 0:
             self.preview += "No files to import."
         else:
-            self.preview += f"Metadata in {len(self.track_paths_before_import)} file(s)\n\n"
+            self.preview += (
+                f"Metadata in {len(self.track_paths_before_import)} file(s)\n\n"
+            )
             for fp in self.track_paths_before_import:
                 self.preview += f"  {fp}\n"
                 tags = taglib.File(fp).tags
@@ -471,15 +472,12 @@ class AsIsImportSession(MatchedImportSession):
                     self.preview += f"  {tag.lower()}: {tags[tag][0]}\n"
                 self.preview += "--------------------------------------------\n"
 
-
         self.preview += "\n\n (This is no guarantee the import worked)"
         # ... and this is a major TODO. How to get track paths _after_ an import,
         # even when using as is?
         self.preview = self.preview.strip()
 
         return out, err
-
-
 
 
 def cli_command(beets_args: list[str], key: str = "s") -> tuple[str, str]:

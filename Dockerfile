@@ -24,6 +24,7 @@ RUN --mount=type=cache,target=/var/cache/apk \
     apk update
 RUN --mount=type=cache,target=/var/cache/apk \
     apk add \
+    build-base \
     imagemagick \
     redis  \
     git \
