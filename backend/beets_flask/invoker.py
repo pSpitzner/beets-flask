@@ -269,7 +269,7 @@ def runImport(
             bt.match_album = bs.match_album
             bt.match_artist = bs.match_artist
             bt.num_tracks = bs.match_num_tracks
-            bt.track_paths_after = bs.track_paths_before_import
+            bt.track_paths_after = bs.track_paths_after_import
             bt.status = "imported" if bs.status == "ok" else bs.status
             log.debug(f"tried import {bt.status=}")
         except Exception as e:

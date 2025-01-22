@@ -80,7 +80,10 @@ def register_inboxes():
         if inbox["autotag"]:
             album_folders = all_album_folders(inbox["path"])
             for f in album_folders:
-                os.utime(f, None)
+                try:
+                    os.utime(f, None)
+                except Exception as e:
+                    log.error(f"Could not touch {f}. Check the permissions! {e}")
 
 
 class InboxHandler(FileSystemEventHandler):

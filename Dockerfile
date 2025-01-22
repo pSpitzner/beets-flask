@@ -24,7 +24,6 @@ RUN --mount=type=cache,target=/var/cache/apk \
     apk update
 RUN --mount=type=cache,target=/var/cache/apk \
     apk add \
-    build-base \
     imagemagick \
     redis  \
     git \
@@ -32,7 +31,11 @@ RUN --mount=type=cache,target=/var/cache/apk \
     keyfinder-cli \
     npm \
     tmux \
-    shadow
+    shadow \
+    build-base \
+    taglib
+
+# build-base and taglib needed for pytaglib :/
 
 # Install our package (backend)
 COPY ./backend /repo/backend

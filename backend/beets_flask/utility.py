@@ -5,6 +5,7 @@ from functools import wraps
 from math import floor
 
 from flask import current_app
+from rq import Worker
 
 from .logger import log
 
@@ -24,7 +25,6 @@ def with_app_context(f):
 
 def get_running_jobs():
     running_jobs = []
-    from rq import Worker
     workers = Worker.all()
     for worker in workers:
         job = worker.get_current_job()
