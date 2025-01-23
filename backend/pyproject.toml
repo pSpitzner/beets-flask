@@ -83,3 +83,8 @@ pythonpath = ["."]
 
 [tool.coverage.report]
 omit = ["*/tests/*"]
+
+
+[tool.mypy]
+ignore_missing_imports = true
+check_untyped_defs = true

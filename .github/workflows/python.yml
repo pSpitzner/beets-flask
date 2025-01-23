@@ -24,12 +24,16 @@ jobs:
                   cd ./backend
                   python -m pip install --upgrade pip
                   pip install ruff
-
-            # Update output format to enable automatic inline annotations.
+                  pip install mypy
             - name: Check style with Ruff
               run: |
                   cd ./backend
                   ruff check --output-format=github .
+            - name: Check type hints with mypy
+              run: |
+                  cd ./backend
+                  pip install .
+                  mypy --show-error-codes beets_flask
             - name: Test with pytest
               run: |
                   cd ./backend
