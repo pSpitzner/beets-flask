@@ -25,6 +25,7 @@ jobs:
                   python -m pip install --upgrade pip
                   pip install ruff
                   pip install mypy
+                  pip install .
             - name: Check style with Ruff
               run: |
                   cd ./backend
@@ -32,8 +33,7 @@ jobs:
             - name: Check type hints with mypy
               run: |
                   cd ./backend
-                  pip install .
-                  mypy --show-error-codes beets_flask
+                  mypy --show-error-codes --config-file ./pyproject.toml ./beets_flask
             - name: Test with pytest
               run: |
                   cd ./backend
