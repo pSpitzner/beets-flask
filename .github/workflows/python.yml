@@ -32,7 +32,7 @@ jobs:
             - name: Check type hints with mypy
               run: |
                   cd ./backend
-                  mypy --show-error-codes --config-file --check-untyped-defs ./pyproject.toml ./beets_flask
+                  mypy --show-error-codes --check-untyped-defs --config-file ./pyproject.toml ./beets_flask
             - name: Test with pytest
               run: |
                   cd ./backend
