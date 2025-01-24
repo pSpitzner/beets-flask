@@ -36,8 +36,9 @@ dependencies = [
 [project.optional-dependencies]
 # Can be install with e.g. `pip install -e .[dev]`
 test = ["pytest>=8.2.2", "pytest-asyncio>=0.23.8", "pytest-cov>=5.0.0"]
-dev = ["ruff>=0.6.5", "pre-commit>=3.8.0", "types-cachetools", "mypy"]
-all = ["beets_flask[dev,test]"]
+dev = ["ruff>=0.6.5", "pre-commit>=3.8.0", "interactive_beets[typed]"]
+typed = ["types-cachetools", "types-requests", "mypy>=1.14.1", "types-cachetools","types-Flask-Cors"]
+all = ["interactive_beets[dev,test]"]
 
 [build-system]
 requires = ["hatchling"]
@@ -82,7 +83,10 @@ pythonpath = ["."]
 [tool.coverage.report]
 omit = ["*/tests/*"]
 
-
 [tool.mypy]
+check_untyped_defs = false
+
+[[tool.mypy.overrides]]
+# Suppresses error messages about imports that cannot be resolved.
+module = ["socketio.*", "beets.*", "confuse.*","mediafile.*"]
 ignore_missing_imports = true
-check_untyped_defs = true

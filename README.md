@@ -153,34 +153,6 @@ Currently planned:
 -   Cache candidates for auto-generated tag previews to choose later (without needing an interactive session)
 -   Notifications for new imports on mobile devices (Installable PWA)
 
-# Developer quick start
+# Developer Guide & Contribution
 
-We appriciate any help! If you want to contribute, here is how to get started:
-
--   Launch Dev container with docker-compose: `docker-compose -f docker-compose-dev.yaml up --build`
--   This mounts `./` to `/repo` in the container for live reloading and enhanced development experience.
--   For platform agnostic development, login to the container and install dependencies:
-
-```bash
-docker exec -it beets-flask-dev bash
-cd /repo/frontend
-
-pnpm install
-pnpm run dev
-```
-
-The frontend is served at `http://localhost:5173`
-
-If you are having issues installing dependencies with pnpm, try:
-
-```bash
-rm -rf /repo/frontend/node_modules
-rm -rf /repo/frontend/dist
-rm -rf /repo/.pnpm-store
-pnpm store prune
-
-# and/or reset the lockfile
-rm -rf /frontend/pnpm-lock.json
-```
-
-See also [Resources.md](./RESOURCES.md) for some background information and design choices.
+Please see [CONTRIBUTE.md](./CONTRIBUTE.md) for more information on how to contribute.

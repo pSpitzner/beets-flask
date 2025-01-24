@@ -23,6 +23,6 @@ def setup_logging() -> None:
     log.info("Logging initialized")
 
 
-log = None
+log: logging.Logger
 log_file_for_web = None
 setup_logging()
