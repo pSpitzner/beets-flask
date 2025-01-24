@@ -3,9 +3,9 @@ import logging
 import os
 import sys
 
-import taglib
 from beets import importer, plugins
 from beets.autotag import AlbumMatch, TrackMatch
+from beets.library import MediaFile
 from beets.ui import UserError, _open_library, colorize, print_
 from beets.ui.commands import show_change, summarize_items
 from beets.util import displayable_path
@@ -439,10 +439,14 @@ class AsIsImportSession(MatchedImportSession):
         # afaik the import_task only gives paths when we _copied_
         # so, because with as_is data its more likely that people
         # _move_ the files, we keep track of the paths before import
-        self.track_paths_before_import = list(self.track_paths_before_import)
-        self.taglib_tags = [
-            taglib.File(fp).tags for fp in self.track_paths_before_import
+        self._track_paths_before_import = list(super().track_paths_before_import)
+        self._tags_before_import = [
+            MediaFile(fp).as_dict() for fp in self._track_paths_before_import
         ]
+
+    @property
+    def track_paths_before_import(self) -> list[str]:
+        return self._track_paths_before_import
 
     def debug(self):
         return config
@@ -456,20 +460,23 @@ class AsIsImportSession(MatchedImportSession):
         err, out = super().run_and_capture_output()
 
         # add some basic info of the added items to the preview
-        # I do not know how to get a quick dump of file metadata using beets,
-        # so we simply use taglib for now
         self.preview += "\n\n"
-        if len(self.track_paths_before_import) == 0:
+        if len(self._track_paths_before_import) == 0:
             self.preview += "No files to import."
         else:
             self.preview += (
-                f"Metadata in {len(self.track_paths_before_import)} file(s)\n\n"
+                f"Metadata in {len(self._track_paths_before_import)} file(s)\n\n"
             )
-            for fp in self.track_paths_before_import:
+            for idx, fp in enumerate(self._track_paths_before_import):
                 self.preview += f"  {fp}\n"
-                tags = taglib.File(fp).tags
-                for tag in tags.keys():
-                    self.preview += f"  {tag.lower()}: {tags[tag][0]}\n"
+                tags = self._tags_before_import[idx]
+                for key, val in tags.items():
+                    if val is not None and key not in ["art", "images"]:
+                        self.preview += f"  {key.lower()}: {val}\n"
+                    if key == "art":
+                        self.preview += f"  art: found artwork\n"
+                    if key == "images":
+                        self.preview += f"  images: found 3\n"
                 self.preview += "--------------------------------------------\n"
 
         self.preview += "\n\n (This is no guarantee the import worked)"

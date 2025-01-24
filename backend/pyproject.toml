@@ -30,9 +30,7 @@ dependencies = [
     "gunicorn>=22.0.0",
     "eventlet>=0.32.0",
     # beets plugin dependencies
-    "pylast>=5.2.0",
-    # taglib for as-is imports, temporary
-    "pytaglib>=3.0.0",
+    "pylast>=5.2.0"
 ]
 
 [project.optional-dependencies]

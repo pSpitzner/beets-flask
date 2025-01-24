@@ -31,11 +31,7 @@ RUN --mount=type=cache,target=/var/cache/apk \
     keyfinder-cli \
     npm \
     tmux \
-    shadow \
-    build-base \
-    taglib
-
-# build-base and taglib needed for pytaglib :/
+    shadow
 
 # Install our package (backend)
 COPY ./backend /repo/backend
