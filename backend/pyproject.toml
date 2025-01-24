@@ -84,7 +84,7 @@ pythonpath = ["."]
 omit = ["*/tests/*"]
 
 [tool.mypy]
-check_untyped_defs = false
+check_untyped_defs = true
 
 [[tool.mypy.overrides]]
 # Suppresses error messages about imports that cannot be resolved.

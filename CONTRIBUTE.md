@@ -52,7 +52,7 @@ Please make sure the tests pass and the code is linted before submitting a pull 
 pip install pre-commit
 pre-commit install
 ```
-
+^
 This should now automatically reject commits that do not pass the linting and formatting checks.
 
 You may run our tests locally with:
@@ -60,6 +60,12 @@ You may run our tests locally with:
 cd backend
 pip install .[dev,test]
 pytest
+```
+
+Further if you want to make sure that the types are correct, you can run:
+```bash
+cd backend
+mypy beets_flask
 ```
 
 ## Additional Resources
