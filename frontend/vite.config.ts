@@ -14,8 +14,27 @@ export default defineConfig({
     css: {
         preprocessorOptions: {
             scss: {
-                api: 'modern-compiler',
+                api: "modern-compiler",
             },
-        }
-    }
+        },
+    },
+    server: {
+        /** Allow the api calls to be
+         * made to the another port during
+         * development as the frontend and
+         * backend are running independently
+         * in dev.
+         *
+         * For production, the frontend and
+         * backend are served from the quart
+         * app, so the api calls are made
+         * to and from the same port.
+         */
+        proxy: {
+            "^/api_v1/.*": {
+                target: "http://localhost:5001",
+                changeOrigin: true,
+            },
+        },
+    },
 });

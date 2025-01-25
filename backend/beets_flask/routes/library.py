@@ -25,9 +25,11 @@ from pathlib import Path
 from typing import Optional, TypedDict, cast
 
 import beets.library
-from beets import util
+from beets import util as beets_util
 from beets.ui import _open_library
-from flask import (
+from mediafile import MediaFile  # comes with the beets install
+from PIL import Image as PILImage
+from quart import (
     Blueprint,
     Response,
     abort,
@@ -37,8 +39,6 @@ from flask import (
     request,
     send_file,
 )
-from mediafile import MediaFile  # comes with the beets install
-from PIL import Image as PILImage
 from unidecode import unidecode
 from werkzeug.routing import BaseConverter, PathConverter
 
@@ -83,7 +83,7 @@ def _rep(obj, expand=False, minimal=False):
             out = {k: v for k, v in out.items() if k in fields}
 
         if not minimal:
-            out["path"] = util.displayable_path(out["path"])
+            out["path"] = beets_util.displayable_path(out["path"])
 
         for key, value in out.items():
             if isinstance(out[key], bytes):
@@ -92,7 +92,7 @@ def _rep(obj, expand=False, minimal=False):
         # Get the size (in bytes) of the backing file. This is useful
         # for the Tomahawk resolver API.
         try:
-            out["size"] = os.path.getsize(util.syspath(obj.path))
+            out["size"] = os.path.getsize(beets_util.syspath(obj.path))
         except OSError:
             out["size"] = 0
 
@@ -103,7 +103,7 @@ def _rep(obj, expand=False, minimal=False):
             fields = ["id", "name", "albumartist", "year"]
             out = {k: v for k, v in out.items() if k in fields}
         else:
-            out["artpath"] = util.displayable_path(out["artpath"])
+            out["artpath"] = beets_util.displayable_path(out["artpath"])
 
         if expand:
             out["items"] = [
@@ -163,10 +163,13 @@ def get_method():
 
 
 def resource(name, patchable=False):
-    """Decorate a function to handle RESTful HTTP requests for a resource."""
+    """Decorate a function to handle RESTful HTTP requests for a resource.
+
+    # TODO: Check if async is still working as expected!
+    """
 
     def make_responder(retriever):
-        def responder(ids):
+        async def responder(ids):
             entities = [retriever(id) for id in ids]
             entities = [entity for entity in entities if entity]
 
@@ -184,7 +187,7 @@ def resource(name, patchable=False):
                     return abort(405)
 
                 for entity in entities:
-                    entity.update(request.get_json())
+                    entity.update(await request.get_json())
                     entity.try_sync(True, False)  # write, don't move
 
                 if len(entities) == 1:
@@ -367,7 +370,7 @@ library_bp.record_once(add_converters)
 
 
 @library_bp.before_request
-def before_request():
+async def before_request():
     # we will need to see if keeping the db open from each thread is what we want,
     # the importer may want to write.
     if not hasattr(g, "lib") or g.lib is None:
@@ -381,14 +384,14 @@ def before_request():
 
 @library_bp.route("/item/<idlist:ids>", methods=["GET", "DELETE", "PATCH"])
 @resource("items", patchable=True)
-def get_item(id):
+async def get_item(id):
     return g.lib.get_item(id)
 
 
 @library_bp.route("/item/")
 @library_bp.route("/item/query/")
 @resource_list("items")
-def all_items():
+async def all_items():
     items = g.lib.items()
     if is_expand():
         return items
@@ -397,15 +400,15 @@ def all_items():
 
 
 @library_bp.route("/item/<int:item_id>/file")
-def item_file(item_id):
+async def item_file(item_id):
     item = g.lib.get_item(item_id)
 
-    # On Windows under Python 2, Flask wants a Unicode path. On Python 3, it
+    # On Windows under Python 2, Quart wants a Unicode path. On Python 3, it
     # *always* wants a Unicode path.
     if os.name == "nt":
-        item_path = util.syspath(item.path)
+        item_path = beets_util.syspath(item.path)
     else:
-        item_path = util.py3_path(item.path)
+        item_path = beets_util.py3_path(item.path)
 
     base_filename = os.path.basename(item_path)
     # FIXME: Arguably, this should just use `displayable_path`: The latter
@@ -414,7 +417,7 @@ def item_file(item_id):
         try:
             unicode_base_filename = base_filename.decode("utf-8")
         except UnicodeError:
-            unicode_base_filename = util.displayable_path(base_filename)
+            unicode_base_filename = beets_util.displayable_path(base_filename)
     else:
         unicode_base_filename = base_filename
 
@@ -426,18 +429,20 @@ def item_file(item_id):
     else:
         safe_filename = unicode_base_filename
 
-    response = send_file(item_path, as_attachment=True, download_name=safe_filename)
+    response = await send_file(
+        item_path, as_attachment=True, attachment_filename=safe_filename
+    )
     return response
 
 
 @library_bp.route("/item/query/<path:queries>", methods=["GET", "DELETE", "PATCH"])
 @resource_query("items", patchable=True)
-def item_query(queries):
+async def item_query(queries):
     return g.lib.items(queries)
 
 
 @library_bp.route("/item/path/<everything:path>")
-def item_at_path(path):
+async def item_at_path(path):
     query = beets.library.PathQuery("path", path.encode("utf-8"))
     item = g.lib.items(query).get()
     if item:
@@ -447,7 +452,7 @@ def item_at_path(path):
 
 
 @library_bp.route("/item/values/<string:key>")
-def item_unique_field_values(key):
+async def item_unique_field_values(key):
     sort_key = request.args.get("sort_key", key)
     try:
         values = _get_unique_table_field_values(beets.library.Item, key, sort_key)
@@ -463,25 +468,25 @@ def item_unique_field_values(key):
 
 @library_bp.route("/album/<idlist:ids>", methods=["GET", "DELETE"])
 @resource("albums")
-def get_album(id):
+async def get_album(id):
     return g.lib.get_album(id)
 
 
 @library_bp.route("/album/")
 @library_bp.route("/album/query/")
 @resource_list("albums")
-def all_albums():
+async def all_albums():
     return g.lib.albums()
 
 
 @library_bp.route("/album/query/<path:queries>", methods=["GET", "DELETE"])
 @resource_query("albums")
-def album_query(queries):
+async def album_query(queries):
     return g.lib.albums(queries)
 
 
 @library_bp.route("/album/values/<string:key>")
-def album_unique_field_values(key):
+async def album_unique_field_values(key):
     sort_key = request.args.get("sort_key", key)
     try:
         values = _get_unique_table_field_values(beets.library.Album, key, sort_key)
@@ -491,7 +496,7 @@ def album_unique_field_values(key):
 
 
 @library_bp.route("/album/<int:album_id>/items")
-def album_items(album_id):
+async def album_items(album_id):
     album = g.lib.get_album(album_id)
     if album:
         return jsonify(items=[_rep(item) for item in album.items()])
@@ -505,35 +510,35 @@ def album_items(album_id):
 
 
 @library_bp.route("/item/<int:item_id>/art")
-def item_art(item_id):
+async def item_art(item_id):
     log.debug(f"Item art query for '{item_id}'")
     item: beets.library.Item = g.lib.get_item(item_id)
-    item_path = util.py3_path(item.path)
+    item_path = beets_util.py3_path(item.path)
     if not os.path.exists(item_path):
         return abort(404, description="Media file not found")
     mediafile = MediaFile(item_path)
     if mediafile.art:
-        return _send_image(BytesIO(mediafile.art))
+        return await _send_image(BytesIO(mediafile.art))
     else:
         abort(404, description="Item has no cover art")
 
 
 @library_bp.route("/album/<int:album_id>/art")
-def album_art(album_id):
+async def album_art(album_id):
     log.debug(f"Art art query for album id '{album_id}'")
     album = g.lib.get_album(album_id)
     if album and album.artpath:
-        return _send_image(BytesIO(album.artpath.decode()))
+        return await _send_image(BytesIO(album.artpath.decode()))
     elif album:
         # Check the first item in the album for embedded cover art
         try:
             first_item: beets.library.Item = album.items()[0]
-            item_path = util.py3_path(first_item.path)
+            item_path = beets_util.py3_path(first_item.path)
             if not os.path.exists(item_path):
                 return abort(404, description="Media file not found")
             mediafile = MediaFile(item_path)
             if mediafile.art:
-                return _send_image(BytesIO(mediafile.art))
+                return await _send_image(BytesIO(mediafile.art))
             else:
                 return abort(404, description="Item has no cover art")
         except:
@@ -543,10 +548,10 @@ def album_art(album_id):
         return abort(404, description="No art for this album id, or id does not exist")
 
 
-def _send_image(img_data: BytesIO):
+async def _send_image(img_data: BytesIO):
     max_size = (200, 200)
     img = _resize(img_data, max_size)
-    response = make_response(send_file(img, mimetype="image/jpeg"))
+    response = await make_response(send_file(img, mimetype="image/jpeg"))
     response.headers["Cache-Control"] = "public, max-age=86400"
     return response
 
@@ -566,7 +571,7 @@ def _resize(img_data: BytesIO, size: tuple[int, int]) -> BytesIO:
 
 
 @library_bp.route("/artist/")
-def all_artists():
+async def all_artists():
     with g.lib.transaction() as tx:
         rows = tx.query("SELECT DISTINCT albumartist FROM albums")
     all_artists = [{"name": row[0]} for row in rows]
@@ -574,7 +579,7 @@ def all_artists():
 
 
 @library_bp.route("/artist/<path:artist_name>")
-def albums_by_artist(artist_name):
+async def albums_by_artist(artist_name):
     log.debug(f"Album query for artist '{artist_name}'")
 
     with g.lib.transaction() as tx:
@@ -614,7 +619,7 @@ class Stats(TypedDict):
 
 
 @library_bp.route("/stats")
-def stats():
+async def stats():
     with g.lib.transaction() as tx:
         album_stats = tx.query(
             "SELECT COUNT(*), COUNT(DISTINCT genre), COUNT(DISTINCT label), COUNT(DISTINCT albumartist) FROM albums"

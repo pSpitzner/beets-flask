@@ -2,7 +2,7 @@ import os
 from typing import TypedDict
 from urllib.parse import unquote
 
-from flask import Blueprint, abort, jsonify, request
+from quart import Blueprint, abort, jsonify, request
 from sqlalchemy import select
 
 from beets_flask.database import Tag, db_session
@@ -24,7 +24,7 @@ class SelectionLookup(TypedDict):
 
 
 @lookup_bp.route("/<path:folder>", methods=["GET"])
-def lookup_folder_type(folder):
+async def lookup_folder_type(folder):
     """Lookup one folder."""
     decoded_folder = unquote(folder)
     log.debug(decoded_folder)
@@ -33,7 +33,7 @@ def lookup_folder_type(folder):
 
 
 @lookup_bp.route("/", methods=["POST"])
-def lookup_folder_types():
+async def lookup_folder_types():
     """Lookup information of multiple folders for input.
 
     This is a helper to allow the frontend to take the right action for a particular selected folder.
@@ -45,7 +45,7 @@ def lookup_folder_types():
     # Potential problems:
     - if a folder has the same name as a previously deleted (and tagged) one
     """
-    data = request.get_json()
+    data = await request.get_json()
     folders = data.get("folders", [])
 
     if len(folders == 0):

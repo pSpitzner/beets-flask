@@ -1,5 +1,5 @@
 <p align="center">
-    <h1 align="center">Beets Flask</h1>
+    <h1 align="center">Beets Quart</h1>
 </p>
 
 ![version number](https://img.shields.io/github/package-json/v/pspitzner/beets-flask/main?filename=frontend%2Fpackage.json&label=version&color=blue)

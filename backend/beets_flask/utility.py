@@ -1,37 +1,8 @@
 import io
 import re
 import sys
-from functools import wraps
-from math import floor
-
-from flask import current_app
-from rq import Worker
 
 from .logger import log
-
-# ------------------------------------------------------------------------------------ #
-#                                    init flask app                                    #
-# ------------------------------------------------------------------------------------ #
-
-
-def with_app_context(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        with current_app.app_context():
-            return f(*args, **kwargs)
-
-    return wrapper
-
-
-def get_running_jobs():
-    running_jobs = []
-    workers = Worker.all()
-    for worker in workers:
-        job = worker.get_current_job()
-        if job:
-            running_jobs.append(job)
-    return running_jobs
-
 
 # ------------------------------------------------------------------------------------ #
 #                                        Logging                                       #

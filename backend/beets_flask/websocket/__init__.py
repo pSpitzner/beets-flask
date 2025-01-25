@@ -8,4 +8,4 @@ sio: socketio.Server = socketio.Server(
 
 
 def register_socketio(app):
-    app.wsgi_app = socketio.WSGIApp(sio, app.wsgi_app)
+    app.asgi_app = socketio.ASGIApp(sio, app.asgi_app)
