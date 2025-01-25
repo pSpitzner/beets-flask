@@ -81,14 +81,15 @@ def db_session(session: Session | None = None):
             session = session_factory()
 
     try:
+        # mypy does not resolve our try/catch for None-Type check. ignore type errors.``
         yield session
-        session.commit()
+        session.commit()  # type: ignore
     except:
-        session.rollback()
+        session.rollback()  # type: ignore
         raise
     finally:
         if is_outermost:
-            session.close()
+            session.close()  # type: ignore
 
 
 def with_db_session(func):

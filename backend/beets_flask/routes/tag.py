@@ -98,7 +98,7 @@ def add_tag():
             description={"error": "Library is configured as readonly"},
         )
 
-    tags = []
+    tags: list[dict] = []
     with db_session() as session:
         for f in folders:
             tag = Tag.get_by(Tag.album_folder == f, session=session)

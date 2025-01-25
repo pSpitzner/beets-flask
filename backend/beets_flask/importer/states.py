@@ -48,7 +48,7 @@ class ImportStatus:
 
     @property
     def value(self):
-        ret = self.message
+        ret: str = self.message
         if self.plugin_stage is not None:
             ret += f" ({self.plugin_stage})"
         if self.plugin_name is not None:

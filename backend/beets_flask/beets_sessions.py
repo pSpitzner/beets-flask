@@ -2,6 +2,7 @@ import io
 import logging
 import os
 import sys
+from typing import Optional
 
 from beets import importer, plugins
 from beets.autotag import AlbumMatch, TrackMatch
@@ -109,7 +110,7 @@ class BaseSession(importer.ImportSession):
         return False
 
     @property
-    def track_paths_before_import(self, from_disk=False) -> list[str]:
+    def track_paths_before_import(self) -> list[str]:
         """Returns the paths to all media files that would be imported.
 
         Relies on `self.path` pointing to an album or single track.
@@ -242,7 +243,7 @@ class MatchedImportSession(BaseSession):
     def __init__(
         self,
         path: str,
-        match_url: str,
+        match_url: Optional[str],
         config_overlay: str | dict | None = None,
         tag_id: str | None = None,
     ):
@@ -460,7 +461,7 @@ class AsIsImportSession(MatchedImportSession):
         err, out = super().run_and_capture_output()
 
         # add some basic info of the added items to the preview
-        self.preview += "\n\n"
+        self.preview = f"{self.preview}\n\n"
         if len(self._track_paths_before_import) == 0:
             self.preview += "No files to import."
         else:

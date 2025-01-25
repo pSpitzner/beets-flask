@@ -623,8 +623,7 @@ def stats():
             "SELECT COUNT(*), MAX(added), MAX(mtime), SUM(length) FROM items"
         )
 
-    lib_path = cast(str, config["directory"].get())
-    lib_path = Path(lib_path)
+    lib_path = Path(cast(str, config["directory"].get()))
 
     # Get available disk space
     disk_space = shutil.disk_usage(lib_path)

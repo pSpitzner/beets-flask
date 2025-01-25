@@ -207,7 +207,7 @@ class InteractiveImportSession(BaseSession):
         """Search for candidates for the current selection."""
         log.debug("searching more candidates")
 
-        candidates = []
+        candidates: list[AlbumMatch | TrackMatch] = []
         if search_artist is not None:
             # @ps: why is an assert here? This will error, no?
             assert search_album is not None

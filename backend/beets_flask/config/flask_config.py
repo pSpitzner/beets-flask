@@ -8,10 +8,12 @@ The configuration classes are parse in the `create_app`
 function in the `__init__.py` file.
 """
 
+from __future__ import annotations
+
 import os
 
 cwd = os.getcwd()
-config = None
+config: ServerConfig
 
 
 class ServerConfig:
@@ -61,7 +63,9 @@ class DevelopmentLocal(ServerConfig):
 
 
 class DevelopmentDocker(ServerConfig):
-    DATABASE_URI = f'sqlite:////{os.getenv("BEETSFLASKDIR")}/beets-flask-sqlite.db?timeout=5'
+    DATABASE_URI = (
+        f'sqlite:////{os.getenv("BEETSFLASKDIR")}/beets-flask-sqlite.db?timeout=5'
+    )
     DEBUG = True
 
 

@@ -39,7 +39,7 @@ def _copy_file(src, dest):
 
 
 class Singleton(type):
-    _instances = {}
+    _instances: dict = {}
 
     def __call__(cls, *args, **kwargs):
         """Singleton pattern implementation."""

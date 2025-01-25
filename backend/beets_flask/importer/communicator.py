@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Generic, List, Literal, TypedDict, TypeVar, Union
+from typing import Any, Generic, List, Literal, TypedDict, TypeVar, Union, cast
 
 from beets_flask.logger import log
 
@@ -88,9 +88,10 @@ class ImportCommunicator(ABC):
 
         """
         log.debug(f"received_request {req=}")
-        ret_val = {}
+        ret_val: dict[str, Any] = {}
         match req["event"]:
             case "candidate_choice":
+                req = cast(ChoiceReceive, req)  # only needed for mypy type checking
                 selection_id = req["selection_id"]
                 candidate_id = req["candidate_id"]
                 duplicate_action = req["duplicate_action"]
@@ -102,6 +103,7 @@ class ImportCommunicator(ABC):
                 sel_state.duplicate_action = duplicate_action
 
             case "selection_complete":
+                req = cast(CompleteReceive, req)
                 # Validate the request
                 selection_ids = req["selection_ids"]
                 are_completed = req["are_completed"]
@@ -117,6 +119,7 @@ class ImportCommunicator(ABC):
                     sel_state.completed = completed
 
             case "candidate_search":
+                req = cast(CandidateSearchReceive, req)
                 selection_id = req["selection_id"]
                 search_id = req["search_id"]
                 artist = req["artist"]

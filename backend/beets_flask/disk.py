@@ -2,7 +2,7 @@ import os
 import re
 import subprocess
 from pathlib import Path
-from typing import Dict, List, TypedDict, Union
+from typing import Any, Dict, List, NotRequired, TypedDict, Union
 
 from beets.importer import MULTIDISC_MARKERS, MULTIDISC_PAT_FMT, albums_in_dir
 from cachetools import TTLCache, cached
@@ -13,13 +13,13 @@ from beets_flask.logger import log
 class FolderStructure(TypedDict):
     type: str
     is_album: bool
-    is_inbox: bool | None = None
+    is_inbox: NotRequired[bool]
     full_path: str
-    children: Dict[str, Union['FolderStructure', dict]]
+    children: Dict[str, Union["FolderStructure", dict]]
 
 
 @cached(cache=TTLCache(maxsize=1024, ttl=900), info=True)
-def path_to_dict(root_dir, relative_to="/", subdirs=True) -> dict:
+def path_to_dict(root_dir, relative_to="/", subdirs=True):
     """Generate our nested dict structure for the specified path.
 
     Each level in the folder hierarchy is a dict with the following keys:
@@ -163,7 +163,7 @@ def all_album_folders(root_dir: str, subdirs: bool = False) -> List[str]:
     -------
         List[str]
     """
-    folders = []
+    folders: list[Any] = []
     for paths, _ in albums_in_dir(root_dir):
         if subdirs:
             folders.extend(p for p in paths)

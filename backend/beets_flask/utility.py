@@ -82,71 +82,6 @@ def heading(heading: str):
     return f"\n+{'-' * 90}+\n| {heading}\n+{'-' * 90}+\n"
 
 
-def ansi_to_html(text: str):
-    if not text:
-        return text
-
-    ansi_codes = {
-        "\x1b[39;49;00m": "</span>",
-        "\x1b[0m": "</span>",
-        "\x1b[1m": '<span class="fw-bolder">',
-        "\x1b[2m": '<span class="fw-lighter fg-gray">',
-        "\x1b[01m": '<span class="fw-bolder">',
-        "\x1b[3m": '<span class="fst-italic">',
-        "\x1b[4m": '<span class="text-decoration-underline">',
-        "\x1b[31m": '<span class="fg-red">',
-        "\x1b[31;01m": '<span class="fg-red fw-bolder">',
-        "\x1b[32m": '<span class="fg-green">',
-        "\x1b[32;01m": '<span class="fg-green fw-bolder">',
-        "\x1b[33m": '<span class="fg-yellow">',
-        "\x1b[33;01m": '<span class="fg-yellow fw-bolder">',
-        "\x1b[34m": '<span class="fg-blue">',
-        "\x1b[34;01m": '<span class="fg-blue fw-bolder">',
-        "\x1b[35m": '<span class="fg-magenta">',
-        "\x1b[35;01m": '<span class="fg-magenta fw-bolder">',
-        "\x1b[36m": '<span class="fg-cyan">',
-        "\x1b[36;01m": '<span class="fg-cyan fw-bolder">',
-        # 37 should be white, but we use white as the default color.
-        # "\x1b[37m": '<span style="color: white">',
-        "\x1b[37m": '<span class="fg-yellow">',
-        "\x1b[39m": '<span style="color: inherit">',
-        "\x1b[49m": '<span style="background-color: inherit">',
-        "\x1b[00m": '<span style="font-weight: normal; font-style: normal; text-decoration: none">',
-        # preserve leading white spaces
-        "^ +": lambda match: "&nbsp;" * len(match.group(0)),
-        "\n": "<br>",
-        "\t": "  ",
-        # we want to pass this as a html attribute, e.g. title='{this}'. replace single quotes.
-        "'": "&#39;",
-    }
-
-    # Create a regular expression that matches any of the keys in ansi_codes
-    regex = re.compile("|".join(map(re.escape, ansi_codes.keys())))
-
-    open_spans = 0
-
-    def replacer(match):
-        nonlocal open_spans
-        replacement = ansi_codes[match.group(0)]
-        if replacement.startswith("<span"):
-            open_spans += 1
-        elif replacement == "</span>":
-            replacement = "</span>" * open_spans
-            open_spans = 0
-        return replacement
-
-    text = text.lstrip(" \n")
-    text = text.rstrip("\n ")
-    text = regex.sub(replacer, text)
-    # make links clickable
-    text = re.sub(r"(https?://[^\s]+)(?=<br>|$)", r'<a href="\1">\1</a>', text)
-    # preserve leading white spaces
-    # leading_spaces = re.compile("^ +", re.MULTILINE)
-    # text = leading_spaces.sub(lambda match: "&nbsp;" * len(match.group(0)), text)
-
-    return text
-
-
 def selector_safe(s: str):
     replacements = {
         " ": "_",
@@ -161,23 +96,6 @@ def selector_safe(s: str):
     regex = re.compile("(%s)" % "|".join(map(re.escape, replacements.keys())))
 
     return regex.sub(lambda mo: replacements[mo.string[mo.start() : mo.end()]], s)
-
-
-def html_for_distance(dist):
-    from beets import config
-
-    prefix = "<span class='similarity-badge"
-    suffix = "</span>"
-    if dist is None:
-        return f"{prefix} fg-border-clr'>tbd{suffix}"
-
-    sim = f"{floor((1 - dist) * 100):.0f}%"
-    if dist <= config["match"]["strong_rec_thresh"].as_number():
-        return f"{prefix} fg-green'>{sim}{suffix}"
-    elif dist <= config["match"]["medium_rec_thresh"].as_number():
-        return f"{prefix} fg-yellow'>{sim}{suffix}"
-    else:
-        return f"{prefix} fg-red'>{sim}{suffix}"
 
 
 # ------------------------------------------------------------------------------------ #

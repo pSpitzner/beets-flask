@@ -76,7 +76,7 @@ def emit_output():
 
 def emit_output_continuously(sleep_seconds=0.1):
     # only emit if there was a change
-    prev = []
+    prev: list[str] = []
     while True:
         sio.sleep(sleep_seconds)  # type: ignore
         try:

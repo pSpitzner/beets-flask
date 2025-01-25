@@ -3,7 +3,7 @@ from __future__ import annotations
 import glob
 import os
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from uuid import uuid4 as uuid
 
 from sqlalchemy import ForeignKey
@@ -62,7 +62,7 @@ class Tag(Base):
     created_at: Mapped[datetime]
     updated_at: Mapped[datetime]
 
-    # the track list we keep ourselves
+    # the track list we keep ourselves, as strings so we can store in sqlite
     _track_paths: Mapped[Optional[str]]
     _track_paths_before: Mapped[Optional[str]]
     _track_paths_after: Mapped[Optional[str]]
@@ -78,8 +78,8 @@ class Tag(Base):
         status=None,
         num_tracks=None,
         preview=None,
-        track_paths_before=None,
-        track_paths_after=None,
+        track_paths_before: Optional[list[str]] = None,
+        track_paths_after: Optional[list[str]] = None,
     ):
         self.album_folder = album_folder
         self.album_folder_basename = str(os.path.basename(album_folder))
@@ -108,6 +108,10 @@ class Tag(Base):
         else:
             return []
 
+    @track_paths_before.setter
+    def track_paths_before(self, paths):
+        self._track_paths_before = "\n".join(paths) if paths else None
+
     @property
     def track_paths_after(self):
         if self._track_paths_after is not None:
@@ -115,20 +119,16 @@ class Tag(Base):
         else:
             return []
 
+    @track_paths_after.setter
+    def track_paths_after(self, paths):
+        self._track_paths_after = "\n".join(paths) if paths else None
+
     @property
     def track_paths(self):
         if self._track_paths is not None:
             return self._track_paths.split("\n")
         else:
             return []
-
-    @track_paths_before.setter
-    def track_paths_before(self, paths):
-        self._track_paths_before = "\n".join(paths) if paths else None
-
-    @track_paths_after.setter
-    def track_paths_after(self, paths):
-        self._track_paths_after = "\n".join(paths) if paths else None
 
     @track_paths.setter
     def track_paths(self, paths):
