@@ -9,7 +9,7 @@ see also /websocket/status
 from typing import Literal
 
 import requests
-from flask import Blueprint, current_app, request
+from quart import Blueprint, current_app, request
 
 from beets_flask.logger import log
 from beets_flask.websocket import sio
@@ -45,9 +45,9 @@ def update_client_view(
 
 
 @sse_bp.route("/publish", methods=["POST"])
-def publish():
-    with current_app.app_context():
-        data = request.get_json()
+async def publish():
+    async with current_app.app_context():
+        data = await request.get_json()
         type: Literal["tag", "inbox"] = data.get("type")
         body: dict = data.get("body")
         log.debug(f"Sending status update: {type=} {body=}")

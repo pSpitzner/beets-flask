@@ -36,7 +36,17 @@ redis-cli FLUSHALL
 
 # we need to run with one worker for socketio to work (but need at least threads for SSEs)
 # sufficient timout for the interactive import sessions, which may take a couple of minutes
-gunicorn --worker-class eventlet -w 1 --threads 32  --timeout 300 --bind 0.0.0.0:5001 --reload 'main:create_app()'
+# gunicorn --worker-class eventlet -w 1 --threads 32  --timeout 300 --bind 0.0.0.0:5001 --reload 'main:create_app()'
+
+
+# see for available cli options:
+# https://www.uvicorn.org/#command-line-options
+uvicorn beets_flask:create_app --port 5001 \
+    --host 0.0.0.0 \
+    --reload \
+    --factory
+
+
 
 # if we need to debug the continaer without running the webserver:
 # tail -f /dev/null

@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 from functools import wraps
 
-from flask import Flask
+from quart import Quart
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
@@ -13,7 +13,7 @@ engine: Engine
 session_factory: scoped_session[Session]
 
 
-def setup_database(app: Flask) -> None:
+def setup_database(app: Quart) -> None:
     """Set up the database connection and session factory for the FLask application.
 
     This function initializes the global `engine` and `session_factory` variables

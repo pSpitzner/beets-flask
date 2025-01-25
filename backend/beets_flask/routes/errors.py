@@ -1,13 +1,13 @@
 """How errors are propagated to the user.
 
-This module contains the error handling logic for the Flask application. It provides a way to handle errors in a consistent way and return JSON responses to the user.
+This module contains the error handling logic for the Quart application. It provides a way to handle errors in a consistent way and return JSON responses to the user.
 """
 
 import json
 import traceback
 
 from confuse import ConfigError
-from flask import Blueprint, jsonify
+from quart import Blueprint, jsonify
 from werkzeug.exceptions import HTTPException
 
 error_bp = Blueprint("error", __name__)
@@ -31,12 +31,12 @@ class InvalidUsage(Exception):
 
 
 @error_bp.app_errorhandler(NotImplementedError)
-def handle_not_implemented(error):
+async def handle_not_implemented(error):
     return jsonify({"error": "Not implemented"}), 501
 
 
 @error_bp.app_errorhandler(InvalidUsage)
-def handle_crawler_exception(error: InvalidUsage):
+async def handle_crawler_exception(error: InvalidUsage):
     return (
         jsonify({"error": "Bad request", "message": error.message}),
         error.status_code,
@@ -44,7 +44,7 @@ def handle_crawler_exception(error: InvalidUsage):
 
 
 @error_bp.app_errorhandler(ConfigError)
-def handle_config_exception(error: ConfigError):
+async def handle_config_exception(error: ConfigError):
     return (
         jsonify(
             {
@@ -58,29 +58,28 @@ def handle_config_exception(error: ConfigError):
 
 
 @error_bp.app_errorhandler(FileNotFoundError)
-def handle_file_not_found(error):
+async def handle_file_not_found(error):
     return jsonify({"error": "File not found", "message": str(error)}), 404
 
 
 @error_bp.app_errorhandler(HTTPException)
-def handle_exception(e):
+async def handle_exception(e: HTTPException):
     """Return JSON instead of HTML for HTTP errors."""
     # start with the correct headers and status code from the error
-    response = e.get_response()
-    # replace the body with JSON
-    response.data = json.dumps(
-        {
-            "code": e.code,
-            "name": e.name,
-            "description": e.description,
-        }
+    return (
+        jsonify(
+            {
+                "code": e.code or 500,
+                "name": e.name,
+                "description": e.description,
+            }
+        ),
+        e.code or 500,
     )
-    response.content_type = "application/json"
-    return response
 
 
 @error_bp.app_errorhandler(Exception)
-def handle_generic_error(error):
+async def handle_generic_error(error):
     return (
         jsonify(
             {
@@ -99,25 +98,25 @@ def handle_generic_error(error):
 
 
 @error_bp.route("/error/invalidUsage", methods=["GET"])
-def error():
+async def error():
     raise InvalidUsage("This is a bad request")
 
 
 @error_bp.route("/error/notImplemented", methods=["GET"])
-def not_implemented():
+async def not_implemented():
     raise NotImplementedError("This is not implemented")
 
 
 @error_bp.route("/error/configError", methods=["GET"])
-def config_error():
+async def config_error():
     raise ConfigError("This is a config error")
 
 
 @error_bp.route("/error/fileNotFound", methods=["GET"])
-def file_not_found():
+async def file_not_found():
     raise FileNotFoundError("This is a file not found error")
 
 
 @error_bp.route("/error/genericError", methods=["GET"])
-def generic_error():
+async def generic_error():
     raise Exception("This is a generic error")

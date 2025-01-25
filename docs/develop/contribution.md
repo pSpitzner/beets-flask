@@ -54,7 +54,6 @@ Please make sure the tests pass and the code is linted before submitting a pull 
 pip install pre-commit
 pre-commit install
 ```
-^
 This should now automatically reject commits that do not pass the linting and formatting checks.
 
 You may run our tests locally with:

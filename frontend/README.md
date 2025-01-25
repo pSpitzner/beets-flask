@@ -4,7 +4,7 @@ Basic React + TypeScript + TanStack Router scaffold for Vite.
 
 TODO:
 - [ ] Add correct dist folder to host by flask
-- [ ] Port templates from flask to react
+- [ ] Port templates from quart to react
 
 ## Install
 

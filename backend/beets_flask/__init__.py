@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import os
 from typing import TYPE_CHECKING
 
-from flask import Flask
-from flask_cors import CORS
+from quart import Quart
 
 from .config.flask_config import ServerConfig, init_server_config
 from .database import setup_database
@@ -14,12 +12,10 @@ if TYPE_CHECKING:
     from .config.flask_config import ServerConfig
 
 
-def create_app(config: str | ServerConfig | None = None) -> Flask:
+def create_app(config: str | ServerConfig | None = None) -> Quart:
 
     # create and configure the app
-    app = Flask(__name__, instance_relative_config=True)
-    # CORS needed for Dev so vite can talk to the backend
-    CORS(app)
+    app = Quart(__name__, instance_relative_config=True)
 
     config = init_server_config(config)
     app.config.from_object(config)

@@ -1,4 +1,4 @@
-from flask import Blueprint
+from quart import Blueprint
 from rq.registry import clean_registries
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
@@ -9,7 +9,7 @@ monitor_bp = Blueprint("monitor", __name__, url_prefix="/monitor")
 
 
 @monitor_bp.route("/queues", methods=["GET"])
-def get_queue_status():
+async def get_queue_status():
     """
     Get the status of the job queues.
 
@@ -36,7 +36,7 @@ def get_queue_status():
 
 
 @monitor_bp.route("/workers", methods=["GET"])
-def get_worker_status():
+async def get_worker_status():
     """
     Get the status of the RQ workers.
 
@@ -61,7 +61,7 @@ def get_worker_status():
 
 
 @monitor_bp.route("/debugResetDb", methods=["GET"])
-def reset_database():
+async def reset_database():
     """
     Reset the sql database.
 

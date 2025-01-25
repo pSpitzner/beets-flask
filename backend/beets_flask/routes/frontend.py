@@ -1,6 +1,6 @@
 """The glue between the compiled vite frontend and our backend."""
 
-from flask import Blueprint, send_from_directory
+from quart import Blueprint, send_from_directory
 
 frontend_bp = Blueprint("frontend", __name__)
 
@@ -9,7 +9,8 @@ frontend_bp = Blueprint("frontend", __name__)
 # basically a reverse proxy for the frontend
 @frontend_bp.route("/", defaults={"path": "index.html"})
 @frontend_bp.route("/<path:path>")
-def reverse_proxy(path):
+async def reverse_proxy(path):
+    """Link to vite resources."""
     # not include assets
     if (
         not "assets" in path
@@ -24,5 +25,5 @@ def reverse_proxy(path):
     if "logo.png" in path:
         path = path[path.index("logo.png") :]
 
-    r = send_from_directory("../../frontend/dist/", path)
+    r = await send_from_directory("../../frontend/dist/", path)
     return r

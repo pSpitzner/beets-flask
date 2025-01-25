@@ -3,7 +3,7 @@ import shutil
 from pathlib import Path
 from typing import Optional, TypedDict
 
-from flask import Blueprint, abort, jsonify, request
+from quart import Blueprint, abort, jsonify, request
 from sqlalchemy import select
 
 from beets_flask.database import Tag, db_session
@@ -21,7 +21,7 @@ inbox_bp = Blueprint("inbox", __name__, url_prefix="/inbox")
 
 
 @inbox_bp.route("/flatPaths", methods=["POST"])
-def get_tree():
+async def get_tree():
     """Get all flat paths for the inbox folder.
 
     # Request args
@@ -48,7 +48,7 @@ def get_tree():
 
 
 @inbox_bp.route("/", methods=["GET"])
-def get_all():
+async def get_all():
     """Get nested dict structures for the inbox folder.
 
     # Request args
@@ -65,7 +65,7 @@ def get_all():
 
 
 @inbox_bp.route("/path/<path:folder>", methods=["GET"])
-def get_folder(folder):
+async def get_folder(folder):
     """Get all subfolders from of the specified folder."""
     use_cache = bool(request.args.get("use_cache", False))
     if not use_cache:
@@ -76,14 +76,14 @@ def get_folder(folder):
 
 
 @inbox_bp.route("/autotag", methods=["POST"])
-def autotag_inbox_folder():
+async def autotag_inbox_folder():
     """Trigger a tagging process on all subfolders of a given inbox folder.
 
-    By default, tags folders that were not tagged yet.
+    By async default, tags folders that were not tagged yet.
     To retag existing folders use `with_status` to provide a list of statuses
     that should be renewed.
     """
-    data = request.get_json()
+    data = await request.get_json()
     kind = data.get("kind")
     folder = data.get("folder")
     with_status = data.get("with_status", ["untagged"])
@@ -102,8 +102,8 @@ def autotag_inbox_folder():
 
 
 @inbox_bp.route("/path", methods=["DELETE"])
-def delete_folders():
-    data = request.get_json()
+async def delete_folders():
+    data = await request.get_json()
     with_status = data.get("with_status", [])
     folders = data.get("folders", [])
 
@@ -120,12 +120,12 @@ def delete_folders():
 
 
 @inbox_bp.route("/path/<path:folder>", methods=["DELETE"])
-def delete_inbox(folder):
+async def delete_inbox(folder):
     """Delete the specified inbox folder and all its contents.
 
     !This is not reversible
     """
-    data = request.get_json()
+    data = await request.get_json()
     with_status = data.get("with_status", [])
 
     try:
@@ -215,7 +215,7 @@ class Stats(TypedDict):
 
 
 @inbox_bp.route("/stats", methods=["GET"])
-def stats_for_all():
+async def stats_for_all():
     """Get the stats for all inbox folders."""
     folders = get_inbox_folders()
     stats = [compute_stats(f) for f in folders]
@@ -223,7 +223,7 @@ def stats_for_all():
 
 
 @inbox_bp.route("/stats/<path:folder>", methods=["GET"])
-def stats_for_folder(folder: str):
+async def stats_for_folder(folder: str):
     """Get the stats for a specific inbox folder."""
     if not folder.startswith("/"):
         folder = "/" + folder

@@ -14,8 +14,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
-    "flask>=3.0.3",
-    "flask-cors>=5.0.0",
+    "quart>=0.20.0",
     "confuse>=2.0.1",
     "beets==2.0.0",
     "sqlalchemy>=2.0.35",
@@ -27,17 +26,22 @@ dependencies = [
     "cachetools>=5.3.3",
     "libtmux>=0.37.0",
     # Used for hosting the web-interface & api
-    "gunicorn>=22.0.0",
-    "eventlet>=0.32.0",
+    "uvicorn>=0.34.0",
     # beets plugin dependencies
-    "pylast>=5.2.0"
+    "pylast>=5.2.0",
 ]
 
 [project.optional-dependencies]
 # Can be install with e.g. `pip install -e .[dev]`
 test = ["pytest>=8.2.2", "pytest-asyncio>=0.23.8", "pytest-cov>=5.0.0"]
 dev = ["ruff>=0.6.5", "pre-commit>=3.8.0", "interactive_beets[typed]"]
-typed = ["types-cachetools", "types-requests", "mypy>=1.14.1", "types-cachetools","types-Flask-Cors"]
+typed = [
+    "types-cachetools",
+    "types-requests",
+    "mypy>=1.14.1",
+    "types-cachetools",
+    "types-Quart-Cors",
+]
 all = ["interactive_beets[dev,test]"]
 docs = [
     "sphinx>=8.0.2",
@@ -97,5 +101,5 @@ check_untyped_defs = true
 
 [[tool.mypy.overrides]]
 # Suppresses error messages about imports that cannot be resolved.
-module = ["socketio.*", "beets.*", "confuse.*","mediafile.*"]
+module = ["socketio.*", "beets.*", "confuse.*", "mediafile.*"]
 ignore_missing_imports = true

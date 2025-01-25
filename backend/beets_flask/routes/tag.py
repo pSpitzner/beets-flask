@@ -4,7 +4,7 @@ Tags are our database representation of a look-up or import performed by beets.
 Can be created by the user or automatically by the system.
 """
 
-from flask import Blueprint, abort, jsonify, request
+from quart import Blueprint, abort, jsonify, request
 from sqlalchemy import select
 
 from beets_flask import invoker
@@ -16,7 +16,7 @@ tag_bp = Blueprint("tag", __name__, url_prefix="/tag")
 
 
 @tag_bp.route("/", methods=["GET"])
-def get_all():
+async def get_all():
     """Get all tags."""
     with db_session() as session:
         stmt = select(Tag).order_by(Tag.created_at.desc())
@@ -25,7 +25,7 @@ def get_all():
 
 
 @tag_bp.route("/id/<tag_id>", methods=["GET"])
-def get_tag_by_id(tag_id: str):
+async def get_tag_by_id(tag_id: str):
     """Get a task by its id."""
     with db_session() as session:
         tag = Tag.get_by(Tag.id == tag_id, session=session)
@@ -33,7 +33,7 @@ def get_tag_by_id(tag_id: str):
 
 
 @tag_bp.route("/id/<tag_id>", methods=["DELETE"])
-def delete_tag_by_id(tag_id: str):
+async def delete_tag_by_id(tag_id: str):
     """Delete a tag by its id."""
     with db_session() as session:
         tag = Tag.get_by(Tag.id == tag_id, session=session)
@@ -46,7 +46,7 @@ def delete_tag_by_id(tag_id: str):
 
 
 @tag_bp.route("/path/<path:folder>", methods=["GET"])
-def get_tag_by_folder_path(folder: str):
+async def get_tag_by_folder_path(folder: str):
     """Get a tag by its folder path on disk."""
     with db_session() as session:
         tag = Tag.get_by(Tag.album_folder == "/" + folder, session=session)
@@ -54,7 +54,7 @@ def get_tag_by_folder_path(folder: str):
 
 
 @tag_bp.route("/path/<path:folder>", methods=["DELETE"])
-def delete_tag_by_folder_path(folder: str):
+async def delete_tag_by_folder_path(folder: str):
     """Delete a tag by its folder path on disk."""
     with db_session() as session:
         tag = Tag.get_by(Tag.album_folder == "/" + folder, session=session)
@@ -67,7 +67,7 @@ def delete_tag_by_folder_path(folder: str):
 
 
 @tag_bp.route("/add", methods=["POST"])
-def add_tag():
+async def add_tag():
     """Add one or multiple tags.
 
     You need to specify the folder of the album,
@@ -79,7 +79,7 @@ def add_tag():
     - OR `folder` (str): Single folder to tag
 
     """
-    data = request.get_json()
+    data = await request.get_json()
     kind = data.get("kind", None)
     # 24-10-21 PS@SM: lets talk about how we prefer the endpoint!
     folder = data.get("folder", None)
