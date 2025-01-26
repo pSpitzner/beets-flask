@@ -1,6 +1,19 @@
+from typing import Callable
+
 import socketio
 
-sio: socketio.AsyncServer = socketio.AsyncServer(
+
+class TypedAsyncServer(socketio.AsyncServer):
+    def on(  # type: ignore
+        self, event, namespace=None
+    ):  # -> Callable[..., Any]:# -> Callable[..., Any]:
+        def decorator(handler: Callable):
+            return super().on(event, namespace)(handler)  # type: ignore
+
+        return decorator
+
+
+sio = TypedAsyncServer(
     async_mode="asgi",
     logger=False,
     engineio_logger=False,
