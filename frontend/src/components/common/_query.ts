@@ -11,8 +11,7 @@ export const queryClient = new QueryClient({});
 // thin wrapper around fetch so that we can use the vite dev server with our backend
 export function customizeFetch() {
     const originalFetch = window.fetch;
-    const devMode = import.meta.env.MODE === "development";
-    const apiPrefix = devMode ? "http://0.0.0.0:5001/api_v1" : "/api_v1";
+    const apiPrefix = "/api_v1";
 
     window.fetch = async (
         input: RequestInfo | URL,
@@ -31,7 +30,7 @@ export function customizeFetch() {
             throw new APIError(data);
         }
 
-        if (devMode && response.headers.get("Content-Type") == "application/json") {
+        if (response.headers.get("Content-Type") == "application/json") {
             try {
                 await response.clone().json();
             } catch (e) {

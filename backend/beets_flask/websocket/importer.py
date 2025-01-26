@@ -1,6 +1,6 @@
 from typing import Union
 
-from socketio import AsyncServer, Server
+from socketio import AsyncServer
 
 from beets_flask.importer import (
     ChoiceReceive,
@@ -72,6 +72,7 @@ async def start_import_session(sid, data):
     state = ImportState()
     communicator = WebsocketCommunicator(state, sio)
     session = InteractiveImportSession(state, communicator, path=path, cleanup=cleanup)
+    await communicator.emit_current()
 
     session_ref = sio.start_background_task(session.run)
 

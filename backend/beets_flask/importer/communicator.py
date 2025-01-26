@@ -29,13 +29,12 @@ class ImportCommunicator(ABC):
 
     def __init__(self, state: ImportState):
         self.state = state
-        self.emit_current()
 
-    def emit_current(self):
+    async def emit_current(self):
         """Emit the current top-level state associated with the import session."""
-        self.emit_state(self.state)
+        await self.emit_state(self.state)
 
-    def emit_state(
+    async def emit_state(
         self, state: Union[ImportState, SelectionState, CandidateState, None], **kwargs
     ) -> None:
         """Emit a (sub-) state of an import session.
@@ -45,7 +44,7 @@ class ImportCommunicator(ABC):
         if state is None:
             return
 
-        self._emit(
+        await self._emit(
             EmitRequest(
                 event=default_events(state),
                 data=state.serialize(),
@@ -53,14 +52,14 @@ class ImportCommunicator(ABC):
             **kwargs,
         )
 
-    def emit_status(self, status: ImportStatus, **kwargs):
+    async def emit_status(self, status: ImportStatus, **kwargs):
         """Emit a status message."""
-        self._emit(
+        await self._emit(
             EmitRequest(event="status", data=status.as_dict()),
             **kwargs,
         )
 
-    def emit_custom(self, event: str, data: Any, **kwargs):
+    async def emit_custom(self, event: str, data: Any, **kwargs):
         """Emit a custom event.
 
         For the WebsocketCommunicator, this is equivalent to
@@ -77,9 +76,9 @@ class ImportCommunicator(ABC):
         ```
 
         """
-        self._emit(EmitRequest(event=event, data=data), **kwargs)
+        await self._emit(EmitRequest(event=event, data=data), **kwargs)
 
-    def received_request(
+    async def received_request(
         self, req: Union[ChoiceReceive, CompleteReceive, CandidateSearchReceive]
     ):
         """Process incoming requests related to the import session.
@@ -169,11 +168,11 @@ class ImportCommunicator(ABC):
                 return
 
         # Emit to all (potential) clients
-        self._emit(req=req)
+        await self._emit(req=req)
         return ret_val
 
     @abstractmethod
-    def _emit(
+    async def _emit(
         self,
         req: Union[ChoiceReceive, CompleteReceive, CandidateSearchReceive, EmitRequest],
         **kwargs,
