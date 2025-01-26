@@ -1,23 +1,23 @@
-from typing import Callable
+from typing import Callable, cast
 
 import socketio
 
+old_on = socketio.AsyncServer.on
 
+
+# Gets rid of the type error in the decorator
 class TypedAsyncServer(socketio.AsyncServer):
-    def on(  # type: ignore
-        self, event, namespace=None
-    ):  # -> Callable[..., Any]:# -> Callable[..., Any]:
-        def decorator(handler: Callable):
-            return super().on(event, namespace)(handler)  # type: ignore
-
-        return decorator
+    def on(self, event: str, namespace: str | None = None) -> Callable: ...  # type: ignore
 
 
-sio = TypedAsyncServer(
-    async_mode="asgi",
-    logger=False,
-    engineio_logger=False,
-    cors_allowed_origins="*",
+sio: TypedAsyncServer = cast(
+    TypedAsyncServer,
+    socketio.AsyncServer(
+        async_mode="asgi",
+        logger=False,
+        engineio_logger=False,
+        cors_allowed_origins="*",
+    ),
 )
 
 

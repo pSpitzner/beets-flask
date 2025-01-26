@@ -382,6 +382,9 @@ async def before_request():
     # the importer may want to write.
     if not hasattr(g, "lib") or g.lib is None:
         g.lib = _open_library(config)
+    else:
+        if str(g.lib.path) != str(config.as_path()):
+            g.lib = _open_library(config)
 
 
 # ------------------------------------------------------------------------------------ #
