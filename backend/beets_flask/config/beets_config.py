@@ -149,5 +149,16 @@ class InteractiveBeetsConfig(BeetsConfig, metaclass=Singleton):
 # Monkey patch the beets config
 import beets
 
-config = InteractiveBeetsConfig()
-beets.config = config
+
+def refresh_config():
+    """Refresh the config object.
+
+    This is useful if you want to reload the config after it has been changed.
+    """
+    global config
+
+    config = InteractiveBeetsConfig()
+    beets.config = config
+
+
+refresh_config()
