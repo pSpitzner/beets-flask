@@ -1,8 +1,9 @@
+import asyncio
 import pytest
 from beets_flask.__init__ import create_app
 
 
-@pytest.fixture(name="testapp")
+@pytest.fixture(name="testapp", scope="session")
 def fixture_testapp():
 
     app = create_app("test")

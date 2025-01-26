@@ -16,8 +16,11 @@ https://stackoverflow.com/questions/44447473/how-to-make-xterm-js-accept-input
 
 """
 
+from __future__ import annotations
+
 import libtmux
 from libtmux import Pane, Session, Window
+from libtmux.exc import LibTmuxException
 
 from beets_flask.config import config
 from beets_flask.logger import log
@@ -33,17 +36,21 @@ def register_tmux():
     server = libtmux.Server()
 
     try:
-        session = server.sessions.get(session_name="beets-socket-term")  # type: ignore
+        abs_path_lib = str(config["gui"]["terminal"]["start_path"].as_str())
     except:
-        try:
-            abs_path_lib = str(config["gui"]["terminal"]["start_path"].as_str())
-        except:
-            abs_path_lib = "/repo"
+        abs_path_lib = "/repo"
+
+    try:
         session = server.new_session(
             session_name="beets-socket-term", start_directory=abs_path_lib
         )
+    except LibTmuxException:  # DuplicateSessionName
+        session = server.sessions.get(session_name="beets-socket-term")  # type: ignore
 
-    window = session.active_window  # type: ignore
+    if session is None:
+        raise Exception("Could not create or find tmux session")
+
+    window = session.active_window
     pane = window.active_pane or window.split_window(attach=True)
 
 
@@ -58,40 +65,40 @@ def is_session_alive():
         return False
 
 
-def emit_output():
+async def emit_output():
     try:
         if is_session_alive():
             current = pane.cmd("capture-pane", "-p", "-N", "-T", "-e").stdout
         else:
             current = ["Session ended. Reload page to restart!"]
-        sio.emit("ptyOutput", {"output": current}, namespace="/terminal")
+        await sio.emit("ptyOutput", {"output": current}, namespace="/terminal")
     except Exception as e:
         log.error(f"Error reading from pty: {e}")
-        sio.emit(
+        await sio.emit(
             "ptyOutput",
             {"output": f"\nError reading from pty: {e}"},
             namespace="/terminal",
         )
 
 
-def emit_output_continuously(sleep_seconds=0.1):
+async def emit_output_continuously(sleep_seconds=0.1):
     # only emit if there was a change
     prev: list[str] = []
     while True:
-        sio.sleep(sleep_seconds)  # type: ignore
+        await sio.sleep(sleep_seconds)  # type: ignore
         try:
             if is_session_alive():
                 current = pane.cmd("capture-pane", "-p", "-N", "-T", "-e").stdout
             else:
                 current = ["Session ended. Reload page to restart!"]
             if current != prev:
-                sio.emit("ptyOutput", {"output": current}, namespace="/terminal")
-                emit_cursor_position()
+                await sio.emit("ptyOutput", {"output": current}, namespace="/terminal")
+                await emit_cursor_position()
                 prev = current
                 log.debug(f"emitting {current}")
         except Exception as e:
             log.error(f"Error reading from pty: {e}")
-            sio.emit(
+            await sio.emit(
                 "ptyOutput",
                 {"output": f"\nError reading from pty: {e}"},
                 namespace="/terminal",
@@ -99,33 +106,33 @@ def emit_output_continuously(sleep_seconds=0.1):
             break
 
 
-sio.start_background_task(target=emit_output_continuously)
+# sio.start_background_task(target=emit_output_continuously)
 
 
-def emit_cursor_position():
+async def emit_cursor_position():
     try:
         cursor = pane.cmd("display-message", "-p", "#{cursor_x},#{cursor_y}").stdout
         x, y = map(int, cursor[0].split(","))
-        sio.emit("ptyCursorPosition", {"x": x, "y": y}, namespace="/terminal")
+        await sio.emit("ptyCursorPosition", {"x": x, "y": y}, namespace="/terminal")
     except Exception as e:
         log.error(f"Error reading cursor position: {e}")
-        sio.emit(
+        await sio.emit(
             "cursorPosition",
             {"cursor": f"\nError reading cursor position: {e}"},
             namespace="/terminal",
         )
 
 
-@sio.on("ptyInput", namespace="/terminal")  # type: ignore
-def pty_input(sid, data):
+@sio.on("ptyInput", namespace="/terminal")
+async def pty_input(sid, data):
     """Write to the child pty."""
     log.debug(f"{sid} input {data}")
     pane.send_keys(data["input"], enter=False)
-    emit_cursor_position()
+    await emit_cursor_position()
 
 
-@sio.on("ptyResize", namespace="/terminal")  # type: ignore
-def resize(sid, data):
+@sio.on("ptyResize", namespace="/terminal")
+async def resize(sid, data):
     """Resize the pty."""
     log.debug(f"{sid} resize pty to {data['cols']} {data['rows']}")
     window.resize(width=data["cols"], height=data["rows"])
@@ -133,26 +140,26 @@ def resize(sid, data):
     # sio.emit("ptyOutput", {"output": pane.capture_pane()}, namespace="/terminal")
 
 
-@sio.on("ptyResendOutput", namespace="/terminal")  # type: ignore
-def resend_output(sid):
+@sio.on("ptyResendOutput", namespace="/terminal")
+async def resend_output(sid):
     """Resend the output."""
     log.debug(f"{sid} resend output")
-    emit_output()
+    await emit_output()
 
 
-@sio.on("connect", namespace="/terminal")  # type: ignore
-def connect(sid, environ):
+@sio.on("connect", namespace="/terminal")
+async def connect(sid, environ):
     """Handle new client connected."""
     log.debug(f"TerminalSocket new client connected {sid}")
     register_tmux()
 
 
-@sio.on("disconnect", namespace="/terminal")  # type: ignore
-def disconnect(sid):
+@sio.on("disconnect", namespace="/terminal")
+async def disconnect(sid):
     """Handle client disconnect."""
     log.debug(f"TerminalSocket client disconnected {sid}")
 
 
-@sio.on("*", namespace="/terminal")  # type: ignore
-def any_event(event, sid, data):
+@sio.on("*", namespace="/terminal")
+async def any_event(event, sid, data):
     log.debug(f"TerminalSocket sid {sid} undhandled event {event} with data {data}")

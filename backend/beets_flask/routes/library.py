@@ -16,13 +16,15 @@
 # ------------------------------------------------------------------------------------ #
 
 
+import asyncio
 import base64
 import json
 import os
 import shutil
+from cgi import test
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, TypedDict, cast
+from typing import Awaitable, Callable, Coroutine, Optional, TypedDict, cast
 
 import beets.library
 from beets import util as beets_util
@@ -171,6 +173,7 @@ def resource(name, patchable=False):
     def make_responder(retriever):
         async def responder(ids):
             entities = [retriever(id) for id in ids]
+            entities = await asyncio.gather(*entities)
             entities = [entity for entity in entities if entity]
 
             if get_method() == "DELETE":
@@ -180,7 +183,7 @@ def resource(name, patchable=False):
                 for entity in entities:
                     entity.remove(delete=is_delete())
 
-                return make_response(jsonify({"deleted": True}), 200)
+                return await make_response(jsonify({"deleted": True}), 200)
 
             elif get_method() == "PATCH" and patchable:
                 if config["gui"]["library"]["readonly"].get(bool):
@@ -230,7 +233,7 @@ def resource_query(name, patchable=False):
     """Decorate a function to handle RESTful HTTP queries for resources."""
 
     def make_responder(query_func):
-        def responder(queries):
+        async def responder(queries):
             # we set the route to use a path converter before us,
             # so queries is a single string.
             # edgecase: trailing escape character `\` would crash. we should
@@ -242,7 +245,7 @@ def resource_query(name, patchable=False):
                 # only remove the last character if it is a single escape character
                 queries = queries[:-1]
 
-            entities = query_func(queries)
+            entities = await query_func(queries)
 
             log.debug(queries)
 
@@ -253,7 +256,7 @@ def resource_query(name, patchable=False):
                 for entity in entities:
                     entity.remove(delete=is_delete())
 
-                return make_response(jsonify({"deleted": True}), 200)
+                return await make_response(jsonify({"deleted": True}), 200)
 
             elif get_method() == "PATCH" and patchable:
                 if config["gui"]["library"]["readonly"].get(bool):
@@ -293,10 +296,14 @@ def resource_list(name):
     """Return a JSON response for a given resource."""
 
     def make_responder(list_all):
-        def responder():
+        async def responder():
+
             return Response(
                 json_generator(
-                    list_all(), root=name, expand=is_expand(), minimal=is_minimal()
+                    await list_all(),
+                    root=name,
+                    expand=is_expand(),
+                    minimal=is_minimal(),
                 ),
                 mimetype="application/json",
             )
@@ -526,9 +533,10 @@ async def item_art(item_id):
 @library_bp.route("/album/<int:album_id>/art")
 async def album_art(album_id):
     log.debug(f"Art art query for album id '{album_id}'")
-    album = g.lib.get_album(album_id)
+    album: beets.library.Album = g.lib.get_album(album_id)
     if album and album.artpath:
-        return await _send_image(BytesIO(album.artpath.decode()))
+        with open(album.artpath.decode(), "rb") as f:
+            return await _send_image(BytesIO(f.read()))
     elif album:
         # Check the first item in the album for embedded cover art
         try:
@@ -551,7 +559,7 @@ async def album_art(album_id):
 async def _send_image(img_data: BytesIO):
     max_size = (200, 200)
     img = _resize(img_data, max_size)
-    response = await make_response(send_file(img, mimetype="image/jpeg"))
+    response = await make_response(await send_file(img, mimetype="image/jpeg"))
     response.headers["Cache-Control"] = "public, max-age=86400"
     return response
 

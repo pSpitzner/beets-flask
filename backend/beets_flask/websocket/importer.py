@@ -1,6 +1,6 @@
 from typing import Union
 
-from socketio import Server
+from socketio import AsyncServer, Server
 
 from beets_flask.importer import (
     ChoiceReceive,
@@ -18,20 +18,20 @@ session: InteractiveImportSession | None = None
 session_ref = None
 
 
-@sio.on("connect", namespace=namespace)  # type: ignore
-def connect(sid, environ):
+@sio.on("connect", namespace=namespace)
+async def connect(sid, environ):
     """Handle new client connected."""
     log.debug(f"ImportSocket new client connected {sid}")
 
 
-@sio.on("disconnect", namespace=namespace)  # type: ignore
-def disconnect(sid):
+@sio.on("disconnect", namespace=namespace)
+async def disconnect(sid):
     """Handle client disconnect."""
     log.debug(f"ImportSocket client disconnected {sid}")
 
 
-@sio.on("get_state", namespace=namespace)  # type: ignore
-def get_state(sid):
+@sio.on("get_state", namespace=namespace)
+async def get_state(sid):
     """Get the current state of the import session.
 
     Returns data via callback
@@ -42,13 +42,13 @@ def get_state(sid):
         return None
 
 
-@sio.on("*", namespace=namespace)  # type: ignore
-def any_event(event, sid, data):
+@sio.on("*", namespace=namespace)
+async def any_event(event, sid, data):
     log.error(f"ImportSocket sid {sid} unhandled event {event} with data {data}")
 
 
-@sio.on("start_import_session", namespace=namespace)  # type: ignore
-def start_import_session(sid, data):
+@sio.on("start_import_session", namespace=namespace)
+async def start_import_session(sid, data):
     """Start a new interactive import session.
 
     We shall only have one running at a time (for now).
@@ -78,8 +78,8 @@ def start_import_session(sid, data):
     return True
 
 
-@sio.on("abort_import_session", namespace=namespace)  # type: ignore
-def abort_session(sid):
+@sio.on("abort_import_session", namespace=namespace)
+async def abort_session(sid):
     global session, session_ref
 
     try:
@@ -90,13 +90,13 @@ def abort_session(sid):
     if session is not None and session.cleanup is not None:
         session.cleanup()
 
-    sio.emit("abort", namespace=namespace, skip_sid=sid)
+    await sio.emit("abort", namespace=namespace, skip_sid=sid)
 
     return True
 
 
-@sio.on("user_action", namespace=namespace)  # type: ignore
-def choice(sid, req: Union[ChoiceReceive, CompleteReceive]):
+@sio.on("user_action", namespace=namespace)
+async def choice(sid, req: Union[ChoiceReceive, CompleteReceive]):
     """Handle user action.
 
     Triggers when a user has made a choice via the frontend -> Pass it to the session.
@@ -106,9 +106,9 @@ def choice(sid, req: Union[ChoiceReceive, CompleteReceive]):
     log.debug(f"received user action {req=}")
 
     if not session is None:
-        ret_val = session.communicator.received_request(req)
+        ret_val = await session.communicator.received_request(req)
         # Remit state
-        session.communicator.emit_state(session.import_state, skip_sid=sid)
+        await session.communicator.emit_state(session.import_state, skip_sid=sid)
         return ret_val
     else:
         return False
@@ -121,15 +121,15 @@ class WebsocketCommunicator(ImportCommunicator):
     backend import logic.
     """
 
-    sio: Server
+    sio: AsyncServer
 
-    def __init__(self, state: ImportState, sio: Server):
+    def __init__(self, state: ImportState, sio: AsyncServer):
         self.sio = sio
         super().__init__(state)
 
-    def _emit(self, req, **kwargs) -> None:
+    async def _emit(self, req, **kwargs) -> None:
         # TODO Hardcoded namespace for now
-        self.sio.emit(req["event"], req, namespace=namespace, **kwargs)
+        await self.sio.emit(req["event"], req, namespace=namespace, **kwargs)
 
 
 def register_importer():
