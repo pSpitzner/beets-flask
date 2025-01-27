@@ -6,6 +6,7 @@ We used to use SeverSideEvents but moved to websocket.
 see also /websocket/status
 """
 
+import asyncio
 from typing import Literal
 
 import requests
@@ -34,14 +35,28 @@ def update_client_view(
         },
     }
 
-    try:
-        response = requests.post(
-            "http://localhost:5001/api_v1/status/publish", json=payload
-        )
-        if response.status_code != 200:
-            log.debug(f"Failed to update client view: {response.json()}")
-    except requests.exceptions.ConnectionError:
-        log.debug("Failed to update client view: Connection refused")
+    def handle_response():
+        try:
+            log.debug(f"Trying to publish (async): {payload}")
+            response = requests.post(
+                "http://localhost:5001/api_v1/status/publish", json=payload
+            )
+            if response.status_code == 200:
+                log.debug("Client view updated (async)")
+            else:
+                log.error(f"Failed to update client view: {response.json()}")
+        except requests.exceptions.ConnectionError:
+            log.error("Failed to update client view: Connection refused")
+
+    # we could simply use async requests, but this is a paradigm
+    # that we also need in the interactive import session until
+    # we rewrite the beets pipeline for async/await
+    # thus keeping this for reference
+    loop = asyncio.get_event_loop()
+    task = loop.create_task(asyncio.to_thread(handle_response))
+    if not loop.is_running():
+        # In the redis worker, we wont have a loop running by default.
+        loop.run_until_complete(task)
 
 
 @sse_bp.route("/publish", methods=["POST"])
@@ -51,6 +66,6 @@ async def publish():
         type: Literal["tag", "inbox"] = data.get("type")
         body: dict = data.get("body")
         log.debug(f"Sending status update: {type=} {body=}")
-        sio.emit(type, body, namespace="/status")
+        await sio.emit(type, body, namespace="/status")
 
         return {"message": "Message sent"}, 200

@@ -1,3 +1,4 @@
+import asyncio
 import time
 from typing import Callable, List
 
@@ -122,7 +123,8 @@ class InteractiveImportSession(BaseSession):
         # # Update state with new task. In parallel pipeline, user should be able to choose from all tasks simultaneously.
         # # Emit the task to the user
         # self.import_state.upsert_task(task)
-        self.communicator.emit_state(self.import_state)
+        loop = asyncio.get_event_loop()
+        loop.create_task(self.communicator.emit_state(self.import_state))
 
         # tell plugins we are starting user_query
         results = plugins.send("import_task_before_choice", session=self, task=task)
@@ -143,7 +145,8 @@ class InteractiveImportSession(BaseSession):
         log.debug(f"Waiting for user selection for task: {task}")
 
         sel_state = self.import_state.get_selection_state_for_task(task)
-        self.communicator.emit_state(sel_state)
+        loop = asyncio.get_event_loop()
+        loop.create_task(self.communicator.emit_state(sel_state))
 
         if sel_state is None:
             raise ValueError("No selection state found for task.")
@@ -216,14 +219,14 @@ class InteractiveImportSession(BaseSession):
                 search_artist=search_artist,
                 search_album=search_album,
             )
-            candidates = proposal.candidates + candidates
+            candidates = list(proposal.candidates) + candidates
 
         if search_id is not None:
             _, _, proposal = autotag.tag_album(
                 task.items,
                 search_ids=search_id.split(),
             )
-            candidates = proposal.candidates + candidates
+            candidates = list(proposal.candidates) + candidates
 
         log.debug(f"found {len(candidates)} new candidates")
 
@@ -264,7 +267,8 @@ class InteractiveImportSession(BaseSession):
         """
         log.debug(f"Setting status to {status.value}")
         self.import_state.status = status
-        self.communicator.emit_status(status)
+        loop = asyncio.get_event_loop()
+        loop.create_task(self.communicator.emit_state(self.import_state))
 
     def run(self):
         """Run the import task.
@@ -337,7 +341,7 @@ class InteractiveImportSession(BaseSession):
             self.pipeline.run_sequential()
             # parallel still broken. no attribute queue.mutex, no idea why
             # self.pipeline.run_parallel()
-        except importer.ImportAbort:
+        except importer.ImportAbortError:
             self.logger.debug(f"Interactive import session aborted by user")
 
         log.debug(f"Pipeline completed")

@@ -12,9 +12,7 @@ except:
 
 log.info(f"Starting {num_preview_workers} redis workers for preview generation")
 for i in range(num_preview_workers):
-    os.system(
-        f'rq worker preview --log-format "Preview worker $i: %(message)s" > /dev/null &'
-    )
+    os.system(f'rq worker preview --log-format "Preview worker $i: %(message)s" &')
 
 
 # imports are relatively fast, because they use previously fetched previews.
@@ -22,6 +20,4 @@ for i in range(num_preview_workers):
 num_import_workers = 1
 log.info(f"Starting {num_import_workers} redis workers for import")
 for i in range(num_import_workers):
-    os.system(
-        f'rq worker import --log-format "Import worker $i: %(message)s" > /dev/null &'
-    )
+    os.system(f'rq worker import --log-format "Import worker $i: %(message)s" &')

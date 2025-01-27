@@ -18,23 +18,7 @@ from typing import (
 )
 
 from beets import autotag
-
-
-# some beets types, just typed ...
-class AlbumMatch(NamedTuple):
-    distance: autotag.Distance
-    info: autotag.AlbumInfo
-    # these are tracks in the folder that were not found online
-    extra_items: list[autotag.Item]
-    # tracks found online not present in the folder
-    extra_tracks: list[autotag.TrackInfo]
-    # mapping from item -> trackinfo to match items on diks with tracks found online
-    mapping: dict[autotag.Item, autotag.TrackInfo] | None = None
-
-
-class TrackMatch(NamedTuple):
-    distance: autotag.Distance
-    info: autotag.TrackInfo
+from beets.autotag.hooks import AlbumMatch, TrackMatch
 
 
 class PromptChoice(NamedTuple):

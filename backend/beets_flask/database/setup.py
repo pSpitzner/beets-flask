@@ -5,8 +5,9 @@ from quart import Quart
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
-from ..config.flask_config import config
-from ..logger import log
+from beets_flask.config.flask_config import config
+from beets_flask.logger import log
+
 from .models import Base, Tag, TagGroup
 
 engine: Engine
@@ -35,6 +36,7 @@ def setup_database(app: Quart) -> None:
         _reset_database()
 
     _create_tables(engine)
+    _seed_tables()
 
     # Gracefully shutdown the database session
     @app.teardown_appcontext
@@ -47,7 +49,7 @@ def __setup_factory():
     global session_factory
 
     engine = create_engine(config["DATABASE_URI"])
-    session_factory = scoped_session(sessionmaker(bind=engine))
+    session_factory = scoped_session(sessionmaker(bind=engine, expire_on_commit=False))
 
 
 @contextmanager
@@ -73,6 +75,7 @@ def db_session(session: Session | None = None):
     ```
     """
     is_outermost = session is None
+    log.debug(f"Is outermost: {is_outermost}")
     if is_outermost:
         try:
             session = session_factory()
@@ -116,6 +119,16 @@ def with_db_session(func):
 
 def _create_tables(engine) -> None:
     Base.metadata.create_all(bind=engine)
+
+
+def _seed_tables() -> None:
+    with db_session() as session:
+        # By default all tags are in the "Unsorted" group
+        default_TagGroup = TagGroup.get_by(TagGroup.id == "Unsorted", session=session)
+        if default_TagGroup is None:
+            default_TagGroup = TagGroup(id="Unsorted")
+            session.add(default_TagGroup)
+            session.commit()
 
 
 def _reset_database():
