@@ -16,9 +16,10 @@ def setup_logging() -> None:
     rq_name = os.getenv("RQ_JOB_ID", None)
     if rq_name:
         log = logging.getLogger(f"beets-flask.{rq_name[0:8]}")
+        log.setLevel(os.getenv("LOG_LEVEL_BEETSFLASK_REDIS", logging.INFO))
     else:
         log = logging.getLogger("beets-flask")
-    log.setLevel(os.getenv("LOG_LEVEL_BEETSFLASK", logging.INFO))
+        log.setLevel(os.getenv("LOG_LEVEL_BEETSFLASK", logging.INFO))
 
     log.info("Logging initialized")
 

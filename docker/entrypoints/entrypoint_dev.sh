@@ -44,8 +44,8 @@ redis-cli FLUSHALL
 uvicorn beets_flask:create_app --port 5001 \
     --host 0.0.0.0 \
     --factory \
-    --workers 5
-    #--reload \
+    --workers 1
+    # --reload
 
 
 

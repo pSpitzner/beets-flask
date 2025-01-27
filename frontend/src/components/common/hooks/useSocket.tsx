@@ -42,6 +42,7 @@ export const useSocket = (
             transports: ["websocket"],
             ...options,
         });
+        console.log(`Creating`, socket);
         setSocket(socket);
     }, [options, url]);
 

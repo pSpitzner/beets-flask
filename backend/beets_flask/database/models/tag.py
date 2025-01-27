@@ -10,6 +10,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.orm.session import make_transient
 
+from beets_flask.logger import log
 from beets_flask.utility import AUDIO_EXTENSIONS
 
 from .base import Base
@@ -72,7 +73,6 @@ class Tag(Base):
         album_folder: str,
         kind: str,
         id: Optional[str] = None,
-        group_id=None,
         distance=None,
         match_url=None,
         status=None,
@@ -86,7 +86,7 @@ class Tag(Base):
         self.id = str(id) if id is not None else str(uuid())
         self.created_at = datetime.now()
         self.updated_at = datetime.now()
-        self.group_id = group_id or "Unsorted"
+        self._group_id = "Unsorted"
         self.distance = distance
         self.match_url = match_url
         self.status = status or "pending"
@@ -148,16 +148,16 @@ class Tag(Base):
     def group_id(self):
         return self._group_id
 
-    @group_id.setter
-    def group_id(self, group_id):
-        from beets_flask.database import db_session
+    def set_group_id(self, group_id, session=None):
+        from backend.beets_flask.database.setup import db_session
 
-        with db_session() as session:
-            tag_group = session.query(TagGroup).filter_by(id=group_id).first()
+        with db_session(session) as s:
+            log.debug(f"Setting group_id {group_id}, {s}")
+            tag_group = s.query(TagGroup).filter_by(id=group_id).first()
             if not tag_group:
                 tag_group = TagGroup(id=group_id)
-                session.add(tag_group)
-                session.commit()
+                s.add(tag_group)
+                s.commit()
 
             self._group_id = group_id
             self._tag_group = tag_group

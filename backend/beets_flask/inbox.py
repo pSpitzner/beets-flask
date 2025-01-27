@@ -1,3 +1,4 @@
+import asyncio
 import os
 import threading
 from datetime import datetime
@@ -45,16 +46,16 @@ def register_inboxes():
 
     for inbox in _inboxes:
         if not inbox["autotag"]:
-            log.info(f'Skipping observer for inbox {inbox["path"]}')
+            log.info(f"Skipping observer for inbox {inbox['path']}")
             continue
 
-        log.info(f'Starting observer for {inbox["path"]}')
+        log.info(f"Starting observer for {inbox['path']}")
         try:
             # the polling observer worked more reliably for me than the default observer.
             observer.schedule(handler, path=inbox["path"], recursive=True)
         except FileNotFoundError:
             log.error(
-                f'Could not find inbox directory ({inbox["path"]}). Check your config!'
+                f"Could not find inbox directory ({inbox['path']}). Check your config!"
             )
             continue
 
@@ -226,11 +227,14 @@ def get_inbox_for_path(path):
 def get_inbox_folders() -> List[str]:
     return [i["path"] for i in _inboxes]
 
+
 def is_inbox_folder(path: str) -> bool:
     return path in get_inbox_folders()
 
+
 def get_inboxes():
     return _inboxes
+
 
 def mark_inbox_folder(fspath: FolderStructure) -> FolderStructure:
     """Given a FolderStructure, mark the highest level folder as inbox if it actually is one."""
