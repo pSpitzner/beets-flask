@@ -29,7 +29,7 @@ from typing import Awaitable, Callable, Coroutine, Optional, TypedDict, cast
 import beets.library
 from beets import util as beets_util
 from beets.ui import _open_library
-from mediafile import MediaFile  # comes with the beets install
+from mediafile import MediaFile, Image  # comes with the beets install
 from PIL import Image as PILImage
 from quart import (
     Blueprint,
@@ -522,47 +522,55 @@ async def album_items(album_id):
 @library_bp.route("/item/<int:item_id>/art")
 async def item_art(item_id):
     log.debug(f"Item art query for '{item_id}'")
-    item: beets.library.Item = g.lib.get_item(item_id)
-    item_path = beets_util.py3_path(item.path)
+    item: beets.library.Item | None = g.lib.get_item(item_id)
+    if not item:
+        return abort(404, description="Item not found")
+
+    item_path = beets_util.syspath(item.path)
+    log.debug(f"Item: {item_path}")
     if not os.path.exists(item_path):
         return abort(404, description="Media file not found")
+
     mediafile = MediaFile(item_path)
-    if mediafile.art:
-        return await _send_image(BytesIO(mediafile.art))
-    else:
-        abort(404, description="Item has no cover art")
+    if not mediafile.images or len(mediafile.images) < 1:
+        return abort(404, description="Item has no cover art")
+
+    im: Image = cast(Image, mediafile.images[0])  # typehints suck (beets typical)
+    return await _send_image(BytesIO(im.data))
 
 
 @library_bp.route("/album/<int:album_id>/art")
 async def album_art(album_id):
     log.debug(f"Art art query for album id '{album_id}'")
-    album: beets.library.Album = g.lib.get_album(album_id)
-    if album and album.artpath:
+    album: beets.library.Album | None = g.lib.get_album(album_id)
+
+    if album is None:
+        return abort(404, description="Album not found")
+
+    if album.artpath:
         with open(album.artpath.decode(), "rb") as f:
             return await _send_image(BytesIO(f.read()))
-    elif album:
-        # Check the first item in the album for embedded cover art
-        try:
-            first_item: beets.library.Item = album.items()[0]
-            item_path = beets_util.py3_path(first_item.path)
-            if not os.path.exists(item_path):
-                return abort(404, description="Media file not found")
-            mediafile = MediaFile(item_path)
-            if mediafile.art:
-                return await _send_image(BytesIO(mediafile.art))
-            else:
-                return abort(404, description="Item has no cover art")
-        except:
-            return abort(500, description="Failed to get album items")
 
-    else:
-        return abort(404, description="No art for this album id, or id does not exist")
+    # Check the first item in the album for embedded cover art
+    # TODO: cleanup this mess (.art is deprecated)
+    try:
+        first_item: beets.library.Item = album.items()[0]
+        item_path = beets_util.syspath(first_item.path)
+        if not os.path.exists(item_path):
+            return abort(404, description="Media file not found")
+        mediafile = MediaFile(item_path)
+        if mediafile.art:
+            return await _send_image(BytesIO(mediafile.art))
+        else:
+            return abort(404, description="Item has no cover art")
+    except:
+        return abort(500, description="Failed to get album items")
 
 
 async def _send_image(img_data: BytesIO):
     max_size = (200, 200)
     img = _resize(img_data, max_size)
-    response = await make_response(await send_file(img, mimetype="image/jpeg"))
+    response = await make_response(await send_file(img, mimetype="image/png"))
     response.headers["Cache-Control"] = "public, max-age=86400"
     return response
 
@@ -571,7 +579,7 @@ def _resize(img_data: BytesIO, size: tuple[int, int]) -> BytesIO:
     image = PILImage.open(img_data)
     image.thumbnail(size)
     image_io = BytesIO()
-    image.save(image_io, format="JPEG")
+    image.convert("RGB").save(image_io, format="JPEG")
     image_io.seek(0)
     return image_io
 

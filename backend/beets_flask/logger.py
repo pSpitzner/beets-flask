@@ -19,7 +19,7 @@ def setup_logging() -> None:
         log.setLevel(os.getenv("LOG_LEVEL_BEETSFLASK_REDIS", logging.INFO))
     else:
         log = logging.getLogger("beets-flask")
-        log.setLevel(os.getenv("LOG_LEVEL_BEETSFLASK", logging.INFO))
+        log.setLevel(os.getenv("LOG_LEVEL_BEETSFLASK", logging.DEBUG))
 
     log.info("Logging initialized")
 

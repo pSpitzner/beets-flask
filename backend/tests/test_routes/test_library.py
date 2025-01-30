@@ -156,12 +156,37 @@ class TestItemsEndpoint:
 # ---------------------------------------------------------------------------- #
 
 
-@pytest.mark.asyncio
-async def test_get_art(client):
-    response = await client.get("/api_v1/library/item/1/art")
-    data = await response.get_json()
-    assert response.status_code == 200, repr(data)
+class TestArtEndpoint:
+    """Test class for the Art endpoint in the API.
 
-    response = await client.get("/api_v1/library/album/1/art")
-    data = await response.get_json()
-    assert response.status_code == 200, repr(data)
+    This class contains tests for retrieving art for items and albums
+    from the beets library via the API.
+    """
+
+    @pytest.fixture(autouse=True)
+    def items(self, beets_lib):  # type: ignore
+        """Fixture to add items to the beets library before running tests."""
+        beets_lib.add(beets_lib_item(artist="Basstripper", album="Bass"))
+        beets_lib.add(beets_lib_album(artist="Beta", album="Alpha"))
+
+    @pytest.mark.asyncio
+    async def test_get_art(self, client: Client, beets_lib):
+        """Test the GET request to retrieve art for an item and an album.
+
+        Asserts:
+            - The response status code is 200 for each item and album.
+        """
+
+        items = beets_lib.items()
+        for item in items:
+            response = await client.get(f"/api_v1/library/item/{item.id}/art")
+            data = await response.get_json()
+            print(data)
+            assert response.status_code == 200
+
+        albums = beets_lib.albums()
+
+        for album in albums:
+            response = await client.get(f"/api_v1/library/album/{album.id}/art")
+            data = await response.get_json()
+            assert response.status_code == 200
