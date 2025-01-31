@@ -12,6 +12,7 @@ from typing import Literal
 import requests
 from quart import Blueprint, current_app, request
 
+from beets_flask.importer.communicator import with_loop
 from beets_flask.logger import log
 from beets_flask.websocket import sio
 
@@ -52,11 +53,7 @@ def update_client_view(
     # that we also need in the interactive import session until
     # we rewrite the beets pipeline for async/await
     # thus keeping this for reference
-    loop = asyncio.get_event_loop()
-    task = loop.create_task(asyncio.to_thread(handle_response))
-    if not loop.is_running():
-        # In the redis worker, we wont have a loop running by default.
-        loop.run_until_complete(task)
+    with_loop(asyncio.to_thread(handle_response))
 
 
 @sse_bp.route("/publish", methods=["POST"])

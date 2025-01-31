@@ -1,12 +1,27 @@
 from __future__ import annotations
 
+import asyncio
+import functools
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Generic, List, Literal, TypedDict, TypeVar, Union, cast
+from typing import (
+    Any,
+    Callable,
+    Coroutine,
+    Generic,
+    List,
+    Literal,
+    TypedDict,
+    TypeVar,
+    Union,
+    cast,
+)
+
+from socketio import AsyncServer
 
 from beets_flask.logger import log
 
-from .states import CandidateState, ImportState, ImportStatus, SelectionState
+from .states import CandidateState, ImportState, ImportStatusMessage, SelectionState
 
 
 def default_events(state: Union[ImportState, SelectionState, CandidateState]):
@@ -23,6 +38,13 @@ def default_events(state: Union[ImportState, SelectionState, CandidateState]):
     return event
 
 
+def with_loop(co: Coroutine):
+    loop = asyncio.get_event_loop()
+    task = loop.create_task(co)
+    if not loop.is_running():
+        loop.run_until_complete(task)
+
+
 class ImportCommunicator(ABC):
     # Ref to the current import state
     state: ImportState
@@ -30,11 +52,14 @@ class ImportCommunicator(ABC):
     def __init__(self, state: ImportState):
         self.state = state
 
-    async def emit_current(self):
+    async def emit_current_async(self):
         """Emit the current top-level state associated with the import session."""
-        await self.emit_state(self.state)
+        await self.emit_state_async(self.state)
 
-    async def emit_state(
+    def emit_current_sync(self):
+        return with_loop(self.emit_current_async())
+
+    async def emit_state_async(
         self, state: Union[ImportState, SelectionState, CandidateState, None], **kwargs
     ) -> None:
         """Emit a (sub-) state of an import session.
@@ -52,14 +77,22 @@ class ImportCommunicator(ABC):
             **kwargs,
         )
 
-    async def emit_status(self, status: ImportStatus, **kwargs):
+    def emit_state_sync(
+        self, state: Union[ImportState, SelectionState, CandidateState, None], **kwargs
+    ):
+        return with_loop(self.emit_state_async(state, **kwargs))
+
+    async def emit_status_async(self, status: ImportStatusMessage, **kwargs):
         """Emit a status message."""
         await self._emit(
             EmitRequest(event="status", data=status.as_dict()),
             **kwargs,
         )
 
-    async def emit_custom(self, event: str, data: Any, **kwargs):
+    def emit_status_sync(self, status: ImportStatusMessage, **kwargs):
+        return with_loop(self.emit_status_async(status, **kwargs))
+
+    async def emit_custom_async(self, event: str, data: Any, **kwargs):
         """Emit a custom event.
 
         For the WebsocketCommunicator, this is equivalent to
@@ -77,6 +110,9 @@ class ImportCommunicator(ABC):
 
         """
         await self._emit(EmitRequest(event=event, data=data), **kwargs)
+
+    def emit_custom_sync(self, event: str, data: Any, **kwargs):
+        return with_loop(self.emit_custom_async(event, data, **kwargs))
 
     async def received_request(
         self, req: Union[ChoiceReceive, CompleteReceive, CandidateSearchReceive]
@@ -106,9 +142,9 @@ class ImportCommunicator(ABC):
                 # Validate the request
                 selection_ids = req["selection_ids"]
                 are_completed = req["are_completed"]
-                assert len(selection_ids) == len(
-                    are_completed
-                ), "Selections and completion status must have the same length"
+                assert len(selection_ids) == len(are_completed), (
+                    "Selections and completion status must have the same length"
+                )
 
                 # Update the state
                 for id, completed in zip(selection_ids, are_completed):
@@ -124,9 +160,9 @@ class ImportCommunicator(ABC):
                 artist = req["artist"]
                 album = req["album"]
 
-                assert (
-                    search_id is not None or artist is not None
-                ), "Either Search ID or Artist + Album need to be given"
+                assert search_id is not None or artist is not None, (
+                    "Either Search ID or Artist + Album need to be given"
+                )
                 sel_state = self.state.get_selection_state_by_id(selection_id)
                 if sel_state is None:
                     raise ValueError("No selection state found for task.")
@@ -179,6 +215,33 @@ class ImportCommunicator(ABC):
     ) -> None:
         """Emit the current state of the import session."""
         raise NotImplementedError("Implement in subclass")
+
+
+class WebsocketCommunicator(ImportCommunicator):
+    """Communicator for the websocket.
+
+    Forwards imports via websockets from the frontend to our
+    backend import logic.
+    """
+
+    sio: AsyncServer
+
+    def __init__(
+        self, state: ImportState, sio: AsyncServer, namespace: str = "/import"
+    ):
+        self.sio = sio
+        self.namespace = namespace
+        super().__init__(state)
+
+    async def _emit(self, req, **kwargs) -> None:
+        # Attach to loop and emit
+
+        # TODO Hardcoded namespace for now
+        log.debug(f"emitting {req=} {kwargs=}")
+        await self.sio.emit(req["event"], req, namespace=self.namespace, **kwargs)
+
+        # list all socket io clients that are connected
+        log.debug(self.sio.manager.rooms["/import"])
 
 
 # ------------------------------------------------------------------------------------ #

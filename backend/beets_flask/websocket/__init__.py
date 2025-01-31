@@ -22,7 +22,7 @@ sio: TypedAsyncServer = cast(
 
 
 def register_socketio(app):
-    app.asgi_app = socketio.ASGIApp(sio, app.asgi_app)
+    app.asgi_app = socketio.ASGIApp(sio, app.asgi_app, socketio_path="/socket.io")
 
     # Register all socketio namespaces
     from .importer import register_importer

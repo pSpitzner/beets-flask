@@ -5,14 +5,13 @@ from socketio import AsyncServer
 from beets_flask.importer import (
     ChoiceReceive,
     CompleteReceive,
-    ImportCommunicator,
     ImportState,
     InteractiveImportSession,
+    WebsocketCommunicator,
 )
 from beets_flask.logger import log
 from beets_flask.websocket import sio
 
-log.debug("ImportSocket module loaded")
 namespace = "/import"
 session: InteractiveImportSession | None = None
 session_ref = None
@@ -36,6 +35,7 @@ async def get_state(sid):
 
     Returns data via callback
     """
+    log.debug(f"received get_state")
     if session is not None:
         return session.communicator.state.serialize()
     else:
@@ -44,7 +44,7 @@ async def get_state(sid):
 
 @sio.on("*", namespace=namespace)
 async def any_event(event, sid, data):
-    log.error(f"ImportSocket sid {sid} unhandled event {event} with data {data}")
+    log.warning(f"ImportSocket sid {sid} unhandled event {event} with data {data}")
 
 
 @sio.on("start_import_session", namespace=namespace)
@@ -55,8 +55,6 @@ async def start_import_session(sid, data):
     This will kill any existing session.
     """
     global session, session_ref
-
-    log.debug(f"received start_import_session {data=}")
     path = data.get("path", None)
 
     try:
@@ -70,10 +68,9 @@ async def start_import_session(sid, data):
         session_ref = None
 
     state = ImportState()
-    communicator = WebsocketCommunicator(state, sio)
+    communicator = WebsocketCommunicator(state, sio, namespace)
     session = InteractiveImportSession(state, communicator, path=path, cleanup=cleanup)
-    await communicator.emit_current()
-
+    await communicator.emit_current_async()
     session_ref = sio.start_background_task(session.run)
 
     return True
@@ -104,33 +101,13 @@ async def choice(sid, req: Union[ChoiceReceive, CompleteReceive]):
     """
     global session
 
-    log.debug(f"received user action {req=}")
-
     if not session is None:
         ret_val = await session.communicator.received_request(req)
         # Remit state
-        await session.communicator.emit_state(session.import_state, skip_sid=sid)
+        await session.communicator.emit_state_async(session.import_state, skip_sid=sid)
         return ret_val
     else:
         return False
-
-
-class WebsocketCommunicator(ImportCommunicator):
-    """Communicator for the websocket.
-
-    Forwards imports via websockets from the frontend to our
-    backend import logic.
-    """
-
-    sio: AsyncServer
-
-    def __init__(self, state: ImportState, sio: AsyncServer):
-        self.sio = sio
-        super().__init__(state)
-
-    async def _emit(self, req, **kwargs) -> None:
-        # TODO Hardcoded namespace for now
-        await self.sio.emit(req["event"], req, namespace=namespace, **kwargs)
 
 
 def register_importer():

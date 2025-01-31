@@ -39,7 +39,8 @@ export const useSocket = (
     useEffect(() => {
         const socket = io(url, {
             autoConnect: false,
-            transports: ["websocket"],
+            //transports: ["websocket"],
+            path: "/socket.io",
             ...options,
         });
         console.log(`Creating`, socket);

@@ -25,15 +25,22 @@ dependencies = [
     "pillow>=10.4.0",
     "cachetools>=5.3.3",
     "libtmux>=0.37.0",
+    "Deprecated>=1.2.18",
     # Used for hosting the web-interface & api
     "uvicorn>=0.34.0",
     # beets plugin dependencies
     "pylast>=5.2.0",
+
 ]
 
 [project.optional-dependencies]
 # Can be install with e.g. `pip install -e .[dev]`
-test = ["pytest>=8.2.2", "pytest-asyncio>=0.23.8", "pytest-cov>=5.0.0","aiohttp"]
+test = [
+    "pytest>=8.2.2",
+    "pytest-asyncio>=0.23.8",
+    "pytest-cov>=5.0.0",
+    "aiohttp",
+]
 dev = ["ruff>=0.6.5", "pre-commit>=3.8.0", "interactive_beets[typed]"]
 typed = [
     "types-cachetools",

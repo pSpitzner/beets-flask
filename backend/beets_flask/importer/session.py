@@ -7,12 +7,12 @@ from beets.util import pipeline as beets_pipeline
 
 from beets_flask.beets_sessions import BaseSession, set_config_defaults
 from beets_flask.config import config
-from beets_flask.importer.types import AlbumMatch, TrackMatch
+from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackMatch
 from beets_flask.logger import log
 
-from .communicator import ImportCommunicator
+from .communicator import ImportCommunicator, with_loop
 from .pipeline import mutator_stage
-from .states import CandidateState, ImportState, ImportStatus
+from .states import CandidateState, ImportState, ImportStatusMessage
 
 
 class InteractiveImportSession(BaseSession):
@@ -123,8 +123,7 @@ class InteractiveImportSession(BaseSession):
         # # Update state with new task. In parallel pipeline, user should be able to choose from all tasks simultaneously.
         # # Emit the task to the user
         # self.import_state.upsert_task(task)
-        loop = asyncio.get_event_loop()
-        loop.create_task(self.communicator.emit_state(self.import_state))
+        self.communicator.emit_state_sync(self.import_state)
 
         # tell plugins we are starting user_query
         results = plugins.send("import_task_before_choice", session=self, task=task)
@@ -145,44 +144,45 @@ class InteractiveImportSession(BaseSession):
         log.debug(f"Waiting for user selection for task: {task}")
 
         sel_state = self.import_state.get_selection_state_for_task(task)
-        loop = asyncio.get_event_loop()
-        loop.create_task(self.communicator.emit_state(sel_state))
+
+        self.communicator.emit_state_sync(self.import_state)
 
         if sel_state is None:
             raise ValueError("No selection state found for task.")
 
-        # BLOCKING
-        # We use the communicator to receive user input, which modifies the sel_state
-        while True:
-            if sel_state.completed:
-                break
-            if self.import_state.user_response == "abort":
-                self.set_status(ImportStatus("aborted"))
-                return importer.action.SKIP
+        async def wait_for_user_input():
+            while True:
+                if sel_state.completed:
+                    break
+                if self.import_state.user_response == "abort":
+                    self.set_status(ImportStatusMessage("aborted"))
+                    return importer.action.SKIP
 
-            # SEARCHES
-            if (
-                sel_state.current_search_id is not None
-                or sel_state.current_search_artist is not None
-            ):
-                candidates = self.search_candidates(
-                    task,
-                    sel_state.current_search_id,
-                    sel_state.current_search_artist,
-                    sel_state.current_search_album,
-                )
+                # SEARCHES
+                if (
+                    sel_state.current_search_id is not None
+                    or sel_state.current_search_artist is not None
+                ):
+                    candidates = self.search_candidates(
+                        task,
+                        sel_state.current_search_id,
+                        sel_state.current_search_artist,
+                        sel_state.current_search_album,
+                    )
 
-                # Add the new candidates to the selection state
-                sel_state.add_candidates(candidates)
+                    # Add the new candidates to the selection state
+                    sel_state.add_candidates(candidates)
 
-                # Reset search
-                sel_state.current_search_id = None
-                sel_state.current_search_artist = None
-                sel_state.current_search_album = None
+                    # Reset search
+                    sel_state.current_search_id = None
+                    sel_state.current_search_artist = None
+                    sel_state.current_search_album = None
 
-                continue
+                    continue
 
-            time.sleep(3)
+                await asyncio.sleep(1)
+
+        with_loop(wait_for_user_input())
 
         if sel_state.current_candidate_id is None:
             raise ValueError("No candidate selection found. This should not happen!")
@@ -195,7 +195,7 @@ class InteractiveImportSession(BaseSession):
         if candidate.id == "asis":
             return importer.action.ASIS
 
-        match: AlbumMatch = candidate.match  # type: ignore
+        match: BeetsAlbumMatch = candidate.match  # type: ignore
         log.debug(f"Returning {match.info.album=} {match.info.album_id=} for {task=}")
 
         return match
@@ -206,11 +206,11 @@ class InteractiveImportSession(BaseSession):
         search_id: str | None,
         search_artist: str | None,
         search_album: str | None,
-    ) -> List[AlbumMatch | TrackMatch]:
+    ) -> List[BeetsAlbumMatch | BeetsTrackMatch]:
         """Search for candidates for the current selection."""
         log.debug("searching more candidates")
 
-        candidates: list[AlbumMatch | TrackMatch] = []
+        candidates: list[BeetsAlbumMatch | BeetsTrackMatch] = []
         if search_artist is not None:
             # @ps: why is an assert here? This will error, no?
             assert search_album is not None
@@ -259,16 +259,15 @@ class InteractiveImportSession(BaseSession):
         else:
             raise ValueError(f"Unknown duplicate resolution action: {sel}")
 
-    def set_status(self, status: ImportStatus):
+    def set_status(self, status: ImportStatusMessage):
         """Set the status of the import session, and communicate the status changes.
 
         Note: currently we only implement status on the level of the whole import session,
         but should eventually do this per selection (task).
         """
-        log.debug(f"Setting status to {status.value}")
+        log.debug(f"Setting status to '{status.value}'")
         self.import_state.status = status
-        loop = asyncio.get_event_loop()
-        loop.create_task(self.communicator.emit_state(self.import_state))
+        self.communicator.emit_state_sync(self.import_state)
 
     def run(self):
         """Run the import task.
@@ -279,24 +278,24 @@ class InteractiveImportSession(BaseSession):
         self.set_config(config["import"])
 
         # mutator stage does not work for first task, set status manually
-        self.set_status(ImportStatus("reading files"))
+        self.set_status(ImportStatusMessage("reading files"))
         stages = [
             importer.read_tasks(self),
         ]
 
         if self.config["group_albums"] and not self.config["singletons"]:
             stages += [
-                status_stage(self, ImportStatus("grouping albums")),
+                status_stage(self, ImportStatusMessage("grouping albums")),
                 importer.group_albums(self),
             ]
 
         stages += [
-            status_stage(self, ImportStatus("looking up candidates")),
+            status_stage(self, ImportStatusMessage("looking up candidates")),
             importer.lookup_candidates(self),  # type: ignore
-            status_stage(self, ImportStatus("identifying duplicates")),
+            status_stage(self, ImportStatusMessage("identifying duplicates")),
             identify_duplicates(self),
             offer_match(self),
-            status_stage(self, ImportStatus("waiting for user selection")),
+            status_stage(self, ImportStatusMessage("waiting for user selection")),
             importer.user_query(self),  # type: ignore
         ]
 
@@ -305,7 +304,7 @@ class InteractiveImportSession(BaseSession):
             stages.append(
                 status_stage(
                     self,
-                    ImportStatus(
+                    ImportStatusMessage(
                         message="plugin",
                         plugin_stage="early import",
                         plugin_name=stage_func.__name__,
@@ -317,7 +316,7 @@ class InteractiveImportSession(BaseSession):
             stages.append(
                 status_stage(
                     self,
-                    ImportStatus(
+                    ImportStatusMessage(
                         message="plugin",
                         plugin_stage="import",
                         plugin_name=stage_func.__name__,
@@ -327,7 +326,7 @@ class InteractiveImportSession(BaseSession):
             stages.append(importer.plugin_stage(self, stage_func))  # type: ignore
 
         stages += [
-            status_stage(self, ImportStatus("manipulating files")),
+            status_stage(self, ImportStatusMessage("manipulating files")),
             importer.manipulate_files(self),  # type: ignore
         ]
 
@@ -346,7 +345,7 @@ class InteractiveImportSession(BaseSession):
 
         log.debug(f"Pipeline completed")
 
-        self.set_status(ImportStatus("completed"))
+        self.set_status(ImportStatusMessage("completed"))
         if self.cleanup:
             self.cleanup()
 
@@ -376,7 +375,7 @@ def offer_match(session: InteractiveImportSession, task: importer.ImportTask):
 @mutator_stage
 def status_stage(
     session: InteractiveImportSession,
-    status: ImportStatus,
+    status: ImportStatusMessage,
     task: importer.ImportTask,
 ):
     """Stage to call sessions `set_status` method."""

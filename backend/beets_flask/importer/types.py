@@ -18,7 +18,23 @@ from typing import (
 )
 
 from beets import autotag
-from beets.autotag.hooks import AlbumMatch, TrackMatch
+from beets.autotag.hooks import AlbumInfo as BeetsAlbumInfo
+from beets.autotag.hooks import AlbumMatch as BeetsAlbumMatch
+from beets.autotag.hooks import TrackInfo as BeetsTrackInfo
+from beets.autotag.hooks import TrackMatch as BeetsTrackMatch
+
+__all__ = [
+    # Our stuff
+    "MusicInfo",
+    "TrackInfo",
+    "ItemInfo",
+    "AlbumInfo",
+    # Beets stuff
+    "BeetsAlbumMatch",
+    "BeetsTrackMatch",
+    "BeetsAlbumInfo",
+    "BeetsTrackInfo",
+]
 
 
 class PromptChoice(NamedTuple):
@@ -133,6 +149,8 @@ class TrackInfo(MusicInfo):
 @dataclass
 class ItemInfo(MusicInfo):
     """More specific version of MusicInfo for items.
+
+    Corresponds to a music file or library item with file on disk.
 
     Attributes are an indicator of what might be available, and can be None.
     """
