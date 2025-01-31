@@ -2,6 +2,8 @@ import io
 import re
 import sys
 
+from deprecated import deprecated
+
 from .logger import log
 
 # ------------------------------------------------------------------------------------ #
@@ -9,6 +11,7 @@ from .logger import log
 # ------------------------------------------------------------------------------------ #
 
 
+@deprecated
 def capture_stdout_stderr(func, *args, **kwargs):
     """
     beets.ui uses a custom `print_` function to display most console output in a nicely formatted way. This is the easiest way to capture that output.
@@ -45,14 +48,17 @@ def capture_stdout_stderr(func, *args, **kwargs):
 # ------------------------------------------------------------------------------------ #
 
 
+@deprecated
 def strip_ansi(text: str):
     return re.sub(r"\x1b[^m]*m", "", text)
 
 
+@deprecated
 def heading(heading: str):
     return f"\n+{'-' * 90}+\n| {heading}\n+{'-' * 90}+\n"
 
 
+@deprecated
 def selector_safe(s: str):
     replacements = {
         " ": "_",

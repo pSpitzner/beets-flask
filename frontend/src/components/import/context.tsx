@@ -1,4 +1,11 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
+} from "react";
 
 import { CandidateState, ImportState, SelectionState } from "./types";
 
@@ -76,7 +83,9 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
     const [selStates, setSelStates] = useState<SelectionState[]>();
 
     // Whether a valid user choice has been made for every selection
-    const [selectionsInvalidCause, setSelectionsInvalidCause] = useState<string | null>(null);
+    const [selectionsInvalidCause, setSelectionsInvalidCause] = useState<string | null>(
+        null
+    );
 
     // The status of the import in the backend, only backend status!
     const [status, setStatus] = useState<ImportStatus>();
@@ -118,14 +127,17 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         if (!socket || !isConnected) return;
 
         setPending(true);
-        socket.emit("get_state", (data: (ImportState & { status: ImportStatus }) | undefined) => {
-            console.log("Got initial state", data);
-            if (data) {
-                updateImportState(data);
-                setStatus(data.status);
+        socket.emit(
+            "get_state",
+            (data: (ImportState & { status: ImportStatus }) | undefined) => {
+                console.log("Got initial state", data);
+                if (data) {
+                    updateImportState(data);
+                    setStatus(data.status);
+                }
+                setPending(false);
             }
-            setPending(false);
-        });
+        );
     }, [socket, isConnected, updateImportState]);
 
     /** Derived state */
@@ -150,7 +162,11 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
             const candidate = selection.candidate_states.find(
                 (c) => c.id === selection.current_candidate_id
             );
-            if (candidate && candidate.duplicate_in_library && !selection.duplicate_action) {
+            if (
+                candidate &&
+                candidate.duplicate_in_library &&
+                !selection.duplicate_action
+            ) {
                 setSelectionsInvalidCause("no duplicate action");
                 allValid = false;
                 break;
@@ -170,7 +186,11 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         if (!socket) return;
 
         // another client may make a choice, and the server informs us
-        function remoteCandidateChoice(data: { selection_id: string; candidate_id: string }) {
+        function remoteCandidateChoice(data: {
+            selection_id: string;
+            candidate_id: string;
+        }) {
+            console.log("Got candidate choice", data);
             setSelStates((prev) => {
                 if (!prev) return prev;
                 const selectionIdx = prev.findIndex((s) => s.id === data.selection_id);
@@ -197,6 +217,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         }
 
         function handleAbort() {
+            console.log("Got abort");
             updateImportState(undefined);
             setStatus(undefined);
         }
@@ -223,12 +244,20 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
             await applyTimeout(
                 new Promise<true>((resolve, reject) => {
                     if (!sessionPath) {
-                        reject(new Error("SessionPath needs to be set before starting a session"));
+                        reject(
+                            new Error(
+                                "SessionPath needs to be set before starting a session"
+                            )
+                        );
                     }
 
-                    socket?.emit("start_import_session", { path: sessionPath }, (started: true) => {
-                        resolve(started);
-                    });
+                    socket?.emit(
+                        "start_import_session",
+                        { path: sessionPath },
+                        (started: true) => {
+                            resolve(started);
+                        }
+                    );
                 })
             );
         } finally {
@@ -243,7 +272,11 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
             await applyTimeout(
                 new Promise<true>((resolve, reject) => {
                     if (!sessionPath) {
-                        reject(new Error("SessionPath needs to be set before starting a session"));
+                        reject(
+                            new Error(
+                                "SessionPath needs to be set before starting a session"
+                            )
+                        );
                     }
 
                     socket?.emit("abort_import_session", (aborted: true) => {
@@ -268,7 +301,8 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
                 const selection = prev.find((s) => s.id === selectionId);
                 if (!selection) return prev;
 
-                if (!selection.candidate_states.some((c) => c.id === candidateId)) return prev;
+                if (!selection.candidate_states.some((c) => c.id === candidateId))
+                    return prev;
 
                 selection.current_candidate_id = candidateId;
 
@@ -404,7 +438,9 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
 export const useImportContext = () => {
     const context = useContext(ImportContext);
     if (!context) {
-        throw new Error("useImportContext must be used within a ImportSocketContextProvider");
+        throw new Error(
+            "useImportContext must be used within a ImportSocketContextProvider"
+        );
     }
     return context;
 };
@@ -412,6 +448,8 @@ export const useImportContext = () => {
 function applyTimeout<T>(promise: Promise<T>, timeout = 20000): Promise<T> {
     return Promise.race([
         promise,
-        new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timeout")), timeout)),
+        new Promise<T>((_, reject) =>
+            setTimeout(() => reject(new Error("timeout")), timeout)
+        ),
     ]);
 }

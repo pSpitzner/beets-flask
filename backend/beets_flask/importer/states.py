@@ -4,29 +4,30 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import List, Literal, Union
+from typing import List, Literal, Sequence, Union
 from uuid import uuid4 as uuid
 
 import beets.ui.commands as uicommands
 from beets import autotag, importer
 
+from beets_flask.logger import log
 from beets_flask.utility import capture_stdout_stderr
 
 from .types import (
     AlbumInfo,
-    AlbumMatch,
+    BeetsAlbumMatch,
+    BeetsTrackMatch,
     ItemInfo,
     MusicInfo,
     SerializedCandidateState,
     SerializedImportState,
     SerializedSelectionState,
     TrackInfo,
-    TrackMatch,
 )
 
 
 @dataclass
-class ImportStatus:
+class ImportStatusMessage:
     """Simple dataclass to hold a status message and a status code."""
 
     message: Literal[
@@ -73,7 +74,7 @@ class ImportState:
     def __post_init__(self):
         self.id = str(uuid())
         self._selection_states: List[SelectionState] = []
-        self.status: ImportStatus = ImportStatus("initializing")
+        self.status: ImportStatusMessage = ImportStatusMessage("initializing")
         # session-level buttons. continue from choose_match when not None
         self.user_response: Literal["abort"] | Literal["apply"] | None = None
 
@@ -176,7 +177,9 @@ class SelectionState:
         self.current_search_album: str | None = None
 
     @property
-    def candidates(self) -> Union[List[AlbumMatch], List[TrackMatch]]:
+    def candidates(
+        self,
+    ) -> Sequence[BeetsAlbumMatch | BeetsTrackMatch]:
         """Task candidates, i.e. possible matches to choose from."""
         return self.task.candidates
 
@@ -193,12 +196,19 @@ class SelectionState:
         return None
 
     def add_candidates(
-        self, candidates: List[Union[AlbumMatch, TrackMatch]], insert_at: int = 0
+        self,
+        candidates: List[Union[BeetsAlbumMatch, BeetsTrackMatch]],
+        insert_at: int = 0,
     ) -> List[CandidateState]:
         """Add a new candidates to the selection state."""
         if len(self.task.candidates) == 0 or len(self.candidate_states) == 0:
             insert_at = 0
-        self.task.candidates[insert_at:insert_at] = candidates
+
+        # task.candidates is a sequence and thus immutable
+        _ = list(self.task.candidates)
+        _[insert_at:insert_at] = candidates
+        self.task.candidates = _
+
         new_states = [CandidateState(c, self) for c in candidates]
         self.candidate_states[insert_at:insert_at] = new_states
         return new_states
@@ -256,7 +266,7 @@ class CandidateState:
     Note: currently only tested for album matches.
     """
 
-    match: Union[AlbumMatch, TrackMatch]
+    match: Union[BeetsAlbumMatch, BeetsTrackMatch]
     selection_state: SelectionState
 
     def __post_init__(self):
@@ -300,7 +310,7 @@ class CandidateState:
             return kwargs
 
         tracks = [autotag.TrackInfo(**_generate_kwargs(i)) for i in items]
-        match = AlbumMatch(
+        match = BeetsAlbumMatch(
             distance=autotag.Distance(),
             info=autotag.AlbumInfo(
                 tracks=tracks,
@@ -335,9 +345,7 @@ class CandidateState:
 
     def serialize(self) -> SerializedCandidateState:
         """JSON representation to match the frontend types."""
-        # we lift the match.info from to reduce nesting in the frontend.
-        self.match.info.decode()
-
+        # we lift the match.info to reduce nesting in the frontend.
         info = None
         items = None
         tracks = None
@@ -348,17 +356,15 @@ class CandidateState:
         if self.type == "track":
             info = TrackInfo.from_instance(self.match.info).serialize()
 
-        elif self.type == "album":
+        elif self.type == "album" and isinstance(self.match.info, autotag.AlbumInfo):
             info = AlbumInfo.from_instance(self.match.info).serialize()
 
             tracks = []
             for track in self.match.info.tracks or []:
-                track.decode()
                 tracks.append(TrackInfo.from_instance(track).serialize())
 
             extra_tracks = []
             for track in self.match.extra_tracks or []:  # type: ignore
-                track.decode()
                 extra_tracks.append(TrackInfo.from_instance(track).serialize())
 
             items = [ItemInfo.from_instance(i).serialize() for i in self.items]
