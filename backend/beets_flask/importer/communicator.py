@@ -38,13 +38,6 @@ def default_events(state: Union[ImportState, SelectionState, CandidateState]):
     return event
 
 
-def with_loop(co: Coroutine):
-    loop = asyncio.get_event_loop()
-    task = loop.create_task(co)
-    if not loop.is_running():
-        loop.run_until_complete(task)
-
-
 class ImportCommunicator(ABC):
     # Ref to the current import state
     state: ImportState
@@ -57,7 +50,8 @@ class ImportCommunicator(ABC):
         await self.emit_state_async(self.state)
 
     def emit_current_sync(self):
-        return with_loop(self.emit_current_async())
+        asyncio.run(self.emit_current_async())
+        # return with_loop(asyncio.to_thread(self.emit_current_async))
 
     async def emit_state_async(
         self, state: Union[ImportState, SelectionState, CandidateState, None], **kwargs
@@ -67,6 +61,7 @@ class ImportCommunicator(ABC):
         This can be a full import state, a selection state, or a candidate state.
         """
         if state is None:
+            log.debug(f"did not emit state: None")
             return
 
         await self._emit(
@@ -76,21 +71,30 @@ class ImportCommunicator(ABC):
             ),
             **kwargs,
         )
+        log.debug(f"emitted state {state}")
 
     def emit_state_sync(
         self, state: Union[ImportState, SelectionState, CandidateState, None], **kwargs
     ):
-        return with_loop(self.emit_state_async(state, **kwargs))
+        # import threading
+
+        # sio = self.sio
+        # log.debug(
+        #     f"\nCommunicator set state sync:\n\t{state.status=}\n\t{threading.get_ident()=}\n\t{sio=}\n\t{sio.manager.rooms['/import']=}"
+        # )
+
+        asyncio.run(self.emit_state_async(state, **kwargs))
 
     async def emit_status_async(self, status: ImportStatusMessage, **kwargs):
         """Emit a status message."""
+        log.error("Not getting log statements from async funcs?")
         await self._emit(
             EmitRequest(event="status", data=status.as_dict()),
             **kwargs,
         )
 
     def emit_status_sync(self, status: ImportStatusMessage, **kwargs):
-        return with_loop(self.emit_status_async(status, **kwargs))
+        asyncio.run(self.emit_status_async(status, **kwargs))
 
     async def emit_custom_async(self, event: str, data: Any, **kwargs):
         """Emit a custom event.
@@ -112,7 +116,7 @@ class ImportCommunicator(ABC):
         await self._emit(EmitRequest(event=event, data=data), **kwargs)
 
     def emit_custom_sync(self, event: str, data: Any, **kwargs):
-        return with_loop(self.emit_custom_async(event, data, **kwargs))
+        asyncio.run(self.emit_custom_async(event, data, **kwargs))
 
     async def received_request(
         self, req: Union[ChoiceReceive, CompleteReceive, CandidateSearchReceive]
@@ -136,6 +140,7 @@ class ImportCommunicator(ABC):
                     raise ValueError("No selection state found for task.")
                 sel_state.current_candidate_id = candidate_id
                 sel_state.duplicate_action = duplicate_action
+                log.debug(f"Communicator received choice {sel_state=}")
 
             case "selection_complete":
                 req = cast(CompleteReceive, req)
@@ -152,6 +157,7 @@ class ImportCommunicator(ABC):
                     if sel_state is None:
                         raise ValueError("No selection state found for task.")
                     sel_state.completed = completed
+                    log.debug(f"Communicator received sel complete {sel_state=}")
 
             case "candidate_search":
                 req = cast(CandidateSearchReceive, req)
@@ -234,14 +240,8 @@ class WebsocketCommunicator(ImportCommunicator):
         super().__init__(state)
 
     async def _emit(self, req, **kwargs) -> None:
-        # Attach to loop and emit
-
-        # TODO Hardcoded namespace for now
-        log.debug(f"emitting {req=} {kwargs=}")
+        log.debug(f"emitting {req['event']=} {kwargs=}")
         await self.sio.emit(req["event"], req, namespace=self.namespace, **kwargs)
-
-        # list all socket io clients that are connected
-        log.debug(self.sio.manager.rooms["/import"])
 
 
 # ------------------------------------------------------------------------------------ #

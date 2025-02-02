@@ -7,12 +7,11 @@ see also /websocket/status
 """
 
 import asyncio
-from typing import Literal
+from typing import Coroutine, Literal
 
 import requests
 from quart import Blueprint, current_app, request
 
-from beets_flask.importer.communicator import with_loop
 from beets_flask.logger import log
 from beets_flask.websocket import sio
 
@@ -66,3 +65,10 @@ async def publish():
         await sio.emit(type, body, namespace="/status")
 
         return {"message": "Message sent"}, 200
+
+
+def with_loop(co: Coroutine):
+    loop = asyncio.get_event_loop()
+    task = loop.create_task(co)
+    if not loop.is_running():
+        loop.run_until_complete(task)
