@@ -169,7 +169,7 @@ class ItemInfo(MusicInfo):
 
 
 # ------------------------------------------------------------------------------------ #
-#                   (serialized) state representations for fronntend                   #
+#                   (serialized) state representations for frontend                    #
 # ------------------------------------------------------------------------------------ #
 
 
