@@ -26,6 +26,7 @@ dependencies = [
     "cachetools>=5.3.3",
     "libtmux>=0.37.0",
     "Deprecated>=1.2.18",
+    "nest_asyncio>=1.6.0",
     # Used for hosting the web-interface & api
     "uvicorn>=0.34.0",
     # beets plugin dependencies

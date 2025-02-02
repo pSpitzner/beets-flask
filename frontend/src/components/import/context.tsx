@@ -148,14 +148,20 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
             // this happens when we initialize
             // and causes the apply button to be hidden
             setSelectionsInvalidCause("no selections");
+            console.log("Selections invalid: No selections");
             allValid = false;
         } else if (pending || status?.message !== "waiting for user selection") {
             setSelectionsInvalidCause("operation pending");
-            allValid = false;
+            console.log("Selections invalid: Operation pending");
+            // PS 25-02-01: async rewrite, seems we are not yet setting the right state
+            // so we get 'waiting for user selection' even after the choices are made
+            // come back to this!
+            // allValid = false;
         }
         for (const selection of selStates ?? []) {
             if (selection.current_candidate_id === null) {
                 setSelectionsInvalidCause("no current candidate");
+                console.log("Selections invalid: No current candidate");
                 allValid = false;
                 break;
             }
@@ -168,12 +174,14 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
                 !selection.duplicate_action
             ) {
                 setSelectionsInvalidCause("no duplicate action");
+                console.log("Selections invalid: No duplicate action");
                 allValid = false;
                 break;
             }
         }
         if (allValid) {
             setSelectionsInvalidCause(null);
+            console.log("Selections valid");
         }
     }, [selStates, pending, status]);
 
@@ -207,7 +215,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         }
 
         function handleImportState(data: { data: ImportState }) {
-            console.log("Got import state", data);
+            console.log("Got import state", data.data.status, data);
             updateImportState(data.data);
         }
 

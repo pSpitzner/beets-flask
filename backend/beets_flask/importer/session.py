@@ -1,18 +1,23 @@
 import asyncio
+import threading
 import time
 from typing import Callable, List
 
+import nest_asyncio
 from beets import autotag, importer, library, plugins
 from beets.util import pipeline as beets_pipeline
+from socketio import AsyncServer
 
 from beets_flask.beets_sessions import BaseSession, set_config_defaults
 from beets_flask.config import config
 from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackMatch
 from beets_flask.logger import log
 
-from .communicator import ImportCommunicator, with_loop
+from .communicator import WebsocketCommunicator
 from .pipeline import mutator_stage
 from .states import CandidateState, ImportState, ImportStatusMessage
+
+nest_asyncio.apply()
 
 
 class InteractiveImportSession(BaseSession):
@@ -27,7 +32,7 @@ class InteractiveImportSession(BaseSession):
     # current session state
     import_state: ImportState
     # usually this is a WebsocketCommunicator inheriting from ImportCommunicator
-    communicator: ImportCommunicator
+    communicator: WebsocketCommunicator
 
     task: importer.ImportTask | None = None
     pipeline: beets_pipeline.Pipeline | None = None
@@ -36,7 +41,7 @@ class InteractiveImportSession(BaseSession):
     def __init__(
         self,
         import_state: ImportState,
-        communicator: ImportCommunicator,
+        communicator: WebsocketCommunicator,
         path: str,
         config_overlay: str | dict | None = None,
         cleanup: Callable | None = None,
@@ -180,9 +185,11 @@ class InteractiveImportSession(BaseSession):
 
                     continue
 
+                log.debug(f"Waiting for user input  {sel_state=}")
                 await asyncio.sleep(1)
 
-        with_loop(wait_for_user_input())
+        asyncio.run(wait_for_user_input())
+        log.debug(f"User input received {sel_state=}")
 
         if sel_state.current_candidate_id is None:
             raise ValueError("No candidate selection found. This should not happen!")
@@ -265,7 +272,10 @@ class InteractiveImportSession(BaseSession):
         Note: currently we only implement status on the level of the whole import session,
         but should eventually do this per selection (task).
         """
-        log.debug(f"Setting status to '{status.value}'")
+        sio: AsyncServer = self.communicator.sio
+        log.debug(
+            f"\nSession set status:\n\t{status.value}\n\t{threading.get_ident()=}\n\t{sio=}\n\t{sio.manager.rooms['/import']=}"
+        )
         self.import_state.status = status
         self.communicator.emit_state_sync(self.import_state)
 
@@ -335,13 +345,17 @@ class InteractiveImportSession(BaseSession):
         log.debug(f"Running pipeline stages: {self.pipeline.stages}")
 
         # Run the pipeline.
-        plugins.send("import_begin", session=self)
-        try:
-            self.pipeline.run_sequential()
-            # parallel still broken. no attribute queue.mutex, no idea why
-            # self.pipeline.run_parallel()
-        except importer.ImportAbortError:
-            self.logger.debug(f"Interactive import session aborted by user")
+        async def run_pipeline():
+            plugins.send("import_begin", session=self)
+            try:
+                assert self.pipeline is not None
+                self.pipeline.run_sequential()
+                # parallel still broken. no attribute queue.mutex, no idea why
+                # self.pipeline.run_parallel()
+            except importer.ImportAbortError:
+                self.logger.debug(f"Interactive import session aborted by user")
+
+        asyncio.run(run_pipeline())
 
         log.debug(f"Pipeline completed")
 
@@ -380,6 +394,10 @@ def status_stage(
 ):
     """Stage to call sessions `set_status` method."""
     # sentinel tasks (this is what beets does in choose_match)
+    # sio: AsyncServer = session.communicator.sio
+    # log.debug(
+    #     f"\nStatus stage:\n\t{status.value}\n\t{threading.get_ident()=}\n\t{task.skip=}\n\t{sio=}\n\t{sio.manager.rooms['/import']=}"
+    # )
     if task.skip:
         return task
     session.set_status(status)

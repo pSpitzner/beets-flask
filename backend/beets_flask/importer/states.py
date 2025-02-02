@@ -144,6 +144,9 @@ class ImportState:
             completed=self.completed,
         )
 
+    def __repr__(self) -> str:
+        return f"ImportState({self.status=}, {self.id=}, {self.completed=})"
+
 
 @dataclass
 class SelectionState:
@@ -252,6 +255,12 @@ class SelectionState:
             completed=self.completed,
             toppath=self.toppath,
             paths=self.paths,
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"SelectionState({self.id=}, {self.completed=}, "
+            + f"{self.toppath=}, {self.current_candidate_id=})"
         )
 
 
@@ -403,6 +412,9 @@ class CandidateState:
         )
 
         return res
+
+    def __repr__(self) -> str:
+        return f"CandidateState({self.id=}, {self.cur_artist=}, {self.cur_album=})"
 
 
 # class AsIsCandidateState(CandidateState):
