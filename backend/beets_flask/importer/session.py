@@ -279,7 +279,7 @@ class InteractiveImportSession(BaseSession):
         self.import_state.status = status
         self.communicator.emit_state_sync(self.import_state)
 
-    def run(self):
+    async def run_async(self):
         """Run the import task.
 
         Basically a customized version of `ImportSession.run`.
@@ -344,18 +344,14 @@ class InteractiveImportSession(BaseSession):
 
         log.debug(f"Running pipeline stages: {self.pipeline.stages}")
 
-        # Run the pipeline.
-        async def run_pipeline():
-            plugins.send("import_begin", session=self)
-            try:
-                assert self.pipeline is not None
-                self.pipeline.run_sequential()
-                # parallel still broken. no attribute queue.mutex, no idea why
-                # self.pipeline.run_parallel()
-            except importer.ImportAbortError:
-                self.logger.debug(f"Interactive import session aborted by user")
-
-        asyncio.run(run_pipeline())
+        plugins.send("import_begin", session=self)
+        try:
+            assert self.pipeline is not None
+            self.pipeline.run_sequential()
+            # parallel still broken. no attribute queue.mutex, no idea why
+            # self.pipeline.run_parallel()
+        except importer.ImportAbortError:
+            self.logger.debug(f"Interactive import session aborted by user")
 
         log.debug(f"Pipeline completed")
 
@@ -389,7 +385,7 @@ def offer_match(session: InteractiveImportSession, task: importer.ImportTask):
 @mutator_stage
 def status_stage(
     session: InteractiveImportSession,
-    status: ImportStatusMessage,
+    status: ImportStatusMessage | None,
     task: importer.ImportTask,
 ):
     """Stage to call sessions `set_status` method."""
