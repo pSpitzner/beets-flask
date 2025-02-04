@@ -45,7 +45,7 @@ async def test_smoke_async(caplog):
     pipeline = AsyncPipeline(initial_task, stages)
 
 
-    await pipeline.run_async()
+    await pipeline.run_sequential()
     assert caplog.record_tuples == [
         (__name__, logging.DEBUG, "producing 0"),
         (__name__, logging.DEBUG, "working 0"),
@@ -63,6 +63,7 @@ async def test_smoke_async(caplog):
         (__name__, logging.DEBUG, "working 4"),
         (__name__, logging.DEBUG, "consuming 8"),
     ]
+
 
 
 @pytest.mark.asyncio

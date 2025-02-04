@@ -1,7 +1,7 @@
 import asyncio
 import threading
 import time
-from typing import Callable, List
+from typing import Any, Callable, List
 
 import nest_asyncio
 from beets import autotag, importer, library, plugins
@@ -14,7 +14,7 @@ from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackMatch
 from beets_flask.logger import log
 
 from .communicator import WebsocketCommunicator
-from .pipeline import mutator_stage
+from .pipeline import AsyncPipeline, mutator_stage, stage
 from .states import CandidateState, ImportState, ImportStatusMessage
 
 nest_asyncio.apply()
@@ -35,8 +35,7 @@ class InteractiveImportSession(BaseSession):
     communicator: WebsocketCommunicator
 
     task: importer.ImportTask | None = None
-    pipeline: beets_pipeline.Pipeline | None = None
-    cleanup: Callable | None = None
+    pipeline: AsyncPipeline[importer.ImportTask, Any] | None = None
 
     def __init__(
         self,
@@ -44,7 +43,6 @@ class InteractiveImportSession(BaseSession):
         communicator: WebsocketCommunicator,
         path: str,
         config_overlay: str | dict | None = None,
-        cleanup: Callable | None = None,
     ):
         """Create a new interactive import session.
 
@@ -64,7 +62,6 @@ class InteractiveImportSession(BaseSession):
         super(InteractiveImportSession, self).__init__(path, config_overlay)
         self.communicator = communicator
         self.import_state = import_state
-        self.cleanup = cleanup
 
     def identify_duplicates(self, task: importer.ImportTask):
         """Identify and flag candidates of a task that are duplicates."""
@@ -266,12 +263,16 @@ class InteractiveImportSession(BaseSession):
         else:
             raise ValueError(f"Unknown duplicate resolution action: {sel}")
 
-    def set_status(self, status: ImportStatusMessage):
+    def set_status(self, status: ImportStatusMessage | str):
         """Set the status of the import session, and communicate the status changes.
 
         Note: currently we only implement status on the level of the whole import session,
         but should eventually do this per selection (task).
         """
+        if isinstance(status, str):
+            # just convenience, not type-safe :P
+            status = ImportStatusMessage(status)  # type: ignore
+
         sio: AsyncServer = self.communicator.sio
         log.debug(
             f"\nSession set status:\n\t{status.value}\n\t{threading.get_ident()=}\n\t{sio=}\n\t{sio.manager.rooms['/import']=}"
@@ -287,19 +288,17 @@ class InteractiveImportSession(BaseSession):
         self.logger.info(f"import started {time.asctime()}")
         self.set_config(config["import"])
 
-        # mutator stage does not work for first task, set status manually
         self.set_status(ImportStatusMessage("reading files"))
-        stages = [
-            importer.read_tasks(self),
-        ]
+        self.pipeline = AsyncPipeline(start_tasks=importer.read_tasks(self))
 
         if self.config["group_albums"] and not self.config["singletons"]:
-            stages += [
-                status_stage(self, ImportStatusMessage("grouping albums")),
-                importer.group_albums(self),
-            ]
+            self.pipeline.add_stage(
+                status_stage(self, ImportStatusMessage("grouping albums"))
+            )
+            self.pipeline.add_stage(importer.group_albums(self))  # type: ignore
 
-        stages += [
+        # main stages
+        self.pipeline.add_stage(
             status_stage(self, ImportStatusMessage("looking up candidates")),
             importer.lookup_candidates(self),  # type: ignore
             status_stage(self, ImportStatusMessage("identifying duplicates")),
@@ -307,11 +306,11 @@ class InteractiveImportSession(BaseSession):
             offer_match(self),
             status_stage(self, ImportStatusMessage("waiting for user selection")),
             importer.user_query(self),  # type: ignore
-        ]
+        )
 
-        # Plugin stages.
+        # plugin stages
         for stage_func in plugins.early_import_stages():
-            stages.append(
+            self.pipeline.add_stage(
                 status_stage(
                     self,
                     ImportStatusMessage(
@@ -319,11 +318,12 @@ class InteractiveImportSession(BaseSession):
                         plugin_stage="early import",
                         plugin_name=stage_func.__name__,
                     ),
-                )
+                ),
+                importer.plugin_stage(self, stage_func),  # type: ignore
             )
-            stages.append(importer.plugin_stage(self, stage_func))  # type: ignore
+
         for stage_func in plugins.import_stages():
-            stages.append(
+            self.pipeline.add_stage(
                 status_stage(
                     self,
                     ImportStatusMessage(
@@ -331,33 +331,27 @@ class InteractiveImportSession(BaseSession):
                         plugin_stage="import",
                         plugin_name=stage_func.__name__,
                     ),
-                )
+                ),
+                importer.plugin_stage(self, stage_func),  # type: ignore
             )
-            stages.append(importer.plugin_stage(self, stage_func))  # type: ignore
 
-        stages += [
+        # finally, move files
+        self.pipeline.add_stage(
             status_stage(self, ImportStatusMessage("manipulating files")),
             importer.manipulate_files(self),  # type: ignore
-        ]
-
-        self.pipeline = beets_pipeline.Pipeline(stages)
+        )
 
         log.debug(f"Running pipeline stages: {self.pipeline.stages}")
 
         plugins.send("import_begin", session=self)
         try:
             assert self.pipeline is not None
-            self.pipeline.run_sequential()
-            # parallel still broken. no attribute queue.mutex, no idea why
-            # self.pipeline.run_parallel()
+            await self.pipeline.run_async()
         except importer.ImportAbortError:
             self.logger.debug(f"Interactive import session aborted by user")
 
         log.debug(f"Pipeline completed")
-
         self.set_status(ImportStatusMessage("completed"))
-        if self.cleanup:
-            self.cleanup()
 
 
 @mutator_stage
@@ -396,4 +390,4 @@ def status_stage(
     # )
     if task.skip:
         return task
-    session.set_status(status)
+    session.set_status(status or ImportStatusMessage("unknown"))

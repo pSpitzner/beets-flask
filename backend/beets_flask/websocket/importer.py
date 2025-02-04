@@ -1,3 +1,4 @@
+import asyncio
 from typing import Union
 
 from socketio import AsyncServer
@@ -14,7 +15,7 @@ from beets_flask.websocket import sio
 
 namespace = "/import"
 session: InteractiveImportSession | None = None
-session_ref = None
+session_task: asyncio.Task | None = None
 
 
 @sio.on("connect", namespace=namespace)
@@ -54,39 +55,42 @@ async def start_import_session(sid, data):
     We shall only have one running at a time (for now).
     This will kill any existing session.
     """
-    global session, session_ref
+    global session, session_task
     path = data.get("path", None)
 
-    try:
-        session_ref.kill()  # type: ignore
-    except AttributeError:
-        pass
-
-    def cleanup():
-        global session, session_ref
-        session = None
-        session_ref = None
+    if session_task is not None:
+        session_task.cancel()
+        session_task = None
 
     state = ImportState()
     communicator = WebsocketCommunicator(state, sio, namespace)
-    session = InteractiveImportSession(state, communicator, path=path, cleanup=cleanup)
+    session = InteractiveImportSession(state, communicator, path=path)
     await communicator.emit_current_async()
-    session_ref = sio.start_background_task(session.run)
+
+    async def run_session():
+        global session, session_task
+        if session is None:
+            log.error("Session is None, this should not happen.")
+            return
+        await session.run_async()
+        # cleanup when done
+        session = None
+        session_task = None
+
+    session_task = asyncio.create_task(run_session())
+    # session_task = sio.start_background_task(session.run)
 
     return True
 
 
 @sio.on("abort_import_session", namespace=namespace)
 async def abort_session(sid):
-    global session, session_ref
+    global session, session_task
 
-    try:
-        session_ref.kill()  # type: ignore
-    except AttributeError:
-        pass
-
-    if session is not None and session.cleanup is not None:
-        session.cleanup()
+    if session_task is not None:
+        session_task.cancel()
+        session_task = None
+        session = None
 
     await sio.emit("abort", namespace=namespace, skip_sid=sid)
 

@@ -36,6 +36,11 @@ A = TypeVarTuple("A")  # args und kwargs
 T = TypeVar("T")  # task
 R = TypeVar("R")  # return type
 
+# general
+Y = TypeVar("Y")  # yield
+S = TypeVar("S")  # send
+R = TypeVar("R")  # return
+
 
 def stage(
     func: Callable[
@@ -56,7 +61,7 @@ def stage(
     [3, 4, 5]
     """
 
-    def coro(*args: Unpack[A]) -> Generator[Union[R, T, None], T, None]:
+    def coro(*args: Unpack[A]) -> Generator[Union[R, T, None], T, Optional[R]]:
         task = None
         while True:
             task = yield task  # wait for send to arrive. the first next() always returns None
@@ -81,7 +86,7 @@ def mutator_stage(func: Callable[[Unpack[A], T], R]):
     [{'x': True}, {'a': False, 'x': True}]
     """
 
-    def coro(*args: Unpack[A]) -> Generator[Optional[T], T, R]:
+    def coro(*args: Unpack[A]) -> Generator[Union[R, T, None], T, Optional[R]]:
         task = None
         while True:
             task = yield task  # wait for send to arrive. the first next() always returns None
@@ -97,18 +102,18 @@ def mutator_stage(func: Callable[[Unpack[A], T], R]):
 # T = Task
 # yield : Task or None, send : Task, return : None
 Task = TypeVar("Task", bound=Any)
-Stage = Generator[Optional[Task], Task, None] | AsyncGenerator[Optional[Task], Task]
+Stage = Generator[Optional[Task], Task, R] | AsyncGenerator[Optional[Task], Task]
 
 
-class AsyncPipeline(Generic[Task]):
+class AsyncPipeline(Generic[Task, R]):
     start_tasks: AsyncIterable[Task]
-    stages: list[Stage[Task]]
+    stages: list[Stage[Task, R]]
 
     # Original: stages = [start_task, *stages]
     def __init__(
         self,
         start_tasks: Iterable[Task] | AsyncIterable[Task] | Task,
-        stages: Sequence[Stage[Task]],
+        stages: Sequence[Stage[Task, R]] = [],
     ) -> None:
         if isinstance(start_tasks, Iterable):
             self.start_tasks = _async_iterable_from_iterable(start_tasks)
@@ -118,6 +123,11 @@ class AsyncPipeline(Generic[Task]):
             self.start_tasks = _async_iterable_from_iterable([start_tasks])
 
         self.stages = list(stages)
+
+    def add_stage(self, *stage: Stage[Task, R]) -> None:
+        """Add a stage to the pipeline."""
+        for s in stage:
+            self.stages.append(s)
 
     async def pull_async(self) -> AsyncGenerator[Task, None]:
         """Pull items through the pipeline.
@@ -151,11 +161,6 @@ class AsyncPipeline(Generic[Task]):
         async for _ in self.pull_async():
             # resolves the generator, and awaits each element after the previous
             pass
-
-
-Y = TypeVar("Y")
-S = TypeVar("S")
-R = TypeVar("R")
 
 
 async def _next_resolve_async(gen: Generator[Y, S, R] | AsyncGenerator[Y, S]):

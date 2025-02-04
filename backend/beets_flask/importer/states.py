@@ -41,6 +41,7 @@ class ImportStatusMessage:
         "completed",
         "aborted",
         "plugin",
+        "unknown",
     ]
 
     # Plugin specific
