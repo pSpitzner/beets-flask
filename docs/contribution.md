@@ -70,6 +70,8 @@ mypy beets_flask
 
 ## Additional Resources
 
-See also [Resources.md](./RESOURCES.md) for some background information and design choices.
+See also [Resources.md](../RESOURCES.md) for some background information and design choices.
+
+Also have a look at out our [developer documentation](./developer.md) if you need more information on the codebase.
 
 Thank you for contributing! We highly appreciate any help.
