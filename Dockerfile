@@ -41,9 +41,11 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     pip install .
 
 # Install frontend
+RUN echo "npm version: $(npm -v)"
 RUN npm i -g corepack
 RUN corepack enable && corepack prepare pnpm@9.x.x --activate
 RUN pnpm config set store-dir /repo/frontend/.pnpm-store
+RUN echo "pnpm version: $(pnpm -v)"
 
 # ------------------------------------------------------------------------------------ #
 #                                      Development                                     #
