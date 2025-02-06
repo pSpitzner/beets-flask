@@ -34,7 +34,7 @@ from beets_flask.logger import log
 
 A = TypeVarTuple("A")  # args und kwargs
 T = TypeVar("T")  # task
-R = TypeVar("R")  # return type
+# R = TypeVar("R")  # return type
 
 # general
 Y = TypeVar("Y")  # yield
@@ -61,8 +61,9 @@ def stage(
     [3, 4, 5]
     """
 
-    def coro(*args: Unpack[A]) -> Generator[Union[R, T, None], T, Optional[R]]:
-        task = None
+    def coro(*args: Unpack[A]) -> Generator[Union[R, T, None], T, None]:
+        # in some edge-cases we get no task. thus, we have to include the generic R
+        task:Optional[T|R] = None
         while True:
             task = yield task  # wait for send to arrive. the first next() always returns None
             # yield task, call func which gives new task, yield new task in next()
@@ -72,8 +73,7 @@ def stage(
 
 
 def mutator_stage(func: Callable[[Unpack[A], T], R]):
-    """Decorate a function that manipulates items in a coroutine to
-    become a simple stage.
+    """Decorate a function that manipulates items in a coroutine to become a simple stage.
 
     >>> @mutator_stage
     ... def setkey(key, item):
@@ -85,7 +85,6 @@ def mutator_stage(func: Callable[[Unpack[A], T], R]):
     >>> list(pipe.pull())
     [{'x': True}, {'a': False, 'x': True}]
     """
-
     def coro(*args: Unpack[A]) -> Generator[Union[R, T, None], T, Optional[R]]:
         task = None
         while True:

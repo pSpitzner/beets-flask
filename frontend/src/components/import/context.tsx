@@ -153,10 +153,7 @@ export const ImportContextProvider = ({ children }: { children: React.ReactNode 
         } else if (pending || status?.message !== "waiting for user selection") {
             setSelectionsInvalidCause("operation pending");
             console.log("Selections invalid: Operation pending");
-            // PS 25-02-01: async rewrite, seems we are not yet setting the right state
-            // so we get 'waiting for user selection' even after the choices are made
-            // come back to this!
-            // allValid = false;
+            allValid = false;
         }
         for (const selection of selStates ?? []) {
             if (selection.current_candidate_id === null) {

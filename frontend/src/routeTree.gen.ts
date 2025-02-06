@@ -15,7 +15,6 @@ import { Route as TerminalIndexImport } from './routes/terminal/index'
 import { Route as TagsIndexImport } from './routes/tags/index'
 import { Route as InboxIndexImport } from './routes/inbox/index'
 import { Route as ImportIndexImport } from './routes/import/index'
-import { Route as DebugIndexImport } from './routes/debug/index'
 import { Route as FrontpageIndexImport } from './routes/_frontpage/index'
 import { Route as LibrarySearchImport } from './routes/library/search'
 import { Route as LibraryBrowseImport } from './routes/library/browse'
@@ -48,12 +47,6 @@ const InboxIndexRoute = InboxIndexImport.update({
 const ImportIndexRoute = ImportIndexImport.update({
   id: '/import/',
   path: '/import/',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const DebugIndexRoute = DebugIndexImport.update({
-  id: '/debug/',
-  path: '/debug/',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -137,13 +130,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof FrontpageIndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/debug/': {
-      id: '/debug/'
-      path: '/debug'
-      fullPath: '/debug'
-      preLoaderRoute: typeof DebugIndexImport
       parentRoute: typeof rootRoute
     }
     '/import/': {
@@ -262,7 +248,6 @@ export interface FileRoutesByFullPath {
   '/library/browse': typeof LibraryBrowseRouteWithChildren
   '/library/search': typeof LibrarySearchRoute
   '/': typeof FrontpageIndexRoute
-  '/debug': typeof DebugIndexRoute
   '/import': typeof ImportIndexRoute
   '/inbox': typeof InboxIndexRoute
   '/tags': typeof TagsIndexRoute
@@ -278,7 +263,6 @@ export interface FileRoutesByTo {
   '/library/browse': typeof LibraryBrowseRouteWithChildren
   '/library/search': typeof LibrarySearchRoute
   '/': typeof FrontpageIndexRoute
-  '/debug': typeof DebugIndexRoute
   '/import': typeof ImportIndexRoute
   '/inbox': typeof InboxIndexRoute
   '/tags': typeof TagsIndexRoute
@@ -295,7 +279,6 @@ export interface FileRoutesById {
   '/library/browse': typeof LibraryBrowseRouteWithChildren
   '/library/search': typeof LibrarySearchRoute
   '/_frontpage/': typeof FrontpageIndexRoute
-  '/debug/': typeof DebugIndexRoute
   '/import/': typeof ImportIndexRoute
   '/inbox/': typeof InboxIndexRoute
   '/tags/': typeof TagsIndexRoute
@@ -313,7 +296,6 @@ export interface FileRouteTypes {
     | '/library/browse'
     | '/library/search'
     | '/'
-    | '/debug'
     | '/import'
     | '/inbox'
     | '/tags'
@@ -328,7 +310,6 @@ export interface FileRouteTypes {
     | '/library/browse'
     | '/library/search'
     | '/'
-    | '/debug'
     | '/import'
     | '/inbox'
     | '/tags'
@@ -343,7 +324,6 @@ export interface FileRouteTypes {
     | '/library/browse'
     | '/library/search'
     | '/_frontpage/'
-    | '/debug/'
     | '/import/'
     | '/inbox/'
     | '/tags/'
@@ -360,7 +340,6 @@ export interface RootRouteChildren {
   LibraryBrowseRoute: typeof LibraryBrowseRouteWithChildren
   LibrarySearchRoute: typeof LibrarySearchRoute
   FrontpageIndexRoute: typeof FrontpageIndexRoute
-  DebugIndexRoute: typeof DebugIndexRoute
   ImportIndexRoute: typeof ImportIndexRoute
   InboxIndexRoute: typeof InboxIndexRoute
   TagsIndexRoute: typeof TagsIndexRoute
@@ -372,7 +351,6 @@ const rootRouteChildren: RootRouteChildren = {
   LibraryBrowseRoute: LibraryBrowseRouteWithChildren,
   LibrarySearchRoute: LibrarySearchRoute,
   FrontpageIndexRoute: FrontpageIndexRoute,
-  DebugIndexRoute: DebugIndexRoute,
   ImportIndexRoute: ImportIndexRoute,
   InboxIndexRoute: InboxIndexRoute,
   TagsIndexRoute: TagsIndexRoute,
@@ -393,7 +371,6 @@ export const routeTree = rootRoute
         "/library/browse",
         "/library/search",
         "/_frontpage/",
-        "/debug/",
         "/import/",
         "/inbox/",
         "/tags/",
@@ -417,9 +394,6 @@ export const routeTree = rootRoute
     },
     "/_frontpage/": {
       "filePath": "_frontpage/index.tsx"
-    },
-    "/debug/": {
-      "filePath": "debug/index.tsx"
     },
     "/import/": {
       "filePath": "import/index.tsx"

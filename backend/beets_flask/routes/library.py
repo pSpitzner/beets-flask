@@ -29,7 +29,7 @@ from typing import Awaitable, Callable, Coroutine, Optional, TypedDict, cast
 import beets.library
 from beets import util as beets_util
 from beets.ui import _open_library
-from mediafile import MediaFile, Image  # comes with the beets install
+from mediafile import Image, MediaFile  # comes with the beets install
 from PIL import Image as PILImage
 from quart import (
     Blueprint,

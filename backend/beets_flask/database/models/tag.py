@@ -149,7 +149,7 @@ class Tag(Base):
         return self._group_id
 
     def set_group_id(self, group_id, session=None):
-        from backend.beets_flask.database.setup import db_session
+        from beets_flask.database.setup import db_session
 
         with db_session(session) as s:
             log.debug(f"Setting group_id {group_id}, {s}")

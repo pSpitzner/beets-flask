@@ -48,6 +48,7 @@ typed = [
     "types-requests",
     "mypy>=1.14.1",
     "types-cachetools",
+    "types-Deprecated",
 ]
 all = ["interactive_beets[dev,test]"]
 docs = [
@@ -108,5 +109,5 @@ check_untyped_defs = true
 
 [[tool.mypy.overrides]]
 # Suppresses error messages about imports that cannot be resolved.
-module = ["socketio.*", "beets.*", "confuse.*", "mediafile.*"]
+module = ["socketio.*", "beets.*", "confuse.*", "mediafile.*", "nest_asyncio"]
 ignore_missing_imports = true

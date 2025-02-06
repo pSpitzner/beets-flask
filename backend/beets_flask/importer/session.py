@@ -68,7 +68,7 @@ class InteractiveImportSession(BaseSession):
         # Update state with new task. In parallel pipeline, user should be able to choose from all tasks simultaneously.
         # Emit the task to the user
         self.import_state.upsert_task(task)
-        # self.communicator.emit_state(self.import_state)
+        self.communicator.emit_state_sync(self.import_state)
 
         sel_state = self.import_state.get_selection_state_for_task(task)
         if sel_state is None:
@@ -278,7 +278,7 @@ class InteractiveImportSession(BaseSession):
             f"\nSession set status:\n\t{status.value}\n\t{threading.get_ident()=}\n\t{sio=}\n\t{sio.manager.rooms['/import']=}"
         )
         self.import_state.status = status
-        self.communicator.emit_state_sync(self.import_state)
+        self.communicator.emit_status_sync(status)
 
     async def run_async(self):
         """Run the import task.
