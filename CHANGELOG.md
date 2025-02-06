@@ -9,8 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-  Option to install beets plugins by placing either `requirements.txt` or `startup.sh` in /`config`. cf. [Readthedocs](https://beets-flask.readthedocs.io/en/latest/plugins.html)
+-  [Documentation](https://beets-flask.readthedocs.io/en/latest/?badge=latest) on readthedocs.
 -  Option to import Asis via right-click, or as inbox type. Good for Bootlegs that do not
    have online meta data and you curate manually. Currently also applies `--group-albums`.
+
+### Fixed
+
+-  Path escaping for right-click import via cli (#51)
 
 ## [0.1.0] - 24-11-13
 

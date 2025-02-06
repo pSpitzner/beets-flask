@@ -102,7 +102,15 @@ COPY --from=deps /repo /repo
 COPY --from=build /repo/frontend/dist /repo/frontend/dist
 COPY entrypoint.sh .
 COPY entrypoint_fix_permissions.sh .
+COPY entrypoint_user_scripts.sh .
 RUN chown -R beetle:beetle /repo
 
 USER root
-ENTRYPOINT ["/bin/sh", "-c", "./entrypoint_fix_permissions.sh && su beetle -c ./entrypoint.sh"]
+
+ENTRYPOINT [ \
+    "/bin/sh", "-c", \
+    "/repo/entrypoint_fix_permissions.sh && \
+    /repo/entrypoint_user_scripts.sh && \
+    su beetle -c /repo/entrypoint.sh" \
+]
+
