@@ -418,7 +418,9 @@ export function TerminalImportAction(props: Partial<ActionProps>) {
 }
 
 function _escapePathForBash(path: string) {
-    return path.replace(/'/g, "'\\''").replace(/\\/g, "\\\\").replace(/ /g, "\\ ");
+    // escaping path is fishy, but this seems to be the best compromise
+    // https://stackoverflow.com/questions/1779858/how-do-i-escape-a-string-for-a-shell-command-in-node
+    return `'${path.replace(/'/g, `'\\''`)}'`;
 }
 
 export function UndoImportAction(props: Partial<ActionProps>) {
