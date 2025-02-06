@@ -39,6 +39,15 @@ test = ["pytest>=8.2.2", "pytest-asyncio>=0.23.8", "pytest-cov>=5.0.0"]
 dev = ["ruff>=0.6.5", "pre-commit>=3.8.0", "interactive_beets[typed]"]
 typed = ["types-cachetools", "types-requests", "mypy>=1.14.1", "types-cachetools","types-Flask-Cors"]
 all = ["interactive_beets[dev,test]"]
+docs = [
+    "sphinx>=8.0.2",
+    "furo>=2024.8.6",
+    "sphinx-copybutton>=0.5.2",
+    "sphinx-inline-tabs>=2023.4.21",
+    "sphinxcontrib-typer[html]>=0.5.0",
+    "myst-parser>=4.0.0",
+    "myst-nb>=1.1.2",
+]
 
 [build-system]
 requires = ["hatchling"]

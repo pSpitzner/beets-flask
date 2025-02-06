@@ -1,8 +1,9 @@
+<!-- start intro -->
 <p align="center">
     <h1 align="center">Beets Flask</h1>
 </p>
 
-![version number](https://img.shields.io/github/package-json/v/pspitzner/beets-flask/main?filename=frontend%2Fpackage.json&label=version&color=blue)
+[![version number](https://img.shields.io/github/package-json/v/pspitzner/beets-flask/main?filename=frontend%2Fpackage.json&label=version&color=blue)](https://github.com/pSpitzner/beets-flask/blob/main/CHANGELOG.md)
 [![docker-hub status](https://img.shields.io/github/actions/workflow/status/pSpitzner/beets-flask/docker_hub.yml?label=docker%20build)](https://github.com/pSpitzner/beets-flask/pkgs/container/beets-flask)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?label=license)](https://opensource.org/licenses/MIT)
 
@@ -10,7 +11,11 @@
     <em><b>Opinionated web-interface around the music organizer <a href="https://beets.io/">beets</a></b></em>
 </p>
 
+<!-- end intro -->
+
 ## Features
+
+<!-- start features -->
 
 -   Autogenerate previews before importing
 -   Import via GUI
@@ -19,6 +24,7 @@
 -   Monitor multiple inboxes
 -   Library view and search
 
+<!-- end features -->
 
 https://github.com/user-attachments/assets/dd526b9d-9351-4f7c-9034-1071e4ff66e6
 
@@ -155,4 +161,4 @@ Currently planned:
 
 # Developer Guide & Contribution
 
-Please see [CONTRIBUTE.md](./CONTRIBUTE.md) for more information on how to contribute.
+Please see [CONTRIBUTE.md](.docs/contribution.md) for more information on how to contribute.
