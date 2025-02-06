@@ -1,4 +1,4 @@
-FROM python:3.11-alpine AS base
+FROM python:3.11-alpine3.20 AS base
 
 FROM base AS deps
 
@@ -20,8 +20,8 @@ RUN mkdir -p /music/imported
 RUN chown -R beetle:beetle /music
 
 # dependencies
-RUN --mount=type=cache,target=/var/cache/apk \
-    apk update
+# RUN --mount=type=cache,target=/var/cache/apk \
+RUN apk update
 RUN --mount=type=cache,target=/var/cache/apk \
     apk add \
     imagemagick \
@@ -29,9 +29,13 @@ RUN --mount=type=cache,target=/var/cache/apk \
     git \
     bash \
     keyfinder-cli \
-    npm \
     tmux \
+    wget \
+    npm \
     shadow
+
+# pnpm
+RUN npm install -g pnpm
 
 # Install our package (backend)
 COPY ./backend /repo/backend
@@ -40,12 +44,8 @@ WORKDIR /repo/backend
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install .
 
-# Install frontend
-RUN echo "npm version: $(npm -v)"
-RUN npm i -g corepack
-RUN corepack enable && corepack prepare pnpm@9.x.x --activate
+# Frontend
 RUN pnpm config set store-dir /repo/frontend/.pnpm-store
-RUN echo "pnpm version: $(pnpm -v)"
 
 # ------------------------------------------------------------------------------------ #
 #                                      Development                                     #
