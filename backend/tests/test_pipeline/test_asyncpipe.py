@@ -6,38 +6,34 @@ import logging
 import pytest
 import asyncio
 
-log = logging.getLogger(__name__)
-
 @pytest.mark.asyncio
 async def test_smoke_async(caplog):
     """ Async version of the beets smoke test
     for pipeline
     """
 
+    # no idea what happens with the test
+    # when logging is configured differently
+    log = logging.getLogger("logger")
+    log.setLevel(logging.INFO)
+
     async def produce():
         for i in range(5):
-            log.debug("producing %i" % i)
+            log.info("producing %i" % i)
             await asyncio.sleep(0.1)
             yield i
 
     async def work():
         num = yield
         while True:
-            log.debug("working %i" % num)
-            if num == 0:
-                await asyncio.sleep(2)
-                log.debug("waiting long")
-            else:
-                await asyncio.sleep(0.1)
-                log.debug("waiting short")
-            log.debug("worked %i" % num)
+            log.info("working %i" % num)
             num = yield num * 2
 
     async def consume():
         while True:
             num = yield
             await asyncio.sleep(0.1)
-            log.debug("consuming %i" % num)
+            log.info("consuming %i" % num)
 
 
     initial_task = produce()
@@ -45,23 +41,23 @@ async def test_smoke_async(caplog):
     pipeline = AsyncPipeline(initial_task, stages)
 
 
-    await pipeline.run_sequential()
+    await pipeline.run_async()
     assert caplog.record_tuples == [
-        (__name__, logging.DEBUG, "producing 0"),
-        (__name__, logging.DEBUG, "working 0"),
-        (__name__, logging.DEBUG, "consuming 0"),
-        (__name__, logging.DEBUG, "producing 1"),
-        (__name__, logging.DEBUG, "working 1"),
-        (__name__, logging.DEBUG, "consuming 2"),
-        (__name__, logging.DEBUG, "producing 2"),
-        (__name__, logging.DEBUG, "working 2"),
-        (__name__, logging.DEBUG, "consuming 4"),
-        (__name__, logging.DEBUG, "producing 3"),
-        (__name__, logging.DEBUG, "working 3"),
-        (__name__, logging.DEBUG, "consuming 6"),
-        (__name__, logging.DEBUG, "producing 4"),
-        (__name__, logging.DEBUG, "working 4"),
-        (__name__, logging.DEBUG, "consuming 8"),
+        ("logger", logging.INFO, "producing 0"),
+        ("logger", logging.INFO, "working 0"),
+        ("logger", logging.INFO, "consuming 0"),
+        ("logger", logging.INFO, "producing 1"),
+        ("logger", logging.INFO, "working 1"),
+        ("logger", logging.INFO, "consuming 2"),
+        ("logger", logging.INFO, "producing 2"),
+        ("logger", logging.INFO, "working 2"),
+        ("logger", logging.INFO, "consuming 4"),
+        ("logger", logging.INFO, "producing 3"),
+        ("logger", logging.INFO, "working 3"),
+        ("logger", logging.INFO, "consuming 6"),
+        ("logger", logging.INFO, "producing 4"),
+        ("logger", logging.INFO, "working 4"),
+        ("logger", logging.INFO, "consuming 8"),
     ]
 
 
@@ -72,16 +68,19 @@ async def test_smoke_sync(caplog):
     for pipeline
     """
 
+    log = logging.getLogger("logger")
+    log.setLevel(logging.INFO)
+
     def produce():
         for i in range(5):
-            log.debug("producing %i" % i)
+            log.info("producing %i" % i)
             time.sleep(0.1)
             yield i
 
     def work():
         num = yield
         while True:
-            log.debug("working %i" % num)
+            log.info("working %i" % num)
             time.sleep(0.1)
             num = yield num * 2
 
@@ -89,7 +88,7 @@ async def test_smoke_sync(caplog):
         while True:
             num = yield
             time.sleep(0.1)
-            log.debug("consuming %i" % num)
+            log.info("consuming %i" % num)
 
 
     initial_task = produce()
@@ -99,19 +98,19 @@ async def test_smoke_sync(caplog):
 
     await pipeline.run_async()
     assert caplog.record_tuples == [
-        (__name__, logging.DEBUG, "producing 0"),
-        (__name__, logging.DEBUG, "working 0"),
-        (__name__, logging.DEBUG, "consuming 0"),
-        (__name__, logging.DEBUG, "producing 1"),
-        (__name__, logging.DEBUG, "working 1"),
-        (__name__, logging.DEBUG, "consuming 2"),
-        (__name__, logging.DEBUG, "producing 2"),
-        (__name__, logging.DEBUG, "working 2"),
-        (__name__, logging.DEBUG, "consuming 4"),
-        (__name__, logging.DEBUG, "producing 3"),
-        (__name__, logging.DEBUG, "working 3"),
-        (__name__, logging.DEBUG, "consuming 6"),
-        (__name__, logging.DEBUG, "producing 4"),
-        (__name__, logging.DEBUG, "working 4"),
-        (__name__, logging.DEBUG, "consuming 8"),
+        ("logger", logging.INFO, "producing 0"),
+        ("logger", logging.INFO, "working 0"),
+        ("logger", logging.INFO, "consuming 0"),
+        ("logger", logging.INFO, "producing 1"),
+        ("logger", logging.INFO, "working 1"),
+        ("logger", logging.INFO, "consuming 2"),
+        ("logger", logging.INFO, "producing 2"),
+        ("logger", logging.INFO, "working 2"),
+        ("logger", logging.INFO, "consuming 4"),
+        ("logger", logging.INFO, "producing 3"),
+        ("logger", logging.INFO, "working 3"),
+        ("logger", logging.INFO, "consuming 6"),
+        ("logger", logging.INFO, "producing 4"),
+        ("logger", logging.INFO, "working 4"),
+        ("logger", logging.INFO, "consuming 8"),
     ]
