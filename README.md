@@ -6,6 +6,7 @@
 [![version number](https://img.shields.io/github/package-json/v/pspitzner/beets-flask/main?filename=frontend%2Fpackage.json&label=version&color=blue)](https://github.com/pSpitzner/beets-flask/blob/main/CHANGELOG.md)
 [![docker-hub status](https://img.shields.io/github/actions/workflow/status/pSpitzner/beets-flask/docker_hub.yml?label=docker%20build)](https://github.com/pSpitzner/beets-flask/pkgs/container/beets-flask)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?label=license)](https://opensource.org/licenses/MIT)
+[![Documentation Status](https://readthedocs.org/projects/beets-flask/badge/?version=latest)](https://beets-flask.readthedocs.io/en/latest/?badge=latest)
 
 <p align="center">
     <em><b>Opinionated web-interface around the music organizer <a href="https://beets.io/">beets</a></b></em>
