@@ -2,6 +2,11 @@ FROM python:3.11-alpine3.20 AS base
 
 FROM base AS deps
 
+# Prevent __pycache__ directories
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+
 RUN addgroup -g 1000 beetle && \
     adduser -D -u 1000 -G beetle beetle
 
@@ -26,26 +31,17 @@ RUN --mount=type=cache,target=/var/cache/apk \
     apk add \
     imagemagick \
     redis  \
-    git \
     bash \
-    keyfinder-cli \
     tmux \
-    wget \
-    npm \
     shadow
-
-# pnpm
-RUN npm install -g pnpm
 
 # Install our package (backend)
 COPY ./backend /repo/backend
 COPY ./README.md /repo/README.md
 WORKDIR /repo/backend
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install .
+    pip install --no-cache-dir .
 
-# Frontend
-RUN pnpm config set store-dir /repo/frontend/.pnpm-store
 
 # ------------------------------------------------------------------------------------ #
 #                                      Development                                     #
@@ -78,8 +74,14 @@ ENTRYPOINT ["./entrypoint_test.sh"]
 # ------------------------------------------------------------------------------------ #
 
 FROM deps AS build
+# Build frontend files
 
-COPY --from=deps /repo /repo
+RUN --mount=type=cache,target=/var/cache/apk \
+    apk add \
+    npm
+
+RUN npm install -g pnpm
+RUN pnpm config set store-dir /repo/frontend/.pnpm-store
 
 WORKDIR /repo
 COPY ./frontend ./frontend/
@@ -98,7 +100,6 @@ FROM deps AS prod
 ENV IB_SERVER_CONFIG="prod"
 
 WORKDIR /repo
-COPY --from=deps /repo /repo
 COPY --from=build /repo/frontend/dist /repo/frontend/dist
 COPY entrypoint.sh .
 COPY entrypoint_fix_permissions.sh .
@@ -113,4 +114,5 @@ ENTRYPOINT [ \
     /repo/entrypoint_user_scripts.sh && \
     su beetle -c /repo/entrypoint.sh" \
 ]
+
 
