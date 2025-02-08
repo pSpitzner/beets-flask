@@ -29,4 +29,4 @@
 
 !README.md
 !LICENSE
-!entrypoint*.sh
+!docker/entrypoints/entrypoint*.sh

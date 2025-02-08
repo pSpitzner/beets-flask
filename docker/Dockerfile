@@ -2,10 +2,6 @@ FROM python:3.11-alpine3.20 AS base
 
 FROM base AS deps
 
-# Prevent __pycache__ directories
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
-
 
 RUN addgroup -g 1000 beetle && \
     adduser -D -u 1000 -G beetle beetle
@@ -39,6 +35,9 @@ RUN --mount=type=cache,target=/var/cache/apk \
 COPY ./backend /repo/backend
 COPY ./README.md /repo/README.md
 WORKDIR /repo/backend
+# Prevent __pycache__ directories
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --no-cache-dir .
 
@@ -49,12 +48,19 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 FROM deps AS dev
 
+RUN --mount=type=cache,target=/var/cache/apk \
+    apk add \
+    npm
+
+RUN npm install -g pnpm
+RUN pnpm config set store-dir /repo/frontend/.pnpm-store
+
 ENV IB_SERVER_CONFIG="dev_docker"
 
 # relies on mounting this volume
 WORKDIR /repo
 USER root
-ENTRYPOINT ["./entrypoint_dev.sh"]
+ENTRYPOINT ["./docker/entrypoints/entrypoint_dev.sh"]
 
 # ------------------------------------------------------------------------------------ #
 #                                        Testing                                       #
@@ -101,9 +107,9 @@ ENV IB_SERVER_CONFIG="prod"
 
 WORKDIR /repo
 COPY --from=build /repo/frontend/dist /repo/frontend/dist
-COPY entrypoint.sh .
-COPY entrypoint_fix_permissions.sh .
-COPY entrypoint_user_scripts.sh .
+COPY docker/entrypoints/entrypoint.sh .
+COPY docker/entrypoints/entrypoint_user_scripts.sh .
+COPY docker/entrypoints/entrypoint_fix_permissions.sh .
 RUN chown -R beetle:beetle /repo
 
 USER root

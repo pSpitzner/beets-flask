@@ -3,13 +3,13 @@ services:
         container_name: beets-flask
         hostname: beets-container
         build:
-            context: .
-            dockerfile: Dockerfile
+            context: ..
+            dockerfile: docker/Dockerfile
             target: dev
         image: beets-flask
         restart: unless-stopped
         ports:
-            - "5001:5001" # production and backend
+            - "5001:5001" # for beets-flask
             - "5173:5173" # for vite dev server
         environment:
             # 502 is default on macos, 1000 on linux
@@ -26,7 +26,7 @@ services:
             # we put the beets and our beets-flask config into the /config directory
             # create these folders before starting the container! otherwise you might
             # get permission issues.
-            - ./config/:/config
+            - ./dev_config/:/config
 
             # for development. (disable if target is `prod`)
-            - ./:/repo/
+            - ../:/repo/

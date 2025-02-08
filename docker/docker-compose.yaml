@@ -1,0 +1,15 @@
+services:
+    beets-flask:
+        image: pspitzner/beets-flask:stable
+        restart: unless-stopped
+        ports:
+            - "5001:5001"
+        environment:
+            # 502 is default on macos, 1000 on linux
+            USER_ID: 1000
+            GROUP_ID: 1000
+        volumes:
+            - /wherever/config/:/config
+            # for music folders, match paths inside and out of container!
+            - /music_path/inbox/:/music_path/inbox/
+            - /music_path/clean/:/music_path/clean/
