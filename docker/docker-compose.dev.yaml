@@ -21,12 +21,12 @@ services:
             # if you want to use the same beets-library inside and out:
             # YOU NEED TO MAP YOUR MUSIC FOLDER IN THE CONTAINER TO THE SAME PATH AS OUTSIDE
             # and make sure the config used in the container has the right path!
-            # - /music/:/music/
+            - ../local/music/:/music/
 
             # we put the beets and our beets-flask config into the /config directory
             # create these folders before starting the container! otherwise you might
             # get permission issues.
-            - ./dev_config/:/config
+            - ../local/config/:/config
 
             # for development. (disable if target is `prod`)
             - ../:/repo/

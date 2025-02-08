@@ -14,10 +14,12 @@ cd beets-flask
 We use a development container for a consistent development environment across devices You can use the provided `docker-compose-dev.yaml` to start a development container.
 
 ```bash
-docker-compose -f docker-compose-dev.yaml up --build
+docker-compose -f docker/docker-compose.dev.yaml up --build
 ```
 
-This mounts `./` to `/repo` in the container for live reloading and enhanced development experience and starts the development flask server and serves the frontend at `http://localhost:5173`.
+This mounts `./` to `/repo` in the container for live reloading and enhanced development experience and starts the development flask server and serves the frontend at `http://localhost:5173` and the backend at `http://localhost:5001`. 
+
+As always you may need to adjust the user, ports and volumes in the compose file for your specific setup. We recommend to create a copy of the `docker-compose.dev.yaml` and adjust it to your needs.
 
 ### Apple Issues
 
