@@ -7,6 +7,11 @@ hide-toc: true
 :end-before: <!-- end intro -->
 ```
 
+```{note}
+This documentation is very much a work in progress. If you have any questions or suggestions, please feel free to open an issue or a pull request.
+```
+
+
 ## Features
 
 ```{include} ../README.md
@@ -15,19 +20,29 @@ hide-toc: true
 ```
 
 
-## Documentation
+## Motivation
 
-```{note}
-This documentation is very much a work in progress. If you have any questions or suggestions, please feel free to open an issue or a pull request.
+```{include} ../README.md
+:start-after: <!-- start motivation -->
+:end-before: <!-- end motivation -->
 ```
 
-```{toctree}
----
-maxdepth: 1
----
 
-contribution
-developer
-plugins
+
+```{toctree}
+:hidden:
+:caption: 📚 Guides
+
+getting-started.md
+plugins.md
+```
+
+
+```{toctree}
+:hidden:
+:caption: 📖 Reference
+
+develop/contribution.md
+develop/resources/index.md
 ```
 

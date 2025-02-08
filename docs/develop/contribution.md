@@ -70,8 +70,8 @@ mypy beets_flask
 
 ## Additional Resources
 
-See also [Resources.md](../RESOURCES.md) for some background information and design choices.
+If you want to contribute and don't know where to start, you can check out our [open issues](https://github.com/pSpitzner/beets-flask/issues) or checkout the [project board](https://github.com/users/pSpitzner/projects/2) for the current state of the project and what we are working on currently.
 
-Also have a look at out our [developer documentation](./developer.md) if you need more information on the codebase.
+See also our [developer resources](./resources/index.md) for some background information if you need more information on the codebase.
 
-Thank you for contributing! We highly appreciate any help.
+Thank you for contributing! We highly appreciate any feedback and help.

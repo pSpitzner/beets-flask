@@ -9,29 +9,10 @@ Here you can find some resources that might be useful and interesting for develo
     -   [Gunicorn](https://gunicorn.org/)
     -   [Redis Queue](https://python-rq.org/)
     -   [SQLite via SQLAlchemy](https://docs.sqlalchemy.org/en/20/)
--   Frontend:
-    -   [React](https://react.dev/)
-    -   [Vite](https://vitejs.dev/)
-    -   [Tanstack router](https://tanstack.com/router/latest)
-    -   [MUI Core](https://mui.com/material-ui/all-components/)
-    -   [Radix-ui primitives](https://www.radix-ui.com/primitives/docs/overview/introduction)
-    -   [Lucide icons](https://lucide.dev/icons/)
 -   Terminal:
     -   [xtermjs](https://xtermjs.org/)
     -   [tmux](https://github.com/tmux/tmux/wiki)
 
-## Environment variables
-
-**undergoing changes, in progress**
-
-```
-IB_GUI_CONFIG_PATH # path to gui yaml, should you desire to place it config elsewhere than in the BEETSFLASKDIR
-
-# set by in the container, should not be changed
-IB_SERVER_CONFIG # prod | dev_local | dev_docker | test
-BEETSDIR="/config/beets"
-BEETSFLASKDIR="/config/beets-flask"
-```
 
 ## Notes, Design Choices and Ideas
 
