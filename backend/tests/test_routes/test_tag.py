@@ -24,7 +24,7 @@ def tags():
 class TestTagEndpoints:
 
     @pytest.mark.asyncio
-    async def test_add_tag(self, client):
+    async def test_add_tag(self, client, tags):
         data = {"kind": "import", "folder": "/some/folder"}
         response = await client.post("/api_v1/tag/add", json=data)
         data = await response.get_json()

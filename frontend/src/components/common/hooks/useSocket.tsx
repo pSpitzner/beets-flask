@@ -27,10 +27,7 @@ export const useSocket = (
     namespace: string,
     options?: Partial<ManagerOptions & SocketOptions>
 ) => {
-    const url: string =
-        import.meta.env.MODE === "development"
-            ? `ws://localhost:5001/${namespace}`
-            : `/${namespace}`;
+    const url: string = `/${namespace}`;
 
     const [socket, setSocket] = useState<Socket | null>(null);
     const [isConnected, setIsConnected] = useState(false);

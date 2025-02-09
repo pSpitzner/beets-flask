@@ -48,7 +48,6 @@ async def handle_crawler_exception(error: InvalidUsage):
 @error_bp.app_errorhandler(ConfigError)
 async def handle_config_exception(error: ConfigError):
     log.warning(f"Configuration Error: {error}")
-    raise error
     return (
         jsonify(
             {
