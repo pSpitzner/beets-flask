@@ -1,8 +1,6 @@
 import logging
 import asyncio
-import ssl
-from typing import Any, AsyncIterator, Awaitable, Optional
-from engineio.async_socket import AsyncSocket
+from typing import Any, Optional
 import pytest
 import socketio
 import uvicorn
@@ -22,9 +20,7 @@ class UvicornTestServer(uvicorn.Server):
     ):
         self._startup_done = asyncio.Event()
         self._serve_task: Optional[asyncio.Task] = None
-        super().__init__(
-            config=uvicorn.Config(app, host=host, port=port, ws_ping_interval=0.01)
-        )
+        super().__init__(config=uvicorn.Config(app, host=host, port=port))
 
     async def startup(self, sockets=None) -> None:
         """Override uvicorn startup"""
@@ -49,13 +45,9 @@ class UvicornTestServer(uvicorn.Server):
             except asyncio.exceptions.CancelledError:
                 pass
         await self.shutdown()
-        await asyncio.sleep(self.config.ws_ping_interval or 0.01)
 
 
-import pytest_asyncio
-
-
-@pytest_asyncio.fixture(name="ws_server", scope="session", autouse=True)
+@pytest.fixture
 async def fixture_ws_server(testapp):
     server = UvicornTestServer(testapp)
     try:
@@ -72,25 +64,17 @@ async def fixture_ws_server(testapp):
             task.cancel()
 
 
-@pytest_asyncio.fixture(scope="session")
-async def ws_client(ws_server):
-    sio = socketio.AsyncClient()
-    await sio.connect(BASE_URL, wait_timeout=1)
+@pytest.fixture
+async def ws_client(fixture_ws_server):
+    client = socketio.AsyncClient(reconnection=False)
+    await client.connect(
+        BASE_URL,
+        namespaces=["/import", "/test"],
+        transports=["websocket"],
+    )
     try:
-        yield sio
+        yield client
     finally:
-        await sio.disconnect()
-        await sio.wait()
-        await sio.shutdown()
-
-
-@pytest_asyncio.fixture(scope="function", loop_scope="session")
-async def ws_client_import(ws_server):
-    sio = socketio.AsyncClient(request_timeout=1, reconnection=False)
-    await sio.connect(BASE_URL, wait=False, namespaces=["/import"])
-    try:
-        yield sio
-    finally:
-        await sio.disconnect()
-        await sio.wait()
-        await sio.shutdown()
+        await client.disconnect()
+        await client.wait()
+        await client.shutdown()

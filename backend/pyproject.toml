@@ -100,6 +100,7 @@ filterwarnings = [
     "ignore::DeprecationWarning",
 ]
 pythonpath = ["."]
+asyncio_mode = "auto"
 
 [tool.coverage.report]
 omit = ["*/tests/*"]

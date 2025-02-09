@@ -12,6 +12,7 @@ from beets_flask.importer import (
 )
 from beets_flask.logger import log
 from beets_flask.websocket import sio
+from beets_flask.websocket.errors import sio_catch_expection
 
 namespace = "/import"
 session: InteractiveImportSession | None = None
@@ -19,15 +20,13 @@ session_task: asyncio.Task | None = None
 
 
 @sio.on("connect", namespace=namespace)
-async def connect(sid, environ):
-    """Handle new client connected."""
-    log.debug(f"ImportSocket new client connected {sid}")
+async def connect(sid, *args):
+    log.debug(f"ImportSocket sid {sid} connected")
 
 
 @sio.on("disconnect", namespace=namespace)
 async def disconnect(sid):
-    """Handle client disconnect."""
-    log.debug(f"ImportSocket client disconnected {sid}")
+    log.debug(f"ImportSocket sid {sid} disconnected")
 
 
 @sio.on("get_state", namespace=namespace)
