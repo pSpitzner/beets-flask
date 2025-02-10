@@ -7,7 +7,7 @@ from .communicator import (
     WebsocketCommunicator,
 )
 from .session import InteractiveImportSession
-from .states import ImportState
+from .states import SessionState
 
 __all__ = [
     "ImportCommunicator",
@@ -16,6 +16,6 @@ __all__ = [
     "ChoiceReceive",
     "CompleteReceive",
     "InteractiveImportSession",
-    "ImportState",
+    "SessionState",
     "types",
 ]

@@ -21,15 +21,15 @@ from socketio import AsyncServer
 
 from beets_flask.logger import log
 
-from .states import CandidateState, ImportState, ImportStatusMessage, SelectionState
+from .states import CandidateState, SessionState, ImportStatusMessage, TaskState
 
 
-def default_events(state: Union[ImportState, SelectionState, CandidateState]):
+def default_events(state: Union[SessionState, TaskState, CandidateState]):
     """Assign the default emit events for commonly used states."""
     event = None
-    if isinstance(state, ImportState):
+    if isinstance(state, SessionState):
         event = "import_state"
-    elif isinstance(state, SelectionState):
+    elif isinstance(state, TaskState):
         event = "selection_state"
     elif isinstance(state, CandidateState):
         event = "candidate_state"
@@ -40,9 +40,9 @@ def default_events(state: Union[ImportState, SelectionState, CandidateState]):
 
 class ImportCommunicator(ABC):
     # Ref to the current import state
-    state: ImportState
+    state: SessionState
 
-    def __init__(self, state: ImportState):
+    def __init__(self, state: SessionState):
         self.state = state
 
     async def emit_current_async(self):
@@ -54,7 +54,7 @@ class ImportCommunicator(ABC):
         # return with_loop(asyncio.to_thread(self.emit_current_async))
 
     async def emit_state_async(
-        self, state: Union[ImportState, SelectionState, CandidateState, None], **kwargs
+        self, state: Union[SessionState, TaskState, CandidateState, None], **kwargs
     ) -> None:
         """Emit a (sub-) state of an import session.
 
@@ -74,7 +74,7 @@ class ImportCommunicator(ABC):
         log.debug(f"emitted state {state}")
 
     def emit_state_sync(
-        self, state: Union[ImportState, SelectionState, CandidateState, None], **kwargs
+        self, state: Union[SessionState, TaskState, CandidateState, None], **kwargs
     ):
         # import threading
 
@@ -135,7 +135,7 @@ class ImportCommunicator(ABC):
                 candidate_id = req["candidate_id"]
                 duplicate_action = req["duplicate_action"]
 
-                sel_state = self.state.get_selection_state_by_id(selection_id)
+                sel_state = self.state.get_task_state_by_id(selection_id)
                 if sel_state is None:
                     raise ValueError("No selection state found for task.")
                 sel_state.current_candidate_id = candidate_id
@@ -153,7 +153,7 @@ class ImportCommunicator(ABC):
 
                 # Update the state
                 for id, completed in zip(selection_ids, are_completed):
-                    sel_state = self.state.get_selection_state_by_id(id)
+                    sel_state = self.state.get_task_state_by_id(id)
                     if sel_state is None:
                         raise ValueError("No selection state found for task.")
                     sel_state.completed = completed
@@ -169,7 +169,7 @@ class ImportCommunicator(ABC):
                 assert search_id is not None or artist is not None, (
                     "Either Search ID or Artist + Album need to be given"
                 )
-                sel_state = self.state.get_selection_state_by_id(selection_id)
+                sel_state = self.state.get_task_state_by_id(selection_id)
                 if sel_state is None:
                     raise ValueError("No selection state found for task.")
                 n_candidates_pre_search = len(sel_state.candidates)
@@ -233,7 +233,7 @@ class WebsocketCommunicator(ImportCommunicator):
     sio: AsyncServer
 
     def __init__(
-        self, state: ImportState, sio: AsyncServer, namespace: str = "/import"
+        self, state: SessionState, sio: AsyncServer, namespace: str = "/import"
     ):
         self.sio = sio
         self.namespace = namespace

@@ -6,7 +6,7 @@ from socketio import AsyncServer
 from beets_flask.importer import (
     ChoiceReceive,
     CompleteReceive,
-    ImportState,
+    SessionState,
     InteractiveImportSession,
     WebsocketCommunicator,
 )
@@ -61,10 +61,11 @@ async def start_import_session(sid, data):
         session_task.cancel()
         session_task = None
 
-    state = ImportState()
+    state = SessionState()
     communicator = WebsocketCommunicator(state, sio, namespace)
-    session = InteractiveImportSession(state, communicator, path=path)
-    await communicator.emit_current_async()
+    session = InteractiveImportSession(
+        state=state, communicator=communicator, path=path
+    )
 
     async def run_session():
         global session, session_task
@@ -107,7 +108,7 @@ async def choice(sid, req: Union[ChoiceReceive, CompleteReceive]):
     if not session is None:
         ret_val = await session.communicator.received_request(req)
         # Remit state
-        await session.communicator.emit_state_async(session.import_state, skip_sid=sid)
+        await session.communicator.emit_state_async(session.state, skip_sid=sid)
         return ret_val
     else:
         return False

@@ -76,7 +76,7 @@ USER root
 ENTRYPOINT ["./entrypoint_test.sh"]
 
 # ------------------------------------------------------------------------------------ #
-#                                      Production                                      #
+#                                         Build                                        #
 # ------------------------------------------------------------------------------------ #
 
 FROM deps AS build
@@ -100,6 +100,8 @@ RUN pnpm install
 RUN pnpm run build
 
 # ------------------------------------------------------------------------------------ #
+#                                      Production                                      #
+# ------------------------------------------------------------------------------------ #
 
 FROM deps AS prod
 
@@ -119,6 +121,6 @@ ENTRYPOINT [ \
     "/repo/entrypoint_fix_permissions.sh && \
     /repo/entrypoint_user_scripts.sh && \
     su beetle -c /repo/entrypoint.sh" \
-]
+    ]
 
 
