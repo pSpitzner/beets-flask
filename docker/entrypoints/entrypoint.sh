@@ -22,5 +22,9 @@ python ./launch_redis_workers.py
 
 redis-cli FLUSHALL
 
-# we need to run with one worker for socketio to work (but need at lesat threads for SSEs)
-gunicorn --worker-class eventlet -w 1 --threads 32 --timeout 300 --bind 0.0.0.0:5001 'main:create_app()'
+# we need to run with one worker for socketio to work
+uvicorn beets_flask.server.app:create_app --port 5001 \
+    --host 0.0.0.0 \
+    --factory \
+    --workers 1 \
+    --threads 32

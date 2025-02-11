@@ -4,16 +4,18 @@ from .communicator import (
     CompleteReceive,
     EmitRequest,
     ImportCommunicator,
+    WebsocketCommunicator,
 )
 from .session import InteractiveImportSession
-from .states import ImportState
+from .states import SessionState
 
 __all__ = [
     "ImportCommunicator",
+    "WebsocketCommunicator",
     "EmitRequest",
     "ChoiceReceive",
     "CompleteReceive",
     "InteractiveImportSession",
-    "ImportState",
+    "SessionState",
     "types",
 ]

@@ -1,20 +1,35 @@
 from __future__ import annotations
 
+import asyncio
+import functools
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Generic, List, Literal, TypedDict, TypeVar, Union, cast
+from typing import (
+    Any,
+    Callable,
+    Coroutine,
+    Generic,
+    List,
+    Literal,
+    TypedDict,
+    TypeVar,
+    Union,
+    cast,
+)
+
+from socketio import AsyncServer
 
 from beets_flask.logger import log
 
-from .states import CandidateState, ImportState, ImportStatus, SelectionState
+from .states import CandidateState, SessionState, ImportStatusMessage, TaskState
 
 
-def default_events(state: Union[ImportState, SelectionState, CandidateState]):
+def default_events(state: Union[SessionState, TaskState, CandidateState]):
     """Assign the default emit events for commonly used states."""
     event = None
-    if isinstance(state, ImportState):
+    if isinstance(state, SessionState):
         event = "import_state"
-    elif isinstance(state, SelectionState):
+    elif isinstance(state, TaskState):
         event = "selection_state"
     elif isinstance(state, CandidateState):
         event = "candidate_state"
@@ -25,42 +40,63 @@ def default_events(state: Union[ImportState, SelectionState, CandidateState]):
 
 class ImportCommunicator(ABC):
     # Ref to the current import state
-    state: ImportState
+    state: SessionState
 
-    def __init__(self, state: ImportState):
+    def __init__(self, state: SessionState):
         self.state = state
-        self.emit_current()
 
-    def emit_current(self):
+    async def emit_current_async(self):
         """Emit the current top-level state associated with the import session."""
-        self.emit_state(self.state)
+        await self.emit_state_async(self.state)
 
-    def emit_state(
-        self, state: Union[ImportState, SelectionState, CandidateState, None], **kwargs
+    def emit_current_sync(self):
+        asyncio.run(self.emit_current_async())
+        # return with_loop(asyncio.to_thread(self.emit_current_async))
+
+    async def emit_state_async(
+        self, state: Union[SessionState, TaskState, CandidateState, None], **kwargs
     ) -> None:
         """Emit a (sub-) state of an import session.
 
         This can be a full import state, a selection state, or a candidate state.
         """
         if state is None:
+            log.debug(f"did not emit state: None")
             return
 
-        self._emit(
+        await self._emit(
             EmitRequest(
                 event=default_events(state),
                 data=state.serialize(),
             ),
             **kwargs,
         )
+        log.debug(f"emitted state {state}")
 
-    def emit_status(self, status: ImportStatus, **kwargs):
+    def emit_state_sync(
+        self, state: Union[SessionState, TaskState, CandidateState, None], **kwargs
+    ):
+        # import threading
+
+        # sio = self.sio
+        # log.debug(
+        #     f"\nCommunicator set state sync:\n\t{state.status=}\n\t{threading.get_ident()=}\n\t{sio=}\n\t{sio.manager.rooms['/import']=}"
+        # )
+
+        asyncio.run(self.emit_state_async(state, **kwargs))
+
+    async def emit_status_async(self, status: ImportStatusMessage, **kwargs):
         """Emit a status message."""
-        self._emit(
+        log.error("Not getting log statements from async funcs?")
+        await self._emit(
             EmitRequest(event="status", data=status.as_dict()),
             **kwargs,
         )
 
-    def emit_custom(self, event: str, data: Any, **kwargs):
+    def emit_status_sync(self, status: ImportStatusMessage, **kwargs):
+        asyncio.run(self.emit_status_async(status, **kwargs))
+
+    async def emit_custom_async(self, event: str, data: Any, **kwargs):
         """Emit a custom event.
 
         For the WebsocketCommunicator, this is equivalent to
@@ -77,9 +113,12 @@ class ImportCommunicator(ABC):
         ```
 
         """
-        self._emit(EmitRequest(event=event, data=data), **kwargs)
+        await self._emit(EmitRequest(event=event, data=data), **kwargs)
 
-    def received_request(
+    def emit_custom_sync(self, event: str, data: Any, **kwargs):
+        asyncio.run(self.emit_custom_async(event, data, **kwargs))
+
+    async def received_request(
         self, req: Union[ChoiceReceive, CompleteReceive, CandidateSearchReceive]
     ):
         """Process incoming requests related to the import session.
@@ -96,27 +135,29 @@ class ImportCommunicator(ABC):
                 candidate_id = req["candidate_id"]
                 duplicate_action = req["duplicate_action"]
 
-                sel_state = self.state.get_selection_state_by_id(selection_id)
+                sel_state = self.state.get_task_state_by_id(selection_id)
                 if sel_state is None:
                     raise ValueError("No selection state found for task.")
                 sel_state.current_candidate_id = candidate_id
                 sel_state.duplicate_action = duplicate_action
+                log.debug(f"Communicator received choice {sel_state=}")
 
             case "selection_complete":
                 req = cast(CompleteReceive, req)
                 # Validate the request
                 selection_ids = req["selection_ids"]
                 are_completed = req["are_completed"]
-                assert len(selection_ids) == len(
-                    are_completed
-                ), "Selections and completion status must have the same length"
+                assert len(selection_ids) == len(are_completed), (
+                    "Selections and completion status must have the same length"
+                )
 
                 # Update the state
                 for id, completed in zip(selection_ids, are_completed):
-                    sel_state = self.state.get_selection_state_by_id(id)
+                    sel_state = self.state.get_task_state_by_id(id)
                     if sel_state is None:
                         raise ValueError("No selection state found for task.")
                     sel_state.completed = completed
+                    log.debug(f"Communicator received sel complete {sel_state=}")
 
             case "candidate_search":
                 req = cast(CandidateSearchReceive, req)
@@ -125,10 +166,10 @@ class ImportCommunicator(ABC):
                 artist = req["artist"]
                 album = req["album"]
 
-                assert (
-                    search_id is not None or artist is not None
-                ), "Either Search ID or Artist + Album need to be given"
-                sel_state = self.state.get_selection_state_by_id(selection_id)
+                assert search_id is not None or artist is not None, (
+                    "Either Search ID or Artist + Album need to be given"
+                )
+                sel_state = self.state.get_task_state_by_id(selection_id)
                 if sel_state is None:
                     raise ValueError("No selection state found for task.")
                 n_candidates_pre_search = len(sel_state.candidates)
@@ -169,17 +210,38 @@ class ImportCommunicator(ABC):
                 return
 
         # Emit to all (potential) clients
-        self._emit(req=req)
+        await self._emit(req=req)
         return ret_val
 
     @abstractmethod
-    def _emit(
+    async def _emit(
         self,
         req: Union[ChoiceReceive, CompleteReceive, CandidateSearchReceive, EmitRequest],
         **kwargs,
     ) -> None:
         """Emit the current state of the import session."""
         raise NotImplementedError("Implement in subclass")
+
+
+class WebsocketCommunicator(ImportCommunicator):
+    """Communicator for the websocket.
+
+    Forwards imports via websockets from the frontend to our
+    backend import logic.
+    """
+
+    sio: AsyncServer
+
+    def __init__(
+        self, state: SessionState, sio: AsyncServer, namespace: str = "/import"
+    ):
+        self.sio = sio
+        self.namespace = namespace
+        super().__init__(state)
+
+    async def _emit(self, req, **kwargs) -> None:
+        log.debug(f"emitting {req['event']=} {kwargs=}")
+        await self.sio.emit(req["event"], req, namespace=self.namespace, **kwargs)
 
 
 # ------------------------------------------------------------------------------------ #

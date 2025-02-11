@@ -205,7 +205,7 @@ class PreviewSession(BaseSession):
         for cdx in range(num_candidates):
             try:
                 c = task.candidates[cdx]
-                self.candidate_urls.append(c.info.data_url)
+                self.candidate_urls.append(str(c.info.data_url))
                 self.candidate_dists.append(float(c.distance))
             except:
                 # we rather keep no candidates than an invalid one, for when this becomes ui-selectable.

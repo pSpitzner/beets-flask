@@ -7,20 +7,21 @@ We might just merge this into tag.py blueprint?
 
 from datetime import datetime, timedelta
 
-from flask import Blueprint
+from quart import Blueprint
 from sqlalchemy import select
 
 from beets_flask.config import config
 from beets_flask.database import Tag, TagGroup, db_session
 from beets_flask.disk import path_to_dict
 from beets_flask.inbox import get_inbox_folders
-from beets_flask.routes.errors import InvalidUsage
+
+from .errors import InvalidUsage
 
 group_bp = Blueprint("tagGroup", __name__, url_prefix="/tagGroup")
 
 
 @group_bp.route("/", methods=["GET"])
-def get_all():
+async def get_all():
     """Get all tag groups."""
     with db_session() as session:
         # for now, group ids are just their name
@@ -30,7 +31,7 @@ def get_all():
 
 
 @group_bp.route("/id/<path:group_id>", methods=["GET"])
-def get_tag_by_id(group_id: str):
+async def get_tag_by_id(group_id: str):
     """Get a group by its id (name).
 
     There are a few pre-defined groups:

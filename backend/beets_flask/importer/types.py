@@ -18,23 +18,23 @@ from typing import (
 )
 
 from beets import autotag
+from beets.autotag.hooks import AlbumInfo as BeetsAlbumInfo
+from beets.autotag.hooks import AlbumMatch as BeetsAlbumMatch
+from beets.autotag.hooks import TrackInfo as BeetsTrackInfo
+from beets.autotag.hooks import TrackMatch as BeetsTrackMatch
 
-
-# some beets types, just typed ...
-class AlbumMatch(NamedTuple):
-    distance: autotag.Distance
-    info: autotag.AlbumInfo
-    # these are tracks in the folder that were not found online
-    extra_items: list[autotag.Item]
-    # tracks found online not present in the folder
-    extra_tracks: list[autotag.TrackInfo]
-    # mapping from item -> trackinfo to match items on diks with tracks found online
-    mapping: dict[autotag.Item, autotag.TrackInfo] | None = None
-
-
-class TrackMatch(NamedTuple):
-    distance: autotag.Distance
-    info: autotag.TrackInfo
+__all__ = [
+    # Our stuff
+    "MusicInfo",
+    "TrackInfo",
+    "ItemInfo",
+    "AlbumInfo",
+    # Beets stuff
+    "BeetsAlbumMatch",
+    "BeetsTrackMatch",
+    "BeetsAlbumInfo",
+    "BeetsTrackInfo",
+]
 
 
 class PromptChoice(NamedTuple):
@@ -150,6 +150,8 @@ class TrackInfo(MusicInfo):
 class ItemInfo(MusicInfo):
     """More specific version of MusicInfo for items.
 
+    Corresponds to a music file or library item with file on disk.
+
     Attributes are an indicator of what might be available, and can be None.
     """
 
@@ -167,7 +169,7 @@ class ItemInfo(MusicInfo):
 
 
 # ------------------------------------------------------------------------------------ #
-#                   (serialized) state representations for fronntend                   #
+#                   (serialized) state representations for frontend                    #
 # ------------------------------------------------------------------------------------ #
 
 

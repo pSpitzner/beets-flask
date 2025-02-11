@@ -5,7 +5,7 @@ Here you can find some resources that might be useful and interesting for develo
 ## Tech Stack
 
 -   Backend:
-    -   [Flask](https://flask.palletsprojects.com/en/3.0.x/) with some plugins
+    -   [Quart](https://flask.palletsprojects.com/en/3.0.x/) with some plugins
     -   [Gunicorn](https://gunicorn.org/)
     -   [Redis Queue](https://python-rq.org/)
     -   [SQLite via SQLAlchemy](https://docs.sqlalchemy.org/en/20/)
@@ -82,11 +82,11 @@ The container runs a tmux session that you can connect to from the host, or from
 To access the tmux from the host:
 
 ```
-docker exec -it beets-flask /usr/bin/tmux attach-session -t beets-socket-term
+docker exec -it -u beetle beets-flask /usr/bin/tmux attach-session -t beets-socket-term
 ```
 
 If you use iTerm on macOS and want to create a profile for connecting to the tmux session natively:
 
 ```
-ssh -t yourserver "/usr/bin/docker exec -it beets-flask /usr/bin/tmux -CC new -A -s beets-socket-term"
+ssh -t yourserver "/usr/bin/docker exec -it -u beetle beets-flask /usr/bin/tmux -CC new -A -s beets-socket-term"
 ```

@@ -1,4 +1,4 @@
-from .beets_config import config
+from .beets_config import config, refresh_config
 from .flask_config import (
     DeploymentDocker,
     DevelopmentDocker,
