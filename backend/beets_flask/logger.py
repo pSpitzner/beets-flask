@@ -13,13 +13,14 @@ def setup_logging() -> None:
         format="%(relativeCreated)d [%(levelname)-4s] %(name)s - %(message)s %(filename)s:%(lineno)d",
         level=os.getenv("LOG_LEVEL_OTHERS", logging.WARNING),
     )
-    rq_name = os.getenv("RQ_JOB_ID", None)
     log = logging.getLogger("beets-flask")
+    log.setLevel(os.getenv("LOG_LEVEL_BEETSFLASK", logging.DEBUG))
+
+    # Overwrite loggers for redis workers
+    rq_name = os.getenv("RQ_JOB_ID", None)
     if rq_name:
         log = log.getChild(rq_name[0:4])
         log.setLevel(os.getenv("LOG_LEVEL_BEETSFLASK_REDIS", logging.INFO))
-    else:
-        log.setLevel(os.getenv("LOG_LEVEL_BEETSFLASK", logging.DEBUG))
 
     log.info("Logging initialized")
 

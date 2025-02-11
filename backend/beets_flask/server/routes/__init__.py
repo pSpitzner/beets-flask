@@ -1,4 +1,4 @@
-from quart import Blueprint
+from quart import Blueprint, Quart
 
 from .config import config_bp
 from .errors import error_bp
@@ -24,3 +24,11 @@ backend_bp.register_blueprint(monitor_bp)
 backend_bp.register_blueprint(sse_bp)
 backend_bp.register_blueprint(tag_bp)
 backend_bp.register_blueprint(group_bp)
+
+
+def register_routes(app: Quart):
+    app.register_blueprint(backend_bp)
+    app.register_blueprint(frontend_bp)
+
+
+__all__ = ["register_routes"]

@@ -24,7 +24,8 @@ from libtmux.exc import LibTmuxException
 
 from beets_flask.config import config
 from beets_flask.logger import log
-from beets_flask.websocket import sio
+
+from . import sio
 
 session: Session
 window: Window

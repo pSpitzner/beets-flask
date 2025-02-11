@@ -1,10 +1,9 @@
-import asyncio
 from beets_flask.logger import log
 import os
 from pathlib import Path
 import shutil
 import pytest
-from beets_flask.__init__ import create_app
+from beets_flask.server.app import create_app
 
 from beets_flask.config.beets_config import refresh_config
 from quart import Quart

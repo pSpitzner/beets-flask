@@ -14,7 +14,8 @@ from beets_flask.config import config
 from beets_flask.database import Tag, TagGroup, db_session
 from beets_flask.disk import path_to_dict
 from beets_flask.inbox import get_inbox_folders
-from beets_flask.routes.errors import InvalidUsage
+
+from .errors import InvalidUsage
 
 group_bp = Blueprint("tagGroup", __name__, url_prefix="/tagGroup")
 

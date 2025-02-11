@@ -6,6 +6,7 @@ from typing import Optional, TypedDict
 from quart import Blueprint, abort, jsonify, request
 from sqlalchemy import select
 
+from beets_flask import log
 from beets_flask.database import Tag, db_session
 from beets_flask.disk import is_album_folder, path_to_dict
 from beets_flask.inbox import (
@@ -14,7 +15,6 @@ from beets_flask.inbox import (
     mark_inbox_folder,
     retag_inbox,
 )
-from beets_flask.logger import log
 from beets_flask.utility import AUDIO_EXTENSIONS
 
 inbox_bp = Blueprint("inbox", __name__, url_prefix="/inbox")

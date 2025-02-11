@@ -1,5 +1,6 @@
 from beets_flask.logger import log
-from beets_flask.websocket import sio
+
+from . import sio
 
 
 # Do we even need these?

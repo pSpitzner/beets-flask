@@ -13,7 +13,8 @@ import requests
 from quart import Blueprint, current_app, request
 
 from beets_flask.logger import log
-from beets_flask.websocket import sio
+
+from ..websocket import sio
 
 sse_bp = Blueprint("status", __name__, url_prefix="/status")
 

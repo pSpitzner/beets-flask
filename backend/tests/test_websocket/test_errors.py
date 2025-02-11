@@ -2,7 +2,7 @@ import pytest
 from socketio import AsyncClient
 import logging
 
-from beets_flask.websocket.errors import WebSocketErrorDict
+from beets_flask.server.websocket.errors import WebSocketErrorDict
 
 log = logging.getLogger(__name__)
 

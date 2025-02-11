@@ -10,7 +10,7 @@ from confuse import ConfigError
 from quart import Blueprint, jsonify
 from werkzeug.exceptions import HTTPException
 
-from ..logger import log
+from beets_flask import log
 
 error_bp = Blueprint("error", __name__)
 

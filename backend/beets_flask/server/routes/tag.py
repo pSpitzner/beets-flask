@@ -11,7 +11,8 @@ from beets_flask import invoker
 from beets_flask.config import config
 from beets_flask.database import Tag, db_session
 from beets_flask.logger import log
-from beets_flask.routes.errors import InvalidUsage
+
+from .errors import InvalidUsage
 
 tag_bp = Blueprint("tag", __name__, url_prefix="/tag")
 

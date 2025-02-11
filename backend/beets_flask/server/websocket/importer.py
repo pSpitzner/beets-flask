@@ -6,13 +6,14 @@ from socketio import AsyncServer
 from beets_flask.importer import (
     ChoiceReceive,
     CompleteReceive,
-    SessionState,
     InteractiveImportSession,
+    SessionState,
     WebsocketCommunicator,
 )
 from beets_flask.logger import log
-from beets_flask.websocket import sio
-from beets_flask.websocket.errors import sio_catch_expection
+
+from . import sio
+from .errors import sio_catch_expection
 
 namespace = "/import"
 session: InteractiveImportSession | None = None
