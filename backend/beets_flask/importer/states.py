@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
+from functools import total_ordering
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -29,13 +30,15 @@ from .types import (
 )
 
 
+@total_ordering
 class Progress(Enum):
     """The progress of the current session in chronological order.
 
     Allows to resume a import at any time using our state dataclasses. We might
     also want to add the plugin stages or refine this.
 
-    @PS: I like it this far, you have ideas for more progress stages?
+    @PS: I like it this far, you have ideas for more progress. I think this should be on
+    task level.
     """
 
     NOT_STARTED = 0
@@ -50,18 +53,10 @@ class Progress(Enum):
     def __lt__(self, other: Progress) -> bool:
         return self.value < other.value
 
-    def __le__(self, other: Progress) -> bool:
-        return self.value <= other.value
 
-    def __gt__(self, other: Progress) -> bool:
-        return self.value > other.value
-
-    def __ge__(self, other: Progress) -> bool:
-        return self.value >= other.value
-
-
-@dataclass(frozen=True, slots=True)
-class ImportStatusMessage:
+@total_ordering
+@dataclass(slots=True)
+class DetailedProgress:
     """Simple dataclass to hold a status message and a status code."""
 
     progress: Progress = Progress.NOT_STARTED
@@ -81,6 +76,9 @@ class ImportStatusMessage:
             "plugin_name": self.plugin_name,
         }
 
+    def __lt__(self, other: DetailedProgress) -> bool:
+        return self.progress < other.progress
+
 
 @dataclass(init=False)
 class SessionState:
@@ -91,7 +89,6 @@ class SessionState:
 
     id: str
     _task_states: List[TaskState]
-    status: ImportStatusMessage
     # session-level buttons. continue from choose_match when not None
     user_response: Literal["abort"] | Literal["apply"] | None = None
     path: Path
@@ -100,7 +97,6 @@ class SessionState:
         self.id = str(uuid())
         self._task_states = []
         self.path = path
-        self.status = ImportStatusMessage()
 
     @property
     def task_states(self):
@@ -117,6 +113,11 @@ class SessionState:
     @property
     def completed(self):
         return all([s.completed for s in self.task_states])
+
+    @property
+    def progress(self):
+        """The session progress is the loweset progress of all tasks."""
+        return min([s.progress for s in self.task_states])
 
     def get_task_state_for_task(self, task: importer.ImportTask) -> TaskState | None:
         state: TaskState | None = None
@@ -162,12 +163,12 @@ class SessionState:
         return SerializedImportState(
             id=self.id,
             selection_states=[s.serialize() for s in self.task_states],
-            status=self.status.as_dict(),
+            status=self.progress.as_dict(),
             completed=self.completed,
         )
 
     def __repr__(self) -> str:
-        return f"ImportState({self.status=}, {self.id=}, {self.completed=})"
+        return f"ImportState({self.progress=}, {self.id=}, {self.completed=})"
 
 
 @dataclass(init=False)
@@ -182,6 +183,7 @@ class TaskState:
     id: str
     task: importer.ImportTask
     candidate_states: List[CandidateState]
+    progress = DetailedProgress()
 
     # the completed state blocks the choose_match function
     # of interactive sessions via our await_completion method

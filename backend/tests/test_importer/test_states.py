@@ -1,6 +1,11 @@
 from pathlib import Path
 from typing import List
-from beets_flask.importer.states import SessionState, TaskState, CandidateState, ImportStatusMessage
+from beets_flask.importer.states import (
+    SessionState,
+    TaskState,
+    CandidateState,
+    DetailedProgress,
+)
 from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackInfo
 import pytest
 
@@ -9,10 +14,11 @@ from beets import importer
 from beets import autotag
 
 import logging
+
 log = logging.getLogger(__name__)
 
 
-def get_album_match(tracks : List[BeetsTrackInfo], items, **info):
+def get_album_match(tracks: List[BeetsTrackInfo], items, **info):
     match = BeetsAlbumMatch(
         distance=autotag.Distance(),
         info=autotag.AlbumInfo(
@@ -30,13 +36,9 @@ def get_album_match(tracks : List[BeetsTrackInfo], items, **info):
 def import_task(beets_lib):
 
     item = beets_lib_item(title="title", path="path")
-    task = importer.ImportTask(
-        paths=[b"a path"], toppath=b"top path", items=[item]
-    )
+    task = importer.ImportTask(paths=[b"a path"], toppath=b"top path", items=[item])
 
-    track_info = autotag.TrackInfo(
-        title="match title"
-    )
+    track_info = autotag.TrackInfo(title="match title")
     album_match = get_album_match([track_info], [item], album="match album")
 
     task.candidates = [album_match]
@@ -54,6 +56,7 @@ def test_task(import_task):
     assert import_task.paths == [b"a path"]
     assert import_task.toppath == b"top path"
 
+
 def test_task_state(import_task):
     task_state = TaskState(import_task, session_state=None)
     # in our code, we cast to proper path type
@@ -70,9 +73,7 @@ def test_task_state(import_task):
     assert task_state.best_candidate is not None
     assert task_state.best_candidate.id == "asis"
 
-
     log.debug(task_state)
-
 
 
 def test_candidate_state():

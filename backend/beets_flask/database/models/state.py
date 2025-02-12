@@ -24,8 +24,13 @@ from sqlalchemy.orm import (
     registry,
 )
 
-from beets_flask.importer import SessionState
-from beets_flask.importer.communicator import CandidateState, TaskState
+from beets_flask.importer.states import (
+    SessionState,
+    Progress,
+    TaskState,
+    CandidateState,
+    DetailedProgress,
+)
 
 
 class Base(DeclarativeBase):
@@ -50,16 +55,19 @@ class Session(Base):
 
     tasks: Mapped[List[Task]] = relationship()
     path: Mapped[bytes] = mapped_column(LargeBinary)
+    progress: Mapped[Progress]
 
     def __init__(
         self,
         path: bytes,
         id: str | None = None,
         tasks: List[Task] = [],
+        progress: Progress = Progress.NOT_STARTED,
     ):
         super().__init__(id)
         self.path = path
         self.tasks = tasks
+        self.progress = progress
 
     @classmethod
     def from_session_state(cls, state: SessionState) -> Session:
@@ -69,6 +77,7 @@ class Session(Base):
             path=os.fsencode(state.path),
             id=state.id,
             tasks=[Task.from_task_state(task) for task in state.task_states],
+            progress=state.progress.progress,
         )
 
         return session
@@ -78,6 +87,7 @@ class Session(Base):
         session = SessionState(Path(os.fsdecode(self.path)))
         session.id = self.id
         session._task_states = [task.to_task_state(session) for task in self.tasks]
+        session.progress = DetailedProgress(self.progress)
         return session
 
 
