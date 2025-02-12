@@ -9,7 +9,7 @@ import asyncio
 from beets.importer import ImportSession, ImportTask
 
 
-from .states import Progress
+from .states import DetailedProgress, Progress
 from .session import BaseSessionNew
 
 
@@ -88,4 +88,39 @@ def identify_duplicates(
     pass
 
 
-# FIXME: Add all stages here
+@set_progress(Progress.OFFERING_MATCHES)
+def offer_match(
+    session: BaseSessionNew,
+    task: ImportTask,
+):
+    pass
+
+
+@set_progress(Progress.WAITING_FOR_USER_SELECTION)
+def user_query(
+    session: BaseSessionNew,
+    task: ImportTask,
+):
+    pass
+
+
+# Dynamic set_progress for plugin name
+# e.g. DetailedProgress(Progress.EARLY_IMPORT, plugin_name="my_plugin")
+def plugin_stage(
+    session: BaseSessionNew,
+    task: ImportTask,
+    progress: DetailedProgress,
+):
+    session.set_progress(task, progress)
+    pass
+
+
+# --------------------------------- Consumer --------------------------------- #
+
+
+@set_progress(Progress.MANIPULATING_FILES)
+def manipulate_files(
+    session: BaseSessionNew,
+    task: ImportTask,
+):
+    pass

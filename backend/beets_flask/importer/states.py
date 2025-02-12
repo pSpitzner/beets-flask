@@ -46,9 +46,12 @@ class Progress(Enum):
     GROUPING_ALBUMS = 2
     LOOKING_UP_CANDIDATES = 3
     IDENTIFYING_DUPLICATES = 4
-    WAITING_FOR_USER_SELECTION = 5
-    MANIPULATING_FILES = 6
-    COMPLETED = 7
+    OFFERING_MATCHES = 5
+    WAITING_FOR_USER_SELECTION = 6
+    EARLY_IMPORT = 7
+    IMPORTING = 8
+    MANIPULATING_FILES = 9
+    COMPLETED = 10
 
     def __lt__(self, other: Progress) -> bool:
         return self.value < other.value
@@ -65,14 +68,12 @@ class DetailedProgress:
     message: str | None = None
 
     # Plugin specific
-    plugin_stage: str | None = None
     plugin_name: str | None = None
 
     def as_dict(self) -> dict:
         return {
             "progess": self.progress.name,
             "message": self.message,
-            "plugin_stage": self.plugin_stage,
             "plugin_name": self.plugin_name,
         }
 
