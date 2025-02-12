@@ -67,7 +67,7 @@ class ImportStatusMessage:
         }
 
 
-@dataclass(init=False, slots=True)
+@dataclass(init=False)
 class SessionState:
     """Highest level state of an import session.
 
@@ -79,11 +79,13 @@ class SessionState:
     status: ImportStatusMessage
     # session-level buttons. continue from choose_match when not None
     user_response: Literal["abort"] | Literal["apply"] | None = None
+    path: Path
 
-    def __init__(self):
+    def __init__(self, path: Path) -> None:
         self.id = str(uuid())
         self._task_states = []
         self.status = ImportStatusMessage("initializing")
+        self.path = path
 
     @property
     def task_states(self):
@@ -153,7 +155,7 @@ class SessionState:
         return f"ImportState({self.status=}, {self.id=}, {self.completed=})"
 
 
-@dataclass(init=False, slots=True)
+@dataclass(init=False)
 class TaskState:
     """State representation of a beets ImportTask.
 
@@ -298,7 +300,7 @@ class TaskState:
         )
 
 
-@dataclass(init=False, slots=True)
+@dataclass(init=False)
 class CandidateState:
     """
     State representation of a single candidate (match) for an import task.

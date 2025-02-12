@@ -58,25 +58,22 @@ class BaseSessionNew(importer.ImportSession):
 
     def __init__(
         self,
-        path: Path | str,
+        state: SessionState,
         config_overlay: dict | None = None,
-        state: SessionState | None = None,
     ):
-        if isinstance(config_overlay, dict):
-            config.set_args(config_overlay)
 
-        if isinstance(path, str):
-            path = Path(path)
+        path = state.path
 
         if not path.exists():
             raise FileNotFoundError(f"Path {path} does not exist.")
-        if path.is_dir() and not is_album_folder(path):
+        if not path.is_dir() and not is_album_folder(path):
             raise ValueError(f"Path {path} is not an album folder.")
-        self.path = path
 
-        if state is None:
-            state = SessionState()
+        if isinstance(config_overlay, dict):
+            config.set_args(config_overlay)
+
         self.state = state
+        self.path = path
 
         super().__init__(
             lib=_open_library(config),
