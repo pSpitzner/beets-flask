@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from enum import Enum
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -28,39 +29,53 @@ from .types import (
 )
 
 
-@dataclass
+class Progress(Enum):
+    """The progress of the current session in chronological order.
+
+    Allows to resume a import at any time using our state dataclasses. We might
+    also want to add the plugin stages or refine this.
+
+    @PS: I like it this far, you have ideas for more progress stages?
+    """
+
+    NOT_STARTED = 0
+    READING_FILES = 1
+    GROUPING_ALBUMS = 2
+    LOOKING_UP_CANDIDATES = 3
+    IDENTIFYING_DUPLICATES = 4
+    WAITING_FOR_USER_SELECTION = 5
+    MANIPULATING_FILES = 6
+    COMPLETED = 7
+
+    def __lt__(self, other: Progress) -> bool:
+        return self.value < other.value
+
+    def __le__(self, other: Progress) -> bool:
+        return self.value <= other.value
+
+    def __gt__(self, other: Progress) -> bool:
+        return self.value > other.value
+
+    def __ge__(self, other: Progress) -> bool:
+        return self.value >= other.value
+
+
+@dataclass(frozen=True, slots=True)
 class ImportStatusMessage:
     """Simple dataclass to hold a status message and a status code."""
 
-    message: Literal[
-        "initializing",
-        "reading files",
-        "grouping albums",
-        "looking up candidates",
-        "identifying duplicates",
-        "waiting for user selection",
-        "manipulating files",
-        "completed",
-        "aborted",
-        "plugin",
-        "unknown",
-    ]
+    progress: Progress = Progress.NOT_STARTED
+
+    # Optional message to display to the user
+    message: str | None = None
 
     # Plugin specific
     plugin_stage: str | None = None
     plugin_name: str | None = None
 
-    @property
-    def value(self):
-        ret: str = self.message
-        if self.plugin_stage is not None:
-            ret += f" ({self.plugin_stage})"
-        if self.plugin_name is not None:
-            ret += f" ({self.plugin_name})"
-        return ret
-
     def as_dict(self) -> dict:
         return {
+            "progess": self.progress.name,
             "message": self.message,
             "plugin_stage": self.plugin_stage,
             "plugin_name": self.plugin_name,
@@ -84,8 +99,8 @@ class SessionState:
     def __init__(self, path: Path) -> None:
         self.id = str(uuid())
         self._task_states = []
-        self.status = ImportStatusMessage("initializing")
         self.path = path
+        self.status = ImportStatusMessage()
 
     @property
     def task_states(self):
@@ -195,7 +210,7 @@ class TaskState:
         self.candidate_states = [CandidateState(c, self) for c in self.task.candidates]
         self.candidate_states.append(CandidateState.asis_candidate(self))
 
-        self.session_state = session_state or SessionState()
+        self.session_state = session_state or SessionState(task.toppath)
 
     @property
     def candidates(
