@@ -21,7 +21,7 @@ from socketio import AsyncServer
 
 from beets_flask.logger import log
 
-from .states import CandidateState, DetailedProgress, SessionState, TaskState
+from .states import CandidateState, ProgressState, SessionState, TaskState
 
 
 def default_events(state: Union[SessionState, TaskState, CandidateState]):
@@ -85,7 +85,7 @@ class ImportCommunicator(ABC):
 
         asyncio.run(self.emit_state_async(state, **kwargs))
 
-    async def emit_status_async(self, status: DetailedProgress, **kwargs):
+    async def emit_status_async(self, status: ProgressState, **kwargs):
         """Emit a status message."""
         log.error("Not getting log statements from async funcs?")
         await self._emit(
@@ -93,7 +93,7 @@ class ImportCommunicator(ABC):
             **kwargs,
         )
 
-    def emit_status_sync(self, status: DetailedProgress, **kwargs):
+    def emit_status_sync(self, status: ProgressState, **kwargs):
         asyncio.run(self.emit_status_async(status, **kwargs))
 
     async def emit_custom_async(self, event: str, data: Any, **kwargs):

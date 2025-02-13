@@ -63,10 +63,13 @@ def stage(
 
     def coro(*args: Unpack[A]) -> Generator[Union[R, T, None], T, None]:
         # in some edge-cases we get no task. thus, we have to include the generic R
-        task:Optional[T|R] = None
+        task: Optional[T | R] = None
         while True:
-            task = yield task  # wait for send to arrive. the first next() always returns None
+            task = (
+                yield task
+            )  # wait for send to arrive. the first next() always returns None
             # yield task, call func which gives new task, yield new task in next()
+            # FIXME: Generator support!
             task = func(*(args + (task,)))
 
     return coro
@@ -85,10 +88,13 @@ def mutator_stage(func: Callable[[Unpack[A], T], R]):
     >>> list(pipe.pull())
     [{'x': True}, {'a': False, 'x': True}]
     """
+
     def coro(*args: Unpack[A]) -> Generator[Union[R, T, None], T, Optional[R]]:
         task = None
         while True:
-            task = yield task  # wait for send to arrive. the first next() always returns None
+            task = (
+                yield task
+            )  # wait for send to arrive. the first next() always returns None
             # perform function on task, and in next() send the same, modified task
             # funcs prob. modify task in place?
             func(*(args + (task,)))

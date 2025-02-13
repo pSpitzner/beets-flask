@@ -85,6 +85,8 @@ ignore = [
     # Ignore req. for public facing functions docstrings
     "F401",
     "D10",
+    "D401",
+    "D202",
 ]
 fixable = ["ALL"]
 

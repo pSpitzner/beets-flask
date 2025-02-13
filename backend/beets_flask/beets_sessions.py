@@ -215,7 +215,7 @@ class PreviewSession(BaseSession):
         # because we skip every following stage, make a duplicate check here, so we can generate the info for the user.
         # task.choice_flag is needed for Assertion in find_duplicates.
         task.choice_flag = importer.action.ASIS
-        duplicates = task.find_duplicates(self.lib)
+        duplicates = task.find_duplicates(lib=self.lib)
         if duplicates:
             print_(
                 f"\nThis {'album' if task.is_album else 'item'} is already in the library!"

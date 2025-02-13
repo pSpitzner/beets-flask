@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from enum import Enum
-from functools import total_ordering
 import time
 from dataclasses import dataclass
+from enum import Enum
+from functools import total_ordering
 from pathlib import Path
 from typing import List, Literal, Sequence, Union, cast
 from uuid import uuid4 as uuid
@@ -14,6 +14,7 @@ import beets.ui.commands as uicommands
 from beets import autotag, importer, library
 
 from beets_flask.config import config
+from beets_flask.importer.stages import Progress
 from beets_flask.logger import log
 from beets_flask.utility import capture_stdout_stderr
 
@@ -31,35 +32,8 @@ from .types import (
 
 
 @total_ordering
-class Progress(Enum):
-    """The progress of the current session in chronological order.
-
-    Allows to resume a import at any time using our state dataclasses. We might
-    also want to add the plugin stages or refine this.
-
-    @PS: I like it this far, you have ideas for more progress. I think this should be on
-    task level.
-    """
-
-    NOT_STARTED = 0
-    READING_FILES = 1
-    GROUPING_ALBUMS = 2
-    LOOKING_UP_CANDIDATES = 3
-    IDENTIFYING_DUPLICATES = 4
-    OFFERING_MATCHES = 5
-    WAITING_FOR_USER_SELECTION = 6
-    EARLY_IMPORT = 7
-    IMPORTING = 8
-    MANIPULATING_FILES = 9
-    COMPLETED = 10
-
-    def __lt__(self, other: Progress) -> bool:
-        return self.value < other.value
-
-
-@total_ordering
 @dataclass(slots=True)
-class DetailedProgress:
+class ProgressState:
     """Simple dataclass to hold a status message and a status code."""
 
     progress: Progress = Progress.NOT_STARTED
@@ -77,7 +51,7 @@ class DetailedProgress:
             "plugin_name": self.plugin_name,
         }
 
-    def __lt__(self, other: DetailedProgress) -> bool:
+    def __lt__(self, other: ProgressState) -> bool:
         return self.progress < other.progress
 
 
@@ -118,13 +92,15 @@ class SessionState:
     @property
     def progress(self):
         """The session progress is the loweset progress of all tasks."""
-        return min([s.progress for s in self.task_states])
+        return min(
+            *[s.progress for s in self.task_states], ProgressState(Progress.NOT_STARTED)
+        )
 
     def get_task_state_for_task(self, task: importer.ImportTask) -> TaskState | None:
         state: TaskState | None = None
         for s in self.task_states:
             # TODO: are tasks really comparable?
-            if s.task == task:
+            if s.task == task:  # by ref
                 state = s
                 break
         return state
@@ -184,7 +160,7 @@ class TaskState:
     id: str
     task: importer.ImportTask
     candidate_states: List[CandidateState]
-    progress = DetailedProgress()
+    progress = ProgressState()
 
     # the completed state blocks the choose_match function
     # of interactive sessions via our await_completion method
@@ -310,6 +286,22 @@ class TaskState:
             toppath=str(self.toppath),
             paths=[str(p) for p in self.paths],
         )
+
+    def set_progress(self, progress: ProgressState | Progress | str) -> None:
+        """Set the progress of the task.
+
+        If string is given it is set as the message of the current progress.
+        """
+        log.debug(f"Setting progress for {progress=} {self=},")
+        if isinstance(progress, ProgressState):
+            self.progress = progress
+        elif isinstance(progress, Progress):
+            self.progress = ProgressState(progress)
+        elif isinstance(progress, str):
+            # just convenience for debugging should not be used in production
+            self.progress.message = progress
+        else:
+            raise ValueError(f"Unknown progress type: {progress}")
 
     def __repr__(self) -> str:
         return (
@@ -477,7 +469,7 @@ class CandidateState:
     def identify_duplicates(self, lib: library.Library) -> List[library.Album]:
         """Find duplicates.
 
-        Copy of beets' `task.find_duplicate` but works on any candidates' match.
+        Copy of beets' `task.find_duplicates` but works on any candidates' match.
 
         # FIXME: Tracks are not checked for duplicates. Tbh noone cares about tracks anyways
         """

@@ -14,23 +14,23 @@ from typing import List
 from uuid import uuid4
 
 from beets.importer import ImportTask, library
-from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackMatch
 from sqlalchemy import ForeignKey, LargeBinary, PickleType
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
     mapped_column,
-    relationship,
     registry,
+    relationship,
 )
 
 from beets_flask.importer.states import (
-    SessionState,
-    Progress,
-    TaskState,
     CandidateState,
-    DetailedProgress,
+    ProgressState,
+    Progress,
+    SessionState,
+    TaskState,
 )
+from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackMatch
 
 
 class Base(DeclarativeBase):
@@ -55,7 +55,6 @@ class Session(Base):
 
     tasks: Mapped[List[Task]] = relationship()
     path: Mapped[bytes] = mapped_column(LargeBinary)
-    progress: Mapped[Progress]
 
     def __init__(
         self,
@@ -87,7 +86,7 @@ class Session(Base):
         session = SessionState(Path(os.fsdecode(self.path)))
         session.id = self.id
         session._task_states = [task.to_task_state(session) for task in self.tasks]
-        session.progress = DetailedProgress(self.progress)
+        session.progress = ProgressState(self.progress)
         return session
 
 
@@ -103,6 +102,8 @@ class Task(Base):
     toppath: Mapped[bytes | None]
     paths: Mapped[bytes]
     items: Mapped[bytes]
+
+    progress: Mapped[Progress]
 
     def __init__(
         self,

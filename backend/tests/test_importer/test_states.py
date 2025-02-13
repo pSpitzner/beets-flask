@@ -4,7 +4,7 @@ from beets_flask.importer.states import (
     SessionState,
     TaskState,
     CandidateState,
-    DetailedProgress,
+    ProgressState,
 )
 from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackInfo
 import pytest

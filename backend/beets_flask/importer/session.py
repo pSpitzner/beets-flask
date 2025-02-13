@@ -3,11 +3,11 @@ import logging
 import os
 import threading
 import time
+from abc import ABC, abstractmethod
 from pathlib import Path
 from posixpath import normpath
 from typing import Any, Callable, List
 
-from beets_flask.database.models.state import Progress
 import nest_asyncio
 from beets import autotag, importer, library, plugins
 from beets.library import MediaFile
@@ -20,6 +20,7 @@ from socketio import AsyncServer
 
 from beets_flask.beets_sessions import BaseSession, set_config_defaults
 from beets_flask.config import config
+from beets_flask.database.models.state import Progress
 from beets_flask.disk import is_album_folder
 from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackMatch
 from beets_flask.logger import log
@@ -27,12 +28,22 @@ from beets_flask.utility import capture_stdout_stderr
 
 from .communicator import WebsocketCommunicator
 from .pipeline import AsyncPipeline, mutator_stage, stage
-from .states import CandidateState, DetailedProgress, SessionState
+from .stages import (
+    group_albums,
+    identify_duplicates,
+    lookup_candidates,
+    manipulate_files,
+    offer_match,
+    plugin_stage,
+    read_tasks,
+    user_query,
+)
+from .states import ProgressState, SessionState
 
 nest_asyncio.apply()
 
 
-class BaseSessionNew(importer.ImportSession):
+class BaseSessionNew(importer.ImportSession, ABC):
     """Base class for our GUI-based ImportSessions.
 
     Operates on single Albums / files.
@@ -117,6 +128,7 @@ class BaseSessionNew(importer.ImportSession):
             raise ValueError("No state found for thiis task.")
 
         for idx, cs in enumerate(task_state.candidate_states):
+            # This is a mutable operation i.e. cs is modfied here!
             duplicates = cs.identify_duplicates(self.lib)
 
             if len(duplicates) > 0:
@@ -160,26 +172,22 @@ class BaseSessionNew(importer.ImportSession):
     # -------------------------- State handling helpers -------------------------- #
 
     def set_progress(
-        self, task: ImportTask, progress: DetailedProgress | Progress | str
+        self, task: importer.ImportTask, progress: ProgressState | Progress | str
     ):
-        """Helper to set the progress of the import session.
+        """Set the progress of the import session.
 
         If string is given it is set as the message of the current progress.
         """
 
         task_state = self.state.get_task_state_for_task(task)
-
         assert task_state is not None, "Task state not found for task."
 
-        if isinstance(progress, DetailedProgress):
-            task_state.progress = progress
-        elif isinstance(progress, Progress):
-            task_state.progress = DetailedProgress(progress)
-        elif isinstance(progress, str):
-            # just convenience for debugging should not be used in production
-            self.state.progress.message = progress
-        else:
-            raise ValueError(f"Unknown progress type: {progress}")
+        task_state.set_progress(progress)
+
+    def get_progress(self, task: importer.ImportTask) -> ProgressState | None:
+        """Get the progress of the task, via this sessions state."""
+        task_state = self.state.get_task_state_for_task(task)
+        return task_state.progress if task_state else None
 
 
 class PreviewSessionNew(BaseSessionNew):
@@ -197,21 +205,15 @@ class PreviewSessionNew(BaseSessionNew):
 
         # TODO: check some config values. that are not compatible with our code.
 
-        self.set_status(DetailedProgress("reading files"))
-        self.pipeline = AsyncPipeline(start_tasks=importer.read_tasks(self))
+        self.pipeline = AsyncPipeline(start_tasks=read_tasks(self))
 
         if self.config["group_albums"] and not self.config["singletons"]:
-            self.pipeline.add_stage(
-                status_stage(self, DetailedProgress("grouping albums"))
-            )
             # FIXME once migrated to next beets version
-            self.pipeline.add_stage(importer.group_albums(self))  # type: ignore
+            self.pipeline.add_stage(group_albums(self))  # type: ignore
 
         # main stages
         self.pipeline.add_stage(
-            status_stage(self, DetailedProgress("looking up candidates")),
-            importer.lookup_candidates(self),  # type: ignore
-            status_stage(self, DetailedProgress("identifying duplicates")),
+            lookup_candidates(self),  # type: ignore
             identify_duplicates(self),
             # offer_match(self) -> invokes plugins.send("import_task_before_choice", session=self, task=task). check if we want to enable this plugin stage
         )
@@ -228,7 +230,7 @@ class PreviewSessionNew(BaseSessionNew):
         log.debug(f"Pipeline completed")
 
         # FIXME: Status messages for preview
-        self.set_status(DetailedProgress("preview completed"))  # type: ignore
+        self.set_status(ProgressState("preview completed"))  # type: ignore
 
         return self.state
 
@@ -317,7 +319,10 @@ class InteractiveImportSession(BaseSessionNew):
                 if task_state.completed:
                     break
                 if self.state.user_response == "abort":
-                    self.set_status(DetailedProgress("aborted"))
+                    self.set_progress(
+                        task,
+                        ProgressState(Progress.COMPLETED, "aborted"),
+                    )
                     return importer.action.SKIP
 
                 # SEARCHES
@@ -423,13 +428,15 @@ class InteractiveImportSession(BaseSessionNew):
         else:
             raise ValueError(f"Unknown duplicate resolution action: {sel}")
 
-    def set_status(self, status: DetailedProgress | str):
+    def set_progress(
+        self, task: importer.ImportTask, progress: ProgressState | Progress | str
+    ):
         """Set the status of the import session, and communicate the status changes.
 
         Note: currently we only implement status on the level of the whole import session,
         but should eventually do this per selection (task).
         """
-        super().set_status(status)  # this mutates the state
+        super().set_progress(task, progress)  # this mutates the state
         self.communicator.emit_status_sync(self.state.progress)
 
     async def run_async(self):
@@ -442,58 +449,48 @@ class InteractiveImportSession(BaseSessionNew):
         # TODO: check some config values. that are not compatible with our code.
         self.set_config(config["import"])
 
-        self.set_status(DetailedProgress("reading files"))
         # FIXME: This should also deserialize saved state
-        self.pipeline = AsyncPipeline(start_tasks=importer.read_tasks(self))
+        self.pipeline = AsyncPipeline(read_tasks(self))
 
         if self.config["group_albums"] and not self.config["singletons"]:
-            self.pipeline.add_stage(
-                status_stage(self, DetailedProgress("grouping albums"))
-            )
-            self.pipeline.add_stage(importer.group_albums(self))  # type: ignore
+            self.pipeline.add_stage(group_albums(self))
 
         # main stages
         self.pipeline.add_stage(
-            status_stage(self, DetailedProgress("looking up candidates")),
-            importer.lookup_candidates(self),  # type: ignore
-            status_stage(self, DetailedProgress("identifying duplicates")),
+            lookup_candidates(self),
             identify_duplicates(self),
             offer_match(self),
-            status_stage(self, DetailedProgress("waiting for user selection")),
-            importer.user_query(self),  # type: ignore
+            user_query(self),
         )
 
         # plugin stages
         for stage_func in plugins.early_import_stages():
             self.pipeline.add_stage(
-                status_stage(
+                plugin_stage(
                     self,
-                    DetailedProgress(
-                        message="plugin",
-                        plugin_stage="early import",
+                    stage_func,
+                    ProgressState(
+                        Progress.EARLY_IMPORTING,
                         plugin_name=stage_func.__name__,
                     ),
                 ),
-                importer.plugin_stage(self, stage_func),  # type: ignore
             )
 
         for stage_func in plugins.import_stages():
             self.pipeline.add_stage(
-                status_stage(
+                plugin_stage(
                     self,
-                    DetailedProgress(
-                        message="plugin",
-                        plugin_stage="import",
+                    stage_func,
+                    ProgressState(
+                        Progress.IMPORTING,
                         plugin_name=stage_func.__name__,
                     ),
                 ),
-                importer.plugin_stage(self, stage_func),  # type: ignore
             )
 
         # finally, move files
         self.pipeline.add_stage(
-            status_stage(self, DetailedProgress("manipulating files")),
-            importer.manipulate_files(self),  # type: ignore
+            manipulate_files(self),
         )
 
         log.debug(f"Running pipeline stages: {self.pipeline.stages}")
@@ -506,44 +503,8 @@ class InteractiveImportSession(BaseSessionNew):
         except importer.ImportAbortError:
             self.logger.debug(f"Interactive import session aborted by user")
 
+        # Set progress to completed
+        for task in self.state.tasks:
+            self.set_progress(task, ProgressState(Progress.COMPLETED))
+
         log.debug(f"Pipeline completed")
-        self.set_status(DetailedProgress("completed"))
-
-
-@mutator_stage
-def identify_duplicates(session: BaseSessionNew, task: importer.ImportTask):
-    """Stage to identify which candidates would be duplicates if imported."""
-    if task.skip:
-        return task
-    session.identify_duplicates(task)
-
-
-@mutator_stage
-def offer_match(session: InteractiveImportSession, task: importer.ImportTask):
-    """Stage to offer a match to the user.
-
-    This is non-blocking. Essentially we split the `user_query` stage (which calls `choose_match`) into two stages.
-    The first is `offer_match` sending info to the frontend, while the second is
-    `choose_match` that waits until all user choices have been made.
-    """
-    # sentinel tasks (this is what beets does in choose_match)
-    if task.skip:
-        return task
-    session.offer_match(task)
-
-
-@mutator_stage
-def status_stage(
-    session: BaseSessionNew,
-    status: DetailedProgress | None,
-    task: importer.ImportTask,
-):
-    """Stage to call sessions `set_status` method."""
-    # sentinel tasks (this is what beets does in choose_match)
-    # sio: AsyncServer = session.communicator.sio
-    # log.debug(
-    #     f"\nStatus stage:\n\t{status.value}\n\t{threading.get_ident()=}\n\t{task.skip=}\n\t{sio=}\n\t{sio.manager.rooms['/import']=}"
-    # )
-    if task.skip:
-        return task
-    session.set_status(status or DetailedProgress("unknown"))
