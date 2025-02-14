@@ -126,6 +126,11 @@ def read_tasks(
     for toppath in session.paths:
         task_factory = ImportTaskFactory(toppath, session)
         for task in task_factory.tasks():
+
+            if isinstance(task, SentinelImportTask):
+                log.warning(f"Skipping {displayable_path(toppath)}")
+                continue
+
             task_state = session.state.upsert_task(task)
             log.warning(f"Reading files from {displayable_path(toppath)}")
             task_state.set_progress(Progress.READING_FILES)
@@ -206,7 +211,7 @@ def identify_duplicates(
 ):
     """Stage to identify which candidates would be duplicates if imported."""
     if task.skip:
-        return task
+        return
     session.identify_duplicates(task)
 
 

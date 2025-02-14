@@ -92,9 +92,10 @@ class SessionState:
     @property
     def progress(self):
         """The session progress is the loweset progress of all tasks."""
-        return min(
-            *[s.progress for s in self.task_states], ProgressState(Progress.NOT_STARTED)
-        )
+        if len(self.task_states) == 0:
+            return ProgressState(Progress.NOT_STARTED)
+
+        return min([s.progress for s in self.task_states])
 
     def get_task_state_for_task(self, task: importer.ImportTask) -> TaskState | None:
         state: TaskState | None = None

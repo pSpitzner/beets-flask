@@ -209,11 +209,11 @@ class PreviewSessionNew(BaseSessionNew):
 
         if self.config["group_albums"] and not self.config["singletons"]:
             # FIXME once migrated to next beets version
-            self.pipeline.add_stage(group_albums(self))  # type: ignore
+            self.pipeline.add_stage(group_albums(self))
 
         # main stages
         self.pipeline.add_stage(
-            lookup_candidates(self),  # type: ignore
+            lookup_candidates(self),
             identify_duplicates(self),
             # offer_match(self) -> invokes plugins.send("import_task_before_choice", session=self, task=task). check if we want to enable this plugin stage
         )
@@ -228,9 +228,6 @@ class PreviewSessionNew(BaseSessionNew):
             self.logger.debug(f"Interactive import session aborted by user")
 
         log.debug(f"Pipeline completed")
-
-        # FIXME: Status messages for preview
-        self.set_status(ProgressState("preview completed"))  # type: ignore
 
         return self.state
 
