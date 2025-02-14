@@ -453,7 +453,11 @@ class CandidateState:
     def url(self) -> str | None:
         """URL of the match."""
         if isinstance(self.match, BeetsAlbumMatch):
-            return self.match.info.url
+            try:
+                return self.match.info.url
+            except AttributeError:  # not set in the match
+                return None
+
         return None
 
     # ------------------------------------ utility ----------------------------------- #
