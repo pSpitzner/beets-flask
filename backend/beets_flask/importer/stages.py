@@ -75,6 +75,8 @@ def set_progress(progress: Progress):
     `session.set_progress(task, progress)`
     before the decorated function.
 
+    Also skips the function if the task is already progressed!
+
     Usage
     -----
     ```python
@@ -87,12 +89,14 @@ def set_progress(progress: Progress):
     def decorator(func: Callable[[Session, ImportTask, *A]]):
         @wraps(func)
         def wrapper(session: Session, task: ImportTask, *args: *A):
+
+            # Skip automatically if the task is already progressed
+            task_progress = session.get_progress(task)
+            if task_progress and task_progress.progress > progress:
+                return task  # This could be wrong (yield?)
+
             # Set the task's progress
             session.set_progress(task, progress)
-            # Execute the original function
-            # TODO: skip if state is alread progressed
-            # if progress < session.get_progress(task):
-            #    return
             return func(session, task, *args)
 
         return wrapper

@@ -145,9 +145,6 @@ class SessionState:
             completed=self.completed,
         )
 
-    def __repr__(self) -> str:
-        return f"ImportState({self.progress=}, {self.id=}, {self.completed=})"
-
 
 @dataclass(init=False)
 class TaskState:
@@ -303,12 +300,6 @@ class TaskState:
             self.progress.message = progress
         else:
             raise ValueError(f"Unknown progress type: {progress}")
-
-    def __repr__(self) -> str:
-        return (
-            f"SelectionState({self.id=}, {self.completed=}, "
-            + f"{self.toppath=}, {self.current_candidate_id=})"
-        )
 
 
 @dataclass(init=False)
@@ -576,9 +567,6 @@ class CandidateState:
         )
 
         return res
-
-    def __repr__(self) -> str:
-        return f"CandidateState({self.id=}, {self.cur_artist=}, {self.cur_album=})"
 
 
 # class AsIsCandidateState(CandidateState):
