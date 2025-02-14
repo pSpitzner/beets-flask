@@ -143,10 +143,12 @@ def album_folders_from_track_paths(
     return sorted([str(folder) for folder in album_folders], key=lambda s: s.lower())
 
 
-def is_album_folder(path: Path | str):
-    if not isinstance(path, str):
-        path = str(path)
-    for paths, _ in albums_in_dir(path.encode("utf-8")):
+def is_album_folder(path: Path | str | bytes):
+    if isinstance(path, Path):
+        path = str(path).encode("utf-8")
+    if isinstance(path, str):
+        path = path.encode("utf-8")
+    for paths, _ in albums_in_dir(path):
         if path in paths:
             return True
     return False

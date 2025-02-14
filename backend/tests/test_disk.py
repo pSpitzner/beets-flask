@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import shutil
 import tempfile
 import pytest
@@ -16,18 +17,18 @@ def touch(path):
         pass
 
 
-@pytest.fixture
-def base():
+@pytest.fixture(scope="session")
+def base(tmpdir_factory):
     """
     Create a folder structure for testing purposes.
     """
-    base = tempfile.mkdtemp()
+    base = str(tmpdir_factory.mktemp("beets_flask_disk"))
 
     # music files and misc
     os.makedirs(os.path.join(base, "artist/album_good"))
-    touch(os.path.join(base, "artist/album_good/cover.jpg"))
-    touch(os.path.join(base, "artist/album_good/track_1.mp3"))
-    touch(os.path.join(base, "artist/album_good/track_2.mp3"))
+    source = Path(__file__).parent / "data" / "audio"
+    dest = Path(base) / "artist" / "album_good"
+    shutil.copytree(source, dest, dirs_exist_ok=True)
 
     # empty folder
     os.makedirs(os.path.join(base, "artist/album_empty"))
@@ -56,12 +57,22 @@ def base():
     shutil.rmtree(base)
 
 
-def test_is_album_folder_empty(base):
-    assert not is_album_folder(base + "/artist/album_empty")
+@pytest.mark.parametrize(
+    "type",
+    [Path, str, lambda x: str(x).encode("utf-8")],
+)
+def test_is_album_folder_empty(type, base):
+    p = type(base + "/artist/album_empty")
+    assert not is_album_folder(p)
 
 
-def test_is_album_folder_good(base):
-    assert is_album_folder(base + "/artist/album_good")
+@pytest.mark.parametrize(
+    "type",
+    [Path, str, lambda x: str(x).encode("utf-8")],
+)
+def test_is_album_folder_good(type, base):
+    p = type(base + "/artist/album_good")
+    assert is_album_folder(p)
 
 
 def test_is_album_folder_junk(base):
@@ -108,7 +119,7 @@ def test_is_within_multi_dir(base):
 
 
 def test_album_folders_from_track_path_1(base):
-    folders = album_folders_from_track_paths([base + "/artist/album_good/track_1.mp3"])
+    folders = album_folders_from_track_paths([base + "/artist/album_good/test.mp3"])
     assert folders == [base + "/artist/album_good"]
 
 
