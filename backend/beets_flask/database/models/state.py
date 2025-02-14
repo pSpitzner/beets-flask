@@ -25,8 +25,8 @@ from sqlalchemy.orm import (
 
 from beets_flask.importer.states import (
     CandidateState,
-    ProgressState,
     Progress,
+    ProgressState,
     SessionState,
     TaskState,
 )
@@ -86,7 +86,6 @@ class Session(Base):
         session = SessionState(Path(os.fsdecode(self.path)))
         session.id = self.id
         session._task_states = [task.to_task_state(session) for task in self.tasks]
-        session.progress = ProgressState(self.progress)
         return session
 
 
@@ -112,12 +111,14 @@ class Task(Base):
         paths: List[bytes] = [],
         items: List[library.Item] = [],
         candidates: List[Candidate] = [],
+        progress: Progress = Progress.NOT_STARTED,
     ):
         super().__init__(id)
         self.toppath = toppath
         self.paths = pickle.dumps(paths)
         self.items = pickle.dumps(items)
         self.candidates = candidates
+        self.progress = progress
 
     @classmethod
     def from_task_state(cls, state: TaskState) -> Task:
@@ -129,6 +130,7 @@ class Task(Base):
             candidates=[
                 Candidate.from_candidate_state(c) for c in state.candidate_states
             ],
+            progress=state.progress.progress,
         )
         return task
 
@@ -145,6 +147,7 @@ class Task(Base):
         task = TaskState(beets_task, session_state)
         task.id = self.id
         task.candidate_states = [c.to_candidate_state(task) for c in self.candidates]
+        task.progress.progress = self.progress
         return task
 
 

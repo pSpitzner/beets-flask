@@ -248,7 +248,6 @@ class InteractiveImportSession(BaseSessionNew):
         self,
         communicator: WebsocketCommunicator,
         state: SessionState,
-        path: str,
         config_overlay: dict | None = None,
     ):
         """Create a new interactive import session.
@@ -264,7 +263,7 @@ class InteractiveImportSession(BaseSessionNew):
             updates into the sate which the session awaits.
         """
         set_config_defaults()
-        super().__init__(path, config_overlay, state)
+        super().__init__(state, config_overlay)
         self.communicator = communicator
 
     def identify_duplicates(self, task: importer.ImportTask):
