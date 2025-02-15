@@ -1,5 +1,5 @@
 # main.py
-from beets_flask import create_app
+from beets_flask.server.app import create_app
 
 app = create_app()
 if __name__ == "__main__":
