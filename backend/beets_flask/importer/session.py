@@ -20,22 +20,24 @@ from socketio import AsyncServer
 
 from beets_flask.beets_sessions import BaseSession, set_config_defaults
 from beets_flask.config import config
-from beets_flask.database.models.state import Progress
 from beets_flask.disk import is_album_folder
+from beets_flask.importer.progress import Progress, ProgressState
 from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackMatch
 from beets_flask.logger import log
 from beets_flask.utility import capture_stdout_stderr
 
 from .communicator import WebsocketCommunicator
-from .pipeline import AsyncPipeline, mutator_stage, stage
+from .pipeline import AsyncPipeline
 from .stages import (
     group_albums,
     identify_duplicates,
     lookup_candidates,
     manipulate_files,
+    mutator_stage,
     offer_match,
     plugin_stage,
     read_tasks,
+    stage,
     user_query,
 )
 from .states import ProgressState, SessionState
@@ -56,6 +58,10 @@ class BaseSessionNew(importer.ImportSession, ABC):
         path to a config file to overlay on top of the default config.
         Note that if `dict`, the lazyconfig notation e.g. `{import.default_action: skip}`
         wont work reliably. Better nest the dicts: `{import: {default_action: skip}}`
+
+    Note: It's a design choice to require that you manually create and pass the
+    `SessionState` object. Usually the states go into the database, which needs explizit
+    handling beyond the session.
     """
 
     # attributes needed to create a beetsTag instance for our database
@@ -73,7 +79,6 @@ class BaseSessionNew(importer.ImportSession, ABC):
         state: SessionState,
         config_overlay: dict | None = None,
     ):
-
         path = state.path
 
         if not path.exists():
@@ -134,24 +139,6 @@ class BaseSessionNew(importer.ImportSession, ABC):
             if len(duplicates) > 0:
                 log.debug(f"Found duplicates for {cs.id=}: {duplicates}")
 
-    @property
-    def track_paths_before_import(self) -> list[Path]:
-        """Returns the paths to all media files that would be imported.
-
-        Relies on `self.path` pointing to an album or single track.
-        """
-        # im not sure if beets rescans the directory on task creation / run.
-        if self.path.is_file():
-            return [self.path]
-
-        items: list[bytes] = []
-        for _, i in importer.albums_in_dir(self.path):
-            # the generator returns a nested list of the outer diretories
-            # and file paths. thus, extend and then cast
-            items.extend(i)
-
-        return [Path(i.decode("utf-8")) for i in items]
-
     @deprecated
     def run_and_capture_output(self) -> tuple[str, str]:
         """Run the import session and capture the output.
@@ -171,7 +158,7 @@ class BaseSessionNew(importer.ImportSession, ABC):
 
     # -------------------------- State handling helpers -------------------------- #
 
-    def set_progress(
+    def set_task_progress(
         self, task: importer.ImportTask, progress: ProgressState | Progress | str
     ):
         """Set the progress of the import session.
@@ -184,7 +171,7 @@ class BaseSessionNew(importer.ImportSession, ABC):
 
         task_state.set_progress(progress)
 
-    def get_progress(self, task: importer.ImportTask) -> ProgressState | None:
+    def get_task_progress(self, task: importer.ImportTask) -> ProgressState | None:
         """Get the progress of the task, via this sessions state."""
         task_state = self.state.get_task_state_for_task(task)
         return task_state.progress if task_state else None
@@ -194,12 +181,15 @@ class PreviewSessionNew(BaseSessionNew):
     """Mocks an Import to gather the info displayed to the user.
 
     Only fetches candidates.
+
     """
 
-    def run(self):
-        raise NotImplementedError("This method should not be called!")
+    def run_sync(self) -> SessionState:
+        """Run the import session synchronously."""
+        return asyncio.run(self.run_async())
 
     async def run_async(self) -> SessionState:
+        """Run the import session asynchronously."""
         self.logger.info(f"import started {time.asctime()}")
         self.set_config(config["import"])
 
@@ -315,7 +305,7 @@ class InteractiveImportSession(BaseSessionNew):
                 if task_state.completed:
                     break
                 if self.state.user_response == "abort":
-                    self.set_progress(
+                    self.set_task_progress(
                         task,
                         ProgressState(Progress.COMPLETED, "aborted"),
                     )
@@ -357,7 +347,7 @@ class InteractiveImportSession(BaseSessionNew):
             raise ValueError("No candidate state found. This should not happen!")
 
         # the dummmy candidate to signal we want to import `asis` has a hard-coded id:
-        if candidate.id == "asis":
+        if candidate.id.startswith("asis"):
             return importer.action.ASIS
 
         match: BeetsAlbumMatch = candidate.match  # type: ignore
@@ -424,7 +414,7 @@ class InteractiveImportSession(BaseSessionNew):
         else:
             raise ValueError(f"Unknown duplicate resolution action: {sel}")
 
-    def set_progress(
+    def set_task_progress(
         self, task: importer.ImportTask, progress: ProgressState | Progress | str
     ):
         """Set the status of the import session, and communicate the status changes.
@@ -432,7 +422,7 @@ class InteractiveImportSession(BaseSessionNew):
         Note: currently we only implement status on the level of the whole import session,
         but should eventually do this per selection (task).
         """
-        super().set_progress(task, progress)  # this mutates the state
+        super().set_task_progress(task, progress)  # this mutates the state
         self.communicator.emit_status_sync(self.state.progress)
 
     async def run_async(self):
@@ -501,6 +491,6 @@ class InteractiveImportSession(BaseSessionNew):
 
         # Set progress to completed
         for task in self.state.tasks:
-            self.set_progress(task, ProgressState(Progress.COMPLETED))
+            self.set_task_progress(task, ProgressState(Progress.COMPLETED))
 
         log.debug(f"Pipeline completed")

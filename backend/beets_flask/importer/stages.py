@@ -9,7 +9,25 @@ import asyncio
 import itertools
 from enum import Enum
 from functools import total_ordering, wraps
-from typing import TYPE_CHECKING, Callable, TypeVar, TypeVarTuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Coroutine,
+    Generator,
+    Generic,
+    Iterable,
+    Optional,
+    ParamSpec,
+    Sequence,
+    Sized,
+    Tuple,
+    TypeVar,
+    TypeVarTuple,
+    Union,
+    Unpack,
+    cast,
+)
 
 from beets import library, plugins
 from beets.importer import (
@@ -28,44 +46,13 @@ from beets.util import MoveOperation, displayable_path
 from beets.util import pipeline as beets_pipeline
 
 from beets_flask import log
-from beets_flask.importer.pipeline import mutator_stage, stage
+from beets_flask.importer.progress import Progress, ProgressState
 
 if TYPE_CHECKING:
     from .session import BaseSessionNew, InteractiveImportSession
-    from .states import ProgressState
 
     # Tell type-checking that subclasses of BaseSession are allowed
     Session = TypeVar("Session", bound=BaseSessionNew)
-
-A = TypeVarTuple("A")
-R = TypeVarTuple("R")
-
-
-@total_ordering
-class Progress(Enum):
-    """The progress of the current session in chronological order.
-
-    Allows to resume a import at any time using our state dataclasses. We might
-    also want to add the plugin stages or refine this.
-
-    @PS: I like it this far, you have ideas for more progress. I think this should be on
-    task level.
-    """
-
-    NOT_STARTED = 0
-    READING_FILES = 1
-    GROUPING_ALBUMS = 2
-    LOOKING_UP_CANDIDATES = 3
-    IDENTIFYING_DUPLICATES = 4
-    OFFERING_MATCHES = 5
-    WAITING_FOR_USER_SELECTION = 6
-    EARLY_IMPORTING = 7
-    IMPORTING = 8
-    MANIPULATING_FILES = 9
-    COMPLETED = 10
-
-    def __lt__(self, other: Progress) -> bool:
-        return self.value < other.value
 
 
 def set_progress(progress: Progress):
@@ -86,22 +73,91 @@ def set_progress(progress: Progress):
     ```
     """
 
-    def decorator(func: Callable[[Session, ImportTask, *A]]):
+    def decorator(func: Callable[[Session, ImportTask, *Arg]]):
         @wraps(func)
-        def wrapper(session: Session, task: ImportTask, *args: *A):
-
+        def wrapper(session: Session, task: ImportTask, *args: *Arg):
             # Skip automatically if the task is already progressed
-            task_progress = session.get_progress(task)
-            if task_progress and task_progress.progress > progress:
-                return task  # This could be wrong (yield?)
+            # Note that >= and > below both have caveats:
+            # >= might give us a too optimistic state if the function call fails
+            # > might re-run the function if we resume, and we have not testet
+            # what happens when doing the same state-mutation twice
+            task_progress = session.get_task_progress(task)
+            if task_progress and task_progress.progress >= progress:
+                return task
 
             # Set the task's progress
-            session.set_progress(task, progress)
+            session.set_task_progress(task, progress)
             return func(session, task, *args)
 
         return wrapper
 
     return decorator
+
+
+# --------------------------------- Decorator -------------------------------- #
+
+Arg = TypeVarTuple("Arg")  # args und kwargs
+Ret = TypeVar("Ret")  # return type
+Task = TypeVar("Task")  # task
+
+
+def stage(
+    func: Callable[[Unpack[Arg], Task], Ret],
+):
+    """Decorate a function to become a simple stage.
+
+    Yields a task and waits until the next task is sent to it.
+
+    >>> @stage
+    ... def add(n, i):
+    ...     return i + n
+    >>> pipe = Pipeline([
+    ...     iter([1, 2, 3]),
+    ...     add(2),
+    ... ])
+    >>> list(pipe.pull())
+    [3, 4, 5]
+    """
+
+    def coro(*args: Unpack[Arg]) -> Generator[Union[Ret, Task, None], Task, None]:
+        # in some edge-cases we get no task. thus, we have to include the generic R
+        task: Optional[Task | Ret] = None
+        while True:
+            task = yield task  # wait for send to arrive. the first next() always returns None
+            # yield task, call func which gives new task, yield new task in next()
+            # FIXME: Generator support!
+            task = func(*(args + (task,)))
+
+    return coro
+
+
+def mutator_stage(func: Callable[[Unpack[Arg], Task], Ret]):
+    """Decorate a function that manipulates items in a coroutine to become a simple stage.
+
+    Yields a task and waits until the next task is sent to it.
+
+    >>> @mutator_stage
+    ... def setkey(key, item):
+    ...     item[key] = True
+    >>> pipe = Pipeline([
+    ...     iter([{'x': False}, {'a': False}]),
+    ...     setkey('x'),
+    ... ])
+    >>> list(pipe.pull())
+    [{'x': True}, {'a': False, 'x': True}]
+    """
+
+    def coro(
+        *args: Unpack[Arg],
+    ) -> Generator[Union[Ret, Task, None], Task, Optional[Ret]]:
+        task = None
+        while True:
+            task = yield task  # wait for send to arrive. the first next() always returns None
+            # perform function on task, and in next() send the same, modified task
+            # funcs prob. modify task in place?
+            func(*(args + (task,)))
+
+    return coro
 
 
 # --------------------------------- Producer --------------------------------- #
@@ -130,7 +186,6 @@ def read_tasks(
     for toppath in session.paths:
         task_factory = ImportTaskFactory(toppath, session)
         for task in task_factory.tasks():
-
             if isinstance(task, SentinelImportTask):
                 log.warning(f"Skipping {displayable_path(toppath)}")
                 continue
@@ -314,7 +369,7 @@ def plugin_stage(
     task: ImportTask,
 ):
     # TODO: Skip if already progressed
-    session.set_progress(task, progress)
+    session.set_task_progress(task, progress)
     if task.skip:
         return
 

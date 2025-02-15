@@ -1,0 +1,6 @@
+{
+    "python.defaultInterpreterPath": "/Users/paul/para/2_Projects/beets_flask_24/.conda/bin/python3",
+    "python.analysis.extraPaths": [
+        "/Users/paul/para/2_Projects/beets_flask_24/.conda/lib/python3.11/site-packages"
+    ]
+}

@@ -14,7 +14,7 @@ import beets.ui.commands as uicommands
 from beets import autotag, importer, library
 
 from beets_flask.config import config
-from beets_flask.importer.stages import Progress
+from beets_flask.importer.progress import Progress, ProgressState
 from beets_flask.logger import log
 from beets_flask.utility import capture_stdout_stderr
 
@@ -29,30 +29,6 @@ from .types import (
     SerializedSelectionState,
     TrackInfo,
 )
-
-
-@total_ordering
-@dataclass(slots=True)
-class ProgressState:
-    """Simple dataclass to hold a status message and a status code."""
-
-    progress: Progress = Progress.NOT_STARTED
-
-    # Optional message to display to the user
-    message: str | None = None
-
-    # Plugin specific
-    plugin_name: str | None = None
-
-    def as_dict(self) -> dict:
-        return {
-            "progess": self.progress.name,
-            "message": self.message,
-            "plugin_name": self.plugin_name,
-        }
-
-    def __lt__(self, other: ProgressState) -> bool:
-        return self.progress < other.progress
 
 
 @dataclass(init=False)
@@ -239,6 +215,22 @@ class TaskState:
         return [Path(p.decode("utf-8")) for p in self.task.paths]
 
     @property
+    def item_paths_before_import(self) -> list[Path]:
+        """Explicit paths to all media files that would be imported."""
+        if self.toppath is None:
+            return []
+        if self.toppath.is_file():
+            return [self.toppath]
+
+        items: list[bytes] = []
+        for _, i in importer.albums_in_dir(self.toppath):
+            # the generator returns a nested list of the outer diretories
+            # and file paths. thus, extend and then cast
+            items.extend(i)
+
+        return [Path(i.decode("utf-8")) for i in items]
+
+    @property
     def items(self) -> List[autotag.Item]:
         """Items (representing music files on disk) of the associated task."""
         return [item for item in self.task.items]
@@ -249,7 +241,7 @@ class TaskState:
         return [ItemInfo.from_instance(i) for i in self.task.items]
 
     @property
-    def best_candidate(self) -> CandidateState | None:
+    def best_candidate_state(self) -> CandidateState | None:
         """Returns the best candidate of this task.
 
         ```
@@ -390,7 +382,8 @@ class CandidateState:
         # the session checks the candidate id for this particular value.
         # this saves us from defining an extra attribute
         # (and passing back and forth to the frontend)
-        candidate.id = "asis"
+        candidate.id = "asis-" + str(uuid())
+        log.warning(f"Created asis candidate {candidate.id=}")
         return candidate
 
     # --------------------- Helper to lift / unnset from match to -------------------- #
@@ -409,6 +402,16 @@ class CandidateState:
         Named to be consistent with beets.
         """
         return str(self.task_state.task.cur_album)
+
+    @property
+    def artist(self) -> str | None:
+        """Artist of the match."""
+        return self.match.info.artist
+
+    @property
+    def album(self) -> str | None:
+        """Album of the match."""
+        return self.match.info.album
 
     @property
     def items(self) -> List[autotag.Item]:
@@ -581,3 +584,6 @@ class CandidateState:
 
 #     def __post_init__(self):
 #         super().__post_init__()
+
+
+__all__ = ["SessionState", "TaskState", "CandidateState"]

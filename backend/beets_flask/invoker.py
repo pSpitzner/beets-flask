@@ -9,8 +9,10 @@ It combines:
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import Path
 from typing import TYPE_CHECKING
 
+from beets_flask.importer.stages import Progress
 import requests
 from rq.decorators import job
 from sqlalchemy import delete
@@ -23,6 +25,9 @@ from beets_flask.beets_sessions import (
 )
 from beets_flask.config import config
 from beets_flask.database import Tag, db_session
+from beets_flask.database.models.state import SessionStateInDb
+from beets_flask.importer.session import PreviewSessionNew
+from beets_flask.importer.states import CandidateState, SessionState, TaskState
 from beets_flask.redis import import_queue, preview_queue, redis_conn, tag_queue
 from beets_flask.server.routes.errors import InvalidUsage
 from beets_flask.server.routes.status import update_client_view
@@ -43,6 +48,7 @@ def enqueue(id: str, session: Session | None = None):
         tag.status = "pending"
         s.merge(tag)
         s.commit()
+        # TODO: this could become a watch-dog that monitors the database for updated
         update_client_view(
             type="tag",
             tagId=tag.id,
@@ -89,10 +95,7 @@ def enqueue_tag_path(path: str, kind: str, session: Session | None = None):
 
 
 @job(timeout=600, queue=tag_queue, connection=redis_conn)
-def runPreview(
-    tagId: str,
-    callback_url: str | None = None,
-) -> str | None:
+def runPreview(tagId: str) -> str | None:
     """Start a preview Session on an existing tag.
 
     Parameters
@@ -112,7 +115,6 @@ def runPreview(
             raise InvalidUsage(f"Tag {tagId} not found in database")
 
         bt.status = "tagging"
-        bt.updated_at = datetime.now()
         session.merge(bt)
         session.commit()
         update_client_view(
@@ -128,30 +130,48 @@ def runPreview(
         )
 
         try:
-            bs = PreviewSession(path=bt.album_folder)
-            bs.run_and_capture_output()
+            # bs = PreviewSession(path=bt.album_folder)
+            # bs.run_and_capture_output()
 
-            log.debug(bs.preview)
+            # TODO: Check if session exists in db
+            session_state = SessionState(Path(bt.album_folder))
+            bs = PreviewSessionNew(session_state)
+            session_state = bs.run_sync()
 
-            bt.preview = bs.preview
-            bt.distance = bs.match_dist
-            bt.match_url = bs.match_url
-            bt.match_album = bs.match_album
-            bt.match_artist = bs.match_artist
-            bt.num_tracks = bs.match_num_tracks
+            # TESTING: assume single task
+            try:
+                task_state = session_state.task_states[0]
+            except IndexError:
+                raise ValueError("No task states found in session state")
+
+            candidate_state = task_state.best_candidate_state
+            if candidate_state is None:
+                raise ValueError("No candidate state found in task state")
+
+            # TODO: Refactor to not duplicate the state to the db
+            bt.preview = candidate_state.diff_preview
+            bt.distance = float(candidate_state.distance)
+            bt.match_url = candidate_state.url
+            bt.match_album = candidate_state.album
+            bt.match_artist = candidate_state.artist
+            bt.num_tracks = candidate_state.num_tracks
+            state = SessionStateInDb.from_session_state(session_state)
+            session.merge(state)
+            bt.session_state_in_db = state
+            log.warning(f"Preview done. {bt.session_state_in_db}")
+
+            prog = session_state.progress
             bt.status = (
                 "tagged"
-                if (bt.match_url is not None and bs.status == "ok")
-                else bs.status
+                if (
+                    bt.match_url is not None
+                    and session_state.progress >= Progress.LOOKING_UP_CANDIDATES
+                )
+                else "failed"
             )
         except Exception as e:
             log.debug(e)
             bt.status = "failed"
-            if callback_url:
-                requests.post(
-                    callback_url,
-                    json={"status": "beets preview failed", "tag": bt.to_dict()},
-                )
             return None
         finally:
             bt.updated_at = datetime.now()
@@ -163,12 +183,6 @@ def runPreview(
                 tagId=bt.id,
                 attributes="all",
                 message=f"Tagging finished with status: {bt.status}",
-            )
-
-        if callback_url:
-            requests.post(
-                callback_url,
-                json={"status": "beets preview done", "tag": bt.to_dict()},
             )
 
         log.debug(f"preview done. {bt.status=}, {bt.match_url=}")

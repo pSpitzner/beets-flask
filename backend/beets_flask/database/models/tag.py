@@ -10,6 +10,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.orm.session import make_transient
 
+from beets_flask.database.models.state import SessionStateInDb
 from beets_flask.logger import log
 from beets_flask.utility import AUDIO_EXTENSIONS
 
@@ -18,16 +19,17 @@ from .tag_group import TagGroup
 
 
 class Tag(Base):
+    # refactor: step 1 think of tags as sessions
     __tablename__ = "tag"
 
     # we might consider to use folders as ids:
     # for now we want to allow only one tag per folder.
-    id: Mapped[str] = mapped_column(primary_key=True)
+    # id: Mapped[str] = mapped_column(primary_key=True)
     album_folder: Mapped[str]
     album_folder_basename: Mapped[str]
 
-    status: Mapped[str]
-    kind: Mapped[str]
+    status: Mapped[str]  # refactor: ✔ task progress
+    kind: Mapped[str]  # refactor: ✗ session kind
     _valid_statuses = [
         "dummy",
         "pending",
@@ -47,11 +49,13 @@ class Tag(Base):
     ]
 
     # we could alternatively handle this by allowing multiple tag groups
+    # frontend only?
     archived: Mapped[bool] = mapped_column(default=False)
 
     _group_id: Mapped[str] = mapped_column(ForeignKey("tag_group.id"))
     _tag_group: Mapped[TagGroup] = relationship(back_populates="tag_ids")
 
+    # refactor: ✔ candidates -> TODO: currenlty all as byes, not searchable in db
     distance: Mapped[Optional[float]]
     match_url: Mapped[Optional[str]]
     match_album: Mapped[Optional[str]]
@@ -59,14 +63,20 @@ class Tag(Base):
     preview: Mapped[Optional[str]]
     num_tracks: Mapped[Optional[int]]
 
-    # Time stamps
-    created_at: Mapped[datetime]
-    updated_at: Mapped[datetime]
+    # temporary refactor: this should all be contained in session state in the future
+    _session_start_in_db_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("session.id"), nullable=True
+    )
+    session_state_in_db: Mapped[Optional[SessionStateInDb]] = relationship()
+
+    # Time stamps # refactor: ✔ base session
+    # created_at: Mapped[datetime]
+    # updated_at: Mapped[datetime]
 
     # the track list we keep ourselves, as strings so we can store in sqlite
     _track_paths: Mapped[Optional[str]]
-    _track_paths_before: Mapped[Optional[str]]
-    _track_paths_after: Mapped[Optional[str]]
+    _track_paths_before: Mapped[Optional[str]]  # refactor: ✔ task_state.item_paths...
+    _track_paths_after: Mapped[Optional[str]]  # refactor: ✗ task state? or elsehwere?
 
     def __init__(
         self,
@@ -84,8 +94,8 @@ class Tag(Base):
         self.album_folder = album_folder
         self.album_folder_basename = str(os.path.basename(album_folder))
         self.id = str(id) if id is not None else str(uuid())
-        self.created_at = datetime.now()
-        self.updated_at = datetime.now()
+        # self.created_at = datetime.now()
+        # self.updated_at = datetime.now()
         self._group_id = "Unsorted"
         self.distance = distance
         self.match_url = match_url

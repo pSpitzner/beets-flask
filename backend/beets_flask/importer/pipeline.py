@@ -32,79 +32,13 @@ from beets.util.pipeline import _allmsgs
 
 from beets_flask.logger import log
 
-A = TypeVarTuple("A")  # args und kwargs
-T = TypeVar("T")  # task
-# R = TypeVar("R")  # return type
-
-# general
+# Generics for Generators
 Y = TypeVar("Y")  # yield
 S = TypeVar("S")  # send
 R = TypeVar("R")  # return
 
-
-def stage(
-    func: Callable[
-        [Unpack[A], T],  # add task to arguments
-        R,
-    ],
-):
-    """Decorate a function to become a simple stage.
-
-    >>> @stage
-    ... def add(n, i):
-    ...     return i + n
-    >>> pipe = Pipeline([
-    ...     iter([1, 2, 3]),
-    ...     add(2),
-    ... ])
-    >>> list(pipe.pull())
-    [3, 4, 5]
-    """
-
-    def coro(*args: Unpack[A]) -> Generator[Union[R, T, None], T, None]:
-        # in some edge-cases we get no task. thus, we have to include the generic R
-        task: Optional[T | R] = None
-        while True:
-            task = (
-                yield task
-            )  # wait for send to arrive. the first next() always returns None
-            # yield task, call func which gives new task, yield new task in next()
-            # FIXME: Generator support!
-            task = func(*(args + (task,)))
-
-    return coro
-
-
-def mutator_stage(func: Callable[[Unpack[A], T], R]):
-    """Decorate a function that manipulates items in a coroutine to become a simple stage.
-
-    >>> @mutator_stage
-    ... def setkey(key, item):
-    ...     item[key] = True
-    >>> pipe = Pipeline([
-    ...     iter([{'x': False}, {'a': False}]),
-    ...     setkey('x'),
-    ... ])
-    >>> list(pipe.pull())
-    [{'x': True}, {'a': False, 'x': True}]
-    """
-
-    def coro(*args: Unpack[A]) -> Generator[Union[R, T, None], T, Optional[R]]:
-        task = None
-        while True:
-            task = (
-                yield task
-            )  # wait for send to arrive. the first next() always returns None
-            # perform function on task, and in next() send the same, modified task
-            # funcs prob. modify task in place?
-            func(*(args + (task,)))
-
-    return coro
-
-
 # --------------------------------- Pipeline --------------------------------- #
 
-# T = Task
 # yield : Task or None, send : Task, return : None
 Task = TypeVar("Task", bound=Any)
 Stage = Generator[Optional[Task], Task, R] | AsyncGenerator[Optional[Task], Task]
@@ -186,6 +120,8 @@ async def _send_resolve_async(
         return await gen.asend(*args, **kwargs)
 
 
-async def _async_iterable_from_iterable(iterable: Iterable[T]) -> AsyncIterable[T]:
+async def _async_iterable_from_iterable(
+    iterable: Iterable[Task],
+) -> AsyncIterable[Task]:
     for item in iterable:
         yield item

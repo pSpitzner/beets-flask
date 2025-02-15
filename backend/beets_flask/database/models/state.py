@@ -1,6 +1,6 @@
 """Minimal state model for the beets_flask application.
 
-Allows to resume a import at any time using our state dataclasses, 
+Allows to resume a import at any time using our state dataclasses,
 see importer/state.py for more information.
 """
 
@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import pickle
+from datetime import datetime
 from pathlib import Path
 from pickletools import bytes1
 from typing import List
@@ -22,29 +23,15 @@ from sqlalchemy.orm import (
     registry,
     relationship,
 )
+from sqlalchemy.sql import func
 
-from beets_flask.importer.states import (
-    CandidateState,
-    Progress,
-    ProgressState,
-    SessionState,
-    TaskState,
-)
+from beets_flask.database.models.base import Base
+from beets_flask.importer.progress import Progress, ProgressState
+from beets_flask.importer.states import CandidateState, SessionState, TaskState
 from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackMatch
 
 
-class Base(DeclarativeBase):
-    __abstract__ = True
-
-    registry = registry(type_annotation_map={bytes: LargeBinary})
-
-    id: Mapped[str] = mapped_column(primary_key=True)
-
-    def __init__(self, id: str | None = None):
-        self.id = str(id) if id is not None else str(uuid4())
-
-
-class Session(Base):
+class SessionStateInDb(Base):
     """Represents an import session.
 
     Normally a session has one task but in theory and edge cases
@@ -53,14 +40,14 @@ class Session(Base):
 
     __tablename__ = "session"
 
-    tasks: Mapped[List[Task]] = relationship()
+    tasks: Mapped[List[TaskStateInDb]] = relationship()
     path: Mapped[bytes] = mapped_column(LargeBinary)
 
     def __init__(
         self,
         path: bytes,
         id: str | None = None,
-        tasks: List[Task] = [],
+        tasks: List[TaskStateInDb] = [],
         progress: Progress = Progress.NOT_STARTED,
     ):
         super().__init__(id)
@@ -69,13 +56,13 @@ class Session(Base):
         self.progress = progress
 
     @classmethod
-    def from_session_state(cls, state: SessionState) -> Session:
+    def from_session_state(cls, state: SessionState) -> SessionStateInDb:
         """Create a new session from a session state."""
 
         session = cls(
             path=os.fsencode(state.path),
             id=state.id,
-            tasks=[Task.from_task_state(task) for task in state.task_states],
+            tasks=[TaskStateInDb.from_task_state(task) for task in state.task_states],
             progress=state.progress.progress,
         )
 
@@ -89,13 +76,13 @@ class Session(Base):
         return session
 
 
-class Task(Base):
+class TaskStateInDb(Base):
     """Represents an import task."""
 
     __tablename__ = "task"
 
     session_id: Mapped[str] = mapped_column(ForeignKey("session.id"))
-    candidates: Mapped[List[Candidate]] = relationship()
+    candidates: Mapped[List[CandidateStateInDb]] = relationship()
 
     # To reconstruct the beets task we also need
     toppath: Mapped[bytes | None]
@@ -110,7 +97,7 @@ class Task(Base):
         toppath: bytes | None = None,
         paths: List[bytes] = [],
         items: List[library.Item] = [],
-        candidates: List[Candidate] = [],
+        candidates: List[CandidateStateInDb] = [],
         progress: Progress = Progress.NOT_STARTED,
     ):
         super().__init__(id)
@@ -121,14 +108,15 @@ class Task(Base):
         self.progress = progress
 
     @classmethod
-    def from_task_state(cls, state: TaskState) -> Task:
+    def from_task_state(cls, state: TaskState) -> TaskStateInDb:
         """Create a new task from a task state."""
         task = cls(
             toppath=state.task.toppath,
             paths=state.task.paths,
             items=state.task.items,
             candidates=[
-                Candidate.from_candidate_state(c) for c in state.candidate_states
+                CandidateStateInDb.from_candidate_state(c)
+                for c in state.candidate_states
             ],
             progress=state.progress.progress,
         )
@@ -151,7 +139,7 @@ class Task(Base):
         return task
 
 
-class Candidate(Base):
+class CandidateStateInDb(Base):
     """Represents a candidate for an import task."""
 
     __tablename__ = "candidate"
@@ -171,7 +159,7 @@ class Candidate(Base):
         self.match = pickle.dumps(match)
 
     @classmethod
-    def from_candidate_state(cls, state: CandidateState) -> Candidate:
+    def from_candidate_state(cls, state: CandidateState) -> CandidateStateInDb:
         """Create a new candidate from a candidate state."""
         candidate = cls(
             id=state.id,

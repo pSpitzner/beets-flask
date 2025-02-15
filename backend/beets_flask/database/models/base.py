@@ -1,15 +1,36 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Self
+from uuid import uuid4
 
-from sqlalchemy import select
-from sqlalchemy.orm import DeclarativeBase, Session
+from beets.importer import ImportTask, library
+from sqlalchemy import LargeBinary, select
+from sqlalchemy.orm import (
+    DeclarativeBase,
+    Mapped,
+    Session,
+    mapped_column,
+    registry,
+)
+from sqlalchemy.sql import func
 
 from beets_flask.logger import log
 
 
 class Base(DeclarativeBase):
     __abstract__ = True
+
+    registry = registry(type_annotation_map={bytes: LargeBinary})
+
+    id: Mapped[str] = mapped_column(primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        default=func.now(), onupdate=func.now()
+    )
+
+    def __init__(self, id: str | None = None):
+        self.id = str(id) if id is not None else str(uuid4())
 
     @classmethod
     def get_by(cls, *whereclause, session: Session | None = None) -> Self | None:

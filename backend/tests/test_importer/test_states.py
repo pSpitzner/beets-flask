@@ -72,8 +72,8 @@ def test_task_state(import_task):
     assert task_state.items == [import_task.items[0]]
 
     # Task state always has asis candidate
-    assert task_state.best_candidate is not None
-    assert task_state.best_candidate.id == "asis"
+    assert task_state.best_candidate_state is not None
+    assert task_state.best_candidate_state.id.startswith("asis")
 
 
 def test_candidate_state(import_task):
@@ -99,7 +99,7 @@ def test_candidate_state(import_task):
 
     # Test asis candidate
     asis_candidate = candidate_states[1]
-    assert asis_candidate.id == "asis"
+    assert asis_candidate.id.startswith("asis")
     assert asis_candidate.type == "album"
 
 
