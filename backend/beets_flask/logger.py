@@ -8,7 +8,7 @@ LOGGING_CONFIG = {
     "formatters": {
         "standard": {
             # https://docs.python.org/3/library/logging.html#logrecord-attributes
-            "format": "[%(levelname)-5s] %(name)s: %(message)s"
+            "format": "[%(levelname)s] %(name)s: %(message)s"
         },
         "debug": {
             "format": "%(relativeCreated)-8d [%(levelname)-5s] %(name)s %(filename)-8s:%(lineno)d: %(message)s"
@@ -45,14 +45,10 @@ LOGGING_CONFIG = {
 }
 
 logging.config.dictConfig(LOGGING_CONFIG)
-
-
 log = logging.getLogger("beets-flask")
 
-# Redis workers will have a different logger
 rq_name = os.getenv("RQ_JOB_ID", None)
 if rq_name:
-    log = log.getChild(rq_name[0:4])
-    log.setLevel(os.getenv("LOG_LEVEL_BEETSFLASK_REDIS", logging.DEBUG))
+    log = log.getChild(rq_name[:4])
 
 log.debug("Logging configured!")
