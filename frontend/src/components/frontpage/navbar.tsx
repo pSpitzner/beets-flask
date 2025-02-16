@@ -143,23 +143,30 @@ export default function NavTabs() {
                 <NavItem key={item.to} {...item} />
             ))}
             {/* Mouse hover effect */}
-            <Box
-                className="mouse-trail"
-                sx={(theme) => ({
-                    top: "var(--mouse-y)",
-                    left: "var(--mouse-x)",
-                    width: "10px",
-                    height: "10px",
-                    backgroundColor: theme.palette.secondary.main,
-                    filter: "blur(25px)",
-                    pointerEvents: "none",
-                    transition: "opacity 0.3s ease-in-out",
-                    transform: "translate(-50%, -50%)",
-                    position: "absolute",
-                    opacity: 0,
-                    zIndex: -1,
-                })}
-            />
+            <MouseTrail />
         </Tabs>
     );
 }
+
+// Weird workaround for mui problems in console as it parses props to its children
+const MouseTrail = () => {
+    return (
+        <Box
+            className="mouse-trail"
+            sx={(theme) => ({
+                top: "var(--mouse-y)",
+                left: "var(--mouse-x)",
+                width: "10px",
+                height: "10px",
+                backgroundColor: theme.palette.secondary.main,
+                filter: "blur(25px)",
+                pointerEvents: "none",
+                transition: "opacity 0.3s ease-in-out",
+                transform: "translate(-50%, -50%)",
+                position: "absolute",
+                opacity: 0,
+                zIndex: -1,
+            })}
+        />
+    );
+};

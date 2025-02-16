@@ -11,7 +11,7 @@ LOGGING_CONFIG = {
             "format": "[%(levelname)s] %(name)s: %(message)s"
         },
         "debug": {
-            "format": "%(relativeCreated)-8d [%(levelname)-5s] %(name)s %(filename)-8s:%(lineno)d: %(message)s"
+            "format": "%(relativeCreated)-8d [%(levelname)-5s] %(name)s %(filename)-8s:%(lineno)d %(message)s"
         },
     },
     "handlers": {
