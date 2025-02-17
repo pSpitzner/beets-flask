@@ -64,10 +64,12 @@ class Tag(Base):
     num_tracks: Mapped[Optional[int]]
 
     # temporary refactor: this should all be contained in session state in the future
-    _session_start_in_db_id: Mapped[Optional[str]] = mapped_column(
+    _session_state_in_db_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("session.id"), nullable=True
     )
-    session_state_in_db: Mapped[Optional[SessionStateInDb]] = relationship()
+    session_state_in_db: Mapped[Optional[SessionStateInDb]] = relationship(
+        "SessionStateInDb", back_populates="tag"
+    )
 
     # Time stamps # refactor: ✔ base session
     # created_at: Mapped[datetime]

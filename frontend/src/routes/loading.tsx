@@ -1,4 +1,3 @@
-import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Loading, LoadingSmall } from "@/components/common/loading";
 import { Box, Button } from "@mui/material";

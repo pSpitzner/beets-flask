@@ -42,6 +42,7 @@ class SessionStateInDb(Base):
 
     tasks: Mapped[List[TaskStateInDb]] = relationship()
     path: Mapped[bytes] = mapped_column(LargeBinary)
+    tag = relationship("Tag", uselist=False, back_populates="session_state_in_db")
 
     def __init__(
         self,
