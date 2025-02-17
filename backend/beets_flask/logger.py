@@ -25,7 +25,7 @@ LOGGING_CONFIG = {
             "class": "logging.handlers.RotatingFileHandler",
             "level": "DEBUG",
             "formatter": "debug",
-            "filename": os.environ.get("LOG_FILE_WEB", "/repo/log/for_web.log"),
+            "filename": os.environ.get("LOG_FILE_WEB", "./beets-flask.log"),
             "maxBytes": 1048576,  #
             "backupCount": 3,
         },

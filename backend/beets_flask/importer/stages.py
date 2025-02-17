@@ -123,7 +123,9 @@ def stage(
         # in some edge-cases we get no task. thus, we have to include the generic R
         task: Optional[Task | Ret] = None
         while True:
-            task = yield task  # wait for send to arrive. the first next() always returns None
+            task = (
+                yield task
+            )  # wait for send to arrive. the first next() always returns None
             # yield task, call func which gives new task, yield new task in next()
             # FIXME: Generator support!
             task = func(*(args + (task,)))
@@ -152,7 +154,9 @@ def mutator_stage(func: Callable[[Unpack[Arg], Task], Ret]):
     ) -> Generator[Union[Ret, Task, None], Task, Optional[Ret]]:
         task = None
         while True:
-            task = yield task  # wait for send to arrive. the first next() always returns None
+            task = (
+                yield task
+            )  # wait for send to arrive. the first next() always returns None
             # perform function on task, and in next() send the same, modified task
             # funcs prob. modify task in place?
             func(*(args + (task,)))
@@ -173,7 +177,7 @@ def read_tasks(
     Adapted closely from beets, but we do not need/support resuming and skipping
     """
 
-    log.warning(f"Reading files")
+    log.debug(f"Reading files")
 
     # Our Skip-check usually uses Progress, but here we do not have progress yet
     # We want to catch the case when we resume a session,
@@ -187,11 +191,11 @@ def read_tasks(
         task_factory = ImportTaskFactory(toppath, session)
         for task in task_factory.tasks():
             if isinstance(task, SentinelImportTask):
-                log.warning(f"Skipping {displayable_path(toppath)}")
+                log.debug(f"Skipping {displayable_path(toppath)}")
                 continue
 
             task_state = session.state.upsert_task(task)
-            log.warning(f"Reading files from {displayable_path(toppath)}")
+            log.debug(f"Reading files from {displayable_path(toppath)}")
             task_state.set_progress(Progress.READING_FILES)
             yield task
 
@@ -260,6 +264,14 @@ def lookup_candidates(
     task.search_ids = session.config["search_ids"].as_str_seq()
 
     task.lookup_candidates()
+
+    # Update our state
+    task_state = session.state.get_task_state_for_task(task)
+    if not task_state:
+        raise ValueError(f"No task state found for {task=}")
+
+    # FIXME: type hint should be fine once beets updates
+    task_state.add_candidates(task.candidates)  # type: ignore
 
 
 @mutator_stage

@@ -172,3 +172,6 @@ class CandidateStateInDb(Base):
         candidate = CandidateState(pickle.loads(self.match), task_state)
         candidate.id = self.id
         return candidate
+
+
+__all__ = ["SessionStateInDb", "TaskStateInDb", "CandidateStateInDb"]
