@@ -1,0 +1,158 @@
+// wrapper for multiple notes
+.notes {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.note {
+    // Staggered animation for the notes
+    @for $i from 1 through 3 {
+        &:nth-child(3n + #{$i}) {
+            animation-delay: 0.2s * $i - 0.2s;
+        }
+
+        &:nth-child(3n + #{$i})::after {
+            animation-delay: 0.2s * $i - 0.2s;
+        }
+    }
+
+    // Shadow effect
+    &::after {
+        content: "";
+        position: absolute;
+        width: 45%;
+        height: 5%;
+
+        /* Shadow color */
+        border-radius: 50%;
+        bottom: 0;
+        bottom: -2.5%;
+        left: 12%;
+        /* Centering the shadow under the SVG */
+        z-index: -1;
+        /* Ensure the shadow is underneath the note */
+        animation: shadowScale 1s infinite ease-in-out both;
+        background-color: var(--shadow-color, currentColor);
+        filter: blur(2px) opacity(0.5);
+    }
+    display: flex;
+    // Note jump
+    position: relative;
+    font-size: 48px;
+    height: 100%;
+    animation: jump 1s infinite ease-in-out;
+    color: var(--note-color, currentColor);
+
+    .noteIcon {
+        display: block;
+        width: 100%;
+    }
+}
+
+/* Keyframes for the jumping animation 
+* We do a jump and a shadow scale to simulate a jumping effect
+* The shadow scale is to simulate the shadow while jumping.
+*/
+@keyframes jump {
+    0%,
+    20%,
+    50%,
+    80%,
+    100% {
+        transform: translateY(0);
+        /* Base position */
+    }
+    40% {
+        transform: translateY(-30px);
+        /* Jump to -30px */
+    }
+    60% {
+        transform: translateY(-15px);
+        /* Second lower hop */
+    }
+}
+
+@keyframes shadowScale {
+    0%,
+    20%,
+    50%,
+    80%,
+    100% {
+        transform: translateY(0) scale(1);
+    }
+    40% {
+        transform: translateY(30px) scale(1.5);
+    }
+    60% {
+        transform: translateY(15px) scale(1.2);
+    }
+}
+
+/* ------------------------------- Small notes ------------------------------ */
+
+.note {
+    &[data-size="small"] {
+        font-size: 20px;
+        height: 20px;
+        padding: 0;
+
+        animation: xAxis 0.85s infinite cubic-bezier(0.25, 0.1, 0.25, 1);
+
+        .noteIcon {
+            animation: yAxis 0.85s infinite cubic-bezier(0.25, 0.1, 0.25, 1);
+            height: 20px;
+        }
+
+        &::after {
+            width: 8px;
+            height: 3px;
+            bottom: -4px;
+            left: calc(50% - 10px + 3px);
+
+            animation: shadowSmall 0.85s infinite cubic-bezier(0.25, 0.1, 0.25, 1);
+            filter: blur(2px) opacity(0.5);
+        }
+        margin-inline: 10px;
+        margin-block: 8px;
+    }
+}
+
+/** The get a realistic jump we animate on two axis  
+* at the same time.
+* We jump left to right and right to left
+*/
+@keyframes xAxis {
+    100%,
+    0% {
+        transform: translateX(-10px);
+    }
+    50% {
+        transform: translateX(10px);
+    }
+}
+
+@keyframes yAxis {
+    100%,
+    50%,
+    0% {
+        transform: translateY(0);
+    }
+    75%,
+    25% {
+        transform: translateY(-8px);
+    }
+}
+
+@keyframes shadowSmall {
+    100%,
+    50%,
+    0% {
+        transform: translateY(0) scale(1);
+    }
+    75%,
+    25% {
+        transform: translateY(0) scale(1.3);
+    }
+}

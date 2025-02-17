@@ -11,6 +11,7 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as LoadingImport } from './routes/loading'
 import { Route as TerminalIndexImport } from './routes/terminal/index'
 import { Route as TagsIndexImport } from './routes/tags/index'
 import { Route as InboxIndexImport } from './routes/inbox/index'
@@ -25,6 +26,12 @@ import { Route as LibraryBrowseArtistAlbumIdImport } from './routes/library/brow
 import { Route as LibraryBrowseArtistAlbumIdItemIdImport } from './routes/library/browse.$artist.$albumId.$itemId'
 
 // Create/Update Routes
+
+const LoadingRoute = LoadingImport.update({
+  id: '/loading',
+  path: '/loading',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const TerminalIndexRoute = TerminalIndexImport.update({
   id: '/terminal/',
@@ -104,6 +111,13 @@ const LibraryBrowseArtistAlbumIdItemIdRoute =
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/loading': {
+      id: '/loading'
+      path: '/loading'
+      fullPath: '/loading'
+      preLoaderRoute: typeof LoadingImport
+      parentRoute: typeof rootRoute
+    }
     '/_frontpage/_modal': {
       id: '/_frontpage/_modal'
       path: ''
@@ -244,6 +258,7 @@ const LibraryBrowseRouteWithChildren = LibraryBrowseRoute._addFileChildren(
 )
 
 export interface FileRoutesByFullPath {
+  '/loading': typeof LoadingRoute
   '': typeof FrontpageModalRouteWithChildren
   '/library/browse': typeof LibraryBrowseRouteWithChildren
   '/library/search': typeof LibrarySearchRoute
@@ -259,6 +274,7 @@ export interface FileRoutesByFullPath {
 }
 
 export interface FileRoutesByTo {
+  '/loading': typeof LoadingRoute
   '': typeof FrontpageModalRouteWithChildren
   '/library/browse': typeof LibraryBrowseRouteWithChildren
   '/library/search': typeof LibrarySearchRoute
@@ -275,6 +291,7 @@ export interface FileRoutesByTo {
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
+  '/loading': typeof LoadingRoute
   '/_frontpage/_modal': typeof FrontpageModalRouteWithChildren
   '/library/browse': typeof LibraryBrowseRouteWithChildren
   '/library/search': typeof LibrarySearchRoute
@@ -292,6 +309,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/loading'
     | ''
     | '/library/browse'
     | '/library/search'
@@ -306,6 +324,7 @@ export interface FileRouteTypes {
     | '/library/browse/$artist/$albumId/$itemId'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/loading'
     | ''
     | '/library/browse'
     | '/library/search'
@@ -320,6 +339,7 @@ export interface FileRouteTypes {
     | '/library/browse/$artist/$albumId/$itemId'
   id:
     | '__root__'
+    | '/loading'
     | '/_frontpage/_modal'
     | '/library/browse'
     | '/library/search'
@@ -336,6 +356,7 @@ export interface FileRouteTypes {
 }
 
 export interface RootRouteChildren {
+  LoadingRoute: typeof LoadingRoute
   FrontpageModalRoute: typeof FrontpageModalRouteWithChildren
   LibraryBrowseRoute: typeof LibraryBrowseRouteWithChildren
   LibrarySearchRoute: typeof LibrarySearchRoute
@@ -347,6 +368,7 @@ export interface RootRouteChildren {
 }
 
 const rootRouteChildren: RootRouteChildren = {
+  LoadingRoute: LoadingRoute,
   FrontpageModalRoute: FrontpageModalRouteWithChildren,
   LibraryBrowseRoute: LibraryBrowseRouteWithChildren,
   LibrarySearchRoute: LibrarySearchRoute,
@@ -367,6 +389,7 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
+        "/loading",
         "/_frontpage/_modal",
         "/library/browse",
         "/library/search",
@@ -376,6 +399,9 @@ export const routeTree = rootRoute
         "/tags/",
         "/terminal/"
       ]
+    },
+    "/loading": {
+      "filePath": "loading.tsx"
     },
     "/_frontpage/_modal": {
       "filePath": "_frontpage/_modal.tsx",

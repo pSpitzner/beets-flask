@@ -383,7 +383,7 @@ class CandidateState:
         # this saves us from defining an extra attribute
         # (and passing back and forth to the frontend)
         candidate.id = "asis-" + str(uuid())
-        log.warning(f"Created asis candidate {candidate.id=}")
+        log.debug(f"Created asis candidate {candidate.id=}")
         return candidate
 
     # --------------------- Helper to lift / unnset from match to -------------------- #
