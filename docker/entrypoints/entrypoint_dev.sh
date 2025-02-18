@@ -34,6 +34,10 @@ python ./launch_redis_workers.py
 
 redis-cli FLUSHALL
 
+
+# generate types for the frontend (only done in dev mode)
+python ./generate_types.py
+
 # we need to run with one worker for socketio to work (but need at least threads for SSEs)
 # sufficient timout for the interactive import sessions, which may take a couple of minutes
 # gunicorn --worker-class eventlet -w 1 --threads 32  --timeout 300 --bind 0.0.0.0:5001 --reload 'main:create_app()'

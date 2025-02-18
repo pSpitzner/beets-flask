@@ -31,7 +31,8 @@ RUN --mount=type=cache,target=/var/cache/apk \
     redis  \
     bash \
     tmux \
-    shadow
+    shadow \ 
+    git 
 
 # Install our package (backend)
 COPY ./backend /repo/backend

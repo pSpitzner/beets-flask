@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import total_ordering
 from pathlib import Path
-from typing import List, Literal, Sequence, Union, cast
+from typing import List, Literal, Sequence, TypedDict, Union, cast
 from uuid import uuid4 as uuid
 
 import beets.ui.commands as uicommands
@@ -24,9 +24,6 @@ from .types import (
     BeetsTrackMatch,
     ItemInfo,
     MusicInfo,
-    SerializedCandidateState,
-    SerializedImportState,
-    SerializedSelectionState,
     TrackInfo,
 )
 
@@ -112,9 +109,9 @@ class SessionState:
             time.sleep(0.5)
         return True
 
-    def serialize(self) -> SerializedImportState:
+    def serialize(self) -> SerializedSessionState:
         """JSON representation to match the frontend types."""
-        return SerializedImportState(
+        return SerializedSessionState(
             id=self.id,
             selection_states=[s.serialize() for s in self.task_states],
             status=self.progress.as_dict(),
@@ -258,7 +255,7 @@ class TaskState:
 
     # ---------------------------------------------------------------------------- #
 
-    def serialize(self) -> SerializedSelectionState:
+    def serialize(self) -> SerializedTaskState:
         """JSON representation to match the frontend types."""
         # Workaround to show initial selection on frontend
         # if no candidate has been selected yet
@@ -266,7 +263,7 @@ class TaskState:
         if current_id is None:
             current_id = self.candidate_states[0].id
 
-        return SerializedSelectionState(
+        return SerializedTaskState(
             id=self.id,
             candidate_states=[c.serialize() for c in self.candidate_states],
             current_candidate_id=current_id,
@@ -585,5 +582,55 @@ class CandidateState:
 #     def __post_init__(self):
 #         super().__post_init__()
 
+# ---------------------------- Serialization types --------------------------- #
+# Used for getting typehints in the frontend. I.e. we generate the types from
+# these typed dicts! See the generate_types.py script for more information.
+# FIXME: We should overhaul these serialized types. They seem a bit outdated to me!
+#       We could make these types way more strict
 
-__all__ = ["SessionState", "TaskState", "CandidateState"]
+
+class SerializedSessionState(TypedDict):
+    id: str
+    selection_states: List[SerializedTaskState]
+    status: dict[str, str]
+    completed: bool
+
+
+class SerializedTaskState(TypedDict):
+    id: str
+    candidate_states: List[SerializedCandidateState]
+    current_candidate_id: str | None
+    duplicate_action: str | None
+    items: List[dict]  #  ItemInfo
+    completed: bool
+    toppath: str | None
+    paths: List[str]
+
+
+class SerializedCandidateState(TypedDict):
+    id: str
+    diff_preview: str | None
+    cur_artist: str
+    cur_album: str
+    penalties: List[str]
+    duplicate_in_library: bool
+    type: str
+    distance: float
+    info: dict  # AlbumInfo | TrackInfo
+
+    items: List[dict] | None  #  ItemInfo TODO: infer in frontend from selection state
+    tracks: List[dict] | None  #  TrackInfo
+    extra_tracks: List[dict] | None  #  TrackInfo
+    extra_items: List[dict] | None  #  ItemInfo
+
+    mapping: dict[int, int] | None
+
+
+__all__ = [
+    "SessionState",
+    "TaskState",
+    "CandidateState",
+    "SerializedSessionState",
+    "SerializedTaskState",
+    "SerializedCandidateState",
+]

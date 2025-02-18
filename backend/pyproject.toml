@@ -31,7 +31,7 @@ dependencies = [
     "uvicorn>=0.34.0",
     # beets plugin dependencies
     "pylast>=5.2.0",
-
+    "py2ts @ git+https://github.com/semohr/py2ts.git",
 ]
 
 [project.optional-dependencies]
@@ -68,6 +68,9 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 package = "./beets_flask"
 packages = ["beets_flask"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.ruff]
 include = ["pyproject.toml", "beets_flask/**/*.py"]
