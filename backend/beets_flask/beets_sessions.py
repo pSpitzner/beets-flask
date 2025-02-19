@@ -268,7 +268,6 @@ class MatchedImportSession(BaseSession):
 
         # no idea how to keep track of the task otherwise.
         # we need it to get some info outside the session, like track_paths.
-        # the pipeline stages take a task argument that i never find passed!
         self.import_task = task
 
         # this just mimics the output that TerminalImportSession generates

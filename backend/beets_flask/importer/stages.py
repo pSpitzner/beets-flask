@@ -49,7 +49,7 @@ from beets_flask import log
 from beets_flask.importer.progress import Progress, ProgressState
 
 if TYPE_CHECKING:
-    from .session import BaseSessionNew, InteractiveImportSession
+    from .session import BaseSessionNew, ImportSessionNew, InteractiveImportSession
 
     # Tell type-checking that subclasses of BaseSession are allowed
     Session = TypeVar("Session", bound=BaseSessionNew)
@@ -81,7 +81,7 @@ def set_progress(progress: Progress):
             # >= might give us a too optimistic state if the function call fails
             # > might re-run the function if we resume, and we have not testet
             # what happens when doing the same state-mutation twice
-            task_progress = session.get_task_progress(task)
+            task_progress = session.state.upsert_task(task)
             if task_progress and task_progress.progress >= progress:
                 return task
 
@@ -242,6 +242,12 @@ def lookup_candidates(
 ):
     """Performing the initial MusicBrainz lookup for an album.
 
+    We tweaks this from upstream beets to not
+    call `task.lookup_candidates()` but instead `session.lookup_candidates(task)`, with some extra logic
+
+    This is more consistent, as it allows the logic
+    to be modified by each kind of session.
+
     Calls `task.lookup_candidates()`,
     which sets attributes of the task:
         - cur_artist   # metadata in file
@@ -258,20 +264,7 @@ def lookup_candidates(
     plugins.send("import_task_start", session=session, task=task)
     log.debug(f"Looking up: {displayable_path(task.paths)}")
 
-    # Restrict the initial lookup to IDs specified by the user via the -m
-    # option. Currently all the IDs are passed onto the tasks directly.
-    # FIXME: Revisit, we want to avoid using the global config.
-    task.search_ids = session.config["search_ids"].as_str_seq()
-
-    task.lookup_candidates()
-
-    # Update our state
-    task_state = session.state.get_task_state_for_task(task)
-    if not task_state:
-        raise ValueError(f"No task state found for {task=}")
-
-    # FIXME: type hint should be fine once beets updates
-    task_state.add_candidates(task.candidates)  # type: ignore
+    session.lookup_candidates(task)
 
 
 @mutator_stage
@@ -283,6 +276,7 @@ def identify_duplicates(
     """Stage to identify which candidates would be duplicates if imported."""
     if task.skip:
         return
+
     session.identify_duplicates(task)
 
 
@@ -331,6 +325,7 @@ def user_query(
         return beets_pipeline.BUBBLE
 
     # Ask the user for a choice.
+    # This calls session.choose_match(task)... but whyyy?
     task.choose_match(session)
     plugins.send("import_task_choice", session=session, task=task)
 

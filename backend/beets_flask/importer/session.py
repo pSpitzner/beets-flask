@@ -6,7 +6,7 @@ import time
 from abc import ABC, abstractmethod
 from pathlib import Path
 from posixpath import normpath
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Literal
 
 import nest_asyncio
 from beets import autotag, importer, library, plugins
@@ -27,7 +27,7 @@ from beets_flask.logger import log
 from beets_flask.utility import capture_stdout_stderr
 
 from .communicator import WebsocketCommunicator
-from .pipeline import AsyncPipeline
+from .pipeline import AsyncPipeline, Stage
 from .stages import (
     group_albums,
     identify_duplicates,
@@ -86,6 +86,10 @@ class BaseSessionNew(importer.ImportSession, ABC):
         if not path.is_dir() and not is_album_folder(path):
             raise ValueError(f"Path {path} is not an album folder.")
 
+        # FIXME: This is a super bad convention of the original beets.
+        # We do not want to pollute a global config object every time a session runs.
+        # This is fine for the cli tool, where each run creates only one session
+        # but not for our long-running webserver.
         if isinstance(config_overlay, dict):
             config.set_args(config_overlay)
 
@@ -98,6 +102,49 @@ class BaseSessionNew(importer.ImportSession, ABC):
             query=None,
             loghandler=None,
         )
+        # Hacky workaround to use our logging, to allow plugins to communicate
+        self.logger.handlers = log.handlers
+        log.debug(f"Created new {self.__name__} for {path}")
+
+    @deprecated
+    def run_and_capture_output(self) -> tuple[str, str]:
+        """Run the import session and capture the output.
+
+        Uses the original beets import session run method,
+        with lots of overhead.
+        Sets self.preivew to output and error messages occuring during run.
+
+        Returns
+        -------
+            tuple[str, str]: out, err
+        """
+        self.logger.debug(f"{self.paths}")
+        out, err, _ = capture_stdout_stderr(self.run)
+        self.preview = out + "\n\n" + err if err else out
+        return out, err
+
+    # -------------------------- State handling helpers -------------------------- #
+
+    def set_task_progress(
+        self, task: importer.ImportTask, progress: ProgressState | Progress | str
+    ):
+        """Set the progress of the import session.
+
+        If string is given it is set as the message of the current progress.
+        Note: currently we only implement status on the level of the whole import session, but should eventually do this per selection (task).
+        """
+
+        task_state = self.state.get_task_state_for_task(task)
+        assert task_state is not None, "Task state not found for task."
+
+        task_state.set_progress(progress)
+
+    def get_task_progress(self, task: importer.ImportTask) -> ProgressState | None:
+        """Get the progress of the task, via this sessions state."""
+        task_state = self.state.get_task_state_for_task(task)
+        return task_state.progress if task_state else None
+
+    # -------------------------------- Stages -------------------------------- #
 
     def resolve_duplicate(self, task: importer.ImportTask, found_duplicates):
         """Overload default resolve duplicate and skip it.
@@ -126,8 +173,6 @@ class BaseSessionNew(importer.ImportSession, ABC):
 
     def identify_duplicates(self, task: importer.ImportTask):
         """For all candidates, check if they have duplicates in the library."""
-        self.state.upsert_task(task)
-
         task_state = self.state.get_task_state_for_task(task)
         if task_state is None:
             raise ValueError("No state found for thiis task.")
@@ -139,75 +184,52 @@ class BaseSessionNew(importer.ImportSession, ABC):
             if len(duplicates) > 0:
                 log.debug(f"Found duplicates for {cs.id=}: {duplicates}")
 
-    @deprecated
-    def run_and_capture_output(self) -> tuple[str, str]:
-        """Run the import session and capture the output.
+    def lookup_candidates(self, task: importer.ImportTask):
+        """Lookup candidates for the task."""
 
-        Uses the original beets import session run method,
-        with lots of overhead.
-        Sets self.preivew to output and error messages occuring during run.
+        # Restrict the initial lookup to IDs specified by the user via the -m
+        # option. Currently all the IDs are passed onto the tasks directly.
+        # FIXME: Revisit, we want to avoid using the global config.
+        task.search_ids = self.config["search_ids"].as_str_seq()
 
-        Returns
-        -------
-            tuple[str, str]: out, err
-        """
-        self.logger.debug(f"{self.paths}")
-        out, err, _ = capture_stdout_stderr(self.run)
-        self.preview = out + "\n\n" + err if err else out
-        return out, err
+        task.lookup_candidates()
 
-    # -------------------------- State handling helpers -------------------------- #
-
-    def set_task_progress(
-        self, task: importer.ImportTask, progress: ProgressState | Progress | str
-    ):
-        """Set the progress of the import session.
-
-        If string is given it is set as the message of the current progress.
-        """
-
+        # Update our state
         task_state = self.state.get_task_state_for_task(task)
-        assert task_state is not None, "Task state not found for task."
+        if not task_state:
+            raise ValueError(f"No task state found for {task=}")
 
-        task_state.set_progress(progress)
+        # FIXME: type hint should be fine once beets updates
+        task_state.add_candidates(task.candidates)  # type: ignore
 
-    def get_task_progress(self, task: importer.ImportTask) -> ProgressState | None:
-        """Get the progress of the task, via this sessions state."""
-        task_state = self.state.get_task_state_for_task(task)
-        return task_state.progress if task_state else None
+    # ---------------------------------- Run --------------------------------- #
 
-
-class PreviewSessionNew(BaseSessionNew):
-    """Mocks an Import to gather the info displayed to the user.
-
-    Only fetches candidates.
-
-    """
+    @abstractmethod
+    def stages(self) -> List[Stage[importer.ImportTask, Any]]:
+        """Return the stages of the pipeline."""
+        pass
 
     def run_sync(self) -> SessionState:
         """Run the import session synchronously."""
         return asyncio.run(self.run_async())
 
     async def run_async(self) -> SessionState:
-        """Run the import session asynchronously."""
-        self.logger.info(f"import started {time.asctime()}")
+        """Run the import session asynchronously.
+
+        Does not set tasks to completed at the end.
+        Take care of this in subclasses.
+        """
+        log.info(f"{self.__name__} running async {time.asctime()}")
+        # For now, until we improve the upstream beets config logic,
+        # adhere to importer.ImportSession convention and create a local copy
+        # of the config.
         self.set_config(config["import"])
 
         # TODO: check some config values. that are not compatible with our code.
-
         self.pipeline = AsyncPipeline(start_tasks=read_tasks(self))
 
-        if self.config["group_albums"] and not self.config["singletons"]:
-            # FIXME once migrated to next beets version
-            self.pipeline.add_stage(group_albums(self))
-
-        # main stages
-        self.pipeline.add_stage(
-            lookup_candidates(self),
-            identify_duplicates(self),
-            # TODO: check if we want to enable this plugin stage
-            # offer_match(self) -> invokes plugins.send("import_task_before_choice", session=self, task=task).
-        )
+        for s in self.stages():
+            self.pipeline.add_stage(s)
 
         log.debug(f"Running pipeline stages: {self.pipeline.stages}")
 
@@ -216,11 +238,177 @@ class PreviewSessionNew(BaseSessionNew):
             assert self.pipeline is not None
             await self.pipeline.run_async()
         except importer.ImportAbortError:
-            self.logger.debug(f"Interactive import session aborted by user")
+            log.debug(f"Interactive import session aborted by user")
 
         log.debug(f"Pipeline completed")
 
         return self.state
+
+
+class PreviewSessionNew(BaseSessionNew):
+    """Preview what would be imported. Only fetches candidates."""
+
+    def stages(self):
+        stages: List[Stage[importer.ImportTask, Any]] = []
+
+        if self.config["group_albums"] and not self.config["singletons"]:
+            # FIXME once migrated to next beets version
+            stages.append(group_albums(self))
+
+        # main stages
+        stages += [
+            lookup_candidates(self),
+            identify_duplicates(self),
+            # TODO: check if we want to enable this plugin stage
+            # TODO: Start documentation of plugins that work with us.
+            # c.f. https://docs.beets.io/en/latest/dev/plugins.html
+            # offer_match(self) -> invokes plugins.send("import_task_before_choice", session=self, task=task).
+        ]
+        return stages
+
+
+class ImportSessionNew(BaseSessionNew):
+    """Import session that assumes we already have a match-id."""
+
+    match_url: str | None
+    duplicate_action: Literal["skip", "keep", "remove", "merge", "ask"]
+
+    def __init__(
+        self,
+        state: SessionState,
+        config_overlay: dict | None = None,
+        match_url: str | None = None,
+        duplicate_action: (
+            Literal["skip", "keep", "remove", "merge", "ask"] | None
+        ) = None,
+    ):
+        """Create new.
+
+        Parameters
+        ----------
+        match_url : str
+            The URL of the match to import, if any. Normally this should be infered from
+            the state.
+        duplicate_action : str
+            The action to take if duplicates are found. One of "skip", "keep",
+            "remove", "merge", "ask". If not specified, the default is read from
+            the user config.
+        """
+        if (
+            config_overlay
+            and config_overlay.get("import", {}).get("search_ids") is not None
+        ):
+            raise ValueError("search_ids set in config_overlay. This is not supported.")
+
+        if match_url is not None and state.progress > Progress.NOT_STARTED:
+            raise ValueError("Cannot set match_url and for pre-populated state.")
+
+        self.match_url = match_url
+
+        if duplicate_action is None:
+            duplicate_action = config["import"]["duplicate_action"].as_str()  # type: ignore
+        self.duplicate_action = duplicate_action.lower()  # type: ignore
+        super().__init__(state, config_overlay)
+
+    # -------------------------------- Stages -------------------------------- #
+
+    def lookup_candidates(self, task: importer.ImportTask):
+        """Lookup candidates for the task."""
+
+        if self.match_url is not None:
+            task.search_ids = [self.match_url]
+
+        super().lookup_candidates(task)
+
+    def choose_match(self, task: importer.ImportTask):
+        self.logger.debug(f"choose_match {task}")
+
+        try:
+            match: BeetsAlbumMatch | BeetsTrackMatch = task.candidates[0]
+        except IndexError:
+            # FIXME: where and how is this handled? TODO: InvalidUrlError
+            raise ValueError("No matches found. Is the provided search URL correct?")
+
+        # Let plugins display info
+        results = plugins.send("import_task_before_choice", session=self, task=task)
+        actions = [action for action in results if action]
+
+        if len(actions) > 0:
+            # decide if we can just move past this and ignore the plugins
+            raise UserError(
+                f"Plugins returned actions, which is not supported for {self.__class__.__name__}"
+            )
+
+        return match
+
+    def stages(self) -> List[Stage[importer.ImportTask, Any]]:
+        """Return the stages of the pipeline."""
+        stages: List[Stage[importer.ImportTask, Any]] = []
+
+        if self.config["group_albums"] and not self.config["singletons"]:
+            # FIXME once migrated to next beets version
+            stages.append(group_albums(self))
+
+        stages += [
+            lookup_candidates(self),
+            identify_duplicates(self),
+            # FIXME: user_query calls task.choose_match, which calls session.choose_match.
+            # Better abstraction needed upstream.
+            user_query(self),
+        ]
+
+        # plugin stages
+        for stage_func in plugins.early_import_stages():
+            stages.append(
+                plugin_stage(
+                    self,
+                    stage_func,
+                    ProgressState(
+                        Progress.EARLY_IMPORTING,
+                        plugin_name=stage_func.__name__,
+                    ),
+                ),
+            )
+
+        for stage_func in plugins.import_stages():
+            stages.append(
+                plugin_stage(
+                    self,
+                    stage_func,
+                    ProgressState(
+                        Progress.IMPORTING,
+                        plugin_name=stage_func.__name__,
+                    ),
+                ),
+            )
+
+        # finally, move files
+        stages.append(
+            manipulate_files(self),
+        )
+
+        return stages
+
+    def resolve_duplicate(self, task: importer.ImportTask, found_duplicates):
+        log.debug(
+            f"Resolving duplicates for {task} with action {self.duplicate_action}"
+        )
+        match self.duplicate_action:
+            case "skip":
+                task.set_choice(importer.action.SKIP)
+            case "keep":
+                pass
+            case "remove":
+                task.should_remove_duplicates = True
+            case "merge":
+                task.should_merge_duplicates = True
+            case "ask":
+                task.set_choice(importer.action.SKIP)
+            case _:
+                log.warning(
+                    f"Unknown duplicate resolution action: {self.duplicate_action}"
+                )
+                task.set_choice(importer.action.SKIP)
 
 
 class InteractiveImportSession(BaseSessionNew):
@@ -256,6 +444,15 @@ class InteractiveImportSession(BaseSessionNew):
         set_config_defaults()
         super().__init__(state, config_overlay)
         self.communicator = communicator
+
+    def set_task_progress(
+        self, task: importer.ImportTask, progress: ProgressState | Progress | str
+    ):
+        """In addition to the default, emit the current state via connector."""
+        super().set_task_progress(task, progress)  # this mutates the state
+        self.communicator.emit_status_sync(self.state.progress)
+
+    # -------------------------------- Stages -------------------------------- #
 
     def identify_duplicates(self, task: importer.ImportTask):
         """Identify and flag candidates of a task that are duplicates."""
@@ -415,44 +612,24 @@ class InteractiveImportSession(BaseSessionNew):
         else:
             raise ValueError(f"Unknown duplicate resolution action: {sel}")
 
-    def set_task_progress(
-        self, task: importer.ImportTask, progress: ProgressState | Progress | str
-    ):
-        """Set the status of the import session, and communicate the status changes.
-
-        Note: currently we only implement status on the level of the whole import session,
-        but should eventually do this per selection (task).
-        """
-        super().set_task_progress(task, progress)  # this mutates the state
-        self.communicator.emit_status_sync(self.state.progress)
-
-    async def run_async(self):
-        """Run the import task.
-
-        Basically a customized version of `ImportSession.run`.
-        """
-        self.logger.info(f"import started {time.asctime()}")
-
-        # TODO: check some config values. that are not compatible with our code.
-        self.set_config(config["import"])
-
-        # FIXME: This should also deserialize saved state
-        self.pipeline = AsyncPipeline(read_tasks(self))
+    def stages(self) -> List[Stage[importer.ImportTask, Any]]:
+        """Return the stages of the pipeline."""
+        stages: List[Stage[importer.ImportTask, Any]] = []
 
         if self.config["group_albums"] and not self.config["singletons"]:
-            self.pipeline.add_stage(group_albums(self))
+            # FIXME once migrated to next beets version
+            stages.append(group_albums(self))
 
-        # main stages
-        self.pipeline.add_stage(
+        stages += [
             lookup_candidates(self),
             identify_duplicates(self),
             offer_match(self),
             user_query(self),
-        )
+        ]
 
         # plugin stages
         for stage_func in plugins.early_import_stages():
-            self.pipeline.add_stage(
+            stages.append(
                 plugin_stage(
                     self,
                     stage_func,
@@ -464,7 +641,7 @@ class InteractiveImportSession(BaseSessionNew):
             )
 
         for stage_func in plugins.import_stages():
-            self.pipeline.add_stage(
+            stages.append(
                 plugin_stage(
                     self,
                     stage_func,
@@ -476,22 +653,18 @@ class InteractiveImportSession(BaseSessionNew):
             )
 
         # finally, move files
-        self.pipeline.add_stage(
+        stages.append(
             manipulate_files(self),
         )
 
-        log.debug(f"Running pipeline stages: {self.pipeline.stages}")
+        return stages
 
-        plugins.send("import_begin", session=self)
-        try:
-            assert self.pipeline is not None
-            await self.communicator.emit_current_async()
-            await self.pipeline.run_async()
-        except importer.ImportAbortError:
-            self.logger.debug(f"Interactive import session aborted by user")
+    async def run_async(self):
+        await self.communicator.emit_current_async()
+        state = await super().run_async()
 
-        # Set progress to completed
+        # FIXME: Why do we need this here? Set progress to completed
         for task in self.state.tasks:
             self.set_task_progress(task, ProgressState(Progress.COMPLETED))
 
-        log.debug(f"Pipeline completed")
+        return state
