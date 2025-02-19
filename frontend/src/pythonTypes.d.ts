@@ -12,11 +12,11 @@ export interface SerializedCandidateState {
 	type: string;
 	distance: number;
 	info: Record<any, any>;
-	items: Array<Record<any, any>> | null;
-	tracks: Array<Record<any, any>> | null;
-	extra_tracks: Array<Record<any, any>> | null;
-	extra_items: Array<Record<any, any>> | null;
-	mapping: Record<number, number> | null;
+	items: null | Array<Record<any, any>>;
+	tracks: null | Array<Record<any, any>>;
+	extra_tracks: null | Array<Record<any, any>>;
+	extra_items: null | Array<Record<any, any>>;
+	mapping: null | Record<number, number>;
 }
 
 export interface SerializedTaskState {

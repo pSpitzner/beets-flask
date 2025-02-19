@@ -12,7 +12,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from beets_flask.importer.stages import Progress
 import requests
 from rq.decorators import job
 from sqlalchemy import delete
@@ -27,6 +26,7 @@ from beets_flask.config import config
 from beets_flask.database import Tag, db_session
 from beets_flask.database.models.state import SessionStateInDb
 from beets_flask.importer.session import PreviewSessionNew
+from beets_flask.importer.stages import Progress
 from beets_flask.importer.states import CandidateState, SessionState, TaskState
 from beets_flask.redis import import_queue, preview_queue, redis_conn, tag_queue
 from beets_flask.server.routes.errors import InvalidUsage

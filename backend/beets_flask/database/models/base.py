@@ -5,7 +5,7 @@ from typing import Self
 from uuid import uuid4
 
 from beets.importer import ImportTask, library
-from sqlalchemy import LargeBinary, select
+from sqlalchemy import Index, LargeBinary, select
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -24,7 +24,7 @@ class Base(DeclarativeBase):
     registry = registry(type_annotation_map={bytes: LargeBinary})
 
     id: Mapped[str] = mapped_column(primary_key=True)
-    created_at: Mapped[datetime] = mapped_column(default=func.now())
+    created_at: Mapped[datetime] = mapped_column(default=func.now(), index=True)
     updated_at: Mapped[datetime] = mapped_column(
         default=func.now(), onupdate=func.now()
     )
@@ -53,3 +53,6 @@ class Base(DeclarativeBase):
         finally:
             if close_after:
                 session.close()
+
+    def to_dict(self) -> dict:
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
