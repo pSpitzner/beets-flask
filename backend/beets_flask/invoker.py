@@ -95,13 +95,16 @@ def enqueue_tag_path(path: str, kind: str, session: Session | None = None):
 
 
 @job(timeout=600, queue=tag_queue, connection=redis_conn)
-def runPreview(tagId: str) -> str | None:
+def runPreview(tagId: str, force_retag: bool = False) -> str | None:
     """Start a preview Session on an existing tag.
 
     Parameters
     ----------
-    callback_url: str, optional
-        Called on success/failure of preview.
+    tagId : str
+        The ID of the tag to be previewed, used to load info from db.
+    force_retag : bool, optional
+        If true, we force identifying new matches, the current session (if
+        existing) will be replaced with a new one. Default False.
 
     Returns
     -------
@@ -130,7 +133,7 @@ def runPreview(tagId: str) -> str | None:
         )
 
         try:
-            # TODO: Check if session exists in db
+            # TODO: Check if session exists in db, create new if force_retag
             bs = PreviewSessionNew(SessionState(Path(bt.album_folder)))
             state = bs.run_sync()
 
@@ -162,14 +165,8 @@ def runPreview(tagId: str) -> str | None:
                 message=f"Tagging finished with status: {bt.status}",
             )
 
-        log.debug(f"Preview done. {bt.status=}, {bt.match_url=}")
+        log.info(f"Preview done. {bt.status=}, {bt.match_url=}")
         match_url = bt.match_url
-
-    # log what was commited, and use a new session handle to make sure
-    # it works in other threads.
-    with db_session() as session:
-        bt = Tag.get_by(Tag.id == tagId, session=session)
-        log.debug(f"Tag committed to database: {bt.to_dict() if bt else None}")
 
     return match_url
 
@@ -210,9 +207,8 @@ def runImport(
         bt = Tag.get_by(Tag.id == tagId, session=session)
         if bt is None:
             raise InvalidUsage(f"Tag {tagId} not found in database")
-        log.debug(f"Import task on {bt.to_dict()}")
+
         bt.status = "importing"
-        bt.updated_at = datetime.now()
         session.merge(bt)
         session.commit()
         update_client_view(
@@ -227,6 +223,7 @@ def runImport(
             message="Importing started",
         )
 
+        # @PS: I dont think we need this!
         if not as_is:
             match_url = match_url or _get_or_gen_match_url(tagId, session)
             if not match_url:
@@ -241,6 +238,13 @@ def runImport(
                 return []
 
         try:
+            # Get session (if any)
+            session = (
+                bt.session_state_in_db.to_session_state()
+                if bt.session_state_in_db
+                else SessionState(Path(bt.album_folder))
+            )
+            # TODO: FIX the following to use the new session
             if as_is:
                 bs = AsIsImportSession(
                     path=bt.album_folder,
@@ -254,17 +258,11 @@ def runImport(
                 )
             bs.run_and_capture_output()
 
-            bt.preview = bs.preview
-            bt.distance = bs.match_dist
-            bt.match_url = bs.match_url
-            bt.match_album = bs.match_album
-            bt.match_artist = bs.match_artist
-            bt.num_tracks = bs.match_num_tracks
             bt.track_paths_after = bs.track_paths_after_import
             bt.status = "imported" if bs.status == "ok" else bs.status
             log.debug(f"tried import {bt.status=}")
         except Exception as e:
-            log.debug(e)
+            log.error(e)
             bt.distance = 1.0
             bt.preview = colorize("text_error", str(e))
             bt.track_paths_after = []
@@ -276,10 +274,8 @@ def runImport(
                 )
             return []
         finally:
-            bt.updated_at = datetime.now()
             session.merge(bt)
             session.commit()
-            log.debug(f"finally {bt.status=}")
             update_client_view(
                 type="tag",
                 tagId=bt.id,

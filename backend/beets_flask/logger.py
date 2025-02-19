@@ -17,7 +17,7 @@ LOGGING_CONFIG = {
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
-            "level": "DEBUG",
+            "level": "INFO",
             "formatter": "standard",
             "stream": "ext://sys.stdout",
         },
@@ -33,7 +33,7 @@ LOGGING_CONFIG = {
     "loggers": {
         "": {  # root logger
             "handlers": ["console", "file"],
-            "level": os.getenv("LOG_LEVEL_OTHERS", logging.DEBUG),
+            "level": os.getenv("LOG_LEVEL_OTHERS", logging.WARNING),
             "propagate": False,
         },
         "beets-flask": {
