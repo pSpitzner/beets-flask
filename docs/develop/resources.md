@@ -38,8 +38,10 @@ BEETSFLASKDIR="/config/beets-flask"
 
 We use docker for development and deployment. You can find the files needed to build the docker images in the `docker` folder.
 
+Redis-Caching seems to be very persistent and we have not figured out how to completely reset it without _rebuilding_ the container.
+Thus, currently, after code changes that run inside a redis worker `docker-compose up --build` is needed even when live-mounting the repo.
 
-### Entrypoins
+### Entrypoints
 
 We use different entrypoints for the different environments. You can find all scripts in the `docker/entrypoints` folder.
 

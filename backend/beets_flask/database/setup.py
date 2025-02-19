@@ -75,7 +75,6 @@ def db_session(session: Session | None = None):
     ```
     """
     is_outermost = session is None
-    log.debug(f"Is outermost: {is_outermost}")
     if is_outermost:
         try:
             session = session_factory()

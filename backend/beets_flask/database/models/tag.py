@@ -3,9 +3,11 @@ from __future__ import annotations
 import glob
 import os
 from datetime import datetime
+from functools import cache
 from typing import List, Optional
 from uuid import uuid4 as uuid
 
+from deprecated import deprecated
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.orm.session import make_transient
@@ -55,14 +57,6 @@ class Tag(Base):
     _group_id: Mapped[str] = mapped_column(ForeignKey("tag_group.id"))
     _tag_group: Mapped[TagGroup] = relationship(back_populates="tag_ids")
 
-    # refactor: ✔ candidates -> TODO: currenlty all as byes, not searchable in db
-    distance: Mapped[Optional[float]]
-    match_url: Mapped[Optional[str]]
-    match_album: Mapped[Optional[str]]
-    match_artist: Mapped[Optional[str]]
-    preview: Mapped[Optional[str]]
-    num_tracks: Mapped[Optional[int]]
-
     # temporary refactor: this should all be contained in session state in the future
     _session_state_in_db_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("session.id"), nullable=True
@@ -70,10 +64,6 @@ class Tag(Base):
     session_state_in_db: Mapped[Optional[SessionStateInDb]] = relationship(
         "SessionStateInDb", back_populates="tag"
     )
-
-    # Time stamps # refactor: ✔ base session
-    # created_at: Mapped[datetime]
-    # updated_at: Mapped[datetime]
 
     # the track list we keep ourselves, as strings so we can store in sqlite
     _track_paths: Mapped[Optional[str]]
@@ -85,11 +75,7 @@ class Tag(Base):
         album_folder: str,
         kind: str,
         id: Optional[str] = None,
-        distance=None,
-        match_url=None,
         status=None,
-        num_tracks=None,
-        preview=None,
         track_paths_before: Optional[list[str]] = None,
         track_paths_after: Optional[list[str]] = None,
     ):
@@ -99,18 +85,72 @@ class Tag(Base):
         # self.created_at = datetime.now()
         # self.updated_at = datetime.now()
         self._group_id = "Unsorted"
-        self.distance = distance
-        self.match_url = match_url
         self.status = status or "pending"
-        self.num_tracks = num_tracks
-        self.preview = (
-            preview
-            or f"Tagging {self.album_folder if self.album_folder else '...'} \n\n"
-        )
         self.kind = kind
         self.track_paths_before = track_paths_before or []
         self.track_paths_after = track_paths_after or []
         # self.track_paths = self.eligible_track_paths()
+
+    @property
+    def best_candidate(self):
+        if not self.session_state_in_db:
+            return None
+        session_state = self.session_state_in_db.to_session_state()
+        # FIXME: task to session 1 to 1 mapping might not be accurate
+        # assume single task, until we rework frontend
+        best_candidate = session_state.task_states[0].best_candidate_state
+        return best_candidate
+
+    @property
+    @deprecated(reason="Historical reasons, should be removed")
+    def distance(self):
+        bc = self.best_candidate
+        try:
+            if bc:
+                return float(bc.distance)
+        except:
+            return None
+        return None
+
+    @property
+    @deprecated(reason="Historical reasons, should be removed")
+    def preview(self) -> str | None:
+        bc = self.best_candidate
+        if bc:
+            return bc.diff_preview
+        return None
+
+    @property
+    @deprecated(reason="Historical reasons, should be removed")
+    def match_url(self):
+        bc = self.best_candidate
+        if bc:
+            return bc.url
+        return None
+
+    @property
+    @deprecated(reason="Historical reasons, should be removed")
+    def match_album(self):
+        bc = self.best_candidate
+        if bc:
+            return bc.album
+        return None
+
+    @property
+    @deprecated(reason="Historical reasons, should be removed")
+    def match_artist(self):
+        bc = self.best_candidate
+        if bc:
+            return bc.artist
+        return None
+
+    @property
+    @deprecated(reason="Historical reasons, should be removed")
+    def num_tracks(self):
+        bc = self.best_candidate
+        if bc:
+            return bc.num_tracks
+        return None
 
     # parse list of strings as \n delimited. sqlite supports no lists.
     @property
@@ -175,10 +215,18 @@ class Tag(Base):
             self._tag_group = tag_group
 
     def to_dict(self):
-        data = {c.name: getattr(self, c.name) for c in self.__table__.columns}  # type: ignore
+        data = {c.name: getattr(self, c.name) for c in self.__table__.columns}
         data["track_paths_after"] = self.track_paths_after
         data["track_paths_before"] = self.track_paths_before
         data["group_id"] = self.group_id
+
+        # FIXME: Remove this once we have a better solution/ lookup
+        data["distance"] = self.distance
+        data["preview"] = self.preview
+        data["match_url"] = self.match_url
+        data["match_album"] = self.match_album
+        data["match_artist"] = self.match_artist
+        data["num_tracks"] = self.num_tracks
 
         return data
 

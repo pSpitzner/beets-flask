@@ -10,6 +10,9 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
 
+VALID_PATHS = ["1992", "1992/Chant [SINGLE]", "Annix", "Annix/Antidote"]
+
+
 # Path relative to data/audio
 @pytest.fixture
 def album_paths(tmpdir_factory):
@@ -17,8 +20,8 @@ def album_paths(tmpdir_factory):
     tmpdir = tmpdir_factory.mktemp("audio")
 
     destinations = []
-    paths = ["1992", "1992/Chant [Single]", "Annix", "Annix/Antidote"]
-    for path in paths:
+
+    for path in VALID_PATHS:
         # Copy files
         source = Path(__file__).parent.parent / "data" / "audio" / path
         destination = tmpdir / path

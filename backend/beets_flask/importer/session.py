@@ -205,7 +205,8 @@ class PreviewSessionNew(BaseSessionNew):
         self.pipeline.add_stage(
             lookup_candidates(self),
             identify_duplicates(self),
-            # offer_match(self) -> invokes plugins.send("import_task_before_choice", session=self, task=task). check if we want to enable this plugin stage
+            # TODO: check if we want to enable this plugin stage
+            # offer_match(self) -> invokes plugins.send("import_task_before_choice", session=self, task=task).
         )
 
         log.debug(f"Running pipeline stages: {self.pipeline.stages}")
@@ -347,7 +348,7 @@ class InteractiveImportSession(BaseSessionNew):
             raise ValueError("No candidate state found. This should not happen!")
 
         # the dummmy candidate to signal we want to import `asis` has a hard-coded id:
-        if candidate.id.startswith("asis"):
+        if candidate.is_asis:
             return importer.action.ASIS
 
         match: BeetsAlbumMatch = candidate.match  # type: ignore

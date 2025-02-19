@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 
@@ -5,7 +6,10 @@ import pytest
 
 from beets_flask.importer.session import PreviewSessionNew
 from beets_flask.importer.states import SessionState
-from tests.test_importer.conftest import use_mock_tag_album
+from tests.test_importer.conftest import VALID_PATHS, use_mock_tag_album
+
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 
 @pytest.mark.skip(reason="This test is only for generating!")
@@ -15,8 +19,7 @@ def test_generate_lookup():
 
     They should normally exist in the repository already.
     """
-    paths = ["1992", "1992/Chant [Single]", "Annix", "Annix/Antidote"]
-    for path in paths:
+    for path in VALID_PATHS:
         path = Path(__file__).parent.parent / "data" / "audio" / path
         use_mock_tag_album(str(path))
 
@@ -34,3 +37,26 @@ def test_album_exists(album_paths: list[Path]):
         assert ap.exists()
         assert ap.is_dir()
         assert len(list(ap.glob("**/*.mp3"))) > 0
+
+
+class TestPreviewSessions:
+
+    def get_state(self, path: Path):
+
+        p = Path(__file__).parent.parent / "data" / "audio" / path
+        self.session = PreviewSessionNew(SessionState(p))
+        use_mock_tag_album(str(p))
+        return self.session.run_sync()
+
+    @pytest.mark.parametrize("path", VALID_PATHS)
+    def test_candidates_url(self, path):
+        state = self.get_state(path)
+        for task in state.task_states:
+            for candidate in task.candidate_states:
+                if candidate.id.startswith("asis"):
+                    assert candidate.url is None
+                else:
+                    assert candidate.url is not None
+                    assert candidate.url.startswith("https")
+
+        log.debug(f"State: {state}")

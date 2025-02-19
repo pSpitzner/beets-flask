@@ -13,9 +13,9 @@ from uuid import uuid4 as uuid
 import beets.ui.commands as uicommands
 from beets import autotag, importer, library
 
+from beets_flask import log
 from beets_flask.config import config
 from beets_flask.importer.progress import Progress, ProgressState
-from beets_flask.logger import log
 from beets_flask.utility import capture_stdout_stderr
 
 from .types import (
@@ -249,8 +249,13 @@ class TaskState:
         """
         best = None
         for candidate in self.candidate_states:
-            if best is None or candidate.distance.distance < best.distance.distance:
+            if candidate.is_asis:
+                continue
+            if best is None or candidate.distance < best.distance.distance:
                 best = candidate
+                log.debug(
+                    f"Using candidate with distance: {candidate.distance.distance}"
+                )
         return best
 
     # ---------------------------------------------------------------------------- #
@@ -365,6 +370,7 @@ class CandidateState:
             return kwargs
 
         tracks = [autotag.TrackInfo(**_generate_kwargs(i)) for i in items]
+
         match = BeetsAlbumMatch(
             distance=autotag.Distance(),
             info=autotag.AlbumInfo(
@@ -454,11 +460,16 @@ class CandidateState:
         """URL of the match."""
         if isinstance(self.match, BeetsAlbumMatch):
             try:
-                return self.match.info.url
+                return self.match.info.data_url
             except AttributeError:  # not set in the match
                 return None
 
         return None
+
+    @property
+    def is_asis(self) -> bool:
+        """Returns True if this is an "as is" candidate."""
+        return self.id.startswith("asis-")
 
     # ------------------------------------ utility ----------------------------------- #
 
@@ -574,13 +585,12 @@ class CandidateState:
 
 
 # class AsIsCandidateState(CandidateState):
-#     """
-#     Just a thin wrapper so we can preset the "as is" nicely in frontend, inlcuding
+#     """Just a thin wrapper so we can preset the "as is" nicely in frontend, inlcuding
 #     a preview of tracks and meta data.
 #     """
 
-#     def __post_init__(self):
-#         super().__post_init__()
+#     pass
+
 
 # ---------------------------- Serialization types --------------------------- #
 # Used for getting typehints in the frontend. I.e. we generate the types from

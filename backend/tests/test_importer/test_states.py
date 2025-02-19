@@ -1,19 +1,19 @@
+import logging
 from pathlib import Path
 from typing import List
+
+import pytest
+from beets import autotag, importer
+
 from beets_flask.importer.states import (
-    SessionState,
-    TaskState,
     CandidateState,
     ProgressState,
+    SessionState,
+    TaskState,
 )
 from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackInfo
-import pytest
 
 from ..conftest import beets_lib_item
-from beets import importer
-from beets import autotag
-
-import logging
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +39,9 @@ def import_task(beets_lib):
     task = importer.ImportTask(paths=[b"a path"], toppath=b"top path", items=[item])
 
     track_info = autotag.TrackInfo(title="match title")
-    album_match = get_album_match([track_info], [item], album="match album")
+    album_match = get_album_match(
+        [track_info], [item], album="match album", data_url="url"
+    )
 
     task.candidates = [album_match]
     return task
@@ -95,10 +97,11 @@ def test_candidate_state(import_task):
     assert candidate.distance == candidate.match.distance
     assert candidate.num_tracks == len(candidate.match.info.tracks)
     assert candidate.num_items == len(candidate.items)
-    assert candidate.url == None
+    assert candidate.url == import_task.candidates[0].info.data_url
+    assert candidate.url == "url"
 
-    # Test asis candidate
-    asis_candidate = candidate_states[1]
+    # Test asis candidate (last in list)
+    asis_candidate = candidate_states[-1]
     assert asis_candidate.id.startswith("asis")
     assert asis_candidate.type == "album"
 

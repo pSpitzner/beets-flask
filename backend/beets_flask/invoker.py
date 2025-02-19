@@ -16,6 +16,7 @@ import requests
 from rq.decorators import job
 from sqlalchemy import delete
 
+from beets_flask import log
 from beets_flask.beets_sessions import (
     AsIsImportSession,
     MatchedImportSession,
@@ -31,7 +32,6 @@ from beets_flask.importer.states import CandidateState, SessionState, TaskState
 from beets_flask.redis import import_queue, preview_queue, redis_conn, tag_queue
 from beets_flask.server.routes.errors import InvalidUsage
 from beets_flask.server.routes.status import update_client_view
-from beets_flask.utility import log
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -130,51 +130,28 @@ def runPreview(tagId: str) -> str | None:
         )
 
         try:
-            # bs = PreviewSession(path=bt.album_folder)
-            # bs.run_and_capture_output()
-
             # TODO: Check if session exists in db
-            session_state = SessionState(Path(bt.album_folder))
-            bs = PreviewSessionNew(session_state)
-            session_state = bs.run_sync()
+            bs = PreviewSessionNew(SessionState(Path(bt.album_folder)))
+            state = bs.run_sync()
 
-            # TESTING: assume single task
-            try:
-                task_state = session_state.task_states[0]
-            except IndexError:
-                raise ValueError("No task states found in session state")
+            state_in_db = SessionStateInDb.from_session_state(state)
+            session.add(state_in_db)
+            bt.session_state_in_db = state_in_db
 
-            candidate_state = task_state.best_candidate_state
-            if candidate_state is None:
-                raise ValueError("No candidate state found in task state")
-
-            # TODO: Refactor to not duplicate the state to the db
-            bt.preview = candidate_state.diff_preview
-            bt.distance = float(candidate_state.distance)
-            bt.match_url = candidate_state.url
-            bt.match_album = candidate_state.album
-            bt.match_artist = candidate_state.artist
-            bt.num_tracks = candidate_state.num_tracks
-            state = SessionStateInDb.from_session_state(session_state)
-            session.merge(state)
-            bt.session_state_in_db = state
-            log.warning(f"Preview done. {bt.session_state_in_db}")
-
-            prog = session_state.progress
             bt.status = (
                 "tagged"
+                # If only the asis candidate exits, no match was found.
                 if (
-                    bt.match_url is not None
-                    and session_state.progress >= Progress.LOOKING_UP_CANDIDATES
+                    len(state.task_states[0].candidate_states) > 1
+                    and state.progress >= Progress.LOOKING_UP_CANDIDATES
                 )
                 else "failed"
             )
         except Exception as e:
-            log.debug(e)
+            log.error(e)
             bt.status = "failed"
             return None
         finally:
-            bt.updated_at = datetime.now()
             session.merge(bt)
             session.commit()
             update_client_view(
@@ -185,14 +162,14 @@ def runPreview(tagId: str) -> str | None:
                 message=f"Tagging finished with status: {bt.status}",
             )
 
-        log.debug(f"preview done. {bt.status=}, {bt.match_url=}")
+        log.debug(f"Preview done. {bt.status=}, {bt.match_url=}")
         match_url = bt.match_url
 
     # log what was commited, and use a new session handle to make sure
     # it works in other threads.
     with db_session() as session:
         bt = Tag.get_by(Tag.id == tagId, session=session)
-        log.debug(f"Tag commited to database: {bt.to_dict() if bt else None}")
+        log.debug(f"Tag committed to database: {bt.to_dict() if bt else None}")
 
     return match_url
 
