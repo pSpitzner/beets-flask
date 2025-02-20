@@ -7,6 +7,7 @@ from beets import autotag, importer
 
 from beets_flask.importer.states import (
     CandidateState,
+    Progress,
     ProgressState,
     SessionState,
     TaskState,
@@ -47,7 +48,7 @@ def import_task(beets_lib):
     return task
 
 
-def test_task(import_task):
+def test_task_fixture(import_task):
     assert isinstance(import_task, importer.ImportTask)
 
     # Test if paths is bytes
@@ -59,81 +60,172 @@ def test_task(import_task):
     assert import_task.toppath == b"top path"
 
 
-def test_task_state(import_task):
-    import_task.candidates = []
+class TestTaskState:
+    task: importer.ImportTask
+    task_state: TaskState
 
-    task_state = TaskState(import_task, session_state=None)
-    # in our code, we cast to proper path type
-    assert isinstance(task_state.toppath, Path)
-    assert isinstance(task_state.paths, list)
-    for path in task_state.paths:
-        assert isinstance(path, Path)
+    @pytest.fixture(autouse=True)
+    def gen_task_state(self, import_task):
+        self.task = import_task
+        self.task_state = TaskState(import_task)
 
-    assert task_state.paths == [Path("a path")]
-    assert task_state.toppath == Path("top path")
-    assert task_state.items == [import_task.items[0]]
+    def test_properties(self):
+        task_state = self.task_state
+        assert task_state.id is not None
+        assert task_state.toppath == Path("top path")
+        assert task_state.paths == [Path("a path")]
+        assert task_state.items == [self.task.items[0]]
+        assert task_state.progress == Progress.NOT_STARTED
 
-    # Task state always has asis candidate
-    assert task_state.best_candidate_state is not None
-    assert task_state.best_candidate_state.id.startswith("asis")
+        assert len(task_state.candidate_states) == len(self.task.candidates) + 1
 
+    def test_best_candidate(self, import_task):
+        task_state = self.task_state
+        assert task_state.best_candidate_state is not None
+        assert task_state.best_candidate_state.match is import_task.candidates[0]
 
-def test_candidate_state(import_task):
-    task_state = TaskState(import_task, session_state=None)
-    candidate_states = task_state.candidate_states
+        import_task.candidates = []
+        task_state = TaskState(import_task)
+        # Should be none if no candidates (asis is not counted!)
+        assert task_state.best_candidate_state is None
 
-    assert len(candidate_states) == 2  # One from import_task and one asis_candidate
-    candidate = candidate_states[0]
+    def test_serialize(self):
+        task_state = self.task_state
+        serialized = task_state.serialize()
+        assert isinstance(serialized, dict)
+        assert serialized["id"] == task_state.id
+        assert serialized["toppath"] == str(task_state.toppath)
+        assert serialized["paths"] == [str(p) for p in task_state.paths]
+        assert serialized["items"] == [{}]
 
-    assert isinstance(candidate, CandidateState)
-    assert candidate.id is not None
-    assert candidate.match == import_task.candidates[0]
-    assert candidate.task_state == task_state
-    assert candidate.type == "album"
-    assert candidate.cur_artist == str(import_task.cur_artist)
-    assert candidate.cur_album == str(import_task.cur_album)
-    assert candidate.items == import_task.items
-    assert candidate.tracks == candidate.match.info.tracks
-    assert candidate.distance == candidate.match.distance
-    assert candidate.num_tracks == len(candidate.match.info.tracks)
-    assert candidate.num_items == len(candidate.items)
-    assert candidate.url == import_task.candidates[0].info.data_url
-    assert candidate.url == "url"
+        # Can be serialized with json.dumps
+        import json
 
-    # Test asis candidate (last in list)
-    asis_candidate = candidate_states[-1]
-    assert asis_candidate.id.startswith("asis")
-    assert asis_candidate.type == "album"
+        json.dumps(serialized)
 
 
-def test_candidate_state_diff_preview(import_task):
-    task_state = TaskState(import_task, session_state=None)
-    candidate = task_state.candidate_states[0]
+class TestCandidateState:
 
-    diff_preview = candidate.diff_preview
-    assert isinstance(diff_preview, str)
-    assert "match album" in diff_preview
+    task: importer.ImportTask
+    task_state: TaskState
+    candidates: list[CandidateState]
+
+    @pytest.fixture(autouse=True)
+    def gen_candidate_state(self, import_task):
+        task_state = TaskState(import_task)
+        candidate_states = task_state.candidate_states
+
+        assert len(candidate_states) == 2  # One from import_task and one asis_candidate
+        self.candidates = candidate_states
+        self.task = import_task
+        self.task_state = task_state
+
+    def test_properties(self):
+        candidate = self.candidates[0]
+        task = self.task
+
+        assert isinstance(candidate, CandidateState)
+        assert candidate.id is not None
+        assert candidate.match == task.candidates[0]
+        assert candidate.task_state == self.task_state
+        assert candidate.type == "album"
+        assert candidate.cur_artist == str(task.cur_artist)
+        assert candidate.cur_album == str(task.cur_album)
+        assert candidate.items == task.items
+        assert candidate.tracks == candidate.match.info.tracks
+        assert candidate.distance == candidate.match.distance
+        assert candidate.num_tracks == len(candidate.match.info.tracks)
+        assert candidate.num_items == len(candidate.items)
+        assert candidate.url == task.candidates[0].info.data_url
+        assert candidate.url == "url"
+
+    def test_asis_candidate(self):
+        # Test asis candidate (last in list)
+        asis_candidate = self.candidates[-1]
+        assert asis_candidate.id.startswith("asis")
+        assert asis_candidate.type == "album"
+
+    def test_diff_preview(self):
+        candidate = self.candidates[0]
+        diff_preview = candidate.diff_preview
+        assert isinstance(diff_preview, str)
+        assert "match album" in diff_preview
+
+    def test_identify_duplicates(self, beets_lib):
+        candidate = self.candidates[0]
+        duplicates = candidate.identify_duplicates(beets_lib)
+        assert isinstance(duplicates, list)
+        assert len(duplicates) == 0
+        assert candidate.has_duplicates_in_library is False
+
+    def test_serialize(self):
+        candidate = self.candidates[0]
+        serialized = candidate.serialize()
+        assert isinstance(serialized, dict)
+        assert serialized["id"] == candidate.id
+        assert serialized["cur_artist"] == candidate.cur_artist
+        assert serialized["cur_album"] == candidate.cur_album
+        assert serialized["type"] == candidate.type
+        assert serialized["distance"] == candidate.distance.distance
+        assert serialized["duplicate_in_library"] == candidate.has_duplicates_in_library
+
+        # Can be serialized with json.dumps
+        import json
+
+        json.dumps(serialized)
 
 
-def test_candidate_state_identify_duplicates(import_task, beets_lib):
-    task_state = TaskState(import_task, session_state=None)
-    candidate = task_state.candidate_states[0]
+class TestSessionState:
 
-    duplicates = candidate.identify_duplicates(beets_lib)
-    assert isinstance(duplicates, list)
-    assert len(duplicates) == 0
-    assert candidate.has_duplicates_in_library is False
+    session_state: SessionState
 
+    @pytest.fixture(autouse=True)
+    def gen_session_state(self, import_task):
+        self.session_state = SessionState(Path("not_really_needed"))
+        self.session_state.upsert_task(import_task)
 
-def test_candidate_state_serialize(import_task):
-    task_state = TaskState(import_task, session_state=None)
-    candidate = task_state.candidate_states[0]
+    def test_multiple_upserts(self, import_task):
+        session_state = self.session_state
+        session_state.upsert_task(import_task)
+        session_state.upsert_task(import_task)
+        assert len(session_state.task_states) == 1
 
-    serialized = candidate.serialize()
-    assert isinstance(serialized, dict)
-    assert serialized["id"] == candidate.id
-    assert serialized["cur_artist"] == candidate.cur_artist
-    assert serialized["cur_album"] == candidate.cur_album
-    assert serialized["type"] == candidate.type
-    assert serialized["distance"] == candidate.distance.distance
-    assert serialized["duplicate_in_library"] == candidate.has_duplicates_in_library
+    def test_progress(self, import_task):
+        session_state = self.session_state
+
+        assert session_state.progress == Progress.NOT_STARTED
+
+        for task in session_state.task_states:
+            assert task.progress == Progress.NOT_STARTED
+            task.set_progress(Progress.IMPORTING)
+
+        # Should be minimal progress of all tasks i.e. IMPORTING
+        assert session_state.progress == Progress.IMPORTING
+
+        # Should return notstarted if no tasks
+        session_state._task_states = []
+        assert session_state.progress == Progress.NOT_STARTED
+
+    def test_get_task(self, import_task):
+        session_state = self.session_state
+        task_state = session_state.get_task_state_for_task(import_task)
+        assert task_state is not None
+        assert task_state.task is import_task
+
+        # By id
+        task_state = session_state.get_task_state_by_id(task_state.id)
+        assert task_state is not None
+        assert task_state.task is import_task
+
+    def test_serialize(self):
+        session_state = self.session_state
+        serialized = session_state.serialize()
+        assert isinstance(serialized, dict)
+        assert serialized["id"] == session_state.id
+        assert len(serialized["selection_states"]) == len(session_state.task_states)
+        assert serialized["completed"] == False
+
+        # Can be serialized with json.dumps
+        import json
+
+        json.dumps(serialized)

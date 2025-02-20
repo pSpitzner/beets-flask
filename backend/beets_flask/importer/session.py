@@ -104,7 +104,7 @@ class BaseSessionNew(importer.ImportSession, ABC):
         )
         # Hacky workaround to use our logging, to allow plugins to communicate
         self.logger.handlers = log.handlers
-        log.debug(f"Created new {self.__name__} for {path}")
+        log.debug(f"Created new {self.__class__.__name__} for {path}")
 
     @deprecated
     def run_and_capture_output(self) -> tuple[str, str]:
@@ -219,7 +219,7 @@ class BaseSessionNew(importer.ImportSession, ABC):
         Does not set tasks to completed at the end.
         Take care of this in subclasses.
         """
-        log.info(f"{self.__name__} running async {time.asctime()}")
+        log.info(f"{self.__class__.__name__} running async {time.asctime()}")
         # For now, until we improve the upstream beets config logic,
         # adhere to importer.ImportSession convention and create a local copy
         # of the config.

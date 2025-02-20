@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Self
+from typing import Any, Mapping, Self, TypedDict
 from uuid import uuid4
 
 from beets.importer import ImportTask, library
@@ -54,5 +54,5 @@ class Base(DeclarativeBase):
             if close_after:
                 session.close()
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> Mapping:
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}

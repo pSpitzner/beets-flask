@@ -58,3 +58,10 @@ class ProgressState:
         if isinstance(other, Progress):
             other = ProgressState(other)
         return self.progress < other.progress
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Progress):
+            return self.progress == other
+        if not isinstance(other, ProgressState):
+            return False
+        return self.progress == other.progress

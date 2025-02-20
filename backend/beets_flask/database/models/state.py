@@ -11,7 +11,7 @@ import pickle
 from datetime import datetime
 from pathlib import Path
 from pickletools import bytes1
-from typing import List
+from typing import TYPE_CHECKING, List
 from uuid import uuid4
 
 from beets.importer import ImportTask, library
@@ -27,7 +27,14 @@ from sqlalchemy.sql import func
 
 from beets_flask.database.models.base import Base
 from beets_flask.importer.progress import Progress, ProgressState
-from beets_flask.importer.states import CandidateState, SessionState, TaskState
+from beets_flask.importer.states import (
+    CandidateState,
+    SerializedCandidateState,
+    SerializedSessionState,
+    SerializedTaskState,
+    SessionState,
+    TaskState,
+)
 from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackMatch
 
 
@@ -40,7 +47,7 @@ class SessionStateInDb(Base):
 
     __tablename__ = "session"
 
-    tasks: Mapped[List[TaskStateInDb]] = relationship()
+    tasks: Mapped[List[TaskStateInDb]] = relationship(back_populates="session")
     path: Mapped[bytes] = mapped_column(LargeBinary)
     tag = relationship("Tag", uselist=False, back_populates="session_state_in_db")
 
@@ -76,14 +83,22 @@ class SessionStateInDb(Base):
         session._task_states = [task.to_task_state(session) for task in self.tasks]
         return session
 
+    def to_dict(self) -> SerializedSessionState:
+        return self.to_session_state().serialize()
+
 
 class TaskStateInDb(Base):
     """Represents an import task."""
 
     __tablename__ = "task"
 
+    # Relationships
     session_id: Mapped[str] = mapped_column(ForeignKey("session.id"))
-    candidates: Mapped[List[CandidateStateInDb]] = relationship()
+    session: Mapped[SessionStateInDb] = relationship(back_populates="tasks")
+
+    candidates: Mapped[List[CandidateStateInDb]] = relationship(
+        back_populates="task", lazy="subquery"
+    )
 
     # To reconstruct the beets task we also need
     toppath: Mapped[bytes | None]
@@ -133,11 +148,14 @@ class TaskStateInDb(Base):
             items=pickle.loads(self.items),
         )
 
-        task = TaskState(beets_task, session_state)
+        task = TaskState(beets_task)
         task.id = self.id
         task.candidate_states = [c.to_candidate_state(task) for c in self.candidates]
         task.progress.progress = self.progress
         return task
+
+    def to_dict(self) -> SerializedTaskState:
+        return self.to_task_state().serialize()
 
 
 class CandidateStateInDb(Base):
@@ -146,6 +164,7 @@ class CandidateStateInDb(Base):
     __tablename__ = "candidate"
 
     task_id: Mapped[str] = mapped_column(ForeignKey("task.id"))
+    task: Mapped[TaskStateInDb] = relationship(back_populates="candidates")
 
     # Should deserialize to AlbumMatch|TrackMatch
     # ~4kb per match
@@ -173,6 +192,17 @@ class CandidateStateInDb(Base):
         candidate = CandidateState(pickle.loads(self.match), task_state)
         candidate.id = self.id
         return candidate
+
+    def to_dict(self) -> SerializedCandidateState:
+
+        task = TaskStateInDb.get_by(TaskStateInDb.id == self.task_id)
+        if task is None:
+            raise ValueError(f"Task with id {self.task_id} not found.")
+
+        for candidate in task.to_task_state().candidate_states:
+            if candidate.id == self.id:
+                return candidate.serialize()
+        raise ValueError(f"Candidate with id {self.id} not found.")
 
 
 __all__ = ["SessionStateInDb", "TaskStateInDb", "CandidateStateInDb"]

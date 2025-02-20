@@ -17,6 +17,7 @@ from beets_flask import log
 from beets_flask.config import config
 from beets_flask.importer.progress import Progress, ProgressState
 from beets_flask.utility import capture_stdout_stderr
+from deprecated import deprecated
 
 from .types import (
     AlbumInfo,
@@ -99,11 +100,12 @@ class SessionState:
         state = self.get_task_state_for_task(task)
 
         if state is None:
-            state = TaskState(task, self)
+            state = TaskState(task)
             self._task_states.append(state)
 
         return state
 
+    @deprecated
     def await_completion(self):
         while not self.completed:
             time.sleep(0.5)
@@ -147,11 +149,9 @@ class TaskState:
     current_search_artist: str | None = None
     current_search_album: str | None = None
 
-    # Reference upwards
-    session_state: SessionState
-
     def __init__(
-        self, task: importer.ImportTask, session_state: SessionState | None
+        self,
+        task: importer.ImportTask,
     ) -> None:
         self.id: str = str(uuid())
         # we might run into inconsistencies here, if candidates of the task
@@ -159,8 +159,6 @@ class TaskState:
         self.task = task
         self.candidate_states = [CandidateState(c, self) for c in self.task.candidates]
         self.candidate_states.append(CandidateState.asis_candidate(self))
-
-        self.session_state = session_state or SessionState(task.toppath)
 
     @property
     def candidates(
@@ -558,9 +556,15 @@ class CandidateState:
             # where first index is in self.items, and second is in self.match.info.tracks
             mapping = dict()
             for item, track in self.match.mapping.items():  # type: ignore
-                idx = self.items.index(item)
-                tdx = self.match.info.tracks.index(track)  # type: ignore
-                mapping[idx] = tdx
+                idx = tdx = None
+                for idx, _ in enumerate(self.items):
+                    if item.path == self.items[idx].path:
+                        break
+                for tdx, _ in enumerate(self.match.info.tracks):
+                    if track.track_id == self.match.info.tracks[tdx].track_id:
+                        break
+                if idx is not None and tdx is not None:
+                    mapping[idx] = tdx
         else:
             raise ValueError(f"Unknown type {self.type}")
 
