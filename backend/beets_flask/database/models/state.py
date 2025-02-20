@@ -47,7 +47,14 @@ class SessionStateInDb(Base):
 
     __tablename__ = "session"
 
-    tasks: Mapped[List[TaskStateInDb]] = relationship(back_populates="session")
+    tasks: Mapped[List[TaskStateInDb]] = relationship(
+        back_populates="session",
+        # all: All operations cascade i.e. session.merge!
+        # delete-orphan: Automatic deletion of tasks if not referenced
+        # by a session anymore
+        # See also https://docs.sqlalchemy.org/en/20/orm/cascades.html#unitofwork-cascades
+        cascade="all, delete-orphan",
+    )
     path: Mapped[bytes] = mapped_column(LargeBinary)
     tag = relationship("Tag", uselist=False, back_populates="session_state_in_db")
 
@@ -97,7 +104,7 @@ class TaskStateInDb(Base):
     session: Mapped[SessionStateInDb] = relationship(back_populates="tasks")
 
     candidates: Mapped[List[CandidateStateInDb]] = relationship(
-        back_populates="task", lazy="subquery"
+        back_populates="task", cascade="all, delete-orphan"
     )
 
     # To reconstruct the beets task we also need
