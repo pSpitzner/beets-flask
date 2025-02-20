@@ -23,10 +23,10 @@ from beets_flask.beets_sessions import (
     PreviewSession,
     colorize,
 )
-from beets_flask.config import config
+from beets_flask.config import get_config
 from beets_flask.database import Tag, db_session
 from beets_flask.database.models.state import SessionStateInDb
-from beets_flask.importer.session import PreviewSessionNew
+from beets_flask.importer.session import ImportSessionNew, PreviewSessionNew
 from beets_flask.importer.stages import Progress
 from beets_flask.importer.states import CandidateState, SessionState, TaskState
 from beets_flask.redis import import_queue, preview_queue, redis_conn, tag_queue
@@ -176,7 +176,6 @@ def runImport(
     tagId: str,
     match_url: str | None = None,
     as_is: bool = False,
-    callback_url: str | None = None,
 ) -> list[str]:
     """Start Import session for a tag.
 
@@ -223,55 +222,37 @@ def runImport(
             message="Importing started",
         )
 
-        # @PS: I dont think we need this!
-        if not as_is:
-            match_url = match_url or _get_or_gen_match_url(tagId, session)
-            if not match_url:
-                if callback_url:
-                    requests.post(
-                        callback_url,
-                        json={
-                            "status": "beets import failed: no match url found.",
-                            "tag": bt.to_dict(),
-                        },
-                    )
-                return []
-
         try:
             # Get session (if any)
-            session = (
+            state = (
                 bt.session_state_in_db.to_session_state()
                 if bt.session_state_in_db
                 else SessionState(Path(bt.album_folder))
             )
             # TODO: FIX the following to use the new session
+            """
             if as_is:
                 bs = AsIsImportSession(
                     path=bt.album_folder,
                     tag_id=bt.id,
                 )
             else:
-                bs = MatchedImportSession(
-                    path=bt.album_folder,
-                    match_url=match_url,
-                    tag_id=bt.id,
-                )
-            bs.run_and_capture_output()
+            """
 
-            bt.track_paths_after = bs.track_paths_after_import
-            bt.status = "imported" if bs.status == "ok" else bs.status
-            log.debug(f"tried import {bt.status=}")
+            bs = ImportSessionNew(
+                state=state,
+                match_url=match_url,
+            )
+
+            state = bs.run_sync()
+            # TODO: How to update the state in the db?
+            state_in_db = SessionStateInDb.from_session_state(state)
+            bt.session_state_in_db = state_in_db
+            bt.status = "imported" if state.progress == Progress.COMPLETED else "failed"
         except Exception as e:
             log.error(e)
-            bt.distance = 1.0
-            bt.preview = colorize("text_error", str(e))
             bt.track_paths_after = []
             bt.status = "failed"
-            if callback_url:
-                requests.post(
-                    callback_url,
-                    json={"status": "beets import failed", "tag": bt.to_dict()},
-                )
             return []
         finally:
             session.merge(bt)
@@ -283,19 +264,12 @@ def runImport(
                 attributes="all",
                 message=f"Importing finished with status: {bt.status}",
             )
-
-        if callback_url:
-            requests.post(
-                callback_url,
-                json={"status": "beets preview done", "tag": bt.to_dict()},
-            )
-
         # cleanup_status()
         return bt.track_paths_after
 
 
 @job(timeout=600, queue=import_queue, connection=redis_conn)
-def AutoImport(tagId: str, callback_url: str | None = None) -> list[str] | None:
+def AutoImport(tagId: str) -> list[str] | None:
     """Automatically run an import session.
 
     Runs an import on a tag after a preview has been generated.
@@ -305,8 +279,6 @@ def AutoImport(tagId: str, callback_url: str | None = None) -> list[str] | None:
     ----------
     tagId:str
         The ID of the tag to be imported.
-    callback_url: str, optional
-        URL to call on status change
 
     Returns
     -------
@@ -332,6 +304,8 @@ def AutoImport(tagId: str, callback_url: str | None = None) -> list[str] | None:
             )
             return []
 
+        config = get_config()
+
         if config["import"]["timid"].get(bool):
             log.info(
                 "Auto importing is disabled if `import:timid=yes` is set in config"
@@ -345,7 +319,9 @@ def AutoImport(tagId: str, callback_url: str | None = None) -> list[str] | None:
             )
             return []
 
-        return runImport(tagId, callback_url=callback_url)
+        return runImport(
+            tagId,
+        )
 
 
 def _get_or_gen_match_url(tagId, session: Session) -> str | None:

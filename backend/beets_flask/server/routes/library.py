@@ -44,7 +44,7 @@ from quart import (
 from unidecode import unidecode
 from werkzeug.routing import BaseConverter, PathConverter
 
-from beets_flask.config import config
+from beets_flask.config import get_config
 from beets_flask.disk import dir_size
 from beets_flask.logger import log
 
@@ -170,6 +170,8 @@ def resource(name, patchable=False):
     # TODO: Check if async is still working as expected!
     """
 
+    config = get_config()
+
     def make_responder(retriever):
         async def responder(ids):
             entities = [retriever(id) for id in ids]
@@ -231,6 +233,8 @@ def resource(name, patchable=False):
 
 def resource_query(name, patchable=False):
     """Decorate a function to handle RESTful HTTP queries for resources."""
+
+    config = get_config()
 
     def make_responder(query_func):
         async def responder(queries):
@@ -378,6 +382,8 @@ library_bp.record_once(add_converters)
 
 @library_bp.before_request
 async def before_request():
+
+    config = get_config()
     # we will need to see if keeping the db open from each thread is what we want,
     # the importer may want to write.
     if not hasattr(g, "lib") or g.lib is None:
@@ -639,6 +645,8 @@ class Stats(TypedDict):
 
 @library_bp.route("/stats")
 async def stats():
+    config = get_config()
+
     with g.lib.transaction() as tx:
         album_stats = tx.query(
             "SELECT COUNT(*), COUNT(DISTINCT genre), COUNT(DISTINCT label), COUNT(DISTINCT albumartist) FROM albums"

@@ -6,6 +6,7 @@ import time
 from abc import ABC, abstractmethod
 from pathlib import Path
 from posixpath import normpath
+from pprint import pformat
 from typing import Any, Callable, List, Literal
 
 import nest_asyncio
@@ -19,7 +20,7 @@ from deprecated import deprecated
 from socketio import AsyncServer
 
 from beets_flask.beets_sessions import BaseSession, set_config_defaults
-from beets_flask.config import config
+from beets_flask.config import get_config
 from beets_flask.disk import is_album_folder
 from beets_flask.importer.progress import Progress, ProgressState
 from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackMatch
@@ -90,6 +91,7 @@ class BaseSessionNew(importer.ImportSession, ABC):
         # We do not want to pollute a global config object every time a session runs.
         # This is fine for the cli tool, where each run creates only one session
         # but not for our long-running webserver.
+        config = get_config()
         if isinstance(config_overlay, dict):
             config.set_args(config_overlay)
 
@@ -219,10 +221,10 @@ class BaseSessionNew(importer.ImportSession, ABC):
         Does not set tasks to completed at the end.
         Take care of this in subclasses.
         """
-        log.info(f"{self.__class__.__name__} running async {time.asctime()}")
         # For now, until we improve the upstream beets config logic,
         # adhere to importer.ImportSession convention and create a local copy
         # of the config.
+        config = get_config()
         self.set_config(config["import"])
 
         # TODO: check some config values. that are not compatible with our code.
@@ -231,7 +233,8 @@ class BaseSessionNew(importer.ImportSession, ABC):
         for s in self.stages():
             self.pipeline.add_stage(s)
 
-        log.debug(f"Running pipeline stages: {self.pipeline.stages}")
+        log.info(f"Running {self.__class__.__name__} on state<{self.state.id=}>.")
+        log.debug(f"Running {len(self.pipeline.stages)} stages.")
 
         plugins.send("import_begin", session=self)
         try:
@@ -240,7 +243,7 @@ class BaseSessionNew(importer.ImportSession, ABC):
         except importer.ImportAbortError:
             log.debug(f"Interactive import session aborted by user")
 
-        log.debug(f"Pipeline completed")
+        log.info(f"Completed {self.__class__.__name__} on state<{self.state.id=}>.")
 
         return self.state
 
@@ -321,12 +324,14 @@ class ImportSessionNew(BaseSessionNew):
         super().lookup_candidates(task)
 
     def choose_match(self, task: importer.ImportTask):
+        self.logger.setLevel(logging.DEBUG)
         self.logger.debug(f"choose_match {task}")
 
         try:
             match: BeetsAlbumMatch | BeetsTrackMatch = task.candidates[0]
         except IndexError:
             # FIXME: where and how is this handled? TODO: InvalidUrlError
+            log.error(f"No matches found for {task=} {task.candidates=}")
             raise ValueError("No matches found. Is the provided search URL correct?")
 
         # Let plugins display info

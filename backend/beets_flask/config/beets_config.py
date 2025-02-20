@@ -149,7 +149,8 @@ class InteractiveBeetsConfig(BeetsConfig, metaclass=Singleton):
 # Monkey patch the beets config
 import beets
 
-config: InteractiveBeetsConfig
+config: InteractiveBeetsConfig | None = None
+
 
 def refresh_config():
     """Refresh the config object.
@@ -160,6 +161,19 @@ def refresh_config():
 
     config = InteractiveBeetsConfig()
     beets.config = config
+    return config
 
 
-refresh_config()
+def get_config() -> InteractiveBeetsConfig:
+    """Get the config object.
+
+    This is useful if you want to access the config from another module.
+    """
+    if config is None:
+        return refresh_config()
+    return config
+
+
+__all__ = ["refresh_config", "get_config"]
+
+# raise NotImplementedError("This module should not be imported.")

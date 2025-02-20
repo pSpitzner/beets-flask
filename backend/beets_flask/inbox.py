@@ -9,7 +9,7 @@ from watchdog.events import FileMovedEvent, FileSystemEvent, FileSystemEventHand
 from watchdog.observers.polling import PollingObserver
 
 from beets_flask import invoker
-from beets_flask.config import config
+from beets_flask.config import get_config
 from beets_flask.disk import (
     FolderStructure,
     album_folders_from_track_paths,
@@ -28,7 +28,7 @@ _inboxes: List[OrderedDict] = []
 
 def register_inboxes():
     global _inboxes
-    _inboxes = config["gui"]["inbox"]["folders"].flatten().values()  # type: ignore
+    _inboxes = get_config()["gui"]["inbox"]["folders"].flatten().values()  # type: ignore
 
     for i in _inboxes:
         i["last_tagged"] = None

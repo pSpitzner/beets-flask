@@ -44,11 +44,14 @@ LOGGING_CONFIG = {
     },
 }
 
-logging.config.dictConfig(LOGGING_CONFIG)
+# On testing only log to console
+if "PYTEST_CURRENT_TEST" in os.environ:
+    logging.config.dictConfig(LOGGING_CONFIG)
 log = logging.getLogger("beets-flask")
 
 rq_name = os.getenv("RQ_JOB_ID", None)
 if rq_name:
     log = log.getChild(rq_name[:4])
+
 
 log.debug("Logging configured!")

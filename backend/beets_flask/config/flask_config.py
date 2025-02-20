@@ -11,9 +11,11 @@ function in the `__init__.py` file.
 from __future__ import annotations
 
 import os
+from typing import Mapping
+
+from ..logger import log
 
 cwd = os.getcwd()
-config: ServerConfig
 
 
 class ServerConfig:
@@ -53,7 +55,7 @@ class Testing(ServerConfig):
     TESTING = True
     DATABASE_URI = "sqlite:///:memory:?cache=shared"
     # temporary in-memory database
-    DATABASE_URI = "sqlite://"
+    # DATABASE_URI = "sqlite://"
 
 
 class DevelopmentLocal(ServerConfig):
@@ -83,7 +85,7 @@ def init_server_config(input_config: str | ServerConfig | None = None) -> Server
     else:
         if input_config is None:
             input_config = os.environ.get("IB_SERVER_CONFIG", "dev_local")
-        switch = {
+        switch: Mapping[str, type[ServerConfig]] = {
             "dev_local": DevelopmentLocal,
             "dev_docker": DevelopmentDocker,
             "test": Testing,
@@ -91,6 +93,7 @@ def init_server_config(input_config: str | ServerConfig | None = None) -> Server
         }
         if isinstance(input_config, str) and input_config not in switch:
             raise ValueError(f"Invalid config: {config}")
+        log.debug(f"Using config: {input_config}")
         # we still have to initalize!
         config = switch[input_config]()
 
@@ -101,4 +104,13 @@ def init_server_config(input_config: str | ServerConfig | None = None) -> Server
 # not elegant, but we also need to initalize the config in workers,
 # where the app init is not called
 # and for some reason it is needed in global space. revisit this in quartz port
-config = init_server_config()
+
+
+config: ServerConfig | None = None
+
+
+def get_flask_config() -> ServerConfig:
+    global config
+    if not config:
+        config = init_server_config()
+    return config

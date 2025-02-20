@@ -8,7 +8,7 @@ from quart import Blueprint, abort, jsonify, request
 from sqlalchemy import select
 
 from beets_flask import invoker
-from beets_flask.config import config
+from beets_flask.config import get_config
 from beets_flask.database import Tag, db_session
 from beets_flask.logger import log
 
@@ -94,7 +94,7 @@ async def add_tag():
     if not folders:
         folders = [folder]
 
-    if kind == "import" and config["gui"]["library"]["readonly"].get(bool):
+    if kind == "import" and get_config()["gui"]["library"]["readonly"].get(bool):
         return abort(
             405,
             description={"error": "Library is configured as readonly"},

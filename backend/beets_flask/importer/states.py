@@ -12,12 +12,12 @@ from uuid import uuid4 as uuid
 
 import beets.ui.commands as uicommands
 from beets import autotag, importer, library
+from deprecated import deprecated
 
 from beets_flask import log
-from beets_flask.config import config
+from beets_flask.config import get_config
 from beets_flask.importer.progress import Progress, ProgressState
 from beets_flask.utility import capture_stdout_stderr
-from deprecated import deprecated
 
 from .types import (
     AlbumInfo,
@@ -282,7 +282,6 @@ class TaskState:
 
         If string is given it is set as the message of the current progress.
         """
-        log.debug(f"Setting progress for {progress=} {self=},")
         if isinstance(progress, ProgressState):
             self.progress = progress
         elif isinstance(progress, Progress):
@@ -489,7 +488,8 @@ class CandidateState:
         # use a temporary Album object to generate any computed fields.
         tmp_album = library.Album(lib, **info)
         keys: List[str] = cast(
-            List[str], config["import"]["duplicate_keys"]["album"].as_str_seq() or []
+            List[str],
+            get_config()["import"]["duplicate_keys"]["album"].as_str_seq() or [],
         )
         dup_query = library.Album.all_fields_query(
             {key: tmp_album.get(key) for key in keys}

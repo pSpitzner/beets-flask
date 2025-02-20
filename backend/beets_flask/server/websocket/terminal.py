@@ -22,7 +22,7 @@ import libtmux
 from libtmux import Pane, Session, Window
 from libtmux.exc import LibTmuxException
 
-from beets_flask.config import config
+from beets_flask.config import get_config
 from beets_flask.logger import log
 
 from . import sio
@@ -37,7 +37,7 @@ def register_tmux():
     server = libtmux.Server()
 
     try:
-        abs_path_lib = str(config["gui"]["terminal"]["start_path"].as_str())
+        abs_path_lib = str(get_config()["gui"]["terminal"]["start_path"].as_str())
     except:
         abs_path_lib = "/repo"
 

@@ -11,7 +11,7 @@ from beets.ui import UserError, _open_library, colorize, print_
 from beets.ui.commands import show_change, summarize_items
 from beets.util import displayable_path
 
-from beets_flask.config import config
+from beets_flask.config import get_config
 from beets_flask.disk import is_album_folder
 
 from . import utility as ut
@@ -20,6 +20,7 @@ from .logger import log
 
 # config overwrites that are required for generating the right previews
 def set_config_defaults():
+    config = get_config()
     config.reset()
     config["import"]["detail"] = True
     config["import"]["resume"] = False
@@ -64,6 +65,7 @@ class BaseSession(importer.ImportSession):
     path: str
 
     def __init__(self, path: str, config_overlay: str | dict | None = None):
+        config = get_config()
         if isinstance(config_overlay, str):
             config.set_file(config_overlay)
         elif isinstance(config_overlay, dict):
@@ -249,6 +251,7 @@ class MatchedImportSession(BaseSession):
     ):
         # make sure to start with clean slate
         # apply all tweaks to global config before initializing the basesession!
+        config = get_config()
         set_config_defaults()
         config["import"]["search_ids"].set([match_url])
 
@@ -449,7 +452,7 @@ class AsIsImportSession(MatchedImportSession):
         return self._track_paths_before_import
 
     def debug(self):
-        return config
+        return get_config()
 
     def choose_match(self, task: importer.ImportTask):
         raise NotImplementedError(

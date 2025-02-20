@@ -1,13 +1,12 @@
-from beets_flask.logger import log
 import os
-from pathlib import Path
 import shutil
-import pytest
-from beets_flask.server.app import create_app
+from pathlib import Path
 
-from beets_flask.config.beets_config import refresh_config
+import pytest
 from quart import Quart
 from quart.typing import TestClientProtocol
+
+from beets_flask.server.app import create_app
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -25,9 +24,10 @@ def setup_and_teardown(tmpdir_factory):
     tmp_dir = tmpdir_factory.mktemp("beets_flask")
     os.environ["HOME"] = str(tmp_dir)
     os.environ["BEETSDIR"] = str(tmp_dir / "beets")
-    os.makedirs(tmp_dir / "beets", exist_ok=True)
+    os.makedirs(name=tmp_dir / "beets", exist_ok=True)
     os.environ["BEETSFLASKDIR"] = str(tmp_dir / "beets-flask")
     os.makedirs(tmp_dir / "beets-flask", exist_ok=True)
+    os.environ["IB_SERVER_CONFIG"] = "test"
 
     yield
 
@@ -57,6 +57,8 @@ def fixture_runner(app):
 @pytest.fixture
 def beets_lib():
     import beets.library
+
+    from beets_flask.config.beets_config import refresh_config
 
     lib = beets.library.Library(path=os.environ["BEETSDIR"] + "/library.db")
 

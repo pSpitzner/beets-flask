@@ -5,12 +5,12 @@ from quart import Quart
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
-from beets_flask.config.flask_config import config
+from beets_flask.config import get_flask_config
 from beets_flask.logger import log
 
 from .models import Base, Tag, TagGroup
 
-engine: Engine
+engine: Engine | None = None
 session_factory: scoped_session[Session]
 
 
@@ -30,8 +30,7 @@ def setup_database(app: Quart) -> None:
         None
     """
     __setup_factory()
-
-    if config["RESET_DB_ON_START"]:
+    if get_flask_config()["RESET_DB_ON_START"]:
         log.warning("Resetting database due to RESET_DB=True in config")
         _reset_database()
 
@@ -48,7 +47,7 @@ def __setup_factory():
     global engine
     global session_factory
 
-    engine = create_engine(config["DATABASE_URI"])
+    engine = create_engine(get_flask_config()["DATABASE_URI"])
     session_factory = scoped_session(sessionmaker(bind=engine, expire_on_commit=False))
 
 

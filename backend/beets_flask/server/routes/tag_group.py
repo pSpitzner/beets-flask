@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from quart import Blueprint
 from sqlalchemy import select
 
-from beets_flask.config import config
+from beets_flask.config import get_config
 from beets_flask.database import Tag, TagGroup, db_session
 from beets_flask.disk import path_to_dict
 from beets_flask.inbox import get_inbox_folders
@@ -127,7 +127,7 @@ def get_inbox_tags() -> list[str]:
 def _order_by_clause():
     """Convert the user config to an order clause to use with sqlalchemy."""
     try:
-        order_by = config["gui"]["tags"]["order_by"].as_str()
+        order_by = get_config()["gui"]["tags"]["order_by"].as_str()
     except:
         order_by = ""
 

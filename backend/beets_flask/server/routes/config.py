@@ -6,7 +6,7 @@ fetch settings once from the backend on first page-load.
 
 from quart import Blueprint, jsonify
 
-from beets_flask.config import config
+from beets_flask.config import get_config
 from beets_flask.logger import log
 
 config_bp = Blueprint("config", __name__, url_prefix="/config")
@@ -15,12 +15,14 @@ config_bp = Blueprint("config", __name__, url_prefix="/config")
 @config_bp.route("/all", methods=["GET"])
 async def get_all():
     """Get nested dict representing the full (but redacted) beets config."""
+    config = get_config()
     return jsonify(_serializable(config.flatten(redact=True)))
 
 
 @config_bp.route("/", methods=["GET"])
 async def get_basic():
     """Get the config settings needed for the gui."""
+    config = get_config()
     return jsonify(
         {
             "gui": _serializable(config["gui"].flatten(redact=True)),
