@@ -1,10 +1,10 @@
-import logging
 import asyncio
+import logging
 from typing import Any, Optional
+
 import pytest
 import socketio
 import uvicorn
-
 
 HOST = "127.0.0.1"
 PORT = 5006

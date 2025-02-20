@@ -7,3 +7,8 @@ from beets_flask.database import db_session
 def fixture_db_session(testapp):
     with db_session() as session:
         yield session
+
+
+@pytest.fixture(name="db_session_factory")
+def fdb_session_factory(testapp):
+    return db_session
