@@ -62,7 +62,7 @@ class Tag(Base):
         ForeignKey("session.id"), nullable=True
     )
     session_state_in_db: Mapped[Optional[SessionStateInDb]] = relationship(
-        "SessionStateInDb", back_populates="tag"
+        "SessionStateInDb", back_populates="tag", cascade="all"
     )
 
     # the track list we keep ourselves, as strings so we can store in sqlite

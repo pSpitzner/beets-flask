@@ -428,6 +428,13 @@ def manipulate_files(
 
     # Progress, cleanup, and event.
     task.finalize(session)
+    return task
+
+
+@stage
+@set_progress(Progress.COMPLETED)
+def set_tasks_completed(session: BaseSessionNew, task: ImportTask):
+    return task
 
 
 __all__ = [
@@ -439,4 +446,5 @@ __all__ = [
     "user_query",
     "plugin_stage",
     "manipulate_files",
+    "set_tasks_completed",
 ]

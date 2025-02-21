@@ -151,7 +151,7 @@ class TaskStateInDb(Base):
         # We just assume it is a normal import task
         beets_task = ImportTask(
             toppath=self.toppath,
-            paths=self.paths,
+            paths=pickle.loads(self.paths),
             items=pickle.loads(self.items),
         )
 
@@ -167,6 +167,11 @@ class TaskStateInDb(Base):
 
     def to_dict(self) -> SerializedTaskState:
         return self.to_task_state().serialize()
+
+
+import dill
+
+from beets_flask.logger import log
 
 
 class CandidateStateInDb(Base):
@@ -187,6 +192,18 @@ class CandidateStateInDb(Base):
         id: str | None = None,
     ):
         super().__init__(id)
+
+        # Remove db from all items as it can't be pickled
+        # FIXME: this should go into beets __getstate__ method
+        # see https://github.com/beetbox/beets/pull/5641
+        if isinstance(match, BeetsAlbumMatch):
+            for item in match.mapping.keys():
+                item._db = None
+                item._Item__album = None
+            for item in match.extra_items:
+                item._db = None
+                item._Item__album = None
+
         self.match = pickle.dumps(match)
 
     @classmethod

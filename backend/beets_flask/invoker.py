@@ -231,27 +231,27 @@ def runImport(
         )
         session.expunge_all()
 
-    # TODO: FIX the following to use the new session
-    """
-    if as_is:
-        bs = AsIsImportSession(
-            path=bt.album_folder,
-            tag_id=bt.id,
-        )
-    else:
-    """
-    bs = ImportSessionNew(
-        state=state,
-        match_url=match_url,
-    )
-    state = bs.run_sync()
+        # TODO: FIX the following to use the new session
+        """
+        if as_is:
+            bs = AsIsImportSession(
+                path=bt.album_folder,
+                tag_id=bt.id,
+            )
+        else:
+        """
 
-    with db_session() as session:
         try:
-            state_in_db = SessionStateInDb.from_session_state(state)
-            # session.merge(state_in_db)
-            bt = Tag.get_by_raise(Tag.id == tagId, session=session)
+            bs = ImportSessionNew(
+                state=state,
+                match_url=match_url,
+            )
+            state = bs.run_sync()
 
+            state_in_db = SessionStateInDb.from_session_state(state)
+            session.merge(instance=state_in_db)
+
+            # session.merge(state_in_db)
             bt.session_state_in_db = state_in_db
             bt.status = "imported" if state.progress == Progress.COMPLETED else "failed"
         except Exception as e:
@@ -264,6 +264,7 @@ def runImport(
         finally:
             log.warning("Import stuck here?!")
             session.merge(bt)
+            log.warning("Import stuck here?!")
             session.commit()
             log.info(f"Import done. {bt.status=}, {bt.match_url=}")
             update_client_view(

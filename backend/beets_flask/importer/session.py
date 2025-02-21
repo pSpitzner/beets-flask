@@ -34,11 +34,10 @@ from .stages import (
     identify_duplicates,
     lookup_candidates,
     manipulate_files,
-    mutator_stage,
     offer_match,
     plugin_stage,
     read_tasks,
-    stage,
+    set_tasks_completed,
     user_query,
 )
 from .states import ProgressState, SessionState
@@ -390,6 +389,10 @@ class ImportSessionNew(BaseSessionNew):
         # finally, move files
         stages.append(
             manipulate_files(self),
+        )
+        # If everything went well, set tasks to completed
+        stages.append(
+            set_tasks_completed(self),
         )
 
         return stages
