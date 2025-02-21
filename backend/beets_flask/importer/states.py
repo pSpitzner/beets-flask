@@ -251,9 +251,6 @@ class TaskState:
                 continue
             if best is None or candidate.distance < best.distance.distance:
                 best = candidate
-                log.debug(
-                    f"Using candidate with distance: {candidate.distance.distance}"
-                )
         return best
 
     # ---------------------------------------------------------------------------- #
@@ -383,7 +380,6 @@ class CandidateState:
         # this saves us from defining an extra attribute
         # (and passing back and forth to the frontend)
         candidate.id = "asis-" + str(uuid())
-        log.debug(f"Created asis candidate {candidate.id=}")
         return candidate
 
     # --------------------- Helper to lift / unnset from match to -------------------- #

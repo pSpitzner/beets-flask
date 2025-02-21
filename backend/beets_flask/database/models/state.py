@@ -159,6 +159,10 @@ class TaskStateInDb(Base):
         task.id = self.id
         task.candidate_states = [c.to_candidate_state(task) for c in self.candidates]
         task.progress.progress = self.progress
+
+        # Set candidate of beets_task
+        task.task.candidates = [c.match for c in task.candidate_states]
+
         return task
 
     def to_dict(self) -> SerializedTaskState:

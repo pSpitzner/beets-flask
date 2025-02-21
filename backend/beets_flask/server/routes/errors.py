@@ -84,7 +84,8 @@ async def handle_exception(e: HTTPException):
 @error_bp.app_errorhandler(Exception)
 async def handle_generic_error(error):
     log.error(f"Internal server error: {error}")
-    traceback.print_exc()
+    trace = traceback.format_exc()
+    log.error(trace)
     return (
         jsonify(
             {

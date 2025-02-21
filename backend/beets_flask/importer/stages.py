@@ -83,10 +83,12 @@ def set_progress(progress: Progress):
             # what happens when doing the same state-mutation twice
             task_progress = session.state.upsert_task(task)
             if task_progress and task_progress.progress >= progress:
+                log.debug(f"Skipping {progress} for {task}")
                 return task
 
             # Set the task's progress
             session.set_task_progress(task, progress)
+            log.debug(f"Running {progress} for {task}")
             return func(session, task, *args)
 
         return wrapper

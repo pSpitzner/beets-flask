@@ -63,6 +63,7 @@ class TestSessionStateInDb:
         with db_session_factory() as s:
             state_in_db.path = b"new path"
             state_in_db.tasks[0].progress = Progress.COMPLETED
+            state_in_db.tasks[0].candidates = []
             s.autoflush = True
             s.merge(state_in_db)
             s.commit()
@@ -74,3 +75,4 @@ class TestSessionStateInDb:
 
             # Check that the progress is updated
             assert state_in_db.tasks[0].progress == Progress.COMPLETED
+            assert len(state_in_db.tasks[0].candidates) == 0

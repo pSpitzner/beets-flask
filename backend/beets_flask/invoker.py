@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
+import traceback
 from typing import TYPE_CHECKING
 
 import requests
@@ -203,13 +204,13 @@ def runImport(
     """
     with db_session() as session:
         log.info(f"Import task: {as_is=} {tagId=}")
-        bt = Tag.get_by(Tag.id == tagId, session=session)
-        if bt is None:
-            raise InvalidUsage(f"Tag {tagId} not found in database")
+        bt = Tag.get_by_raise(Tag.id == tagId, session=session)
 
         bt.status = "importing"
         session.merge(bt)
         session.commit()
+
+        # FIXME: update_client needs a refactor
         update_client_view(
             type="tag",
             tagId=bt.id,
@@ -222,41 +223,49 @@ def runImport(
             message="Importing started",
         )
 
+        # Get session state (if any)
+        state = (
+            bt.session_state_in_db.to_session_state()
+            if bt.session_state_in_db
+            else SessionState(Path(bt.album_folder))
+        )
+        session.expunge_all()
+
+    # TODO: FIX the following to use the new session
+    """
+    if as_is:
+        bs = AsIsImportSession(
+            path=bt.album_folder,
+            tag_id=bt.id,
+        )
+    else:
+    """
+    bs = ImportSessionNew(
+        state=state,
+        match_url=match_url,
+    )
+    state = bs.run_sync()
+
+    with db_session() as session:
         try:
-            # Get session (if any)
-            state = (
-                bt.session_state_in_db.to_session_state()
-                if bt.session_state_in_db
-                else SessionState(Path(bt.album_folder))
-            )
-            # TODO: FIX the following to use the new session
-            """
-            if as_is:
-                bs = AsIsImportSession(
-                    path=bt.album_folder,
-                    tag_id=bt.id,
-                )
-            else:
-            """
-
-            bs = ImportSessionNew(
-                state=state,
-                match_url=match_url,
-            )
-
-            state = bs.run_sync()
-            # TODO: How to update the state in the db?
             state_in_db = SessionStateInDb.from_session_state(state)
+            # session.merge(state_in_db)
+            bt = Tag.get_by_raise(Tag.id == tagId, session=session)
+
             bt.session_state_in_db = state_in_db
             bt.status = "imported" if state.progress == Progress.COMPLETED else "failed"
         except Exception as e:
             log.error(e)
+            trace = traceback.format_exc()
+            log.error(trace)
             bt.track_paths_after = []
             bt.status = "failed"
             return []
         finally:
+            log.warning("Import stuck here?!")
             session.merge(bt)
             session.commit()
+            log.info(f"Import done. {bt.status=}, {bt.match_url=}")
             update_client_view(
                 type="tag",
                 tagId=bt.id,
@@ -264,6 +273,8 @@ def runImport(
                 attributes="all",
                 message=f"Importing finished with status: {bt.status}",
             )
+            log.info(f"Client view updated for {bt.id=}")
+
         # cleanup_status()
         return bt.track_paths_after
 

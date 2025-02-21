@@ -54,5 +54,13 @@ class Base(DeclarativeBase):
             if close_after:
                 session.close()
 
+    @classmethod
+    def get_by_raise(cls, *whereclause, session: Session | None = None) -> Self:
+        """Get an item by whereclause or raise ValueError if not found."""
+        item = cls.get_by(*whereclause, session=session)
+        if item is None:
+            raise ValueError(f"{cls.__name__} not found.")
+        return item
+
     def to_dict(self) -> Mapping:
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}

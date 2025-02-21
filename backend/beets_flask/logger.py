@@ -45,7 +45,7 @@ LOGGING_CONFIG = {
 }
 
 # On testing only log to console
-if "PYTEST_CURRENT_TEST" in os.environ:
+if not "PYTEST_CURRENT_TEST" in os.environ:
     logging.config.dictConfig(LOGGING_CONFIG)
 log = logging.getLogger("beets-flask")
 

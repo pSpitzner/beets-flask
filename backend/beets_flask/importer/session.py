@@ -309,7 +309,7 @@ class ImportSessionNew(BaseSessionNew):
         self.match_url = match_url
 
         if duplicate_action is None:
-            duplicate_action = config["import"]["duplicate_action"].as_str()  # type: ignore
+            duplicate_action = get_config()["import"]["duplicate_action"].as_str()  # type: ignore
         self.duplicate_action = duplicate_action.lower()  # type: ignore
         super().__init__(state, config_overlay)
 
