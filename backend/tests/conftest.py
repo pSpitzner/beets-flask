@@ -1,12 +1,15 @@
+from contextlib import _GeneratorContextManager
 import os
 import shutil
 from pathlib import Path
+from typing import Any, Callable, Generator
 
 import pytest
 from quart import Quart
 from quart.typing import TestClientProtocol
 
 from beets_flask.server.app import create_app
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -52,6 +55,26 @@ def fixture_client(testapp: Quart) -> TestClientProtocol:
 @pytest.fixture(name="runner")
 def fixture_runner(app):
     return app.test_cli_runner()
+
+
+# ----------------------------- Database fixtures ---------------------------- #
+# Both for our and the beets database
+
+
+@pytest.fixture(name="db_session_factory")
+def db_session_factory(
+    testapp,
+) -> Callable[..., _GeneratorContextManager[Session, None, None]]:
+    from beets_flask.database import db_session
+
+    return db_session
+
+
+@pytest.fixture(name="db_session")
+def db_session(db_session_factory):
+
+    with db_session_factory() as session:
+        yield session
 
 
 @pytest.fixture

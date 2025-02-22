@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import json
+import os
+from datetime import datetime
+from typing import TYPE_CHECKING, Any
 
 from quart import Quart
 
@@ -12,7 +15,7 @@ if TYPE_CHECKING:
 
 
 def create_app(config: str | ServerConfig | None = None) -> Quart:
-
+    config = config or os.getenv("BEETSFLASK_ENV", None)
     # create and configure the app
     app = Quart(__name__, instance_relative_config=True)
 
@@ -20,6 +23,7 @@ def create_app(config: str | ServerConfig | None = None) -> Quart:
     app.config.from_object(config)
     # make routes with and without trailing slahes the same
     app.url_map.strict_slashes = False
+    app.json = CustomProvider(app)
 
     global socketio
     # app.wsgi_app = socketio.WSGIApp(sio, app.wsgi_app)
@@ -47,3 +51,30 @@ def create_app(config: str | ServerConfig | None = None) -> Quart:
     log.debug("Quart app created!")
 
     return app
+
+
+# ------------------------------- Json encoder ------------------------------- #
+# Allows to serialize bytes and datetime objects in dictionaries to json
+# The default encoder does not support this!
+# Has to be added to the app with app.json = CustomProvider(app)
+# FIXME: We might be able to remove this once our serialized state does not
+# contain bytes or datetime objects
+
+from quart.json.provider import DefaultJSONProvider
+
+
+class CustomProvider(DefaultJSONProvider):
+    def dumps(self, obj: Any, **kwargs: Any) -> str:
+        return json.dumps(obj, cls=Encoder, **kwargs)
+
+
+class Encoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, bytes):
+            # Mainly used for paths
+            # b'/path/to/file' -> '/path/to/file'
+            # Might yield strange results for other byte objects
+            return o.decode("utf-8")
+        if isinstance(o, datetime):
+            return o.isoformat()
+        return json.JSONEncoder.default(self, o)

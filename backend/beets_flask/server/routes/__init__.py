@@ -1,6 +1,7 @@
 from quart import Blueprint, Quart
 
 from .config import config_bp
+from .db_models import register_state_models
 from .errors import error_bp
 from .frontend import frontend_bp
 from .inbox import inbox_bp
@@ -27,6 +28,11 @@ backend_bp.register_blueprint(group_bp)
 
 
 def register_routes(app: Quart):
+
+    # Register database state models
+    # to api blueprint i.e. /api_v1/session, /api_v1/task & /api_v1/candidate
+    register_state_models(backend_bp)
+
     app.register_blueprint(backend_bp)
     app.register_blueprint(frontend_bp)
 
