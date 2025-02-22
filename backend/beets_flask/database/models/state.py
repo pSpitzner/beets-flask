@@ -14,7 +14,7 @@ from pickletools import bytes1
 from typing import TYPE_CHECKING, List
 from uuid import uuid4
 
-from beets.importer import ImportTask, library
+from beets.importer import ImportTask, action, library
 from sqlalchemy import ForeignKey, LargeBinary, PickleType
 from sqlalchemy.orm import (
     DeclarativeBase,
@@ -71,27 +71,27 @@ class SessionStateInDb(Base):
         self.progress = progress
 
     @classmethod
-    def from_session_state(cls, state: SessionState) -> SessionStateInDb:
+    def from_live_state(cls, state: SessionState) -> SessionStateInDb:
         """Create a new session from a session state."""
 
         session = cls(
             path=os.fsencode(state.path),
             id=state.id,
-            tasks=[TaskStateInDb.from_task_state(task) for task in state.task_states],
+            tasks=[TaskStateInDb.from_live_state(task) for task in state.task_states],
             progress=state.progress.progress,
         )
 
         return session
 
-    def to_session_state(self) -> SessionState:
+    def to_live_state(self) -> SessionState:
         """Convert the session to a session state."""
         session = SessionState(Path(os.fsdecode(self.path)))
         session.id = self.id
-        session._task_states = [task.to_task_state(session) for task in self.tasks]
+        session._task_states = [task.to_live_state(session) for task in self.tasks]
         return session
 
     def to_dict(self) -> SerializedSessionState:
-        return self.to_session_state().serialize()
+        return self.to_live_state().serialize()
 
 
 class TaskStateInDb(Base):
@@ -111,6 +111,7 @@ class TaskStateInDb(Base):
     toppath: Mapped[bytes | None]
     paths: Mapped[bytes]
     items: Mapped[bytes]
+    choice_flag: Mapped[bytes]
 
     progress: Mapped[Progress]
 
@@ -122,6 +123,7 @@ class TaskStateInDb(Base):
         items: List[library.Item] = [],
         candidates: List[CandidateStateInDb] = [],
         progress: Progress = Progress.NOT_STARTED,
+        choice_flag: action | None = None,
     ):
         super().__init__(id)
         self.toppath = toppath
@@ -129,23 +131,23 @@ class TaskStateInDb(Base):
         self.items = pickle.dumps(items)
         self.candidates = candidates
         self.progress = progress
+        self.choice_flag = pickle.dumps(choice_flag)
 
     @classmethod
-    def from_task_state(cls, state: TaskState) -> TaskStateInDb:
+    def from_live_state(cls, state: TaskState) -> TaskStateInDb:
         """Create a new task from a task state."""
         task = cls(
             toppath=state.task.toppath,
             paths=state.task.paths,
             items=state.task.items,
             candidates=[
-                CandidateStateInDb.from_candidate_state(c)
-                for c in state.candidate_states
+                CandidateStateInDb.from_live_state(c) for c in state.candidate_states
             ],
             progress=state.progress.progress,
         )
         return task
 
-    def to_task_state(self, session_state: SessionState | None = None) -> TaskState:
+    def to_live_state(self, session_state: SessionState | None = None) -> TaskState:
         """Convert the task to a task state."""
 
         # We just assume it is a normal import task
@@ -154,19 +156,22 @@ class TaskStateInDb(Base):
             paths=pickle.loads(self.paths),
             items=pickle.loads(self.items),
         )
+        beets_task.choice_flag = pickle.loads(self.choice_flag)
 
-        task = TaskState(beets_task)
-        task.id = self.id
-        task.candidate_states = [c.to_candidate_state(task) for c in self.candidates]
-        task.progress.progress = self.progress
+        live_state = TaskState(beets_task)
+        live_state.id = self.id
+        live_state.candidate_states = [
+            c.to_live_state(live_state) for c in self.candidates
+        ]
+        live_state.progress.progress = self.progress
 
         # Set candidate of beets_task
-        task.task.candidates = [c.match for c in task.candidate_states]
+        live_state.task.candidates = [c.match for c in live_state.candidate_states]
 
-        return task
+        return live_state
 
     def to_dict(self) -> SerializedTaskState:
-        return self.to_task_state().serialize()
+        return self.to_live_state().serialize()
 
 
 from beets_flask.logger import log
@@ -205,7 +210,7 @@ class CandidateStateInDb(Base):
         self.match = pickle.dumps(match)
 
     @classmethod
-    def from_candidate_state(cls, state: CandidateState) -> CandidateStateInDb:
+    def from_live_state(cls, state: CandidateState) -> CandidateStateInDb:
         """Create a new candidate from a candidate state."""
         candidate = cls(
             id=state.id,
@@ -213,18 +218,18 @@ class CandidateStateInDb(Base):
         )
         return candidate
 
-    def to_candidate_state(self, task_state: TaskState) -> CandidateState:
+    def to_live_state(self, task_state: TaskState) -> CandidateState:
         """Convert the candidate to a candidate state."""
-        candidate = CandidateState(pickle.loads(self.match), task_state)
-        candidate.id = self.id
-        return candidate
+        live_state = CandidateState(pickle.loads(self.match), task_state)
+        live_state.id = self.id
+        return live_state
 
     def to_dict(self) -> SerializedCandidateState:
         task = TaskStateInDb.get_by(TaskStateInDb.id == self.task_id)
         if task is None:
             raise ValueError(f"Task with id {self.task_id} not found.")
 
-        for candidate in task.to_task_state().candidate_states:
+        for candidate in task.to_live_state().candidate_states:
             if candidate.id == self.id:
                 return candidate.serialize()
         raise ValueError(f"Candidate with id {self.id} not found.")

@@ -95,7 +95,7 @@ class Tag(Base):
     def best_candidate(self):
         if not self.session_state_in_db:
             return None
-        session_state = self.session_state_in_db.to_session_state()
+        session_state = self.session_state_in_db.to_live_state()
         # FIXME: task to session 1 to 1 mapping might not be accurate
         # assume single task, until we rework frontend
         best_candidate = session_state.task_states[0].best_candidate_state

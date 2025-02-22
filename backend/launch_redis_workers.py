@@ -1,11 +1,11 @@
 import os
 
-from beets_flask.config.beets_config import config
+from beets_flask.config.beets_config import get_config
 from beets_flask.logger import log
 
 num_preview_workers: int = 4  # Default value
 try:
-    num_preview_workers = config["gui"]["num_preview_workers"].get(int)  # type: ignore
+    num_preview_workers = get_config()["gui"]["num_preview_workers"].get(int)  # type: ignore
     log.debug(f"Got num_preview_workers from config: {num_preview_workers}")
 except:
     pass

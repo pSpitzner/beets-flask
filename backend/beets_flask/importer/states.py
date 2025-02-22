@@ -253,6 +253,14 @@ class TaskState:
                 best = candidate
         return best
 
+    @property
+    def choice_flag(self) -> importer.action | None:
+        return self.task.choice_flag
+
+    @choice_flag.setter
+    def choice_flag(self, value: importer.action | None):
+        self.task.choice_flag = value
+
     # ---------------------------------------------------------------------------- #
 
     def serialize(self) -> SerializedTaskState:

@@ -138,7 +138,7 @@ def runPreview(tagId: str, force_retag: bool = False) -> str | None:
             bs = PreviewSessionNew(SessionState(Path(bt.album_folder)))
             state = bs.run_sync()
 
-            state_in_db = SessionStateInDb.from_session_state(state)
+            state_in_db = SessionStateInDb.from_live_state(state)
             session.add(state_in_db)
             bt.session_state_in_db = state_in_db
 
@@ -225,7 +225,7 @@ def runImport(
 
         # Get session state (if any)
         state = (
-            bt.session_state_in_db.to_session_state()
+            bt.session_state_in_db.to_live_state()
             if bt.session_state_in_db
             else SessionState(Path(bt.album_folder))
         )
@@ -248,7 +248,7 @@ def runImport(
             )
             state = bs.run_sync()
 
-            state_in_db = SessionStateInDb.from_session_state(state)
+            state_in_db = SessionStateInDb.from_live_state(state)
             session.merge(instance=state_in_db)
 
             # session.merge(state_in_db)
