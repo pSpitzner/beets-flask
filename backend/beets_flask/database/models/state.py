@@ -169,8 +169,6 @@ class TaskStateInDb(Base):
         return self.to_task_state().serialize()
 
 
-import dill
-
 from beets_flask.logger import log
 
 
@@ -222,7 +220,6 @@ class CandidateStateInDb(Base):
         return candidate
 
     def to_dict(self) -> SerializedCandidateState:
-
         task = TaskStateInDb.get_by(TaskStateInDb.id == self.task_id)
         if task is None:
             raise ValueError(f"Task with id {self.task_id} not found.")
