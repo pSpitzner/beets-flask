@@ -168,7 +168,11 @@ def get_config() -> InteractiveBeetsConfig:
     """Get the config object.
 
     This is useful if you want to access the config from another module.
+
+    The result of this function is still the global object that you can mutate!
     """
+    global config
+
     if config is None:
         return refresh_config()
     return config

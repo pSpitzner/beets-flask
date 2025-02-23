@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from beets_flask.database import db_session
 from beets_flask.database.models.base import Base
-from beets_flask.database.models.state import (
+from beets_flask.database.models.states import (
     CandidateStateInDb,
     SessionStateInDb,
     TaskStateInDb,
@@ -16,83 +16,7 @@ from beets_flask.server.routes.errors import InvalidUsage
 
 T = TypeVar("T", bound=Base)
 
-
-def _get_all(
-    model: type[T], cursor: tuple[datetime, str] | None = None, n_items: int = 50
-):
-    """Seek pagination for all items in the database.
-
-    Returns a list of items and a cursor for the next page.
-    """
-
-    with db_session() as session:
-        query = select(model)
-        if cursor:
-            query = query.where(
-                (model.created_at <= cursor[0]).__and__(model.id < cursor[1])
-            )
-        query = query.order_by(model.created_at.desc(), model.id.desc()).limit(n_items)
-        items: Sequence[T] = session.execute(query).scalars().all()
-        # session.merge(*items)
-        items_serialized = []
-        for item in items:
-            items_serialized.append(item.to_dict())
-
-        # Convert items to a list of dictionaries
-        items_list = [item.to_dict() for item in items]
-
-    # Determine the next cursor
-    if len(items) == n_items:
-        last_item = items[-1]
-        next_cursor = (last_item.created_at, last_item.id)
-    else:
-        next_cursor = None
-
-    return items_list, next_cursor
-
-
-def __cursor_to_string(cursor: tuple[datetime, str] | None) -> str | None:
-    if cursor is None:
-        return None
-    return f"{cursor[0].isoformat()},{cursor[1]}".encode("utf-8").hex()
-
-
-def __cursor_from_string(cursor: str | None) -> tuple[datetime, str] | None:
-    if cursor is None:
-        return None
-    cursor = bytes.fromhex(cursor).decode("utf-8")
-    c = cursor.split(",")
-    if len(c) != 2:
-        return None
-    return datetime.fromisoformat(c[0]), c[1]
-
-
-def _get_query_param(params, key, convert_func, default=None, error_message=None):
-    """Safely retrieves and converts a query parameter from the request args.
-
-    Parameters
-    ----------
-    params : dict
-        The request args.
-    key : str
-        The key of the parameter to retrieve.
-    default : any, optional
-        The default value if the parameter is not found, defaults to None.
-    convert_func : callable, optional
-        A function to convert the parameter value, defaults to None.
-    error_message : str, optional
-        The error message to raise if the conversion fails, defaults to None.
-    """
-    value = params.get(key, default)
-
-    try:
-        value = convert_func(value)
-    except (ValueError, TypeError):
-        if error_message is None:
-            error_message = f"Invalid parameter'{key}'"
-        raise InvalidUsage(error_message)
-
-    return value
+__all__ = ["blueprint_for_db_model", "register_state_models"]
 
 
 def blueprint_for_db_model(model: type[T], url_prefix: str | None = None) -> Blueprint:
@@ -119,7 +43,6 @@ def blueprint_for_db_model(model: type[T], url_prefix: str | None = None) -> Blu
 
     @bp.route("/", methods=["GET"])
     async def get_all():
-
         params = request.args
         # Cursor is encoded as a string in the format "datetime,id" where date
         # is the creation date as integer and id is the id of the item.
@@ -179,4 +102,77 @@ def register_state_models(app: Blueprint | Quart):
     )
 
 
-__all__ = ["blueprint_for_db_model", "register_state_models"]
+def _get_all(
+    model: type[T], cursor: tuple[datetime, str] | None = None, n_items: int = 50
+):
+    """Seek pagination for all items in the database.
+
+    Returns a list of items and a cursor for the next page.
+    """
+
+    with db_session() as session:
+        query = select(model)
+        if cursor:
+            query = query.where(
+                # cursor is a combination of date and model id, this is faster than
+                # just using an offset
+                (model.created_at <= cursor[0]).__and__(model.id < cursor[1])
+            )
+        query = query.order_by(model.created_at.desc(), model.id.desc()).limit(n_items)
+        items: Sequence[T] = session.execute(query).scalars().all()
+
+        # Convert items to a list of dictionaries
+        items_list = [item.to_dict() for item in items]
+
+    # Determine the next cursor
+    if len(items) == n_items:
+        last_item = items[-1]
+        next_cursor = (last_item.created_at, last_item.id)
+    else:
+        next_cursor = None
+
+    return items_list, next_cursor
+
+
+def __cursor_to_string(cursor: tuple[datetime, str] | None) -> str | None:
+    if cursor is None:
+        return None
+    return f"{cursor[0].isoformat()},{cursor[1]}".encode("utf-8").hex()
+
+
+def __cursor_from_string(cursor: str | None) -> tuple[datetime, str] | None:
+    if cursor is None:
+        return None
+    cursor = bytes.fromhex(cursor).decode("utf-8")
+    c = cursor.split(",")
+    if len(c) != 2:
+        return None
+    return datetime.fromisoformat(c[0]), c[1]
+
+
+def _get_query_param(params, key, convert_func, default=None, error_message=None):
+    """Safely retrieves and converts a query parameter from the request args.
+
+    Parameters
+    ----------
+    params : dict
+        The request args.
+    key : str
+        The key of the parameter to retrieve.
+    default : any, optional
+        The default value if the parameter is not found, defaults to None.
+    convert_func : callable, optional
+        A function to convert the parameter value, defaults to None.
+    error_message : str, optional
+        The error message to raise if the conversion fails, defaults to None.
+    """
+    value = params.get(key, default)
+
+    try:
+        value = convert_func(value)
+    except (ValueError, TypeError):
+        if error_message is None:
+            error_message = f"Invalid parameter'{key}'"
+        raise InvalidUsage(error_message)
+
+    return value

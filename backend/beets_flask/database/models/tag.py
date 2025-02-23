@@ -12,7 +12,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.orm.session import make_transient
 
-from beets_flask.database.models.state import SessionStateInDb
+from beets_flask.database.models.states import SessionStateInDb
 from beets_flask.logger import log
 from beets_flask.utility import AUDIO_EXTENSIONS
 

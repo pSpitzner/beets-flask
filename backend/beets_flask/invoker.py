@@ -26,7 +26,7 @@ from beets_flask.beets_sessions import (
 )
 from beets_flask.config import get_config
 from beets_flask.database import Tag, db_session
-from beets_flask.database.models.state import SessionStateInDb
+from beets_flask.database.models.states import SessionStateInDb
 from beets_flask.importer.session import ImportSessionNew, PreviewSessionNew
 from beets_flask.importer.stages import Progress
 from beets_flask.importer.states import CandidateState, SessionState, TaskState

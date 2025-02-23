@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from beets import autotag, importer
 
-from beets_flask.database.models.state import SessionStateInDb
+from beets_flask.database.models.states import SessionStateInDb
 from beets_flask.importer.session import SessionState
 from beets_flask.importer.stages import Progress
 

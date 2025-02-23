@@ -11,7 +11,8 @@ from watchdog.observers.polling import PollingObserver
 from beets_flask import invoker
 from beets_flask.config import get_config
 from beets_flask.disk import (
-    FolderStructure,
+    File,
+    Folder,
     album_folders_from_track_paths,
     all_album_folders,
     path_to_dict,
@@ -236,12 +237,12 @@ def get_inboxes():
     return _inboxes
 
 
-def mark_inbox_folder(fspath: FolderStructure) -> FolderStructure:
+def mark_inbox_folder(fspath: Folder | File) -> Folder | File:
     """Given a FolderStructure, mark the highest level folder as inbox if it actually is one."""
     # we would want to do this directly in path_to_dict() in disk.py, but
     # then we'd have circular imports.
     # since we go top-down, and there should be nothing higher up than an inbox (?)
     # no need to check children.
-    if is_inbox_folder(fspath["full_path"]):
+    if is_inbox_folder(fspath["full_path"]) and fspath["type"] == "directory":
         fspath["is_inbox"] = True
     return fspath

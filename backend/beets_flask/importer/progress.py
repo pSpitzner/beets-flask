@@ -9,13 +9,12 @@ from beets_flask.logger import log
 
 @total_ordering
 class Progress(Enum):
-    """The progress of the current session in chronological order.
+    """The progress of tasks in chronological order.
+
+    The order roughly matches the stages you might expect.
 
     Allows to resume a import at any time using our state dataclasses. We might
     also want to add the plugin stages or refine this.
-
-    @PS: I like it this far, you have ideas for more progress. I think this should be on
-    task level.
     """
 
     NOT_STARTED = 0
@@ -65,3 +64,51 @@ class ProgressState:
         if not isinstance(other, ProgressState):
             return False
         return self.progress == other.progress
+
+
+class SessionStatus(Enum):
+    """The status of a session.
+
+    For now reflects the old tag status (lower-cased strings).
+
+    I like the simplification this allows in the front-end, where we use three or so icons
+    - pending
+    - running (something)
+    - done as
+        - tagged (i.e. previewed, requiring action)
+        - imported
+        - duplicate (requiring action... potentially,
+          but now clue what we do if defaul action is override)
+        - failed
+
+    Let's rethink how we do this mapping since we now have the more detailed task progress.
+
+    """
+
+    NOT_STARTED = 0
+    PENDING = 1
+    TAGGING = 2
+    TAGGED = 3
+    IMPORTING = 4
+    IMPORTED = 5
+    FAILED = 6
+    UNMATCHED = 7
+    DUPLICATE = 8
+
+    def __str__(self) -> str:
+        return self.name.lower()
+
+
+class SessionKind(Enum):
+    """The kind of session.
+
+    For now reflects the old tag kind (lower-cased strings).
+    """
+
+    PREVIEW = 0
+    IMPORT = 1
+    IMPORT_AS_IS = 2
+    AUTO = 3
+
+    def __str__(self) -> str:
+        return self.name.lower()

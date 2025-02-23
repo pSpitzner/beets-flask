@@ -15,7 +15,7 @@ from tests.test_importer.conftest import (
     valid_data_for_album_path,
 )
 
-from beets_flask.invoker import runPreview
+from beets_flask.invoker import runImport, runPreview
 from beets_flask.server.routes.tag import add_tag
 
 log = logging.getLogger(__name__)
@@ -79,7 +79,7 @@ class TestPreviewSessions:
 def test_run_preview(path: str, db_session_factory):
     ap = album_path_absolute(path)
     use_mock_tag_album(str(ap))
-    log.info(f"Album path: {ap}")
+    log.info(f"Preview on album path: {ap}")
 
     tag_id = None
     with db_session_factory() as session:

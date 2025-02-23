@@ -2,6 +2,13 @@
 
 Allows to resume a import at any time using our state dataclasses,
 see importer/state.py for more information.
+
+Why not just have State and StateInDb in the same class?
+- ORM ideally wants full mirroring of whats in RAM in the DB. This is hard to ensure
+  in our case, as we dont have full control over beets tasks etc.
+- A lot of beets objects do not neatly translate to DB objects.
+- Often we want states without having to think about a DB Session.
+- Just a current motivation and choice, will revisit this later.
 """
 
 from __future__ import annotations
@@ -11,11 +18,11 @@ import pickle
 from datetime import datetime
 from pathlib import Path
 from pickletools import bytes1
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 from uuid import uuid4
 
 from beets.importer import ImportTask, action, library
-from sqlalchemy import ForeignKey, LargeBinary, PickleType
+from sqlalchemy import Enum, ForeignKey, LargeBinary, PickleType
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -38,11 +45,40 @@ from beets_flask.importer.states import (
 from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackMatch
 
 
+# class FolderStructureInDb(Base):
+#     """Represents a folder on disk, to keep track of changes.
+
+#     This folder does not necessarily have to exist on disk anymore. If the content
+#     changed, a new folder object (new hash) should be created.
+#     """
+
+#     path: str
+#     hash: str
+
+
 class SessionStateInDb(Base):
     """Represents an import session.
 
     Normally a session has one task but in theory and edge cases
     we could have multiple tasks per session.
+
+    Beets uses sessions for the back-and-forth dialog with the user,
+    where one session may have multiple tasks.
+    We wrap the beets session in our SessionState to better handle its progress.
+    And our SessionState has a representation in our database, the SessionStateInDb.
+
+    Example:
+    ```
+    # Create
+    s_live_state = SessionState(Path("path"))
+    session = PreviewSession(s_live_state)
+    s_live_state = session.run_sync()
+    s_db_state = SessionStateInDb.from_live_state(s_live_state)
+
+    # Search
+    select(SessionStateInDb).where(TaskStateInDb.id == "some path").first()
+    s_db_state = SessionStateInDb.get_by(
+    ```
     """
 
     __tablename__ = "session"
@@ -72,7 +108,7 @@ class SessionStateInDb(Base):
 
     @classmethod
     def from_live_state(cls, state: SessionState) -> SessionStateInDb:
-        """Create a new session from a session state."""
+        """Create the DB representation of a live SessionState.."""
 
         session = cls(
             path=os.fsencode(state.path),
@@ -84,18 +120,23 @@ class SessionStateInDb(Base):
         return session
 
     def to_live_state(self) -> SessionState:
-        """Convert the session to a session state."""
-        session = SessionState(Path(os.fsdecode(self.path)))
-        session.id = self.id
-        session._task_states = [task.to_live_state(session) for task in self.tasks]
-        return session
+        """Recreate the live SessionState with underlying task from its stored version in the db."""
+        s_state = SessionState(Path(os.fsdecode(self.path)))
+        s_state.id = self.id
+        s_state._task_states = [task.to_live_state(s_state) for task in self.tasks]
+        return s_state
 
     def to_dict(self) -> SerializedSessionState:
         return self.to_live_state().serialize()
 
 
 class TaskStateInDb(Base):
-    """Represents an import task."""
+    """Represents an import task.
+
+    More precisely, beets uses one task per album that goes through a bunch of stages.
+    We wrap the beets task in our TaskState to better handle its progress.
+    And this TaskState has a representation in our database, the TaskStateInDb.
+    """
 
     __tablename__ = "task"
 
@@ -107,11 +148,11 @@ class TaskStateInDb(Base):
         back_populates="task", cascade="all, delete-orphan"
     )
 
-    # To reconstruct the beets task we also need
+    # To reconstruct the beets task we need to store a few of its attributes
     toppath: Mapped[bytes | None]
     paths: Mapped[bytes]
     items: Mapped[bytes]
-    choice_flag: Mapped[bytes]
+    choice_flag: Mapped[action | None]
 
     progress: Mapped[Progress]
 
@@ -131,11 +172,11 @@ class TaskStateInDb(Base):
         self.items = pickle.dumps(items)
         self.candidates = candidates
         self.progress = progress
-        self.choice_flag = pickle.dumps(choice_flag)
+        self.choice_flag = choice_flag
 
     @classmethod
     def from_live_state(cls, state: TaskState) -> TaskStateInDb:
-        """Create a new task from a task state."""
+        """Create the DB representation of a live TaskState."""
         task = cls(
             toppath=state.task.toppath,
             paths=state.task.paths,
@@ -144,11 +185,12 @@ class TaskStateInDb(Base):
                 CandidateStateInDb.from_live_state(c) for c in state.candidate_states
             ],
             progress=state.progress.progress,
+            choice_flag=state.task.choice_flag,
         )
         return task
 
     def to_live_state(self, session_state: SessionState | None = None) -> TaskState:
-        """Convert the task to a task state."""
+        """Recreate the live TaskState with underlying task from its stored version in the db."""
 
         # We just assume it is a normal import task
         beets_task = ImportTask(
@@ -156,7 +198,7 @@ class TaskStateInDb(Base):
             paths=pickle.loads(self.paths),
             items=pickle.loads(self.items),
         )
-        beets_task.choice_flag = pickle.loads(self.choice_flag)
+        beets_task.choice_flag = self.choice_flag
 
         live_state = TaskState(beets_task)
         live_state.id = self.id
@@ -178,7 +220,10 @@ from beets_flask.logger import log
 
 
 class CandidateStateInDb(Base):
-    """Represents a candidate for an import task."""
+    """Represents a candidate (potential match) for an import task.
+
+    Again: Beets-Candidate > CandidateState > CandidateStateInDb
+    """
 
     __tablename__ = "candidate"
 
@@ -211,7 +256,7 @@ class CandidateStateInDb(Base):
 
     @classmethod
     def from_live_state(cls, state: CandidateState) -> CandidateStateInDb:
-        """Create a new candidate from a candidate state."""
+        """Create the DB representation of a live CandidateState."""
         candidate = cls(
             id=state.id,
             match=state.match,
@@ -219,19 +264,19 @@ class CandidateStateInDb(Base):
         return candidate
 
     def to_live_state(self, task_state: TaskState) -> CandidateState:
-        """Convert the candidate to a candidate state."""
+        """Recreate the live CandidateState with underlying task from its stored version in the db.."""
         live_state = CandidateState(pickle.loads(self.match), task_state)
         live_state.id = self.id
         return live_state
 
     def to_dict(self) -> SerializedCandidateState:
-        task = TaskStateInDb.get_by(TaskStateInDb.id == self.task_id)
-        if task is None:
+        t_state_db = TaskStateInDb.get_by(TaskStateInDb.id == self.task_id)
+        if t_state_db is None:
             raise ValueError(f"Task with id {self.task_id} not found.")
 
-        for candidate in task.to_live_state().candidate_states:
-            if candidate.id == self.id:
-                return candidate.serialize()
+        for c_state in t_state_db.to_live_state().candidate_states:
+            if c_state.id == self.id:
+                return c_state.serialize()
         raise ValueError(f"Candidate with id {self.id} not found.")
 
 

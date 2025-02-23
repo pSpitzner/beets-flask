@@ -129,10 +129,11 @@ class BaseSessionNew(importer.ImportSession, ABC):
     def set_task_progress(
         self, task: importer.ImportTask, progress: ProgressState | Progress | str
     ):
-        """Set the progress of the import session.
+        """Set the progress for a task belonging to the session.
 
         If string is given it is set as the message of the current progress.
-        Note: currently we only implement status on the level of the whole import session, but should eventually do this per selection (task).
+        Note: currently we only implement status on the level of the whole import session,
+        but should eventually do this per selection (task).
         """
 
         task_state = self.state.get_task_state_for_task(task)
@@ -146,6 +147,11 @@ class BaseSessionNew(importer.ImportSession, ABC):
         return task_state.progress if task_state else None
 
     # -------------------------------- Stages -------------------------------- #
+
+    @abstractmethod
+    def stages(self) -> List[Stage[importer.ImportTask, Any]]:
+        """Return the stages of the pipeline."""
+        pass
 
     def resolve_duplicate(self, task: importer.ImportTask, found_duplicates):
         """Overload default resolve duplicate and skip it.
@@ -204,11 +210,6 @@ class BaseSessionNew(importer.ImportSession, ABC):
         task_state.add_candidates(task.candidates)  # type: ignore
 
     # ---------------------------------- Run --------------------------------- #
-
-    @abstractmethod
-    def stages(self) -> List[Stage[importer.ImportTask, Any]]:
-        """Return the stages of the pipeline."""
-        pass
 
     def run_sync(self) -> SessionState:
         """Run the import session synchronously."""
@@ -314,37 +315,6 @@ class ImportSessionNew(BaseSessionNew):
 
     # -------------------------------- Stages -------------------------------- #
 
-    def lookup_candidates(self, task: importer.ImportTask):
-        """Lookup candidates for the task."""
-
-        if self.match_url is not None:
-            task.search_ids = [self.match_url]
-
-        super().lookup_candidates(task)
-
-    def choose_match(self, task: importer.ImportTask):
-        self.logger.setLevel(logging.DEBUG)
-        self.logger.debug(f"choose_match {task}")
-
-        try:
-            match: BeetsAlbumMatch | BeetsTrackMatch = task.candidates[0]
-        except IndexError:
-            # FIXME: where and how is this handled? TODO: InvalidUrlError
-            log.error(f"No matches found for {task=} {task.candidates=}")
-            raise ValueError("No matches found. Is the provided search URL correct?")
-
-        # Let plugins display info
-        results = plugins.send("import_task_before_choice", session=self, task=task)
-        actions = [action for action in results if action]
-
-        if len(actions) > 0:
-            # decide if we can just move past this and ignore the plugins
-            raise UserError(
-                f"Plugins returned actions, which is not supported for {self.__class__.__name__}"
-            )
-
-        return match
-
     def stages(self) -> List[Stage[importer.ImportTask, Any]]:
         """Return the stages of the pipeline."""
         stages: List[Stage[importer.ImportTask, Any]] = []
@@ -396,6 +366,37 @@ class ImportSessionNew(BaseSessionNew):
         )
 
         return stages
+
+    def lookup_candidates(self, task: importer.ImportTask):
+        """Lookup candidates for the task."""
+
+        if self.match_url is not None:
+            task.search_ids = [self.match_url]
+
+        super().lookup_candidates(task)
+
+    def choose_match(self, task: importer.ImportTask):
+        self.logger.setLevel(logging.DEBUG)
+        self.logger.debug(f"choose_match {task}")
+
+        try:
+            match: BeetsAlbumMatch | BeetsTrackMatch = task.candidates[0]
+        except IndexError:
+            # FIXME: where and how is this handled? TODO: InvalidUrlError
+            log.error(f"No matches found for {task=} {task.candidates=}")
+            raise ValueError("No matches found. Is the provided search URL correct?")
+
+        # Let plugins display info
+        results = plugins.send("import_task_before_choice", session=self, task=task)
+        actions = [action for action in results if action]
+
+        if len(actions) > 0:
+            # decide if we can just move past this and ignore the plugins
+            raise UserError(
+                f"Plugins returned actions, which is not supported for {self.__class__.__name__}"
+            )
+
+        return match
 
     def resolve_duplicate(self, task: importer.ImportTask, found_duplicates):
         log.debug(
@@ -461,6 +462,53 @@ class InteractiveImportSession(BaseSessionNew):
         self.communicator.emit_status_sync(self.state.progress)
 
     # -------------------------------- Stages -------------------------------- #
+
+    def stages(self) -> List[Stage[importer.ImportTask, Any]]:
+        """Return the stages of the pipeline."""
+        stages: List[Stage[importer.ImportTask, Any]] = []
+
+        if self.config["group_albums"] and not self.config["singletons"]:
+            # FIXME once migrated to next beets version
+            stages.append(group_albums(self))
+
+        stages += [
+            lookup_candidates(self),
+            identify_duplicates(self),
+            offer_match(self),
+            user_query(self),
+        ]
+
+        # plugin stages
+        for stage_func in plugins.early_import_stages():
+            stages.append(
+                plugin_stage(
+                    self,
+                    stage_func,
+                    ProgressState(
+                        Progress.EARLY_IMPORTING,
+                        plugin_name=stage_func.__name__,
+                    ),
+                ),
+            )
+
+        for stage_func in plugins.import_stages():
+            stages.append(
+                plugin_stage(
+                    self,
+                    stage_func,
+                    ProgressState(
+                        Progress.IMPORTING,
+                        plugin_name=stage_func.__name__,
+                    ),
+                ),
+            )
+
+        # finally, move files
+        stages.append(
+            manipulate_files(self),
+        )
+
+        return stages
 
     def identify_duplicates(self, task: importer.ImportTask):
         """Identify and flag candidates of a task that are duplicates."""
@@ -619,53 +667,6 @@ class InteractiveImportSession(BaseSessionNew):
             task.should_merge_duplicates = True
         else:
             raise ValueError(f"Unknown duplicate resolution action: {sel}")
-
-    def stages(self) -> List[Stage[importer.ImportTask, Any]]:
-        """Return the stages of the pipeline."""
-        stages: List[Stage[importer.ImportTask, Any]] = []
-
-        if self.config["group_albums"] and not self.config["singletons"]:
-            # FIXME once migrated to next beets version
-            stages.append(group_albums(self))
-
-        stages += [
-            lookup_candidates(self),
-            identify_duplicates(self),
-            offer_match(self),
-            user_query(self),
-        ]
-
-        # plugin stages
-        for stage_func in plugins.early_import_stages():
-            stages.append(
-                plugin_stage(
-                    self,
-                    stage_func,
-                    ProgressState(
-                        Progress.EARLY_IMPORTING,
-                        plugin_name=stage_func.__name__,
-                    ),
-                ),
-            )
-
-        for stage_func in plugins.import_stages():
-            stages.append(
-                plugin_stage(
-                    self,
-                    stage_func,
-                    ProgressState(
-                        Progress.IMPORTING,
-                        plugin_name=stage_func.__name__,
-                    ),
-                ),
-            )
-
-        # finally, move files
-        stages.append(
-            manipulate_files(self),
-        )
-
-        return stages
 
     async def run_async(self):
         await self.communicator.emit_current_async()

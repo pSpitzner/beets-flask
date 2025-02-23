@@ -5,7 +5,7 @@ from beets import autotag, importer
 from quart.typing import TestClientProtocol as Client
 from sqlalchemy.orm import Session
 
-from beets_flask.database.models.state import SessionStateInDb
+from beets_flask.database.models.states import SessionStateInDb
 from beets_flask.importer.states import SessionState
 
 from ..conftest import beets_lib_item
@@ -69,7 +69,6 @@ class TestSessionEndpoint:
 
     @pytest.mark.asyncio
     async def test_get_all(self, client: Client, session_in_db):
-
         response = await client.get("/api_v1/session")
         assert response.status_code == 200
         data = await response.get_json()
@@ -103,19 +102,16 @@ class TestSessionEndpoint:
 
     @pytest.mark.asyncio
     async def test_invalid_id(self, client: Client):
-
         response = await client.get("/api_v1/session/id/invalid_id")
         assert response.status_code == 404
 
     @pytest.mark.asyncio
     async def test_invalid_param(self, client: Client):
-
         response = await client.get("/api_v1/session?cursor=invalid")
         assert response.status_code == 400
 
     @pytest.mark.asyncio
     async def test_get_by_id(self, client: Client, session_in_db):
-
         for s in session_in_db:
             response = await client.get(f"/api_v1/session/id/{s.id}")
             assert response.status_code == 200

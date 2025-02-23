@@ -184,7 +184,7 @@ class TaskState:
         candidates: List[Union[BeetsAlbumMatch, BeetsTrackMatch]],
         insert_at: int = 0,
     ) -> List[CandidateState]:
-        """Add a new candidates to the selection state."""
+        """Add new candidates to the selection state."""
         if len(self.task.candidates) == 0 or len(self.candidate_states) == 0:
             insert_at = 0
 

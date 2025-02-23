@@ -1,8 +1,9 @@
+from __future__ import annotations
 import os
 import re
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, List, NotRequired, TypedDict, Union
+from typing import Any, Dict, List, Literal, NotRequired, TypedDict, Union
 
 from beets.importer import MULTIDISC_MARKERS, MULTIDISC_PAT_FMT, albums_in_dir
 from cachetools import TTLCache, cached
@@ -10,12 +11,24 @@ from cachetools import TTLCache, cached
 from beets_flask.logger import log
 
 
-class FolderStructure(TypedDict):
-    type: str
+class Folder(TypedDict):
+    type: Literal["directory"]
+    # FIXME: currently, children maps from path component (folder or file name) to objects.
+    # Should be a set, and classes should have (file) name as attribute.
+    children: Dict[str, Union[Folder, File]]
     is_album: bool
     is_inbox: NotRequired[bool]
     full_path: str
-    children: Dict[str, Union["FolderStructure", dict]]
+    hash: NotRequired[str]
+
+
+class File(TypedDict):
+    type: Literal["file"]
+    full_path: str
+    # FIXME: remove this once we fix frontend
+    is_album: NotRequired[bool]
+    is_inbox: NotRequired[bool]
+    children: NotRequired[Dict[str, Union[Folder, File]]]
 
 
 @cached(cache=TTLCache(maxsize=1024, ttl=900), info=True)
@@ -41,7 +54,7 @@ def path_to_dict(root_dir, relative_to="/", subdirs=True):
 
     album_folders = all_album_folders(root_dir, subdirs=subdirs)
 
-    folder_structure: FolderStructure = {
+    folder_structure: Folder = {
         "type": "directory",
         "is_album": relative_to in album_folders,
         "full_path": relative_to,
@@ -54,12 +67,24 @@ def path_to_dict(root_dir, relative_to="/", subdirs=True):
                 continue
             path = os.path.join(path, component)
             if component not in d["children"]:
-                d["children"][component] = {
-                    "type": "file" if os.path.isfile(path) else "directory",
-                    "is_album": path in album_folders,
-                    "full_path": path,
-                    "children": {},
-                }
+                if os.path.isfile(path):
+                    d["children"][component] = File(
+                        {
+                            "type": "file",
+                            "is_album": False,
+                            "full_path": path,
+                            "children": {},
+                        }
+                    )
+                else:
+                    d["children"][component] = Folder(
+                        {
+                            "type": "directory",
+                            "is_album": path in album_folders,
+                            "full_path": path,
+                            "children": {},
+                        }
+                    )
             d = d["children"][component]
 
     for dirpath, dirnames, filenames in os.walk(root_dir):
