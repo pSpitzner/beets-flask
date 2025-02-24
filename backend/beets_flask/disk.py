@@ -1,12 +1,14 @@
 from __future__ import annotations
+
 import os
 import re
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, List, Literal, NotRequired, TypedDict, Union
+from typing import Any, Dict, List, Literal, NotRequired, Set, TypedDict, Union
 
 from beets.importer import MULTIDISC_MARKERS, MULTIDISC_PAT_FMT, albums_in_dir
 from cachetools import TTLCache, cached
+from deprecated import deprecated
 
 from beets_flask.logger import log
 
@@ -32,7 +34,7 @@ class File(TypedDict):
 
 
 @cached(cache=TTLCache(maxsize=1024, ttl=900), info=True)
-def path_to_dict(root_dir, relative_to="/", subdirs=True):
+def path_to_dict(root_dir: Path | str, relative_to="/", subdirs=True):
     """Generate our nested dict structure for the specified path.
 
     Each level in the folder hierarchy is a dict with the following keys:
@@ -49,7 +51,10 @@ def path_to_dict(root_dir, relative_to="/", subdirs=True):
     # Returns:
     - dict: The nested dict structure.
     """
-    if not os.path.isdir(root_dir):
+    if isinstance(root_dir, str):
+        root_dir = Path(root_dir)
+
+    if not root_dir.is_dir():
         raise FileNotFoundError(f"Path `{root_dir}` does not exist or is no directory.")
 
     album_folders = all_album_folders(root_dir, subdirs=subdirs)
@@ -104,68 +109,54 @@ def path_to_dict(root_dir, relative_to="/", subdirs=True):
     return folder_structure
 
 
-def tree(folder_structure) -> str:
-    """Tree-like string to represent our nested dict structure and reflects file paths.
-
-    # Args:
-        folder_structure (dict): The nested dict structure.
-    """
-
-    def _tree(d, prefix=""):
-        contents = d["children"].keys()
-        pointers = ["├── "] * (len(contents) - 1) + ["└── "]
-        for pointer, name in zip(pointers, contents):
-            yield prefix + pointer + name
-            if d[name].get("__type") == "directory":
-                extension = "│   " if pointer == "├── " else "    "
-                yield from _tree(d[name], prefix=prefix + extension)
-
-    res = ""
-    for line in _tree(folder_structure):
-        res += line + "\n"
-    return res
-
-
 def album_folders_from_track_paths(
-    track_paths: List[str], use_parent_for_multidisc: bool = True
-) -> List[str]:
+    track_paths: List[Path] | List[str], use_parent_for_multidisc: bool = True
+) -> List[Path]:
     """Get all album folders from a list of paths to files.
 
-    Args:
-        track_paths (List[str]): list of track paths, e.g. mp3 files
-        use_parent_for_multidisc: (bool, optional): when files are in an album folder that might be a multi-disc folder (e.g. `/album/cd1`), return the parent (`/album`) instead of the lowes-level-folder (`/cd1`). Defaults to True.
+    Parameters
+    ----------
+    track_paths : List[Path]
+        List of track paths, e.g. mp3 files.
+    use_parent_for_multidisc : bool, optional
+        When files are in an album folder that might be a multi-disc folder (e.g. `/album/cd1`),
+        return the parent (`/album`) instead of the lowest-level-folder (`/cd1`). Defaults to True.
 
     Returns
     -------
         List[str]: album folders
     """
-    folders_to_check = set()
+
+    folders_to_check: Set[Path] = set()
     for path in track_paths:
-        if os.path.isfile(path):
-            folders_to_check.add(os.path.dirname(os.path.abspath(path)))
+        # FIXME: For backwards compatibility, we allow a string as input
+        if isinstance(path, str):
+            path = Path(path)
+
+        if path.is_file():
+            folders_to_check.add(path.parent.resolve())
         else:
             # just to be nice and manage directories instead of files
-            folders_to_check.add(os.path.abspath(path))
+            folders_to_check.add(path.resolve())
 
-    album_folders = set()
+    album_folders: Set[Path] = set()
     for folder in folders_to_check:
         afs = all_album_folders(folder, subdirs=True)
         for af in afs:
             album_folders.add(af)
 
     if use_parent_for_multidisc:
-        parents = set()
-        children = set()
+        parents: Set[Path] = set()
+        children: Set[Path] = set()
         for folder in album_folders:
             if is_within_multi_dir(folder):
-                # remove trailing slash because dirname("/foo/bar/") -> "/foo/bar" not "/foo"
-                parents.add(os.path.dirname(folder.rstrip("/")))
+                parents.add(folder.parent)
                 children.add(folder)
 
         album_folders = album_folders - children
         album_folders = album_folders.union(parents)
 
-    return sorted([str(folder) for folder in album_folders], key=lambda s: s.lower())
+    return sorted(album_folders, key=lambda s: str(s).lower())
 
 
 def is_album_folder(path: Path | str | bytes):
@@ -179,20 +170,29 @@ def is_album_folder(path: Path | str | bytes):
     return False
 
 
-def all_album_folders(root_dir: str, subdirs: bool = False) -> List[str]:
+def all_album_folders(root_dir: Path | str, subdirs: bool = False) -> List[Path]:
     """
     Get all album folders from a given root dir.
 
-    Args:
-        root_dir (str): toppath, highest level to start searching.
-        subdirs (bool, optional): Whether to return subfolders of an album that themselves would qualify. E.g. a `CD1` folder. Defaults to False.
+    Parameters
+    ----------
+    root_dir : str
+        toppath, highest level to start searching.
+    subdirs : bool, optional
+        Whether to return subfolders of an album that themselves would qualify.
+        E.g. a `CD1` folder. Defaults to False.
 
     Returns
     -------
-        List[str]
+        List[Path]
     """
-    folders: list[Any] = []
-    for paths, _ in albums_in_dir(root_dir):
+
+    # FIXME: For backwards compatibility, we allow a string as input
+    if isinstance(root_dir, str):
+        root_dir = Path(root_dir)
+
+    folders: list[bytes] = []
+    for paths, _ in albums_in_dir(root_dir.absolute()):
         if subdirs:
             folders.extend(p for p in paths)
         else:
@@ -207,12 +207,34 @@ def all_album_folders(root_dir: str, subdirs: bool = False) -> List[str]:
             else:
                 folders.append(paths[0])
 
-    return [f.decode("utf-8") for f in folders]
+    return [Path(f.decode("utf-8")) for f in folders]
 
 
-# cache data for no longer than one minutes
+def is_within_multi_dir(path: Path | str) -> bool:
+    """
+    Minimal version of beets heuristic to check if a string matches a multi-disc pattern.
+
+    E.g. "My Album CD1" or "Disc 2" will return True
+    """
+
+    # FIXME: For backwards compatibility, we allow a string as input
+    if isinstance(path, str):
+        path = Path(path)
+
+    path_str = path.name  # Use pathlib to get the basename
+
+    for marker in MULTIDISC_MARKERS:
+        p = MULTIDISC_PAT_FMT.replace(b"%s", marker)
+        marker_pat = re.compile(p, re.I)
+        match = marker_pat.match(path_str.encode("utf-8"))
+        if match:
+            return True
+    return False
+
+
 @cached(cache=TTLCache(maxsize=1024, ttl=60), info=True)
-def dir_size(path: Path):
+def dir_size(path: Path) -> int:
+    """Size of a dir in bytes, including content."""
     try:
         result = subprocess.run(
             ["du", "-sb", str(path.resolve())],
@@ -228,19 +250,6 @@ def dir_size(path: Path):
         return -1
 
 
-def is_within_multi_dir(path) -> bool:
-    """
-    Minimal version of beets heuristic to check if a string matches a multi-disc pattern.
-
-    E.g. "CD1" or "Disc 2" will return True
-    """
-    # basename gives '' if we have a trailing /
-    path = path.rstrip("/")
-
-    for marker in MULTIDISC_MARKERS:
-        p = MULTIDISC_PAT_FMT.replace(b"%s", marker)
-        marker_pat = re.compile(p, re.I)
-        match = marker_pat.match(os.path.basename(path).encode("utf-8"))
-        if match:
-            return True
-    return False
+__all__ = [
+    "dir_size",
+]

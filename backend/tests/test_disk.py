@@ -1,13 +1,14 @@
 import os
-from pathlib import Path
 import shutil
 import tempfile
+from pathlib import Path
+
 import pytest
 
 from beets_flask.disk import (
-    is_album_folder,
-    all_album_folders,
     album_folders_from_track_paths,
+    all_album_folders,
+    is_album_folder,
     is_within_multi_dir,
 )
 
@@ -86,25 +87,41 @@ def test_is_album_folder_multi(base):
 
 
 def test_all_album_folders_no_subdirs(base):
-    print(all_album_folders(base))
-    assert set(all_album_folders(base)) == {
+
+    all_albums = [
         base + "/artist/album_good",
         base + "/artist/album_multi/1",
         base + "/artist/album_multi/2",
         base + "/artist/album_multi/2/CD1",
         base + "/artist/album_multi/2/CD2",
-    }
+        base + "/artist/album_good/1991",
+        base + "/artist/album_good/1991/Chant [SINGLE]",
+        base + "/artist/album_good/Annix",
+        base + "/artist/album_good/Annix/Antidote",
+    ]
+
+    print(all_album_folders(base))
+    assert set(all_album_folders(base)) == {Path(p) for p in all_albums}
 
 
 def test_all_album_folders_with_subdirs(base):
-    assert set(all_album_folders(base, subdirs=True)) == {
+
+    all_albums_with_subdirs = [
         base + "/artist/album_good",
+        base + "/artist/album_good/1991",
+        base + "/artist/album_good/1991/Chant [SINGLE]",
+        base + "/artist/album_good/Annix",
+        base + "/artist/album_good/Annix/Antidote",
         base + "/artist/album_multi/1",
         base + "/artist/album_multi/1/CD1",
         base + "/artist/album_multi/1/CD2",
         base + "/artist/album_multi/2",
         base + "/artist/album_multi/2/CD1",
         base + "/artist/album_multi/2/CD2",
+    ]
+
+    assert set(all_album_folders(base, subdirs=True)) == {
+        Path(p) for p in all_albums_with_subdirs
     }
 
 
@@ -118,45 +135,65 @@ def test_is_within_multi_dir(base):
     assert not is_within_multi_dir(base + "/artist/album_good/")
 
 
-def test_album_folders_from_track_path_1(base):
-    folders = album_folders_from_track_paths([base + "/artist/album_good/test.mp3"])
-    assert folders == [base + "/artist/album_good"]
-
-
-def test_album_folders_from_track_path_2(base):
-    folders = album_folders_from_track_paths(
-        [base + "/artist/album_multi/1/CD1/track_1.mp3"],
-        # this is a bit of an edge-case: the subdirs arg has no effect here,
-        # cos only one file (and therefore, no way to
-        use_parent_for_multidisc=False,
-    )
-    assert folders == [
-        base + "/artist/album_multi/1/CD1",
-    ]
-
-
-def test_album_folders_from_track_path_3(base):
-    folders = album_folders_from_track_paths(
+# input, use_parent_for_multidisc, expected
+testdata = [
+    (
+        ["/artist/album_multi/1/CD1/track_1.mp3"],
+        True,
+        ["/artist/album_multi/1"],
+    ),
+    (
+        ["/artist/album_multi/1/CD1/track_1.mp3"],
+        False,
+        ["/artist/album_multi/1/CD1"],
+    ),
+    (
         [
-            base + "/artist/album_multi/1/CD1/track_1.mp3",
-            base + "/artist/album_multi/1/CD2/track_1.mp3",
+            "/artist/album_multi/1/CD1/track_1.mp3",
+            "/artist/album_multi/1/CD2/track_1.mp3",
         ],
-        use_parent_for_multidisc=False,
-    )
-    assert folders == [
-        base + "/artist/album_multi/1/CD1",
-        base + "/artist/album_multi/1/CD2",
-    ]
-
-
-def test_album_folders_from_track_path_4(base):
-    folders = album_folders_from_track_paths(
+        True,
+        ["/artist/album_multi/1"],
+    ),
+    (
         [
-            base + "/artist/album_multi/1/CD1/track_1.mp3",
-            base + "/artist/album_multi/1/CD2/track_1.mp3",
+            "/artist/album_multi/1/CD1/track_1.mp3",
+            "/artist/album_multi/1/CD2/track_1.mp3",
         ],
-        use_parent_for_multidisc=True,
+        False,
+        [
+            "/artist/album_multi/1/CD1",
+            "/artist/album_multi/1/CD2",
+        ],
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "input, use_parent_for_multidisc, expected",
+    testdata,
+)
+def test_album_folders_from_track(
+    base, input: list[str], use_parent_for_multidisc: bool, expected: list[str]
+):
+
+    # Try legacy using string paths
+    # TODO: Remove once we have migrated to Path objects
+    folders = album_folders_from_track_paths(
+        [base + p for p in input],
+        use_parent_for_multidisc=use_parent_for_multidisc,
     )
-    assert folders == [
-        base + "/artist/album_multi/1",
-    ]
+
+    assert len(folders) == len(expected)
+    for i, e in enumerate(expected):
+        assert folders[i] == Path(base + e)
+
+    # Test same thing with Path objects
+    folders = album_folders_from_track_paths(
+        [Path(base + p) for p in input],
+        use_parent_for_multidisc=use_parent_for_multidisc,
+    )
+
+    assert len(folders) == len(expected)
+    for i, e in enumerate(expected):
+        assert folders[i] == Path(base + e)
