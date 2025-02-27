@@ -15,6 +15,6 @@ async def get_tree():
     # Create dict representation of inbox folders
     folders: list[Folder] = []
     for folder in inbox_folders:
-        folders.append(path_to_dict(folder))
+        folders.append(path_to_dict(folder, subdirs=False))
 
     return folders
