@@ -1,19 +1,33 @@
 import os
 from hashlib import md5
 
-from cachetools import TTLCache, cached
+from cachetools import Cache, TTLCache, cached
 
 cache = TTLCache(maxsize=1024, ttl=900)
 
 
-@cached(cache=cache)
-def dirhash(dirname: str) -> bytes:
+def dirhash_c(dirname: str, cache: Cache[str, bytes]) -> bytes:
+    """Compute a hash for a directory.
+
+    The hash is computed by hashing the path of each file and using
+    its filesystem metadata (size, mtime, ctime).
+
+    Parameters
+    ----------
+    dirname: str
+        The path to the directory
+    cache: dict, optional
+        A cache object to store intermediate results. If None, no caching is used.
+    """
+    if dirname in cache:
+        return cache[dirname]
+
     hash = md5()
 
     # Hash for each entry in the directory
     for entry in os.scandir(dirname):
         if entry.is_dir():
-            hash.update(dirhash(entry.path))
+            hash.update(dirhash_c(entry.path, cache))
         else:
             # TODO: Filter audio only
             fs = os.stat(entry.path)
@@ -24,27 +38,6 @@ def dirhash(dirname: str) -> bytes:
             hash.update(entry.name.encode())
 
     return hash.digest()
-
-
-def dirhash_c(dirname: str, clear_cache=False) -> str:
-    """Compute high level hash for a directory.
-
-    The hash is computed by hashing the path of each file and by using
-    its filesystem metadata (size, mtime, ctime).
-
-    Parameters
-    ----------
-    dirname: str
-        The path to the directory
-    clear_cache: bool, optional
-        If True, the cache will be cleared before computing the hash
-    """
-
-    global cache
-    if clear_cache:
-        cache.clear()
-
-    return dirhash(dirname).hex()
 
 
 __all__ = ["dirhash_c"]

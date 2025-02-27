@@ -4,24 +4,32 @@ import os
 import re
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, List, Literal, NotRequired, Set, TypedDict, Union
+from typing import (
+    List,
+    Literal,
+    Mapping,
+    NotRequired,
+    Sequence,
+    Set,
+    TypedDict,
+)
 
 from beets.importer import MULTIDISC_MARKERS, MULTIDISC_PAT_FMT, albums_in_dir
-from cachetools import TTLCache, cached
-from deprecated import deprecated
+from cachetools import Cache, TTLCache, cached
 
+from beets_flask.dirhash_custom import dirhash_c
 from beets_flask.logger import log
 
 
 class Folder(TypedDict):
     type: Literal["directory"]
-    # FIXME: currently, children maps from path component (folder or file name) to objects.
-    # Should be a set, and classes should have (file) name as attribute.
-    children: Dict[str, Union[Folder, File]]
-    is_album: bool
-    is_inbox: NotRequired[bool]
+    children: Sequence[Folder | File]
     full_path: str
-    hash: NotRequired[str]
+    hash: str
+
+    # FIXME: Old stuff (needs some more thought)
+    is_inbox: NotRequired[bool]
+    is_album: NotRequired[bool]
 
 
 class File(TypedDict):
@@ -30,13 +38,13 @@ class File(TypedDict):
     # FIXME: remove this once we fix frontend
     is_album: NotRequired[bool]
     is_inbox: NotRequired[bool]
-    children: NotRequired[Dict[str, Union[Folder, File]]]
 
 
 @cached(cache=TTLCache(maxsize=1024, ttl=900), info=True)
 def path_to_dict(root_dir: Path | str, relative_to="/", subdirs=True):
     """Generate our nested dict structure for the specified path.
 
+    # TODO: fix docstring
     Each level in the folder hierarchy is a dict with the following keys:
         * "type": "directory" | "file"
         * "is_album": bool
@@ -57,56 +65,43 @@ def path_to_dict(root_dir: Path | str, relative_to="/", subdirs=True):
     if not root_dir.is_dir():
         raise FileNotFoundError(f"Path `{root_dir}` does not exist or is no directory.")
 
-    album_folders = all_album_folders(root_dir, subdirs=subdirs)
+    # FIXME: Add is_album again
+    # album_folders = all_album_folders(root_dir, subdirs=subdirs)
 
-    folder_structure: Folder = {
-        "type": "directory",
-        "is_album": relative_to in album_folders,
-        "full_path": relative_to,
-        "children": {},
-    }
+    # Cache for the dirhash function
+    cache: Cache[str, bytes] = Cache(maxsize=2**15)
 
-    def add_to_structure(d, components, path):
-        for component in components:
-            if component == ".":
-                continue
-            path = os.path.join(path, component)
-            if component not in d["children"]:
-                if os.path.isfile(path):
-                    d["children"][component] = File(
-                        {
-                            "type": "file",
-                            "is_album": False,
-                            "full_path": path,
-                            "children": {},
-                        }
-                    )
-                else:
-                    d["children"][component] = Folder(
-                        {
-                            "type": "directory",
-                            "is_album": path in album_folders,
-                            "full_path": path,
-                            "children": {},
-                        }
-                    )
-            d = d["children"][component]
+    # Object that contains all tree elements
+    lookup: Mapping[str, Folder] = dict()
 
-    for dirpath, dirnames, filenames in os.walk(root_dir):
-        # Filter out hidden files and directories
-        dirnames[:] = [d for d in dirnames if not d.startswith(".")]
-        filenames = [f for f in filenames if not f.startswith(".")]
+    for dirpath, dirnames, filenames in os.walk(root_dir, topdown=False):
 
-        relative_path = os.path.relpath(dirpath, relative_to)
-        path_components = [p for p in relative_path.split(os.sep) if p]
-        current_dict = folder_structure
+        # As we iterate from bottom to top, we can access the elements from
+        # the lookup table as they are already created
+        children: list[Folder | File] = [
+            lookup[os.path.join(dirpath, sub_dir)] for sub_dir in dirnames
+        ]
 
-        add_to_structure(current_dict, path_components, relative_to)
-
+        # Add all files to children
         for filename in filenames:
-            add_to_structure(current_dict, path_components + [filename], relative_to)
+            full_path = os.path.join(dirpath, filename)
+            children.append(
+                File(
+                    type="file",
+                    full_path=full_path,
+                )
+            )
 
-    return folder_structure
+        # Add current directory to lookup
+        lookup[dirpath] = Folder(
+            type="directory",
+            children=children,
+            full_path=dirpath,
+            hash=dirhash_c(dirpath, cache).hex(),
+            # is_album=Path(dirpath) in album_folders,
+        )
+
+    return lookup[str(root_dir)]
 
 
 def album_folders_from_track_paths(
