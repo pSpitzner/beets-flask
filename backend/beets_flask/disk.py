@@ -16,6 +16,7 @@ from typing import (
 
 from beets.importer import MULTIDISC_MARKERS, MULTIDISC_PAT_FMT, albums_in_dir
 from cachetools import Cache, TTLCache, cached
+from natsort import os_sorted
 
 from beets_flask.dirhash_custom import dirhash_c
 from beets_flask.logger import log
@@ -27,37 +28,31 @@ class Folder(TypedDict):
     full_path: str
     hash: str
 
-    # FIXME: Old stuff (needs some more thought)
-    is_inbox: NotRequired[bool]
-    is_album: NotRequired[bool]
+    # If beets has marked this folder as an album
+    is_album: bool
 
 
 class File(TypedDict):
     type: Literal["file"]
     full_path: str
-    # FIXME: remove this once we fix frontend
-    is_album: NotRequired[bool]
-    is_inbox: NotRequired[bool]
 
 
 @cached(cache=TTLCache(maxsize=1024, ttl=900), info=True)
-def path_to_dict(root_dir: Path | str, relative_to="/", subdirs=True):
+def path_to_dict(root_dir: Path | str, relative_to="/", subdirs=True) -> Folder:
     """Generate our nested dict structure for the specified path.
 
-    # TODO: fix docstring
-    Each level in the folder hierarchy is a dict with the following keys:
-        * "type": "directory" | "file"
-        * "is_album": bool
-        * "full_path": str
-        * "children": dict
+    Parameters
+    ----------
+    root_dir : str
+        The root directory to start from.
+    relative_to : str, optional
+        The path to be stripped from the full path. Defaults to "/".
+    subdirs : bool, optional
+        Whether to mark qualifying subfolders of an album as album folders themselves. If true, e.g. for `/album/CD1/track.mp3` both `/album/` and `/album/CD1/` are flagged. Defaults to True.
 
-    # Args:
-    - root_dir (str): The root directory to start from.
-    - relative_to (str): The path to be stripped from the full path.
-    - subdirs (bool, optional): Whether to mark qualifying subfolders of an album as album folders themselves. If true, e.g. for `/album/CD1/track.mp3` both `/album/` and `/album/CD1/` are flagged. Defaults to True.
-
-    # Returns:
-    - dict: The nested dict structure.
+    Returns
+    -------
+        dict: The nested dict structure.
     """
     if isinstance(root_dir, str):
         root_dir = Path(root_dir)
@@ -65,30 +60,32 @@ def path_to_dict(root_dir: Path | str, relative_to="/", subdirs=True):
     if not root_dir.is_dir():
         raise FileNotFoundError(f"Path `{root_dir}` does not exist or is no directory.")
 
-    # FIXME: Add is_album again
-    # album_folders = all_album_folders(root_dir, subdirs=subdirs)
+    album_folders = all_album_folders(root_dir, subdirs=subdirs)
 
     # Cache for the dirhash function
-    cache: Cache[str, bytes] = Cache(maxsize=2**15)
+    cache: Cache[str, bytes] = Cache(maxsize=2**16)
 
     # Object that contains all tree elements
     lookup: Mapping[str, Folder] = dict()
 
     for dirpath, dirnames, filenames in os.walk(root_dir, topdown=False):
 
+        # FIXME: Filter for files here (audio extensions only)
+        # FIXME: Skip hidden folders
+
         # As we iterate from bottom to top, we can access the elements from
         # the lookup table as they are already created
         children: list[Folder | File] = [
-            lookup[os.path.join(dirpath, sub_dir)] for sub_dir in dirnames
+            lookup[os.path.join(dirpath, sub_dir)] for sub_dir in os_sorted(dirnames)
         ]
 
         # Add all files to children
-        for filename in filenames:
+        for filename in os_sorted(filenames):
             full_path = os.path.join(dirpath, filename)
             children.append(
                 File(
                     type="file",
-                    full_path=full_path,
+                    full_path=os.path.relpath(full_path, relative_to),
                 )
             )
 
@@ -96,9 +93,9 @@ def path_to_dict(root_dir: Path | str, relative_to="/", subdirs=True):
         lookup[dirpath] = Folder(
             type="directory",
             children=children,
-            full_path=dirpath,
+            full_path=os.path.relpath(dirpath, relative_to),
             hash=dirhash_c(dirpath, cache).hex(),
-            # is_album=Path(dirpath) in album_folders,
+            is_album=Path(dirpath) in album_folders,
         )
 
     return lookup[str(root_dir)]

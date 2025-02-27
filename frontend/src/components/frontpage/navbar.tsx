@@ -83,6 +83,7 @@ export default function NavTabs() {
     const navItems = [
         { label: "Home", icon: <Home />, to: "/" as const },
         { label: "Inbox", icon: <Inbox />, to: "/inbox" as const },
+        { label: "Inbox2", icon: <Inbox />, to: "/inbox2" as const },
         { label: "Tags", icon: <Tag />, to: "/tags" as const },
         { label: "Import", icon: <HardDriveDownload />, to: "/import" as const },
         { label: "Library", icon: <Library />, to: "/library/browse" as const },

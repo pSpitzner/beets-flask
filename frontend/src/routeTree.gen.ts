@@ -14,6 +14,7 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as LoadingImport } from './routes/loading'
 import { Route as TerminalIndexImport } from './routes/terminal/index'
 import { Route as TagsIndexImport } from './routes/tags/index'
+import { Route as Inbox2IndexImport } from './routes/inbox2/index'
 import { Route as InboxIndexImport } from './routes/inbox/index'
 import { Route as ImportIndexImport } from './routes/import/index'
 import { Route as FrontpageIndexImport } from './routes/_frontpage/index'
@@ -42,6 +43,12 @@ const TerminalIndexRoute = TerminalIndexImport.update({
 const TagsIndexRoute = TagsIndexImport.update({
   id: '/tags/',
   path: '/tags/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const Inbox2IndexRoute = Inbox2IndexImport.update({
+  id: '/inbox2/',
+  path: '/inbox2/',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -160,6 +167,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InboxIndexImport
       parentRoute: typeof rootRoute
     }
+    '/inbox2/': {
+      id: '/inbox2/'
+      path: '/inbox2'
+      fullPath: '/inbox2'
+      preLoaderRoute: typeof Inbox2IndexImport
+      parentRoute: typeof rootRoute
+    }
     '/tags/': {
       id: '/tags/'
       path: '/tags'
@@ -265,6 +279,7 @@ export interface FileRoutesByFullPath {
   '/': typeof FrontpageIndexRoute
   '/import': typeof ImportIndexRoute
   '/inbox': typeof InboxIndexRoute
+  '/inbox2': typeof Inbox2IndexRoute
   '/tags': typeof TagsIndexRoute
   '/terminal': typeof TerminalIndexRoute
   '/schedule': typeof FrontpageModalScheduleRoute
@@ -281,6 +296,7 @@ export interface FileRoutesByTo {
   '/': typeof FrontpageIndexRoute
   '/import': typeof ImportIndexRoute
   '/inbox': typeof InboxIndexRoute
+  '/inbox2': typeof Inbox2IndexRoute
   '/tags': typeof TagsIndexRoute
   '/terminal': typeof TerminalIndexRoute
   '/schedule': typeof FrontpageModalScheduleRoute
@@ -298,6 +314,7 @@ export interface FileRoutesById {
   '/_frontpage/': typeof FrontpageIndexRoute
   '/import/': typeof ImportIndexRoute
   '/inbox/': typeof InboxIndexRoute
+  '/inbox2/': typeof Inbox2IndexRoute
   '/tags/': typeof TagsIndexRoute
   '/terminal/': typeof TerminalIndexRoute
   '/_frontpage/_modal/schedule': typeof FrontpageModalScheduleRoute
@@ -316,6 +333,7 @@ export interface FileRouteTypes {
     | '/'
     | '/import'
     | '/inbox'
+    | '/inbox2'
     | '/tags'
     | '/terminal'
     | '/schedule'
@@ -331,6 +349,7 @@ export interface FileRouteTypes {
     | '/'
     | '/import'
     | '/inbox'
+    | '/inbox2'
     | '/tags'
     | '/terminal'
     | '/schedule'
@@ -346,6 +365,7 @@ export interface FileRouteTypes {
     | '/_frontpage/'
     | '/import/'
     | '/inbox/'
+    | '/inbox2/'
     | '/tags/'
     | '/terminal/'
     | '/_frontpage/_modal/schedule'
@@ -363,6 +383,7 @@ export interface RootRouteChildren {
   FrontpageIndexRoute: typeof FrontpageIndexRoute
   ImportIndexRoute: typeof ImportIndexRoute
   InboxIndexRoute: typeof InboxIndexRoute
+  Inbox2IndexRoute: typeof Inbox2IndexRoute
   TagsIndexRoute: typeof TagsIndexRoute
   TerminalIndexRoute: typeof TerminalIndexRoute
 }
@@ -375,6 +396,7 @@ const rootRouteChildren: RootRouteChildren = {
   FrontpageIndexRoute: FrontpageIndexRoute,
   ImportIndexRoute: ImportIndexRoute,
   InboxIndexRoute: InboxIndexRoute,
+  Inbox2IndexRoute: Inbox2IndexRoute,
   TagsIndexRoute: TagsIndexRoute,
   TerminalIndexRoute: TerminalIndexRoute,
 }
@@ -396,6 +418,7 @@ export const routeTree = rootRoute
         "/_frontpage/",
         "/import/",
         "/inbox/",
+        "/inbox2/",
         "/tags/",
         "/terminal/"
       ]
@@ -426,6 +449,9 @@ export const routeTree = rootRoute
     },
     "/inbox/": {
       "filePath": "inbox/index.tsx"
+    },
+    "/inbox2/": {
+      "filePath": "inbox2/index.tsx"
     },
     "/tags/": {
       "filePath": "tags/index.tsx"
