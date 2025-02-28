@@ -1,4 +1,4 @@
-import { Disc3, FileIcon, FolderIcon, LucideChevronRight, Music } from "lucide-react";
+import { Disc3, FolderIcon, LucideChevronRight } from "lucide-react";
 import { createContext, useCallback, useContext, useState } from "react";
 import { Box, Checkbox, Chip, IconButton, SxProps, Theme, Typography } from "@mui/material";
 
@@ -18,7 +18,7 @@ interface FolderContext {
 
 const foldersContext = createContext<FolderContext | null>(null);
 
-function useFoldersContext() {
+export function useFoldersContext() {
     const context = useContext(foldersContext);
     if (!context) {
         throw new Error("useFoldersContext must be used inside a FoldersProvider");
@@ -101,7 +101,7 @@ export function FolderComponent({ folder }: { folder: Folder }) {
                 <PenaltyIcon kind="artist" color="red" />
                 <PenaltyIcon kind="track" color="orange" />
                 <PenaltyIcon kind="duplicate" />
-                <MatchChip type="spotify" quality={Math.random() * 100} />
+                <MatchChip type="spotify" quality={100} />
 
                 {/* Selector */}
                 <Checkbox
@@ -189,6 +189,7 @@ function RowWrapper({
                 background: isSelected ? "gray" : "transparent",
                 paddingBlock: "1px",
                 position: "relative",
+                flexWrap: "wrap",
                 ...sx,
             }}
         >
@@ -206,7 +207,7 @@ function MatchChip({ type, quality }: { type: string; quality: number }) {
             size="small"
             color="success"
             sx={{
-                minWidth: "4.1rem",
+                minWidth: "4.5rem",
                 justifyContent: "space-between",
                 alignItems: "center",
                 backgroundColor: quality_color(quality),
