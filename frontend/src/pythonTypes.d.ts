@@ -12,11 +12,11 @@ export interface SerializedCandidateState {
 	type: string;
 	distance: number;
 	info: Record<any, any>;
-	items: Array<Record<any, any>> | null;
-	tracks: Array<Record<any, any>> | null;
-	extra_tracks: Array<Record<any, any>> | null;
-	extra_items: Array<Record<any, any>> | null;
-	mapping: null | Record<number, number>;
+	items: null | Array<Record<any, any>>;
+	tracks: null | Array<Record<any, any>>;
+	extra_tracks: null | Array<Record<any, any>>;
+	extra_items: null | Array<Record<any, any>>;
+	mapping: Record<number, number> | null;
 }
 
 export interface SerializedTaskState {
@@ -43,7 +43,7 @@ export interface File {
 
 export interface Folder {
 	type: "directory";
-	children: Array<Folder | File>;
+	children: Array<File | Folder>;
 	full_path: string;
 	hash: string;
 	is_album: boolean;

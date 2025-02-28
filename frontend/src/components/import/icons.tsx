@@ -122,7 +122,7 @@ export function PenaltyIcon({
     kind,
     className,
     ...props
-}: { kind: string; className?: string } & Omit<LucideProps, "ref">): JReact.JSX.Element {
+}: { kind: string; className?: string } & Omit<LucideProps, "ref">): React.JSX.Element {
     /** Determine the icon to use for a penalty kind */
     let Icon: IconType | null = null;
     switch (kind) {

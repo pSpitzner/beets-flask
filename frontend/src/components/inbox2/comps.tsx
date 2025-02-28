@@ -1,26 +1,10 @@
-import {
-    Badge,
-    Box,
-    Button,
-    Checkbox,
-    Chip,
-    IconButton,
-    SxProps,
-    Theme,
-    Tooltip,
-    Typography,
-} from "@mui/material";
-import { File, Folder } from "@/pythonTypes";
+import { Disc3, FileIcon, FolderIcon, LucideChevronRight, Music } from "lucide-react";
 import { createContext, useCallback, useContext, useState } from "react";
-import {
-    Disc3,
-    FileIcon,
-    FolderIcon,
-    LucideChevronRight,
-    LucideProps,
-    Music,
-} from "lucide-react";
-import { JSONPretty } from "../common/json";
+import { Box, Checkbox, Chip, IconButton, SxProps, Theme, Typography } from "@mui/material";
+
+import { File, Folder } from "@/pythonTypes";
+
+import { FileTypeIcon, SourceTypeIcon } from "../common/icons";
 import { PenaltyIcon } from "../import/icons";
 
 /* --------------------------------- Context -------------------------------- */
@@ -108,34 +92,16 @@ export function FolderComponent({ folder }: { folder: Folder }) {
                     />
                 </IconButton>
                 {/* Folder name */}
-                {folder.is_album ? (
-                    <Disc3 size={ICON_SIZE} />
-                ) : (
-                    <FolderIcon size={ICON_SIZE} />
-                )}
-                <Typography
-                    variant="body1"
-                    sx={{ fontSize: "1rem", marginRight: "auto" }}
-                >
+                {folder.is_album ? <Disc3 size={ICON_SIZE} /> : <FolderIcon size={ICON_SIZE} />}
+                <Typography variant="body1" sx={{ fontSize: "1rem", marginRight: "auto" }}>
                     {folder.full_path.split("/").pop()}
                 </Typography>
 
-                {/* Current best match */}
+                {/* Current best match including penalties */}
                 <PenaltyIcon kind="artist" color="red" />
                 <PenaltyIcon kind="track" color="orange" />
                 <PenaltyIcon kind="duplicate" />
-                <IconButton sx={{ padding: 0 }} disableRipple>
-                    <Chip
-                        label={(Math.random() * 100).toFixed() + "%"}
-                        color="success"
-                        size="small"
-                        sx={{
-                            minWidth: "3rem",
-                            justifyContent: "flex-end",
-                            alignItems: "center",
-                        }}
-                    />
-                </IconButton>
+                <MatchChip type="spotify" quality={Math.random() * 100} />
 
                 {/* Selector */}
                 <Checkbox
@@ -190,28 +156,7 @@ function FileComponent({ file }: { file: File }) {
     );
 }
 
-function FileTypeIcon({
-    type,
-    ...props
-}: { type: string | undefined } & React.ComponentProps<typeof Music>) {
-    switch (type) {
-        case "mp3":
-        case "flac":
-        case "wav":
-        case "ogg":
-            return <Music {...props} />;
-        default:
-            return <FileIcon {...props} />;
-    }
-}
-
-function ColWrapper({
-    children,
-    sx,
-}: {
-    children: React.ReactNode;
-    sx?: SxProps<Theme>;
-}) {
+function ColWrapper({ children, sx }: { children: React.ReactNode; sx?: SxProps<Theme> }) {
     return (
         <Box
             sx={{
@@ -250,6 +195,30 @@ function RowWrapper({
             {children}
         </Box>
     );
+}
+
+/**Shows the percentage of the best match and its source */
+function MatchChip({ type, quality }: { type: string; quality: number }) {
+    return (
+        <Chip
+            icon={<SourceTypeIcon type={type} />}
+            label={quality.toFixed() + "%"}
+            size="small"
+            color="success"
+            sx={{
+                minWidth: "4.1rem",
+                justifyContent: "space-between",
+                alignItems: "center",
+                backgroundColor: quality_color(quality),
+            }}
+        />
+    );
+}
+function quality_color(quality: number) {
+    var h = 355 + (125 * quality) / 100;
+    var s = 130 - (60 * quality) / 100;
+    var l = 45 + Math.abs(0.5 - quality / 100) * 30;
+    return "hsl(" + h + ", " + s + "%, " + l + "%)";
 }
 
 /* --------------------------------- Header --------------------------------- */

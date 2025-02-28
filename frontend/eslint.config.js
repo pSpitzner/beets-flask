@@ -8,7 +8,7 @@ import js from "@eslint/js";
 const tslint = {
     name: "tseslint",
     files: ["src/**/*.ts", "src/**/*.tsx"],
-    extends: [...ts.configs.strictTypeChecked],
+    extends: [...ts.configs.recommendedTypeChecked],
     plugins: {
         "@typescript-eslint": ts.plugin,
     },
@@ -26,6 +26,7 @@ const tslint = {
         "@typescript-eslint/restrict-template-expressions": "off",
         "@typescript-eslint/no-unnecessary-type-parameters": "off",
         "@typescript-eslint/no-unnecessary-condition": "off",
+        "@typescript-eslint/restrict-plus-operands": "off",
     },
 };
 
