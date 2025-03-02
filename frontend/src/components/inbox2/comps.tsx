@@ -1,4 +1,11 @@
-import { Disc3, FolderIcon, ImportIcon, LucideChevronRight, TagIcon } from "lucide-react";
+import {
+    Disc3,
+    FolderIcon,
+    ImportIcon,
+    LucideChevronRight,
+    TagIcon,
+    Trash2Icon,
+} from "lucide-react";
 import {
     createContext,
     forwardRef,
@@ -26,7 +33,7 @@ import {
     Zoom,
 } from "@mui/material";
 
-import { File, Folder } from "@/pythonTypes";
+import { File, Folder, SerializedCandidateState } from "@/pythonTypes";
 
 import { FileTypeIcon, SourceTypeIcon } from "../common/icons";
 import { PenaltyIcon } from "../import/icons";
@@ -90,9 +97,35 @@ export function FoldersSelectionProvider({ children }: { children: React.ReactNo
 const ICON_SIZE = 20;
 const INDENT = 5;
 
-export function FolderComponent({ folder }: { folder: Folder }) {
+export function FolderComponent({
+    folder,
+    unSelectable = false,
+}: {
+    folder: Folder;
+    unSelectable?: boolean;
+}) {
     const [isOpen, setIsOpen] = useState(true);
     const { isSelected, toggleSelect } = useFoldersContext();
+
+    // TODO: Get best candidate for folder (should be send on first
+    // load by default imo)
+    // This needs better typing! In python
+    const bestCandidate: SerializedCandidateState = {
+        id: "1",
+        diff_preview: null,
+        cur_artist: "Artist",
+        cur_album: "Album",
+        penalties: [],
+        duplicate_in_library: false,
+        type: "album",
+        distance: 0,
+        info: {},
+        items: null,
+        tracks: null,
+        extra_tracks: null,
+        extra_items: null,
+        mapping: null,
+    };
 
     // Create children elements from tree (recursive)
     const childElements = Object.entries(folder.children).map(([_key, values]) => {
@@ -128,6 +161,7 @@ export function FolderComponent({ folder }: { folder: Folder }) {
                 </Typography>
 
                 {/* Current best match including penalties */}
+                {/* TODO: Generate with best candidate */}
                 <PenaltyIcon kind="artist" color="red" />
                 <PenaltyIcon kind="track" color="orange" />
                 <PenaltyIcon kind="duplicate" />
@@ -139,6 +173,7 @@ export function FolderComponent({ folder }: { folder: Folder }) {
                     checked={isSelected(folder)}
                     onChange={() => toggleSelect(folder)}
                     style={{ padding: 0 }}
+                    disabled={unSelectable}
                 />
             </RowWrapper>
 
@@ -245,6 +280,7 @@ function MatchChip({ type, quality }: { type: string; quality: number }) {
         />
     );
 }
+
 function quality_color(quality: number) {
     const h = 355 + (125 * quality) / 100;
     const s = 130 - (60 * quality) / 100;
@@ -281,6 +317,12 @@ export function FolderActions() {
         deselectAll();
     }
 
+    function onDelete(e: MouseEvent<HTMLDivElement>) {
+        console.log("Deleting ", selectedHash);
+        setOpen(false);
+        deselectAll();
+    }
+
     // Show speed dial only once something is selected
     // This is done via zoom component
     const transitionDuration = {
@@ -309,6 +351,11 @@ export function FolderActions() {
                 <GenericSpeedDialAction
                     icon={<ImportIcon />}
                     tooltip="Auto-import"
+                    onClick={onAutoImport}
+                />
+                <GenericSpeedDialAction
+                    icon={<Trash2Icon />}
+                    tooltip={`Delete ${nSelected} folder${nSelected > 1 ? "s" : ""}!`}
                     onClick={onAutoImport}
                 />
             </GenericSpeedDial>

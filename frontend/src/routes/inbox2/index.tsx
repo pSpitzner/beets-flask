@@ -68,7 +68,7 @@ function RouteComponent() {
 
                     <Box sx={{ display: "flex", width: "100%", flexDirection: "column" }}>
                         {data.map((folder, i) => (
-                            <FolderComponent key={i} folder={folder} />
+                            <FolderComponent key={i} folder={folder} unSelectable />
                         ))}
                     </Box>
                     <Box sx={{ flexGrow: "grow" }}>
