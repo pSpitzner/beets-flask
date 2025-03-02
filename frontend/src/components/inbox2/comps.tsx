@@ -4,6 +4,7 @@ import {
     ImportIcon,
     LucideChevronRight,
     TagIcon,
+    TagsIcon,
     Trash2Icon,
 } from "lucide-react";
 import {
@@ -20,6 +21,7 @@ import {
     Checkbox,
     Chip,
     IconButton,
+    Link,
     SpeedDial,
     SpeedDialAction,
     SpeedDialActionProps,
@@ -27,6 +29,7 @@ import {
     SpeedDialProps,
     SxProps,
     Theme,
+    Tooltip,
     Typography,
     useMediaQuery,
     useTheme,
@@ -160,14 +163,42 @@ export function FolderComponent({
                     {folder.full_path.split("/").pop()}
                 </Typography>
 
+                {/* Selector */}
+                <Tooltip
+                    title="Show all candidates"
+                    disableInteractive
+                    sx={(theme) => ({
+                        marginRight: theme.spacing(1),
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: theme.spacing(1),
+                    })}
+                >
+                    <Link href={`#${folder.hash}`} underline="none">
+                        All tags <TagsIcon strokeWidth={1} />
+                    </Link>
+                </Tooltip>
+
                 {/* Current best match including penalties */}
                 {/* TODO: Generate with best candidate */}
-                <PenaltyIcon kind="artist" color="red" />
-                <PenaltyIcon kind="track" color="orange" />
-                <PenaltyIcon kind="duplicate" />
-                <MatchChip type="spotify" quality={100} />
+                <Box
+                    sx={(theme) => ({
+                        display: "flex",
+                        gap: "0.5rem",
+                        alignItems: "center",
+                        height: "22px",
+                        border: "1px solid #495057",
+                        paddingLeft: theme.spacing(1),
+                        borderRadius: theme.shape.borderRadius,
+                    })}
+                >
+                    <PenaltyIcon kind="artist" color="red" />
+                    <PenaltyIcon kind="track" color="orange" />
+                    <PenaltyIcon kind="duplicate" />
+                    <MatchChip type="spotify" quality={100} />
+                </Box>
 
-                {/* Selector */}
                 <Checkbox
                     size="medium"
                     checked={isSelected(folder)}
@@ -418,6 +449,7 @@ function GenericSpeedDialAction({
                 staticTooltipLabel: {
                     sx: (theme) => ({
                         right: "3.5rem",
+                        whiteSpace: "nowrap",
                         [theme.breakpoints.up("laptop")]: {
                             bottom: "1.5rem",
                             right: "0",
