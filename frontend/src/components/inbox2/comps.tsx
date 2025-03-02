@@ -107,7 +107,14 @@ export function FolderComponent({
     folder: Folder;
     unSelectable?: boolean;
 }) {
-    const [isOpen, setIsOpen] = useState(true);
+    const [isOpen, setIsOpen] = useState(() => {
+        // Open if folder does contain other folders
+        // else closed (i.e. only file)
+        if (folder.children.some((child) => child.type === "directory")) {
+            return true;
+        }
+        return false;
+    });
     const { isSelected, toggleSelect } = useFoldersContext();
 
     // TODO: Get best candidate for folder (should be send on first
@@ -157,13 +164,13 @@ export function FolderComponent({
                         }}
                     />
                 </IconButton>
+
                 {/* Folder name */}
                 {folder.is_album ? <Disc3 size={ICON_SIZE} /> : <FolderIcon size={ICON_SIZE} />}
                 <Typography variant="body1" sx={{ fontSize: "1rem", marginRight: "auto" }}>
                     {folder.full_path.split("/").pop()}
                 </Typography>
 
-                {/* Selector */}
                 <Tooltip
                     title="Show all candidates"
                     disableInteractive
@@ -199,6 +206,7 @@ export function FolderComponent({
                     <MatchChip type="spotify" quality={100} />
                 </Box>
 
+                {/* Selector */}
                 <Checkbox
                     size="medium"
                     checked={isSelected(folder)}
