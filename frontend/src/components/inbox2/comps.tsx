@@ -1,6 +1,20 @@
-import { Disc3, FolderIcon, LucideChevronRight } from "lucide-react";
-import { createContext, useCallback, useContext, useState } from "react";
-import { Box, Checkbox, Chip, IconButton, SxProps, Theme, Typography } from "@mui/material";
+import { Disc3, FolderIcon, ImportIcon, LucideChevronRight, TagIcon } from "lucide-react";
+import { createContext, MouseEvent, useCallback, useContext, useState } from "react";
+import {
+    Box,
+    Checkbox,
+    Chip,
+    IconButton,
+    SpeedDial,
+    SpeedDialAction,
+    SpeedDialActionProps,
+    SpeedDialIcon,
+    SpeedDialProps,
+    SxProps,
+    Theme,
+    Typography,
+    useMediaQuery,
+} from "@mui/material";
 
 import { File, Folder } from "@/pythonTypes";
 
@@ -12,8 +26,10 @@ import { PenaltyIcon } from "../import/icons";
 
 interface FolderContext {
     nSelected: number;
+    selectedHash: Folder["hash"][];
     toggleSelect(folder: Folder): void;
     isSelected(folder: Folder): boolean;
+    deselectAll(): void;
 }
 
 const foldersContext = createContext<FolderContext | null>(null);
@@ -46,10 +62,14 @@ export function FoldersSelectionProvider({ children }: { children: React.ReactNo
         [selectedHash]
     );
 
+    const deselectAll = () => setSelectedHash([]);
+
     const nSelected = selectedHash.length;
 
     return (
-        <foldersContext.Provider value={{ nSelected, toggleSelect, isSelected }}>
+        <foldersContext.Provider
+            value={{ nSelected, toggleSelect, isSelected, selectedHash, deselectAll }}
+        >
             {children}
         </foldersContext.Provider>
     );
@@ -216,15 +236,122 @@ function MatchChip({ type, quality }: { type: string; quality: number }) {
     );
 }
 function quality_color(quality: number) {
-    var h = 355 + (125 * quality) / 100;
-    var s = 130 - (60 * quality) / 100;
-    var l = 45 + Math.abs(0.5 - quality / 100) * 30;
+    const h = 355 + (125 * quality) / 100;
+    const s = 130 - (60 * quality) / 100;
+    const l = 45 + Math.abs(0.5 - quality / 100) * 30;
     return "hsl(" + h + ", " + s + "%, " + l + "%)";
 }
 
-/* --------------------------------- Header --------------------------------- */
+/* --------------------------------- Utility --------------------------------- */
 
 export function SelectedStats() {
     const { nSelected } = useFoldersContext();
-    return <Box>{nSelected} folders selected</Box>;
+    return <Typography fontSize={12}>{nSelected} folders selected</Typography>;
+}
+
+/* --------------------------------- Actions -------------------------------- */
+// Actions a user can take on a single or multiple folders implemented as speed dial
+
+export function FolderActions() {
+    const [open, setOpen] = useState(false);
+    const { nSelected, selectedHash, deselectAll } = useFoldersContext();
+
+    function onReTag(e: MouseEvent<HTMLDivElement>) {
+        console.log("Retagging on ", selectedHash);
+        setOpen(false);
+        setTimeout(() => {
+            deselectAll();
+        }, 1000);
+    }
+
+    function onAutoImport(e: MouseEvent<HTMLDivElement>) {
+        console.log("Auto-importing on ", selectedHash);
+        setOpen(false);
+        deselectAll();
+    }
+
+    // Show speed dial only once something is selected
+    if (nSelected === 0) {
+        return null;
+    }
+
+    return (
+        <GenericSpeedDial
+            ariaLabel="FolderAction"
+            open={open}
+            onOpen={() => setOpen(true)}
+            onClose={() => setOpen(false)}
+        >
+            <GenericSpeedDialAction icon={<TagIcon />} tooltip="Retag" onClick={onReTag} />
+            <GenericSpeedDialAction
+                icon={<ImportIcon />}
+                tooltip="Auto-import"
+                onClick={onAutoImport}
+            />
+        </GenericSpeedDial>
+    );
+}
+
+/* --------------------------- Speeddial generics --------------------------- */
+// We might want to move this into common
+
+export function GenericSpeedDial(props: SpeedDialProps) {
+    // speed dial opens left on big screens
+    const isLaptopUp = useMediaQuery((theme) => theme.breakpoints.up("laptop"));
+
+    return (
+        <SpeedDial
+            color="primary"
+            icon={<SpeedDialIcon />}
+            direction={isLaptopUp ? "left" : undefined}
+            sx={(theme) => {
+                return {
+                    position: "absolute",
+                    bottom: theme.spacing(1),
+                    right: theme.spacing(1),
+                    [theme.breakpoints.up("laptop")]: {
+                        position: "relative",
+                        display: "flex",
+                        bottom: "0",
+                        right: "0",
+                    },
+                };
+            }}
+            {...props}
+        />
+    );
+}
+
+function GenericSpeedDialAction({
+    icon,
+    tooltip,
+    ...props
+}: { icon: React.ReactNode; tooltip: string } & SpeedDialActionProps) {
+    // In theory we should check for touch instead of a breakpoint but tbh
+    // im too lazy to figure out how to do that properly
+    const isMobile = !useMediaQuery((theme) => theme.breakpoints.up("laptop"));
+
+    return (
+        <SpeedDialAction
+            icon={icon}
+            slotProps={{
+                tooltip: {
+                    // show tooltips always on mobile devices
+                    open: isMobile ?? undefined,
+                    title: tooltip,
+                },
+                staticTooltipLabel: {
+                    sx: (theme) => ({
+                        right: "3.5rem",
+                        [theme.breakpoints.up("laptop")]: {
+                            bottom: "1.5rem",
+                            right: "0",
+                            display: "flex",
+                        },
+                    }),
+                },
+            }}
+            {...props}
+        />
+    );
 }

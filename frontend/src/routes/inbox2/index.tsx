@@ -1,15 +1,17 @@
+import { ImportIcon, TagIcon } from "lucide-react";
+import { useState } from "react";
+import { Box, SpeedDial, SpeedDialAction, SpeedDialIcon, useTheme, Zoom } from "@mui/material";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+
 import {
+    FolderActions,
     FolderComponent,
     FoldersSelectionProvider,
     SelectedStats,
     useFoldersContext,
 } from "@/components/inbox2/comps";
 import { Folder } from "@/pythonTypes";
-import { Box, Fab, SpeedDial, SpeedDialAction, SpeedDialIcon, useTheme, Zoom } from "@mui/material";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { Import, ImportIcon, MusicIcon, PlusIcon, TagIcon } from "lucide-react";
-import { useState } from "react";
 
 const inboxQueryOptions = () => ({
     queryKey: ["inbox2"],
@@ -22,7 +24,7 @@ const inboxQueryOptions = () => ({
 export const Route = createFileRoute("/inbox2/")({
     component: RouteComponent,
     loader: async ({ context }) => {
-        context.queryClient.ensureQueryData(inboxQueryOptions());
+        await context.queryClient.ensureQueryData(inboxQueryOptions());
     },
 });
 
@@ -32,26 +34,60 @@ function RouteComponent() {
     return (
         <Box
             sx={{
-                maxWidth: 800,
-                margin: "auto",
                 display: "flex",
                 flexDirection: "column",
-                alignItems: "flex-end",
+                height: "100%",
+                width: "100%",
+                alignItems: "center",
             }}
         >
             <FoldersSelectionProvider>
-                <SelectedStats />
-                <Box sx={{ display: "flex", width: "100%", flexDirection: "column" }}>
-                    {data.map((folder, i) => (
-                        <FolderComponent key={i} folder={folder} />
-                    ))}
+                <Box
+                    sx={(theme) => {
+                        return {
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-end",
+                            width: "100%",
+                            height: "100%",
+                            maxWidth: "100%",
+                            position: "relative",
+                            paddingBlock: theme.spacing(1),
+                            paddingInline: theme.spacing(2),
+                            backgroundColor: theme.palette.background.paper,
+                            gap: theme.spacing(1),
+                            [theme.breakpoints.up("laptop")]: {
+                                // Styles for desktop
+                                margin: theme.spacing(2),
+                                minWidth: theme.breakpoints.values["laptop"],
+                                width: "calc(100% - " + theme.spacing(2) + " * 2)",
+                                maxWidth: theme.breakpoints.values["desktop"],
+                                height: "unset",
+                            },
+                        };
+                    }}
+                >
+                    <SelectedStats />
+
+                    <Box sx={{ display: "flex", width: "100%", flexDirection: "column" }}>
+                        {data.map((folder, i) => (
+                            <FolderComponent key={i} folder={folder} />
+                        ))}
+                    </Box>
+                    <Box sx={{ flexGrow: "grow" }}>
+                        <FolderActions />
+                    </Box>
                 </Box>
-                <TestFab />
             </FoldersSelectionProvider>
         </Box>
     );
 }
 
+/** The is a history example.
+ *
+ * Zoom is an interesting mui component
+ *
+ */
 function TestFab() {
     const [open, setOpen] = useState(false);
     const handleOpen = () => setOpen(true);

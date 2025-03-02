@@ -5,6 +5,21 @@ import { createTheme, ThemeProvider as MuiThemeProvider } from "@mui/material/st
 // Global styles
 import "./main.css";
 
+// TS Augmentation to add custom breakpoints (see below)
+declare module "@mui/material/styles" {
+    interface BreakpointOverrides {
+        xs: false; // removes the `xs` breakpoint
+        sm: false;
+        md: false;
+        lg: false;
+        xl: false;
+        mobile: true; // adds the `mobile` breakpoint
+        tablet: true;
+        laptop: true;
+        desktop: true;
+    }
+}
+
 /** Relative basic theme for now
  * using a mint green and a orange
  * as primary and secondary colors.
@@ -61,6 +76,19 @@ const darkTheme = createTheme({
                 },
             },
         },
+    },
+
+    breakpoints: {
+        values: {
+            mobile: 0,
+            tablet: 640,
+            laptop: 1024,
+            desktop: 1200,
+        },
+    },
+
+    colorSchemes: {
+        dark: true,
     },
 });
 

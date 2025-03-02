@@ -16,7 +16,7 @@ export interface SerializedCandidateState {
 	tracks: null | Array<Record<any, any>>;
 	extra_tracks: null | Array<Record<any, any>>;
 	extra_items: null | Array<Record<any, any>>;
-	mapping: Record<number, number> | null;
+	mapping: null | Record<number, number>;
 }
 
 export interface SerializedTaskState {
@@ -43,7 +43,7 @@ export interface File {
 
 export interface Folder {
 	type: "directory";
-	children: Array<File | Folder>;
+	children: Array<Folder | File>;
 	full_path: string;
 	hash: string;
 	is_album: boolean;

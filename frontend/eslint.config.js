@@ -27,6 +27,7 @@ const tslint = {
         "@typescript-eslint/no-unnecessary-type-parameters": "off",
         "@typescript-eslint/no-unnecessary-condition": "off",
         "@typescript-eslint/restrict-plus-operands": "off",
+        "@typescript-eslint/unbound-method": "off",
     },
 };
 
