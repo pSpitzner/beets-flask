@@ -1,5 +1,13 @@
 import { Disc3, FolderIcon, ImportIcon, LucideChevronRight, TagIcon } from "lucide-react";
-import { createContext, MouseEvent, useCallback, useContext, useState } from "react";
+import {
+    createContext,
+    forwardRef,
+    MouseEvent,
+    Ref,
+    useCallback,
+    useContext,
+    useState,
+} from "react";
 import {
     Box,
     Checkbox,
@@ -14,6 +22,8 @@ import {
     Theme,
     Typography,
     useMediaQuery,
+    useTheme,
+    Zoom,
 } from "@mui/material";
 
 import { File, Folder } from "@/pythonTypes";
@@ -255,6 +265,7 @@ export function SelectedStats() {
 export function FolderActions() {
     const [open, setOpen] = useState(false);
     const { nSelected, selectedHash, deselectAll } = useFoldersContext();
+    const theme = useTheme();
 
     function onReTag(e: MouseEvent<HTMLDivElement>) {
         console.log("Retagging on ", selectedHash);
@@ -271,31 +282,47 @@ export function FolderActions() {
     }
 
     // Show speed dial only once something is selected
-    if (nSelected === 0) {
-        return null;
-    }
+    // This is done via zoom component
+    const transitionDuration = {
+        enter: theme.transitions.duration.enteringScreen,
+        exit: theme.transitions.duration.leavingScreen,
+    };
 
     return (
-        <GenericSpeedDial
-            ariaLabel="FolderAction"
-            open={open}
-            onOpen={() => setOpen(true)}
-            onClose={() => setOpen(false)}
+        <Zoom
+            in={nSelected > 0}
+            timeout={transitionDuration.enter}
+            style={{
+                transitionDelay: `${nSelected > 0 ? transitionDuration.exit : 0}ms`,
+                // FIXME: Transform origin should be centered on button
+                transformOrigin: "bottom right",
+            }}
+            unmountOnExit
         >
-            <GenericSpeedDialAction icon={<TagIcon />} tooltip="Retag" onClick={onReTag} />
-            <GenericSpeedDialAction
-                icon={<ImportIcon />}
-                tooltip="Auto-import"
-                onClick={onAutoImport}
-            />
-        </GenericSpeedDial>
+            <GenericSpeedDial
+                ariaLabel="FolderAction"
+                open={open}
+                onOpen={() => setOpen(true)}
+                onClose={() => setOpen(false)}
+            >
+                <GenericSpeedDialAction icon={<TagIcon />} tooltip="Retag" onClick={onReTag} />
+                <GenericSpeedDialAction
+                    icon={<ImportIcon />}
+                    tooltip="Auto-import"
+                    onClick={onAutoImport}
+                />
+            </GenericSpeedDial>
+        </Zoom>
     );
 }
 
-/* --------------------------- Speeddial generics --------------------------- */
-// We might want to move this into common
+/* --------------------------- Speed dial generics -------------------------- */
+// We might want to move this into common namespace
 
-export function GenericSpeedDial(props: SpeedDialProps) {
+const GenericSpeedDial = forwardRef(function GenericSpeedDial(
+    props: SpeedDialProps,
+    ref: Ref<HTMLDivElement>
+) {
     // speed dial opens left on big screens
     const isLaptopUp = useMediaQuery((theme) => theme.breakpoints.up("laptop"));
 
@@ -317,10 +344,11 @@ export function GenericSpeedDial(props: SpeedDialProps) {
                     },
                 };
             }}
+            ref={ref}
             {...props}
         />
     );
-}
+});
 
 function GenericSpeedDialAction({
     icon,
