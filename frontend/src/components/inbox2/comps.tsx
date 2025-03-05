@@ -99,13 +99,13 @@ export function GridWrapper({ children }: { children: React.ReactNode }) {
         <Box
             sx={{
                 display: "grid",
-                gridTemplateColumns: "[tree] 1fr [chip] auto [selector] auto",
+                gridTemplateColumns: "[selector] auto [chip] auto [tree] 1fr",
                 height: "100%",
                 width: "100%",
                 columnGap: "1rem",
 
                 // Fill columns even if content is given in other order
-                gridAutoFlow: "column",
+                gridAutoFlow: "dense",
 
                 // Add zebra striping
                 "> div:nth-child(odd)": {
@@ -138,6 +138,7 @@ function GridRow({
                 gridColumn: "1 / -1",
                 gridTemplateColumns: "subgrid",
                 backgroundColor: isSelected ? "gray" : "transparent",
+                gridAutoFlow: "dense",
             }}
         >
             {children}
