@@ -1,5 +1,7 @@
 import {
+    CopyIcon,
     Disc3,
+    EllipsisVerticalIcon,
     FolderIcon,
     ImportIcon,
     LucideChevronRight,
@@ -20,11 +22,15 @@ import {
     Checkbox,
     Chip,
     IconButton,
+    ListItemIcon,
+    Menu,
+    MenuItem,
     SpeedDial,
     SpeedDialAction,
     SpeedDialActionProps,
     SpeedDialIcon,
     SpeedDialProps,
+    styled,
     SxProps,
     Theme,
     Typography,
@@ -94,57 +100,34 @@ export function FoldersSelectionProvider({ children }: { children: React.ReactNo
 
 /* ------------------------------ Grid wrapper ------------------------------ */
 
-export function GridWrapper({ children }: { children: React.ReactNode }) {
-    return (
-        <Box
-            sx={{
-                display: "grid",
-                gridTemplateColumns: "[selector] auto [chip] auto [tree] 1fr",
-                height: "100%",
-                width: "100%",
-                columnGap: "1rem",
+export const GridWrapper = styled(Box)({
+    display: "grid",
+    gridTemplateColumns: "[tree] 1fr[chip] auto [actions] auto [selector] auto",
+    height: "100%",
+    width: "100%",
+    columnGap: "1rem",
 
-                // Fill columns even if content is given in other order
-                gridAutoFlow: "dense",
+    // Fill columns even if content is given in other order
+    // Fill columns even if content is given in other order
+    gridAutoFlow: "dense",
 
-                // Add zebra striping
-                "> div:nth-child(odd)": {
-                    background: `linear-gradient(
-                        90deg,
-                        rgba(0, 0, 0, 0.01) 0%,
-                        rgba(0, 0, 0, 0.2) 50%,
-                        rgba(0, 0, 0, 0.01) 100%
-                    )`,
-                },
-            }}
-        >
-            {children}
-        </Box>
-    );
-}
+    // Add zebra striping
+    "> div:nth-of-type(odd)": {
+        background: `linear-gradient(
+            90deg,
+            rgba(0, 0, 0, 0.01) 0%,
+            rgba(0, 0, 0, 0.2) 50%,
+            rgba(0, 0, 0, 0.01) 100%
+        )`,
+    },
+});
 
-function GridRow({
-    children,
-    isSelected,
-}: {
-    children: React.ReactNode;
-    isSelected?: boolean;
-}) {
-    // Allow styling of a grid row using subgrids
-    return (
-        <Box
-            sx={{
-                display: "grid",
-                gridColumn: "1 / -1",
-                gridTemplateColumns: "subgrid",
-                backgroundColor: isSelected ? "gray" : "transparent",
-                gridAutoFlow: "dense",
-            }}
-        >
-            {children}
-        </Box>
-    );
-}
+const GridRow = styled(Box)({
+    display: "grid",
+    gridColumn: "1 / -1",
+    gridTemplateColumns: "subgrid",
+    gridAutoFlow: "dense",
+});
 
 /* ---------------------------- Folder & File component ---------------------------- */
 
@@ -206,7 +189,12 @@ export function FolderComponent({
         <>
             {/* Current best match including penalties */}
             {/* TODO: Generate with best candidate */}
-            <GridRow isSelected={isSelected(folder)}>
+            <GridRow
+                sx={{
+                    backgroundColor: isSelected(folder) ? "gray" : "inherit",
+                    position: "relative",
+                }}
+            >
                 {/* Folder name and collapsable */}
                 <FolderTreeRow
                     folder={folder}
@@ -245,6 +233,8 @@ export function FolderComponent({
                     style={{ padding: 0 }}
                     disabled={unSelectable}
                 />
+                {/* More actions*/}
+                <MoreActions f={folder} />
             </GridRow>
 
             {/* Children */}
@@ -255,14 +245,12 @@ export function FolderComponent({
 
 function FileComponent({ file, level = 0 }: { file: File; level?: number }) {
     return (
-        <Box
-            sx={{ display: "grid", gridColumn: 1 / -1, gridTemplateColumns: "subgrid" }}
-        >
+        <GridRow>
             <FileName file={file} level={level} />
             {/* Emtpy grid items for alignment */}
             <Box sx={{ gridColumn: "chip" }} />
             <Box sx={{ gridColumn: "selector" }} />
-        </Box>
+        </GridRow>
     );
 }
 
@@ -565,5 +553,42 @@ function GenericSpeedDialAction({
             }}
             {...props}
         />
+    );
+}
+
+/** Simple context menu with some items */
+function MoreActions({ f }: { f: Folder | File }) {
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+
+    return (
+        <>
+            <IconButton
+                onClick={(e) => {
+                    setAnchorEl(e.currentTarget);
+                }}
+                sx={{ padding: "0px", margin: "0px" }}
+                disableRipple
+            >
+                <EllipsisVerticalIcon size={ICON_SIZE} />
+            </IconButton>
+            <Menu
+                onClose={() => setAnchorEl(null)}
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+            >
+                <MenuItem
+                    onClick={() => {
+                        // copy full path to clipboard
+                        navigator.clipboard.writeText(f.full_path);
+                        setAnchorEl(null);
+                    }}
+                >
+                    <ListItemIcon>
+                        <CopyIcon fontSize="small" />
+                    </ListItemIcon>
+                    Copy Path
+                </MenuItem>
+            </Menu>
+        </>
     );
 }
