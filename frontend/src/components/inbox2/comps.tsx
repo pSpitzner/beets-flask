@@ -4,7 +4,6 @@ import {
     ImportIcon,
     LucideChevronRight,
     TagIcon,
-    TagsIcon,
     Trash2Icon,
 } from "lucide-react";
 import {
@@ -21,7 +20,6 @@ import {
     Checkbox,
     Chip,
     IconButton,
-    Link,
     SpeedDial,
     SpeedDialAction,
     SpeedDialActionProps,
@@ -29,7 +27,6 @@ import {
     SpeedDialProps,
     SxProps,
     Theme,
-    Tooltip,
     Typography,
     useMediaQuery,
     useTheme,
@@ -95,17 +92,71 @@ export function FoldersSelectionProvider({ children }: { children: React.ReactNo
     );
 }
 
+/* ------------------------------ Grid wrapper ------------------------------ */
+
+export function GridWrapper({ children }: { children: React.ReactNode }) {
+    return (
+        <Box
+            sx={{
+                display: "grid",
+                gridTemplateColumns: "[tree] 1fr [chip] auto [selector] auto",
+                height: "100%",
+                width: "100%",
+                columnGap: "1rem",
+
+                // Fill columns even if content is given in other order
+                gridAutoFlow: "column",
+
+                // Add zebra striping
+                "> div:nth-child(odd)": {
+                    background: `linear-gradient(
+                        90deg,
+                        rgba(0, 0, 0, 0.01) 0%,
+                        rgba(0, 0, 0, 0.2) 50%,
+                        rgba(0, 0, 0, 0.01) 100%
+                    )`,
+                },
+            }}
+        >
+            {children}
+        </Box>
+    );
+}
+
+function GridRow({
+    children,
+    isSelected,
+}: {
+    children: React.ReactNode;
+    isSelected?: boolean;
+}) {
+    // Allow styling of a grid row using subgrids
+    return (
+        <Box
+            sx={{
+                display: "grid",
+                gridColumn: "1 / -1",
+                gridTemplateColumns: "subgrid",
+                backgroundColor: isSelected ? "gray" : "transparent",
+            }}
+        >
+            {children}
+        </Box>
+    );
+}
+
 /* ---------------------------- Folder & File component ---------------------------- */
 
 const ICON_SIZE = 20;
-const INDENT = 5;
 
 export function FolderComponent({
     folder,
     unSelectable = false,
+    level = 0,
 }: {
     folder: Folder;
     unSelectable?: boolean;
+    level?: number;
 }) {
     const [isOpen, setIsOpen] = useState(() => {
         // Open if folder does contain other folders
@@ -140,64 +191,40 @@ export function FolderComponent({
     // Create children elements from tree (recursive)
     const childElements = Object.entries(folder.children).map(([_key, values]) => {
         if (values.type === "file") {
-            return <FileComponent file={values} key={values.full_path} />;
+            return (
+                <FileComponent file={values} key={values.full_path} level={level + 1} />
+            );
         } else if (values.type === "directory") {
-            return <FolderComponent folder={values} key={values.hash} />;
+            return (
+                <FolderComponent folder={values} key={values.hash} level={level + 1} />
+            );
         }
     });
 
     return (
-        <ColWrapper>
-            <RowWrapper isSelected={isSelected(folder)}>
-                {/* Collapse/Expand button */}
-                <IconButton
-                    onClick={() => setIsOpen(!isOpen)}
-                    size="small"
-                    sx={{ padding: "0px", margin: "0px", marginRight: "-2px" }}
-                    disableRipple
-                >
-                    <LucideChevronRight
-                        size={ICON_SIZE}
-                        style={{
-                            transform: isOpen ? "rotate(90deg)" : "",
-                            transition: "transform 0.15s ease-in-out",
-                        }}
-                    />
-                </IconButton>
+        <>
+            {/* Current best match including penalties */}
+            {/* TODO: Generate with best candidate */}
+            <GridRow isSelected={isSelected(folder)}>
+                {/* Folder name and collapsable */}
+                <FolderTreeRow
+                    folder={folder}
+                    isOpen={isOpen}
+                    setIsOpen={setIsOpen}
+                    level={level}
+                />
 
-                {/* Folder name */}
-                {folder.is_album ? <Disc3 size={ICON_SIZE} /> : <FolderIcon size={ICON_SIZE} />}
-                <Typography variant="body1" sx={{ fontSize: "1rem", marginRight: "auto" }}>
-                    {folder.full_path.split("/").pop()}
-                </Typography>
-
-                <Tooltip
-                    title="Show all candidates"
-                    disableInteractive
-                    sx={(theme) => ({
-                        marginRight: theme.spacing(1),
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        gap: theme.spacing(1),
-                    })}
-                >
-                    <Link href={`#${folder.hash}`} underline="none">
-                        All tags <TagsIcon strokeWidth={1} />
-                    </Link>
-                </Tooltip>
-
-                {/* Current best match including penalties */}
-                {/* TODO: Generate with best candidate */}
+                {/* Penalties */}
                 <Box
                     sx={(theme) => ({
                         display: "flex",
                         gap: "0.5rem",
                         alignItems: "center",
-                        height: "22px",
                         border: "1px solid #495057",
                         paddingLeft: theme.spacing(1),
                         borderRadius: theme.shape.borderRadius,
+                        gridColumn: "chip",
+                        alignSelf: "center",
                     })}
                 >
                     <PenaltyIcon kind="artist" color="red" />
@@ -208,80 +235,123 @@ export function FolderComponent({
 
                 {/* Selector */}
                 <Checkbox
+                    sx={{
+                        gridColumn: "selector",
+                    }}
                     size="medium"
                     checked={isSelected(folder)}
                     onChange={() => toggleSelect(folder)}
                     style={{ padding: 0 }}
                     disabled={unSelectable}
                 />
-            </RowWrapper>
+            </GridRow>
 
             {/* Children */}
-            <ColWrapper
-                sx={{
-                    position: "relative",
-                    display: isOpen ? "flex" : "none",
-                    // Align border with icon
-                    marginLeft: ICON_SIZE / 2 - 0.5 + "px",
-                    paddingLeft: INDENT + "px",
-                    borderLeft: "1px solid #495057;",
-                }}
-            >
-                {childElements}
-            </ColWrapper>
-        </ColWrapper>
+            {isOpen && childElements}
+        </>
     );
 }
 
-function FileComponent({ file }: { file: File }) {
-    // Infer type from file ending
-    const type = file.full_path.split(".").pop();
-
-    return (
-        <RowWrapper
-            sx={{
-                marginLeft: ICON_SIZE + INDENT + "px",
-                fontSize: "0.7rem",
-                fontFamily: "monospace",
-                color: "#999",
-                "&:after": {
-                    content: '""',
-                    position: "absolute",
-                    display: "block",
-                    width: ICON_SIZE + "px",
-                    left: -ICON_SIZE - 2 * INDENT + "px",
-                    borderBottom: "1px solid #495057",
-                },
-            }}
-        >
-            <FileTypeIcon type={type} size={ICON_SIZE * 0.7} />
-            <Typography variant="body1">{file.full_path.split("/").pop()}</Typography>
-        </RowWrapper>
-    );
-}
-
-function ColWrapper({ children, sx }: { children: React.ReactNode; sx?: SxProps<Theme> }) {
+function FileComponent({ file, level = 0 }: { file: File; level?: number }) {
     return (
         <Box
-            sx={{
-                display: "flex",
-                flexDirection: "column",
-                ...sx,
-            }}
+            sx={{ display: "grid", gridColumn: 1 / -1, gridTemplateColumns: "subgrid" }}
         >
-            {children}
+            <FileName file={file} level={level} />
+            {/* Emtpy grid items for alignment */}
+            <Box sx={{ gridColumn: "chip" }} />
+            <Box sx={{ gridColumn: "selector" }} />
         </Box>
     );
 }
 
-function RowWrapper({
+function FolderTreeRow({
+    folder,
+    isOpen,
+    setIsOpen,
+    level = 0,
+}: {
+    folder: Folder;
+    isOpen: boolean;
+    setIsOpen: (open: boolean) => void;
+    level?: number;
+}) {
+    return (
+        <LevelIndentWrapper
+            level={level}
+            sx={{
+                gridColumn: "tree",
+            }}
+        >
+            {/* Collapse/Expand button */}
+            <IconButton
+                onClick={() => setIsOpen(!isOpen)}
+                size="small"
+                sx={{ padding: "0px", margin: "0px", marginRight: "-2px" }}
+                disableRipple
+            >
+                <LucideChevronRight
+                    size={ICON_SIZE}
+                    style={{
+                        transform: isOpen ? "rotate(90deg)" : "",
+                        transition: "transform 0.15s ease-in-out",
+                    }}
+                />
+            </IconButton>
+
+            {folder.is_album ? (
+                <Disc3 size={ICON_SIZE} />
+            ) : (
+                <FolderIcon size={ICON_SIZE} />
+            )}
+            <Typography variant="body1">{folder.full_path.split("/").pop()}</Typography>
+        </LevelIndentWrapper>
+    );
+}
+
+function FileName({ file, level = 0 }: { file: File; level?: number }) {
+    // Infer type from file ending
+    const type = file.full_path.split(".").pop();
+
+    return (
+        <LevelIndentWrapper
+            level={level}
+            sx={{
+                fontSize: "0.7rem",
+                fontFamily: "monospace",
+                color: "#999",
+                gridColumn: "tree",
+            }}
+        >
+            <Box
+                sx={{
+                    position: "absolute",
+                    left: ICON_SIZE / 2 - 0.5 + ICON_SIZE * (level - 1) + "px",
+                    width: ICON_SIZE + "px",
+                    height: "1px",
+                    backgroundColor: "#495057",
+                }}
+            ></Box>
+            <FileTypeIcon
+                type={type}
+                size={ICON_SIZE * 0.7}
+                style={{
+                    marginLeft: ICON_SIZE * 0.7 + "px",
+                }}
+            />
+            <Typography variant="body1">{file.full_path.split("/").pop()}</Typography>
+        </LevelIndentWrapper>
+    );
+}
+
+function LevelIndentWrapper({
     children,
-    isSelected,
     sx,
+    level = 0,
 }: {
     children: React.ReactNode;
-    isSelected?: boolean;
     sx?: SxProps<Theme>;
+    level?: number;
 }) {
     return (
         <Box
@@ -289,14 +359,36 @@ function RowWrapper({
                 display: "flex",
                 flexDirection: "row",
                 alignItems: "center",
-                gap: "0.5rem",
-                background: isSelected ? "gray" : "transparent",
                 paddingBlock: "1px",
                 position: "relative",
-                flexWrap: "wrap",
+                flexShrink: 0,
+                gap: "0.4rem",
+                paddingLeft: level * ICON_SIZE + "px",
                 ...sx,
             }}
         >
+            {Array.from({ length: Math.floor(level) }, (_, i) => (
+                <Box
+                    key={i}
+                    sx={{
+                        //  Indentation blocks (same width as icons)
+                        position: "absolute",
+                        left: (i - 0.5) * ICON_SIZE - 0.5 + "px",
+                        display: "flex",
+                        width: ICON_SIZE + "px",
+                        height: "100%",
+
+                        borderRight: "1px solid #495057",
+
+                        /** DEBUG
+                         * 
+                        backgroundColor: "red",
+                        outline: "1px solid #495057",
+                        */
+                    }}
+                />
+            ))}
+
             {children}
         </Box>
     );
@@ -386,7 +478,11 @@ export function FolderActions() {
                 onOpen={() => setOpen(true)}
                 onClose={() => setOpen(false)}
             >
-                <GenericSpeedDialAction icon={<TagIcon />} tooltip="Retag" onClick={onReTag} />
+                <GenericSpeedDialAction
+                    icon={<TagIcon />}
+                    tooltip="Retag"
+                    onClick={onReTag}
+                />
                 <GenericSpeedDialAction
                     icon={<ImportIcon />}
                     tooltip="Auto-import"

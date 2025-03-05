@@ -16,7 +16,7 @@ export interface SerializedCandidateState {
 	tracks: null | Array<Record<any, any>>;
 	extra_tracks: null | Array<Record<any, any>>;
 	extra_items: null | Array<Record<any, any>>;
-	mapping: null | Record<number, number>;
+	mapping: Record<number, number> | null;
 }
 
 export interface SerializedTaskState {
