@@ -12,7 +12,7 @@ from sqlalchemy import select
 
 from beets_flask.config import get_config
 from beets_flask.database import Tag, TagGroup, db_session
-from beets_flask.disk import path_to_dict
+from beets_flask.disk import path_to_folder
 from beets_flask.inbox import get_inbox_folders
 
 from .errors import InvalidUsage
@@ -76,7 +76,7 @@ def get_recent_tags() -> list[str]:
     Number of days can be set in the config file.
     TODO: We may want to allow a parameter to be passed in the request.
     """
-    recent_days: int = config["gui"]["tags"]["recent_days"].as_number()  # type: ignore
+    recent_days: int = get_config()["gui"]["tags"]["recent_days"].as_number()  # type: ignore
 
     with db_session() as session:
         stmt = (
@@ -107,8 +107,8 @@ def get_inbox_tags() -> list[str]:
                 yield from get_album_folders(v)
 
     # we need to reset the cache, as refetches might be triggered after folder deletion.
-    path_to_dict.cache.clear()  # type: ignore
-    inboxes = [path_to_dict(f) for f in get_inbox_folders()]
+    path_to_folder.cache.clear()  # type: ignore
+    inboxes = [path_to_folder(f) for f in get_inbox_folders()]
 
     album_folders = []
     for inbox in inboxes:

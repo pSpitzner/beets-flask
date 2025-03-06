@@ -15,25 +15,20 @@ from __future__ import annotations
 
 import os
 import pickle
-from datetime import datetime
 from pathlib import Path
-from pickletools import bytes1
-from typing import TYPE_CHECKING, List, Optional
-from uuid import uuid4
+from typing import List, Optional
 
 from beets.importer import ImportTask, action, library
-from sqlalchemy import Enum, ForeignKey, LargeBinary, PickleType
+from sqlalchemy import ForeignKey, LargeBinary
 from sqlalchemy.orm import (
-    DeclarativeBase,
     Mapped,
     mapped_column,
-    registry,
     relationship,
 )
-from sqlalchemy.sql import func
 
 from beets_flask.database.models.base import Base
-from beets_flask.importer.progress import Progress, ProgressState
+from beets_flask.disk import Folder
+from beets_flask.importer.progress import Progress
 from beets_flask.importer.states import (
     CandidateState,
     SerializedCandidateState,
@@ -45,15 +40,62 @@ from beets_flask.importer.states import (
 from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackMatch
 
 
-# class FolderStructureInDb(Base):
-#     """Represents a folder on disk, to keep track of changes.
+class FolderInDb(Base):
+    """Represents a folder on disk, to keep track of changes.
 
-#     This folder does not necessarily have to exist on disk anymore. If the content
-#     changed, a new folder object (new hash) should be created.
-#     """
+    This folder does not necessarily have to exist on disk anymore. If the content
+    changed, a new folder object (new hash) should be created.
+    """
 
-#     path: str
-#     hash: str
+    __tablename__ = "folder"
+
+    full_path: Mapped[str] = mapped_column(index=True)
+
+    # checked -> yes | no or didnt check -> None
+    is_album: Mapped[Optional[bool]]
+
+    def __init__(self, path: Path, hash: str):
+        """
+        Create a FolderInDb object from a path.
+
+        Convention:
+        /home/user/foo/
+        abs path with trailing slash.
+
+        Parameters
+        ----------
+        path : Path
+            The path to create the object from.
+        """
+        self.full_path = str(path.resolve())
+        self.hash = hash
+
+    @classmethod
+    def from_live_folder(cls, folder: Folder) -> FolderInDb:
+        """Create a FolderInDb object from a Folder object."""
+        return cls(
+            path=folder.path,
+            hash=folder.hash,
+        )
+
+    def as_tuple(self) -> tuple[Path, str]:
+        """Recreate the live Folder object from its stored version in the db."""
+        return (
+            self.path,
+            self.hash,
+        )
+
+    @property
+    def hash(self) -> str:
+        return self.id
+
+    @hash.setter
+    def hash(self, value: str):
+        self.id = value
+
+    @property
+    def path(self) -> Path:
+        return Path(self.full_path)
 
 
 class SessionStateInDb(Base):
@@ -91,18 +133,21 @@ class SessionStateInDb(Base):
         # See also https://docs.sqlalchemy.org/en/20/orm/cascades.html#unitofwork-cascades
         cascade="all, delete-orphan",
     )
-    path: Mapped[bytes] = mapped_column(LargeBinary)
+
+    _folder_id: Mapped[str] = mapped_column(ForeignKey("folder.id"))
+    folder: Mapped[FolderInDb] = relationship()
+
     tag = relationship("Tag", uselist=False, back_populates="session_state_in_db")
 
     def __init__(
         self,
-        path: bytes,
+        folder: FolderInDb,
         id: str | None = None,
         tasks: List[TaskStateInDb] = [],
         progress: Progress = Progress.NOT_STARTED,
     ):
         super().__init__(id)
-        self.path = path
+        self.folder = folder
         self.tasks = tasks
         self.progress = progress
 
@@ -111,7 +156,7 @@ class SessionStateInDb(Base):
         """Create the DB representation of a live SessionState.."""
 
         session = cls(
-            path=os.fsencode(state.path),
+            folder=FolderInDb(state.folder_path, state.folder_hash),
             id=state.id,
             tasks=[TaskStateInDb.from_live_state(task) for task in state.task_states],
             progress=state.progress.progress,
@@ -121,7 +166,12 @@ class SessionStateInDb(Base):
 
     def to_live_state(self) -> SessionState:
         """Recreate the live SessionState with underlying task from its stored version in the db."""
-        s_state = SessionState(Path(os.fsdecode(self.path)))
+        s_state = SessionState(self.folder.path)
+        if s_state.folder_hash != self.folder.hash:
+            log.warning(
+                f"Folder hash mismatch for {self.folder.path}. "
+                f"Expected {self.folder.hash} but got {s_state.folder_hash}."
+            )
         s_state.id = self.id
         s_state._task_states = [task.to_live_state(s_state) for task in self.tasks]
         return s_state
@@ -148,8 +198,9 @@ class TaskStateInDb(Base):
         back_populates="task", cascade="all, delete-orphan"
     )
 
-    # To reconstruct the beets task we need to store a few of its attributes
     toppath: Mapped[bytes | None]
+
+    # To reconstruct the beets task we need to store a few of its attributes
     paths: Mapped[bytes]
     items: Mapped[bytes]
     choice_flag: Mapped[action | None]
@@ -264,7 +315,7 @@ class CandidateStateInDb(Base):
         return candidate
 
     def to_live_state(self, task_state: TaskState) -> CandidateState:
-        """Recreate the live CandidateState with underlying task from its stored version in the db.."""
+        """Recreate the live CandidateState with underlying task from its stored version in the db."""
         live_state = CandidateState(pickle.loads(self.match), task_state)
         live_state.id = self.id
         return live_state

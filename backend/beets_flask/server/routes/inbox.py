@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 from beets_flask import log
 from beets_flask.database import Tag, db_session
-from beets_flask.disk import is_album_folder, path_to_dict
+from beets_flask.disk import is_album_folder, path_to_folder
 from beets_flask.inbox import (
     get_inbox_folders,
     get_inbox_for_path,
@@ -56,10 +56,10 @@ async def get_all():
     """
     use_cache = bool(request.args.get("use_cache", False))
     if not use_cache:
-        path_to_dict.cache.clear()  # type: ignore
+        path_to_folder.cache.clear()  # type: ignore
     inboxes = []
     for path in get_inbox_folders():
-        inboxes.append(mark_inbox_folder(path_to_dict(path)))
+        inboxes.append(mark_inbox_folder(path_to_folder(path)))
 
     return inboxes
 
@@ -69,8 +69,8 @@ async def get_folder(folder):
     """Get all subfolders from of the specified folder."""
     use_cache = bool(request.args.get("use_cache", False))
     if not use_cache:
-        path_to_dict.cache.clear()  # type: ignore
-    path = path_to_dict("/" + folder, relative_to="/" + folder)
+        path_to_folder.cache.clear()  # type: ignore
+    path = path_to_folder("/" + folder, relative_to="/" + folder)
     path = mark_inbox_folder(path)
     return path
 

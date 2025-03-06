@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+from dataclasses import asdict, is_dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
@@ -77,4 +78,7 @@ class Encoder(json.JSONEncoder):
             return o.decode("utf-8")
         if isinstance(o, datetime):
             return o.isoformat()
+        if is_dataclass(o) and not isinstance(o, type):
+            return asdict(o)
+
         return json.JSONEncoder.default(self, o)

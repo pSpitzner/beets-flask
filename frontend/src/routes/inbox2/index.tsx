@@ -10,12 +10,34 @@ import {
     SelectedStats,
 } from "@/components/inbox2/comps";
 import { Folder } from "@/pythonTypes";
+import { queryClient } from "@/components/common/_query";
 
-const inboxQueryOptions = () => ({
+/** Get inbox folder tree
+ */
+export const inboxQueryOptions = () => ({
     queryKey: ["inbox2"],
     queryFn: async () => {
         const response = await fetch(`/inbox2/tree`);
         return (await response.json()) as Folder[];
+    },
+});
+
+/** Define mutation to reset cache of the tree
+ *
+ */
+queryClient.setMutationDefaults(["refreshInbox2Tree"], {
+    mutationFn: async () => {
+        await fetch(`/inbox2/cache`, { method: "DELETE" });
+    },
+    onMutate: async () => {
+        const q = inboxQueryOptions();
+
+        // At least 0.5 second delay for loading indicator
+        const ps = [
+            queryClient.cancelQueries(q).then(() => queryClient.invalidateQueries(q)),
+            new Promise((resolve) => setTimeout(resolve, 500)),
+        ];
+        await Promise.all(ps);
     },
 });
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 from functools import total_ordering
+from typing import TYPE_CHECKING, Literal, TypedDict
 
 from beets_flask.logger import log
 
@@ -33,6 +34,25 @@ class Progress(Enum):
         return self.value < other.value
 
 
+class SerializedProgressState(TypedDict):
+    # ugly to repeat, but no way to read the type hint from enum.
+    progress: Literal[
+        "NOT_STARTED",
+        "READING_FILES",
+        "GROUPING_ALBUMS",
+        "LOOKING_UP_CANDIDATES",
+        "IDENTIFYING_DUPLICATES",
+        "OFFERING_MATCHES",
+        "WAITING_FOR_USER_SELECTION",
+        "EARLY_IMPORTING",
+        "IMPORTING",
+        "MANIPULATING_FILES",
+        "COMPLETED",
+    ]
+    message: str | None
+    plugin_name: str | None
+
+
 @total_ordering
 @dataclass(slots=True)
 class ProgressState:
@@ -46,12 +66,12 @@ class ProgressState:
     # Plugin specific
     plugin_name: str | None = None
 
-    def as_dict(self) -> dict:
-        return {
-            "progess": self.progress.name,
-            "message": self.message,
-            "plugin_name": self.plugin_name,
-        }
+    def serialize(self) -> SerializedProgressState:
+        return SerializedProgressState(
+            progress=self.progress.name,
+            message=self.message,
+            plugin_name=self.plugin_name,
+        )
 
     def __lt__(self, other: ProgressState | Progress) -> bool:
         if isinstance(other, Progress):

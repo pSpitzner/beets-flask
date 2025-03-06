@@ -4,13 +4,35 @@ It combines:
 - the BeetSessions (interacting with beets, implementing core functions)
 - the Tags (our sql database model, grabbed by the gui to display everything static)
 - the Redis Queue (to run the tasks in the background)
+
+# Thoughts on hash validation:
+- Hash validation on / shortly after route request
+  for doing something on folder
+- Routes take hash + path and warn if current
+  folder hash (cached) does not match passed
+- TODO: watchdog file change invalidate hash cache
+- Database:
+    - get by hash, (check path, should match, md5)
+    - if fails: get by path
+    - outlook todo: inform user on inconsinstency
+    - in any case: here, walk tree, cos we create session
+- New Routes:
+    - get all candidates / tasks / sessions by folder-hash or folder-path
+
+- Tagging / creation:
+    - get real current folder state from disk and work with it.
+    - consistency inform stuff, but in any case
+    - put current path + hash into db
+    - run tagging stuff associated to this path + hash
+    - put tag results into db
+
 """
 
 from __future__ import annotations
 
+import traceback
 from datetime import datetime
 from pathlib import Path
-import traceback
 from typing import TYPE_CHECKING
 
 import requests
@@ -304,7 +326,7 @@ def AutoImport(tagId: str) -> list[str] | None:
 
         if bt.status != "tagged":
             log.info(
-                f"Skipping auto import, we only import after a successfull preview (status 'tagged' not '{bt.status}'). {bt.album_folder=}"
+                f"Skipping auto import, we only import after a successful preview (status 'tagged' not '{bt.status}'). {bt.album_folder=}"
             )
             # we should consider to do an explicit duplicate check here
             # because two previews yielding the same match might finish at the same time

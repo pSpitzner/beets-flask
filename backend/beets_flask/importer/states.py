@@ -16,7 +16,12 @@ from deprecated import deprecated
 
 from beets_flask import log
 from beets_flask.config import get_config
-from beets_flask.importer.progress import Progress, ProgressState
+from beets_flask.disk import Folder
+from beets_flask.importer.progress import (
+    Progress,
+    ProgressState,
+    SerializedProgressState,
+)
 from beets_flask.utility import capture_stdout_stderr
 
 from .types import (
@@ -24,7 +29,6 @@ from .types import (
     BeetsAlbumMatch,
     BeetsTrackMatch,
     ItemInfo,
-    MusicInfo,
     TrackInfo,
 )
 
@@ -40,12 +44,24 @@ class SessionState:
     _task_states: List[TaskState]
     # session-level buttons. continue from choose_match when not None
     user_response: Literal["abort"] | Literal["apply"] | None = None
-    path: Path
+    folder_path: Path
+    folder_hash: str
 
-    def __init__(self, path: Path) -> None:
+    def __init__(self, folder: Folder | Path) -> None:
+        # Alternate constructor is part of the SessionStateInDb class
         self.id = str(uuid())
         self._task_states = []
-        self.path = path
+        if isinstance(folder, Path):
+            folder = Folder.from_path(folder)
+        # Why not just a folder object as member?
+        # We do not always want to compute the children (or save them to db)
+        self.folder_path = folder.path
+        self.folder_hash = folder.hash
+
+    @property
+    @deprecated("Use the folder attribute instead!")
+    def path(self) -> Path:
+        return self.folder_path
 
     @property
     def task_states(self):
@@ -115,8 +131,8 @@ class SessionState:
         """JSON representation to match the frontend types."""
         return SerializedSessionState(
             id=self.id,
-            selection_states=[s.serialize() for s in self.task_states],
-            status=self.progress.as_dict(),
+            tasks=[s.serialize() for s in self.task_states],
+            status=self.progress.serialize(),
             completed=self.completed,
         )
 
@@ -231,7 +247,7 @@ class TaskState:
         return [item for item in self.task.items]
 
     @property
-    def items_minimal(self) -> List[MusicInfo]:
+    def items_minimal(self) -> List[TrackInfo | ItemInfo | AlbumInfo]:
         """Items of the associated task as MinimalItemAndTrackInfo."""
         return [ItemInfo.from_instance(i) for i in self.task.items]
 
@@ -273,10 +289,10 @@ class TaskState:
 
         return SerializedTaskState(
             id=self.id,
-            candidate_states=[c.serialize() for c in self.candidate_states],
+            candidates=[c.serialize() for c in self.candidate_states],
             current_candidate_id=current_id,
             duplicate_action=self.duplicate_action,
-            items=[i.serialize() for i in self.items_minimal],
+            items=self.items_minimal,
             completed=self.completed,
             toppath=str(self.toppath),
             paths=[str(p) for p in self.paths],
@@ -535,23 +551,23 @@ class CandidateState:
         mapping = None
 
         if self.type == "track":
-            info = TrackInfo.from_instance(self.match.info).serialize()
+            info = TrackInfo.from_instance(self.match.info)
 
         elif self.type == "album" and isinstance(self.match.info, autotag.AlbumInfo):
-            info = AlbumInfo.from_instance(self.match.info).serialize()
+            info = AlbumInfo.from_instance(self.match.info)
 
             tracks = []
             for track in self.match.info.tracks or []:
-                tracks.append(TrackInfo.from_instance(track).serialize())
+                tracks.append(TrackInfo.from_instance(track))
 
             extra_tracks = []
             for track in self.match.extra_tracks or []:  # type: ignore
-                extra_tracks.append(TrackInfo.from_instance(track).serialize())
+                extra_tracks.append(TrackInfo.from_instance(track))
 
-            items = [ItemInfo.from_instance(i).serialize() for i in self.items]
+            items = [ItemInfo.from_instance(i) for i in self.items]
 
             extra_items = [
-                ItemInfo.from_instance(i).serialize()
+                ItemInfo.from_instance(i)
                 for i in self.match.extra_items or []  # type: ignore
             ]
 
@@ -603,23 +619,21 @@ class CandidateState:
 # ---------------------------- Serialization types --------------------------- #
 # Used for getting typehints in the frontend. I.e. we generate the types from
 # these typed dicts! See the generate_types.py script for more information.
-# FIXME: We should overhaul these serialized types. They seem a bit outdated to me!
-#       We could make these types way more strict
 
 
 class SerializedSessionState(TypedDict):
     id: str
-    selection_states: List[SerializedTaskState]
-    status: dict[str, str]
+    tasks: List[SerializedTaskState]
+    status: SerializedProgressState
     completed: bool
 
 
 class SerializedTaskState(TypedDict):
     id: str
-    candidate_states: List[SerializedCandidateState]
+    candidates: List[SerializedCandidateState]
     current_candidate_id: str | None
     duplicate_action: str | None
-    items: List[dict]  #  ItemInfo
+    items: List[TrackInfo | ItemInfo | AlbumInfo]
     completed: bool
     toppath: str | None
     paths: List[str]
@@ -634,12 +648,12 @@ class SerializedCandidateState(TypedDict):
     duplicate_in_library: bool
     type: str
     distance: float
-    info: dict  # AlbumInfo | TrackInfo
+    info: TrackInfo | ItemInfo | AlbumInfo
 
-    items: List[dict] | None  #  ItemInfo TODO: infer in frontend from selection state
-    tracks: List[dict] | None  #  TrackInfo
-    extra_tracks: List[dict] | None  #  TrackInfo
-    extra_items: List[dict] | None  #  ItemInfo
+    items: List[TrackInfo | ItemInfo | AlbumInfo] | None
+    tracks: List[TrackInfo] | None
+    extra_tracks: List[TrackInfo] | None
+    extra_items: list[TrackInfo | ItemInfo | AlbumInfo] | None
 
     mapping: dict[int, int] | None
 

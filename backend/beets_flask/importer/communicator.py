@@ -87,9 +87,8 @@ class ImportCommunicator(ABC):
 
     async def emit_status_async(self, status: ProgressState, **kwargs):
         """Emit a status message."""
-        log.error("Not getting log statements from async funcs?")
         await self._emit(
-            EmitRequest(event="status", data=status.as_dict()),
+            EmitRequest(event="status", data=status.serialize()),
             **kwargs,
         )
 

@@ -5,6 +5,7 @@ Also includes and our own derivatives.
 
 from __future__ import annotations
 
+from abc import ABC
 from dataclasses import asdict, dataclass
 from typing import (
     Any,
@@ -51,7 +52,7 @@ class PromptChoice(NamedTuple):
 
 
 @dataclass
-class MusicInfo:
+class MusicInfo(ABC):
     """Shared info for tracks, items and albums.
 
     Items (music files on disk), tracks (trackinfo), and album info are somewhat similar.
@@ -75,22 +76,21 @@ class MusicInfo:
     genre: str | None
     media: str | None
 
-    def serialize(self):
-        return asdict(self)
-
     @classmethod
     def from_instance(
         cls, info: Union[autotag.TrackInfo, autotag.Item, autotag.AlbumInfo]
-    ) -> MusicInfo:
+    ):
         kwargs = class_attributes_to_kwargs(cls, info)
         if isinstance(info, autotag.TrackInfo):
             kwargs["type"] = "track"
+            return TrackInfo(**kwargs)
         elif isinstance(info, autotag.Item):
-            kwargs["type"] = "item"
+            return ItemInfo(**kwargs)
         elif isinstance(info, autotag.AlbumInfo):
             kwargs["type"] = "album"
+            return AlbumInfo(**kwargs)
 
-        return cls(**kwargs)
+        raise ValueError(f"Unknown type of info: {info}")
 
     def __repr__(self) -> str:
         res = f"{self.__class__.__name__}"

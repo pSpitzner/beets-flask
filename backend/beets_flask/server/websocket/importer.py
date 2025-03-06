@@ -1,8 +1,7 @@
 import asyncio
 from typing import Union
 
-from socketio import AsyncServer
-
+from beets_flask.disk import path_to_folder
 from beets_flask.importer import (
     ChoiceReceive,
     CompleteReceive,
@@ -13,7 +12,6 @@ from beets_flask.importer import (
 from beets_flask.logger import log
 
 from . import sio
-from .errors import sio_catch_expection
 
 namespace = "/import"
 session: InteractiveImportSession | None = None
@@ -62,11 +60,11 @@ async def start_import_session(sid, data):
         session_task.cancel()
         session_task = None
 
-    state = SessionState()
+    folder = path_to_folder(path)
+
+    state = SessionState(folder)
     communicator = WebsocketCommunicator(state, sio, namespace)
-    session = InteractiveImportSession(
-        state=state, communicator=communicator, path=path
-    )
+    session = InteractiveImportSession(state=state, communicator=communicator)
 
     async def run_session():
         global session, session_task

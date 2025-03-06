@@ -15,7 +15,7 @@ from beets_flask.disk import (
     Folder,
     album_folders_from_track_paths,
     all_album_folders,
-    path_to_dict,
+    path_to_folder,
 )
 from beets_flask.logger import log
 from beets_flask.server.routes.status import update_client_view
@@ -121,7 +121,7 @@ class InboxHandler(FileSystemEventHandler):
             return
 
         # trigger cache clear and gui update of inbox directories
-        path_to_dict.cache.clear()  # type: ignore
+        path_to_folder.cache.clear()  # type: ignore
         update_client_view("inbox")
 
         try:

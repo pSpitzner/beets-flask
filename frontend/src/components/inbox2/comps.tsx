@@ -5,6 +5,7 @@ import {
     FolderIcon,
     ImportIcon,
     LucideChevronRight,
+    RefreshCwIcon,
     TagIcon,
     Trash2Icon,
 } from "lucide-react";
@@ -33,6 +34,7 @@ import {
     styled,
     SxProps,
     Theme,
+    Tooltip,
     Typography,
     useMediaQuery,
     useTheme,
@@ -42,7 +44,7 @@ import {
 import { File, Folder, SerializedCandidateState } from "@/pythonTypes";
 
 import { FileTypeIcon, SourceTypeIcon } from "../common/icons";
-import { PenaltyIcon } from "../import/icons";
+import { useMutation } from "@tanstack/react-query";
 
 /* --------------------------------- Context -------------------------------- */
 // Allows to trigger actions on a single or multiple folders
@@ -102,11 +104,9 @@ export function FoldersSelectionProvider({ children }: { children: React.ReactNo
 
 export const GridWrapper = styled(Box)({
     display: "grid",
-    gridTemplateColumns: "[tree] 1fr[chip] auto [actions] auto [selector] auto",
-    height: "100%",
+    gridTemplateColumns: "[chip] auto [tree] 1fr [actions] auto [selector] auto",
     width: "100%",
     columnGap: "1rem",
-
     // Fill columns even if content is given in other order
     // Fill columns even if content is given in other order
     gridAutoFlow: "dense",
@@ -191,10 +191,11 @@ export function FolderComponent({
             {/* TODO: Generate with best candidate */}
             <GridRow
                 sx={{
-                    backgroundColor: isSelected(folder) ? "gray" : "inherit",
+                    backgroundColor: isSelected(folder) ? "gray !important" : "inherit",
                     position: "relative",
                 }}
             >
+                <MatchChip type="spotify" quality={100} sx={{ gridColumn: "chip" }} />
                 {/* Folder name and collapsable */}
                 <FolderTreeRow
                     folder={folder}
@@ -202,25 +203,6 @@ export function FolderComponent({
                     setIsOpen={setIsOpen}
                     level={level}
                 />
-
-                {/* Penalties */}
-                <Box
-                    sx={(theme) => ({
-                        display: "flex",
-                        gap: "0.5rem",
-                        alignItems: "center",
-                        border: "1px solid #495057",
-                        paddingLeft: theme.spacing(1),
-                        borderRadius: theme.shape.borderRadius,
-                        gridColumn: "chip",
-                        alignSelf: "center",
-                    })}
-                >
-                    <PenaltyIcon kind="artist" color="red" />
-                    <PenaltyIcon kind="track" color="orange" />
-                    <PenaltyIcon kind="duplicate" />
-                    <MatchChip type="spotify" quality={100} />
-                </Box>
 
                 {/* Selector */}
                 <Checkbox
@@ -248,8 +230,8 @@ function FileComponent({ file, level = 0 }: { file: File; level?: number }) {
         <GridRow>
             <FileName file={file} level={level} />
             {/* Emtpy grid items for alignment */}
-            <Box sx={{ gridColumn: "chip" }} />
-            <Box sx={{ gridColumn: "selector" }} />
+            <Box sx={{ gridColumn: "chip", minWidth: 0 }} />
+            <Box sx={{ gridColumn: "selector", minWidth: 0 }} />
         </GridRow>
     );
 }
@@ -301,6 +283,7 @@ function FolderTreeRow({
 function FileName({ file, level = 0 }: { file: File; level?: number }) {
     // Infer type from file ending
     const type = file.full_path.split(".").pop();
+    const theme = useTheme();
 
     return (
         <LevelIndentWrapper
@@ -309,7 +292,9 @@ function FileName({ file, level = 0 }: { file: File; level?: number }) {
                 fontSize: "0.7rem",
                 fontFamily: "monospace",
                 color: "#999",
-                gridColumn: "tree",
+                gridColumnStart: "tree",
+                gridColumnEnd: "-1", // Allow full size
+                minWidth: "0",
             }}
         >
             <Box
@@ -319,6 +304,12 @@ function FileName({ file, level = 0 }: { file: File; level?: number }) {
                     width: ICON_SIZE + "px",
                     height: "1px",
                     backgroundColor: "#495057",
+                    flexShrink: 0,
+
+                    // Mobile styling
+                    [theme.breakpoints.down("laptop")]: {
+                        visibility: "hidden",
+                    },
                 }}
             ></Box>
             <FileTypeIcon
@@ -326,9 +317,27 @@ function FileName({ file, level = 0 }: { file: File; level?: number }) {
                 size={ICON_SIZE * 0.7}
                 style={{
                     marginLeft: ICON_SIZE * 0.7 + "px",
+                    flexShrink: 0,
                 }}
             />
-            <Typography variant="body1">{file.full_path.split("/").pop()}</Typography>
+            <Box
+                sx={{
+                    overflow: "hidden",
+                }}
+            >
+                <Typography
+                    variant="body1"
+                    sx={{
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        position: "relative",
+                        maxWidth: "100%",
+                        overflow: "hidden",
+                    }}
+                >
+                    {file.full_path.split("/").pop()}
+                </Typography>
+            </Box>
         </LevelIndentWrapper>
     );
 }
@@ -342,6 +351,8 @@ function LevelIndentWrapper({
     sx?: SxProps<Theme>;
     level?: number;
 }) {
+    const theme = useTheme();
+
     return (
         <Box
             sx={{
@@ -353,6 +364,11 @@ function LevelIndentWrapper({
                 flexShrink: 0,
                 gap: "0.4rem",
                 paddingLeft: level * ICON_SIZE + "px",
+
+                // Mobile styling
+                [theme.breakpoints.down("laptop")]: {
+                    paddingLeft: "0px",
+                },
                 ...sx,
             }}
         >
@@ -369,11 +385,11 @@ function LevelIndentWrapper({
 
                         borderRight: "1px solid #495057",
 
-                        /** DEBUG
-                         * 
-                        backgroundColor: "red",
-                        outline: "1px solid #495057",
-                        */
+                        // Mobile styling show stacked lines
+                        [theme.breakpoints.down("laptop")]: {
+                            left: -ICON_SIZE - 2 * i + "px",
+                            borderRight: `1px solid hsl(210deg, 8.75%, ${30 + i * 15}%)`,
+                        },
                     }}
                 />
             ))}
@@ -384,7 +400,15 @@ function LevelIndentWrapper({
 }
 
 /**Shows the percentage of the best match and its source */
-function MatchChip({ type, quality }: { type: string; quality: number }) {
+function MatchChip({
+    type,
+    quality,
+    sx,
+}: {
+    type: string;
+    quality: number;
+    sx?: SxProps<Theme>;
+}) {
     return (
         <Chip
             icon={<SourceTypeIcon type={type} />}
@@ -396,6 +420,7 @@ function MatchChip({ type, quality }: { type: string; quality: number }) {
                 justifyContent: "space-between",
                 alignItems: "center",
                 backgroundColor: quality_color(quality),
+                ...sx,
             }}
         />
     );
@@ -412,7 +437,24 @@ function quality_color(quality: number) {
 
 export function SelectedStats() {
     const { nSelected } = useFoldersContext();
-    return <Typography fontSize={12}>{nSelected} folders selected</Typography>;
+
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                gap: "1rem",
+                alignItems: "flex-end",
+                justifyContent: "flex-start",
+                width: "100%",
+            }}
+        >
+            <RefreshFolders />
+            <DeleteAllImported />
+            <Typography fontSize={12} sx={{ marginLeft: "auto" }}>
+                {nSelected} folder{nSelected > 1 ? "s" : null} selected
+            </Typography>
+        </Box>
+    );
 }
 
 /* --------------------------------- Actions -------------------------------- */
@@ -484,6 +526,41 @@ export function FolderActions() {
                 />
             </GenericSpeedDial>
         </Zoom>
+    );
+}
+
+function RefreshFolders() {
+    // See inbox2 route
+    const mutation = useMutation({
+        mutationKey: ["refreshInbox2Tree"],
+    });
+
+    return (
+        <Tooltip title="Refresh folders">
+            <IconButton
+                onClick={() => mutation.mutate()}
+                sx={{
+                    animation: mutation.isPending ? "spin 1s linear infinite" : "none",
+                    "@keyframes spin": {
+                        from: { transform: "rotate(0deg)" },
+                        to: { transform: "rotate(360deg)" },
+                    },
+                }}
+                disabled={mutation.isPending}
+            >
+                <RefreshCwIcon size={ICON_SIZE} />
+            </IconButton>
+        </Tooltip>
+    );
+}
+
+function DeleteAllImported() {
+    return (
+        <Tooltip title="Delete all imported albums">
+            <IconButton>
+                <Trash2Icon size={ICON_SIZE} />
+            </IconButton>
+        </Tooltip>
     );
 }
 

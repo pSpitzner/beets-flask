@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+from dataclasses import dataclass
 from pathlib import Path
 from typing import (
     List,
@@ -22,7 +23,8 @@ from beets_flask.dirhash_custom import dirhash_c
 from beets_flask.logger import log
 
 
-class Folder(TypedDict):
+@dataclass
+class Folder:
     type: Literal["directory"]
     children: Sequence[Folder | File]
     full_path: str
@@ -31,6 +33,65 @@ class Folder(TypedDict):
     # If beets has marked this folder as an album
     is_album: bool
 
+    @classmethod
+    def from_path(cls, path: Path | str, subdirs=True) -> Folder:
+        """Create a Folder object from a path."""
+
+        if isinstance(path, str):
+            path = Path(path)
+
+        if not path.is_dir():
+            raise FileNotFoundError(f"Path `{path}` does not exist or is no directory.")
+
+        path = path.resolve()
+
+        album_folders = all_album_folders(path, subdirs=subdirs)
+
+        # Cache for the dirhash function
+        cache: Cache[str, bytes] = Cache(maxsize=2**16)
+
+        # Object that contains all tree elements, because
+        # we need to fill top down but iterate buttom up
+        lookup: Mapping[str, Folder] = dict()
+
+        # Iterate over all directories from bottom to top
+        for dirpath, dirnames, filenames in os.walk(path, topdown=False):
+
+            # FIXME: Filter for files here (audio extensions only)
+            # FIXME: Skip hidden folders
+
+            # As we iterate from bottom to top, we can access the elements from
+            # the lookup table as they are already created
+            children: list[Folder | File] = [
+                lookup[os.path.join(dirpath, sub_dir)]
+                for sub_dir in os_sorted(dirnames)
+            ]
+
+            # Add all files to children
+            for filename in os_sorted(filenames):
+                full_path = os.path.join(dirpath, filename)
+                children.append(
+                    File(
+                        type="file",
+                        full_path=os.path.abspath(full_path),
+                    )
+                )
+
+            # Add current directory to lookup
+            lookup[dirpath] = Folder(
+                type="directory",
+                children=children,
+                full_path=os.path.abspath(dirpath),
+                hash=dirhash_c(dirpath, cache).hex(),
+                is_album=Path(dirpath) in album_folders,
+            )
+
+        return lookup[str(path)]
+
+    @property
+    def path(self) -> Path:
+        return Path(self.full_path)
+
 
 class File(TypedDict):
     type: Literal["file"]
@@ -38,15 +99,13 @@ class File(TypedDict):
 
 
 @cached(cache=TTLCache(maxsize=1024, ttl=900), info=True)
-def path_to_dict(root_dir: Path | str, relative_to="/", subdirs=True) -> Folder:
+def path_to_folder(root_dir: Path | str, subdirs=True) -> Folder:
     """Generate our nested dict structure for the specified path.
 
     Parameters
     ----------
     root_dir : str
         The root directory to start from.
-    relative_to : str, optional
-        The path to be stripped from the full path. Defaults to "/".
     subdirs : bool, optional
         Whether to mark qualifying subfolders of an album as album folders themselves. If true, e.g. for `/album/CD1/track.mp3` both `/album/` and `/album/CD1/` are flagged. Defaults to True.
 
@@ -54,51 +113,8 @@ def path_to_dict(root_dir: Path | str, relative_to="/", subdirs=True) -> Folder:
     -------
         dict: The nested dict structure.
     """
-    if isinstance(root_dir, str):
-        root_dir = Path(root_dir)
 
-    if not root_dir.is_dir():
-        raise FileNotFoundError(f"Path `{root_dir}` does not exist or is no directory.")
-
-    album_folders = all_album_folders(root_dir, subdirs=subdirs)
-
-    # Cache for the dirhash function
-    cache: Cache[str, bytes] = Cache(maxsize=2**16)
-
-    # Object that contains all tree elements
-    lookup: Mapping[str, Folder] = dict()
-
-    for dirpath, dirnames, filenames in os.walk(root_dir, topdown=False):
-
-        # FIXME: Filter for files here (audio extensions only)
-        # FIXME: Skip hidden folders
-
-        # As we iterate from bottom to top, we can access the elements from
-        # the lookup table as they are already created
-        children: list[Folder | File] = [
-            lookup[os.path.join(dirpath, sub_dir)] for sub_dir in os_sorted(dirnames)
-        ]
-
-        # Add all files to children
-        for filename in os_sorted(filenames):
-            full_path = os.path.join(dirpath, filename)
-            children.append(
-                File(
-                    type="file",
-                    full_path=os.path.relpath(full_path, relative_to),
-                )
-            )
-
-        # Add current directory to lookup
-        lookup[dirpath] = Folder(
-            type="directory",
-            children=children,
-            full_path=os.path.relpath(dirpath, relative_to),
-            hash=dirhash_c(dirpath, cache).hex(),
-            is_album=Path(dirpath) in album_folders,
-        )
-
-    return lookup[str(root_dir)]
+    return Folder.from_path(root_dir, subdirs=subdirs)
 
 
 def album_folders_from_track_paths(

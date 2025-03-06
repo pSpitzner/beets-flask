@@ -48,8 +48,8 @@ python ./generate_types.py
 uvicorn beets_flask.server.app:create_app --port 5001 \
     --host 0.0.0.0 \
     --factory \
-    --workers 1
-    # --reload
+    --workers 1 \
+    --reload
 
 
 

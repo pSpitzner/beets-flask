@@ -70,21 +70,16 @@ class BaseSessionNew(importer.ImportSession, ABC):
 
     pipeline: AsyncPipeline[importer.ImportTask, Any] | None = None
 
-    # toppath. during run, multiple sessions, each with their own
-    # subpath of this may be created
-    path: Path
-
     def __init__(
         self,
         state: SessionState,
         config_overlay: dict | None = None,
     ):
-        path = state.path
 
-        if not path.exists():
-            raise FileNotFoundError(f"Path {path} does not exist.")
-        if not path.is_dir() and not is_album_folder(path):
-            raise ValueError(f"Path {path} is not an album folder.")
+        if not state.path.exists():
+            raise FileNotFoundError(f"Path {state.path} does not exist.")
+        if not state.path.is_dir() and not is_album_folder(state.path):
+            raise ValueError(f"Path {state.path} is not an album folder.")
 
         # FIXME: This is a super bad convention of the original beets.
         # We do not want to pollute a global config object every time a session runs.
@@ -95,17 +90,20 @@ class BaseSessionNew(importer.ImportSession, ABC):
             config.set_args(config_overlay)
 
         self.state = state
-        self.path = path
 
         super().__init__(
             lib=_open_library(config),
-            paths=[path],
+            paths=[state.path],
             query=None,
             loghandler=None,
         )
         # Hacky workaround to use our logging, to allow plugins to communicate
         self.logger.handlers = log.handlers
-        log.debug(f"Created new {self.__class__.__name__} for {path}")
+        log.debug(f"Created new {self.__class__.__name__} for {state.path}")
+
+    @property
+    def path(self) -> Path:
+        return self.state.path
 
     @deprecated
     def run_and_capture_output(self) -> tuple[str, str]:
