@@ -42,7 +42,7 @@ import {
     Zoom,
 } from "@mui/material";
 
-import { File, Folder, SerializedCandidateState } from "@/pythonTypes";
+import { File, Folder } from "@/pythonTypes";
 
 import { FileTypeIcon, SourceTypeIcon } from "../common/icons";
 import { useMutation } from "@tanstack/react-query";
@@ -128,6 +128,7 @@ const GridRow = styled(Box)({
     gridColumn: "1 / -1",
     gridTemplateColumns: "subgrid",
     gridAutoFlow: "dense",
+    alignItems: "center",
 });
 
 /* ---------------------------- Folder & File component ---------------------------- */
@@ -153,26 +154,6 @@ export function FolderComponent({
     });
     const { isSelected, toggleSelect } = useFoldersContext();
 
-    // TODO: Get best candidate for folder (should be send on first
-    // load by default imo)
-    // This needs better typing! In python
-    const bestCandidate: SerializedCandidateState = {
-        id: "1",
-        diff_preview: null,
-        cur_artist: "Artist",
-        cur_album: "Album",
-        penalties: [],
-        duplicate_in_library: false,
-        type: "album",
-        distance: 0,
-        info: {},
-        items: null,
-        tracks: null,
-        extra_tracks: null,
-        extra_items: null,
-        mapping: null,
-    };
-
     // Create children elements from tree (recursive)
     const childElements = Object.entries(folder.children).map(([_key, values]) => {
         if (values.type === "file") {
@@ -196,7 +177,11 @@ export function FolderComponent({
                     position: "relative",
                 }}
             >
-                <MatchChip type="spotify" quality={100} sx={{ gridColumn: "chip" }} />
+                <MatchChip
+                    type="unk"
+                    quality={100}
+                    sx={{ gridColumn: "chip", justifyContent: "center" }}
+                />
                 {/* Folder name and collapsable */}
                 <FolderTreeRow
                     folder={folder}
@@ -420,7 +405,7 @@ function MatchChip({
 }) {
     return (
         <Chip
-            icon={<SourceTypeIcon type={type} />}
+            icon={<SourceTypeIcon type={type} size={ICON_SIZE} />}
             label={quality.toFixed() + "%"}
             size="small"
             color="success"
@@ -430,6 +415,7 @@ function MatchChip({
                 alignItems: "center",
                 backgroundColor: quality_color(quality),
                 ...sx,
+                fontSize: "0.8rem",
             }}
         />
     );
@@ -439,7 +425,7 @@ function quality_color(quality: number) {
     const h = 355 + (125 * quality) / 100;
     const s = 130 - (60 * quality) / 100;
     const l = 45 + Math.abs(0.5 - quality / 100) * 30;
-    return "hsl(" + h + ", " + s + "%, " + l + "%)";
+    return "hsl(" + h + ", " + s + "%, " + l + "%) !important";
 }
 
 /* --------------------------------- Utility --------------------------------- */
@@ -507,7 +493,8 @@ export function FolderActions() {
             timeout={transitionDuration.enter}
             style={{
                 transitionDelay: `${nSelected > 0 ? transitionDuration.exit : 0}ms`,
-                // FIXME: Transform origin should be centered on button
+                // FIXME: Transform origin should be centered on button not bottom right
+                // not sure if this is easily doable tho
                 transformOrigin: "bottom right",
             }}
             unmountOnExit
@@ -540,22 +527,22 @@ export function FolderActions() {
 
 function RefreshFolders() {
     // See inbox2 route
-    const mutation = useMutation({
+    const { mutate, isPending } = useMutation({
         mutationKey: ["refreshInbox2Tree"],
     });
 
     return (
         <Tooltip title="Refresh folders">
             <IconButton
-                onClick={() => mutation.mutate()}
+                onClick={() => mutate()}
                 sx={{
-                    animation: mutation.isPending ? "spin 1s linear infinite" : "none",
+                    animation: isPending ? "spin 1s linear infinite" : "none",
                     "@keyframes spin": {
                         from: { transform: "rotate(0deg)" },
                         to: { transform: "rotate(360deg)" },
                     },
                 }}
-                disabled={mutation.isPending}
+                disabled={isPending}
             >
                 <RefreshCwIcon size={ICON_SIZE} />
             </IconButton>
