@@ -33,7 +33,7 @@ function ImportPage() {
 }
 
 function SessionsView({ handleNewSession }: { handleNewSession: () => void }) {
-    const { selStates, status } = useImportContext();
+    const { taskStates: selStates, status } = useImportContext();
     const [timeoutId, setTimeoutId] = useState<number | undefined>(undefined);
     const statusText = useRef("");
     const [remainingPercent, setRemainingPercent] = useState<number>(0);
@@ -43,7 +43,7 @@ function SessionsView({ handleNewSession }: { handleNewSession: () => void }) {
     useEffect(() => {
         if (
             timeoutId === undefined &&
-            (status?.message === "completed" || status?.message === "aborted")
+            (status?.progress === "COMPLETED" || status?.message === "NOT_STARTED")
         ) {
             if (status.message === "aborted") {
                 statusText.current = "Import aborted!";

@@ -1,51 +1,74 @@
 import Box from "@mui/material/Box";
 import { QueryClient } from "@tanstack/react-query";
+import { HeadContent } from "@tanstack/react-router";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 
-import NavTabs from "@/components/frontpage/navbar";
 import { TerminalContextProvider } from "@/components/frontpage/terminal";
+import NavBar from "@/components/frontpage/navbar";
 
 export const Route = createRootRouteWithContext<{
     queryClient: QueryClient;
 }>()({
     component: RootComponent,
+    head: () => ({
+        meta: [
+            {
+                name: "description",
+                content: "Opinionated web-interface around the music organizer beets.",
+            },
+            {
+                title: "Beets",
+            },
+        ],
+        links: [
+            {
+                rel: "icon",
+                type: "image/png",
+                href: "/logo.png",
+            },
+        ],
+    }),
 });
 
 function RootComponent() {
     return (
-        <main style={{ display: "flex", flexDirection: "column", height: "100dvh" }}>
-            <Box
-                className="DefaultBlurBg"
-                sx={{
-                    position: "fixed",
-                    top: 0,
-                    zIndex: 1000,
-                    width: "100dvw",
-                    height: "48px",
+        <>
+            <HeadContent />
+            <main
+                style={{
                     display: "flex",
-                    justifyContent: "center",
-                    alignItems: "flex-start",
-                    borderBottom: "1px solid",
-                    borderColor: "divider",
+                    flexDirection: "column",
+                    height: "100dvh",
+                    overflow: "hidden",
                 }}
             >
-                <NavTabs />
-            </Box>
-            <Box
-                id="main-content"
-                sx={{
-                    flexGrow: 1,
-                    paddingTop: "48px",
-                    // position: "relative",
-                    // top: "64px",
-                    // if we want to move Navbar bottom
-                    // marginTop: { xs: 0, md: "64px" },
-                }}
-            >
-                <TerminalContextProvider>
-                    <Outlet />
-                </TerminalContextProvider>
-            </Box>
-        </main>
+                <NavBar />
+                <Box
+                    id="main-content"
+                    sx={(theme) => ({
+                        flexGrow: 1,
+                        [theme.breakpoints.up("laptop")]: {
+                            paddingTop: "48px", // Navbar
+                        },
+                        [theme.breakpoints.down("laptop")]: {
+                            position: "fixed",
+                            bottom: "48px", // Navbar height
+                            height: "calc(100dvh - 48px)", // Navbar height
+                        },
+                        width: "100%",
+
+                        // if we want to move Navbar bottom
+                        // marginTop: { xs: 0, md: "64px" },
+                        overflow: "auto",
+                    })}
+                >
+                    <Box sx={{ height: "100%" }}>
+                        <TerminalContextProvider>
+                            <Outlet />
+                        </TerminalContextProvider>
+                    </Box>
+                </Box>
+            </main>
+        </>
     );
 }

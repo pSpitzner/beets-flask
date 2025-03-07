@@ -135,12 +135,11 @@ function RouteComponent() {
                         }}
                     >
                         <SelectedStats />
-
-                        <GridWrapper>
-                            {data.map((folder, i) => (
+                        {data.map((folder, i) => (
+                            <GridWrapper>
                                 <FolderComponent key={i} folder={folder} unSelectable />
-                            ))}
-                        </GridWrapper>
+                            </GridWrapper>
+                        ))}
                         <Box sx={{ flexGrow: "grow" }}>
                             <FolderActions />
                         </Box>

@@ -24,7 +24,7 @@ export function ErrorCard({ error }: { error: Error }) {
     return (
         <Card
             sx={(theme) => ({
-                maxWidth: theme.breakpoints.values.sm,
+                maxWidth: theme.breakpoints.values.laptop,
                 margin: "auto",
                 padding: "0.25rem",
                 gap: "0.5rem",

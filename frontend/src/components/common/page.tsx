@@ -16,16 +16,16 @@ export const PageWrapper = styled(Box)(({ theme }) => ({
     maxWidth: "540px",
     paddingBlock: "0.5rem",
     paddingInline: "0.5rem",
-    [theme.breakpoints.up("sm")]: {
+    [theme.breakpoints.up("mobile")]: {
         maxWidth: "720px",
     },
-    [theme.breakpoints.up("md")]: {
+    [theme.breakpoints.up("tablet")]: {
         maxWidth: "960px",
     },
-    [theme.breakpoints.up("lg")]: {
+    [theme.breakpoints.up("laptop")]: {
         maxWidth: "1140px",
     },
-    [theme.breakpoints.up("xl")]: {
+    [theme.breakpoints.up("desktop")]: {
         maxWidth: "1320px",
     },
 }));

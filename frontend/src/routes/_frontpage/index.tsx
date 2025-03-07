@@ -10,7 +10,6 @@ export const Route = createFileRoute("/_frontpage/")({
     loader: async ({ context }) => {
         await context.queryClient.ensureQueryData(libraryStatsQueryOptions());
     },
-    meta: () => [{ title: "Home" }],
     staleTime: 20_000, // 20 seconds
 });
 
