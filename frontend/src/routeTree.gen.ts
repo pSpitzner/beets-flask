@@ -21,6 +21,7 @@ import { Route as ImportIndexImport } from './routes/import/index'
 import { Route as FrontpageIndexImport } from './routes/_frontpage/index'
 import { Route as LibrarySearchImport } from './routes/library/search'
 import { Route as LibraryBrowseImport } from './routes/library/browse'
+import { Route as CandidatesFolderHashImport } from './routes/candidates.$folderHash'
 import { Route as FrontpageModalImport } from './routes/_frontpage/_modal'
 import { Route as LibraryBrowseArtistImport } from './routes/library/browse.$artist'
 import { Route as FrontpageModalScheduleImport } from './routes/_frontpage/_modal.schedule'
@@ -89,6 +90,12 @@ const LibraryBrowseRoute = LibraryBrowseImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const CandidatesFolderHashRoute = CandidatesFolderHashImport.update({
+  id: '/candidates/$folderHash',
+  path: '/candidates/$folderHash',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const FrontpageModalRoute = FrontpageModalImport.update({
   id: '/_frontpage/_modal',
   getParentRoute: () => rootRoute,
@@ -137,6 +144,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: ''
       preLoaderRoute: typeof FrontpageModalImport
+      parentRoute: typeof rootRoute
+    }
+    '/candidates/$folderHash': {
+      id: '/candidates/$folderHash'
+      path: '/candidates/$folderHash'
+      fullPath: '/candidates/$folderHash'
+      preLoaderRoute: typeof CandidatesFolderHashImport
       parentRoute: typeof rootRoute
     }
     '/library/browse': {
@@ -288,6 +302,7 @@ const LibraryBrowseRouteWithChildren = LibraryBrowseRoute._addFileChildren(
 export interface FileRoutesByFullPath {
   '/loading': typeof LoadingRoute
   '': typeof FrontpageModalRouteWithChildren
+  '/candidates/$folderHash': typeof CandidatesFolderHashRoute
   '/library/browse': typeof LibraryBrowseRouteWithChildren
   '/library/search': typeof LibrarySearchRoute
   '/': typeof FrontpageIndexRoute
@@ -306,6 +321,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/loading': typeof LoadingRoute
   '': typeof FrontpageModalRouteWithChildren
+  '/candidates/$folderHash': typeof CandidatesFolderHashRoute
   '/library/browse': typeof LibraryBrowseRouteWithChildren
   '/library/search': typeof LibrarySearchRoute
   '/': typeof FrontpageIndexRoute
@@ -325,6 +341,7 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/loading': typeof LoadingRoute
   '/_frontpage/_modal': typeof FrontpageModalRouteWithChildren
+  '/candidates/$folderHash': typeof CandidatesFolderHashRoute
   '/library/browse': typeof LibraryBrowseRouteWithChildren
   '/library/search': typeof LibrarySearchRoute
   '/_frontpage/': typeof FrontpageIndexRoute
@@ -345,6 +362,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/loading'
     | ''
+    | '/candidates/$folderHash'
     | '/library/browse'
     | '/library/search'
     | '/'
@@ -362,6 +380,7 @@ export interface FileRouteTypes {
   to:
     | '/loading'
     | ''
+    | '/candidates/$folderHash'
     | '/library/browse'
     | '/library/search'
     | '/'
@@ -379,6 +398,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/loading'
     | '/_frontpage/_modal'
+    | '/candidates/$folderHash'
     | '/library/browse'
     | '/library/search'
     | '/_frontpage/'
@@ -398,6 +418,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   LoadingRoute: typeof LoadingRoute
   FrontpageModalRoute: typeof FrontpageModalRouteWithChildren
+  CandidatesFolderHashRoute: typeof CandidatesFolderHashRoute
   LibraryBrowseRoute: typeof LibraryBrowseRouteWithChildren
   LibrarySearchRoute: typeof LibrarySearchRoute
   FrontpageIndexRoute: typeof FrontpageIndexRoute
@@ -412,6 +433,7 @@ export interface RootRouteChildren {
 const rootRouteChildren: RootRouteChildren = {
   LoadingRoute: LoadingRoute,
   FrontpageModalRoute: FrontpageModalRouteWithChildren,
+  CandidatesFolderHashRoute: CandidatesFolderHashRoute,
   LibraryBrowseRoute: LibraryBrowseRouteWithChildren,
   LibrarySearchRoute: LibrarySearchRoute,
   FrontpageIndexRoute: FrontpageIndexRoute,
@@ -435,6 +457,7 @@ export const routeTree = rootRoute
       "children": [
         "/loading",
         "/_frontpage/_modal",
+        "/candidates/$folderHash",
         "/library/browse",
         "/library/search",
         "/_frontpage/",
@@ -454,6 +477,9 @@ export const routeTree = rootRoute
       "children": [
         "/_frontpage/_modal/schedule"
       ]
+    },
+    "/candidates/$folderHash": {
+      "filePath": "candidates.$folderHash.tsx"
     },
     "/library/browse": {
       "filePath": "library/browse.tsx",

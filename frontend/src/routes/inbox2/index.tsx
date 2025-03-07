@@ -23,7 +23,7 @@ export const inboxQueryOptions = () => ({
 });
 
 /** Define mutation to reset cache of the tree
- *
+ * needed for manual refresh
  */
 queryClient.setMutationDefaults(["refreshInbox2Tree"], {
     mutationFn: async () => {
