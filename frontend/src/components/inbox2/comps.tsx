@@ -3,6 +3,7 @@ import {
     Disc3,
     EllipsisVerticalIcon,
     FolderIcon,
+    FolderOpenIcon,
     ImportIcon,
     LucideChevronRight,
     RefreshCwIcon,
@@ -271,7 +272,15 @@ function FolderTreeRow({
             </IconButton>
 
             {folder.is_album ? (
-                <Disc3 size={ICON_SIZE} />
+                <Disc3
+                    size={ICON_SIZE}
+                    style={{
+                        transform: isOpen ? "rotate(90deg)" : "",
+                        transition: "transform 0.15s ease-in-out",
+                    }}
+                />
+            ) : isOpen ? (
+                <FolderOpenIcon size={ICON_SIZE} />
             ) : (
                 <FolderIcon size={ICON_SIZE} />
             )}
