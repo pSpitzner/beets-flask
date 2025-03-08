@@ -26,6 +26,12 @@ It combines:
     - run tagging stuff associated to this path + hash
     - put tag results into db
 
+- We want to indicate status progress before session
+    starts, and we want to do it for tasks, as they correspond
+    to album folders. For that, we need taskStates in the Db
+    before SessionStates!
+    The current default case is one task per session.
+    Other idea: new backend route with pending folders?
 """
 
 from __future__ import annotations
@@ -36,6 +42,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import requests
+from rq import get_current_job
 from rq.decorators import job
 from sqlalchemy import delete
 
@@ -47,8 +54,9 @@ from beets_flask.beets_sessions import (
     colorize,
 )
 from beets_flask.config import get_config
-from beets_flask.database import Tag, db_session
-from beets_flask.database.models.states import SessionStateInDb
+from beets_flask.database import Tag, db_session_factory
+from beets_flask.database.models.states import FolderInDb, SessionStateInDb
+from beets_flask.disk import Folder
 from beets_flask.importer.session import ImportSessionNew, PreviewSessionNew
 from beets_flask.importer.stages import Progress
 from beets_flask.importer.states import CandidateState, SessionState, TaskState
@@ -57,74 +65,57 @@ from beets_flask.server.routes.errors import InvalidUsage
 from beets_flask.server.routes.status import update_client_view
 
 if TYPE_CHECKING:
+    from rq.job import Job
     from sqlalchemy.orm import Session
 
 
-def enqueue(id: str, session: Session | None = None):
+def enqueue(hash: str, path: str, kind: str, session: Session | None = None):
     """Delegate an existing tag to a redis worker, depending on its kind."""
-    with db_session(session) as s:
-        tag = Tag.get_by(Tag.id == id, session=s)
 
-        if tag is None:
-            raise InvalidUsage(f"Tag {id} not found in database")
+    hash = FolderInDb.ensure_hash_consistency(hash, path)
+    # TODO: maybe we want to require a new enqueue if hashes do not match?
+    # For now we just roll with the new one.
 
-        tag.status = "pending"
-        s.merge(tag)
-        s.commit()
-        # TODO: this could become a watch-dog that monitors the database for updated
-        update_client_view(
-            type="tag",
-            tagId=tag.id,
-            tagPath=tag.album_folder,
-            attributes={
-                "kind": tag.kind,
-                "status": tag.status,
-                "updated_at": tag.updated_at.isoformat(),
-            },
-            message="Tag enqueued",
-        )
+    # update_client_view(
+    #     type="tag",
+    #     tagId=tag.id,
+    #     tagPath=tag.album_folder,
+    #     attributes={
+    #         "kind": tag.kind,
+    #         "status": tag.status,
+    #         "updated_at": tag.updated_at.isoformat(),
+    #     },
+    #     message="Tag enqueued",
+    # )
 
-        log.info(f"Enqueued {tag.id=} {tag.album_folder=} {tag.kind=}")
+    if kind == "preview":
+        job = preview_queue.enqueue(run_preview, hash, path, kind)
+        __set_job_meta(job, hash, path, kind)
+    elif kind == "import":
+        job = import_queue.enqueue(run_import, hash, path, kind)
+        __set_job_meta(job, hash, path, kind)
+    elif kind == "import_as_is":
+        job = import_queue.enqueue(run_import, hash, path, kind)
+        __set_job_meta(job, hash, path, kind)
+    elif kind == "auto":
+        job = preview_queue.enqueue(run_preview, hash, path, kind)
+        __set_job_meta(job, hash, path, "auto_preview")
+        job = import_queue.enqueue(auto_import, hash, path, kind, depends_on=job)
+        __set_job_meta(job, hash, path, "auto_import")
+    else:
+        raise ValueError(f"Unknown kind {kind}")
 
-        try:
-            if tag.kind == "preview":
-                preview_queue.enqueue(runPreview, id)
-            elif tag.kind == "import":
-                import_queue.enqueue(runImport, id)
-            elif tag.kind == "import_as_is":
-                import_queue.enqueue(runImport, id, as_is=True)
-            elif tag.kind == "auto":
-                preview_job = preview_queue.enqueue(runPreview, id)
-                import_queue.enqueue(AutoImport, id, depends_on=preview_job)
-            else:
-                raise ValueError(f"Unknown kind {tag.kind}")
-        except Exception as e:
-            log.error(f"Failed to enqueue {tag.id=} {tag.album_folder=} {tag.kind=}")
+    log.debug(f"Enqueued {job.id=} {job.meta=}")
 
-
-def enqueue_tag_path(path: str, kind: str, session: Session | None = None):
-    """Create or update a tag by a given path.
-
-    For a given path that is taggable, update the existing tag or create a new one.
-    """
-    with db_session(session) as s:
-        tag = Tag.get_by(Tag.album_folder == path, session=s) or Tag(
-            album_folder=path, kind=kind
-        )
-        tag.kind = kind
-        s.merge(tag)
-        s.commit()
-        enqueue(tag.id, session=s)
+    return job
 
 
 @job(timeout=600, queue=tag_queue, connection=redis_conn)
-def runPreview(tagId: str, force_retag: bool = False) -> str | None:
+def run_preview(hash: str, path: str, kind: str, force_retag: bool = False):
     """Start a preview Session on an existing tag.
 
     Parameters
     ----------
-    tagId : str
-        The ID of the tag to be previewed, used to load info from db.
     force_retag : bool, optional
         If true, we force identifying new matches, the current session (if
         existing) will be replaced with a new one. Default False.
@@ -133,73 +124,36 @@ def runPreview(tagId: str, force_retag: bool = False) -> str | None:
     -------
         str: the match url, if we found one, else None.
     """
-    match_url = None
-    with db_session() as session:
-        log.info(f"Preview task on {tagId}")
-        bt = Tag.get_by(Tag.id == tagId, session=session)
-        if bt is None:
-            raise InvalidUsage(f"Tag {tagId} not found in database")
 
-        bt.status = "tagging"
-        session.merge(bt)
-        session.commit()
-        update_client_view(
-            type="tag",
-            tagId=bt.id,
-            tagPath=bt.album_folder,
-            attributes={
-                "kind": bt.kind,
-                "status": bt.status,
-                "updated_at": bt.updated_at.isoformat(),
-            },
-            message="Tagging started",
-        )
+    with db_session_factory() as db_session:
+        log.info(f"Preview task on {hash=} {path=} {kind=}")
+        f_on_disk = FolderInDb.ensure_hash_consistency(hash, path)
+        if hash != f_on_disk.hash:
+            log.warning(
+                f"Folder content has changed since the job was scheduled for {path}. "
+                + f"Using new content ({f_on_disk.hash}) instead of {hash}"
+            )
 
+        # update_client_view
+
+        p_session = PreviewSessionNew(SessionState(f_on_disk))
         try:
-            # TODO: Check if session exists in db, create new if force_retag
-            bs = PreviewSessionNew(SessionState(Path(bt.album_folder)))
-            state = bs.run_sync()
-
-            state_in_db = SessionStateInDb.from_live_state(state)
-            session.add(state_in_db)
-            bt.session_state_in_db = state_in_db
-
-            bt.status = (
-                "tagged"
-                # If only the asis candidate exits, no match was found.
-                if (
-                    len(state.task_states[0].candidate_states) > 1
-                    and state.progress >= Progress.LOOKING_UP_CANDIDATES
-                )
-                else "failed"
-            )
+            # TODO: Think about if session exists in db, create new if force_retag?
+            # this concerns auto and retagging.
+            p_session.run_sync()
         except Exception as e:
-            log.error(e)
-            bt.status = "failed"
-            return None
+            log.exception(e)
         finally:
-            session.merge(bt)
-            session.commit()
-            update_client_view(
-                type="tag",
-                tagPath=bt.album_folder,
-                tagId=bt.id,
-                attributes="all",
-                message=f"Tagging finished with status: {bt.status}",
-            )
+            s_state_indb = SessionStateInDb.from_live_state(p_session.state)
+            db_session.merge(s_state_indb)
+            db_session.commit()
+            # update_client_view
 
-        log.info(f"Preview done. {bt.status=}, {bt.match_url=}")
-        match_url = bt.match_url
-
-    return match_url
+        log.info(f"Preview done. {f_on_disk.hash=} {path=} {kind=}")
 
 
 @job(timeout=600, queue=import_queue, connection=redis_conn)
-def runImport(
-    tagId: str,
-    match_url: str | None = None,
-    as_is: bool = False,
-) -> list[str]:
+def run_import(hash: str, path: str, kind: str, match_url: str | None = None):
     """Start Import session for a tag.
 
     Relies on a preview to have been generated before.
@@ -210,100 +164,67 @@ def runImport(
     ----------
     tagId:str
         The ID of the tag to be imported, used to load info from db.
-    as_is: bool, optional
+    import_as_is:
         If true, we import as-is, **grouping albums** and ignoring the match_url.
         Effectively like `beet import --group-albums -A`.
         Default False.
-    match_url: str, optional
-        The match url to use for import, if we have it.
-    callback_url: str, optional
-        Called when the import status changes.
 
     Returns
     -------
         List of track paths after import, as strings. (empty if nothing imported)
 
     """
-    with db_session() as session:
-        log.info(f"Import task: {as_is=} {tagId=}")
-        bt = Tag.get_by_raise(Tag.id == tagId, session=session)
-
-        bt.status = "importing"
-        session.merge(bt)
-        session.commit()
-
-        # FIXME: update_client needs a refactor
-        update_client_view(
-            type="tag",
-            tagId=bt.id,
-            tagPath=bt.album_folder,
-            attributes={
-                "kind": bt.kind,
-                "status": bt.status,
-                "updated_at": bt.updated_at.isoformat(),
-            },
-            message="Importing started",
-        )
-
-        # Get session state (if any)
-        state = (
-            bt.session_state_in_db.to_live_state()
-            if bt.session_state_in_db
-            else SessionState(Path(bt.album_folder))
-        )
-        session.expunge_all()
+    with db_session_factory() as db_session:
+        log.info(f"Import task on {hash=} {path=} {kind=}")
+        f_on_disk = FolderInDb.ensure_hash_consistency(hash, path)
+        if hash != f_on_disk.hash:
+            log.warning(
+                f"Folder content has changed since the job was scheduled for {path}. "
+                + f"Using new content ({f_on_disk.hash}) instead of {hash}"
+            )
 
         # TODO: FIX the following to use the new session
-        """
-        if as_is:
-            bs = AsIsImportSession(
-                path=bt.album_folder,
-                tag_id=bt.id,
-            )
+        if kind == "import_as_is":
+            raise NotImplementedError("Import as-is not implemented yet")
+            """
+            if as_is:
+                bs = AsIsImportSession(
+                    path=bt.album_folder,
+                    tag_id=bt.id,
+                )
+            else:
+            """
+
+        s_state_indb = SessionStateInDb.get_by(
+            SessionStateInDb.folder_hash == f_on_disk.hash
+        )
+
+        if s_state_indb is None:
+            # This also happens when folder content was updated
+            log.debug(f"Creating new session state for {f_on_disk.hash}")
+            s_state_live = SessionState(f_on_disk)
         else:
-        """
+            log.debug(f"Using existing session state for {f_on_disk.hash}")
+            s_state_live = s_state_indb.to_live_state()
 
+        # we need this expunge, otherwise we cannot overwrite session states:
+        # If object id is in session we cant add a new object to the session with the
+        # same id this will raise (see below session.merge)
+        db_session.expunge_all()
+
+        i_session = ImportSessionNew(s_state_live, match_url=match_url)
         try:
-            bs = ImportSessionNew(
-                state=state,
-                match_url=match_url,
-            )
-            state = bs.run_sync()
-
-            state_in_db = SessionStateInDb.from_live_state(state)
-            session.merge(instance=state_in_db)
-
-            # session.merge(state_in_db)
-            bt.session_state_in_db = state_in_db
-            bt.status = "imported" if state.progress == Progress.COMPLETED else "failed"
+            i_session.run_sync()
         except Exception as e:
-            log.error(e)
-            trace = traceback.format_exc()
-            log.error(trace)
-            bt.track_paths_after = []
-            bt.status = "failed"
-            return []
+            log.exception(e)
         finally:
-            log.warning("Import stuck here?!")
-            session.merge(bt)
-            log.warning("Import stuck here?!")
-            session.commit()
-            log.info(f"Import done. {bt.status=}, {bt.match_url=}")
-            update_client_view(
-                type="tag",
-                tagId=bt.id,
-                tagPath=bt.album_folder,
-                attributes="all",
-                message=f"Importing finished with status: {bt.status}",
-            )
-            log.info(f"Client view updated for {bt.id=}")
-
-        # cleanup_status()
-        return bt.track_paths_after
+            s_state_indb = SessionStateInDb.from_live_state(i_session.state)
+            db_session.merge(instance=s_state_indb)
+            db_session.commit()
 
 
 @job(timeout=600, queue=import_queue, connection=redis_conn)
-def AutoImport(tagId: str) -> list[str] | None:
+def auto_import(hash: str, path: str, kind: str) -> list[str] | None:
     """Automatically run an import session.
 
     Runs an import on a tag after a preview has been generated.
@@ -318,44 +239,35 @@ def AutoImport(tagId: str) -> list[str] | None:
     -------
         List of track paths after import, as strings. (empty if nothing imported)
     """
-    with db_session() as session:
-        log.info(f"AutoImport task on {tagId}")
-        bt = Tag.get_by(Tag.id == tagId, session=session)
-        if bt is None:
-            raise InvalidUsage(f"Tag {tagId} not found in database")
-
-        if bt.status != "tagged":
-            log.info(
-                f"Skipping auto import, we only import after a successful preview (status 'tagged' not '{bt.status}'). {bt.album_folder=}"
+    with db_session_factory() as session:
+        log.info(f"Auto Import task on {hash=} {path=} {kind=}")
+        f_on_disk = FolderInDb.ensure_hash_consistency(hash, path)
+        if hash != f_on_disk.hash:
+            raise InvalidUsage(
+                f"Folder content has changed since the job was scheduled for {path}. "
+                + f"This is not supported for auto-imports, please re-run preview."
             )
-            # we should consider to do an explicit duplicate check here
-            # because two previews yielding the same match might finish at the same time
-            return []
 
-        if bt.kind != "auto":
-            log.debug(
-                f"For auto importing, tag kind needs to be 'auto' not '{bt.kind}'. {bt.album_folder=}"
+        s_state_indb = SessionStateInDb.get_by(SessionStateInDb.folder_hash == hash)
+        if s_state_indb is None:
+            raise InvalidUsage(
+                f"Session state not found for {hash=}, this should not happen. "
+                + "Please run preview before queueing auto-import."
             )
-            return []
 
-        config = get_config()
+        # TODO: AutoImport Session
+        # config = get_config()
 
-        if config["import"]["timid"].get(bool):
-            log.info(
-                "Auto importing is disabled if `import:timid=yes` is set in config"
-            )
-            return []
+        # strong_rec_thresh = config["match"]["strong_rec_thresh"].get(float)
+        # if bt.distance is None or bt.distance > strong_rec_thresh:  # type: ignore
+        #     log.info(
+        #         f"Skipping auto import of {bt.album_folder=} with {bt.distance=} > {strong_rec_thresh=}"
+        #     )
+        #     return []
 
-        strong_rec_thresh = config["match"]["strong_rec_thresh"].get(float)
-        if bt.distance is None or bt.distance > strong_rec_thresh:  # type: ignore
-            log.info(
-                f"Skipping auto import of {bt.album_folder=} with {bt.distance=} > {strong_rec_thresh=}"
-            )
-            return []
-
-        return runImport(
-            tagId,
-        )
+        # return run_import(
+        #     tagId,
+        # )
 
 
 def _get_or_gen_match_url(tagId, session: Session) -> str | None:
@@ -388,7 +300,7 @@ def tag_status(
     Get the status of a tag by its id or path.
     Returns "untagged" if the tag does not exist or the path was not tagged yet.
     """
-    with db_session(session) as s:
+    with db_session_factory(session) as s:
         bt = None
         if id is not None:
             bt = Tag.get_by(Tag.id == id, session=s)
@@ -407,10 +319,17 @@ def delete_tags(with_status: list[str]):
     We call this during container launch, to clear up things that
     did not finish.
     """
-    with db_session() as session:
+    with db_session_factory() as session:
         stmt = delete(Tag).where(Tag.status.in_(with_status))
         result = session.execute(stmt)
         log.debug(
             f"Deleted {result.rowcount} tags with statuses: {', '.join(with_status)}"
         )
         session.commit()
+
+
+def __set_job_meta(job: Job, hash: str, path: str, kind: str):
+    job.meta["folder_hash"] = hash
+    job.meta["folder_path"] = path
+    job.meta["job_kind"] = kind
+    job.save_meta()

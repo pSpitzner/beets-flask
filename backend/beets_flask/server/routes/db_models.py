@@ -5,7 +5,7 @@ from typing import Sequence, TypeVar
 from quart import Blueprint, Quart, request
 from sqlalchemy import select
 
-from beets_flask.database import db_session
+from beets_flask.database import db_session_factory
 from beets_flask.database.models.base import Base
 from beets_flask.database.models.states import (
     CandidateStateInDb,
@@ -13,6 +13,7 @@ from beets_flask.database.models.states import (
     TaskStateInDb,
 )
 from beets_flask.server.routes.errors import InvalidUsage
+from .errors import get_query_param
 
 T = TypeVar("T", bound=Base)
 
@@ -46,12 +47,12 @@ def blueprint_for_db_model(model: type[T], url_prefix: str | None = None) -> Blu
         params = request.args
         # Cursor is encoded as a string in the format "datetime,id" where date
         # is the creation date as integer and id is the id of the item.
-        cursor = _get_query_param(
+        cursor = get_query_param(
             params,
             "cursor",
             __cursor_from_string,
         )
-        n_items = _get_query_param(
+        n_items = get_query_param(
             params,
             "n_items",
             int,
@@ -70,7 +71,7 @@ def blueprint_for_db_model(model: type[T], url_prefix: str | None = None) -> Blu
 
     @bp.route("/id/<id>", methods=["GET"])
     async def get_by_id(id: str):
-        with db_session() as session:
+        with db_session_factory() as session:
             item = model.get_by(model.id == id, session=session)
             if not item:
                 return "Not found", 404
@@ -110,7 +111,7 @@ def _get_all(
     Returns a list of items and a cursor for the next page.
     """
 
-    with db_session() as session:
+    with db_session_factory() as session:
         query = select(model)
         if cursor:
             query = query.where(
@@ -148,31 +149,3 @@ def __cursor_from_string(cursor: str | None) -> tuple[datetime, str] | None:
     if len(c) != 2:
         return None
     return datetime.fromisoformat(c[0]), c[1]
-
-
-def _get_query_param(params, key, convert_func, default=None, error_message=None):
-    """Safely retrieves and converts a query parameter from the request args.
-
-    Parameters
-    ----------
-    params : dict
-        The request args.
-    key : str
-        The key of the parameter to retrieve.
-    default : any, optional
-        The default value if the parameter is not found, defaults to None.
-    convert_func : callable, optional
-        A function to convert the parameter value, defaults to None.
-    error_message : str, optional
-        The error message to raise if the conversion fails, defaults to None.
-    """
-    value = params.get(key, default)
-
-    try:
-        value = convert_func(value)
-    except (ValueError, TypeError):
-        if error_message is None:
-            error_message = f"Invalid parameter'{key}'"
-        raise InvalidUsage(error_message)
-
-    return value

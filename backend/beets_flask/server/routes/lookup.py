@@ -5,7 +5,7 @@ from urllib.parse import unquote
 from quart import Blueprint, abort, jsonify, request
 from sqlalchemy import select
 
-from beets_flask.database import Tag, db_session
+from beets_flask.database import Tag, db_session_factory
 from beets_flask.disk import is_album_folder
 from beets_flask.inbox import get_inbox_folders
 from beets_flask.logger import log
@@ -74,7 +74,7 @@ def _folder_type(folder):
         is_album_folder=False,
     )
 
-    with db_session() as session:
+    with db_session_factory() as session:
         # if we have multiple tags for this folder, only use the first one for now!
         stmt = (
             select(Tag)

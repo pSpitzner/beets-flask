@@ -11,7 +11,7 @@ from quart import Blueprint
 from sqlalchemy import select
 
 from beets_flask.config import get_config
-from beets_flask.database import Tag, TagGroup, db_session
+from beets_flask.database import Tag, TagGroup, db_session_factory
 from beets_flask.disk import path_to_folder
 from beets_flask.inbox import get_inbox_folders
 
@@ -23,7 +23,7 @@ group_bp = Blueprint("tagGroup", __name__, url_prefix="/tagGroup")
 @group_bp.route("/", methods=["GET"])
 async def get_all():
     """Get all tag groups."""
-    with db_session() as session:
+    with db_session_factory() as session:
         # for now, group ids are just their name
         stmt = select(TagGroup).order_by(TagGroup.id)
         groups = session.execute(stmt).scalars().all()
@@ -57,7 +57,7 @@ async def get_tag_by_id(group_id: str):
             tag_ids=get_inbox_tags(),
         )
 
-    with db_session() as session:
+    with db_session_factory() as session:
         stmt = select(TagGroup).where(TagGroup.id == group_id)
         g = session.execute(stmt).scalar_one()
         if g is None:
@@ -78,7 +78,7 @@ def get_recent_tags() -> list[str]:
     """
     recent_days: int = get_config()["gui"]["tags"]["recent_days"].as_number()  # type: ignore
 
-    with db_session() as session:
+    with db_session_factory() as session:
         stmt = (
             select(Tag)
             .where(Tag.updated_at > (datetime.now() - timedelta(days=recent_days)))
@@ -90,7 +90,7 @@ def get_recent_tags() -> list[str]:
 
 def get_archived_tags() -> list[str]:
     """Get all tags that have the archived status."""
-    with db_session() as session:
+    with db_session_factory() as session:
         stmt = select(Tag).where(Tag.status == "imported").order_by(_order_by_clause())
         tags = session.execute(stmt).scalars().all()
         return [tag.id for tag in tags]
@@ -114,7 +114,7 @@ def get_inbox_tags() -> list[str]:
     for inbox in inboxes:
         album_folders.extend(get_album_folders(inbox))
 
-    with db_session() as session:
+    with db_session_factory() as session:
         stmt = (
             select(Tag)
             .where(Tag.album_folder.in_(album_folders))

@@ -7,7 +7,7 @@ from quart import Blueprint, abort, jsonify, request
 from sqlalchemy import select
 
 from beets_flask import log
-from beets_flask.database import Tag, db_session
+from beets_flask.database import Tag, db_session_factory
 from beets_flask.disk import is_album_folder, path_to_folder
 from beets_flask.inbox import (
     get_inbox_folders,
@@ -155,7 +155,7 @@ def _delete_folder(folder, with_status=[]):
     if len(with_status) == 0:
         _delete_folder_and_parents_until(folder, inbox["path"])
     else:
-        with db_session() as session:
+        with db_session_factory() as session:
             stmt = select(Tag.album_folder).where(
                 Tag.status.in_(with_status) & Tag.album_folder.startswith(folder)
             )
@@ -253,7 +253,7 @@ def compute_stats(folder: str):
     }
 
     # Get filesize
-    with db_session() as session:
+    with db_session_factory() as session:
         for current_dir, _, files in os.walk(Path(folder)):
             for file in files:
                 path = Path(os.path.join(current_dir, file))

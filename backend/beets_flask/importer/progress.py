@@ -8,6 +8,20 @@ from typing import TYPE_CHECKING, Literal, TypedDict
 from beets_flask.logger import log
 
 
+class FolderStatus(Enum):
+    """The status of a folder."""
+
+    FAILED = -1
+    NOT_STARTED = 0
+    PENDING = 1
+    RUNNING = 2
+    TAGGED = 3
+    IMPORTED = 4
+
+    def __str__(self) -> str:
+        return self.name.lower()
+
+
 @total_ordering
 class Progress(Enum):
     """The progress of tasks in chronological order.

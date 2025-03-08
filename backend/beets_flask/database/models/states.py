@@ -26,6 +26,7 @@ from sqlalchemy.orm import (
     relationship,
 )
 
+from beets_flask.database.setup import db_session_factory
 from beets_flask.database.models.base import Base
 from beets_flask.disk import Folder
 from beets_flask.importer.progress import Progress
@@ -54,7 +55,7 @@ class FolderInDb(Base):
     # checked -> yes | no or didnt check -> None
     is_album: Mapped[Optional[bool]]
 
-    def __init__(self, path: Path, hash: str):
+    def __init__(self, path: Path | str, hash: str):
         """
         Create a FolderInDb object from a path.
 
@@ -67,6 +68,8 @@ class FolderInDb(Base):
         path : Path
             The path to create the object from.
         """
+        if isinstance(path, str):
+            path = Path(path)
         self.full_path = str(path.resolve())
         self.hash = hash
 
@@ -96,6 +99,33 @@ class FolderInDb(Base):
     @property
     def path(self) -> Path:
         return Path(self.full_path)
+
+    @classmethod
+    def ensure_hash_consistency(cls, hash: str, path: Path | str) -> Folder:
+        """
+        Check that a folders hash is still the same, as you have previously determined.
+
+        If changed, a new instance of FolderInDb is created and stored in the DB.
+
+        Returns
+        -------
+        Folder: The live folder object on disk, with the potentially new (current) hash.
+        """
+
+        with db_session_factory() as db_session:
+            f_on_disk = Folder.from_path(path)
+            f_in_db = FolderInDb.get_by(FolderInDb.hash == hash, session=db_session)
+            if f_in_db is None:
+                f_in_db = FolderInDb(hash=hash, path=path)
+                db_session.add(f_in_db)
+                db_session.commit()
+
+            if f_in_db.hash != f_on_disk.hash:
+                log.debug(
+                    f"Hash mismatch {path=} {f_in_db.hash=} {f_on_disk.hash=}"
+                    + "This indicatest that the folder has changed."
+                )
+            return f_on_disk
 
 
 class SessionStateInDb(Base):
@@ -134,7 +164,7 @@ class SessionStateInDb(Base):
         cascade="all, delete-orphan",
     )
 
-    _folder_id: Mapped[str] = mapped_column(ForeignKey("folder.id"))
+    folder_hash: Mapped[str] = mapped_column(ForeignKey("folder.id"))
     folder: Mapped[FolderInDb] = relationship()
 
     tag = relationship("Tag", uselist=False, back_populates="session_state_in_db")

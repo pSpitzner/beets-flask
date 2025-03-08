@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Mapping, Self, TypedDict
+from typing import Any, List, Mapping, Self, Sequence, TypedDict
 from uuid import uuid4
 
 from beets.importer import ImportTask, library
@@ -47,6 +47,28 @@ class Base(DeclarativeBase):
         try:
             stmt = select(cls).where(*whereclause)
             item = session.execute(stmt).scalars().first()
+            return item
+        except:
+            raise
+        finally:
+            if close_after:
+                session.close()
+
+    @classmethod
+    def get_all_by(cls, *whereclause, session: Session | None = None) -> Sequence[Self]:
+        close_after = False
+        if session is None:
+            log.debug(
+                "No session provided, you will not be able to make changes to the database."
+            )
+            close_after = True
+            from beets_flask.database.setup import session_factory
+
+            session = session_factory()
+
+        try:
+            stmt = select(cls).where(*whereclause)
+            item = session.execute(stmt).scalars().all()
             return item
         except:
             raise

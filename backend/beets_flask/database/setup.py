@@ -52,7 +52,7 @@ def __setup_factory():
 
 
 @contextmanager
-def db_session(session: Session | None = None):
+def db_session_factory(session: Session | None = None):
     """Databases session as context.
 
     Makes sure sessions are closed at the end.
@@ -108,7 +108,7 @@ def with_db_session(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        with db_session() as session:
+        with db_session_factory() as session:
             kwargs.setdefault("session", session)
             return func(*args, **kwargs)
 
@@ -120,7 +120,7 @@ def _create_tables(engine) -> None:
 
 
 def _seed_tables() -> None:
-    with db_session() as session:
+    with db_session_factory() as session:
         # By default all tags are in the "Unsorted" group
         default_TagGroup = TagGroup.get_by(TagGroup.id == "Unsorted", session=session)
         if default_TagGroup is None:
@@ -130,7 +130,7 @@ def _seed_tables() -> None:
 
 
 def _reset_database():
-    with db_session() as session:
+    with db_session_factory() as session:
         try:
             session.query(TagGroup).delete()
             session.query(Tag).delete()

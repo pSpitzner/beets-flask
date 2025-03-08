@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 from beets_flask.database.models.tag import Tag
-from beets_flask.database.setup import db_session
+from beets_flask.database.setup import db_session_factory
 import pytest
 
 from beets_flask.importer.session import PreviewSessionNew
@@ -15,7 +15,7 @@ from tests.test_importer.conftest import (
     valid_data_for_album_path,
 )
 
-from beets_flask.invoker import runImport, runPreview
+from beets_flask.invoker import run_import, run_preview
 from beets_flask.server.routes.tag import add_tag
 
 log = logging.getLogger(__name__)
@@ -88,7 +88,7 @@ def test_run_preview(path: str, db_session_factory):
         session.commit()
         tag_id = tag.id
 
-    runPreview(tag_id)
+    run_preview(tag_id)
 
     comparison = valid_data_for_album_path(ap)
 

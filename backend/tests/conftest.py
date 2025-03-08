@@ -40,7 +40,6 @@ def setup_and_teardown(tmpdir_factory):
 
 @pytest.fixture(name="testapp", scope="session")
 def fixture_testapp():
-
     app = create_app("test")
 
     yield app
@@ -65,14 +64,13 @@ def fixture_runner(app):
 def db_session_factory(
     testapp,
 ) -> Callable[..., _GeneratorContextManager[Session, None, None]]:
-    from beets_flask.database import db_session
+    from beets_flask.database import db_session_factory
 
-    return db_session
+    return db_session_factory
 
 
 @pytest.fixture(name="db_session")
 def db_session(db_session_factory):
-
     with db_session_factory() as session:
         yield session
 

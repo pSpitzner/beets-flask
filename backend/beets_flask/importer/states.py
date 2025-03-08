@@ -51,10 +51,12 @@ class SessionState:
         # Alternate constructor is part of the SessionStateInDb class
         self.id = str(uuid())
         self._task_states = []
+        if isinstance(folder, str):
+            folder = Path(folder)
         if isinstance(folder, Path):
             folder = Folder.from_path(folder)
         # Why not just a folder object as member?
-        # We do not always want to compute the children (or save them to db)
+        # -> We do not always want to compute the children (or save them to db)
         self.folder_path = folder.path
         self.folder_hash = folder.hash
 

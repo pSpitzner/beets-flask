@@ -5,6 +5,7 @@ This module contains the error handling logic for the Quart application. It prov
 
 import json
 import traceback
+from typing import Any, Callable
 
 from confuse import ConfigError
 from quart import Blueprint, jsonify
@@ -126,3 +127,39 @@ async def file_not_found():
 @error_bp.route("/error/genericError", methods=["GET"])
 async def generic_error():
     raise Exception("This is a generic error")
+
+
+# PS: I think this is an okay olace for this, as it ensures
+# param parsing with error handler.
+def get_query_param(
+    params: dict,
+    key: str,
+    convert_func: Callable,
+    default: Any = None,
+    error_message: str | None = None,
+):
+    """Safely retrieves and converts a query parameter from the request args.
+
+    Parameters
+    ----------
+    params : dict
+        The request args.
+    key : str
+        The key of the parameter to retrieve.
+    default : any, optional
+        The default value if the parameter is not found, defaults to None.
+    convert_func : callable, optional
+        A function to convert the parameter value, defaults to None. Common example, just use the type: `str`, `int` etc.
+    error_message : str, optional
+        The error message to raise if the conversion fails, defaults to None.
+    """
+    value = params.get(key, default)
+
+    try:
+        value = convert_func(value)
+    except (ValueError, TypeError):
+        if error_message is None:
+            error_message = f"Invalid parameter'{key}'"
+        raise InvalidUsage(error_message)
+
+    return value

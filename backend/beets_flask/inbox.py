@@ -161,7 +161,7 @@ def retag_folder(
 
     status = invoker.tag_status(path=path)
     if with_status is None or status in with_status:
-        invoker.enqueue_tag_path(path, kind=kind)
+        invoker.enqueue(path, kind=kind)
         log.debug(f"tagging folder {path}")
     else:
         log.debug(f"folder {path} has {status=}. skipping.")

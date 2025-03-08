@@ -1,12 +1,12 @@
 import pytest
 
-from beets_flask.database import db_session, Tag
+from beets_flask.database import db_session_factory, Tag
 
 
 @pytest.fixture
 def tags():
     tags = []
-    with db_session() as session:
+    with db_session_factory() as session:
         t = [
             Tag(kind="import", album_folder=f)
             for f in ["/some/folder", "/some/folder2", "/some/folder3"]
@@ -17,12 +17,11 @@ def tags():
 
     yield tags
 
-    with db_session() as session:
+    with db_session_factory() as session:
         session.query(Tag).delete()
 
 
 class TestTagEndpoints:
-
     @pytest.mark.asyncio
     async def test_add_tag(self, client, tags):
         data = {"kind": "import", "folder": "/some/folder"}
