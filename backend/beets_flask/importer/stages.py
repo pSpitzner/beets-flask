@@ -56,6 +56,8 @@ if TYPE_CHECKING:
         InteractiveImportSession,
     )
 
+    from .pipeline import Stage
+
     # Tell type-checking that subclasses of BaseSession are allowed
     Session = TypeVar("Session", bound=BaseSession)
 
@@ -101,6 +103,50 @@ def set_progress(progress: Progress):
     return decorator
 
 
+class StageOrder(dict):
+    """An ordered dict of stages, mapping the stage name to its generator.
+
+    Returned by each sessions `.stages` property.
+    """
+
+    def append(self, stage: Stage[ImportTask, Any], name: str | None = None):
+        """Append a stage to the Order."""
+
+        name = name or str(getattr(stage, "__name__", f"unknown_stage"))
+        if name in self.keys():
+            raise ValueError(f"Stage with name {name} already exists.")
+
+        self[name] = stage
+
+    def insert(
+        self,
+        stage: Stage[ImportTask, Any],
+        name: str | None = None,
+        after: str | None = None,
+        before: str | None = None,
+    ):
+        """Insert a stage after or before another specific stage."""
+
+        if after is None and before is None or (after and before):
+            raise ValueError("Either `after` or `before` must be specified.")
+
+        name = name or str(getattr(stage, "__name__", f"unknown_stage"))
+        if name in self.keys():
+            raise ValueError(f"Stage with name {name} already exists.")
+
+        # even for the OrderedDict there is no insert at index method, so just rebuild
+        keys = list(self.keys())
+        values = list(self.values())
+
+        idx = keys.index(after or before)  # type: ignore
+        if after:
+            idx += 1
+        keys.insert(idx, name)
+        values.insert(idx, stage)
+
+        self = StageOrder(zip(keys, values))
+
+
 # --------------------------------- Decorator -------------------------------- #
 
 Arg = TypeVarTuple("Arg")  # args und kwargs
@@ -108,9 +154,7 @@ Ret = TypeVar("Ret")  # return type
 Task = TypeVar("Task")  # task
 
 
-def stage(
-    func: Callable[[Unpack[Arg], Task], Ret],
-):
+def stage(func: Callable[[Unpack[Arg], Task], Ret]):
     """Decorate a function to become a simple stage.
 
     Yields a task and waits until the next task is sent to it.
@@ -126,6 +170,8 @@ def stage(
     [3, 4, 5]
     """
 
+    # use the wraps decorator to lift function name etc, we use this in StageOrder class
+    @wraps(func)
     def coro(*args: Unpack[Arg]) -> Generator[Union[Ret, Task, None], Task, None]:
         # in some edge-cases we get no task. thus, we have to include the generic R
         task: Optional[Task | Ret] = None
@@ -138,7 +184,7 @@ def stage(
     return coro
 
 
-def mutator_stage(func: Callable[[Unpack[Arg], Task], Ret]):
+def mutator_stage(func: Callable[[Unpack[Arg], Task], Ret], name: str | None = None):
     """Decorate a function that manipulates items in a coroutine to become a simple stage.
 
     Yields a task and waits until the next task is sent to it.
@@ -154,6 +200,7 @@ def mutator_stage(func: Callable[[Unpack[Arg], Task], Ret]):
     [{'x': True}, {'a': False, 'x': True}]
     """
 
+    @wraps(func)
     def coro(
         *args: Unpack[Arg],
     ) -> Generator[Union[Ret, Task, None], Task, Optional[Ret]]:
@@ -448,7 +495,13 @@ def manipulate_files(
 
 @stage
 @set_progress(Progress.COMPLETED)
-def set_tasks_completed(session: BaseSession, task: ImportTask):
+def mark_tasks_completed(session: BaseSession, task: ImportTask):
+    """
+    Wrapper to mark task as completed.
+
+    This is mainly a workaround because our progressd decorator cannot set the
+    progress after stage has finished.
+    """
     return task
 
 
@@ -461,5 +514,5 @@ __all__ = [
     "user_query",
     "plugin_stage",
     "manipulate_files",
-    "set_tasks_completed",
+    "mark_tasks_completed",
 ]

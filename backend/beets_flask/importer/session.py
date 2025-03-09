@@ -1,24 +1,14 @@
 import asyncio
 import logging
-import os
-import threading
-import time
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from pathlib import Path
-from posixpath import normpath
-from pprint import pformat
 from typing import Any, Callable, Dict, List, Literal
 
 import nest_asyncio
 from beets import autotag, importer, library, plugins
-from beets.library import MediaFile
 from beets.ui import UserError, _open_library, colorize, print_
-from beets.ui.commands import show_change, summarize_items
-from beets.util import displayable_path
-from beets.util import pipeline as beets_pipeline
 from deprecated import deprecated
-from socketio import AsyncServer
 
 from beets_flask.config import get_config
 from beets_flask.disk import is_album_folder
@@ -30,15 +20,16 @@ from beets_flask.utility import capture_stdout_stderr
 from .communicator import WebsocketCommunicator
 from .pipeline import AsyncPipeline, Stage
 from .stages import (
+    StageOrder,
     group_albums,
     identify_duplicates,
     lookup_candidates,
     manipulate_files,
+    mark_tasks_completed,
     match_threshold,
     offer_match,
     plugin_stage,
     read_tasks,
-    set_tasks_completed,
     user_query,
 )
 from .states import ProgressState, SessionState
@@ -68,9 +59,9 @@ class BaseSession(importer.ImportSession, ABC):
     # attributes needed to create a beetsTag instance for our database
     # are contained in the associated SessionState -> TaskState -> CandidateStates
     state: SessionState
-    stages: Dict[str, Stage[importer.ImportTask, Any]]
 
     pipeline: AsyncPipeline[importer.ImportTask, Any] | None = None
+    config_overlay: dict
 
     def __init__(
         self,
@@ -90,8 +81,8 @@ class BaseSession(importer.ImportSession, ABC):
         if isinstance(config_overlay, dict):
             config.set_args(config_overlay)
 
+        self.config_overlay = config_overlay or {}
         self.state = state
-        self.stages = {}
 
         super().__init__(
             lib=_open_library(config),
@@ -124,6 +115,31 @@ class BaseSession(importer.ImportSession, ABC):
         self.preview = out + "\n\n" + err if err else out
         return out, err
 
+    def get_config_value(self, key: str, type_func: Callable | None = None) -> Any:
+        """Get a config value from the overlay or default.
+
+        Use dots to separate levels.
+        """
+
+        path = key.split(".")
+
+        overlay = self.config_overlay
+        for p in path:
+            overlay = overlay.get(p, {})
+
+        # overlay takes priority
+        if not isinstance(overlay, dict):
+            return type_func(overlay) if type_func else overlay
+
+        # get settings from user settings, this is not a dict, but confuse config
+        # the confuse config views do not throw key errors, and their .get() is not
+        # the same as dict.get(), but rather resolves the value.
+        default = get_config()
+        for p in path:
+            default = default[p]
+        default = default.get(type_func) if type_func else default.get()
+        return default
+
     # -------------------------- State handling helpers -------------------------- #
 
     def set_task_progress(
@@ -146,48 +162,16 @@ class BaseSession(importer.ImportSession, ABC):
         task_state = self.state.get_task_state_for_task(task)
         return task_state.progress if task_state else None
 
-    # ----------------------------- Stage helpers ---------------------------- #
-
-    def append_stage(
-        self, stage: Stage[importer.ImportTask, Any], name: str | None = None
-    ):
-        """Append a stage to the pipeline."""
-
-        name = name or str(getattr(stage, "__name__", f"unknown_stage"))
-        if name in self.stages:
-            raise ValueError(f"Stage with name {name} already exists.")
-
-        self.stages[name] = stage
-
-    def insert_stage(
-        self,
-        stage: Stage[importer.ImportTask, Any],
-        stage_name: str | None = None,
-        after: str | None = None,
-        before: str | None = None,
-    ):
-        """Insert a stage after or before another specific stage."""
-
-        if after is None and before is None or (after and before):
-            raise ValueError("Either `after` or `before` must be specified.")
-
-        stage_name = stage_name or str(getattr(stage, "__name__", f"unknown_stage"))
-        if stage_name in self.stages:
-            raise ValueError(f"Stage with name {stage_name} already exists.")
-
-        # even for the OrderedDict there is no insert at index method, so just rebuild
-        keys = list(self.stages.keys())
-        values = list(self.stages.values())
-
-        idx = keys.index(after or before)  # type: ignore
-        if after:
-            idx += 1
-        keys.insert(idx, stage_name)
-        values.insert(idx, stage)
-
-        self.stages = dict(zip(keys, values))
-
     # -------------------------------- Stages -------------------------------- #
+
+    @property
+    @abstractmethod
+    def stages(self) -> StageOrder:
+        """Set the stages for the session.
+
+        In Subclasses, define the order of stages here.
+        """
+        raise NotImplementedError("Implement in subclass")
 
     def resolve_duplicate(self, task: importer.ImportTask, found_duplicates):
         """Overload default resolve duplicate and skip it.
@@ -292,21 +276,18 @@ class PreviewSession(BaseSession):
     ):
         super().__init__(state, config_overlay, **kwargs)
 
-        config = get_config()
-        config_overlay = {} if config_overlay is None else config_overlay
-
-        if (
-            # hmmm I dont like these inconsistent methods that we need...
-            (config["import"]["group_albums"] and not config["import"]["singletons"])
-            or (
-                config_overlay.get("import", {}).get("group_albums", False) is True
-                and config_overlay.get("import", {}).get("singletons", False) is False
-            )
+    @property
+    def stages(self) -> StageOrder:
+        stages = StageOrder()
+        if self.get_config_value("import.group_albums") and not self.get_config_value(
+            "import.singletons"
         ):
-            self.append_stage(group_albums(self))
+            stages.append(group_albums(self))
 
-        self.append_stage(lookup_candidates(self))
-        self.append_stage(identify_duplicates(self))
+        stages.append(lookup_candidates(self))
+        stages.append(identify_duplicates(self))
+
+        return stages
 
 
 class ImportSession(BaseSession):
@@ -337,7 +318,6 @@ class ImportSession(BaseSession):
             the user config.
         """
 
-        config = get_config()
         config_overlay = {} if config_overlay is None else config_overlay
         if config_overlay.get("import", {}).get("search_ids") is not None:
             raise ValueError("search_ids set in config_overlay. This is not supported.")
@@ -348,31 +328,30 @@ class ImportSession(BaseSession):
         self.match_url = match_url
 
         if duplicate_action is None:
-            duplicate_action = get_config()["import"]["duplicate_action"].as_str()  # type: ignore
+            duplicate_action = self.get_config_value("import.duplicate_action", str)
+
         self.duplicate_action = duplicate_action.lower()  # type: ignore
         super().__init__(state, config_overlay)
 
-        # ------------------------------ Stages ------------------------------ #
+    # ------------------------------ Stages ------------------------------ #
 
-        if (
-            # hmmm I dont like these inconsistent methods that we need...
-            (config["import"]["group_albums"] and not config["import"]["singletons"])
-            or (
-                config_overlay.get("import", {}).get("group_albums", False) is True
-                and config_overlay.get("import", {}).get("singletons", False) is False
-            )
+    @property
+    def stages(self):
+        stages = StageOrder()
+        if self.get_config_value("import.group_albums") and not self.get_config_value(
+            "import.singletons"
         ):
-            self.append_stage(group_albums(self))
+            stages.append(group_albums(self))
 
-        self.append_stage(lookup_candidates(self))
-        self.append_stage(identify_duplicates(self))
+        stages.append(lookup_candidates(self))
+        stages.append(identify_duplicates(self))
         # FIXME: user_query calls task.choose_match, which calls session.choose_match.
         # Better abstraction needed upstream.
-        self.append_stage(user_query(self))
+        stages.append(user_query(self))
 
         # plugin stages
         for stage_func in plugins.early_import_stages():
-            self.append_stage(
+            stages.append(
                 plugin_stage(
                     self,
                     stage_func,
@@ -385,7 +364,7 @@ class ImportSession(BaseSession):
             )
 
         for stage_func in plugins.import_stages():
-            self.append_stage(
+            stages.append(
                 plugin_stage(
                     self,
                     stage_func,
@@ -398,10 +377,12 @@ class ImportSession(BaseSession):
             )
 
         # finally, move files
-        self.append_stage(manipulate_files(self))
+        stages.append(manipulate_files(self))
 
         # If everything went well, set tasks to completed
-        self.append_stage(set_tasks_completed(self))
+        stages.append(mark_tasks_completed(self))
+
+        return stages
 
     # --------------------------- Stage Definitions -------------------------- #
 
@@ -539,18 +520,18 @@ class AutoImportSession(ImportSession):
             See `ImportSession`.
         """
 
+        super().__init__(state, config_overlay, **kwargs)
+
         if import_threshold is None:
-            config = get_config()
-            config_overlay = config_overlay or {}
-            self.import_threshold = config_overlay.get("match", {}).get(
-                "strong_rec_thresh", config["match"]["strong_rec_thresh"].get(float)
-            )
+            self.get_config_value("match.strong_rec_thresh", float)
         else:
             self.import_threshold = import_threshold
 
-        super().__init__(state, config_overlay, **kwargs)
-
-        self.insert_stage(after="user_query", stage=match_threshold(self))
+    @property
+    def stages(self):
+        stages = super().stages
+        stages.insert(after="user_query", stage=match_threshold(self))
+        return stages
 
     def match_threshold(self, task: importer.ImportTask) -> bool:
         """Check if the match quality is good enough to import.
@@ -567,7 +548,7 @@ class AutoImportSession(ImportSession):
             distance = 2.0
 
         if distance <= self.import_threshold:
-            # PS@SM: Could we just stop our own pipeline here?
+            # beets upstream ways to handle this.
             task.set_choice(importer.action.SKIP)
             return False
 
@@ -609,10 +590,6 @@ class InteractiveImportSession(ImportSession):
         super().__init__(state, config_overlay)
         self.communicator = communicator
 
-        # PS: okay, this is already quite nice, but Id prefer stages as a property
-        # so we do not define the stages inside the __init__ method!
-        self.insert_stage(offer_match(self), after="user_query")
-
     def set_task_progress(
         self, task: importer.ImportTask, progress: ProgressState | Progress | str
     ):
@@ -621,6 +598,12 @@ class InteractiveImportSession(ImportSession):
         self.communicator.emit_status_sync(self.state.progress)
 
     # -------------------------------- Stages -------------------------------- #
+
+    @property
+    def stages(self):
+        stages = super().stages
+        stages.insert(offer_match(self), after="user_query")
+        return stages
 
     def identify_duplicates(self, task: importer.ImportTask):
         """Identify and flag candidates of a task that are duplicates."""
