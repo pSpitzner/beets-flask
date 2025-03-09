@@ -8,7 +8,7 @@ from copy import deepcopy
 from pathlib import Path
 from posixpath import normpath
 from pprint import pformat
-from typing import Any, Callable, List, Literal
+from typing import Any, Callable, Dict, List, Literal
 
 import nest_asyncio
 from beets import autotag, importer, library, plugins
@@ -68,6 +68,7 @@ class BaseSession(importer.ImportSession, ABC):
     # attributes needed to create a beetsTag instance for our database
     # are contained in the associated SessionState -> TaskState -> CandidateStates
     state: SessionState
+    stages: Dict[str, Stage[importer.ImportTask, Any]]
 
     pipeline: AsyncPipeline[importer.ImportTask, Any] | None = None
 
@@ -90,6 +91,7 @@ class BaseSession(importer.ImportSession, ABC):
             config.set_args(config_overlay)
 
         self.state = state
+        self.stages = {}
 
         super().__init__(
             lib=_open_library(config),
@@ -144,12 +146,48 @@ class BaseSession(importer.ImportSession, ABC):
         task_state = self.state.get_task_state_for_task(task)
         return task_state.progress if task_state else None
 
-    # -------------------------------- Stages -------------------------------- #
+    # ----------------------------- Stage helpers ---------------------------- #
 
-    @abstractmethod
-    def stages(self) -> List[Stage[importer.ImportTask, Any]]:
-        """Return the stages of the pipeline."""
-        pass
+    def append_stage(
+        self, stage: Stage[importer.ImportTask, Any], name: str | None = None
+    ):
+        """Append a stage to the pipeline."""
+
+        name = name or str(getattr(stage, "__name__", f"unknown_stage"))
+        if name in self.stages:
+            raise ValueError(f"Stage with name {name} already exists.")
+
+        self.stages[name] = stage
+
+    def insert_stage(
+        self,
+        stage: Stage[importer.ImportTask, Any],
+        stage_name: str | None = None,
+        after: str | None = None,
+        before: str | None = None,
+    ):
+        """Insert a stage after or before another specific stage."""
+
+        if after is None and before is None or (after and before):
+            raise ValueError("Either `after` or `before` must be specified.")
+
+        stage_name = stage_name or str(getattr(stage, "__name__", f"unknown_stage"))
+        if stage_name in self.stages:
+            raise ValueError(f"Stage with name {stage_name} already exists.")
+
+        # even for the OrderedDict there is no insert at index method, so just rebuild
+        keys = list(self.stages.keys())
+        values = list(self.stages.values())
+
+        idx = keys.index(after or before)  # type: ignore
+        if after:
+            idx += 1
+        keys.insert(idx, stage_name)
+        values.insert(idx, stage)
+
+        self.stages = dict(zip(keys, values))
+
+    # -------------------------------- Stages -------------------------------- #
 
     def resolve_duplicate(self, task: importer.ImportTask, found_duplicates):
         """Overload default resolve duplicate and skip it.
@@ -228,7 +266,7 @@ class BaseSession(importer.ImportSession, ABC):
         # TODO: check some config values. that are not compatible with our code.
         self.pipeline = AsyncPipeline(start_tasks=read_tasks(self))
 
-        for s in self.stages():
+        for s in self.stages.values():
             self.pipeline.add_stage(s)
 
         log.info(f"Running {self.__class__.__name__} on state<{self.state.id=}>.")
@@ -249,23 +287,26 @@ class BaseSession(importer.ImportSession, ABC):
 class PreviewSession(BaseSession):
     """Preview what would be imported. Only fetches candidates."""
 
-    def stages(self):
-        stages: List[Stage[importer.ImportTask, Any]] = []
+    def __init__(
+        self, state: SessionState, config_overlay: dict | None = None, **kwargs
+    ):
+        super().__init__(state, config_overlay, **kwargs)
 
-        if self.config["group_albums"] and not self.config["singletons"]:
-            # FIXME once migrated to next beets version
-            stages.append(group_albums(self))
+        config = get_config()
+        config_overlay = {} if config_overlay is None else config_overlay
 
-        # main stages
-        stages += [
-            lookup_candidates(self),
-            identify_duplicates(self),
-            # TODO: check if we want to enable this plugin stage
-            # TODO: Start documentation of plugins that work with us.
-            # c.f. https://docs.beets.io/en/latest/dev/plugins.html
-            # offer_match(self) -> invokes plugins.send("import_task_before_choice", session=self, task=task).
-        ]
-        return stages
+        if (
+            # hmmm I dont like these inconsistent methods that we need...
+            (config["import"]["group_albums"] and not config["import"]["singletons"])
+            or (
+                config_overlay.get("import", {}).get("group_albums", False) is True
+                and config_overlay.get("import", {}).get("singletons", False) is False
+            )
+        ):
+            self.append_stage(group_albums(self))
+
+        self.append_stage(lookup_candidates(self))
+        self.append_stage(identify_duplicates(self))
 
 
 class ImportSession(BaseSession):
@@ -295,10 +336,10 @@ class ImportSession(BaseSession):
             "remove", "merge", "ask". If not specified, the default is read from
             the user config.
         """
-        if (
-            config_overlay
-            and config_overlay.get("import", {}).get("search_ids") is not None
-        ):
+
+        config = get_config()
+        config_overlay = {} if config_overlay is None else config_overlay
+        if config_overlay.get("import", {}).get("search_ids") is not None:
             raise ValueError("search_ids set in config_overlay. This is not supported.")
 
         if match_url is not None and state.progress > Progress.NOT_STARTED:
@@ -311,27 +352,27 @@ class ImportSession(BaseSession):
         self.duplicate_action = duplicate_action.lower()  # type: ignore
         super().__init__(state, config_overlay)
 
-    # -------------------------------- Stages -------------------------------- #
+        # ------------------------------ Stages ------------------------------ #
 
-    def stages(self) -> List[Stage[importer.ImportTask, Any]]:
-        """Return the stages of the pipeline."""
-        stages: List[Stage[importer.ImportTask, Any]] = []
+        if (
+            # hmmm I dont like these inconsistent methods that we need...
+            (config["import"]["group_albums"] and not config["import"]["singletons"])
+            or (
+                config_overlay.get("import", {}).get("group_albums", False) is True
+                and config_overlay.get("import", {}).get("singletons", False) is False
+            )
+        ):
+            self.append_stage(group_albums(self))
 
-        if self.config["group_albums"] and not self.config["singletons"]:
-            # FIXME once migrated to next beets version
-            stages.append(group_albums(self))
-
-        stages += [
-            lookup_candidates(self),
-            identify_duplicates(self),
-            # FIXME: user_query calls task.choose_match, which calls session.choose_match.
-            # Better abstraction needed upstream.
-            user_query(self),
-        ]
+        self.append_stage(lookup_candidates(self))
+        self.append_stage(identify_duplicates(self))
+        # FIXME: user_query calls task.choose_match, which calls session.choose_match.
+        # Better abstraction needed upstream.
+        self.append_stage(user_query(self))
 
         # plugin stages
         for stage_func in plugins.early_import_stages():
-            stages.append(
+            self.append_stage(
                 plugin_stage(
                     self,
                     stage_func,
@@ -340,10 +381,11 @@ class ImportSession(BaseSession):
                         plugin_name=stage_func.__name__,
                     ),
                 ),
+                name="early_plugin_stage_" + stage_func.__name__,
             )
 
         for stage_func in plugins.import_stages():
-            stages.append(
+            self.append_stage(
                 plugin_stage(
                     self,
                     stage_func,
@@ -352,18 +394,16 @@ class ImportSession(BaseSession):
                         plugin_name=stage_func.__name__,
                     ),
                 ),
+                name="plugin_stage_" + stage_func.__name,
             )
 
         # finally, move files
-        stages.append(
-            manipulate_files(self),
-        )
-        # If everything went well, set tasks to completed
-        stages.append(
-            set_tasks_completed(self),
-        )
+        self.append_stage(manipulate_files(self))
 
-        return stages
+        # If everything went well, set tasks to completed
+        self.append_stage(set_tasks_completed(self))
+
+    # --------------------------- Stage Definitions -------------------------- #
 
     def lookup_candidates(self, task: importer.ImportTask):
         """Lookup candidates for the task."""
@@ -510,6 +550,8 @@ class AutoImportSession(ImportSession):
 
         super().__init__(state, config_overlay, **kwargs)
 
+        self.insert_stage(after="user_query", stage=match_threshold(self))
+
     def match_threshold(self, task: importer.ImportTask) -> bool:
         """Check if the match quality is good enough to import.
 
@@ -531,68 +573,8 @@ class AutoImportSession(ImportSession):
 
         return True
 
-    def stages(self) -> List[Stage[importer.ImportTask, Any]]:
-        """Return the stages of the pipeline.
 
-        Carbon copy of the ImportSession stages, but with an additional
-        `check_threshold` stage.
-
-        PS@SM: Lets make stages into attibute, e.g. ordered dict.
-        then we can here simply say "insert after" and be done.
-        """
-        stages: List[Stage[importer.ImportTask, Any]] = []
-
-        if self.config["group_albums"] and not self.config["singletons"]:
-            # FIXME once migrated to next beets version
-            stages.append(group_albums(self))
-
-        stages += [
-            lookup_candidates(self),
-            identify_duplicates(self),
-            # FIXME: user_query calls task.choose_match, which calls session.choose_match.
-            # Better abstraction needed upstream.
-            user_query(self),
-            match_threshold(self),
-        ]
-
-        # plugin stages
-        for stage_func in plugins.early_import_stages():
-            stages.append(
-                plugin_stage(
-                    self,
-                    stage_func,
-                    ProgressState(
-                        Progress.EARLY_IMPORTING,
-                        plugin_name=stage_func.__name__,
-                    ),
-                ),
-            )
-
-        for stage_func in plugins.import_stages():
-            stages.append(
-                plugin_stage(
-                    self,
-                    stage_func,
-                    ProgressState(
-                        Progress.IMPORTING,
-                        plugin_name=stage_func.__name__,
-                    ),
-                ),
-            )
-
-        # finally, move files
-        stages.append(
-            manipulate_files(self),
-        )
-        # If everything went well, set tasks to completed
-        stages.append(
-            set_tasks_completed(self),
-        )
-
-        return stages
-
-
-class InteractiveImportSession(BaseSession):
+class InteractiveImportSession(ImportSession):
     """Interactive Import Session.
 
     The interactive import session is used to parallel tag a directory and
@@ -622,9 +604,14 @@ class InteractiveImportSession(BaseSession):
             Session state, here tied to the communicator. The communicator puts
             updates into the sate which the session awaits.
         """
-        set_config_defaults()
+
+        # FIXME: set_config_defaults()
         super().__init__(state, config_overlay)
         self.communicator = communicator
+
+        # PS: okay, this is already quite nice, but Id prefer stages as a property
+        # so we do not define the stages inside the __init__ method!
+        self.insert_stage(offer_match(self), after="user_query")
 
     def set_task_progress(
         self, task: importer.ImportTask, progress: ProgressState | Progress | str
@@ -634,53 +621,6 @@ class InteractiveImportSession(BaseSession):
         self.communicator.emit_status_sync(self.state.progress)
 
     # -------------------------------- Stages -------------------------------- #
-
-    def stages(self) -> List[Stage[importer.ImportTask, Any]]:
-        """Return the stages of the pipeline."""
-        stages: List[Stage[importer.ImportTask, Any]] = []
-
-        if self.config["group_albums"] and not self.config["singletons"]:
-            # FIXME once migrated to next beets version
-            stages.append(group_albums(self))
-
-        stages += [
-            lookup_candidates(self),
-            identify_duplicates(self),
-            offer_match(self),
-            user_query(self),
-        ]
-
-        # plugin stages
-        for stage_func in plugins.early_import_stages():
-            stages.append(
-                plugin_stage(
-                    self,
-                    stage_func,
-                    ProgressState(
-                        Progress.EARLY_IMPORTING,
-                        plugin_name=stage_func.__name__,
-                    ),
-                ),
-            )
-
-        for stage_func in plugins.import_stages():
-            stages.append(
-                plugin_stage(
-                    self,
-                    stage_func,
-                    ProgressState(
-                        Progress.IMPORTING,
-                        plugin_name=stage_func.__name__,
-                    ),
-                ),
-            )
-
-        # finally, move files
-        stages.append(
-            manipulate_files(self),
-        )
-
-        return stages
 
     def identify_duplicates(self, task: importer.ImportTask):
         """Identify and flag candidates of a task that are duplicates."""
@@ -843,9 +783,5 @@ class InteractiveImportSession(BaseSession):
     async def run_async(self):
         await self.communicator.emit_current_async()
         state = await super().run_async()
-
-        # FIXME: Why do we need this here? Set progress to completed
-        for task in self.state.tasks:
-            self.set_task_progress(task, ProgressState(Progress.COMPLETED))
 
         return state
