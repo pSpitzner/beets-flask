@@ -6,7 +6,7 @@ from beets_flask.database.models.tag import Tag
 from beets_flask.database.setup import db_session_factory
 import pytest
 
-from beets_flask.importer.session import PreviewSessionNew
+from beets_flask.importer.session import PreviewSession
 from beets_flask.importer.states import SessionState
 from tests.test_importer.conftest import (
     VALID_PATHS,
@@ -37,7 +37,7 @@ def test_generate_lookup():
         use_mock_tag_album(str(path))
 
         state = SessionState(path)
-        session = PreviewSessionNew(state)
+        session = PreviewSession(state)
 
         state = session.run_sync()
         assert os.path.exists(path / "lookup.pickle")
@@ -55,7 +55,7 @@ def test_album_exists(album_paths: list[Path]):
 class TestPreviewSessions:
     def get_state(self, path: str):
         p = album_path_absolute(path)
-        self.session = PreviewSessionNew(SessionState(p))
+        self.session = PreviewSession(SessionState(p))
         use_mock_tag_album(str(p))
         return self.session.run_sync()
 

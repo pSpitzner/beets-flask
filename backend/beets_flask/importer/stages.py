@@ -49,10 +49,15 @@ from beets_flask import log
 from beets_flask.importer.progress import Progress, ProgressState
 
 if TYPE_CHECKING:
-    from .session import BaseSessionNew, ImportSessionNew, InteractiveImportSession
+    from beets_flask.importer.session import (
+        AutoImportSession,
+        BaseSession,
+        ImportSession,
+        InteractiveImportSession,
+    )
 
     # Tell type-checking that subclasses of BaseSession are allowed
-    Session = TypeVar("Session", bound=BaseSessionNew)
+    Session = TypeVar("Session", bound=BaseSession)
 
 
 def set_progress(progress: Progress):
@@ -125,9 +130,7 @@ def stage(
         # in some edge-cases we get no task. thus, we have to include the generic R
         task: Optional[Task | Ret] = None
         while True:
-            task = (
-                yield task
-            )  # wait for send to arrive. the first next() always returns None
+            task = yield task  # wait for send to arrive. the first next() always returns None
             # yield task, call func which gives new task, yield new task in next()
             # FIXME: Generator support!
             task = func(*(args + (task,)))
@@ -156,9 +159,7 @@ def mutator_stage(func: Callable[[Unpack[Arg], Task], Ret]):
     ) -> Generator[Union[Ret, Task, None], Task, Optional[Ret]]:
         task = None
         while True:
-            task = (
-                yield task
-            )  # wait for send to arrive. the first next() always returns None
+            task = yield task  # wait for send to arrive. the first next() always returns None
             # perform function on task, and in next() send the same, modified task
             # funcs prob. modify task in place?
             func(*(args + (task,)))
@@ -170,7 +171,7 @@ def mutator_stage(func: Callable[[Unpack[Arg], Task], Ret]):
 
 
 def read_tasks(
-    session: BaseSessionNew,
+    session: BaseSession,
 ):
     """Read the files from the paths and generate tasks.
 
@@ -215,7 +216,7 @@ def __group(item: library.Item) -> tuple[str, str]:
 @stage
 @set_progress(Progress.GROUPING_ALBUMS)
 def group_albums(
-    session: BaseSessionNew,
+    session: BaseSession,
     task: ImportTask,
 ):
     """Highly likely this will work?? Hopefully.
@@ -239,7 +240,7 @@ def group_albums(
 @mutator_stage
 @set_progress(Progress.LOOKING_UP_CANDIDATES)
 def lookup_candidates(
-    session: BaseSessionNew,
+    session: BaseSession,
     task: ImportTask,
 ):
     """Performing the initial MusicBrainz lookup for an album.
@@ -272,7 +273,7 @@ def lookup_candidates(
 @mutator_stage
 @set_progress(Progress.IDENTIFYING_DUPLICATES)
 def identify_duplicates(
-    session: BaseSessionNew,
+    session: BaseSession,
     task: ImportTask,
 ):
     """Stage to identify which candidates would be duplicates if imported."""
@@ -305,7 +306,7 @@ def offer_match(
 @stage
 @set_progress(Progress.WAITING_FOR_USER_SELECTION)
 def user_query(
-    session: BaseSessionNew,
+    session: BaseSession,
     task: ImportTask,
 ):
     """A coroutine for interfacing with the user about the tagging process.
@@ -368,12 +369,12 @@ def user_query(
     return task
 
 
-# Dynamic set_progress for plugin name
+# Dynamicly set_progress for plugin name
 # e.g. DetailedProgress(Progress.EARLY_IMPORT, plugin_name="my_plugin")
 @mutator_stage
 def plugin_stage(
-    session: BaseSessionNew,
-    func: Callable[[BaseSessionNew, ImportTask], None],
+    session: BaseSession,
+    func: Callable[[BaseSession, ImportTask], None],
     progress: ProgressState,
     task: ImportTask,
 ):
@@ -387,13 +388,27 @@ def plugin_stage(
     task.reload()
 
 
+@mutator_stage
+@set_progress(Progress.MATCH_THRESHOLD)
+def match_threshold(
+    session: AutoImportSession,
+    task: ImportTask,
+):
+    """Stage to determine if a match is good enough to be auto-imported."""
+    if task.skip:
+        log.debug(f"Skipping task: {session=}, {task=}")
+        return task
+
+    session.match_threshold(task)
+
+
 # --------------------------------- Consumer --------------------------------- #
 
 
 @stage
 @set_progress(Progress.MANIPULATING_FILES)
 def manipulate_files(
-    session: BaseSessionNew,
+    session: BaseSession,
     task: ImportTask,
 ):
     """A coroutine (pipeline stage) that performs necessary file.
@@ -433,7 +448,7 @@ def manipulate_files(
 
 @stage
 @set_progress(Progress.COMPLETED)
-def set_tasks_completed(session: BaseSessionNew, task: ImportTask):
+def set_tasks_completed(session: BaseSession, task: ImportTask):
     return task
 
 

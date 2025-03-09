@@ -47,17 +47,16 @@ from rq.decorators import job
 from sqlalchemy import delete
 
 from beets_flask import log
-from beets_flask.beets_sessions import (
-    AsIsImportSession,
-    MatchedImportSession,
-    PreviewSession,
-    colorize,
-)
 from beets_flask.config import get_config
 from beets_flask.database import Tag, db_session_factory
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
 from beets_flask.disk import Folder
-from beets_flask.importer.session import ImportSessionNew, PreviewSessionNew
+from beets_flask.importer.session import (
+    AsIsImportSession,
+    AutoImportSession,
+    ImportSession,
+    PreviewSession,
+)
 from beets_flask.importer.stages import Progress
 from beets_flask.importer.states import CandidateState, SessionState, TaskState
 from beets_flask.redis import import_queue, preview_queue, redis_conn, tag_queue
@@ -72,7 +71,8 @@ if TYPE_CHECKING:
 def enqueue(hash: str, path: str, kind: str, session: Session | None = None):
     """Delegate an existing tag to a redis worker, depending on its kind."""
 
-    hash = FolderInDb.ensure_hash_consistency(hash, path)
+    f_on_disk = FolderInDb.get_current_on_disk(hash, path)
+    hash = f_on_disk.hash
     # TODO: maybe we want to require a new enqueue if hashes do not match?
     # For now we just roll with the new one.
 
@@ -127,7 +127,7 @@ def run_preview(hash: str, path: str, kind: str, force_retag: bool = False):
 
     with db_session_factory() as db_session:
         log.info(f"Preview task on {hash=} {path=} {kind=}")
-        f_on_disk = FolderInDb.ensure_hash_consistency(hash, path)
+        f_on_disk = FolderInDb.get_current_on_disk(hash, path)
         if hash != f_on_disk.hash:
             log.warning(
                 f"Folder content has changed since the job was scheduled for {path}. "
@@ -136,7 +136,7 @@ def run_preview(hash: str, path: str, kind: str, force_retag: bool = False):
 
         # update_client_view
 
-        p_session = PreviewSessionNew(SessionState(f_on_disk))
+        p_session = PreviewSession(SessionState(f_on_disk))
         try:
             # TODO: Think about if session exists in db, create new if force_retag?
             # this concerns auto and retagging.
@@ -176,24 +176,12 @@ def run_import(hash: str, path: str, kind: str, match_url: str | None = None):
     """
     with db_session_factory() as db_session:
         log.info(f"Import task on {hash=} {path=} {kind=}")
-        f_on_disk = FolderInDb.ensure_hash_consistency(hash, path)
+        f_on_disk = FolderInDb.get_current_on_disk(hash, path)
         if hash != f_on_disk.hash:
             log.warning(
                 f"Folder content has changed since the job was scheduled for {path}. "
                 + f"Using new content ({f_on_disk.hash}) instead of {hash}"
             )
-
-        # TODO: FIX the following to use the new session
-        if kind == "import_as_is":
-            raise NotImplementedError("Import as-is not implemented yet")
-            """
-            if as_is:
-                bs = AsIsImportSession(
-                    path=bt.album_folder,
-                    tag_id=bt.id,
-                )
-            else:
-            """
 
         s_state_indb = SessionStateInDb.get_by(
             SessionStateInDb.folder_hash == f_on_disk.hash
@@ -212,7 +200,11 @@ def run_import(hash: str, path: str, kind: str, match_url: str | None = None):
         # same id this will raise (see below session.merge)
         db_session.expunge_all()
 
-        i_session = ImportSessionNew(s_state_live, match_url=match_url)
+        if kind == "import_as_is":
+            i_session = AsIsImportSession(s_state_live)
+        else:
+            i_session = ImportSession(s_state_live, match_url=match_url)
+
         try:
             i_session.run_sync()
         except Exception as e:
@@ -223,6 +215,7 @@ def run_import(hash: str, path: str, kind: str, match_url: str | None = None):
             db_session.commit()
 
 
+# TODO: Now that we use an AutoImportSession for both parts, in which queue do we put it? Maybe Rethink this.
 @job(timeout=600, queue=import_queue, connection=redis_conn)
 def auto_import(hash: str, path: str, kind: str) -> list[str] | None:
     """Automatically run an import session.
@@ -239,9 +232,9 @@ def auto_import(hash: str, path: str, kind: str) -> list[str] | None:
     -------
         List of track paths after import, as strings. (empty if nothing imported)
     """
-    with db_session_factory() as session:
+    with db_session_factory() as db_session:
         log.info(f"Auto Import task on {hash=} {path=} {kind=}")
-        f_on_disk = FolderInDb.ensure_hash_consistency(hash, path)
+        f_on_disk = FolderInDb.get_current_on_disk(hash, path)
         if hash != f_on_disk.hash:
             raise InvalidUsage(
                 f"Folder content has changed since the job was scheduled for {path}. "
@@ -255,41 +248,17 @@ def auto_import(hash: str, path: str, kind: str) -> list[str] | None:
                 + "Please run preview before queueing auto-import."
             )
 
-        # TODO: AutoImport Session
-        # config = get_config()
+        s_state_live = s_state_indb.to_live_state()
+        i_session = AutoImportSession(s_state_live)
 
-        # strong_rec_thresh = config["match"]["strong_rec_thresh"].get(float)
-        # if bt.distance is None or bt.distance > strong_rec_thresh:  # type: ignore
-        #     log.info(
-        #         f"Skipping auto import of {bt.album_folder=} with {bt.distance=} > {strong_rec_thresh=}"
-        #     )
-        #     return []
-
-        # return run_import(
-        #     tagId,
-        # )
-
-
-def _get_or_gen_match_url(tagId, session: Session) -> str | None:
-    bt = Tag.get_by(Tag.id == tagId, session=session)
-    log.debug(f"Getting match url for {bt.to_dict() if bt else None}")
-    if bt is None:
-        raise InvalidUsage(f"Tag {tagId} not found in database")
-    if bt.match_url is not None:
-        log.debug(f"Match url already exists for {bt.album_folder}: {bt.match_url}")
-        return bt.match_url
-    if bt.distance is None:
-        log.debug(f"No unique match for {bt.album_folder}: {bt.match_url}")
-        # preview task was run but no match found.
-        return None
-
-    log.debug(
-        f"Running preview task to get match url for {bt.album_folder}: {bt.match_url}"
-    )
-    bs = PreviewSession(path=bt.album_folder)
-    bs.run_and_capture_output()
-
-    return bs.match_url
+        try:
+            i_session.run_sync()
+        except Exception as e:
+            log.exception(e)
+        finally:
+            s_state_indb = SessionStateInDb.from_live_state(i_session.state)
+            db_session.merge(instance=s_state_indb)
+            db_session.commit()
 
 
 def tag_status(

@@ -39,10 +39,11 @@ class Progress(Enum):
     IDENTIFYING_DUPLICATES = 4
     OFFERING_MATCHES = 5
     WAITING_FOR_USER_SELECTION = 6
-    EARLY_IMPORTING = 7
-    IMPORTING = 8
-    MANIPULATING_FILES = 9
-    COMPLETED = 10
+    MATCH_THRESHOLD = 7
+    EARLY_IMPORTING = 8
+    IMPORTING = 9
+    MANIPULATING_FILES = 10
+    COMPLETED = 11
 
     def __lt__(self, other: Progress) -> bool:
         return self.value < other.value

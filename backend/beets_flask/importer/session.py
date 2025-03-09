@@ -4,6 +4,7 @@ import os
 import threading
 import time
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from pathlib import Path
 from posixpath import normpath
 from pprint import pformat
@@ -19,7 +20,6 @@ from beets.util import pipeline as beets_pipeline
 from deprecated import deprecated
 from socketio import AsyncServer
 
-from beets_flask.beets_sessions import BaseSession, set_config_defaults
 from beets_flask.config import get_config
 from beets_flask.disk import is_album_folder
 from beets_flask.importer.progress import Progress, ProgressState
@@ -34,6 +34,7 @@ from .stages import (
     identify_duplicates,
     lookup_candidates,
     manipulate_files,
+    match_threshold,
     offer_match,
     plugin_stage,
     read_tasks,
@@ -45,7 +46,7 @@ from .states import ProgressState, SessionState
 nest_asyncio.apply()
 
 
-class BaseSessionNew(importer.ImportSession, ABC):
+class BaseSession(importer.ImportSession, ABC):
     """Base class for our GUI-based ImportSessions.
 
     Operates on single Albums / files.
@@ -75,7 +76,6 @@ class BaseSessionNew(importer.ImportSession, ABC):
         state: SessionState,
         config_overlay: dict | None = None,
     ):
-
         if not state.path.exists():
             raise FileNotFoundError(f"Path {state.path} does not exist.")
         if not state.path.is_dir() and not is_album_folder(state.path):
@@ -246,7 +246,7 @@ class BaseSessionNew(importer.ImportSession, ABC):
         return self.state
 
 
-class PreviewSessionNew(BaseSessionNew):
+class PreviewSession(BaseSession):
     """Preview what would be imported. Only fetches candidates."""
 
     def stages(self):
@@ -268,7 +268,7 @@ class PreviewSessionNew(BaseSessionNew):
         return stages
 
 
-class ImportSessionNew(BaseSessionNew):
+class ImportSession(BaseSession):
     """Import session that assumes we already have a match-id."""
 
     match_url: str | None
@@ -283,7 +283,7 @@ class ImportSessionNew(BaseSessionNew):
             Literal["skip", "keep", "remove", "merge", "ask"] | None
         ) = None,
     ):
-        """Create new.
+        """Create new ImportSession.
 
         Parameters
         ----------
@@ -302,7 +302,7 @@ class ImportSessionNew(BaseSessionNew):
             raise ValueError("search_ids set in config_overlay. This is not supported.")
 
         if match_url is not None and state.progress > Progress.NOT_STARTED:
-            raise ValueError("Cannot set match_url and for pre-populated state.")
+            raise ValueError("Cannot set match_url for pre-populated state.")
 
         self.match_url = match_url
 
@@ -418,7 +418,181 @@ class ImportSessionNew(BaseSessionNew):
                 task.set_choice(importer.action.SKIP)
 
 
-class InteractiveImportSession(BaseSessionNew):
+class AsIsImportSession(ImportSession):
+    """
+    Import session to import without modifyin metadata.
+
+    Essentially `beet import --group-albums -A`, ideal for bootlegs and
+    just getting a folder into your library where you are sure the metadata is correct.
+    """
+
+    def __init__(
+        self,
+        state,
+        config_overlay: dict | None = None,
+        **kwargs,
+    ):
+        """Create new ImportAsIsSession.
+
+        Parameters
+        ----------
+        state: SessionState
+            Preconfigured state of the import session.
+        config_overlay : dict
+            Configuration to overlay on top of the default config.
+            "import.group_albums", "import.autotag" and "import.search_ids" are ignored.
+        **kwargs
+            See `ImportSession`.
+        """
+
+        config_overlay = {} if config_overlay is None else deepcopy(config_overlay)
+        import_overlay = config_overlay.get("import", {})
+
+        if "group_albums" in import_overlay and import_overlay["group_albums"] is False:
+            log.warning("Overwriting 'group_albums' in config_overlay.")
+        if "autotag" in import_overlay and import_overlay["autotag"] is True:
+            log.warning("Overwriting 'autotag' in config_overlay.")
+        if "search_ids" in import_overlay:
+            log.warning("Overwriting 'search_ids' in config_overlay.")
+
+        import_overlay["group_albums"] = True
+        import_overlay["autotag"] = False
+        import_overlay["search_ids"] = []
+
+        config_overlay["import"] = import_overlay
+
+        super().__init__(state, config_overlay, **kwargs)
+
+
+class AutoImportSession(ImportSession):
+    """
+    Generate a preview and import if the best match is good enough.
+
+    Wether the import is triggered depends on the specified `import_threshold`, or
+    the beets-config setting `match.strong_rec_thresh`.
+    The match quality is calculated via penalties, thus it ranges from 0 to 1, but a
+    perfect match is at 0. The same convention is used for thresholds.
+
+    The default threshold is 0.04, so that a "96% match or better" will be imported.
+    """
+
+    import_threshold: float
+
+    def __init__(
+        self,
+        state,
+        config_overlay: dict | None = None,
+        import_threshold: float | None = None,
+        **kwargs,
+    ):
+        """Create new AutoImportSession.
+
+        Parameters
+        ----------
+        state: SessionState
+            Preconfigured state of the import session.
+        config_overlay : optional, dict
+            Configuration to overlay on top of the default config.
+        import_threshold: optional, float
+            0 to import only perfect matches, 1 to import everything. Default is 0.04.
+        **kwargs
+            See `ImportSession`.
+        """
+
+        if import_threshold is None:
+            config = get_config()
+            config_overlay = config_overlay or {}
+            self.import_threshold = config_overlay.get("match", {}).get(
+                "strong_rec_thresh", config["match"]["strong_rec_thresh"].get(float)
+            )
+        else:
+            self.import_threshold = import_threshold
+
+        super().__init__(state, config_overlay, **kwargs)
+
+    def match_threshold(self, task: importer.ImportTask) -> bool:
+        """Check if the match quality is good enough to import.
+
+        Returns true if the match quality is better than threshlold.
+
+        Note: that the return is just FYI. What stops the pipeline is that
+        we set task.choice to importer.action.SKIP.
+        """
+        try:
+            task_state = self.state.get_task_state_for_task(task)
+            distance = float(task_state.best_candidate_state.distance)  # type: ignore
+        except (AttributeError, TypeError):
+            distance = 2.0
+
+        if distance <= self.import_threshold:
+            # PS@SM: Could we just stop our own pipeline here?
+            task.set_choice(importer.action.SKIP)
+            return False
+
+        return True
+
+    def stages(self) -> List[Stage[importer.ImportTask, Any]]:
+        """Return the stages of the pipeline.
+
+        Carbon copy of the ImportSession stages, but with an additional
+        `check_threshold` stage.
+
+        PS@SM: Lets make stages into attibute, e.g. ordered dict.
+        then we can here simply say "insert after" and be done.
+        """
+        stages: List[Stage[importer.ImportTask, Any]] = []
+
+        if self.config["group_albums"] and not self.config["singletons"]:
+            # FIXME once migrated to next beets version
+            stages.append(group_albums(self))
+
+        stages += [
+            lookup_candidates(self),
+            identify_duplicates(self),
+            # FIXME: user_query calls task.choose_match, which calls session.choose_match.
+            # Better abstraction needed upstream.
+            user_query(self),
+            match_threshold(self),
+        ]
+
+        # plugin stages
+        for stage_func in plugins.early_import_stages():
+            stages.append(
+                plugin_stage(
+                    self,
+                    stage_func,
+                    ProgressState(
+                        Progress.EARLY_IMPORTING,
+                        plugin_name=stage_func.__name__,
+                    ),
+                ),
+            )
+
+        for stage_func in plugins.import_stages():
+            stages.append(
+                plugin_stage(
+                    self,
+                    stage_func,
+                    ProgressState(
+                        Progress.IMPORTING,
+                        plugin_name=stage_func.__name__,
+                    ),
+                ),
+            )
+
+        # finally, move files
+        stages.append(
+            manipulate_files(self),
+        )
+        # If everything went well, set tasks to completed
+        stages.append(
+            set_tasks_completed(self),
+        )
+
+        return stages
+
+
+class InteractiveImportSession(BaseSession):
     """Interactive Import Session.
 
     The interactive import session is used to parallel tag a directory and

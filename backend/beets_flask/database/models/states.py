@@ -26,7 +26,6 @@ from sqlalchemy.orm import (
     relationship,
 )
 
-from beets_flask.database.setup import db_session_factory
 from beets_flask.database.models.base import Base
 from beets_flask.disk import Folder
 from beets_flask.importer.progress import Progress
@@ -101,7 +100,7 @@ class FolderInDb(Base):
         return Path(self.full_path)
 
     @classmethod
-    def ensure_hash_consistency(cls, hash: str, path: Path | str) -> Folder:
+    def get_current_on_disk(cls, hash: str, path: Path | str) -> Folder:
         """
         Check that a folders hash is still the same, as you have previously determined.
 
@@ -111,6 +110,7 @@ class FolderInDb(Base):
         -------
         Folder: The live folder object on disk, with the potentially new (current) hash.
         """
+        from beets_flask.database.setup import db_session_factory
 
         with db_session_factory() as db_session:
             f_on_disk = Folder.from_path(path)
