@@ -1,15 +1,15 @@
-from contextlib import _GeneratorContextManager
 import os
 import shutil
+from contextlib import _GeneratorContextManager
 from pathlib import Path
 from typing import Any, Callable, Generator
 
 import pytest
 from quart import Quart
 from quart.typing import TestClientProtocol
+from sqlalchemy.orm import Session
 
 from beets_flask.server.app import create_app
-from sqlalchemy.orm import Session
 
 
 @pytest.fixture(autouse=True, scope="session")

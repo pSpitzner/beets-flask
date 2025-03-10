@@ -2,12 +2,14 @@ import logging
 import os
 from pathlib import Path
 
-from beets_flask.database.models.tag import Tag
-from beets_flask.database.setup import db_session_factory
 import pytest
 
+from beets_flask.database.models.tag import Tag
+from beets_flask.database.setup import db_session_factory
 from beets_flask.importer.session import PreviewSession
 from beets_flask.importer.states import SessionState
+from beets_flask.invoker import run_import, run_preview
+from beets_flask.server.routes.tag import add_tag
 from tests.test_importer.conftest import (
     VALID_PATHS,
     album_path_absolute,
@@ -15,14 +17,8 @@ from tests.test_importer.conftest import (
     valid_data_for_album_path,
 )
 
-from beets_flask.invoker import run_import, run_preview
-from beets_flask.server.routes.tag import add_tag
-
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
-
-# import conftest from other folder
-from tests.test_database.conftest import fdb_session_factory
 
 
 @pytest.mark.skip(reason="This test is only for generating!")

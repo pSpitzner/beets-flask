@@ -32,15 +32,17 @@ class TestSessionStateInDb:
     state: SessionState
 
     @pytest.fixture(autouse=True)
-    def gen_session_state(self, import_task):
-        state = SessionState(Path("path"))
+    def gen_session_state(self, import_task, tmpdir_factory):
+        state = SessionState(Path(tmpdir_factory.mktemp("beets_flask_disk")))
         state.upsert_task(import_task)
         self.state = state
 
-    def test_from_session_state(self):
+    def test_from_session_state(
+        self,
+    ):
         state_in_db = SessionStateInDb.from_live_state(self.state)
 
-        assert state_in_db.path == b"path"
+        assert state_in_db.folder.full_path == str(self.state.path)
 
         # Tasks generated
         assert len(state_in_db.tasks) == 1
@@ -58,7 +60,7 @@ class TestSessionStateInDb:
         # At a later point we create a new state and merge it
         state_in_db = SessionStateInDb.from_live_state(self.state)
         with db_session_factory() as s:
-            state_in_db.path = b"new path"
+            state_in_db.folder.full_path = "new path"
             state_in_db.tasks[0].progress = Progress.COMPLETED
             state_in_db.tasks[0].candidates = []
             s.autoflush = True
@@ -67,7 +69,7 @@ class TestSessionStateInDb:
 
         with db_session_factory() as s:
             # Check that new path is in db
-            state_in_db = s.query(SessionStateInDb).filter_by(path=b"new path").one()
+            state_in_db = s.query(SessionStateInDb).filter_by(id=state_in_db.id).one()
             assert len(state_in_db.tasks) == 1
 
             # Check that the progress is updated
