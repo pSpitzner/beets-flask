@@ -1,12 +1,16 @@
 import os
 from hashlib import md5
+from re import Pattern
+from typing import Optional
 
 from cachetools import Cache, TTLCache, cached
 
 cache = TTLCache(maxsize=1024, ttl=900)
 
 
-def dirhash_c(dirname: str, cache: Cache[str, bytes]) -> bytes:
+def dirhash_c(
+    dirname: str, cache: Cache[str, bytes], filter_regex: Optional[Pattern[str]] = None
+) -> bytes:
     """Compute a hash for a directory.
 
     The hash is computed by hashing the path of each file and using
@@ -27,11 +31,13 @@ def dirhash_c(dirname: str, cache: Cache[str, bytes]) -> bytes:
     # Hash for each entry in the directory
     for entry in os.scandir(dirname):
         if entry.is_dir():
-            hash.update(dirhash_c(entry.path, cache))
+            hash.update(dirhash_c(entry.path, cache, filter_regex))
         else:
-            # TODO: Filter audio only
-            fs = os.stat(entry.path)
+            # Skip files that do not match the filter
+            if filter_regex is not None and not filter_regex.match(entry.name):
+                continue
 
+            fs = os.stat(entry.path)
             hash.update(fs.st_size.to_bytes(8, byteorder="big"))
             hash.update(fs.st_ino.to_bytes(8, byteorder="big"))
             hash.update(str(fs.st_mtime).encode())

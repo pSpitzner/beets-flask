@@ -9,7 +9,6 @@ from typing import (
     List,
     Literal,
     Mapping,
-    NotRequired,
     Sequence,
     Set,
     TypedDict,
@@ -21,6 +20,14 @@ from natsort import os_sorted
 
 from beets_flask.dirhash_custom import dirhash_c
 from beets_flask.logger import log
+from beets_flask.utility import AUDIO_EXTENSIONS
+
+# Regex pattern to exclude hidden files (files starting with ".")
+non_hidden_regex = re.compile(r"^(?!\.).+$")
+audio_regex = re.compile(
+    r".*\.(" + "|".join(AUDIO_EXTENSIONS) + ")$",
+    re.IGNORECASE,
+)
 
 
 @dataclass
@@ -56,10 +63,6 @@ class Folder:
 
         # Iterate over all directories from bottom to top
         for dirpath, dirnames, filenames in os.walk(path, topdown=False):
-
-            # FIXME: Filter for files here (audio extensions only)
-            # FIXME: Skip hidden folders
-
             # As we iterate from bottom to top, we can access the elements from
             # the lookup table as they are already created
             children: list[Folder | File] = [
@@ -69,6 +72,10 @@ class Folder:
 
             # Add all files to children
             for filename in os_sorted(filenames):
+                # Skip hidden files
+                if not non_hidden_regex.match(filename):
+                    continue
+
                 full_path = os.path.join(dirpath, filename)
                 children.append(
                     File(
@@ -82,7 +89,11 @@ class Folder:
                 type="directory",
                 children=children,
                 full_path=os.path.abspath(dirpath),
-                hash=dirhash_c(dirpath, cache).hex(),
+                hash=dirhash_c(
+                    dirpath,
+                    cache,
+                    filter_regex=audio_regex,  # Only hash audio files
+                ).hex(),
                 is_album=Path(dirpath) in album_folders,
             )
 
