@@ -15,13 +15,46 @@ import {
     SearchXIcon,
     Tally5Icon,
     UserRoundIcon,
+    Folder,
+    FolderOpen,
 } from "lucide-react";
+
+/** Icon to show a folder, shows a disc icon if the folder is an album.
+ *
+ * isAlbum: if the folder is an album
+ * isOpen: if the folder is open
+ */
+export function FolderTypeIcon({
+    isAlbum,
+    isOpen,
+    ...props
+}: { isAlbum: boolean; isOpen: boolean } & LucideProps) {
+    if (isAlbum) {
+        return (
+            <Disc3Icon
+                style={{
+                    transform: isOpen ? "rotate(90deg)" : "",
+                    transition: "transform 0.15s ease-in-out",
+                }}
+                {...props}
+            />
+        );
+    } else {
+        if (isOpen) {
+            return <FolderOpen {...props} />;
+        }
+        return <Folder {...props} />;
+    }
+}
 
 /** Icon to show different file types.
  *
  * type: file type to show icon for (normally the ending of the file)
  */
-export function FileTypeIcon({ type, ...props }: { type: string | undefined } & LucideProps) {
+export function FileTypeIcon({
+    type,
+    ...props
+}: { type: string | undefined } & LucideProps) {
     switch (type) {
         case "mp3":
         case "flac":
@@ -99,7 +132,10 @@ function Spotify(props: LucideProps) {
             {...props}
         >
             <path stroke="none" d="M 0,0 H 24 V 24 H 0 Z" fill="none" id="path2" />
-            <g id="g1168" transform="matrix(0.85434442,0,0,0.85434442,1.7478672,-0.03136257)">
+            <g
+                id="g1168"
+                transform="matrix(0.85434442,0,0,0.85434442,1.7478672,-0.03136257)"
+            >
                 <path
                     d="m 6.3949311,14.46672 c 3.7367129,-2.201671 8.2207679,-1.454328 11.2101379,0.7877"
                     id="path6"

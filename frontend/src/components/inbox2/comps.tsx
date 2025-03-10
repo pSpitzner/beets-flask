@@ -1,9 +1,6 @@
 import {
     CopyIcon,
-    Disc3,
     EllipsisVerticalIcon,
-    FolderIcon,
-    FolderOpenIcon,
     ImportIcon,
     LucideChevronRight,
     RefreshCwIcon,
@@ -44,7 +41,7 @@ import {
 
 import { File, Folder } from "@/pythonTypes";
 
-import { FileTypeIcon, SourceTypeIcon } from "../common/icons";
+import { FileTypeIcon, SourceTypeIcon, FolderTypeIcon } from "../common/icons";
 import { useMutation } from "@tanstack/react-query";
 
 /* --------------------------------- Context -------------------------------- */
@@ -52,16 +49,19 @@ import { useMutation } from "@tanstack/react-query";
 
 interface FolderContext {
     nSelected: number;
-    selectedHash: Folder["hash"][];
+    selected: {
+        hashes: Array<Folder["hash"]>;
+        paths: Array<Folder["full_path"]>;
+    };
     toggleSelect(folder: Folder): void;
     isSelected(folder: Folder): boolean;
     deselectAll(): void;
 }
 
-const foldersContext = createContext<FolderContext | null>(null);
+const FoldersContext = createContext<FolderContext | null>(null);
 
 export function useFoldersContext() {
-    const context = useContext(foldersContext);
+    const context = useContext(FoldersContext);
     if (!context) {
         throw new Error("useFoldersContext must be used inside a FoldersProvider");
     }
@@ -70,34 +70,44 @@ export function useFoldersContext() {
 
 export function FoldersSelectionProvider({ children }: { children: React.ReactNode }) {
     // we do not need to store the selected folders directly but can
-    // derive them from their selected hashes, this is more or less an id for folders
-    const [selectedHash, setSelectedHash] = useState<Folder["hash"][]>([]);
+    // derive them from their selected hashes and paths, this is more or less an id for folders
+    const [selected, setSelected] = useState<{
+        hashes: Folder["hash"][];
+        paths: Folder["full_path"][];
+    }>({ hashes: [], paths: [] });
 
     const toggleSelect = (folder: Folder) => {
-        setSelectedHash((selectedHash) => {
-            if (selectedHash.includes(folder.hash)) {
-                return selectedHash.filter((hash) => hash !== folder.hash);
+        setSelected((selected) => {
+            if (selected.hashes.includes(folder.hash)) {
+                const idx = selected.hashes.indexOf(folder.hash);
+                return {
+                    hashes: selected.hashes.splice(idx, 1),
+                    paths: selected.paths.splice(idx, 1),
+                };
             } else {
-                return [...selectedHash, folder.hash];
+                return {
+                    hashes: [...selected.hashes, folder.hash],
+                    paths: [...selected.paths, folder.full_path],
+                };
             }
         });
     };
 
     const isSelected = useCallback(
-        (folder: Folder) => selectedHash.includes(folder.hash),
-        [selectedHash]
+        (folder: Folder) => selected.hashes.includes(folder.hash),
+        [selected]
     );
 
-    const deselectAll = () => setSelectedHash([]);
+    const deselectAll = () => setSelected({ hashes: [], paths: [] });
 
-    const nSelected = selectedHash.length;
+    const nSelected = selected.hashes.length;
 
     return (
-        <foldersContext.Provider
-            value={{ nSelected, toggleSelect, isSelected, selectedHash, deselectAll }}
+        <FoldersContext.Provider
+            value={{ nSelected, toggleSelect, isSelected, selected, deselectAll }}
         >
             {children}
-        </foldersContext.Provider>
+        </FoldersContext.Provider>
     );
 }
 
@@ -256,19 +266,12 @@ function FolderTreeRow({
                 />
             </IconButton>
 
-            {folder.is_album ? (
-                <Disc3
-                    size={ICON_SIZE}
-                    style={{
-                        transform: isOpen ? "rotate(90deg)" : "",
-                        transition: "transform 0.15s ease-in-out",
-                    }}
-                />
-            ) : isOpen ? (
-                <FolderOpenIcon size={ICON_SIZE} />
-            ) : (
-                <FolderIcon size={ICON_SIZE} />
-            )}
+            <FolderTypeIcon
+                isAlbum={folder.is_album}
+                isOpen={isOpen}
+                size={ICON_SIZE}
+            />
+
             <Typography variant="body1">{folder.full_path.split("/").pop()}</Typography>
         </LevelIndentWrapper>
     );
@@ -457,11 +460,11 @@ export function SelectedStats() {
 
 export function FolderActions() {
     const [open, setOpen] = useState(false);
-    const { nSelected, selectedHash, deselectAll } = useFoldersContext();
+    const { nSelected, selected, deselectAll } = useFoldersContext();
     const theme = useTheme();
 
     function onReTag(e: MouseEvent<HTMLDivElement>) {
-        console.log("Retagging on ", selectedHash);
+        console.log("Retagging on ", selected);
         setOpen(false);
         setTimeout(() => {
             deselectAll();
@@ -469,13 +472,13 @@ export function FolderActions() {
     }
 
     function onAutoImport(e: MouseEvent<HTMLDivElement>) {
-        console.log("Auto-importing on ", selectedHash);
+        console.log("Auto-importing on ", selected);
         setOpen(false);
         deselectAll();
     }
 
     function onDelete(e: MouseEvent<HTMLDivElement>) {
-        console.log("Deleting ", selectedHash);
+        console.log("Deleting ", selected);
         setOpen(false);
         deselectAll();
     }
