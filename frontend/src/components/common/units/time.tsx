@@ -26,7 +26,6 @@ export const RelativeTime = ({ date }: { date?: Date }) => {
 };
 
 /** Humanize the duration in seconds to a human readable format.
- *
  */
 export const humanizeDuration = (duration: number) => {
     const seconds = Math.floor(duration % 60);

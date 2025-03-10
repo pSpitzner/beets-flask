@@ -16,8 +16,8 @@ import { Link } from "@tanstack/react-router";
 import { LibraryStats, libraryStatsQueryOptions } from "./_query";
 
 import styles from "./stats.module.scss";
-import { humanizeBytes } from "../common/bytes";
-import { humanizeDuration, RelativeTime } from "../common/time";
+import { humanizeBytes } from "../common/units/bytes";
+import { humanizeDuration, RelativeTime } from "../common/units/time";
 
 /** A component for general library
  * statistics, such as the number of
@@ -56,8 +56,7 @@ export function LibraryStatsComponent() {
                         <div>
                             Disk Usage: {humanizeBytes(librariesQuery.data.size)} /{" "}
                             {humanizeBytes(
-                                librariesQuery.data.size +
-                                    librariesQuery.data.freeSpace
+                                librariesQuery.data.size + librariesQuery.data.freeSpace
                             )}
                         </div>
                         <div>Number of tracks: {librariesQuery.data.items}</div>

@@ -25,7 +25,7 @@ import {
     IconButtonWithMutation,
     IconButtonWithMutationAndFeedback,
 } from "../common/buttons";
-import { RelativeTime } from "../common/time";
+import { RelativeTime } from "../common/units/time";
 
 export function InboxStatsGridItems() {
     const { data, isLoading, isPending, isError, error } = useQuery(

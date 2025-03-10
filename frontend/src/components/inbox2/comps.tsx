@@ -44,6 +44,7 @@ import { File, Folder } from "@/pythonTypes";
 
 import { FileTypeIcon, SourceTypeIcon, FolderTypeIcon } from "../common/icons";
 import { useMutation } from "@tanstack/react-query";
+import { ClipboardCopyButton } from "../common/buttons/copy";
 
 /* --------------------------------- Context -------------------------------- */
 // Allows to trigger actions on a single or multiple folders
@@ -667,10 +668,21 @@ function MoreActions({ f }: { f: Folder | File }) {
                         setAnchorEl(null);
                     }}
                 >
-                    <ListItemIcon>
-                        <CopyIcon fontSize="small" />
-                    </ListItemIcon>
-                    Copy Path
+                    <ClipboardCopyButton
+                        text={f.full_path}
+                        icon_props={{
+                            size: ICON_SIZE,
+                        }}
+                        sx={{
+                            margin: 0,
+                            display: "flex",
+                            gap: "0.5rem",
+                            fontSize: "1rem",
+                            padding: "0",
+                        }}
+                    >
+                        Copy Path
+                    </ClipboardCopyButton>
                 </MenuItem>
             </Menu>
         </>

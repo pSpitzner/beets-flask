@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { libraryStatsQueryOptions } from "@/components/common/_query";
 import { IconButtonWithMutation } from "@/components/common/buttons";
 import { JSONPretty } from "@/components/common/json";
-import { RelativeTime } from "@/components/common/time";
+import { RelativeTime } from "@/components/common/units/time";
 import {
     Card,
     CardActions,
@@ -14,7 +14,7 @@ import {
     CardTopInfo,
 } from "@/components/frontpage/card";
 
-import { humanizeBytes } from "../common/bytes";
+import { humanizeBytes } from "../common/units/bytes";
 
 export function LibraryStats() {
     const { data } = useQuery(libraryStatsQueryOptions());

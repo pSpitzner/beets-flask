@@ -16,8 +16,8 @@ import { Link } from "@tanstack/react-router";
 import { InboxStats, inboxStatsQueryOptions } from "./_query";
 
 import styles from "../library/stats.module.scss";
-import { humanizeBytes } from "../common/bytes";
-import { RelativeTime } from "../common/time";
+import { humanizeBytes } from "../common/units/bytes";
+import { RelativeTime } from "../common/units/time";
 
 /** A component for general inbox
  * statistics, such as the number of
