@@ -1,0 +1,25 @@
+import os
+
+from beets_flask.logger import log
+
+
+def test_log():
+    """Test that logger is correctly set up for testing."""
+
+    assert "PYTEST_CURRENT_TEST" in os.environ
+
+    # Logger should have no handlers
+    assert not log.handlers
+    assert log.level == 0
+    assert log.name == "beets-flask"
+
+
+from beets_flask.config.beets_config import config
+
+
+def test_config():
+    """Test that config is correctly set up for testing."""
+
+    dir = os.environ.get("BEETSFLASKDIR")
+    assert dir is not None
+    assert "tmp" in dir

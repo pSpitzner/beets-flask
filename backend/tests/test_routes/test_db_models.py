@@ -5,7 +5,7 @@ from beets import autotag, importer
 from quart.typing import TestClientProtocol as Client
 from sqlalchemy.orm import Session
 
-from beets_flask.database.models.states import SessionStateInDb
+from beets_flask.database.models.states import FolderInDb, SessionStateInDb
 from beets_flask.importer.states import SessionState
 
 from ..conftest import beets_lib_item
@@ -27,11 +27,11 @@ def import_task(beets_lib):
 
 
 @pytest.fixture
-async def session_in_db(db_session_factory, import_task):
+async def session_in_db(db_session_factory, import_task, tmpdir_factory):
     # Add a session to the database
     sessions: list[SessionState] = []
     for i in range(3):
-        session = SessionState(Path(f"path{i}"))
+        session = SessionState(Path(tmpdir_factory.mktemp(f"session_{i}")))
         with db_session_factory() as db_session:
             session.upsert_task(import_task)
             session_in_db = SessionStateInDb.from_live_state(session)
@@ -44,6 +44,7 @@ async def session_in_db(db_session_factory, import_task):
     # Clean up the database
     with db_session_factory() as db_session:
         db_session.query(SessionStateInDb).delete()
+        db_session.query(FolderInDb).delete()
         db_session.commit()
 
 

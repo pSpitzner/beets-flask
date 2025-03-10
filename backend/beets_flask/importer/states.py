@@ -286,7 +286,7 @@ class TaskState:
         # Workaround to show initial selection on frontend
         # if no candidate has been selected yet
         current_id = self.current_candidate_id
-        if current_id is None:
+        if current_id is None and len(self.candidate_states) > 0:
             current_id = self.candidate_states[0].id
 
         return SerializedTaskState(

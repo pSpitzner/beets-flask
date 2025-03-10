@@ -13,6 +13,7 @@ from beets_flask.database.models.states import (
     TaskStateInDb,
 )
 from beets_flask.server.routes.errors import InvalidUsage
+
 from .errors import get_query_param
 
 T = TypeVar("T", bound=Base)

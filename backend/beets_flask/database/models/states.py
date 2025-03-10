@@ -49,7 +49,8 @@ class FolderInDb(Base):
 
     __tablename__ = "folder"
 
-    full_path: Mapped[str] = mapped_column(index=True)
+    # Composite primary key
+    full_path: Mapped[str] = mapped_column(index=True, primary_key=True)
 
     # checked -> yes | no or didnt check -> None
     is_album: Mapped[Optional[bool]]
