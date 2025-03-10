@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 from typing import List
 
+from beets_flask.server.app import Encoder
 import pytest
 from beets import autotag, importer
 
@@ -96,12 +97,11 @@ class TestTaskState:
         assert serialized["id"] == task_state.id
         assert serialized["toppath"] == str(task_state.toppath)
         assert serialized["paths"] == [str(p) for p in task_state.paths]
-        assert serialized["items"] == [{}]
 
-        # Can be serialized with json.dumps
+        # Can be serialized with json.dumps and Encoder
         import json
 
-        json.dumps(serialized)
+        json.dumps(serialized, cls=Encoder)
 
 
 class TestCandidateState:
@@ -169,10 +169,10 @@ class TestCandidateState:
         assert serialized["distance"] == candidate.distance.distance
         assert serialized["duplicate_in_library"] == candidate.has_duplicates_in_library
 
-        # Can be serialized with json.dumps
+        # Can be serialized with json.dumps and Encoder
         import json
 
-        json.dumps(serialized)
+        json.dumps(serialized, cls=Encoder)
 
 
 class TestSessionState:
@@ -180,8 +180,10 @@ class TestSessionState:
     session_state: SessionState
 
     @pytest.fixture(autouse=True)
-    def gen_session_state(self, import_task):
-        self.session_state = SessionState(Path("not_really_needed"))
+    def gen_session_state(self, import_task, tmpdir_factory: pytest.TempdirFactory):
+        self.session_state = SessionState(
+            Path(tmpdir_factory.mktemp("beets_flask_disk"))
+        )
         self.session_state.upsert_task(import_task)
 
     def test_multiple_upserts(self, import_task):
@@ -222,10 +224,12 @@ class TestSessionState:
         serialized = session_state.serialize()
         assert isinstance(serialized, dict)
         assert serialized["id"] == session_state.id
-        assert len(serialized["selection_states"]) == len(session_state.task_states)
-        assert serialized["completed"] == False
+        assert serialized["tasks"] == [t.serialize() for t in session_state.task_states]
+        assert serialized["status"]["message"] is None
+        assert serialized["status"]["progress"] == Progress.NOT_STARTED.name
+        assert serialized["status"]["plugin_name"] == None
 
-        # Can be serialized with json.dumps
+        # Can be serialized with json.dumps and Encoder
         import json
 
-        json.dumps(serialized)
+        json.dumps(serialized, cls=Encoder)
