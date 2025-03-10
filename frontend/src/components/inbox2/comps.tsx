@@ -14,6 +14,7 @@ import {
     Ref,
     useCallback,
     useContext,
+    useEffect,
     useState,
 } from "react";
 import {
@@ -76,13 +77,20 @@ export function FoldersSelectionProvider({ children }: { children: React.ReactNo
         paths: Folder["full_path"][];
     }>({ hashes: [], paths: [] });
 
+    useEffect(() => {
+        console.debug("FoldersSelectionProvider", "selected", selected);
+    }, [selected]);
+
     const toggleSelect = (folder: Folder) => {
         setSelected((selected) => {
             if (selected.hashes.includes(folder.hash)) {
                 const idx = selected.hashes.indexOf(folder.hash);
+
+                selected.paths.splice(idx, 1);
+                selected.hashes.splice(idx, 1);
                 return {
-                    hashes: selected.hashes.splice(idx, 1),
-                    paths: selected.paths.splice(idx, 1),
+                    hashes: selected.hashes,
+                    paths: selected.paths,
                 };
             } else {
                 return {
@@ -188,7 +196,7 @@ export function FolderComponent({
                 }}
             >
                 <MatchChip
-                    type="unk"
+                    type="spotify"
                     quality={100}
                     sx={{ gridColumn: "chip", justifyContent: "center" }}
                 />

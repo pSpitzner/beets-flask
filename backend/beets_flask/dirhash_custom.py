@@ -43,6 +43,13 @@ def dirhash_c(
             hash.update(str(fs.st_mtime).encode())
             hash.update(entry.name.encode())
 
+    # dirstats
+    fs = os.stat(dirname)
+    hash.update(fs.st_size.to_bytes(8, byteorder="big"))
+    hash.update(fs.st_ino.to_bytes(8, byteorder="big"))
+    hash.update(str(fs.st_mtime).encode())
+    hash.update(dirname.encode())
+
     return hash.digest()
 
 
