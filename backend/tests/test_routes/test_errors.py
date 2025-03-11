@@ -42,3 +42,20 @@ class TestErrorHandling:
         assert data["error"] == "Internal server error"
         assert "message" in data
         assert "trace" in data
+
+    @pytest.mark.asyncio
+    async def test_not_found(self, client):
+        response = await client.get("/api_v1/error/notFound")
+        data = await response.get_json()
+        assert response.status_code == 404
+        assert data["error"] == "Not found"
+        assert data["message"] == "Item not found"
+
+    @pytest.mark.asyncio
+    async def test_integrity_error(self, client):
+        response = await client.get("/api_v1/error/integrityError")
+
+        data = await response.get_json()
+        assert response.status_code == 409
+        assert data["error"] == "Integrity error"
+        assert data["message"] == "Integrity error"
