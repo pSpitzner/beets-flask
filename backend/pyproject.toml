@@ -35,6 +35,7 @@ dependencies = [
     # dirhash
     #"scantree>=0.0.4",
     "natsort",
+    "tinytag",
 ]
 
 [project.optional-dependencies]
