@@ -42,10 +42,10 @@ class SessionState:
 
     id: str
     _task_states: List[TaskState]
-    # session-level buttons. continue from choose_match when not None
-    user_response: Literal["abort"] | Literal["apply"] | None = None
     folder_path: Path
     folder_hash: str
+    # session-level buttons. continue from choose_match when not None
+    user_response: Literal["abort"] | Literal["apply"] | None = None
 
     def __init__(self, folder: Folder | Path) -> None:
         # Alternate constructor is part of the SessionStateInDb class

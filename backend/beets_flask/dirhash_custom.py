@@ -3,9 +3,7 @@ from hashlib import md5
 from re import Pattern
 from typing import Optional
 
-from cachetools import Cache, TTLCache, cached
-
-cache = TTLCache(maxsize=1024, ttl=900)
+from cachetools import Cache
 
 
 def dirhash_c(

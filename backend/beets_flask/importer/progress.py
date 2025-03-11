@@ -59,6 +59,7 @@ class SerializedProgressState(TypedDict):
         "IDENTIFYING_DUPLICATES",
         "OFFERING_MATCHES",
         "WAITING_FOR_USER_SELECTION",
+        "MATCH_THRESHOLD",
         "EARLY_IMPORTING",
         "IMPORTING",
         "MANIPULATING_FILES",
