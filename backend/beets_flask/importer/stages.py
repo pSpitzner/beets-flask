@@ -17,6 +17,7 @@ from typing import (
     Generator,
     Generic,
     Iterable,
+    Literal,
     Optional,
     ParamSpec,
     Sequence,
@@ -62,7 +63,12 @@ if TYPE_CHECKING:
     Session = TypeVar("Session", bound=BaseSession)
 
 
-def set_progress(progress: Progress):
+def set_progress(
+    progress: Progress,
+) -> Callable[
+    [Callable[[Session, Task, *Arg], Ret]],
+    Callable[[Session, Task, *Arg], Ret | Task],
+]:
     """Decorate to set the progress of a task.
 
     Basically calls
@@ -80,14 +86,23 @@ def set_progress(progress: Progress):
     ```
     """
 
-    def decorator(func: Callable[[Session, ImportTask, *Arg]]):
+    def decorator(
+        func: Callable[[Session, Task, *Arg], Ret],
+    ) -> Callable[[Session, Task, *Arg], Ret | Task]:
+
         @wraps(func)
-        def wrapper(session: Session, task: ImportTask, *args: *Arg):
+        def wrapper(session: Session, task: Task, *args: *Arg) -> Ret | Task:
             # Skip automatically if the task is already progressed
             # Note that >= and > below both have caveats:
             # >= might give us a too optimistic state if the function call fails
             # > might re-run the function if we resume, and we have not testet
             # what happens when doing the same state-mutation twice
+            if not isinstance(task, ImportTask):
+                log.warning(
+                    f"Skipping {progress} for {task} as it is not an ImportTask"
+                )
+                return task
+
             task_progress = session.state.upsert_task(task)
             if task_progress and task_progress.progress >= progress:
                 log.debug(f"Skipping {progress} for {task}")
@@ -151,10 +166,15 @@ class StageOrder(dict):
 
 Arg = TypeVarTuple("Arg")  # args und kwargs
 Ret = TypeVar("Ret")  # return type
-Task = TypeVar("Task")  # task
+Task = TypeVar(
+    "Task",
+    bound=ImportTask,
+)  # task
 
 
-def stage(func: Callable[[Unpack[Arg], Task], Ret]):
+def stage(
+    func: Callable[[*Arg, Task], Ret],
+) -> Callable[[*Arg], Generator[Ret | Task | None, Task, None]]:
     """Decorate a function to become a simple stage.
 
     Yields a task and waits until the next task is sent to it.
@@ -172,11 +192,13 @@ def stage(func: Callable[[Unpack[Arg], Task], Ret]):
 
     # use the wraps decorator to lift function name etc, we use this in StageOrder class
     @wraps(func)
-    def coro(*args: Unpack[Arg]) -> Generator[Union[Ret, Task, None], Task, None]:
+    def coro(*args: *Arg) -> Generator[Ret | Task | None, Task, None]:
         # in some edge-cases we get no task. thus, we have to include the generic R
         task: Optional[Task | Ret] = None
         while True:
-            task = yield task  # wait for send to arrive. the first next() always returns None
+            task = (
+                yield task
+            )  # wait for send to arrive. the first next() always returns None
             # yield task, call func which gives new task, yield new task in next()
             # FIXME: Generator support!
             task = func(*(args + (task,)))
@@ -184,7 +206,9 @@ def stage(func: Callable[[Unpack[Arg], Task], Ret]):
     return coro
 
 
-def mutator_stage(func: Callable[[Unpack[Arg], Task], Ret], name: str | None = None):
+def mutator_stage(
+    func: Callable[[Unpack[Arg], Task], Ret], name: str | None = None
+) -> Callable[[*Arg], Generator[Ret | Task | None, Task, None]]:
     """Decorate a function that manipulates items in a coroutine to become a simple stage.
 
     Yields a task and waits until the next task is sent to it.
@@ -203,10 +227,12 @@ def mutator_stage(func: Callable[[Unpack[Arg], Task], Ret], name: str | None = N
     @wraps(func)
     def coro(
         *args: Unpack[Arg],
-    ) -> Generator[Union[Ret, Task, None], Task, Optional[Ret]]:
+    ) -> Generator[Union[Ret, Task, None], Task, None]:
         task = None
         while True:
-            task = yield task  # wait for send to arrive. the first next() always returns None
+            task = (
+                yield task
+            )  # wait for send to arrive. the first next() always returns None
             # perform function on task, and in next() send the same, modified task
             # funcs prob. modify task in place?
             func(*(args + (task,)))
@@ -271,11 +297,10 @@ def group_albums(
     Yielding might not work as expected yet.
     """
 
-    tasks = []
+    tasks: list[ImportTask] = []
     sorted_items = sorted(task.items, key=__group)
     for _, items in itertools.groupby(sorted_items, __group):
-        items = list(items)
-        task = ImportTask(task.toppath, [i.path for i in items], items)
+        task = ImportTask(task.toppath, [i.path for i in items], list(items))
         tasks += task.handle_created(session)
 
     # FIXME: Not really sure we need this tbh, see also task.skip
@@ -457,7 +482,7 @@ def match_threshold(
 def manipulate_files(
     session: BaseSession,
     task: ImportTask,
-):
+) -> ImportTask:
     """A coroutine (pipeline stage) that performs necessary file.
 
     manipulations *after* items have been added to the library and

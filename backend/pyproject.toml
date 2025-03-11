@@ -120,6 +120,7 @@ omit = ["*/tests/*", "dirhash.py"]
 
 [tool.mypy]
 check_untyped_defs = true
+disallow_untyped_decorators = true
 
 [[tool.mypy.overrides]]
 # Suppresses error messages about imports that cannot be resolved.
