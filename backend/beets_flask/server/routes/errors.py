@@ -99,6 +99,71 @@ async def handle_generic_error(error):
     )
 
 
+# ------------------------------ Library errors ------------------------------ #
+
+
+class NotFoundError(Exception):
+    """Exception raised for 404 errors.
+
+    For instance if an item is not
+    found in the database.
+    """
+
+    status_code = 404
+
+    def __init__(self, message, status_code=None, payload=None):
+        super().__init__()
+        self.message = message
+        if status_code is not None:
+            self.status_code = status_code
+        self.payload = payload
+
+    def to_dict(self):
+        rv = dict(self.payload or ())
+        rv["error"] = "Not found"
+        rv["message"] = self.message
+        return rv
+
+
+@error_bp.app_errorhandler(NotFoundError)
+async def handle_not_found(error: NotFoundError):
+    return (
+        jsonify({"error": "Not found", "message": error.message}),
+        error.status_code,
+    )
+
+
+class IntegrityError(Exception):
+    """Exception raised for 409 errors.
+
+    For instance if an item is not
+    found on disk but is in the database.
+    """
+
+    status_code = 409
+
+    def __init__(self, message, status_code=None, payload=None):
+        super().__init__()
+        self.message = message
+        if status_code is not None:
+            self.status_code = status_code
+        self.payload = payload
+
+    def to_dict(self):
+        rv = dict(self.payload or ())
+        rv["error"] = "Integrity error"
+        rv["message"] = self.message
+        return rv
+
+
+@error_bp.app_errorhandler(IntegrityError)
+async def handle_integrity_error(error: IntegrityError):
+    return (
+        jsonify({"error": "Integrity error", "message": error.message}),
+        error.status_code,
+    )
+
+
 # ---------------------------------------------------------------------------- #
 #                      Test the error handling endpoints                       #
 # ---------------------------------------------------------------------------- #
@@ -127,6 +192,16 @@ async def file_not_found():
 @error_bp.route("/error/genericError", methods=["GET"])
 async def generic_error():
     raise Exception("This is a generic error")
+
+
+@error_bp.route("/error/notFound", methods=["GET"])
+async def not_found():
+    raise NotFoundError("Item not found")
+
+
+@error_bp.route("/error/integrityError", methods=["GET"])
+async def integrity_error():
+    raise IntegrityError("Integrity error")
 
 
 # PS: I think this is an okay olace for this, as it ensures
