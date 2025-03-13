@@ -15,7 +15,7 @@ import {
 } from "@/components/common/_query";
 import List from "@/components/library/list";
 
-import { Selection } from "./browse";
+import { LibraryList, Selection } from "./browse";
 
 import styles from "./library.module.scss";
 
@@ -84,27 +84,5 @@ function Albums() {
         );
     }
 
-    return (
-        <Box
-            sx={(theme) => ({
-                display: "flex",
-                flexDirection: "column",
-                gap: theme.spacing(1),
-                maxWidth: theme.breakpoints.values.laptop,
-                width: "100%",
-                height: "100%",
-            })}
-        >
-            <Box className={styles.label}>Albums</Box>
-            <Box className={styles.list}>
-                {isMobile && selectedData ? (
-                    <Link to={selectedData.to} params={selectedData.params}>
-                        {selectedData.label}
-                    </Link>
-                ) : (
-                    <List data={data}>{List.Item}</List>
-                )}
-            </Box>
-        </Box>
-    );
+    return <LibraryList data={data} selected={selectedData} label="Albums" />;
 }

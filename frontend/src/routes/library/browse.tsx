@@ -1,12 +1,13 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import { createFileRoute, Link, Outlet, useParams } from "@tanstack/react-router";
 
 import { artistsQueryOptions, LIB_BROWSE_ROUTE } from "@/components/common/_query";
-import List from "@/components/library/list";
+import List, { ListItemData } from "@/components/library/list";
 
 import styles from "./library.module.scss";
-import { styled, useMediaQuery, useTheme } from "@mui/material";
+import { styled, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Search } from "@/components/common/inputs/search";
 
 export const Route = createFileRoute(LIB_BROWSE_ROUTE)({
     loader: (opts) => opts.context.queryClient.ensureQueryData(artistsQueryOptions()),
@@ -61,30 +62,13 @@ function Artists() {
     }
 
     // full list
-    return (
-        <Box
-            sx={(theme) => ({
-                display: "flex",
-                flexDirection: "column",
-                gap: theme.spacing(1),
-                maxWidth: theme.breakpoints.values.laptop,
-                width: "100%",
-                height: "100%",
-            })}
-            data-has-selection={selectedData ? "true" : "false"}
-        >
-            <Box className={styles.label}>Artists</Box>
-            <Box className={styles.list}>
-                <List data={data}>{List.Item}</List>
-            </Box>
-        </Box>
-    );
+    return <LibraryList data={data} selected={selectedData} label="Artists" />;
 }
 
 export const Wrapper = styled(Box)(({ theme }) => ({
     display: "grid",
     gridTemplateColumns: "[artists] 1fr [albums] 1fr [items] 1fr",
-    gridTemplateRows: "[selection] auto [content] auto",
+    gridTemplateRows: "[selection] auto",
     gap: theme.spacing(1),
     height: "100%",
     width: "100%",
@@ -112,6 +96,11 @@ export const Wrapper = styled(Box)(({ theme }) => ({
     ":has(> *:nth-last-child(3))": {
         // three children
         gridTemplateColumns: "[artists] 1fr [albums] 1fr [items] 1fr",
+    },
+
+    ":has(> *:nth-last-child(4))": {
+        // four children (content)
+        gridTemplateRows: "[selection] 1fr [content] 2.5fr",
     },
 }));
 
@@ -162,3 +151,74 @@ export const Content = styled(Box)(({ theme }) => ({
     overflow: "hidden",
     gap: theme.spacing(1),
 }));
+
+/** A generic list component with a label and a list of items.
+ *
+ * Also allow to search for items.
+ */
+export function LibraryList({
+    data,
+    selected,
+    label,
+}: {
+    data: (ListItemData & { label: string })[];
+    selected?: ListItemData & { label: string };
+    label: string;
+}) {
+    const [filter, setFilter] = useState<string | null>(null);
+
+    const filteredData = useMemo(() => {
+        if (!filter) {
+            return data;
+        }
+        return data.filter((item) => {
+            //filtered or selected
+            return (
+                item.label?.toLowerCase().includes(filter.toLowerCase()) ||
+                item === selected
+            );
+        });
+    }, [data, filter]);
+
+    return (
+        <Box
+            sx={(theme) => ({
+                display: "flex",
+                flexDirection: "column",
+                gap: theme.spacing(1),
+                maxWidth: theme.breakpoints.values.laptop,
+                width: "100%",
+                height: "100%",
+            })}
+            data-has-selection={selected ? "true" : "false"}
+        >
+            <Box
+                sx={(theme) => ({
+                    display: "flex",
+                    gap: theme.spacing(1),
+                    justifyContent: "space-between",
+                })}
+            >
+                <Search value={filter} setValue={setFilter} size="small" />
+                {filter && filter.length > 0 && (
+                    <Typography
+                        sx={{
+                            display: "flex",
+                            alignSelf: "flex-end",
+                            marginRight: "auto",
+                        }}
+                        variant="body2"
+                        color="text.secondary"
+                    >
+                        Excluded {data.length - filteredData.length}{" "}
+                        {label.toLowerCase()}
+                    </Typography>
+                )}
+                <Box className={styles.label}>{label}</Box>
+            </Box>
+            <Box className={styles.list}>
+                <List data={filteredData}>{List.Item}</List>
+            </Box>
+        </Box>
+    );
+}

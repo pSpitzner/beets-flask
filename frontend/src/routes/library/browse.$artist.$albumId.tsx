@@ -6,7 +6,7 @@ import { createFileRoute, Link, Outlet, useParams } from "@tanstack/react-router
 import { albumQueryOptions, LIB_BROWSE_ROUTE } from "@/components/common/_query";
 import LoadingIndicator from "@/components/common/loadingIndicator";
 import List from "@/components/library/list";
-import { Selection } from "./browse";
+import { LibraryList, Selection } from "./browse";
 
 import styles from "./library.module.scss";
 
@@ -69,25 +69,5 @@ function Items() {
         );
     }
 
-    return (
-        <Box
-            sx={(theme) => ({
-                display: "flex",
-                flexDirection: "column",
-                gap: theme.spacing(1),
-                maxWidth: theme.breakpoints.values.laptop,
-                width: "100%",
-                height: "100%",
-            })}
-        >
-            <Box className={styles.label}>Items</Box>
-            {album && data ? (
-                <Box className={styles.list}>
-                    <List data={data}>{List.Item}</List>
-                </Box>
-            ) : (
-                <LoadingIndicator />
-            )}
-        </Box>
-    );
+    return <LibraryList data={data} selected={selectedData} label="Items" />;
 }
