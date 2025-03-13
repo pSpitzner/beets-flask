@@ -14,9 +14,13 @@ export interface MinimalAlbum {
     year: number;
 }
 
-export interface Album extends MinimalAlbum {
+// Adds items to Album
+interface AlbumItems<Minimal extends boolean> {
+    items: Minimal extends true ? MinimalItem[] : Item[];
+}
+
+interface AlbumFull extends MinimalAlbum {
     [key: string]: unknown; // enable indexing item[key]
-    items?: MinimalItem[];
 
     artist?: string; // if this field exists depends on which part of beets we ask. looking up online data does have it, library queries dont.
 
@@ -66,6 +70,11 @@ export interface Album extends MinimalAlbum {
     script?: string; // "Latn"
     style?: string; // ""
 }
+
+type Album<Minimal extends boolean> = Minimal extends true ? MinimalAlbum : AlbumFull;
+
+type AlbumResponse<Minimal extends boolean, Expand extends boolean> = Album<Minimal> &
+    (Expand extends true ? AlbumItems<Minimal> : {});
 
 export interface MinimalItem {
     id: number;
@@ -170,10 +179,7 @@ export interface Item extends MinimalItem {
     work_disambig?: string; // ""
 }
 
-function _url_parse_minimal_expand(
-    url: string,
-    { minimal, expand }: { minimal: boolean; expand: boolean }
-) {
+function _url_parse_minimal_expand(url: string, minimal: boolean, expand: boolean) {
     const params = [];
     if (minimal) {
         params.push("minimal");
@@ -184,59 +190,48 @@ function _url_parse_minimal_expand(
     return params.length ? `${url}?${params.join("&")}` : url;
 }
 
-export const artistsQueryOptions = () =>
-    queryOptions({
-        queryKey: ["artists"],
-        queryFn: async () => {
-            const response = await fetch(`/library/artist/`);
-            return (await response.json()) as MinimalArtist[];
-        },
-    });
+export const artistsQueryOptions = () => ({
+    queryKey: ["artists"],
+    queryFn: async () => {
+        const response = await fetch(`/library/artist/`);
+        return (await response.json()) as { name: string }[];
+    },
+});
 
-export const artistQueryOptions = ({
-    name,
-    expand = false,
-    minimal = true,
-}: {
-    name: string;
-    expand?: boolean;
-    minimal?: boolean;
-}) =>
-    queryOptions({
-        queryKey: ["artist", name, expand, minimal],
-        queryFn: async (): Promise<MinimalArtist> => {
-            const url = _url_parse_minimal_expand(`/library/artist/${name}`, {
-                expand,
-                minimal,
-            });
-            const response = await fetch(url);
-            return (await response.json()) as MinimalArtist;
-        },
-    });
+export const albumsByArtistQueryOptions = <
+    Expand extends boolean,
+    Minimal extends boolean,
+>(
+    name: string,
+    expand: Expand = true as Expand,
+    minimal: Minimal = true as Minimal
+) => ({
+    queryKey: ["artist", name, expand, minimal],
+    queryFn: async (): Promise<AlbumResponse<typeof expand, typeof minimal>[]> => {
+        const url = _url_parse_minimal_expand(
+            `/library/artist/${name}/albums`,
+            minimal,
+            expand
+        );
+        const response = await fetch(url);
+        return await response.json();
+    },
+});
 
-export const albumQueryOptions = ({
-    id,
-    expand = true,
-    minimal = true,
-}: {
-    id?: number;
-    expand?: boolean;
-    minimal?: boolean;
-}) =>
-    queryOptions({
-        queryKey: ["album", id, expand, minimal],
-        queryFn: async (): Promise<null | MinimalAlbum | Album> => {
-            if (id === undefined || id === null) {
-                return null;
-            }
-            const url = _url_parse_minimal_expand(`/library/album/${id}`, {
-                expand,
-                minimal,
-            });
-            const response = await fetch(url);
-            return (await response.json()) as MinimalAlbum | Album;
-        },
-    });
+export const albumQueryOptions = <Expand extends boolean, Minimal extends boolean>(
+    id: number,
+    expand: Expand = true as Expand,
+    minimal: Minimal = true as Minimal
+) => ({
+    queryKey: ["album", id, expand, minimal],
+    queryFn: async (): Promise<AlbumResponse<typeof expand, typeof minimal>> => {
+        console.log("albumQueryOptions", id, expand, minimal);
+        const url = _url_parse_minimal_expand(`/library/album/${id}`, minimal, expand);
+        const response = await fetch(url);
+        console.log("albumQueryOptions response", response);
+        return await response.json();
+    },
+});
 
 export const itemQueryOptions = ({
     id,
@@ -253,10 +248,11 @@ export const itemQueryOptions = ({
             if (id === undefined || id === null) {
                 return null;
             }
-            const url = _url_parse_minimal_expand(`/library/item/${id}`, {
-                expand,
+            const url = _url_parse_minimal_expand(
+                `/library/item/${id}`,
                 minimal,
-            });
+                expand
+            );
             const response = await fetch(url);
             return (await response.json()) as Item;
         },
@@ -300,10 +296,8 @@ export const searchQueryOptions = <T extends MinimalItem | MinimalAlbum>({
             const minimal = true;
             const url = _url_parse_minimal_expand(
                 `/library/${type}/query/${encodeURIComponent(searchFor)}`,
-                {
-                    expand,
-                    minimal,
-                }
+                minimal,
+                expand
             );
             const response = await fetch(url, { signal });
             return (await response.json()) as SearchResult<T>;

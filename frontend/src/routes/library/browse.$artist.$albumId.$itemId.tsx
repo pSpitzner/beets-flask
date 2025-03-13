@@ -7,7 +7,9 @@ import { itemQueryOptions, LIB_BROWSE_ROUTE } from "@/components/common/_query";
 import { BrowserHeader } from "@/components/library/browserHeader";
 import { ItemView } from "@/components/library/itemAlbumDetails";
 
-import styles from "@/components/library/library.module.scss";
+import { Content } from "./browse";
+
+import styles from "./library.module.scss";
 
 export const Route = createFileRoute(`${LIB_BROWSE_ROUTE}/$artist/$albumId/$itemId`)({
     parseParams: (params) => ({
@@ -29,13 +31,12 @@ function TrackPage() {
     const params = Route.useParams();
     return (
         <>
-            <Paper className={styles.column}>
-                <Box className={styles.columnLabel}>Info</Box>
-                <BrowserHeader
-                    className={styles.browserHeader + " " + styles.alwaysShow}
-                />
-                <ItemView itemId={params.itemId} />
-            </Paper>
+            <Content>
+                <Box sx={{ width: "100%", height: "100%", overflow: "auto" }}>
+                    <Box className={styles.label}>Info</Box>
+                    <ItemView itemId={params.itemId} />
+                </Box>
+            </Content>
         </>
     );
 }

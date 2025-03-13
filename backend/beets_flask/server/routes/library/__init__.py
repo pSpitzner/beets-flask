@@ -9,9 +9,11 @@ from quart import Blueprint, g
 from beets_flask.config import get_config
 
 from .artwork import artwork_pb
+from .resources import resource_bp
 
 library_bp = Blueprint("library", __name__, url_prefix="/library")
 library_bp.register_blueprint(artwork_pb)
+library_bp.register_blueprint(resource_bp)
 
 
 from typing import TYPE_CHECKING
