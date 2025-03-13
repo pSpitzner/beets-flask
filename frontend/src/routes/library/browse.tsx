@@ -5,9 +5,10 @@ import { createFileRoute, Link, Outlet, useParams } from "@tanstack/react-router
 import { artistsQueryOptions, LIB_BROWSE_ROUTE } from "@/components/common/_query";
 import List, { ListItemData } from "@/components/library/list";
 
-import styles from "./library.module.scss";
 import { styled, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { Search } from "@/components/common/inputs/search";
+
+import styles from "./library.module.scss";
 
 export const Route = createFileRoute(LIB_BROWSE_ROUTE)({
     loader: (opts) => opts.context.queryClient.ensureQueryData(artistsQueryOptions()),
@@ -55,7 +56,11 @@ function Artists() {
 
     if (isMobile && selectedData) {
         return (
-            <Link to={selectedData.to} params={selectedData.params}>
+            <Link
+                to={selectedData.to}
+                params={selectedData.params}
+                style={{ padding: "1rem" }}
+            >
                 {selectedData.label}
             </Link>
         );
@@ -69,11 +74,11 @@ export const Wrapper = styled(Box)(({ theme }) => ({
     display: "grid",
     gridTemplateColumns: "[artists] 1fr [albums] 1fr [items] 1fr",
     gridTemplateRows: "[selection] auto",
-    gap: theme.spacing(1),
     height: "100%",
     width: "100%",
     overflow: "hidden",
     padding: theme.spacing(1),
+    rowGap: theme.spacing(1),
     maxWidth: theme.breakpoints.values.laptop * 3,
     alignItems: "center",
     [theme.breakpoints.down("laptop")]: {
@@ -130,6 +135,11 @@ export const Selection = styled(Box)(({ theme }) => ({
         alignSelf: "flex-start",
     },
 
+    borderLeft: `1px solid ${theme.palette.divider}`,
+    ":first-child": {
+        borderLeft: "none",
+    },
+
     [theme.breakpoints.down("laptop")]: {
         ":has(> a)": {
             display: "block",
@@ -150,6 +160,8 @@ export const Content = styled(Box)(({ theme }) => ({
     gridRow: "content",
     overflow: "hidden",
     gap: theme.spacing(1),
+    background: theme.palette.background.paper,
+    padding: theme.spacing(1),
 }));
 
 /** A generic list component with a label and a list of items.
@@ -189,6 +201,9 @@ export function LibraryList({
                 maxWidth: theme.breakpoints.values.laptop,
                 width: "100%",
                 height: "100%",
+                background: theme.palette.background.paper,
+                paddingInline: theme.spacing(1.5),
+                paddingBlock: theme.spacing(0.5),
             })}
             data-has-selection={selected ? "true" : "false"}
         >
@@ -196,16 +211,18 @@ export function LibraryList({
                 sx={(theme) => ({
                     display: "flex",
                     gap: theme.spacing(1),
+                    alignItems: "center",
                     justifyContent: "space-between",
                 })}
             >
-                <Search value={filter} setValue={setFilter} size="small" />
+                <Box className={styles.label}>{label}</Box>
                 {filter && filter.length > 0 && (
                     <Typography
                         sx={{
                             display: "flex",
                             alignSelf: "flex-end",
-                            marginRight: "auto",
+                            marginLeft: "auto",
+                            fontSize: "0.8rem",
                         }}
                         variant="body2"
                         color="text.secondary"
@@ -214,7 +231,12 @@ export function LibraryList({
                         {label.toLowerCase()}
                     </Typography>
                 )}
-                <Box className={styles.label}>{label}</Box>
+                <Search
+                    value={filter}
+                    setValue={setFilter}
+                    size="small"
+                    variant="outlined"
+                />
             </Box>
             <Box className={styles.list}>
                 <List data={filteredData}>{List.Item}</List>

@@ -11,19 +11,17 @@ export function Search({
     setValue: (value: string | null) => void;
 } & React.ComponentProps<typeof TextField>) {
     // Only shown if there is a value
-    const endAdornment =
-        value && value.length > 0 ? (
-            <InputAdornment position="end">
-                <IconButton
-                    sx={{ padding: 0, color: "grey.500" }}
-                    size="small"
-                    disableRipple
-                    onClick={() => setValue("")}
-                >
-                    <XIcon size={20} />
-                </IconButton>
-            </InputAdornment>
-        ) : undefined;
+    const endAdornment = (
+        <InputAdornment position="end">
+            <IconButton
+                sx={{ padding: 0, color: "grey.500", minWidth: 20 }}
+                disableRipple
+                onClick={() => setValue("")}
+            >
+                {value && value.length > 0 ? <XIcon size={20} /> : null}
+            </IconButton>
+        </InputAdornment>
+    );
 
     return (
         <TextField

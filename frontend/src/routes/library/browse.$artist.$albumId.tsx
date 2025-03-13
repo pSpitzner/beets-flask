@@ -1,11 +1,9 @@
 import { useMemo } from "react";
 import z from "zod";
-import { Box, useMediaQuery } from "@mui/material";
+import { useMediaQuery } from "@mui/material";
 import { createFileRoute, Link, Outlet, useParams } from "@tanstack/react-router";
 
 import { albumQueryOptions, LIB_BROWSE_ROUTE } from "@/components/common/_query";
-import LoadingIndicator from "@/components/common/loadingIndicator";
-import List from "@/components/library/list";
 import { LibraryList, Selection } from "./browse";
 
 import styles from "./library.module.scss";
@@ -63,7 +61,11 @@ function Items() {
 
     if (isMobile && selectedData) {
         return (
-            <Link to={selectedData.to} params={selectedData.params}>
+            <Link
+                to={selectedData.to}
+                params={selectedData.params}
+                style={{ padding: "1rem" }}
+            >
                 {selectedData.label}
             </Link>
         );

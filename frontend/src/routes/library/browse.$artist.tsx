@@ -78,7 +78,11 @@ function Albums() {
 
     if (isMobile && selectedData) {
         return (
-            <Link to={selectedData.to} params={selectedData.params}>
+            <Link
+                to={selectedData.to}
+                params={selectedData.params}
+                style={{ padding: "1rem" }}
+            >
                 {selectedData.label}
             </Link>
         );
