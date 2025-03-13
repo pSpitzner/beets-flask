@@ -36,30 +36,23 @@ It combines:
 
 from __future__ import annotations
 
-import traceback
-from datetime import datetime
-from pathlib import Path
+from time import sleep
 from typing import TYPE_CHECKING
 
-import requests
-from rq import get_current_job
 from rq.decorators import job
 from sqlalchemy import delete
 
 from beets_flask import log
-from beets_flask.config import get_config
 from beets_flask.database import Tag, db_session_factory
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
-from beets_flask.disk import Folder
 from beets_flask.importer.session import (
     AsIsImportSession,
     AutoImportSession,
     ImportSession,
     PreviewSession,
 )
-from beets_flask.importer.stages import Progress
-from beets_flask.importer.states import CandidateState, SessionState, TaskState
-from beets_flask.redis import import_queue, preview_queue, redis_conn, tag_queue
+from beets_flask.importer.states import SessionState
+from beets_flask.redis import import_queue, preview_queue, redis_conn
 from beets_flask.server.routes.errors import InvalidUsage
 from beets_flask.server.routes.status import update_client_view
 
@@ -100,7 +93,7 @@ def enqueue(hash: str, path: str, kind: str, session: Session | None = None):
     elif kind == "auto":
         job = preview_queue.enqueue(run_preview, hash, path, kind)
         __set_job_meta(job, hash, path, "auto_preview")
-        job = import_queue.enqueue(auto_import, hash, path, kind, depends_on=job)
+        job = import_queue.enqueue(run_auto_import, hash, path, kind, depends_on=job)
         __set_job_meta(job, hash, path, "auto_import")
     else:
         raise ValueError(f"Unknown kind {kind}")
@@ -110,7 +103,7 @@ def enqueue(hash: str, path: str, kind: str, session: Session | None = None):
     return job
 
 
-@job(timeout=600, queue=tag_queue, connection=redis_conn)
+@job(timeout=600, queue=preview_queue, connection=redis_conn)
 def run_preview(hash: str, path: str, kind: str, force_retag: bool = False):
     """Start a preview Session on an existing tag.
 
@@ -124,6 +117,8 @@ def run_preview(hash: str, path: str, kind: str, force_retag: bool = False):
     -------
         str: the match url, if we found one, else None.
     """
+
+    sleep(15)
 
     with db_session_factory() as db_session:
         log.info(f"Preview task on {hash=} {path=} {kind=}")
@@ -215,9 +210,8 @@ def run_import(hash: str, path: str, kind: str, match_url: str | None = None):
             db_session.commit()
 
 
-# TODO: Now that we use an AutoImportSession for both parts, in which queue do we put it? Maybe Rethink this.
 @job(timeout=600, queue=import_queue, connection=redis_conn)
-def auto_import(hash: str, path: str, kind: str) -> list[str] | None:
+def run_auto_import(hash: str, path: str, kind: str) -> list[str] | None:
     """Automatically run an import session.
 
     Runs an import on a tag after a preview has been generated.

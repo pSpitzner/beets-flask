@@ -61,6 +61,8 @@ def create_app(config: str | ServerConfig | None = None) -> Quart:
 # FIXME: We might be able to remove this once our serialized state does not
 # contain bytes or datetime objects
 
+from enum import Enum
+
 from quart.json.provider import DefaultJSONProvider
 
 
@@ -76,9 +78,16 @@ class Encoder(json.JSONEncoder):
             # b'/path/to/file' -> '/path/to/file'
             # Might yield strange results for other byte objects
             return o.decode("utf-8")
+
         if isinstance(o, datetime):
             return o.isoformat()
+
+        # Dataclasses are not serializable by default
         if is_dataclass(o) and not isinstance(o, type):
             return asdict(o)
+
+        # Enum values are not serializable by default
+        if isinstance(o, Enum):
+            return o.name
 
         return json.JSONEncoder.default(self, o)

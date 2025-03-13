@@ -473,8 +473,26 @@ export function FolderActions() {
     const theme = useTheme();
 
     function onReTag(e: MouseEvent<HTMLDivElement>) {
-        console.log("Retagging on ", selected);
         setOpen(false);
+
+        fetch("/tag/add", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                kind: "preview",
+                folder_hashes: selected.hashes,
+                folder_paths: selected.paths,
+            }),
+        })
+            .catch((e) => {
+                console.error("Failed to tag folders", e);
+            })
+            .then((r) => {
+                console.log("Tagged ", r);
+            });
+
         setTimeout(() => {
             deselectAll();
         }, 1000);

@@ -90,6 +90,11 @@ class FolderInDb(Base):
 
     @property
     def hash(self) -> str:
+        """
+        Convenience property to get the id.
+
+        Note: Although the id is just the hash, when querying the db, you **must** use `FolderInDb.id == hash`. Sqlalchemy does resolve properties.
+        """
         return self.id
 
     @hash.setter
@@ -115,10 +120,10 @@ class FolderInDb(Base):
 
         with db_session_factory() as db_session:
             f_on_disk = Folder.from_path(path)
-            f_in_db = FolderInDb.get_by(FolderInDb.hash == hash, session=db_session)
+            f_in_db = FolderInDb.get_by(FolderInDb.id == hash, session=db_session)
             if f_in_db is None:
                 f_in_db = FolderInDb(hash=hash, path=path)
-                db_session.add(f_in_db)
+                db_session.merge(f_in_db)
                 db_session.commit()
 
             if f_in_db.hash != f_on_disk.hash:

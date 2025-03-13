@@ -8,7 +8,7 @@ import { Link } from "@tanstack/react-router";
 import styles from "./list.module.scss";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-interface WrapperProps<D = any> {
+interface WrapperProps<D = ListItemData> {
     children: ComponentType<ListChildComponentProps<D[]>>;
     className?: string;
     data: D[];
@@ -16,7 +16,7 @@ interface WrapperProps<D = any> {
 
 function List<D>({ children, data, ...props }: WrapperProps<D>) {
     return (
-        <AutoSizer>
+        <AutoSizer defaultHeight={50}>
             {({ height, width }) => (
                 <FixedSizeList
                     className={styles.List}
@@ -34,7 +34,7 @@ function List<D>({ children, data, ...props }: WrapperProps<D>) {
     );
 }
 
-interface ListItemData extends ListItemOwnProps {
+export interface ListItemData extends ListItemOwnProps {
     label: string | ReactNode;
     to?: string;
     params?: Record<string, unknown>;

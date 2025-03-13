@@ -28,6 +28,8 @@ async def get_queue_status():
         ret_dict[q.name] = {
             "name": q.name,
             "queued": q.count,
+            "queued_jobs": q.job_ids,
+            "scheduled": q.scheduled_job_registry.count,
             "executing": q.started_job_registry.count,
             "finished": q.finished_job_registry.count,
             "failed": q.failed_job_registry.count,

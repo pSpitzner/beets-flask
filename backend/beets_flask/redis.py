@@ -5,9 +5,15 @@ from rq import Queue
 redis_conn = Redis()
 
 # Init our different queues
-tag_queue = Queue("tag", connection=redis_conn)
 preview_queue = Queue("preview", connection=redis_conn)
 import_queue = Queue("import", connection=redis_conn)
 
 
-queues = [tag_queue, preview_queue, import_queue]
+queues = [preview_queue, import_queue]
+
+__all__ = [
+    "queues",
+    "import_queue",
+    "preview_queue",
+    "redis_conn",
+]

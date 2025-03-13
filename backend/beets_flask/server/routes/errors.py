@@ -153,7 +153,13 @@ def get_query_param(
     error_message : str, optional
         The error message to raise if the conversion fails, defaults to None.
     """
-    value = params.get(key, default)
+    if params is None:
+        return default
+
+    value = params.get(key, None)
+
+    if value is None:
+        return default
 
     try:
         value = convert_func(value)
