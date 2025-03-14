@@ -7,8 +7,8 @@ export function Search({
     setValue,
     ...props
 }: {
-    value: string | null;
-    setValue: (value: string | null) => void;
+    value: string;
+    setValue: (value: string) => void;
 } & React.ComponentProps<typeof TextField>) {
     // Only shown if there is a value
     const endAdornment = (

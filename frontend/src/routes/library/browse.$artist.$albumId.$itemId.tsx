@@ -8,6 +8,8 @@ import { Content } from "./browse";
 
 import styles from "./library.module.scss";
 import { useState } from "react";
+import CoverArt from "@/components/library/coverArt";
+import { Item } from "@/components/library/item";
 
 export const Route = createFileRoute(`${LIB_BROWSE_ROUTE}/$artist/$albumId/$itemId`)({
     parseParams: (params) => ({
@@ -16,11 +18,7 @@ export const Route = createFileRoute(`${LIB_BROWSE_ROUTE}/$artist/$albumId/$item
     // PS 24-07-26: I kept the loader, although the new TrackView does query on its own. because it uses the same querykeys, i suppose pre-loading should still work.
     loader: async (opts) =>
         await opts.context.queryClient.ensureQueryData(
-            itemQueryOptions({
-                id: opts.params.itemId,
-                minimal: false,
-                expand: true,
-            })
+            itemQueryOptions(opts.params.itemId, false)
         ),
     component: ItemPage,
 });
@@ -28,23 +26,14 @@ export const Route = createFileRoute(`${LIB_BROWSE_ROUTE}/$artist/$albumId/$item
 /** Shows a singular item */
 function ItemPage() {
     const params = Route.useParams();
+    const data = Route.useLoaderData();
+
     return (
         <Content>
             <Box sx={{ width: "100%", height: "100%", overflow: "auto" }}>
                 <Box className={styles.label}>Info</Box>
-                <ItemView />
+                <Item item={data} />
             </Box>
         </Content>
-    );
-}
-
-function ItemView() {
-    const [showDetails, setShowDetails] = useState(false);
-    const data = Route.useLoaderData();
-
-    return (
-        <>
-            <Box></Box>
-        </>
     );
 }

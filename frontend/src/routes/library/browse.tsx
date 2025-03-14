@@ -88,22 +88,22 @@ export const Wrapper = styled(Box)(({ theme }) => ({
     },
 
     // Adjust grid columns based on content
-    ":has(> *:nth-last-child(1))": {
+    ":has(> *:nth-last-of-type(1))": {
         // one child
         gridTemplateColumns: "[artists] 1fr",
     },
 
-    ":has(> *:nth-last-child(2))": {
+    ":has(> *:nth-last-of-type(2))": {
         // two children
         gridTemplateColumns: "auto [artists] 1fr [albums] 1fr auto",
     },
 
-    ":has(> *:nth-last-child(3))": {
+    ":has(> *:nth-last-of-type(3))": {
         // three children
         gridTemplateColumns: "[artists] 1fr [albums] 1fr [items] 1fr",
     },
 
-    ":has(> *:nth-last-child(4))": {
+    ":has(> *:nth-last-of-type(4))": {
         // four children (content)
         gridTemplateRows: "[selection] 1fr [content] 2.5fr",
     },
@@ -118,25 +118,25 @@ export const Selection = styled(Box)(({ theme }) => ({
     minHeight: "200px",
     height: "100%",
 
-    ":nth-last-child(1) > *": {
+    ":nth-last-of-type(1) > *": {
         // one child
         alignSelf: "center",
     },
 
     // two children
-    ":nth-last-child(2) ~ div > *": {
+    ":nth-last-of-type(2) ~ div > *": {
         alignSelf: "flex-start",
     },
-    ":nth-last-child(2) > *": {
+    ":nth-last-of-type(2) > *": {
         alignSelf: "flex-end",
     },
-    ":nth-last-child(3) ~ div > *": {
+    ":nth-last-of-type(3) ~ div > *": {
         // three children
         alignSelf: "flex-start",
     },
 
     borderLeft: `1px solid ${theme.palette.divider}`,
-    ":first-child": {
+    ":first-of-type": {
         borderLeft: "none",
     },
 
@@ -177,7 +177,7 @@ export function LibraryList({
     selected?: ListItemData & { label: string };
     label: string;
 }) {
-    const [filter, setFilter] = useState<string | null>(null);
+    const [filter, setFilter] = useState<string>("");
 
     const filteredData = useMemo(() => {
         if (!filter) {

@@ -34,7 +34,7 @@ function List<D>({ children, data, ...props }: WrapperProps<D>) {
     );
 }
 
-interface ListItemData extends ListItemOwnProps {
+export interface ListItemData extends ListItemOwnProps {
     label: string | ReactNode;
     to?: string;
     params?: Record<string, unknown>;

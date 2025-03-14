@@ -16,7 +16,7 @@ export interface MinimalAlbum {
 
 // Adds items to Album
 interface AlbumItems<Minimal extends boolean> {
-    items: Minimal extends true ? MinimalItem[] : Item[];
+    items: Item<Minimal>[];
 }
 
 interface AlbumFull extends MinimalAlbum {
@@ -87,7 +87,7 @@ export interface MinimalItem {
     isrc: string; // "US39N2308955"
 }
 
-export interface Item extends MinimalItem {
+export interface ItemFull extends MinimalItem {
     [key: string]: unknown; // enable indexing item[key]
 
     albumartist_credit?: string; // "Basstripper"
@@ -179,7 +179,13 @@ export interface Item extends MinimalItem {
     work_disambig?: string; // ""
 }
 
-function _url_parse_minimal_expand(url: string, minimal: boolean, expand: boolean) {
+type Item<Minimal extends boolean> = Minimal extends true ? MinimalItem : ItemFull;
+
+function _url_parse_minimal_expand(
+    url: string,
+    minimal: boolean = false,
+    expand: boolean = false
+) {
     const params = [];
     if (minimal) {
         params.push("minimal");
@@ -233,30 +239,17 @@ export const albumQueryOptions = <Expand extends boolean, Minimal extends boolea
     },
 });
 
-export const itemQueryOptions = ({
-    id,
-    expand = false,
-    minimal = true,
-}: {
-    id?: number;
-    expand?: boolean;
-    minimal?: boolean;
-}) =>
-    queryOptions({
-        queryKey: ["item", id, expand, minimal],
-        queryFn: async () => {
-            if (id === undefined || id === null) {
-                return null;
-            }
-            const url = _url_parse_minimal_expand(
-                `/library/item/${id}`,
-                minimal,
-                expand
-            );
-            const response = await fetch(url);
-            return (await response.json()) as Item;
-        },
-    });
+export const itemQueryOptions = <Minimal extends boolean>(
+    id: number,
+    minimal: Minimal = true as Minimal
+) => ({
+    queryKey: ["item", id, minimal],
+    queryFn: async (): Promise<Item<typeof minimal>> => {
+        const url = _url_parse_minimal_expand(`/library/item/${id}`, minimal);
+        const response = await fetch(url);
+        return (await response.json()) as Item<typeof minimal>;
+    },
+});
 
 export const artQueryOptions = ({ type, id }: { type?: string; id?: number }) =>
     queryOptions({
