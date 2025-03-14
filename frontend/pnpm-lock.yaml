@@ -41,6 +41,9 @@ importers:
       '@types/diff':
         specifier: ^5.2.3
         version: 5.2.3
+      '@wavesurfer/react':
+        specifier: ^1.0.9
+        version: 1.0.9(react@19.0.0)(wavesurfer.js@7.5.7)
       '@xterm/addon-fit':
         specifier: ^0.10.0
         version: 0.10.0(@xterm/xterm@5.5.0)
@@ -74,6 +77,9 @@ importers:
       socket.io-client:
         specifier: ^4.8.1
         version: 4.8.1
+      wavesurfer.js:
+        specifier: ^7.5.7
+        version: 7.5.7
       zod:
         specifier: ^3.24.2
         version: 3.24.2
@@ -1485,6 +1491,12 @@ packages:
     peerDependencies:
       vite: ^4 || ^5 || ^6
 
+  '@wavesurfer/react@1.0.9':
+    resolution: {integrity: sha512-HD3x+p48kWITd3tCOA7KG+6zae8btulNjSTdnRmgrtp9/XPzXc61ZCaPgbqT0gioPGhIcvBcpXZAmnhE8lUDBw==}
+    peerDependencies:
+      react: ^18.2.0 || ^19.0.0
+      wavesurfer.js: '>=7.7.14'
+
   '@xterm/addon-fit@0.10.0':
     resolution: {integrity: sha512-UFYkDm4HUahf2lnEyHvio51TNGiLK66mqP2JoATy7hRZeXaGMRDr00JiSF7m63vR5WKATF605yEggJKsw0JpMQ==}
     peerDependencies:
@@ -2751,6 +2763,9 @@ packages:
         optional: true
       terser:
         optional: true
+
+  wavesurfer.js@7.5.7:
+    resolution: {integrity: sha512-DQp0uNZxLeDQchBCiqEpRi1AbFK6nlxEonAk0Ec/NTZrEjL7t45270PpwWX6mdoT/6OFEWc+nntzNtb4X2VGzA==}
 
   webpack-virtual-modules@0.6.2:
     resolution: {integrity: sha512-66/V2i5hQanC51vBQKPH4aI8NMAcBW59FVBs+rC7eGHupMyfn34q7rZIE+ETlJ+XTevqfUhVVBgSUNSW2flEUQ==}
@@ -4030,6 +4045,11 @@ snapshots:
       vite: 5.4.14(sass@1.85.1)
     transitivePeerDependencies:
       - '@swc/helpers'
+
+  '@wavesurfer/react@1.0.9(react@19.0.0)(wavesurfer.js@7.5.7)':
+    dependencies:
+      react: 19.0.0
+      wavesurfer.js: 7.5.7
 
   '@xterm/addon-fit@0.10.0(@xterm/xterm@5.5.0)':
     dependencies:
@@ -5541,6 +5561,8 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
       sass: 1.85.1
+
+  wavesurfer.js@7.5.7: {}
 
   webpack-virtual-modules@0.6.2: {}
 

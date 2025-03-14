@@ -76,7 +76,7 @@ export const Wrapper = styled(Box)(({ theme }) => ({
     gridTemplateRows: "[selection] auto",
     height: "100%",
     width: "100%",
-    overflow: "hidden",
+    overflow: "auto",
     padding: theme.spacing(1),
     rowGap: theme.spacing(1),
     maxWidth: theme.breakpoints.values.laptop * 3,
@@ -162,6 +162,11 @@ export const Content = styled(Box)(({ theme }) => ({
     gap: theme.spacing(1),
     background: theme.palette.background.paper,
     padding: theme.spacing(1),
+
+    [theme.breakpoints.down("laptop")]: {
+        height: "unset",
+        flex: "1 1 auto",
+    },
 }));
 
 /** A generic list component with a label and a list of items.

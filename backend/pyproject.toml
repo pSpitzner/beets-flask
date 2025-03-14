@@ -36,6 +36,7 @@ dependencies = [
     #"scantree>=0.0.4",
     "natsort",
     "tinytag",
+    "pydub",
 ]
 
 [project.optional-dependencies]

@@ -11,11 +11,11 @@ from typing import TYPE_CHECKING, Any, Awaitable, Callable, Iterable, Sequence, 
 from beets import util as beets_util
 from beets.dbcore import Results
 from beets.library import Album, Item
-from quart import Blueprint, Response, abort, g, jsonify, request
+from quart import Blueprint, Response, abort, g, jsonify, request, send_file
 
 from beets_flask.config import get_config
 from beets_flask.logger import log
-from beets_flask.server.routes.errors import NotFoundError
+from beets_flask.server.routes.errors import IntegrityError, NotFoundError
 
 if TYPE_CHECKING:
     # For type hinting the global g object

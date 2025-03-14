@@ -23,6 +23,11 @@ export function customizeFetch() {
             input = input.url;
         }
 
+        // Local requests get a prefix
+        if (!input.startsWith("/")) {
+            return originalFetch(input, init);
+        }
+
         // console.log("fetching", apiPrefix + input);
         const response = await originalFetch(apiPrefix + input, init);
         if (!response.ok) {

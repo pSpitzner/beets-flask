@@ -6,9 +6,6 @@ import { itemQueryOptions, LIB_BROWSE_ROUTE } from "@/components/common/_query";
 
 import { Content } from "./browse";
 
-import styles from "./library.module.scss";
-import { useState } from "react";
-import CoverArt from "@/components/library/coverArt";
 import { Item } from "@/components/library/item";
 
 export const Route = createFileRoute(`${LIB_BROWSE_ROUTE}/$artist/$albumId/$itemId`)({
@@ -25,13 +22,11 @@ export const Route = createFileRoute(`${LIB_BROWSE_ROUTE}/$artist/$albumId/$item
 
 /** Shows a singular item */
 function ItemPage() {
-    const params = Route.useParams();
     const data = Route.useLoaderData();
 
     return (
         <Content>
             <Box sx={{ width: "100%", height: "100%", overflow: "auto" }}>
-                <Box className={styles.label}>Info</Box>
                 <Item item={data} />
             </Box>
         </Content>
