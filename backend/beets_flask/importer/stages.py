@@ -89,7 +89,6 @@ def set_progress(
     def decorator(
         func: Callable[[Session, Task, *Arg], Ret],
     ) -> Callable[[Session, Task, *Arg], Ret | Task]:
-
         @wraps(func)
         def wrapper(session: Session, task: Task, *args: *Arg) -> Ret | Task:
             # Skip automatically if the task is already progressed
@@ -196,9 +195,7 @@ def stage(
         # in some edge-cases we get no task. thus, we have to include the generic R
         task: Optional[Task | Ret] = None
         while True:
-            task = (
-                yield task
-            )  # wait for send to arrive. the first next() always returns None
+            task = yield task  # wait for send to arrive. the first next() always returns None
             # yield task, call func which gives new task, yield new task in next()
             # FIXME: Generator support!
             task = func(*(args + (task,)))
@@ -230,9 +227,7 @@ def mutator_stage(
     ) -> Generator[Union[Ret, Task, None], Task, None]:
         task = None
         while True:
-            task = (
-                yield task
-            )  # wait for send to arrive. the first next() always returns None
+            task = yield task  # wait for send to arrive. the first next() always returns None
             # perform function on task, and in next() send the same, modified task
             # funcs prob. modify task in place?
             func(*(args + (task,)))
@@ -527,6 +522,12 @@ def mark_tasks_completed(session: BaseSession, task: ImportTask):
     This is mainly a workaround because our progressd decorator cannot set the
     progress after stage has finished.
     """
+    return task
+
+
+@stage
+@set_progress(Progress.PREVIEW_COMPLETED)
+def mark_tasks_preview_completed(session: BaseSession, task: ImportTask):
     return task
 
 

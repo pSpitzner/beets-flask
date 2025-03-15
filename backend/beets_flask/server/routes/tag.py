@@ -26,9 +26,9 @@ from sqlalchemy import select
 from beets_flask import invoker
 from beets_flask.config import get_config
 from beets_flask.database import Tag, db_session_factory
-from beets_flask.database.models.states import FolderInDb
+from beets_flask.database.models.states import FolderInDb, SessionStateInDb
 from beets_flask.disk import Folder
-from beets_flask.importer.progress import FolderStatus
+from beets_flask.importer.progress import FolderStatus, Progress
 from beets_flask.logger import log
 
 from .errors import InvalidUsage, get_query_param
@@ -243,7 +243,6 @@ async def get_status(folder_hashes: list[str], folder_paths: list[str], params: 
         finished.extend(__get_jobs(q.finished_job_registry, connection=redis_conn))
 
     for hash, path in zip(folder_hashes, folder_paths):
-
         # Get metadata for folder if in any job queue
         status: FolderStatus | None = None
         for jobs, job_status in zip(
@@ -259,7 +258,7 @@ async def get_status(folder_hashes: list[str], folder_paths: list[str], params: 
                 FolderStatus.PENDING,
                 FolderStatus.RUNNING,
                 FolderStatus.FAILED,
-                None,
+                None,  # 'finished' needs further differentiation
             ],
         ):
             # meta data has hash, path and kind.
@@ -278,33 +277,41 @@ async def get_status(folder_hashes: list[str], folder_paths: list[str], params: 
 
         # We couldn't find the folder in any job queue. do lookup in db
         if status is None:
-            # TODO: Lookup db if exists
-            pass
-
-        if isinstance(status, FolderStatus):
-            stats.append(
-                FolderStatusResponse(
-                    path=path,
-                    hash=hash,
-                    status=status,
+            log.debug(f"Checking folder status via session from db: {path} ({hash})")
+            with db_session_factory() as db_session:
+                stmt = select(SessionStateInDb).where(
+                    SessionStateInDb.folder_hash == hash
                 )
+                s_state_indb = db_session.execute(stmt).scalars().first()
+                if s_state_indb is None:
+                    # We have no idea about this folder, this should not happen.
+                    status = FolderStatus.UNKNOWN
+                else:
+                    # PS: This progress <-> state mapping feels inconsistent.
+                    # There should be a better place for this.
+                    match s_state_indb.progress:
+                        case Progress.NOT_STARTED:
+                            status = FolderStatus.NOT_STARTED
+                        case Progress.PREVIEW_COMPLETED:
+                            status = FolderStatus.TAGGED
+                        case Progress.COMPLETED:
+                            status = FolderStatus.IMPORTED
+                        case _:
+                            status = FolderStatus.RUNNING
+
+        stats.append(
+            FolderStatusResponse(
+                path=path,
+                hash=hash,
+                status=status,
             )
+        )
 
     return jsonify(stats)
 
 
 def __get_jobs(registry, connection):
-    log.debug(f"{registry} has {registry.count} jobs")
-    try:
-        # is a queyey
-        job_ids = registry.job_ids
-    except:
-        # is a registry
-        job_ids = registry.get_job_ids()
-    log.warning(f"{registry} Job ids: {job_ids}")
-    jobs = Job.fetch_many(job_ids, connection=connection)
-    # jobs = registry.get_jobs()
-    log.warning(f"Jobs {jobs}")
+    jobs = Job.fetch_many(registry.get_job_ids(), connection=connection)
     jobs = [j for j in jobs if j is not None]
     return jobs
 
@@ -312,7 +319,6 @@ def __get_jobs(registry, connection):
 def __is_hash_in_jobs(hash: str, jobs: List[Job]) -> dict[str, str] | None:
     for j in jobs:
         meta = j.get_meta(False)
-        log.warning(f"Meta: {meta}")
         if meta.get("folder_hash") == hash:
             return meta
     return None

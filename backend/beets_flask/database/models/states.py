@@ -173,6 +173,8 @@ class SessionStateInDb(Base):
     folder_hash: Mapped[str] = mapped_column(ForeignKey("folder.id"))
     folder: Mapped[FolderInDb] = relationship()
 
+    progress: Mapped[Progress]
+
     tag = relationship("Tag", uselist=False, back_populates="session_state_in_db")
 
     def __init__(

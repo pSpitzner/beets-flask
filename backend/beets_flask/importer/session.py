@@ -26,6 +26,7 @@ from .stages import (
     lookup_candidates,
     manipulate_files,
     mark_tasks_completed,
+    mark_tasks_preview_completed,
     match_threshold,
     offer_match,
     plugin_stage,
@@ -287,6 +288,10 @@ class PreviewSession(BaseSession):
         stages.append(lookup_candidates(self))
         stages.append(identify_duplicates(self))
 
+        # this is carbon copy of mark_completed
+        # -> can we get a general "set progress" stage?
+        stages.append(mark_tasks_preview_completed(self))
+
         return stages
 
 
@@ -345,6 +350,7 @@ class ImportSession(BaseSession):
 
         stages.append(lookup_candidates(self))
         stages.append(identify_duplicates(self))
+        stages.append(mark_tasks_preview_completed(self))
         # FIXME: user_query calls task.choose_match, which calls session.choose_match.
         # Better abstraction needed upstream.
         stages.append(user_query(self))

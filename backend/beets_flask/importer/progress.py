@@ -11,6 +11,7 @@ from beets_flask.logger import log
 class FolderStatus(Enum):
     """The status of a folder."""
 
+    UNKNOWN = -2
     FAILED = -1
     NOT_STARTED = 0
     PENDING = 1
@@ -37,13 +38,14 @@ class Progress(Enum):
     GROUPING_ALBUMS = 2
     LOOKING_UP_CANDIDATES = 3
     IDENTIFYING_DUPLICATES = 4
-    OFFERING_MATCHES = 5
-    WAITING_FOR_USER_SELECTION = 6
-    MATCH_THRESHOLD = 7
-    EARLY_IMPORTING = 8
-    IMPORTING = 9
-    MANIPULATING_FILES = 10
-    COMPLETED = 11
+    PREVIEW_COMPLETED = 5
+    OFFERING_MATCHES = 6
+    WAITING_FOR_USER_SELECTION = 7
+    MATCH_THRESHOLD = 8
+    EARLY_IMPORTING = 9
+    IMPORTING = 10
+    MANIPULATING_FILES = 11
+    COMPLETED = 12
 
     def __lt__(self, other: Progress) -> bool:
         return self.value < other.value
