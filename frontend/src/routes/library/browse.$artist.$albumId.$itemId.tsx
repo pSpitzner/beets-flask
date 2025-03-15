@@ -3,10 +3,9 @@ import Box from "@mui/material/Box";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { itemQueryOptions, LIB_BROWSE_ROUTE } from "@/components/common/_query";
+import { Item } from "@/components/library/item";
 
 import { Content } from "./browse";
-
-import { Item } from "@/components/library/item";
 
 export const Route = createFileRoute(`${LIB_BROWSE_ROUTE}/$artist/$albumId/$itemId`)({
     parseParams: (params) => ({

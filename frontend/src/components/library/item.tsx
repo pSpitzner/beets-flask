@@ -1,6 +1,5 @@
-import Box from "@mui/material/Box";
-import { JSONPretty } from "../common/json";
-import { ItemFull } from "./_query";
+import { ClockIcon, Disc3Icon } from "lucide-react";
+import { useState } from "react";
 import {
     BoxProps,
     Chip,
@@ -16,10 +15,11 @@ import {
     Typography,
     useTheme,
 } from "@mui/material";
-import CoverArt from "./coverArt";
-import { ClockIcon, Disc3Icon } from "lucide-react";
-import { useState } from "react";
+import Box from "@mui/material/Box";
+
+import { ItemFull } from "./_query";
 import { AudioPlayerItem } from "./audio";
+import CoverArt from "./coverArt";
 
 /** A detailed view of an beets library item
  *
@@ -100,11 +100,7 @@ function SongInfo({ item, ...props }: { item: ItemFull } & BoxProps) {
 
                 {/* Album details*/}
                 <Stack direction="row" spacing={0.5} alignItems="center" mt={1}>
-                    <Disc3Icon
-                        size={20}
-                        strokeWidth={2}
-                        color={theme.palette.text.secondary}
-                    />
+                    <Disc3Icon size={20} strokeWidth={2} color={theme.palette.text.secondary} />
                     <Box>
                         <Typography variant="body2" color="text.secondary">
                             {item.album} ({item.year})
@@ -116,9 +112,8 @@ function SongInfo({ item, ...props }: { item: ItemFull } & BoxProps) {
                 <Stack direction="row" spacing={0.5} alignItems="center" mt={1}>
                     {item.genre
                         ?.split(/[,;]\s*/)
-                        .map((genre) => (
-                            <Chip key={genre} label={genre} size="small" />
-                        ))}
+                        .filter((genre) => genre.length > 0)
+                        .map((genre) => <Chip key={genre} label={genre} size="small" />)}
                 </Stack>
 
                 {/* Playback*/}
@@ -172,11 +167,7 @@ function DetailsTabs({ item, ...props }: { item: ItemFull } & BoxProps) {
                     borderBottom: `1px solid ${theme.palette.divider}`,
                 })}
             >
-                <Tabs
-                    value={tab}
-                    onChange={(_, newTab) => setTab(newTab)}
-                    aria-label="item tabs"
-                >
+                <Tabs value={tab} onChange={(_, newTab) => setTab(newTab)} aria-label="item tabs">
                     <Tab label="Beets Details" />
                     <Tab label="File Details" />
                     {/* Future proof in case we need more content */}
@@ -292,7 +283,7 @@ const ItemGrid = styled(Box)(({ theme }) => ({
 
     [theme.breakpoints.down("tablet")]: {
         display: "flex",
-        flexWrap: "wrap",
+        flexDirection: "column",
         justifyContent: "center",
     },
 }));

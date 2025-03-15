@@ -1,9 +1,11 @@
+import { AudioLinesIcon } from "lucide-react";
 import { useMemo } from "react";
 import z from "zod";
-import { useMediaQuery } from "@mui/material";
+import { Typography, useMediaQuery } from "@mui/material";
 import { createFileRoute, Link, Outlet, useParams } from "@tanstack/react-router";
 
 import { albumQueryOptions, LIB_BROWSE_ROUTE } from "@/components/common/_query";
+
 import { LibraryList, Selection } from "./browse";
 
 import styles from "./library.module.scss";
@@ -64,12 +66,22 @@ function Items() {
             <Link
                 to={selectedData.to}
                 params={selectedData.params}
-                style={{ padding: "1rem" }}
+                style={{ display: "flex", alignItems: "center", gap: 4, paddingInline: 4 }}
             >
-                {selectedData.label}
+                <AudioLinesIcon size={18} color={"gray"} />
+                <Typography variant="body2" color="text.secondary">
+                    {selectedData.label}
+                </Typography>
             </Link>
         );
     }
 
-    return <LibraryList data={data} selected={selectedData} label="Items" />;
+    return (
+        <LibraryList
+            data={data}
+            selected={selectedData}
+            label="Items"
+            labelIcon={<AudioLinesIcon />}
+        />
+    );
 }

@@ -9,14 +9,14 @@ import {
     FastForward,
     FileIcon,
     FlagIcon,
+    Folder,
+    FolderOpen,
     GitPullRequestArrowIcon,
     LucideProps,
     MusicIcon,
     SearchXIcon,
     Tally5Icon,
     UserRoundIcon,
-    Folder,
-    FolderOpen,
 } from "lucide-react";
 
 /** Icon to show a folder, shows a disc icon if the folder is an album.

@@ -1,7 +1,7 @@
-import { Tooltip } from "@mui/material";
-import IconButton from "@mui/material/IconButton";
 import { ClipboardCheckIcon, ClipboardIcon, LucideProps } from "lucide-react";
 import { useState } from "react";
+import { Tooltip } from "@mui/material";
+import IconButton from "@mui/material/IconButton";
 
 /** Minimal copy button/icon
  *
@@ -23,7 +23,7 @@ export function ClipboardCopyButton({
         <Tooltip title={label ?? "Copy to clipboard"} arrow>
             <IconButton
                 onClick={() => {
-                    navigator.clipboard.writeText(text);
+                    navigator.clipboard.writeText(text).catch(console.error);
                     setCopied(true);
                     setTimeout(() => setCopied(false), 5000);
                 }}

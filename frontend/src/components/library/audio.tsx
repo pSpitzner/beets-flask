@@ -3,25 +3,14 @@
  * Uses wavesurfer.js to display a waveform and play audio.
  */
 
-import { useEffect, useRef, useState } from "react";
-import {
-    Box,
-    CircularProgress,
-    IconButton,
-    LinearProgress,
-    useTheme,
-} from "@mui/material";
-import { useQuery } from "@tanstack/react-query";
 import { PauseIcon, PlayIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Box, CircularProgress, IconButton, LinearProgress, useTheme } from "@mui/material";
+import { useQuery } from "@tanstack/react-query";
+
 import WaveSurfer from "wavesurfer.js";
 
-export function AudioPlayerItem({
-    itemId,
-    height = 20,
-}: {
-    itemId: number;
-    height?: number;
-}) {
+export function AudioPlayerItem({ itemId, height = 20 }: { itemId: number; height?: number }) {
     const theme = useTheme();
     const [ready, setReady] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -46,7 +35,6 @@ export function AudioPlayerItem({
                 cursorColor: theme.palette.divider,
                 height: height,
             });
-            wavesurfer.loadBlob(data);
             wavesurferRef.current = wavesurfer;
             wavesurfer.on("ready", () => {
                 // Wait 2 seconds for the waveform to render
@@ -60,6 +48,7 @@ export function AudioPlayerItem({
             wavesurfer.on("pause", () => {
                 setIsPlaying(false);
             });
+            wavesurfer.loadBlob(data).catch(console.error);
             return () => {
                 wavesurfer.destroy();
                 setReady(false);
@@ -91,7 +80,7 @@ export function AudioPlayerItem({
                     style={{ display: ready ? "block" : "none", width: "100%" }}
                 />
                 {!ready && (
-                    <LinearProgress variant="determinate" sx={{ width: "100%" }} />
+                    <LinearProgress variant="determinate" sx={{ width: "100%" }} value={0} />
                 )}
             </Box>
             <IconButton
@@ -104,7 +93,7 @@ export function AudioPlayerItem({
 
                     // Play audio
                     if (wavesurferRef.current) {
-                        wavesurferRef.current.playPause();
+                        await wavesurferRef.current.playPause();
                     }
                 }}
                 sx={{ p: 0.5 }}

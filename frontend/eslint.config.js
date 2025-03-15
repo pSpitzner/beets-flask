@@ -28,6 +28,12 @@ const tslint = {
         "@typescript-eslint/no-unnecessary-condition": "off",
         "@typescript-eslint/restrict-plus-operands": "off",
         "@typescript-eslint/unbound-method": "off",
+        "@typescript-eslint/no-misused-promises": [
+            "error",
+            {
+                checksVoidReturn: false,
+            },
+        ],
     },
 };
 

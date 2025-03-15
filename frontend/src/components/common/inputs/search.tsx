@@ -1,5 +1,5 @@
-import { IconButton, InputAdornment, TextField } from "@mui/material";
 import { SearchIcon, XIcon } from "lucide-react";
+import { IconButton, InputAdornment, TextField } from "@mui/material";
 
 /** Relative minimal search box */
 export function Search({

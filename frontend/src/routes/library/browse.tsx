@@ -1,12 +1,12 @@
-import { useMemo, useState } from "react";
+import { UserRoundIcon } from "lucide-react";
+import { ReactNode, useMemo, useState } from "react";
+import { styled, Typography, useMediaQuery, useTheme } from "@mui/material";
 import Box from "@mui/material/Box";
 import { createFileRoute, Link, Outlet, useParams } from "@tanstack/react-router";
 
 import { artistsQueryOptions, LIB_BROWSE_ROUTE } from "@/components/common/_query";
-import List, { ListItemData } from "@/components/library/list";
-
-import { styled, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { Search } from "@/components/common/inputs/search";
+import List, { ListItemData } from "@/components/library/list";
 
 import styles from "./library.module.scss";
 
@@ -59,15 +59,25 @@ function Artists() {
             <Link
                 to={selectedData.to}
                 params={selectedData.params}
-                style={{ padding: "1rem" }}
+                style={{ display: "flex", alignItems: "center", gap: 4, paddingInline: 4 }}
             >
-                {selectedData.label}
+                <UserRoundIcon size={18} color={"gray"} />
+                <Typography variant="body2" color="text.secondary">
+                    {selectedData.label}
+                </Typography>
             </Link>
         );
     }
 
     // full list
-    return <LibraryList data={data} selected={selectedData} label="Artists" />;
+    return (
+        <LibraryList
+            data={data}
+            selected={selectedData}
+            label="Artists"
+            labelIcon={<UserRoundIcon size={20} />}
+        />
+    );
 }
 
 export const Wrapper = styled(Box)(({ theme }) => ({
@@ -83,8 +93,9 @@ export const Wrapper = styled(Box)(({ theme }) => ({
     alignItems: "center",
     [theme.breakpoints.down("laptop")]: {
         display: "flex",
-        flexWrap: "wrap",
-        flexDirection: "row",
+        flexDirection: "column",
+        gap: 0,
+        padding: 0,
     },
 
     // Adjust grid columns based on content
@@ -143,10 +154,11 @@ export const Selection = styled(Box)(({ theme }) => ({
     [theme.breakpoints.down("laptop")]: {
         ":has(> a)": {
             display: "block",
-            width: "unset",
             height: "auto",
             minHeight: "unset",
             backgroundColor: theme.palette.background.paper,
+            borderLeft: `unset`,
+            width: "100%",
         },
     },
 }));
@@ -177,10 +189,12 @@ export function LibraryList({
     data,
     selected,
     label,
+    labelIcon,
 }: {
     data: (ListItemData & { label: string })[];
     selected?: ListItemData & { label: string };
     label: string;
+    labelIcon: ReactNode;
 }) {
     const [filter, setFilter] = useState<string>("");
 
@@ -190,10 +204,7 @@ export function LibraryList({
         }
         return data.filter((item) => {
             //filtered or selected
-            return (
-                item.label?.toLowerCase().includes(filter.toLowerCase()) ||
-                item === selected
-            );
+            return item.label?.toLowerCase().includes(filter.toLowerCase()) || item === selected;
         });
     }, [data, filter]);
 
@@ -220,7 +231,12 @@ export function LibraryList({
                     justifyContent: "space-between",
                 })}
             >
-                <Box className={styles.label}>{label}</Box>
+                <Box className={styles.label}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        {labelIcon}
+                        <Typography>{label}</Typography>
+                    </Box>
+                </Box>
                 {filter && filter.length > 0 && (
                     <Typography
                         sx={{
@@ -232,16 +248,10 @@ export function LibraryList({
                         variant="body2"
                         color="text.secondary"
                     >
-                        Excluded {data.length - filteredData.length}{" "}
-                        {label.toLowerCase()}
+                        Excluded {data.length - filteredData.length} {label.toLowerCase()}
                     </Typography>
                 )}
-                <Search
-                    value={filter}
-                    setValue={setFilter}
-                    size="small"
-                    variant="outlined"
-                />
+                <Search value={filter} setValue={setFilter} size="small" variant="outlined" />
             </Box>
             <Box className={styles.list}>
                 <List data={filteredData}>{List.Item}</List>
