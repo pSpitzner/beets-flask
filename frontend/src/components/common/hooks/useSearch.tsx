@@ -80,7 +80,7 @@ export function SearchContextProvider({ children }: { children: React.ReactNode 
                 setType,
                 selectedResult,
                 setSelectedResult,
-                results: data?.results,
+                results: data,
                 sentQuery,
                 isFetching,
                 isError,

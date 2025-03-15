@@ -220,7 +220,7 @@ export const albumsByArtistQueryOptions = <
             expand
         );
         const response = await fetch(url);
-        return await response.json();
+        return await response.json() as AlbumResponse<typeof expand, typeof minimal>[];
     },
 });
 
@@ -235,7 +235,7 @@ export const albumQueryOptions = <Expand extends boolean, Minimal extends boolea
         const url = _url_parse_minimal_expand(`/library/album/${id}`, minimal, expand);
         const response = await fetch(url);
         console.log("albumQueryOptions response", response);
-        return await response.json();
+        return await response.json() as AlbumResponse<typeof expand, typeof minimal>;
     },
 });
 
@@ -271,9 +271,7 @@ export const artQueryOptions = ({ type, id }: { type?: string; id?: number }) =>
 /*                                       Search                                       */
 /* ---------------------------------------------------------------------------------- */
 
-export interface SearchResult<T extends MinimalItem | MinimalAlbum> {
-    results: T[];
-}
+
 
 export const searchQueryOptions = <T extends MinimalItem | MinimalAlbum>({
     searchFor,
@@ -293,7 +291,7 @@ export const searchQueryOptions = <T extends MinimalItem | MinimalAlbum>({
                 expand
             );
             const response = await fetch(url, { signal });
-            return (await response.json()) as SearchResult<T>;
+            return (await response.json()) as T[];
         },
     });
 
