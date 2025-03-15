@@ -1,8 +1,9 @@
 import base64
 from datetime import datetime
-from typing import Sequence, TypeVar
+from typing import Any, Sequence, TypeVar
 
-from quart import Blueprint, Quart, request
+from beets_flask.server.routes.tag import with_folders
+from quart import Blueprint, Quart, jsonify, request
 from sqlalchemy import select
 
 from beets_flask.database import db_session_factory
@@ -79,6 +80,41 @@ def blueprint_for_db_model(model: type[T], url_prefix: str | None = None) -> Blu
 
             return item.to_dict()
 
+    @bp.route("/by_folder", methods=["POST"])
+    @with_folders
+    async def get_by_folder(
+        folder_hashes: list[str], folder_paths: list[str], params: Any
+    ):
+        # PS, thoughts:
+        # We currently do not attach folder and hash to tasks or candidates.
+        # I think we should :P
+
+        # Considering Candidates:
+        # Here it might be fine to traverse down, because we will likely want
+        # to only get Candidates of the latest task of the latest session
+        # for a given folder? -> How do we want to request from the frontend?
+
+        hash = folder_hashes[0]
+        path = folder_paths[0]
+        with db_session_factory() as db_session:
+            s_state_db = SessionStateInDb.get_by(
+                SessionStateInDb.folder_hash == hash, session=db_session
+            )
+            if s_state_db is None:
+                raise InvalidUsage("Session not found")
+
+            t_state_db = TaskStateInDb.get_by(
+                TaskStateInDb.session_id == s_state_db.id, session=db_session
+            )
+            if t_state_db is None:
+                raise InvalidUsage("Task not found")
+
+            c_state_db = CandidateStateInDb.get_by(
+                CandidateStateInDb.task_id == t_state_db.id, session=db_session
+            )
+
+        return jsonify({})
+
     return bp
 
 
@@ -112,7 +148,7 @@ def _get_all(
     Returns a list of items and a cursor for the next page.
     """
 
-    with db_session_factory() as session:
+    with db_session_factory() as db_session:
         query = select(model)
         if cursor:
             query = query.where(
@@ -121,7 +157,7 @@ def _get_all(
                 (model.created_at <= cursor[0]).__and__(model.id < cursor[1])
             )
         query = query.order_by(model.created_at.desc(), model.id.desc()).limit(n_items)
-        items: Sequence[T] = session.execute(query).scalars().all()
+        items: Sequence[T] = db_session.execute(query).scalars().all()
 
         # Convert items to a list of dictionaries
         items_list = [item.to_dict() for item in items]

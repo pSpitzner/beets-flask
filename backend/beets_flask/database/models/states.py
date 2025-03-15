@@ -363,14 +363,24 @@ class CandidateStateInDb(Base):
         return live_state
 
     def to_dict(self) -> SerializedCandidateState:
-        t_state_db = TaskStateInDb.get_by(TaskStateInDb.id == self.task_id)
-        if t_state_db is None:
-            raise ValueError(f"Task with id {self.task_id} not found.")
+        # A lot of candidate properties derive from the task, and we do not
+        # save them separately in the db.
+        # Thus, to serialize, we need too recreate the live-task and live-candidate.
 
-        for c_state in t_state_db.to_live_state().candidate_states:
-            if c_state.id == self.id:
-                return c_state.serialize()
-        raise ValueError(f"Candidate with id {self.id} not found.")
+        # avoid circular import and SQLA "not bound to a Session" error
+        from beets_flask.database.setup import db_session_factory
+
+        with db_session_factory() as db_session:
+            t_state_db = TaskStateInDb.get_by(
+                TaskStateInDb.id == self.task_id, session=db_session
+            )
+            if t_state_db is None:
+                raise ValueError(f"Task with id {self.task_id} not found.")
+
+            for c_state in t_state_db.to_live_state().candidate_states:
+                if c_state.id == self.id:
+                    return c_state.serialize()
+            raise ValueError(f"Candidate with id {self.id} not found.")
 
 
 __all__ = ["SessionStateInDb", "TaskStateInDb", "CandidateStateInDb"]
