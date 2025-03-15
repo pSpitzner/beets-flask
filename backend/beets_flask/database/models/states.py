@@ -55,7 +55,7 @@ class FolderInDb(Base):
     # checked -> yes | no or didnt check -> None
     is_album: Mapped[Optional[bool]]
 
-    def __init__(self, path: Path | str, hash: str):
+    def __init__(self, path: Path | str, hash: str, is_album: Optional[bool] = None):
         """
         Create a FolderInDb object from a path.
 
@@ -72,14 +72,18 @@ class FolderInDb(Base):
             path = Path(path)
         self.full_path = str(path.resolve())
         self.hash = hash
+        self.is_album = is_album
 
     @classmethod
     def from_live_folder(cls, folder: Folder) -> FolderInDb:
         """Create a FolderInDb object from a Folder object."""
-        return cls(
+        f_in_db = cls(
             path=folder.path,
             hash=folder.hash,
         )
+        f_in_db.is_album = folder.is_album
+
+        return f_in_db
 
     def as_tuple(self) -> tuple[Path, str]:
         """Recreate the live Folder object from its stored version in the db."""
@@ -122,7 +126,7 @@ class FolderInDb(Base):
             f_on_disk = Folder.from_path(path)
             f_in_db = FolderInDb.get_by(FolderInDb.id == hash, session=db_session)
             if f_in_db is None:
-                f_in_db = FolderInDb(hash=hash, path=path)
+                f_in_db = FolderInDb.from_live_folder(f_on_disk)
                 db_session.merge(f_in_db)
                 db_session.commit()
 
