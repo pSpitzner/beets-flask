@@ -16,8 +16,10 @@ import {
     useTheme,
 } from "@mui/material";
 import Box from "@mui/material/Box";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 
-import { ItemFull } from "./_query";
+import { albumQueryOptions, ItemFull } from "./_query";
 import { AudioPlayerItem } from "./audio";
 import CoverArt from "./coverArt";
 
@@ -87,6 +89,18 @@ function ArtSection({ item, ...props }: { item: ItemFull } & BoxProps) {
 
 function SongInfo({ item, ...props }: { item: ItemFull } & BoxProps) {
     const theme = useTheme();
+    const navigate = useNavigate();
+
+    // Get the album for the item
+    const { data: album } = useSuspenseQuery(
+        albumQueryOptions(
+            item.album_id,
+            true, // expand
+            true // minimal
+        )
+    );
+
+    const currentIdx = album?.items.findIndex((i) => i.id === item.id);
 
     return (
         <Box {...props}>
@@ -148,7 +162,33 @@ function SongInfo({ item, ...props }: { item: ItemFull } & BoxProps) {
                             </Typography>
                         </Box>
                     </Stack>
-                    <AudioPlayerItem itemId={item.id} />
+                    <AudioPlayerItem
+                        itemId={item.id}
+                        navigation={{
+                            onNext: async () => {
+                                await navigate({
+                                    to: "/library/browse/$artist/$albumId/$itemId",
+                                    params: {
+                                        artist: item.albumartist,
+                                        albumId: item.album_id,
+                                        itemId: album.items[currentIdx + 1].id,
+                                    },
+                                });
+                            },
+                            onPrev: async () => {
+                                await navigate({
+                                    to: "/library/browse/$artist/$albumId/$itemId",
+                                    params: {
+                                        artist: item.albumartist,
+                                        albumId: item.album_id,
+                                        itemId: album.items[currentIdx - 1].id,
+                                    },
+                                });
+                            },
+                            prevDisabled: currentIdx === 0,
+                            nextDisabled: currentIdx === album.items.length - 1,
+                        }}
+                    />
                 </Box>
             </Box>
         </Box>
@@ -158,7 +198,7 @@ function SongInfo({ item, ...props }: { item: ItemFull } & BoxProps) {
 /* --------------------------------- Details -------------------------------- */
 
 function DetailsTabs({ item, ...props }: { item: ItemFull } & BoxProps) {
-    const [tab, setTab] = useState(0);
+    const [tab, setTab] = useState<number>(0);
 
     return (
         <Box {...props}>
@@ -167,7 +207,11 @@ function DetailsTabs({ item, ...props }: { item: ItemFull } & BoxProps) {
                     borderBottom: `1px solid ${theme.palette.divider}`,
                 })}
             >
-                <Tabs value={tab} onChange={(_, newTab) => setTab(newTab)} aria-label="item tabs">
+                <Tabs
+                    value={tab}
+                    onChange={(_, newTab: number) => setTab(newTab)}
+                    aria-label="item tabs"
+                >
                     <Tab label="Beets Details" />
                     <Tab label="File Details" />
                     {/* Future proof in case we need more content */}

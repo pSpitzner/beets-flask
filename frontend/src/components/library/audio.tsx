@@ -3,14 +3,27 @@
  * Uses wavesurfer.js to display a waveform and play audio.
  */
 
-import { PauseIcon, PlayIcon } from "lucide-react";
+import { PauseIcon, PlayIcon, SkipBackIcon, SkipForwardIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Box, CircularProgress, IconButton, LinearProgress, useTheme } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 
 import WaveSurfer from "wavesurfer.js";
 
-export function AudioPlayerItem({ itemId, height = 20 }: { itemId: number; height?: number }) {
+export function AudioPlayerItem({
+    itemId,
+    height = 20,
+    navigation,
+}: {
+    itemId: number;
+    navigation?: {
+        onPrev: () => void;
+        onNext: () => void;
+        nextDisabled: boolean;
+        prevDisabled: boolean;
+    };
+    height?: number;
+}) {
     const theme = useTheme();
     const [ready, setReady] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -50,6 +63,8 @@ export function AudioPlayerItem({ itemId, height = 20 }: { itemId: number; heigh
             });
             wavesurfer.loadBlob(data).catch(console.error);
             return () => {
+                setReady(false);
+                setIsPlaying(false);
                 wavesurfer.destroy();
                 setReady(false);
             };
@@ -83,27 +98,41 @@ export function AudioPlayerItem({ itemId, height = 20 }: { itemId: number; heigh
                     <LinearProgress variant="determinate" sx={{ width: "100%" }} value={0} />
                 )}
             </Box>
-            <IconButton
-                onClick={async () => {
-                    // Refetch audio data
-                    if (!data) {
-                        await refetch();
-                        await new Promise((resolve) => setTimeout(resolve, 1000));
-                    }
+            <Box sx={{ display: "flex", gap: 2 }}>
+                <IconButton
+                    onClick={navigation?.onPrev}
+                    disabled={navigation?.prevDisabled ?? true}
+                >
+                    <SkipBackIcon size={20} />
+                </IconButton>
+                <IconButton
+                    onClick={async () => {
+                        // Refetch audio data
+                        if (!data) {
+                            await refetch();
+                            await new Promise((resolve) => setTimeout(resolve, 1000));
+                        }
 
-                    // Play audio
-                    if (wavesurferRef.current) {
-                        await wavesurferRef.current.playPause();
-                    }
-                }}
-                sx={{ p: 0.5 }}
-            >
-                {isLoading || (!ready && isPlaying) ? (
-                    <CircularProgress size={20} />
-                ) : (
-                    <PlayPauseIcon isPlaying={isPlaying} />
-                )}
-            </IconButton>
+                        // Play audio
+                        if (wavesurferRef.current) {
+                            await wavesurferRef.current.playPause();
+                        }
+                    }}
+                    sx={{ p: 0.5 }}
+                >
+                    {isLoading || (!ready && isPlaying) ? (
+                        <CircularProgress size={20} />
+                    ) : (
+                        <PlayPauseIcon isPlaying={isPlaying} />
+                    )}
+                </IconButton>
+                <IconButton
+                    onClick={navigation?.onNext}
+                    disabled={navigation?.nextDisabled ?? true}
+                >
+                    <SkipForwardIcon size={20} />
+                </IconButton>
+            </Box>
         </Box>
     );
 }
