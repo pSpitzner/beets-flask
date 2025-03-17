@@ -3,33 +3,35 @@ import Skeleton from "@mui/material/Skeleton";
 import { SxProps } from "@mui/material/styles";
 import { useQuery } from "@tanstack/react-query";
 
-import { artQueryOptions } from "@/components/common/_query";
+import { APIError, artQueryOptions } from "@/components/common/_query";
+import { FileWarning } from "lucide-react";
 
 interface CoverArtProps {
-    type?: string;
-    albumId?: number;
-    itemId?: number;
+    type: "item" | "album";
+    beetsId: number;
     sx?: SxProps;
     showPlaceholder?: boolean;
 }
 
+/** Cover art
+ *
+ * Shows the cover art for an item or album.
+ */
 export default function CoverArt({
     type,
-    albumId,
-    itemId,
+    beetsId,
     sx,
     showPlaceholder = true,
     ...props
 }: CoverArtProps & Partial<BoxProps>) {
-    // in the library browse view, we can assume the album cover should is requested first and cached, and we only get the item-level cover second.
-    const { data: albumArt } = useQuery({
-        ...artQueryOptions({ type: "album", id: albumId }),
-        enabled: albumId !== undefined && (type === undefined || type === "album"),
-    });
-
-    const { data: itemArt, isFetching: isFetchingItem } = useQuery({
-        ...artQueryOptions({ type: "item", id: itemId }),
-        enabled: itemId !== undefined && (type === undefined || type === "item"),
+    const {
+        data: art,
+        isFetching: isFetching,
+        isError,
+        error,
+    } = useQuery({
+        ...artQueryOptions({ type, id: beetsId }),
+        retry: false,
     });
 
     const coverSx = {
@@ -40,22 +42,20 @@ export default function CoverArt({
         ...sx,
     } as SxProps;
 
-    if (type === "album" && albumArt) {
-        return <CoverArtContent sx={coverSx} src={albumArt} {...props} />;
-    } else if (type === "item") {
-        if (isFetchingItem && albumArt) {
-            return <CoverArtContent sx={coverSx} src={albumArt} {...props} />;
-        }
-        if (itemArt) {
-            return <CoverArtContent sx={coverSx} src={itemArt} {...props} />;
+    if (isFetching) {
+        return <CoverArtPlaceholder sx={coverSx} animation="wave" {...props} />;
+    }
+
+    if (isError) {
+        if (error instanceof APIError) {
+            return <CoverArtError sx={coverSx} error={error} {...props} />;
+        } else {
+            throw error;
         }
     }
 
-    // default case, nothing is loading and no cover found.
-    if (showPlaceholder) {
-        return <CoverArtPlaceholder sx={coverSx} animation={false} {...props} />;
-    } else {
-        return null;
+    if (art) {
+        return <CoverArtContent sx={coverSx} src={art} {...props} />;
     }
 }
 
@@ -80,4 +80,39 @@ function CoverArtPlaceholder({
 
 function CoverArtContent({ src, ...props }: { src: string } & Partial<BoxProps>) {
     return <Box component="img" src={src} {...props} />;
+}
+
+function CoverArtError({ error, ...props }: { error: APIError } & Partial<BoxProps>) {
+    console.log("CoverArtError", error);
+    return (
+        <Box {...props}>
+            <Box
+                sx={{
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    fontSize: "2rem",
+                    border: "1px solid",
+                    color: "error.main",
+                    flexDirection: "column",
+                    gap: 1,
+                }}
+            >
+                <FileWarning size={50} strokeWidth={2} />
+                <Box
+                    sx={{
+                        width: "100%",
+                        alignItems: "center",
+                        fontSize: "0.8rem",
+                        color: "error.main",
+                        p: 1,
+                    }}
+                >
+                    <b>{error.name}</b> - {error.message}
+                </Box>
+            </Box>
+        </Box>
+    );
 }

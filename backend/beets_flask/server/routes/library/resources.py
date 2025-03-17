@@ -266,7 +266,7 @@ class ItemResponseMinimal(TypedDict):
     album_id: int
 
     # ISRC code for the item
-    isrc: Optional[str]
+    isrc: NotRequired[str]
 
     size: int
 
@@ -295,6 +295,17 @@ class ItemResponse(ItemResponseMinimal):
     encoder_info: str
     encoder_settings: str
     initial_key: str
+    length: float
+
+    # Album specifics
+    track: int
+    tracktotal: int
+
+    # Library specific
+    added: float
+
+    # Catalog number
+    catalognum: str
 
     # The source of the item, e.g. CD, Vinyl, Digital
     sources: list[ItemSource]
@@ -306,7 +317,7 @@ class ItemSource(TypedDict):
     album_id: NotRequired[str]
     artist_id: NotRequired[str]
 
-    extra: NotRequired[dict[str, str]]
+    extra: NotRequired[dict[str, str | list[str]]]
 
 
 source_prefixes = ["mb", "spotify", "tidal", "discogs"]
@@ -333,13 +344,12 @@ def _repr_Item(item: Item | None, minimal=False) -> ItemResponse | ItemResponseM
     else:
         # Use all keys
         keys = item.keys(True) + ["name"]
-        out["sources"] = list()
 
         # Check data source prefixes:
         # plugins such as spotify, tidal, discogs add a prefix to the id,
-        # we want to split this prefix from the id
-        # additionally the mb_id fields are filled may be filled
-        # with the same id as the source_id fields, we want to remove these
+        # we want to split this prefix from the id and add them to a list of
+        # sources
+        sources: list[ItemSource] = list()
         for prefix in source_prefixes:
             f_keys = list(filter(lambda k: k.startswith(f"{prefix}_"), keys))
 
@@ -370,8 +380,31 @@ def _repr_Item(item: Item | None, minimal=False) -> ItemResponse | ItemResponseM
             if len(extras) > 0:
                 source["extra"] = extras
 
-            out["sources"].append(source)
+            sources.append(source)
             keys = [k for k in keys if k not in f_keys]
+
+        # additionally the mb_id fields may be filled with the same id
+        # as the any other data source if mb is disabled, this is done
+        # by beets to allow easier lookup
+        mb_source = next(filter(lambda s: s["source"] == "mb", sources), None)
+        if mb_source and len(sources) > 1:
+            for source in sources:
+                if source["source"] == "mb":
+                    continue
+
+                if source["track_id"] == mb_source["track_id"]:
+                    # Update source with other unset mb fields
+                    # no idea why this happens but e.g. albumartist_id set for mb
+                    # but not for spotify even tho the mb_albumartistid is a spotify
+                    # id
+                    for k, v in mb_source.items():
+                        if k not in source:
+                            source[k] = v
+
+                    sources = list(filter(lambda s: s["source"] != "mb", sources))
+                    break
+
+        out["sources"] = sources
 
     for key in keys:
 
@@ -540,7 +573,7 @@ def _rep(entity: Item | Album | None, expand=False, minimal=False):
         raise ValueError(f"Unknown entity type: {type(entity)}")
 
 
-def __is_empty(value: str) -> bool:
+def __is_empty(value: str, zero_empty: bool = True) -> bool:
     """Check if empty value."""
     if value is None:
         return True
@@ -549,6 +582,8 @@ def __is_empty(value: str) -> bool:
     if isinstance(value, str) and value.isspace():
         return True
     if isinstance(value, list) and len(value) == 0:
+        return True
+    if zero_empty and isinstance(value, int) and value == 0:
         return True
 
     return False

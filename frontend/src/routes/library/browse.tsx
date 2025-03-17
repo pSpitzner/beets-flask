@@ -59,7 +59,12 @@ function Artists() {
             <Link
                 to={selectedData.to}
                 params={selectedData.params}
-                style={{ display: "flex", alignItems: "center", gap: 4, paddingInline: 4 }}
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                    paddingInline: 4,
+                }}
             >
                 <UserRoundIcon size={18} color={"gray"} />
                 <Typography variant="body2" color="text.secondary">
@@ -160,6 +165,9 @@ export const Selection = styled(Box)(({ theme }) => ({
             borderLeft: `unset`,
             width: "100%",
         },
+        ":first-of-type": {
+            paddingTop: theme.spacing(1),
+        },
     },
 }));
 
@@ -178,6 +186,7 @@ export const Content = styled(Box)(({ theme }) => ({
     [theme.breakpoints.down("laptop")]: {
         height: "unset",
         flex: "1 1 auto",
+        padding: 0,
     },
 }));
 
@@ -204,7 +213,10 @@ export function LibraryList({
         }
         return data.filter((item) => {
             //filtered or selected
-            return item.label?.toLowerCase().includes(filter.toLowerCase()) || item === selected;
+            return (
+                item.label?.toLowerCase().includes(filter.toLowerCase()) ||
+                item === selected
+            );
         });
     }, [data, filter]);
 
@@ -248,10 +260,16 @@ export function LibraryList({
                         variant="body2"
                         color="text.secondary"
                     >
-                        Excluded {data.length - filteredData.length} {label.toLowerCase()}
+                        Excluded {data.length - filteredData.length}{" "}
+                        {label.toLowerCase()}
                     </Typography>
                 )}
-                <Search value={filter} setValue={setFilter} size="small" variant="outlined" />
+                <Search
+                    value={filter}
+                    setValue={setFilter}
+                    size="small"
+                    variant="outlined"
+                />
             </Box>
             <Box className={styles.list}>
                 <List data={filteredData}>{List.Item}</List>
