@@ -40,7 +40,7 @@ const tslint = {
 export default ts.config(
     // global ignores
     {
-        ignores: ["dist/", "node_modules/"],
+        ignores: ["dist/", "node_modules/", "src/pythonTypes.d.ts"],
     },
 
     // apply eslint to js files

@@ -3,15 +3,30 @@
 Adapted from the official beets web interface
 """
 
+from __future__ import annotations
+
 import base64
 import os
+from dataclasses import dataclass
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Iterable, Sequence, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Awaitable,
+    Callable,
+    Iterable,
+    Optional,
+    Sequence,
+    TypedDict,
+    TypeVar,
+    cast,
+)
 
 from beets import util as beets_util
 from beets.dbcore import Results
 from beets.library import Album, Item
 from quart import Blueprint, Response, abort, g, jsonify, request, send_file
+from typing_extensions import NotRequired
 
 from beets_flask.config import get_config
 from beets_flask.logger import log
@@ -227,59 +242,343 @@ def update_entities(
     return entities
 
 
-def _rep(obj, expand=False, minimal=False):
+# -------------------- Helper for formatting beets models -------------------- #
+
+
+class ItemResponseMinimal(TypedDict):
+    """Type definition for the minimal response for item."""
+
+    # Unique identifier for the item in the beets library
+    id: int
+    # Name of the item
+    name: str
+    # Full path to the item on disk
+    path: str
+    # Primary artist for the item
+    artist: str
+    # Year the item was published
+    year: int
+
+    # Name, id and the primary artist
+    # for the associated album
+    album: str
+    albumartist: str
+    album_id: int
+
+    # ISRC code for the item
+    isrc: Optional[str]
+
+    size: int
+
+
+class ItemResponse(ItemResponseMinimal):
+    """Type definition for the full item response.
+
+    Might not be 100% accurate as plugins may add additional fields. We
+    atleast type all field that are used in the frontend.
+    """
+
+    # The genre of the item, if multiple genres are present they are
+    # separated by a semicolon (;)
+    genre: str
+
+    # The label in which the item was published
+    label: str
+
+    # Technical details about the item
+    samplerate: int
+    bitrate: int
+    bpm: int
+    bitdepth: int
+    channels: int
+    format: str
+    encoder_info: str
+    encoder_settings: str
+    initial_key: str
+
+    # The source of the item, e.g. CD, Vinyl, Digital
+    sources: list[ItemSource]
+
+
+class ItemSource(TypedDict):
+    source: str
+    track_id: str
+    album_id: NotRequired[str]
+    artist_id: NotRequired[str]
+
+    extra: NotRequired[dict[str, str]]
+
+
+source_prefixes = ["mb", "spotify", "tidal", "discogs"]
+
+
+def _repr_Item(item: Item | None, minimal=False) -> ItemResponse | ItemResponseMinimal:
+
+    if not item:
+        raise NotFoundError("Item not found")
+
+    out = dict()
+
+    if minimal:
+        keys = [
+            "id",
+            "name",
+            "artist",
+            "albumartist",
+            "album",
+            "album_id",
+            "year",
+            "isrc",
+        ]
+    else:
+        # Use all keys
+        keys = item.keys(True) + ["name"]
+        out["sources"] = list()
+
+        # Check data source prefixes:
+        # plugins such as spotify, tidal, discogs add a prefix to the id,
+        # we want to split this prefix from the id
+        # additionally the mb_id fields are filled may be filled
+        # with the same id as the source_id fields, we want to remove these
+        for prefix in source_prefixes:
+            f_keys = list(filter(lambda k: k.startswith(f"{prefix}_"), keys))
+
+            track_id, track_id_key = __get_id(item, prefix, "track")
+            if not track_id:
+                continue
+            source = ItemSource(source=prefix, track_id=track_id)
+
+            album_id, album_id_key = __get_id(item, prefix, "album")
+            if album_id:
+                source["album_id"] = album_id
+
+            artist_id, artist_id_key = __get_id(item, prefix, "artist")
+            if artist_id:
+                source["artist_id"] = artist_id
+
+            keys_extra = [
+                k
+                for k in f_keys
+                if k not in [track_id_key, album_id_key, artist_id_key]
+            ]
+            extras = {}
+            for k in keys_extra:
+                if __is_empty(item[k]):
+                    continue
+                extras[__normalize_id_key(prefix, k)] = item[k]
+
+            if len(extras) > 0:
+                source["extra"] = extras
+
+            out["sources"].append(source)
+            keys = [k for k in keys if k not in f_keys]
+
+    for key in keys:
+
+        if key == "name":
+            out[key] = item.title
+        else:
+            out[key] = item[key]
+
+        # Format path
+        if key == "path":
+            out[key] = beets_util.displayable_path(out[key])
+
+        # Decode bytes
+        if isinstance(out[key], bytes):
+            out[key] = base64.b64encode(out[key]).decode("ascii")
+
+        # Remove empty values
+        if __is_empty(out[key]):
+            del out[key]
+
+    # Get the size (in bytes) of the backing file. This is useful
+    # for the Tomahawk resolver API.
+    try:
+        out["size"] = os.path.getsize(beets_util.syspath(path=item.path))
+    except OSError:
+        out["size"] = 0
+
+    return cast(ItemResponse | ItemResponseMinimal, out)
+
+
+class AlbumResponseMinimal(TypedDict):
+    """Type definition for the minimal response for album."""
+
+    # Unique identifier for the album in the beets library
+    id: int
+    # Name of the album
+    name: str
+    # Path to the album
+    path: str
+    # Primary artist for the album
+    albumartist: str
+    # Year the album was published
+    year: int
+
+
+class AlbumResponseMinimalExpanded(AlbumResponseMinimal):
+    items: list[ItemResponseMinimal]
+
+
+class AlbumResponse(AlbumResponseMinimal):
+    """Type definition for the full album response.
+
+    Might not be 100% accurate as plugins may add additional fields. We
+    atleast type all field that are used in the frontend.
+    """
+
+    # The genre of the album, if multiple genres are present they are
+    # separated by a semicolon (;)
+    genre: str
+
+    # The label in which the album was published
+    label: str
+
+    # The data source of the album metadata
+    sources: list[AlbumSource]
+
+
+class AlbumResponseExpanded(AlbumResponseMinimal):
+    items: list[ItemResponse]
+
+
+class AlbumSource(TypedDict):
+    source: str
+    album_id: str
+    artist_id: NotRequired[str]
+
+    extra: NotRequired[dict[str, str]]
+
+
+def _rep_Album(
+    album: Album, expand=False, minimal=False
+) -> AlbumResponse | AlbumResponseMinimal:
     """Get a flat -- i.e., JSON-ish -- representation of a beets Item/Album object.
 
     For Albums, `expand` dictates whether tracks are
     included.
     """
-    out: dict[str, Any] = dict(obj)
 
-    # For our client side, we want to have a consistent name for each kind of item.
-    # for tracks its the title, for albums album name...
-    out["name"] = (
-        out.get("title", None) or out.get("album", None) or out.get("artist", None)
-    )
+    out: dict[str, Any] = dict()
 
-    if isinstance(obj, Item):
-        if minimal:
-            fields = [
-                "id",
-                "name",
-                "artist",
-                "albumartist",
-                "album",
-                "album_id",
-                "year",
-                "isrc",
-            ]
-            out = {k: v for k, v in out.items() if k in fields}
+    out["path"] = beets_util.displayable_path(album.path)
 
-        if not minimal:
-            out["path"] = beets_util.displayable_path(out["path"])
+    if minimal:
+        keys = ["id", "name", "albumartist", "year"]
+    else:
+        # Use all keys
+        keys = album.keys() + ["name"]
 
-        for key, value in out.items():
-            if isinstance(out[key], bytes):
-                out[key] = base64.b64encode(value).decode("ascii")
+        # Parse sources
+        out["sources"] = list()
+        for prefix in source_prefixes:
+            f_keys = list(filter(lambda k: k.startswith(f"{prefix}_"), keys))
 
-        # Get the size (in bytes) of the backing file. This is useful
-        # for the Tomahawk resolver API.
-        try:
-            out["size"] = os.path.getsize(beets_util.syspath(obj.path))
-        except OSError:
-            out["size"] = 0
+            album_id, album_id_key = __get_id(album, prefix, "album")
+            if not album_id:
+                continue
+            source = AlbumSource(source=prefix, album_id=album_id)
 
-        return out
+            artist_id, artist_id_key = __get_id(album, prefix, "artist")
+            if artist_id:
+                source["artist_id"] = artist_id
 
-    elif isinstance(obj, Album):
-        if minimal:
-            fields = ["id", "name", "albumartist", "year"]
-            out = {k: v for k, v in out.items() if k in fields}
+            keys_extra = [k for k in f_keys if k not in [album_id_key, artist_id_key]]
+            extras = {}
+            for k in keys_extra:
+                if __is_empty(album[k]):
+                    continue
+                extras[__normalize_id_key(prefix, k)] = album[k]
+
+            if len(extras) > 0:
+                source["extra"] = extras
+
+            out["sources"].append(source)
+            keys = [k for k in keys if k not in f_keys]
+
+    for key in keys:
+
+        if key == "name":
+            out[key] = album.album
         else:
-            out["artpath"] = beets_util.displayable_path(out["artpath"])
+            out[key] = album[key]
 
-        if expand:
-            out["items"] = [
-                _rep(item, expand=expand, minimal=minimal) for item in obj.items()
-            ]
-        return out
+        # Format path
+        if key == "path":
+            out[key] = beets_util.displayable_path(out[key])
+
+        # Decode bytes
+        if isinstance(out[key], bytes):
+            out[key] = base64.b64encode(out[key]).decode("ascii")
+
+        # Remove empty values
+        if __is_empty(out[key]):
+            del out[key]
+
+    if expand:
+        out["items"] = [_repr_Item(item, minimal) for item in album.items()]
+
+    return cast(AlbumResponse | AlbumResponseMinimal, out)
+
+
+def _rep(entity: Item | Album | None, expand=False, minimal=False):
+    """Get a flat -- i.e., JSON-ish -- representation of a beets Item/Album object.
+
+    For Albums, `expand` dictates whether tracks are
+    included.
+    """
+
+    if not entity:
+        raise NotFoundError("Entity not found")
+
+    if isinstance(entity, Item):
+        return _repr_Item(entity, minimal)
+    elif isinstance(entity, Album):
+        return _rep_Album(entity, expand, minimal)
+    else:
+        raise ValueError(f"Unknown entity type: {type(entity)}")
+
+
+def __is_empty(value: str) -> bool:
+    """Check if empty value."""
+    if value is None:
+        return True
+    if value == "":
+        return True
+    if isinstance(value, str) and value.isspace():
+        return True
+    if isinstance(value, list) and len(value) == 0:
+        return True
+
+    return False
+
+
+def __get_id(
+    item: Item | Album,
+    source: str,
+    t: str,
+) -> tuple[str | None, str | None]:
+    """Get the id of a source.
+
+    Resolve inconsistencies in the beets library where the id is stored in
+    different fields.
+    """
+    s1 = item.get(f"{source}_{t}_id", None)
+    if s1:
+        return s1, f"{source}_{t}_id"
+
+    s2 = item.get(f"{source}_{t}id", None)
+    if s2:
+        return s2, f"{source}_{t}id"
+
+    return None, None
+
+
+def __normalize_id_key(prefix: str, id: str):
+    """Normalize the id key.
+
+    Inserts an underscore before the "id" or "ids" suffix.
+    Also removes the prefix.
+    """
+    return id.replace("id", "_id").replace(prefix + "_", "")

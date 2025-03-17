@@ -50,7 +50,7 @@ export function customizeFetch() {
 
 interface ErrorData {
     error: string; //name
-    messages: string;
+    message: string;
     trace?: string;
 }
 
@@ -58,7 +58,7 @@ export class APIError extends Error {
     trace?: string;
 
     constructor(public data: ErrorData) {
-        super(data.messages);
+        super(data.message);
         this.name = data.error;
         this.trace = data.trace ?? undefined;
     }
