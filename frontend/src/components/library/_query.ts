@@ -125,15 +125,10 @@ export const artQueryOptions = ({ type, id }: { type?: string; id?: number }) =>
 /*                                       Search                                       */
 /* ---------------------------------------------------------------------------------- */
 
-export const searchQueryOptions = <
-    T extends ItemResponseMinimal | AlbumResponseMinimal,
->({
-    searchFor,
-    type,
-}: {
-    searchFor: string;
-    type: "item" | "album";
-}) =>
+export const searchQueryOptions = <T extends "item" | "album">(
+    searchFor: string,
+    type: T
+) =>
     queryOptions({
         queryKey: ["search", type, searchFor],
         queryFn: async ({ signal }) => {
@@ -145,7 +140,9 @@ export const searchQueryOptions = <
                 expand
             );
             const response = await fetch(url, { signal });
-            return (await response.json()) as T[];
+            return (await response.json()) as (T extends "item"
+                ? Item<true>
+                : Album<true, false>)[];
         },
     });
 

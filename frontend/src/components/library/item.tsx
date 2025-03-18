@@ -20,13 +20,21 @@ import Box from "@mui/material/Box";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
-import { albumQueryOptions, Item as ItemT } from "./_query";
+import { albumQueryOptions, itemQueryOptions, Item as ItemT } from "./_query";
 import { AudioPlayerItem } from "./audio";
 import CoverArt from "./coverArt";
 import { ClipboardCopyButton } from "../common/inputs/copy";
 import { SourceTypeIcon } from "../common/icons";
 import { ItemSource as ItemSourceT } from "@/pythonTypes";
 import { Search } from "../common/inputs/search";
+
+export function ItemById({ itemId }: { itemId: number }) {
+    const { data: item } = useSuspenseQuery(
+        itemQueryOptions(itemId, false) // minimal
+    );
+
+    return <Item item={item} />;
+}
 
 /** A detailed view of an beets library item
  *

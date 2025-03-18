@@ -1,11 +1,18 @@
 import { Disc3Icon } from "lucide-react";
 import { useMemo } from "react";
-import z from "zod";
-import { Box, Typography, useMediaQuery } from "@mui/material";
-import { createFileRoute, Link, Outlet, useMatch, useParams } from "@tanstack/react-router";
+import { Typography, useMediaQuery } from "@mui/material";
+import {
+    createFileRoute,
+    Link,
+    Outlet,
+    useMatch,
+    useParams,
+} from "@tanstack/react-router";
 
-import { albumsByArtistQueryOptions, LIB_BROWSE_ROUTE } from "@/components/common/_query";
-import List from "@/components/library/list";
+import {
+    albumsByArtistQueryOptions,
+    LIB_BROWSE_ROUTE,
+} from "@/components/common/_query";
 
 import { LibraryList, Selection } from "./browse";
 
@@ -49,7 +56,9 @@ function Albums() {
         from: `${LIB_BROWSE_ROUTE}/$artist/$albumId`,
         shouldThrow: false,
     });
-    const to = match ? `${LIB_BROWSE_ROUTE}/$artist` : `${LIB_BROWSE_ROUTE}/$artist/$albumId`;
+    const to = match
+        ? `${LIB_BROWSE_ROUTE}/$artist`
+        : `${LIB_BROWSE_ROUTE}/$artist/$albumId`;
 
     const data = useMemo(() => {
         return albums.map((album) => ({
@@ -71,7 +80,12 @@ function Albums() {
             <Link
                 to={selectedData.to}
                 params={selectedData.params}
-                style={{ display: "flex", alignItems: "center", gap: 4, paddingInline: 4 }}
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                    paddingInline: 4,
+                }}
             >
                 <Disc3Icon size={18} color={"gray"} />
                 <Typography variant="body2" color="text.secondary">
@@ -82,6 +96,11 @@ function Albums() {
     }
 
     return (
-        <LibraryList data={data} selected={selectedData} label="Albums" labelIcon={<Disc3Icon />} />
+        <LibraryList
+            data={data}
+            selected={selectedData}
+            label="Albums"
+            labelIcon={<Disc3Icon />}
+        />
     );
 }

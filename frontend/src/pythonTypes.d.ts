@@ -131,22 +131,6 @@ export interface TrackInfo {
 	index: null | number;
 }
 
-export interface AlbumInfo {
-	type: "album" | "item" | "track";
-	artist: null | string;
-	album: null | string;
-	data_url: null | string;
-	data_source: null | string;
-	year: null | number;
-	genre: null | string;
-	media: null | string;
-	mediums: null | number;
-	country: null | string;
-	label: null | string;
-	catalognum: null | string;
-	albumdisambig: null | string;
-}
-
 export interface ItemInfo {
 	type: "album" | "item" | "track";
 	artist: null | string;
@@ -163,6 +147,22 @@ export interface ItemInfo {
 	path: null | string;
 	bitrate: null | number;
 	format: null | string;
+}
+
+export interface AlbumInfo {
+	type: "album" | "item" | "track";
+	artist: null | string;
+	album: null | string;
+	data_url: null | string;
+	data_source: null | string;
+	year: null | number;
+	genre: null | string;
+	media: null | string;
+	mediums: null | number;
+	country: null | string;
+	label: null | string;
+	catalognum: null | string;
+	albumdisambig: null | string;
 }
 
 export interface SerializedCandidateState {

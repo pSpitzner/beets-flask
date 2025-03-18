@@ -1,7 +1,7 @@
 import { Bug as BugOn, BugOff } from "lucide-react";
 import { useState } from "react";
 import { ReactNode, useMemo } from "react";
-import { Box, CircularProgress } from "@mui/material";
+import { Box } from "@mui/material";
 import IconButton from "@mui/material/IconButton";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -9,67 +9,22 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableRow from "@mui/material/TableRow";
 import Tooltip from "@mui/material/Tooltip";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 
-import { Album, albumQueryOptions, Item, itemQueryOptions } from "@/components/common/_query";
-import { JSONPretty } from "@/components/common/json";
+import { Album as AlbumT, albumQueryOptions } from "@/components/common/_query";
+import CoverArt from "./coverArt";
 
-export function ItemView({ itemId }: { itemId?: number }) {
-    const [detailed, setDetailed] = useState(false);
-    const {
-        data: item,
-        isFetching,
-        isError,
-        error,
-        isSuccess,
-    } = useQuery(itemQueryOptions({ id: itemId, minimal: false, expand: true }));
-
-    return (
-        <>
-            <Box
-                sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    flexGrow: 1,
-                    alignItems: "center",
-                    justifyContent: "flex-start",
-                    overflow: "auto",
-                }}
-            >
-                {isSuccess && (
-                    <>
-                        <Tooltip title="Toggle Details" className="ml-auto mt-1">
-                            <IconButton color="primary" onClick={() => setDetailed(!detailed)}>
-                                {detailed && <BugOff size="1em" />}
-                                {!detailed && <BugOn size="1em" />}
-                            </IconButton>
-                        </Tooltip>
-                        <DetailsTable obj={item as Item} keys={detailed ? "all" : "basic"} />
-                    </>
-                )}
-                {!isSuccess && isFetching && (
-                    <Box sx={{ margin: "auto" }}>
-                        <CircularProgress />
-                    </Box>
-                )}
-                {isError && (
-                    <>
-                        <span>Error:</span>
-                        <JSONPretty error={error} />
-                    </>
-                )}
-            </Box>
-        </>
+export function AlbumById({ albumId }: { albumId: number }) {
+    const { data: item } = useSuspenseQuery(
+        albumQueryOptions(albumId, false, false) // minimal
     );
+
+    return <Album album={item} />;
 }
 
 // for now this is the same as ItemView.
-export function AlbumView({ albumId }: { albumId?: number }) {
+export function Album({ album }: { album: AlbumT<false, false> }) {
     const [detailed, setDetailed] = useState(false);
-    const { data, isFetching, isError, error, isSuccess } = useQuery(
-        albumQueryOptions({ id: albumId, minimal: false, expand: false })
-    );
-    const album = data as Album;
 
     return (
         <>
@@ -83,53 +38,28 @@ export function AlbumView({ albumId }: { albumId?: number }) {
                     overflow: "auto",
                 }}
             >
-                {isSuccess && (
-                    <>
-                        <Tooltip title="Toggle Details" className="ml-auto mt-1">
-                            <IconButton color="primary" onClick={() => setDetailed(!detailed)}>
-                                {detailed && <BugOff size="1em" />}
-                                {!detailed && <BugOn size="1em" />}
-                            </IconButton>
-                        </Tooltip>
-                        <DetailsTable obj={album} keys={detailed ? "all" : "basic"} />
-                    </>
-                )}
-                {!isSuccess && isFetching && (
-                    <Box sx={{ margin: "auto" }}>
-                        <CircularProgress />
-                    </Box>
-                )}
-                {isError && (
-                    <>
-                        <span>Error:</span>
-                        <JSONPretty error={error} />
-                    </>
-                )}
+                <CoverArt
+                    type="album"
+                    beetsId={album.id}
+                    sx={{
+                        width: "200px",
+                        height: "200px",
+                        aspectRatio: "1 / 1",
+                        objectFit: "cover",
+                        borderRadius: 0,
+                    }}
+                />
+                <Tooltip title="Toggle Details" className="ml-auto mt-1">
+                    <IconButton color="primary" onClick={() => setDetailed(!detailed)}>
+                        {detailed && <BugOff size="1em" />}
+                        {!detailed && <BugOn size="1em" />}
+                    </IconButton>
+                </Tooltip>
+                <DetailsTable obj={album} keys={detailed ? "all" : "basic"} />
             </Box>
         </>
     );
 }
-
-const basicItemKeys = [
-    "title",
-    "artist",
-    "albumartist",
-    "album",
-    "albumtype",
-    "comp",
-    "genre",
-    "label",
-    "isrc",
-    "bpm",
-    "initial_key",
-    "year",
-    "added",
-    "length",
-    "size",
-    "bitrate",
-    "samplerate",
-    "path",
-];
 
 const basicAlbumKeys = [
     "album",
@@ -142,14 +72,16 @@ const basicAlbumKeys = [
     "added",
 ];
 
-export function DetailsTable({ obj, keys }: { obj: Item | Album; keys?: string | string[] }) {
-    // albums only have an albumartist (not artist), so we can use this to distinguish
-    const isItem = (item: unknown): item is Item => {
-        return (item as Item).artist !== undefined;
-    };
-
+/** FIXME: This needs a rewrite badly! */
+export function DetailsTable({
+    obj,
+    keys,
+}: {
+    obj: AlbumT<false, false>;
+    keys?: string | string[];
+}) {
     if (!keys || keys === "basic") {
-        keys = isItem(obj) ? basicItemKeys : basicAlbumKeys;
+        keys = basicAlbumKeys;
     } else if (keys === "all") {
         keys = Object.keys(obj);
         // we only added name for backend-frontend consistency, its not a beets-field
@@ -185,7 +117,9 @@ export function DetailsTable({ obj, keys }: { obj: Item | Album; keys?: string |
                                 >
                                     {key}
                                 </TableCell>
-                                <TableCell align="left">{parse(key, obj[key])}</TableCell>
+                                <TableCell align="left">
+                                    {parse(key, obj[key])}
+                                </TableCell>
                             </TableRow>
                         );
                     })}
@@ -233,5 +167,5 @@ function parse(key: string, value: any): ReactNode {
         // format to n/a
         return <span style={{ opacity: 0.3 }}>n/a</span>;
     }
-    return value as string;
+    return String(value);
 }

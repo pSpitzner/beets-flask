@@ -1,5 +1,5 @@
 import { ChevronRight, OctagonX, X } from "lucide-react";
-import { useEffect, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import { IconButton, InputAdornment, Paper, Tooltip } from "@mui/material";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -8,7 +8,7 @@ import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { MinimalAlbum, MinimalItem } from "@/components/common/_query";
+import { Album, Item } from "@/components/common/_query";
 import {
     SearchContextProvider,
     SearchType,
@@ -16,11 +16,12 @@ import {
 } from "@/components/common/hooks/useSearch";
 import { JSONPretty } from "@/components/common/json";
 import { PageWrapper } from "@/components/common/page";
-import CoverArt from "@/components/library/coverArt";
-import { AlbumView, ItemView } from "@/components/library/itemAlbumDetails";
 import List from "@/components/library/list";
 
 import styles from "@/components/library/library.module.scss";
+import { ItemById } from "@/components/library/item";
+import { Loading } from "@/components/common/loading";
+import { AlbumById } from "@/components/library/itemAlbumDetails";
 
 export const Route = createFileRoute("/library/search")({
     component: SearchPage,
@@ -29,9 +30,40 @@ export const Route = createFileRoute("/library/search")({
 function SearchPage() {
     return (
         <SearchContextProvider>
-            <PageWrapper className={styles.SearchPageOuter}>
+            <PageWrapper
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 1,
+                    py: 1,
+                    pt: 1.5,
+                    height: "100%",
+
+                    // styling for code blocks
+                    code: {
+                        backgroundColor: "#212529",
+                        padding: "2px 4px",
+                        borderRadius: "4px",
+                        fontFamily: "Courier New, Courier, monospace",
+                        fontSize: "0.9em",
+                        whiteSpace: "nowrap",
+                    },
+                }}
+            >
                 <SearchBar />
-                <Box className={styles.SearchResultsWrapper}>
+                <Box
+                    sx={(theme) => ({
+                        display: "flex",
+                        flexDirection: "row",
+                        gap: 1,
+                        width: "100%",
+                        height: "100%",
+
+                        [theme.breakpoints.down("laptop")]: {
+                            flexDirection: "column",
+                        },
+                    })}
+                >
                     <SearchResults />
                     <SearchResultDetails />
                 </Box>
@@ -50,7 +82,10 @@ function SearchBar() {
         }
     }, [searchFieldRef]);
 
-    function handleTypeChange(_e: React.MouseEvent<HTMLElement>, newType: SearchType | null) {
+    function handleTypeChange(
+        _e: React.MouseEvent<HTMLElement>,
+        newType: SearchType | null
+    ) {
         if (newType !== null && newType !== type) {
             setType(newType);
             setSelectedResult(undefined);
@@ -66,7 +101,7 @@ function SearchBar() {
             component="form"
             noValidate
             autoComplete="off"
-            className={styles.SearchBarOuter}
+            sx={{ display: "flex", flexDirection: "row" }}
             onSubmit={(e) => {
                 e.preventDefault();
             }}
@@ -80,8 +115,12 @@ function SearchBar() {
                 variant="outlined"
                 type="search"
                 onInput={handleInput}
-                InputProps={{
-                    endAdornment: <CancelSearchButton searchFieldRef={searchFieldRef} />,
+                slotProps={{
+                    input: {
+                        endAdornment: (
+                            <CancelSearchButton searchFieldRef={searchFieldRef} />
+                        ),
+                    },
                 }}
             />
 
@@ -165,7 +204,7 @@ function SearchResults() {
         return <BeetsSearchHelp />;
     }
 
-    if (results.length === 0) {
+    if (results === null || results.length === 0) {
         return (
             <Box className={styles.SearchResultsLoading}>
                 <span>
@@ -175,13 +214,11 @@ function SearchResults() {
         );
     }
 
-    // Show results!
-    return (
-        <>
-            {type === "item" && <ItemResultsBox />}
-            {type === "album" && <AlbumResultsBox />}
-        </>
-    );
+    if (type === "item") {
+        return <ItemResultsBox results={results as Item<true>[]} />;
+    } else {
+        return <AlbumResultsBox results={results as Album<true, false>[]} />;
+    }
 }
 
 export interface RouteParams {
@@ -189,15 +226,15 @@ export interface RouteParams {
     id?: number;
 }
 
-function ItemResultsBox() {
-    const { results } = useSearchContext() as { results: MinimalItem[] };
+function ItemResultsBox({ results }: { results: Item<true>[] }) {
     const { selectedResult, setSelectedResult } = useSearchContext();
 
     const data = useMemo(() => {
         return results.map((item) => ({
             className: styles.listItem,
             "data-selected": selectedResult !== undefined && selectedResult === item.id,
-            onClick: () => setSelectedResult(item.id),
+            onClick: () =>
+                setSelectedResult((prev) => (prev === item.id ? undefined : item.id)),
             label: (
                 <Box>
                     <span className={styles.ItemResultArtist}>
@@ -211,16 +248,13 @@ function ItemResultsBox() {
     }, [results, selectedResult, setSelectedResult]);
 
     return (
-        <Paper className={styles.SearchResults}>
-            <Box className={styles.h100w100}>
-                <List data={data}>{List.Item}</List>
-            </Box>
+        <Paper sx={{ height: "100%", width: "100%", minHeight: "200px" }}>
+            <List data={data}>{List.Item}</List>
         </Paper>
     );
 }
 
-function AlbumResultsBox() {
-    const { results } = useSearchContext() as { results: MinimalAlbum[] };
+function AlbumResultsBox({ results }: { results: Album<true, false>[] }) {
     const { selectedResult, setSelectedResult } = useSearchContext();
 
     const data = useMemo(() => {
@@ -241,10 +275,8 @@ function AlbumResultsBox() {
     }, [results, selectedResult, setSelectedResult]);
 
     return (
-        <Paper className={styles.SearchResults}>
-            <Box className={styles.h100w100}>
-                <List data={data}>{List.Item}</List>
-            </Box>
+        <Paper sx={{ width: "100%", height: "100%" }}>
+            <List data={data}>{List.Item}</List>
         </Paper>
     );
 }
@@ -256,42 +288,28 @@ function SearchResultDetails() {
         return null;
     }
 
-    console.log(type);
-    let art = <></>;
-
-    switch (type) {
-        case "item":
-            console.log("1");
-            art = (
-                <CoverArt
-                    itemId={selectedResult}
-                    type={type}
-                    showPlaceholder={false}
-                    className={styles.SearchResultCover}
-                />
-            );
-            break;
-        case "album":
-            console.log("2");
-            art = (
-                <CoverArt
-                    albumId={selectedResult}
-                    type={type}
-                    showPlaceholder={false}
-                    className={styles.SearchResultCover}
-                />
-            );
-            break;
-    }
-
     return (
         <>
-            <Paper className={styles.SearchResultInfoOuter}>
-                <Box className={styles.SearchResultInfo}>
-                    {art}
-                    {type === "item" && <ItemView itemId={selectedResult} />}
-                    {type === "album" && <AlbumView albumId={selectedResult} />}
-                </Box>
+            <Paper sx={{ width: "100%", height: "100%" }}>
+                <Suspense
+                    fallback={
+                        <Box
+                            sx={{
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                margin: "auto",
+                                maxWidth: "120px",
+                                height: "100%",
+                            }}
+                        >
+                            <Loading noteColor="#7FFFD4" />
+                        </Box>
+                    }
+                >
+                    {type === "item" && <ItemById itemId={selectedResult} />}
+                    {type === "album" && <AlbumById albumId={selectedResult} />}
+                </Suspense>
             </Paper>
         </>
     );
@@ -304,7 +322,8 @@ function BeetsSearchHelp() {
                 <h1>Search uses beets&apos; query syntax</h1>
                 <ul>
                     <li>
-                        combine keywords with a space (AND): <code>magnetic tomorrow</code>
+                        combine keywords with a space (AND):{" "}
+                        <code>magnetic tomorrow</code>
                     </li>
                     <li>
                         combine keywords with a comma (OR):{" "}
@@ -347,8 +366,8 @@ function BeetsSearchHelp() {
                 </h1>
                 <ul>
                     <li>
-                        <code>&quot;artist::Ann(a|ie)&quot;</code> finds artists Anna Calvi and
-                        Annie but not Annuals
+                        <code>&quot;artist::Ann(a|ie)&quot;</code> finds artists Anna
+                        Calvi and Annie but not Annuals
                     </li>
                     <li>
                         <code>&quot;:Ho[pm]eless&quot;</code> to search all fields
@@ -358,8 +377,8 @@ function BeetsSearchHelp() {
                 <h1>Common fields</h1>
                 <ul>
                     <li>
-                        <code>title</code> <code>album</code> <code>genre</code> <code>label</code>{" "}
-                        <code>isrc</code>
+                        <code>title</code> <code>album</code> <code>genre</code>{" "}
+                        <code>label</code> <code>isrc</code>
                     </li>
                     <li>
                         <code>artist</code> (only for items, not albums)
