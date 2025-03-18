@@ -4,21 +4,26 @@ Use this blueprint to send status updates to the client.
 We used to use SeverSideEvents but moved to websocket.
 
 see also /websocket/status
+
+TODO: Remove this file in favor of the websocket implementation.
 """
 
 import asyncio
 from typing import Coroutine, Literal
 
 import requests
+from deprecated import deprecated
 from quart import Blueprint, current_app, request
 
 from beets_flask.logger import log
+from beets_flask.server.websocket.status import send_status_update
 
 from ..websocket import sio
 
 sse_bp = Blueprint("status", __name__, url_prefix="/status")
 
 
+@deprecated("Use websocket directly instead. See /websocket/status")
 def update_client_view(
     type: Literal["tag", "inbox"],
     attributes: dict[str, object] | Literal["all"] = "all",
@@ -56,6 +61,7 @@ def update_client_view(
     with_loop(asyncio.to_thread(handle_response))
 
 
+@deprecated("Use websocket directly instead. See /websocket/status")
 @sse_bp.route("/publish", methods=["POST"])
 async def publish():
     async with current_app.app_context():

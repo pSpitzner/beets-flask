@@ -5,7 +5,7 @@ import { createRouter, RouterProvider } from "@tanstack/react-router";
 
 import { customizeFetch, queryClient } from "@/components/common/_query";
 import { PrefetchConfigQueryClientProvider } from "@/components/common/hooks/useConfig";
-import { StatusContextProvider } from "@/components/common/hooks/useSocket";
+import { StatusContextProvider } from "@/components/common/websocket/status";
 
 import ThemeProvider from "./theme";
 

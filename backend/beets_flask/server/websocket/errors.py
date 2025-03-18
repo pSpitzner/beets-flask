@@ -5,6 +5,7 @@ We parse all exceptions to a common format and return them to the client for han
 
 from __future__ import annotations
 
+import functools
 from typing import (
     Awaitable,
     Callable,
@@ -29,8 +30,8 @@ Params = ParamSpec("Params")
 ReturnType = TypeVar("ReturnType")
 
 
-def sio_catch_expection(
-    func: Callable[Params, Awaitable[ReturnType]]
+def sio_catch_exception(
+    func: Callable[Params, Awaitable[ReturnType]],
 ) -> Callable[Params, Awaitable[ReturnType | WebSocketErrorDict]]:
     """Parse exceptions to a common format for websocket routes.
 
@@ -47,21 +48,23 @@ def sio_catch_expection(
         raise Exception("Exception message")
     """
 
+    @functools.wraps(func)
     async def wrapper(*args, **kwargs) -> ReturnType | WebSocketErrorDict:
         try:
-            result = await func(*args, **kwargs)
+            # Get number of arguments as socketio will not infer them correctly
+            n_args = func.__code__.co_argcount
+            result = await func(*args[:n_args], **kwargs)
             return result
         except Exception as e:
-            log.error(f"Unhandled websocket error: {e}")
             return _error_parser(e)
 
     return wrapper
 
 
 def _error_parser(e: Exception) -> WebSocketErrorDict:
-    # We may add some expection handling here if
+    # We may add some exception handling here if
     # we want to handle some exceptions differently
-    log.error(f"Unhandled websocket error: {e}")
+    log.exception(f"Unhandled websocket error: {e}")
     d = WebSocketErrorDict(
         error=e.__class__.__name__,
         message=str(e),
@@ -69,7 +72,7 @@ def _error_parser(e: Exception) -> WebSocketErrorDict:
     return d
 
 
-__all__ = ["sio_catch_expection", "WebSocketErrorDict"]
+__all__ = ["sio_catch_exception", "WebSocketErrorDict"]
 
 
 """Allow to throw the errors in a testing
@@ -80,6 +83,6 @@ from . import sio
 
 
 @sio.on("test_generic_exc", namespace="/test")
-@sio_catch_expection
+@sio_catch_exception
 def test_generic_exc(sid):
     raise Exception("Exception message")
