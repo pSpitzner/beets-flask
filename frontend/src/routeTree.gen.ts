@@ -23,6 +23,7 @@ import { Route as LibrarySearchImport } from './routes/library/search'
 import { Route as LibraryBrowseImport } from './routes/library/browse'
 import { Route as CandidatesFolderHashImport } from './routes/candidates.$folderHash'
 import { Route as FrontpageModalImport } from './routes/_frontpage/_modal'
+import { Route as DebugJobsImport } from './routes/_debug/jobs'
 import { Route as LibraryBrowseArtistImport } from './routes/library/browse.$artist'
 import { Route as FrontpageModalScheduleImport } from './routes/_frontpage/_modal.schedule'
 import { Route as LibraryBrowseArtistAlbumIdImport } from './routes/library/browse.$artist.$albumId'
@@ -101,6 +102,12 @@ const FrontpageModalRoute = FrontpageModalImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const DebugJobsRoute = DebugJobsImport.update({
+  id: '/_debug/jobs',
+  path: '/jobs',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const LibraryBrowseArtistRoute = LibraryBrowseArtistImport.update({
   id: '/$artist',
   path: '/$artist',
@@ -137,6 +144,13 @@ declare module '@tanstack/react-router' {
       path: '/loading'
       fullPath: '/loading'
       preLoaderRoute: typeof LoadingImport
+      parentRoute: typeof rootRoute
+    }
+    '/_debug/jobs': {
+      id: '/_debug/jobs'
+      path: '/jobs'
+      fullPath: '/jobs'
+      preLoaderRoute: typeof DebugJobsImport
       parentRoute: typeof rootRoute
     }
     '/_frontpage/_modal': {
@@ -301,6 +315,7 @@ const LibraryBrowseRouteWithChildren = LibraryBrowseRoute._addFileChildren(
 
 export interface FileRoutesByFullPath {
   '/loading': typeof LoadingRoute
+  '/jobs': typeof DebugJobsRoute
   '': typeof FrontpageModalRouteWithChildren
   '/candidates/$folderHash': typeof CandidatesFolderHashRoute
   '/library/browse': typeof LibraryBrowseRouteWithChildren
@@ -320,6 +335,7 @@ export interface FileRoutesByFullPath {
 
 export interface FileRoutesByTo {
   '/loading': typeof LoadingRoute
+  '/jobs': typeof DebugJobsRoute
   '': typeof FrontpageModalRouteWithChildren
   '/candidates/$folderHash': typeof CandidatesFolderHashRoute
   '/library/browse': typeof LibraryBrowseRouteWithChildren
@@ -340,6 +356,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/loading': typeof LoadingRoute
+  '/_debug/jobs': typeof DebugJobsRoute
   '/_frontpage/_modal': typeof FrontpageModalRouteWithChildren
   '/candidates/$folderHash': typeof CandidatesFolderHashRoute
   '/library/browse': typeof LibraryBrowseRouteWithChildren
@@ -361,6 +378,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/loading'
+    | '/jobs'
     | ''
     | '/candidates/$folderHash'
     | '/library/browse'
@@ -379,6 +397,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/loading'
+    | '/jobs'
     | ''
     | '/candidates/$folderHash'
     | '/library/browse'
@@ -397,6 +416,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/loading'
+    | '/_debug/jobs'
     | '/_frontpage/_modal'
     | '/candidates/$folderHash'
     | '/library/browse'
@@ -417,6 +437,7 @@ export interface FileRouteTypes {
 
 export interface RootRouteChildren {
   LoadingRoute: typeof LoadingRoute
+  DebugJobsRoute: typeof DebugJobsRoute
   FrontpageModalRoute: typeof FrontpageModalRouteWithChildren
   CandidatesFolderHashRoute: typeof CandidatesFolderHashRoute
   LibraryBrowseRoute: typeof LibraryBrowseRouteWithChildren
@@ -432,6 +453,7 @@ export interface RootRouteChildren {
 
 const rootRouteChildren: RootRouteChildren = {
   LoadingRoute: LoadingRoute,
+  DebugJobsRoute: DebugJobsRoute,
   FrontpageModalRoute: FrontpageModalRouteWithChildren,
   CandidatesFolderHashRoute: CandidatesFolderHashRoute,
   LibraryBrowseRoute: LibraryBrowseRouteWithChildren,
@@ -456,6 +478,7 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/loading",
+        "/_debug/jobs",
         "/_frontpage/_modal",
         "/candidates/$folderHash",
         "/library/browse",
@@ -471,6 +494,9 @@ export const routeTree = rootRoute
     },
     "/loading": {
       "filePath": "loading.tsx"
+    },
+    "/_debug/jobs": {
+      "filePath": "_debug/jobs.tsx"
     },
     "/_frontpage/_modal": {
       "filePath": "_frontpage/_modal.tsx",

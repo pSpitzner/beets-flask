@@ -36,15 +36,26 @@ It combines:
 
 from __future__ import annotations
 
+import asyncio
+import functools
 from time import sleep
-from typing import TYPE_CHECKING
+from typing import (
+    TYPE_CHECKING,
+    Callable,
+    Concatenate,
+    ParamSpec,
+    TypeVar,
+    TypeVarTuple,
+)
 
+import redis
 from rq.decorators import job
 from sqlalchemy import delete
 
 from beets_flask import log
 from beets_flask.database import Tag, db_session_factory
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
+from beets_flask.importer.progress import FolderStatus
 from beets_flask.importer.session import (
     AsIsImportSession,
     AutoImportSession,
@@ -54,7 +65,7 @@ from beets_flask.importer.session import (
 from beets_flask.importer.states import SessionState
 from beets_flask.redis import import_queue, preview_queue, redis_conn
 from beets_flask.server.routes.errors import InvalidUsage
-from beets_flask.server.routes.status import update_client_view
+from beets_flask.server.websocket.status import send_folder_status_update
 
 if TYPE_CHECKING:
     from rq.job import Job
@@ -103,7 +114,52 @@ def enqueue(hash: str, path: str, kind: str, session: Session | None = None):
     return job
 
 
+R = TypeVar("R")
+P = ParamSpec("P")
+
+
+def emit_status(
+    before: FolderStatus, after: FolderStatus
+) -> Callable[
+    [Callable[Concatenate[str, str, P], R]], Callable[Concatenate[str, str, P], R]
+]:
+    """Decorator to propagate status updates to clients."""
+
+    def decorator(
+        f: Callable[Concatenate[str, str, P], R],
+    ) -> Callable[Concatenate[str, str, P], R]:
+
+        @functools.wraps(f)
+        def wrapper(hash: str, path: str, *args, **kwargs) -> R:
+
+            # Send status update to clients
+            asyncio.run(
+                send_folder_status_update(
+                    hash=hash,
+                    path=path,
+                    status=before,
+                )
+            )
+
+            ret = f(hash, path, *args, **kwargs)
+
+            # Send status update to clients
+            asyncio.run(
+                send_folder_status_update(
+                    hash=hash,
+                    path=path,
+                    status=after,
+                )
+            )
+            return ret
+
+        return wrapper
+
+    return decorator
+
+
 @job(timeout=600, queue=preview_queue, connection=redis_conn)
+@emit_status(before=FolderStatus.RUNNING, after=FolderStatus.TAGGED)
 def run_preview(hash: str, path: str, kind: str, force_retag: bool = False):
     """Start a preview Session on an existing tag.
 
@@ -117,8 +173,6 @@ def run_preview(hash: str, path: str, kind: str, force_retag: bool = False):
     -------
         str: the match url, if we found one, else None.
     """
-
-    sleep(15)
 
     with db_session_factory() as db_session:
         log.info(f"Preview task on {hash=} {path=} {kind=}")

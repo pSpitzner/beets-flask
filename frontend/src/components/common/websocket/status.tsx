@@ -10,15 +10,32 @@
 
 import { createContext, useContext, useEffect } from "react";
 import type { Socket } from "socket.io-client";
-import { useSocket } from "./useSocket";
-import type { QueryClient } from "@tanstack/react-query";
-
+import useSocket from "./useSocket";
+import { type QueryClient } from "@tanstack/react-query";
+import { queryClient } from "../_query";
 interface StatusContextI {
     isConnected: boolean;
     socket: Socket | null;
 }
 
 const StatusContext = createContext<StatusContextI | null>(null);
+
+// TODO: Replace with py-generated type
+interface FolderStatus {
+    path: string;
+    hash: string;
+    status: string;
+}
+
+export const statusQueryOptions = {
+    queryKey: ["status", "all"],
+    queryFn: async () => {
+        // fetch initial status
+        // further updates will be handled by the socket
+        const response = await fetch("/tag/status");
+        return (await response.json()) as FolderStatus[];
+    },
+};
 
 export function StatusContextProvider({
     children,
@@ -32,8 +49,34 @@ export function StatusContextProvider({
     useEffect(() => {
         if (!socket) return;
 
-        function handleUpdate(data: unknown) {
-            console.log("Status Update", data);
+        function handleUpdate(updateData: {
+            path: string;
+            hash: string;
+            status: string;
+        }) {
+            queryClient.setQueryData<FolderStatus[]>(
+                statusQueryOptions.queryKey,
+                (prev) => {
+                    if (!prev) return [updateData];
+                    // If the folder is already in the list, update it
+                    let folderIndex = prev.findIndex((folder) => {
+                        return folder.hash === updateData.hash;
+                    });
+                    if (folderIndex !== -1) {
+                        // Try by path if we did not find it by hash
+                        folderIndex = prev.findIndex((folder) => {
+                            return folder.path === updateData.path;
+                        });
+                    }
+
+                    if (folderIndex !== -1) {
+                        prev[folderIndex] = updateData;
+                        return prev;
+                    } else {
+                        return [...prev, updateData];
+                    }
+                }
+            );
         }
 
         socket.on("update", handleUpdate);

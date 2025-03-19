@@ -11,7 +11,7 @@ import React, {
 import { FitAddon as xTermFitAddon } from "@xterm/addon-fit";
 import { Terminal as xTerminal } from "@xterm/xterm";
 
-import { useSocket } from "@/components/common/hooks/useSocket";
+import useSocket from "@/components/common/websocket/useSocket";
 
 import "node_modules/@xterm/xterm/css/xterm.css";
 import { Socket } from "socket.io-client";

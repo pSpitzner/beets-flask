@@ -18,10 +18,10 @@ import { io, ManagerOptions, Socket, SocketOptions } from "socket.io-client";
  * const { socket, isConnected } = useSocket("myNamespace");
  * ```
  */
-export const useSocket = (
+export default function useSocket(
     namespace: string,
     options?: Partial<ManagerOptions & SocketOptions>
-) => {
+) {
     const url: string = `/${namespace}`;
 
     const [socket, setSocket] = useState<Socket | null>(null);
@@ -70,4 +70,4 @@ export const useSocket = (
     }, [socket, namespace]);
 
     return { socket, isConnected };
-};
+}

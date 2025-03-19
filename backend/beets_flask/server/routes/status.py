@@ -16,7 +16,6 @@ from deprecated import deprecated
 from quart import Blueprint, current_app, request
 
 from beets_flask.logger import log
-from beets_flask.server.websocket.status import send_status_update
 
 from ..websocket import sio
 

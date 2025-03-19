@@ -35,16 +35,12 @@ dependencies = [
     # dirhash
     #"scantree>=0.0.4",
     "natsort",
+    "aiohttp",
 ]
 
 [project.optional-dependencies]
 # Can be install with e.g. `pip install -e .[dev]`
-test = [
-    "pytest>=8.2.2",
-    "pytest-asyncio>=0.23.8",
-    "pytest-cov>=5.0.0",
-    "aiohttp",
-]
+test = ["pytest>=8.2.2", "pytest-asyncio>=0.23.8", "pytest-cov>=5.0.0"]
 dev = ["ruff>=0.6.5", "pre-commit>=3.8.0", "interactive_beets[typed]"]
 typed = [
     "types-cachetools",
