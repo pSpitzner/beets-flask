@@ -36,9 +36,7 @@ It combines:
 
 from __future__ import annotations
 
-import asyncio
 import functools
-from time import sleep
 from typing import (
     TYPE_CHECKING,
     Awaitable,
@@ -46,10 +44,9 @@ from typing import (
     Concatenate,
     ParamSpec,
     TypeVar,
-    TypeVarTuple,
 )
 
-import redis
+from deprecated import deprecated
 from rq.decorators import job
 from sqlalchemy import delete
 
@@ -73,25 +70,62 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
 
-def enqueue(hash: str, path: str, kind: str, session: Session | None = None):
+R = TypeVar("R")
+P = ParamSpec("P")
+
+
+def emit_status(
+    before: FolderStatus | None = None, after: FolderStatus | None = None
+) -> Callable[
+    [Callable[Concatenate[str, str, P], Awaitable[R]]],
+    Callable[Concatenate[str, str, P], Awaitable[R]],
+]:
+    """Decorator to propagate status updates to clients.
+
+    Parameters
+    ----------
+    before: FolderStatus, optional
+        The status before the function is called. If none is given, no status update is sent.
+    after: FolderStatus, optional
+        The status after the function is called. If none is given, no status update is sent.
+    """
+
+    def decorator(
+        f: Callable[Concatenate[str, str, P], Awaitable[R]],
+    ) -> Callable[Concatenate[str, str, P], Awaitable[R]]:
+
+        @functools.wraps(f)
+        async def wrapper(hash: str, path: str, *args, **kwargs) -> R:
+            # FIXME: In theory we could keep the socket client open here
+            if before is not None:
+                await send_folder_status_update(
+                    hash=hash,
+                    path=path,
+                    status=before,
+                )
+
+            ret = await f(hash, path, *args, **kwargs)
+
+            if after is not None:
+                await send_folder_status_update(
+                    hash=hash,
+                    path=path,
+                    status=after,
+                )
+
+            return ret
+
+        return wrapper
+
+    return decorator
+
+
+@emit_status(before=FolderStatus.PENDING)
+async def enqueue(hash: str, path: str, kind: str, session: Session | None = None):
     """Delegate an existing tag to a redis worker, depending on its kind."""
 
     f_on_disk = FolderInDb.get_current_on_disk(hash, path)
     hash = f_on_disk.hash
-    # TODO: maybe we want to require a new enqueue if hashes do not match?
-    # For now we just roll with the new one.
-
-    # update_client_view(
-    #     type="tag",
-    #     tagId=tag.id,
-    #     tagPath=tag.album_folder,
-    #     attributes={
-    #         "kind": tag.kind,
-    #         "status": tag.status,
-    #         "updated_at": tag.updated_at.isoformat(),
-    #     },
-    #     message="Tag enqueued",
-    # )
 
     if kind == "preview":
         job = preview_queue.enqueue(run_preview, hash, path, kind)
@@ -113,45 +147,6 @@ def enqueue(hash: str, path: str, kind: str, session: Session | None = None):
     log.debug(f"Enqueued {job.id=} {job.meta=}")
 
     return job
-
-
-R = TypeVar("R")
-P = ParamSpec("P")
-
-
-def emit_status(before: FolderStatus, after: FolderStatus) -> Callable[
-    [Callable[Concatenate[str, str, P], Awaitable[R]]],
-    Callable[Concatenate[str, str, P], Awaitable[R]],
-]:
-    """Decorator to propagate status updates to clients."""
-
-    def decorator(
-        f: Callable[Concatenate[str, str, P], Awaitable[R]],
-    ) -> Callable[Concatenate[str, str, P], Awaitable[R]]:
-
-        @functools.wraps(f)
-        async def wrapper(hash: str, path: str, *args, **kwargs) -> R:
-
-            # Send status update to clients
-            await send_folder_status_update(
-                hash=hash,
-                path=path,
-                status=before,
-            )
-
-            ret = await f(hash, path, *args, **kwargs)
-
-            # Send status update to clients
-            await send_folder_status_update(
-                hash=hash,
-                path=path,
-                status=after,
-            )
-            return ret
-
-        return wrapper
-
-    return decorator
 
 
 @job(timeout=600, queue=preview_queue, connection=redis_conn)
@@ -195,7 +190,8 @@ async def run_preview(hash: str, path: str, kind: str, force_retag: bool = False
 
 
 @job(timeout=600, queue=import_queue, connection=redis_conn)
-def run_import(hash: str, path: str, kind: str, match_url: str | None = None):
+@emit_status(before=FolderStatus.RUNNING, after=FolderStatus.IMPORTED)
+async def run_import(hash: str, path: str, kind: str, match_url: str | None = None):
     """Start Import session for a tag.
 
     Relies on a preview to have been generated before.
@@ -248,7 +244,7 @@ def run_import(hash: str, path: str, kind: str, match_url: str | None = None):
             i_session = ImportSession(s_state_live, match_url=match_url)
 
         try:
-            i_session.run_sync()
+            await i_session.run_async()
         except Exception as e:
             log.exception(e)
         finally:
@@ -258,7 +254,8 @@ def run_import(hash: str, path: str, kind: str, match_url: str | None = None):
 
 
 @job(timeout=600, queue=import_queue, connection=redis_conn)
-def run_auto_import(hash: str, path: str, kind: str) -> list[str] | None:
+@emit_status(before=FolderStatus.RUNNING, after=FolderStatus.IMPORTED)
+async def run_auto_import(hash: str, path: str, kind: str) -> list[str] | None:
     """Automatically run an import session.
 
     Runs an import on a tag after a preview has been generated.
@@ -302,6 +299,17 @@ def run_auto_import(hash: str, path: str, kind: str) -> list[str] | None:
             db_session.commit()
 
 
+def __set_job_meta(job: Job, hash: str, path: str, kind: str):
+    job.meta["folder_hash"] = hash
+    job.meta["folder_path"] = path
+    job.meta["job_kind"] = kind
+    job.save_meta()
+
+
+__all__ = ["enqueue"]
+
+
+@deprecated("Old stuff?")
 def tag_status(
     id: str | None = None, path: str | None = None, session: Session | None = None
 ):
@@ -322,6 +330,7 @@ def tag_status(
         return bt.status
 
 
+@deprecated("Old stuff?")
 def delete_tags(with_status: list[str]):
     """Delete tags by status.
 
@@ -336,10 +345,3 @@ def delete_tags(with_status: list[str]):
             f"Deleted {result.rowcount} tags with statuses: {', '.join(with_status)}"
         )
         session.commit()
-
-
-def __set_job_meta(job: Job, hash: str, path: str, kind: str):
-    job.meta["folder_hash"] = hash
-    job.meta["folder_path"] = path
-    job.meta["job_kind"] = kind
-    job.save_meta()

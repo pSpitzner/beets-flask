@@ -2,7 +2,6 @@ import base64
 from datetime import datetime
 from typing import Any, Sequence, TypeVar
 
-from beets_flask.server.routes.tag import with_folders
 from quart import Blueprint, Quart, jsonify, request
 from sqlalchemy import select
 
@@ -14,6 +13,7 @@ from beets_flask.database.models.states import (
     TaskStateInDb,
 )
 from beets_flask.server.routes.errors import InvalidUsage
+from beets_flask.server.routes.tag import with_folders
 
 from .errors import get_query_param
 

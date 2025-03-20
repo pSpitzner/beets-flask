@@ -196,7 +196,7 @@ async def add_tag(folder_hashes: list[str], folder_paths: list[str], params: Any
 
     with db_session_factory() as session:
         for hash, path in zip(folder_hashes, folder_paths):
-            jobs.append(invoker.enqueue(hash, path, kind, session=session))
+            jobs.append(await invoker.enqueue(hash, path, kind, session=session))
 
     return jsonify(
         {
