@@ -41,6 +41,7 @@ import functools
 from time import sleep
 from typing import (
     TYPE_CHECKING,
+    Awaitable,
     Callable,
     Concatenate,
     ParamSpec,
@@ -118,38 +119,33 @@ R = TypeVar("R")
 P = ParamSpec("P")
 
 
-def emit_status(
-    before: FolderStatus, after: FolderStatus
-) -> Callable[
-    [Callable[Concatenate[str, str, P], R]], Callable[Concatenate[str, str, P], R]
+def emit_status(before: FolderStatus, after: FolderStatus) -> Callable[
+    [Callable[Concatenate[str, str, P], Awaitable[R]]],
+    Callable[Concatenate[str, str, P], Awaitable[R]],
 ]:
     """Decorator to propagate status updates to clients."""
 
     def decorator(
-        f: Callable[Concatenate[str, str, P], R],
-    ) -> Callable[Concatenate[str, str, P], R]:
+        f: Callable[Concatenate[str, str, P], Awaitable[R]],
+    ) -> Callable[Concatenate[str, str, P], Awaitable[R]]:
 
         @functools.wraps(f)
-        def wrapper(hash: str, path: str, *args, **kwargs) -> R:
+        async def wrapper(hash: str, path: str, *args, **kwargs) -> R:
 
             # Send status update to clients
-            asyncio.run(
-                send_folder_status_update(
-                    hash=hash,
-                    path=path,
-                    status=before,
-                )
+            await send_folder_status_update(
+                hash=hash,
+                path=path,
+                status=before,
             )
 
-            ret = f(hash, path, *args, **kwargs)
+            ret = await f(hash, path, *args, **kwargs)
 
             # Send status update to clients
-            asyncio.run(
-                send_folder_status_update(
-                    hash=hash,
-                    path=path,
-                    status=after,
-                )
+            await send_folder_status_update(
+                hash=hash,
+                path=path,
+                status=after,
             )
             return ret
 
@@ -160,7 +156,7 @@ def emit_status(
 
 @job(timeout=600, queue=preview_queue, connection=redis_conn)
 @emit_status(before=FolderStatus.RUNNING, after=FolderStatus.TAGGED)
-def run_preview(hash: str, path: str, kind: str, force_retag: bool = False):
+async def run_preview(hash: str, path: str, kind: str, force_retag: bool = False):
     """Start a preview Session on an existing tag.
 
     Parameters
@@ -183,20 +179,17 @@ def run_preview(hash: str, path: str, kind: str, force_retag: bool = False):
                 + f"Using new content ({f_on_disk.hash}) instead of {hash}"
             )
 
-        # update_client_view
-
         p_session = PreviewSession(SessionState(f_on_disk))
         try:
             # TODO: Think about if session exists in db, create new if force_retag?
             # this concerns auto and retagging.
-            p_session.run_sync()
+            await p_session.run_async()
         except Exception as e:
             log.exception(e)
         finally:
             s_state_indb = SessionStateInDb.from_live_state(p_session.state)
             db_session.merge(s_state_indb)
             db_session.commit()
-            # update_client_view
 
         log.info(f"Preview done. {f_on_disk.hash=} {path=} {kind=}")
 

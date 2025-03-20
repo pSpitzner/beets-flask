@@ -71,27 +71,29 @@ async def send_folder_status_response_update(
     """
 
     client = socketio.AsyncClient()
-    log.warning(client)
-    log.warning(f"Connecting to {namespace}")
     # FIXME: Static URL is difficult to maintain and testing does not work
     # with this setup. We need to find a way to make this dynamic.
-    await client.connect("http://127.0.0.1:5001", namespaces=[namespace])
-    log.warning(f"Connected to {namespace}")
+    await client.connect("ws://127.0.0.1:5001", namespaces=[namespace])
+
+    # HACK: Serialize FolderStatus, maybe we can fix this using the standard encoder in the future
+    data = {
+        "path": status["path"],
+        "hash": status["hash"],
+        "status": (
+            status["status"].name
+            if isinstance(status["status"], FolderStatus)
+            else status["status"]
+        ),
+    }
     # We need to use call (instead of emit) as otherwise the event is not emitted
     # if we close the client immediately after connecting
-
-    # Why not emitted in redis?
-    # Gets stuck here
-    log.warning("STUCK HERE (only in redis)")
     await client.call(
         "update",
-        status,
+        data,
         namespace=namespace,
         timeout=5,
     )
-    log.warning(f"Sent update to {namespace}")
     await client.disconnect()
-    log.warning(f"Disconnected from {namespace}")
 
 
 def register_status():

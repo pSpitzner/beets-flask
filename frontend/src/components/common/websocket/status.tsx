@@ -58,23 +58,25 @@ export function StatusContextProvider({
                 statusQueryOptions.queryKey,
                 (prev) => {
                     if (!prev) return [updateData];
+                    const n = [...prev];
+
                     // If the folder is already in the list, update it
-                    let folderIndex = prev.findIndex((folder) => {
+                    let folderIndex = n.findIndex((folder) => {
                         return folder.hash === updateData.hash;
                     });
                     if (folderIndex !== -1) {
                         // Try by path if we did not find it by hash
-                        folderIndex = prev.findIndex((folder) => {
+                        folderIndex = n.findIndex((folder) => {
                             return folder.path === updateData.path;
                         });
                     }
 
                     if (folderIndex !== -1) {
-                        prev[folderIndex] = updateData;
-                        return prev;
+                        n[folderIndex] = updateData;
                     } else {
-                        return [...prev, updateData];
+                        n.push(updateData);
                     }
+                    return n;
                 }
             );
         }
