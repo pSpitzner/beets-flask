@@ -37,30 +37,45 @@ tag_bp = Blueprint("tag", __name__, url_prefix="/tag")
 
 
 def with_folders(
-    f: Callable[[list[str], list[str], Any], Awaitable[Response]],
-) -> Callable[..., Awaitable[Response]]:
+    allow_mismatch: bool = False,
+) -> Callable[
+    [Callable[[list[str], list[str], Any], Awaitable[Response]]],
+    Callable[[list[str], list[str], Any], Awaitable[Response]],
+]:
     """Decorator for the standard scenario where we get a list of folder hashes and paths.
 
     Only works with functions that take the following arguments:
     - `folder_hashes` (list): A list of folder hashes
     - `folder_paths` (list): A list of folder paths
     - `params` (dict): The request parameters
+
+    Parameters
+    ----------
+    allow_mismatch : bool, optional
+        Allow the folder hashes and paths to have different lengths, by default False
+
     """
 
-    @wraps(f)
-    async def wrapper(*args, **kwargs):
-        params = await request.get_json()
-        folder_hashes = get_query_param(params, "folder_hashes", list, default=[])
-        folder_paths = get_query_param(params, "folder_paths", list, default=[])
+    def decorator(
+        f: Callable[[list[str], list[str], Any], Awaitable[Response]],
+    ) -> Callable[[list[str], list[str], Any], Awaitable[Response]]:
 
-        if len(folder_hashes) != len(folder_paths):
-            raise InvalidUsage(
-                "folder_hashes and folder_paths must be of the same length"
-            )
+        @wraps(f)
+        async def wrapper(*args, **kwargs):
+            params = await request.get_json()
+            folder_hashes = get_query_param(params, "folder_hashes", list, default=[])
+            folder_paths = get_query_param(params, "folder_paths", list, default=[])
 
-        return await f(folder_hashes, folder_paths, params)
+            if not allow_mismatch and len(folder_hashes) != len(folder_paths):
+                raise InvalidUsage(
+                    "folder_hashes and folder_paths must be of the same length"
+                )
 
-    return wrapper
+            return await f(folder_hashes, folder_paths, params)
+
+        return wrapper
+
+    return decorator
 
 
 @tag_bp.route("/", methods=["GET"])
@@ -168,7 +183,7 @@ async def add_tag_old():
 
 
 @tag_bp.route("/add", methods=["POST"])
-@with_folders
+@with_folders()
 async def add_tag(folder_hashes: list[str], folder_paths: list[str], params: Any):
     """Add one or multiple tags.
 
@@ -213,7 +228,7 @@ class FolderStatusResponse(TypedDict):
 
 
 @tag_bp.route("/status", methods=["GET"])
-@with_folders
+@with_folders()
 async def get_status(folder_hashes: list[str], folder_paths: list[str], params: Any):
     """Get all pending tasks."""
     from beets_flask.redis import queues, redis_conn

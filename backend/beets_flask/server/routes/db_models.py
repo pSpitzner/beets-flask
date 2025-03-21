@@ -76,44 +76,27 @@ def blueprint_for_db_model(model: type[T], url_prefix: str | None = None) -> Blu
         with db_session_factory() as session:
             item = model.get_by(model.id == id, session=session)
             if not item:
-                return "Not found", 404
+                raise InvalidUsage(f"Item with id {id} not found", status_code=404)
 
             return item.to_dict()
 
-    @bp.route("/by_folder", methods=["POST"])
-    @with_folders
-    async def get_by_folder(
-        folder_hashes: list[str], folder_paths: list[str], params: Any
-    ):
-        # PS, thoughts:
-        # We currently do not attach folder and hash to tasks or candidates.
-        # I think we should :P
+    # FIXME: This is a bit of a hack, but it works for now
+    if model is SessionStateInDb:
 
-        # Considering Candidates:
-        # Here it might be fine to traverse down, because we will likely want
-        # to only get Candidates of the latest task of the latest session
-        # for a given folder? -> How do we want to request from the frontend?
+        @bp.route("/by_folder", methods=["POST"])
+        @with_folders(allow_mismatch=True)
+        async def get_by_folder(
+            folder_hashes: list[str], folder_paths: list[str], params: Any
+        ):
 
-        hash = folder_hashes[0]
-        path = folder_paths[0]
-        with db_session_factory() as db_session:
-            s_state_db = SessionStateInDb.get_by(
-                SessionStateInDb.folder_hash == hash, session=db_session
-            )
-            if s_state_db is None:
-                raise InvalidUsage("Session not found")
-
-            t_state_db = TaskStateInDb.get_by(
-                TaskStateInDb.session_id == s_state_db.id, session=db_session
-            )
-            if t_state_db is None:
-                raise InvalidUsage("Task not found")
-
-            c_state_db = CandidateStateInDb.get_by(
-                CandidateStateInDb.task_id == t_state_db.id, session=db_session
-            )
-
-        return jsonify({})
+            hash = folder_hashes[0]
+            with db_session_factory() as db_session:
+                item = model.get_by(model.folder_hash == hash, session=db_session)
+                if not item:
+                    raise InvalidUsage(
+                        f"Item with hash {hash} not found", status_code=404
+                    )
+                return jsonify(item.to_dict())
 
     return bp
 
