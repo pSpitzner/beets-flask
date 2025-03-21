@@ -45,10 +45,6 @@ def create_app(config: str | ServerConfig | None = None) -> Quart:
 
     register_inboxes()
 
-    from ..invoker import delete_tags
-
-    delete_tags(with_status=["pending", "tagging", "importing"])
-
     log.debug("Quart app created!")
 
     return app

@@ -151,18 +151,18 @@ async def enqueue(hash: str, path: str, kind: str, session: Session | None = Non
 
 @job(timeout=600, queue=preview_queue, connection=redis_conn)
 @emit_status(before=FolderStatus.RUNNING, after=FolderStatus.TAGGED)
-async def run_preview(hash: str, path: str, kind: str, force_retag: bool = False):
-    """Start a preview Session on an existing tag.
+async def run_preview(hash: str, path: str, kind: str):
+    """Fetch candidates for a folder using beets.
+
+    Will refetch candidates if this is rerun even if candidates exist
+    in the db.
 
     Parameters
     ----------
-    force_retag : bool, optional
-        If true, we force identifying new matches, the current session (if
-        existing) will be replaced with a new one. Default False.
-
-    Returns
-    -------
-        str: the match url, if we found one, else None.
+    hash : str
+        The hash of the folder for which to run the preview.
+    path : str
+        The path of the folder for which to run the preview.
     """
 
     with db_session_factory() as db_session:
@@ -328,20 +328,3 @@ def tag_status(
             return "untagged"
 
         return bt.status
-
-
-@deprecated("Old stuff?")
-def delete_tags(with_status: list[str]):
-    """Delete tags by status.
-
-    Delete all tags that have a certain status from the database.
-    We call this during container launch, to clear up things that
-    did not finish.
-    """
-    with db_session_factory() as session:
-        stmt = delete(Tag).where(Tag.status.in_(with_status))
-        result = session.execute(stmt)
-        log.debug(
-            f"Deleted {result.rowcount} tags with statuses: {', '.join(with_status)}"
-        )
-        session.commit()
