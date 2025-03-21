@@ -18,8 +18,11 @@ import {
     useState,
 } from "react";
 import {
+    Badge,
     Box,
+    BoxProps,
     Checkbox,
+    Chip,
     IconButton,
     Menu,
     MenuItem,
@@ -40,11 +43,17 @@ import {
 
 import { File, Folder, FolderStatus } from "@/pythonTypes";
 
-import { FileTypeIcon, FolderTypeIcon, FolderStatusIcon } from "../common/icons";
+import {
+    FileTypeIcon,
+    FolderTypeIcon,
+    FolderStatusIcon,
+    SourceTypeIcon,
+} from "../common/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ClipboardCopyButton } from "../common/inputs/copy";
 import { statusQueryOptions } from "../common/websocket/status";
 import { Link } from "@tanstack/react-router";
+import { sessionQueryOptions } from "@/routes/_debug/session.$id";
 
 /* --------------------------------- Context -------------------------------- */
 // Allows to trigger actions on a single or multiple folders
@@ -124,7 +133,7 @@ export function FoldersSelectionProvider({ children }: { children: React.ReactNo
 
 export const GridWrapper = styled(Box)(({ theme }) => ({
     display: "grid",
-    gridTemplateColumns: "[chip] auto [tree] 1fr [actions] auto [selector] auto",
+    gridTemplateColumns: "[tree] 1fr [chip] auto [actions] auto [selector] auto",
     width: "100%",
     columnGap: theme.spacing(1),
     // Fill columns even if content is given in other order
@@ -166,11 +175,7 @@ export function FolderComponent({
     const [isOpen, setIsOpen] = useState(() => {
         // Open if folder does contain other folders
         // else closed (i.e. only file)
-        if (
-            folder.children.some(
-                (child) => child.type === "directory" && child.is_album
-            )
-        ) {
+        if (folder.children.some((child) => child.type === "directory")) {
             return true;
         }
         return false;
@@ -198,11 +203,14 @@ export function FolderComponent({
                 sx={{
                     backgroundColor: isSelected(folder) ? "gray !important" : "inherit",
                     position: "relative",
-                    px: 1,
                 }}
             >
-                <Link to={"/session/$id"} params={{ id: folder.hash }}>
-                    <FolderStatusForFolder folder={folder} size={ICON_SIZE} />
+                <Link
+                    to={"/session/$id"}
+                    params={{ id: folder.hash }}
+                    style={{ gridColumn: "chip" }}
+                >
+                    <Chips folder={folder} />
                 </Link>
 
                 {/* Folder name and collapsable */}
@@ -212,6 +220,8 @@ export function FolderComponent({
                     setIsOpen={setIsOpen}
                     level={level}
                 />
+                {/* More actions*/}
+                <MoreActions f={folder} sx={{ gridColumn: "actions" }} />
 
                 {/* Selector */}
                 <Checkbox
@@ -224,8 +234,6 @@ export function FolderComponent({
                     style={{ padding: 0 }}
                     disabled={unSelectable}
                 />
-                {/* More actions*/}
-                <MoreActions f={folder} />
             </GridRow>
 
             {/* Children */}
@@ -285,7 +293,9 @@ function FolderTreeRow({
                 size={ICON_SIZE}
             />
 
-            <Typography variant="body1">{folder.full_path.split("/").pop()}</Typography>
+            <Typography variant="body1" sx={{ paddingBlock: 0.25 }}>
+                {folder.full_path.split("/").pop()}
+            </Typography>
         </LevelIndentWrapper>
     );
 }
@@ -409,54 +419,119 @@ function LevelIndentWrapper({
     );
 }
 
-function FolderStatusForFolder({ folder, ...props }: { folder: Folder } & LucideProps) {
-    const { data: status, isError } = useQuery(statusQueryOptions);
+/** Shows the current import status of the
+ * folder.
+ */
+function FolderStatusChip({ folder, ...props }: { folder: Folder } & LucideProps) {
+    const { data: status } = useQuery(statusQueryOptions);
 
-    let status_e = undefined;
+    // Status enum value
+    let status_value = status?.find((s) => s.path === folder.full_path)?.status;
 
-    status_e = status?.find((s) => s.path === folder.full_path)?.status;
-
-    if (isError) {
-        status_e = FolderStatus.FAILED;
+    // Status enum name
+    let status_name: string | undefined = undefined;
+    if (status_value !== undefined) {
+        status_name = FolderStatus[status_value];
     }
 
-    if (status_e === undefined) {
-        return <Box />;
+    if (!status_name || !status_value) {
+        return null;
     }
 
-    return <FolderStatusIcon status={status_e} {...props} />;
+    return (
+        <Chip
+            icon={<FolderStatusIcon status={status_value} size={ICON_SIZE * 0.85} />}
+            label={status_name.charAt(0) + status_name.slice(1).toLowerCase()}
+            size="small"
+            variant="outlined"
+            color="info"
+            sx={(theme) => ({
+                paddingLeft: 0.5,
+                [theme.breakpoints.down("tablet")]: {
+                    paddingLeft: 0,
+                    //Remove border on small screens
+                    border: "none",
+
+                    //Remove label on small screens
+                    "& .MuiChip-label": {
+                        display: "none",
+                    },
+                },
+            })}
+        />
+    );
+}
+
+function BestCandidateChip({ folder, ...props }: { folder: Folder } & LucideProps) {
+    // FIXME: Fetching the full session here is kinda overkill
+    let { data: session } = useQuery(sessionQueryOptions(folder.hash));
+
+    const bestCandidate = session?.tasks
+        .flatMap((t) => t.candidates.map((c) => c))
+        .filter((c) => c.info.data_source !== "asis")
+        .sort((a, b) => a.distance - b.distance)[0];
+
+    if (!bestCandidate) {
+        return null;
+    }
+
+    let color: "success" | "warning" | "error" = "success";
+    if (bestCandidate.distance > 0.3) {
+        color = "warning";
+    }
+    if (bestCandidate.distance > 0.5) {
+        color = "error";
+    }
+
+    return (
+        <Chip
+            icon={
+                <SourceTypeIcon
+                    type={bestCandidate.info.data_source!}
+                    size={ICON_SIZE * 0.85}
+                />
+            }
+            label={(Math.abs(bestCandidate.distance - 1) * 100).toFixed(2) + "%"}
+            size="small"
+            color={color}
+            variant="outlined"
+            sx={(theme) => ({
+                paddingLeft: 0.5,
+                [theme.breakpoints.down("tablet")]: {
+                    paddingLeft: 0,
+                    //Remove border on small screens
+                    border: "none",
+
+                    //Remove label on small screens
+                    "& .MuiChip-label": {
+                        display: "none",
+                    },
+                },
+            })}
+        />
+    );
 }
 
 /**Shows the percentage of the best match and its source */
-function MatchChip({
-    type,
-    quality,
-    sx,
-}: {
-    type: string;
-    quality: number;
-    sx?: SxProps<Theme>;
-}) {
-    return (
-        <Box display="flex" gap={0.5} alignItems="center">
-            {/*
-            <Chip
-            icon={<SourceTypeIcon type={type} size={ICON_SIZE} />}
-            label={quality.toFixed() + "%"}
-            size="small"
-                color="success"
-                sx={{
-                    minWidth: "4.5rem",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    backgroundColor: quality_color(quality),
-                    ...sx,
-                    fontSize: "0.8rem",
-                }}
-                />
-                */}
+function Chips({ folder }: { folder: Folder }) {
+    if (!folder.is_album) {
+        return <Box />;
+    }
 
-            <FolderStatusIcon status={FolderStatus.TAGGED} size={ICON_SIZE} />
+    return (
+        <Box
+            display="flex"
+            alignItems="center"
+            sx={(theme) => ({
+                position: "relative",
+                gap: 0.5,
+                [theme.breakpoints.down("tablet")]: {
+                    gap: 1,
+                },
+            })}
+        >
+            <BestCandidateChip folder={folder} />
+            <FolderStatusChip folder={folder} />
         </Box>
     );
 }
@@ -688,11 +763,11 @@ function GenericSpeedDialAction({
 }
 
 /** Simple context menu with some items */
-function MoreActions({ f }: { f: Folder | File }) {
+function MoreActions({ f, ...props }: { f: Folder | File } & BoxProps) {
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
     return (
-        <>
+        <Box {...props}>
             <IconButton
                 onClick={(e) => {
                     setAnchorEl(e.currentTarget);
@@ -731,6 +806,6 @@ function MoreActions({ f }: { f: Folder | File }) {
                     </ClipboardCopyButton>
                 </MenuItem>
             </Menu>
-        </>
+        </Box>
     );
 }

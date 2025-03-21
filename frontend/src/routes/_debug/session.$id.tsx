@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_debug/session/$id")({
     },
 });
 
-const sessionQueryOptions = (id: string) => ({
+export const sessionQueryOptions = (id: string) => ({
     queryKey: ["session", id],
     queryFn: async () => {
         const response = await fetch(`/session/by_folder`, {
