@@ -103,3 +103,18 @@ export interface Folder {
 	hash: string;
 	is_album: boolean;
 }
+export enum FolderStatus {
+	UNKNOWN = -2,
+	FAILED = -1,
+	NOT_STARTED = 0,
+	PENDING = 1,
+	RUNNING = 2,
+	TAGGED = 3,
+	IMPORTED = 4,
+}
+
+export interface FolderStatusResponse {
+	path: string;
+	hash: string;
+	status: FolderStatus;
+}

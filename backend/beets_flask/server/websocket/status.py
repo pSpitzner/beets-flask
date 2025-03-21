@@ -80,7 +80,7 @@ async def send_folder_status_response_update(
         "path": status["path"],
         "hash": status["hash"],
         "status": (
-            status["status"].name
+            status["status"].value
             if isinstance(status["status"], FolderStatus)
             else status["status"]
         ),

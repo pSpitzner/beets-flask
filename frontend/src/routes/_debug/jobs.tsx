@@ -1,7 +1,9 @@
+import { FolderStatusIcon } from "@/components/common/icons";
 import { JSONPretty } from "@/components/common/json";
 import { PageWrapper } from "@/components/common/page";
 import { statusQueryOptions } from "@/components/common/websocket/status";
-import { Button, Typography } from "@mui/material";
+import { FolderStatus } from "@/pythonTypes";
+import { Box, Button, Typography } from "@mui/material";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -40,7 +42,28 @@ function RouteComponent() {
             </Button>
 
             <JSONPretty {...queues} />
-            <JSONPretty {...jobs} />
+            <Box sx={{ display: "flex", flexDirection: "row", gap: "1rem" }}>
+                Unknown
+                <FolderStatusIcon status={FolderStatus.UNKNOWN} size={20} />
+                Failed
+                <FolderStatusIcon status={FolderStatus.FAILED} size={20} />
+                Not started
+                <FolderStatusIcon status={FolderStatus.NOT_STARTED} size={20} />
+                Pending
+                <FolderStatusIcon status={FolderStatus.PENDING} size={20} />
+                Running
+                <FolderStatusIcon status={FolderStatus.RUNNING} size={20} />
+                Tagged
+                <FolderStatusIcon status={FolderStatus.TAGGED} size={20} />
+                Imported
+                <FolderStatusIcon status={FolderStatus.IMPORTED} size={20} />
+            </Box>
+            {jobs?.map((job) => (
+                <Box sx={{ display: "flex", flexDirection: "row", gap: "1rem" }}>
+                    <FolderStatusIcon status={job.status} size={20} />
+                    <JSONPretty {...job} />
+                </Box>
+            ))}
         </PageWrapper>
     );
 }

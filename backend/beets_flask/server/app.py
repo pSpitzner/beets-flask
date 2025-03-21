@@ -84,6 +84,6 @@ class Encoder(json.JSONEncoder):
 
         # Enum values are not serializable by default
         if isinstance(o, Enum):
-            return o.name
+            return o.value
 
         return json.JSONEncoder.default(self, o)

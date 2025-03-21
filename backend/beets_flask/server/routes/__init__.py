@@ -9,7 +9,6 @@ from .inbox2 import inbox_bp2
 from .library import library_bp
 from .lookup import lookup_bp
 from .monitor import monitor_bp
-from .status import sse_bp
 from .tag import tag_bp
 from .tag_group import group_bp
 
@@ -23,7 +22,6 @@ backend_bp.register_blueprint(inbox_bp)
 backend_bp.register_blueprint(library_bp)
 backend_bp.register_blueprint(lookup_bp)
 backend_bp.register_blueprint(monitor_bp)
-backend_bp.register_blueprint(sse_bp)
 backend_bp.register_blueprint(tag_bp)
 backend_bp.register_blueprint(group_bp)
 backend_bp.register_blueprint(inbox_bp2)

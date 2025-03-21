@@ -18,7 +18,6 @@ from beets_flask.disk import (
     path_to_folder,
 )
 from beets_flask.logger import log
-from beets_flask.server.routes.status import update_client_view
 
 # ------------------------------------------------------------------------------------ #
 #                                   init and watchdog                                  #

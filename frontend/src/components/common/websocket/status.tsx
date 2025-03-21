@@ -13,6 +13,7 @@ import type { Socket } from "socket.io-client";
 import useSocket from "./useSocket";
 import { type QueryClient } from "@tanstack/react-query";
 import { queryClient } from "../_query";
+import { FolderStatusResponse } from "@/pythonTypes";
 interface StatusContextI {
     isConnected: boolean;
     socket: Socket | null;
@@ -20,20 +21,13 @@ interface StatusContextI {
 
 const StatusContext = createContext<StatusContextI | null>(null);
 
-// TODO: Replace with py-generated type
-interface FolderStatus {
-    path: string;
-    hash: string;
-    status: string;
-}
-
 export const statusQueryOptions = {
     queryKey: ["status", "all"],
     queryFn: async () => {
         // fetch initial status
         // further updates will be handled by the socket
         const response = await fetch("/tag/status");
-        return (await response.json()) as FolderStatus[];
+        return (await response.json()) as FolderStatusResponse[];
     },
 };
 
@@ -49,12 +43,8 @@ export function StatusContextProvider({
     useEffect(() => {
         if (!socket) return;
 
-        function handleUpdate(updateData: {
-            path: string;
-            hash: string;
-            status: string;
-        }) {
-            queryClient.setQueryData<FolderStatus[]>(
+        function handleUpdate(updateData: FolderStatusResponse) {
+            queryClient.setQueryData<FolderStatusResponse[]>(
                 statusQueryOptions.queryKey,
                 (prev) => {
                     if (!prev) return [updateData];

@@ -17,7 +17,17 @@ import {
     UserRoundIcon,
     Folder,
     FolderOpen,
+    TriangleAlertIcon,
+    CircleHelpIcon,
+    HourglassIcon,
+    TagsIcon,
+    CircleCheckBigIcon,
 } from "lucide-react";
+
+import { CircularProgress } from "@mui/material";
+import { GrowingRipple } from "./loading";
+
+import { FolderStatus } from "@/pythonTypes";
 
 /** Icon to show a folder, shows a disc icon if the folder is an album.
  *
@@ -113,6 +123,36 @@ export function SourceTypeIcon({ type, ...props }: { type: string } & LucideProp
         default:
             console.warn(`Unknown source type: ${type}`);
             return <BadgeAlertIcon {...props} />;
+    }
+}
+
+/** Shows the status of a folder */
+export function FolderStatusIcon({
+    status,
+    ...props
+}: { status: FolderStatus } & LucideProps) {
+    switch (status) {
+        case FolderStatus.UNKNOWN:
+            return <CircleHelpIcon {...props} />;
+        case FolderStatus.FAILED:
+            return <TriangleAlertIcon {...props} />;
+        case FolderStatus.NOT_STARTED:
+            return <HourglassIcon {...props} />;
+        case FolderStatus.PENDING:
+            return <GrowingRipple size={props.size} color={props.color} />;
+        case FolderStatus.RUNNING:
+            return (
+                <CircularProgress
+                    size={props.size}
+                    sx={{ color: props.color || "inherit" }}
+                />
+            );
+        case FolderStatus.TAGGED:
+            return <TagsIcon {...props} />;
+        case FolderStatus.IMPORTED:
+            return <CircleCheckBigIcon {...props} />;
+        default:
+            return <CircleHelpIcon {...props} />;
     }
 }
 
