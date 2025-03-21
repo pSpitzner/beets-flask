@@ -10,510 +10,486 @@
 
 // Import Routes
 
-import { Route as rootRoute } from './routes/__root'
-import { Route as LoadingImport } from './routes/loading'
-import { Route as TerminalIndexImport } from './routes/terminal/index'
-import { Route as TagsIndexImport } from './routes/tags/index'
-import { Route as Inbox3IndexImport } from './routes/inbox3/index'
-import { Route as Inbox2IndexImport } from './routes/inbox2/index'
-import { Route as InboxIndexImport } from './routes/inbox/index'
-import { Route as ImportIndexImport } from './routes/import/index'
-import { Route as FrontpageIndexImport } from './routes/_frontpage/index'
-import { Route as LibrarySearchImport } from './routes/library/search'
-import { Route as LibraryBrowseImport } from './routes/library/browse'
-import { Route as CandidatesFolderHashImport } from './routes/candidates.$folderHash'
-import { Route as FrontpageModalImport } from './routes/_frontpage/_modal'
-import { Route as DebugJobsImport } from './routes/_debug/jobs'
-import { Route as LibraryBrowseArtistImport } from './routes/library/browse.$artist'
-import { Route as FrontpageModalScheduleImport } from './routes/_frontpage/_modal.schedule'
-import { Route as DebugSessionIdImport } from './routes/_debug/session.$id'
-import { Route as DebugDesignIconsImport } from './routes/_debug/design/icons'
-import { Route as LibraryBrowseArtistAlbumIdImport } from './routes/library/browse.$artist.$albumId'
-import { Route as LibraryBrowseArtistAlbumIdItemIdImport } from './routes/library/browse.$artist.$albumId.$itemId'
+import { Route as rootRoute } from "./routes/__root";
+import { Route as LoadingImport } from "./routes/loading";
+import { Route as TerminalIndexImport } from "./routes/terminal/index";
+import { Route as TagsIndexImport } from "./routes/tags/index";
+import { Route as Inbox3IndexImport } from "./routes/inbox3/index";
+import { Route as Inbox2IndexImport } from "./routes/inbox2/index";
+import { Route as InboxIndexImport } from "./routes/inbox/index";
+import { Route as ImportIndexImport } from "./routes/import/index";
+import { Route as FrontpageIndexImport } from "./routes/_frontpage/index";
+import { Route as LibrarySearchImport } from "./routes/library/search";
+import { Route as LibraryBrowseImport } from "./routes/library/browse";
+import { Route as FrontpageModalImport } from "./routes/_frontpage/_modal";
+import { Route as DebugJobsImport } from "./routes/_debug/jobs";
+import { Route as LibraryBrowseArtistImport } from "./routes/library/browse.$artist";
+import { Route as FrontpageModalScheduleImport } from "./routes/_frontpage/_modal.schedule";
+import { Route as DebugSessionIdImport } from "./routes/_debug/session.$id";
+import { Route as DebugDesignIconsImport } from "./routes/_debug/design/icons";
+import { Route as LibraryBrowseArtistAlbumIdImport } from "./routes/library/browse.$artist.$albumId";
+import { Route as LibraryBrowseArtistAlbumIdItemIdImport } from "./routes/library/browse.$artist.$albumId.$itemId";
 
 // Create/Update Routes
 
 const LoadingRoute = LoadingImport.update({
-  id: '/loading',
-  path: '/loading',
-  getParentRoute: () => rootRoute,
-} as any)
+    id: "/loading",
+    path: "/loading",
+    getParentRoute: () => rootRoute,
+} as any);
 
 const TerminalIndexRoute = TerminalIndexImport.update({
-  id: '/terminal/',
-  path: '/terminal/',
-  getParentRoute: () => rootRoute,
-} as any)
+    id: "/terminal/",
+    path: "/terminal/",
+    getParentRoute: () => rootRoute,
+} as any);
 
 const TagsIndexRoute = TagsIndexImport.update({
-  id: '/tags/',
-  path: '/tags/',
-  getParentRoute: () => rootRoute,
-} as any)
+    id: "/tags/",
+    path: "/tags/",
+    getParentRoute: () => rootRoute,
+} as any);
 
 const Inbox3IndexRoute = Inbox3IndexImport.update({
-  id: '/inbox3/',
-  path: '/inbox3/',
-  getParentRoute: () => rootRoute,
-} as any)
+    id: "/inbox3/",
+    path: "/inbox3/",
+    getParentRoute: () => rootRoute,
+} as any);
 
 const Inbox2IndexRoute = Inbox2IndexImport.update({
-  id: '/inbox2/',
-  path: '/inbox2/',
-  getParentRoute: () => rootRoute,
-} as any)
+    id: "/inbox2/",
+    path: "/inbox2/",
+    getParentRoute: () => rootRoute,
+} as any);
 
 const InboxIndexRoute = InboxIndexImport.update({
-  id: '/inbox/',
-  path: '/inbox/',
-  getParentRoute: () => rootRoute,
-} as any)
+    id: "/inbox/",
+    path: "/inbox/",
+    getParentRoute: () => rootRoute,
+} as any);
 
 const ImportIndexRoute = ImportIndexImport.update({
-  id: '/import/',
-  path: '/import/',
-  getParentRoute: () => rootRoute,
-} as any)
+    id: "/import/",
+    path: "/import/",
+    getParentRoute: () => rootRoute,
+} as any);
 
 const FrontpageIndexRoute = FrontpageIndexImport.update({
-  id: '/_frontpage/',
-  path: '/',
-  getParentRoute: () => rootRoute,
-} as any)
+    id: "/_frontpage/",
+    path: "/",
+    getParentRoute: () => rootRoute,
+} as any);
 
 const LibrarySearchRoute = LibrarySearchImport.update({
-  id: '/library/search',
-  path: '/library/search',
-  getParentRoute: () => rootRoute,
-} as any)
+    id: "/library/search",
+    path: "/library/search",
+    getParentRoute: () => rootRoute,
+} as any);
 
 const LibraryBrowseRoute = LibraryBrowseImport.update({
-  id: '/library/browse',
-  path: '/library/browse',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const CandidatesFolderHashRoute = CandidatesFolderHashImport.update({
-  id: '/candidates/$folderHash',
-  path: '/candidates/$folderHash',
-  getParentRoute: () => rootRoute,
-} as any)
+    id: "/library/browse",
+    path: "/library/browse",
+    getParentRoute: () => rootRoute,
+} as any);
 
 const FrontpageModalRoute = FrontpageModalImport.update({
-  id: '/_frontpage/_modal',
-  getParentRoute: () => rootRoute,
-} as any)
+    id: "/_frontpage/_modal",
+    getParentRoute: () => rootRoute,
+} as any);
 
 const DebugJobsRoute = DebugJobsImport.update({
-  id: '/_debug/jobs',
-  path: '/jobs',
-  getParentRoute: () => rootRoute,
-} as any)
+    id: "/_debug/jobs",
+    path: "/jobs",
+    getParentRoute: () => rootRoute,
+} as any);
 
 const LibraryBrowseArtistRoute = LibraryBrowseArtistImport.update({
-  id: '/$artist',
-  path: '/$artist',
-  getParentRoute: () => LibraryBrowseRoute,
-} as any)
+    id: "/$artist",
+    path: "/$artist",
+    getParentRoute: () => LibraryBrowseRoute,
+} as any);
 
 const FrontpageModalScheduleRoute = FrontpageModalScheduleImport.update({
-  id: '/schedule',
-  path: '/schedule',
-  getParentRoute: () => FrontpageModalRoute,
-} as any)
+    id: "/schedule",
+    path: "/schedule",
+    getParentRoute: () => FrontpageModalRoute,
+} as any);
 
 const DebugSessionIdRoute = DebugSessionIdImport.update({
-  id: '/_debug/session/$id',
-  path: '/session/$id',
-  getParentRoute: () => rootRoute,
-} as any)
+    id: "/_debug/session/$id",
+    path: "/session/$id",
+    getParentRoute: () => rootRoute,
+} as any);
 
 const DebugDesignIconsRoute = DebugDesignIconsImport.update({
-  id: '/_debug/design/icons',
-  path: '/design/icons',
-  getParentRoute: () => rootRoute,
-} as any)
+    id: "/_debug/design/icons",
+    path: "/design/icons",
+    getParentRoute: () => rootRoute,
+} as any);
 
-const LibraryBrowseArtistAlbumIdRoute = LibraryBrowseArtistAlbumIdImport.update(
-  {
-    id: '/$albumId',
-    path: '/$albumId',
+const LibraryBrowseArtistAlbumIdRoute = LibraryBrowseArtistAlbumIdImport.update({
+    id: "/$albumId",
+    path: "/$albumId",
     getParentRoute: () => LibraryBrowseArtistRoute,
-  } as any,
-)
+} as any);
 
 const LibraryBrowseArtistAlbumIdItemIdRoute =
-  LibraryBrowseArtistAlbumIdItemIdImport.update({
-    id: '/$itemId',
-    path: '/$itemId',
-    getParentRoute: () => LibraryBrowseArtistAlbumIdRoute,
-  } as any)
+    LibraryBrowseArtistAlbumIdItemIdImport.update({
+        id: "/$itemId",
+        path: "/$itemId",
+        getParentRoute: () => LibraryBrowseArtistAlbumIdRoute,
+    } as any);
 
 // Populate the FileRoutesByPath interface
 
-declare module '@tanstack/react-router' {
-  interface FileRoutesByPath {
-    '/loading': {
-      id: '/loading'
-      path: '/loading'
-      fullPath: '/loading'
-      preLoaderRoute: typeof LoadingImport
-      parentRoute: typeof rootRoute
+declare module "@tanstack/react-router" {
+    interface FileRoutesByPath {
+        "/loading": {
+            id: "/loading";
+            path: "/loading";
+            fullPath: "/loading";
+            preLoaderRoute: typeof LoadingImport;
+            parentRoute: typeof rootRoute;
+        };
+        "/_debug/jobs": {
+            id: "/_debug/jobs";
+            path: "/jobs";
+            fullPath: "/jobs";
+            preLoaderRoute: typeof DebugJobsImport;
+            parentRoute: typeof rootRoute;
+        };
+        "/_frontpage/_modal": {
+            id: "/_frontpage/_modal";
+            path: "";
+            fullPath: "";
+            preLoaderRoute: typeof FrontpageModalImport;
+            parentRoute: typeof rootRoute;
+        };
+        "/library/browse": {
+            id: "/library/browse";
+            path: "/library/browse";
+            fullPath: "/library/browse";
+            preLoaderRoute: typeof LibraryBrowseImport;
+            parentRoute: typeof rootRoute;
+        };
+        "/library/search": {
+            id: "/library/search";
+            path: "/library/search";
+            fullPath: "/library/search";
+            preLoaderRoute: typeof LibrarySearchImport;
+            parentRoute: typeof rootRoute;
+        };
+        "/_frontpage/": {
+            id: "/_frontpage/";
+            path: "/";
+            fullPath: "/";
+            preLoaderRoute: typeof FrontpageIndexImport;
+            parentRoute: typeof rootRoute;
+        };
+        "/import/": {
+            id: "/import/";
+            path: "/import";
+            fullPath: "/import";
+            preLoaderRoute: typeof ImportIndexImport;
+            parentRoute: typeof rootRoute;
+        };
+        "/inbox/": {
+            id: "/inbox/";
+            path: "/inbox";
+            fullPath: "/inbox";
+            preLoaderRoute: typeof InboxIndexImport;
+            parentRoute: typeof rootRoute;
+        };
+        "/inbox2/": {
+            id: "/inbox2/";
+            path: "/inbox2";
+            fullPath: "/inbox2";
+            preLoaderRoute: typeof Inbox2IndexImport;
+            parentRoute: typeof rootRoute;
+        };
+        "/inbox3/": {
+            id: "/inbox3/";
+            path: "/inbox3";
+            fullPath: "/inbox3";
+            preLoaderRoute: typeof Inbox3IndexImport;
+            parentRoute: typeof rootRoute;
+        };
+        "/tags/": {
+            id: "/tags/";
+            path: "/tags";
+            fullPath: "/tags";
+            preLoaderRoute: typeof TagsIndexImport;
+            parentRoute: typeof rootRoute;
+        };
+        "/terminal/": {
+            id: "/terminal/";
+            path: "/terminal";
+            fullPath: "/terminal";
+            preLoaderRoute: typeof TerminalIndexImport;
+            parentRoute: typeof rootRoute;
+        };
+        "/_debug/design/icons": {
+            id: "/_debug/design/icons";
+            path: "/design/icons";
+            fullPath: "/design/icons";
+            preLoaderRoute: typeof DebugDesignIconsImport;
+            parentRoute: typeof rootRoute;
+        };
+        "/_debug/session/$id": {
+            id: "/_debug/session/$id";
+            path: "/session/$id";
+            fullPath: "/session/$id";
+            preLoaderRoute: typeof DebugSessionIdImport;
+            parentRoute: typeof rootRoute;
+        };
+        "/_frontpage/_modal/schedule": {
+            id: "/_frontpage/_modal/schedule";
+            path: "/schedule";
+            fullPath: "/schedule";
+            preLoaderRoute: typeof FrontpageModalScheduleImport;
+            parentRoute: typeof FrontpageModalImport;
+        };
+        "/library/browse/$artist": {
+            id: "/library/browse/$artist";
+            path: "/$artist";
+            fullPath: "/library/browse/$artist";
+            preLoaderRoute: typeof LibraryBrowseArtistImport;
+            parentRoute: typeof LibraryBrowseImport;
+        };
+        "/library/browse/$artist/$albumId": {
+            id: "/library/browse/$artist/$albumId";
+            path: "/$albumId";
+            fullPath: "/library/browse/$artist/$albumId";
+            preLoaderRoute: typeof LibraryBrowseArtistAlbumIdImport;
+            parentRoute: typeof LibraryBrowseArtistImport;
+        };
+        "/library/browse/$artist/$albumId/$itemId": {
+            id: "/library/browse/$artist/$albumId/$itemId";
+            path: "/$itemId";
+            fullPath: "/library/browse/$artist/$albumId/$itemId";
+            preLoaderRoute: typeof LibraryBrowseArtistAlbumIdItemIdImport;
+            parentRoute: typeof LibraryBrowseArtistAlbumIdImport;
+        };
     }
-    '/_debug/jobs': {
-      id: '/_debug/jobs'
-      path: '/jobs'
-      fullPath: '/jobs'
-      preLoaderRoute: typeof DebugJobsImport
-      parentRoute: typeof rootRoute
-    }
-    '/_frontpage/_modal': {
-      id: '/_frontpage/_modal'
-      path: ''
-      fullPath: ''
-      preLoaderRoute: typeof FrontpageModalImport
-      parentRoute: typeof rootRoute
-    }
-    '/candidates/$folderHash': {
-      id: '/candidates/$folderHash'
-      path: '/candidates/$folderHash'
-      fullPath: '/candidates/$folderHash'
-      preLoaderRoute: typeof CandidatesFolderHashImport
-      parentRoute: typeof rootRoute
-    }
-    '/library/browse': {
-      id: '/library/browse'
-      path: '/library/browse'
-      fullPath: '/library/browse'
-      preLoaderRoute: typeof LibraryBrowseImport
-      parentRoute: typeof rootRoute
-    }
-    '/library/search': {
-      id: '/library/search'
-      path: '/library/search'
-      fullPath: '/library/search'
-      preLoaderRoute: typeof LibrarySearchImport
-      parentRoute: typeof rootRoute
-    }
-    '/_frontpage/': {
-      id: '/_frontpage/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof FrontpageIndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/import/': {
-      id: '/import/'
-      path: '/import'
-      fullPath: '/import'
-      preLoaderRoute: typeof ImportIndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/inbox/': {
-      id: '/inbox/'
-      path: '/inbox'
-      fullPath: '/inbox'
-      preLoaderRoute: typeof InboxIndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/inbox2/': {
-      id: '/inbox2/'
-      path: '/inbox2'
-      fullPath: '/inbox2'
-      preLoaderRoute: typeof Inbox2IndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/inbox3/': {
-      id: '/inbox3/'
-      path: '/inbox3'
-      fullPath: '/inbox3'
-      preLoaderRoute: typeof Inbox3IndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/tags/': {
-      id: '/tags/'
-      path: '/tags'
-      fullPath: '/tags'
-      preLoaderRoute: typeof TagsIndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/terminal/': {
-      id: '/terminal/'
-      path: '/terminal'
-      fullPath: '/terminal'
-      preLoaderRoute: typeof TerminalIndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/_debug/design/icons': {
-      id: '/_debug/design/icons'
-      path: '/design/icons'
-      fullPath: '/design/icons'
-      preLoaderRoute: typeof DebugDesignIconsImport
-      parentRoute: typeof rootRoute
-    }
-    '/_debug/session/$id': {
-      id: '/_debug/session/$id'
-      path: '/session/$id'
-      fullPath: '/session/$id'
-      preLoaderRoute: typeof DebugSessionIdImport
-      parentRoute: typeof rootRoute
-    }
-    '/_frontpage/_modal/schedule': {
-      id: '/_frontpage/_modal/schedule'
-      path: '/schedule'
-      fullPath: '/schedule'
-      preLoaderRoute: typeof FrontpageModalScheduleImport
-      parentRoute: typeof FrontpageModalImport
-    }
-    '/library/browse/$artist': {
-      id: '/library/browse/$artist'
-      path: '/$artist'
-      fullPath: '/library/browse/$artist'
-      preLoaderRoute: typeof LibraryBrowseArtistImport
-      parentRoute: typeof LibraryBrowseImport
-    }
-    '/library/browse/$artist/$albumId': {
-      id: '/library/browse/$artist/$albumId'
-      path: '/$albumId'
-      fullPath: '/library/browse/$artist/$albumId'
-      preLoaderRoute: typeof LibraryBrowseArtistAlbumIdImport
-      parentRoute: typeof LibraryBrowseArtistImport
-    }
-    '/library/browse/$artist/$albumId/$itemId': {
-      id: '/library/browse/$artist/$albumId/$itemId'
-      path: '/$itemId'
-      fullPath: '/library/browse/$artist/$albumId/$itemId'
-      preLoaderRoute: typeof LibraryBrowseArtistAlbumIdItemIdImport
-      parentRoute: typeof LibraryBrowseArtistAlbumIdImport
-    }
-  }
 }
 
 // Create and export the route tree
 
 interface FrontpageModalRouteChildren {
-  FrontpageModalScheduleRoute: typeof FrontpageModalScheduleRoute
+    FrontpageModalScheduleRoute: typeof FrontpageModalScheduleRoute;
 }
 
 const FrontpageModalRouteChildren: FrontpageModalRouteChildren = {
-  FrontpageModalScheduleRoute: FrontpageModalScheduleRoute,
-}
+    FrontpageModalScheduleRoute: FrontpageModalScheduleRoute,
+};
 
 const FrontpageModalRouteWithChildren = FrontpageModalRoute._addFileChildren(
-  FrontpageModalRouteChildren,
-)
+    FrontpageModalRouteChildren
+);
 
 interface LibraryBrowseArtistAlbumIdRouteChildren {
-  LibraryBrowseArtistAlbumIdItemIdRoute: typeof LibraryBrowseArtistAlbumIdItemIdRoute
+    LibraryBrowseArtistAlbumIdItemIdRoute: typeof LibraryBrowseArtistAlbumIdItemIdRoute;
 }
 
 const LibraryBrowseArtistAlbumIdRouteChildren: LibraryBrowseArtistAlbumIdRouteChildren =
-  {
-    LibraryBrowseArtistAlbumIdItemIdRoute:
-      LibraryBrowseArtistAlbumIdItemIdRoute,
-  }
+    {
+        LibraryBrowseArtistAlbumIdItemIdRoute: LibraryBrowseArtistAlbumIdItemIdRoute,
+    };
 
 const LibraryBrowseArtistAlbumIdRouteWithChildren =
-  LibraryBrowseArtistAlbumIdRoute._addFileChildren(
-    LibraryBrowseArtistAlbumIdRouteChildren,
-  )
+    LibraryBrowseArtistAlbumIdRoute._addFileChildren(
+        LibraryBrowseArtistAlbumIdRouteChildren
+    );
 
 interface LibraryBrowseArtistRouteChildren {
-  LibraryBrowseArtistAlbumIdRoute: typeof LibraryBrowseArtistAlbumIdRouteWithChildren
+    LibraryBrowseArtistAlbumIdRoute: typeof LibraryBrowseArtistAlbumIdRouteWithChildren;
 }
 
 const LibraryBrowseArtistRouteChildren: LibraryBrowseArtistRouteChildren = {
-  LibraryBrowseArtistAlbumIdRoute: LibraryBrowseArtistAlbumIdRouteWithChildren,
-}
+    LibraryBrowseArtistAlbumIdRoute: LibraryBrowseArtistAlbumIdRouteWithChildren,
+};
 
-const LibraryBrowseArtistRouteWithChildren =
-  LibraryBrowseArtistRoute._addFileChildren(LibraryBrowseArtistRouteChildren)
+const LibraryBrowseArtistRouteWithChildren = LibraryBrowseArtistRoute._addFileChildren(
+    LibraryBrowseArtistRouteChildren
+);
 
 interface LibraryBrowseRouteChildren {
-  LibraryBrowseArtistRoute: typeof LibraryBrowseArtistRouteWithChildren
+    LibraryBrowseArtistRoute: typeof LibraryBrowseArtistRouteWithChildren;
 }
 
 const LibraryBrowseRouteChildren: LibraryBrowseRouteChildren = {
-  LibraryBrowseArtistRoute: LibraryBrowseArtistRouteWithChildren,
-}
+    LibraryBrowseArtistRoute: LibraryBrowseArtistRouteWithChildren,
+};
 
 const LibraryBrowseRouteWithChildren = LibraryBrowseRoute._addFileChildren(
-  LibraryBrowseRouteChildren,
-)
+    LibraryBrowseRouteChildren
+);
 
 export interface FileRoutesByFullPath {
-  '/loading': typeof LoadingRoute
-  '/jobs': typeof DebugJobsRoute
-  '': typeof FrontpageModalRouteWithChildren
-  '/candidates/$folderHash': typeof CandidatesFolderHashRoute
-  '/library/browse': typeof LibraryBrowseRouteWithChildren
-  '/library/search': typeof LibrarySearchRoute
-  '/': typeof FrontpageIndexRoute
-  '/import': typeof ImportIndexRoute
-  '/inbox': typeof InboxIndexRoute
-  '/inbox2': typeof Inbox2IndexRoute
-  '/inbox3': typeof Inbox3IndexRoute
-  '/tags': typeof TagsIndexRoute
-  '/terminal': typeof TerminalIndexRoute
-  '/design/icons': typeof DebugDesignIconsRoute
-  '/session/$id': typeof DebugSessionIdRoute
-  '/schedule': typeof FrontpageModalScheduleRoute
-  '/library/browse/$artist': typeof LibraryBrowseArtistRouteWithChildren
-  '/library/browse/$artist/$albumId': typeof LibraryBrowseArtistAlbumIdRouteWithChildren
-  '/library/browse/$artist/$albumId/$itemId': typeof LibraryBrowseArtistAlbumIdItemIdRoute
+    "/loading": typeof LoadingRoute;
+    "/jobs": typeof DebugJobsRoute;
+    "": typeof FrontpageModalRouteWithChildren;
+    "/library/browse": typeof LibraryBrowseRouteWithChildren;
+    "/library/search": typeof LibrarySearchRoute;
+    "/": typeof FrontpageIndexRoute;
+    "/import": typeof ImportIndexRoute;
+    "/inbox": typeof InboxIndexRoute;
+    "/inbox2": typeof Inbox2IndexRoute;
+    "/inbox3": typeof Inbox3IndexRoute;
+    "/tags": typeof TagsIndexRoute;
+    "/terminal": typeof TerminalIndexRoute;
+    "/design/icons": typeof DebugDesignIconsRoute;
+    "/session/$id": typeof DebugSessionIdRoute;
+    "/schedule": typeof FrontpageModalScheduleRoute;
+    "/library/browse/$artist": typeof LibraryBrowseArtistRouteWithChildren;
+    "/library/browse/$artist/$albumId": typeof LibraryBrowseArtistAlbumIdRouteWithChildren;
+    "/library/browse/$artist/$albumId/$itemId": typeof LibraryBrowseArtistAlbumIdItemIdRoute;
 }
 
 export interface FileRoutesByTo {
-  '/loading': typeof LoadingRoute
-  '/jobs': typeof DebugJobsRoute
-  '': typeof FrontpageModalRouteWithChildren
-  '/candidates/$folderHash': typeof CandidatesFolderHashRoute
-  '/library/browse': typeof LibraryBrowseRouteWithChildren
-  '/library/search': typeof LibrarySearchRoute
-  '/': typeof FrontpageIndexRoute
-  '/import': typeof ImportIndexRoute
-  '/inbox': typeof InboxIndexRoute
-  '/inbox2': typeof Inbox2IndexRoute
-  '/inbox3': typeof Inbox3IndexRoute
-  '/tags': typeof TagsIndexRoute
-  '/terminal': typeof TerminalIndexRoute
-  '/design/icons': typeof DebugDesignIconsRoute
-  '/session/$id': typeof DebugSessionIdRoute
-  '/schedule': typeof FrontpageModalScheduleRoute
-  '/library/browse/$artist': typeof LibraryBrowseArtistRouteWithChildren
-  '/library/browse/$artist/$albumId': typeof LibraryBrowseArtistAlbumIdRouteWithChildren
-  '/library/browse/$artist/$albumId/$itemId': typeof LibraryBrowseArtistAlbumIdItemIdRoute
+    "/loading": typeof LoadingRoute;
+    "/jobs": typeof DebugJobsRoute;
+    "": typeof FrontpageModalRouteWithChildren;
+    "/library/browse": typeof LibraryBrowseRouteWithChildren;
+    "/library/search": typeof LibrarySearchRoute;
+    "/": typeof FrontpageIndexRoute;
+    "/import": typeof ImportIndexRoute;
+    "/inbox": typeof InboxIndexRoute;
+    "/inbox2": typeof Inbox2IndexRoute;
+    "/inbox3": typeof Inbox3IndexRoute;
+    "/tags": typeof TagsIndexRoute;
+    "/terminal": typeof TerminalIndexRoute;
+    "/design/icons": typeof DebugDesignIconsRoute;
+    "/session/$id": typeof DebugSessionIdRoute;
+    "/schedule": typeof FrontpageModalScheduleRoute;
+    "/library/browse/$artist": typeof LibraryBrowseArtistRouteWithChildren;
+    "/library/browse/$artist/$albumId": typeof LibraryBrowseArtistAlbumIdRouteWithChildren;
+    "/library/browse/$artist/$albumId/$itemId": typeof LibraryBrowseArtistAlbumIdItemIdRoute;
 }
 
 export interface FileRoutesById {
-  __root__: typeof rootRoute
-  '/loading': typeof LoadingRoute
-  '/_debug/jobs': typeof DebugJobsRoute
-  '/_frontpage/_modal': typeof FrontpageModalRouteWithChildren
-  '/candidates/$folderHash': typeof CandidatesFolderHashRoute
-  '/library/browse': typeof LibraryBrowseRouteWithChildren
-  '/library/search': typeof LibrarySearchRoute
-  '/_frontpage/': typeof FrontpageIndexRoute
-  '/import/': typeof ImportIndexRoute
-  '/inbox/': typeof InboxIndexRoute
-  '/inbox2/': typeof Inbox2IndexRoute
-  '/inbox3/': typeof Inbox3IndexRoute
-  '/tags/': typeof TagsIndexRoute
-  '/terminal/': typeof TerminalIndexRoute
-  '/_debug/design/icons': typeof DebugDesignIconsRoute
-  '/_debug/session/$id': typeof DebugSessionIdRoute
-  '/_frontpage/_modal/schedule': typeof FrontpageModalScheduleRoute
-  '/library/browse/$artist': typeof LibraryBrowseArtistRouteWithChildren
-  '/library/browse/$artist/$albumId': typeof LibraryBrowseArtistAlbumIdRouteWithChildren
-  '/library/browse/$artist/$albumId/$itemId': typeof LibraryBrowseArtistAlbumIdItemIdRoute
+    __root__: typeof rootRoute;
+    "/loading": typeof LoadingRoute;
+    "/_debug/jobs": typeof DebugJobsRoute;
+    "/_frontpage/_modal": typeof FrontpageModalRouteWithChildren;
+    "/library/browse": typeof LibraryBrowseRouteWithChildren;
+    "/library/search": typeof LibrarySearchRoute;
+    "/_frontpage/": typeof FrontpageIndexRoute;
+    "/import/": typeof ImportIndexRoute;
+    "/inbox/": typeof InboxIndexRoute;
+    "/inbox2/": typeof Inbox2IndexRoute;
+    "/inbox3/": typeof Inbox3IndexRoute;
+    "/tags/": typeof TagsIndexRoute;
+    "/terminal/": typeof TerminalIndexRoute;
+    "/_debug/design/icons": typeof DebugDesignIconsRoute;
+    "/_debug/session/$id": typeof DebugSessionIdRoute;
+    "/_frontpage/_modal/schedule": typeof FrontpageModalScheduleRoute;
+    "/library/browse/$artist": typeof LibraryBrowseArtistRouteWithChildren;
+    "/library/browse/$artist/$albumId": typeof LibraryBrowseArtistAlbumIdRouteWithChildren;
+    "/library/browse/$artist/$albumId/$itemId": typeof LibraryBrowseArtistAlbumIdItemIdRoute;
 }
 
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/loading'
-    | '/jobs'
-    | ''
-    | '/candidates/$folderHash'
-    | '/library/browse'
-    | '/library/search'
-    | '/'
-    | '/import'
-    | '/inbox'
-    | '/inbox2'
-    | '/inbox3'
-    | '/tags'
-    | '/terminal'
-    | '/design/icons'
-    | '/session/$id'
-    | '/schedule'
-    | '/library/browse/$artist'
-    | '/library/browse/$artist/$albumId'
-    | '/library/browse/$artist/$albumId/$itemId'
-  fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/loading'
-    | '/jobs'
-    | ''
-    | '/candidates/$folderHash'
-    | '/library/browse'
-    | '/library/search'
-    | '/'
-    | '/import'
-    | '/inbox'
-    | '/inbox2'
-    | '/inbox3'
-    | '/tags'
-    | '/terminal'
-    | '/design/icons'
-    | '/session/$id'
-    | '/schedule'
-    | '/library/browse/$artist'
-    | '/library/browse/$artist/$albumId'
-    | '/library/browse/$artist/$albumId/$itemId'
-  id:
-    | '__root__'
-    | '/loading'
-    | '/_debug/jobs'
-    | '/_frontpage/_modal'
-    | '/candidates/$folderHash'
-    | '/library/browse'
-    | '/library/search'
-    | '/_frontpage/'
-    | '/import/'
-    | '/inbox/'
-    | '/inbox2/'
-    | '/inbox3/'
-    | '/tags/'
-    | '/terminal/'
-    | '/_debug/design/icons'
-    | '/_debug/session/$id'
-    | '/_frontpage/_modal/schedule'
-    | '/library/browse/$artist'
-    | '/library/browse/$artist/$albumId'
-    | '/library/browse/$artist/$albumId/$itemId'
-  fileRoutesById: FileRoutesById
+    fileRoutesByFullPath: FileRoutesByFullPath;
+    fullPaths:
+        | "/loading"
+        | "/jobs"
+        | ""
+        | "/library/browse"
+        | "/library/search"
+        | "/"
+        | "/import"
+        | "/inbox"
+        | "/inbox2"
+        | "/inbox3"
+        | "/tags"
+        | "/terminal"
+        | "/design/icons"
+        | "/session/$id"
+        | "/schedule"
+        | "/library/browse/$artist"
+        | "/library/browse/$artist/$albumId"
+        | "/library/browse/$artist/$albumId/$itemId";
+    fileRoutesByTo: FileRoutesByTo;
+    to:
+        | "/loading"
+        | "/jobs"
+        | ""
+        | "/library/browse"
+        | "/library/search"
+        | "/"
+        | "/import"
+        | "/inbox"
+        | "/inbox2"
+        | "/inbox3"
+        | "/tags"
+        | "/terminal"
+        | "/design/icons"
+        | "/session/$id"
+        | "/schedule"
+        | "/library/browse/$artist"
+        | "/library/browse/$artist/$albumId"
+        | "/library/browse/$artist/$albumId/$itemId";
+    id:
+        | "__root__"
+        | "/loading"
+        | "/_debug/jobs"
+        | "/_frontpage/_modal"
+        | "/library/browse"
+        | "/library/search"
+        | "/_frontpage/"
+        | "/import/"
+        | "/inbox/"
+        | "/inbox2/"
+        | "/inbox3/"
+        | "/tags/"
+        | "/terminal/"
+        | "/_debug/design/icons"
+        | "/_debug/session/$id"
+        | "/_frontpage/_modal/schedule"
+        | "/library/browse/$artist"
+        | "/library/browse/$artist/$albumId"
+        | "/library/browse/$artist/$albumId/$itemId";
+    fileRoutesById: FileRoutesById;
 }
 
 export interface RootRouteChildren {
-  LoadingRoute: typeof LoadingRoute
-  DebugJobsRoute: typeof DebugJobsRoute
-  FrontpageModalRoute: typeof FrontpageModalRouteWithChildren
-  CandidatesFolderHashRoute: typeof CandidatesFolderHashRoute
-  LibraryBrowseRoute: typeof LibraryBrowseRouteWithChildren
-  LibrarySearchRoute: typeof LibrarySearchRoute
-  FrontpageIndexRoute: typeof FrontpageIndexRoute
-  ImportIndexRoute: typeof ImportIndexRoute
-  InboxIndexRoute: typeof InboxIndexRoute
-  Inbox2IndexRoute: typeof Inbox2IndexRoute
-  Inbox3IndexRoute: typeof Inbox3IndexRoute
-  TagsIndexRoute: typeof TagsIndexRoute
-  TerminalIndexRoute: typeof TerminalIndexRoute
-  DebugDesignIconsRoute: typeof DebugDesignIconsRoute
-  DebugSessionIdRoute: typeof DebugSessionIdRoute
+    LoadingRoute: typeof LoadingRoute;
+    DebugJobsRoute: typeof DebugJobsRoute;
+    FrontpageModalRoute: typeof FrontpageModalRouteWithChildren;
+    LibraryBrowseRoute: typeof LibraryBrowseRouteWithChildren;
+    LibrarySearchRoute: typeof LibrarySearchRoute;
+    FrontpageIndexRoute: typeof FrontpageIndexRoute;
+    ImportIndexRoute: typeof ImportIndexRoute;
+    InboxIndexRoute: typeof InboxIndexRoute;
+    Inbox2IndexRoute: typeof Inbox2IndexRoute;
+    Inbox3IndexRoute: typeof Inbox3IndexRoute;
+    TagsIndexRoute: typeof TagsIndexRoute;
+    TerminalIndexRoute: typeof TerminalIndexRoute;
+    DebugDesignIconsRoute: typeof DebugDesignIconsRoute;
+    DebugSessionIdRoute: typeof DebugSessionIdRoute;
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  LoadingRoute: LoadingRoute,
-  DebugJobsRoute: DebugJobsRoute,
-  FrontpageModalRoute: FrontpageModalRouteWithChildren,
-  CandidatesFolderHashRoute: CandidatesFolderHashRoute,
-  LibraryBrowseRoute: LibraryBrowseRouteWithChildren,
-  LibrarySearchRoute: LibrarySearchRoute,
-  FrontpageIndexRoute: FrontpageIndexRoute,
-  ImportIndexRoute: ImportIndexRoute,
-  InboxIndexRoute: InboxIndexRoute,
-  Inbox2IndexRoute: Inbox2IndexRoute,
-  Inbox3IndexRoute: Inbox3IndexRoute,
-  TagsIndexRoute: TagsIndexRoute,
-  TerminalIndexRoute: TerminalIndexRoute,
-  DebugDesignIconsRoute: DebugDesignIconsRoute,
-  DebugSessionIdRoute: DebugSessionIdRoute,
-}
+    LoadingRoute: LoadingRoute,
+    DebugJobsRoute: DebugJobsRoute,
+    FrontpageModalRoute: FrontpageModalRouteWithChildren,
+    LibraryBrowseRoute: LibraryBrowseRouteWithChildren,
+    LibrarySearchRoute: LibrarySearchRoute,
+    FrontpageIndexRoute: FrontpageIndexRoute,
+    ImportIndexRoute: ImportIndexRoute,
+    InboxIndexRoute: InboxIndexRoute,
+    Inbox2IndexRoute: Inbox2IndexRoute,
+    Inbox3IndexRoute: Inbox3IndexRoute,
+    TagsIndexRoute: TagsIndexRoute,
+    TerminalIndexRoute: TerminalIndexRoute,
+    DebugDesignIconsRoute: DebugDesignIconsRoute,
+    DebugSessionIdRoute: DebugSessionIdRoute,
+};
 
 export const routeTree = rootRoute
-  ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+    ._addFileChildren(rootRouteChildren)
+    ._addFileTypes<FileRouteTypes>();
 
 /* ROUTE_MANIFEST_START
 {
@@ -524,7 +500,6 @@ export const routeTree = rootRoute
         "/loading",
         "/_debug/jobs",
         "/_frontpage/_modal",
-        "/candidates/$folderHash",
         "/library/browse",
         "/library/search",
         "/_frontpage/",
@@ -549,9 +524,6 @@ export const routeTree = rootRoute
       "children": [
         "/_frontpage/_modal/schedule"
       ]
-    },
-    "/candidates/$folderHash": {
-      "filePath": "candidates.$folderHash.tsx"
     },
     "/library/browse": {
       "filePath": "library/browse.tsx",

@@ -1,4 +1,5 @@
 import { Box } from "@mui/material";
+
 import styles from "./loading.module.scss";
 
 interface LoadingProps {

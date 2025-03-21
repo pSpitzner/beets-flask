@@ -91,18 +91,7 @@ export interface SerializedSessionState {
 	status: SerializedProgressState;
 	completed: boolean;
 }
-export interface File {
-	type: "file";
-	full_path: string;
-}
 
-export interface Folder {
-	type: "directory";
-	children: Array<File | Folder>;
-	full_path: string;
-	hash: string;
-	is_album: boolean;
-}
 export enum FolderStatus {
 	UNKNOWN = -2,
 	FAILED = -1,
@@ -118,3 +107,112 @@ export interface FolderStatusResponse {
 	hash: string;
 	status: FolderStatus;
 }
+
+export interface File {
+	type: "file";
+	full_path: string;
+}
+
+export interface Folder {
+	type: "directory";
+	children: Array<File | Folder>;
+	full_path: string;
+	hash: string;
+	is_album: boolean;
+}
+
+export interface ItemResponseMinimal {
+	id: number;
+	name: string;
+	path: string;
+	artist: string;
+	year: number;
+	album: string;
+	albumartist: string;
+	album_id: number;
+	isrc?: string;
+	size: number;
+}
+
+export interface AlbumResponseMinimalExpanded {
+	id: number;
+	name: string;
+	path: string;
+	albumartist: string;
+	year: number;
+	items: Array<ItemResponseMinimal>;
+}
+
+export interface AlbumResponseMinimal {
+	id: number;
+	name: string;
+	path: string;
+	albumartist: string;
+	year: number;
+}
+
+export interface ItemSource {
+	source: string;
+	track_id: string;
+	album_id?: string;
+	artist_id?: string;
+	extra?: Record<string, Array<string> | string>;
+}
+
+export interface ItemResponse {
+	id: number;
+	name: string;
+	path: string;
+	artist: string;
+	year: number;
+	album: string;
+	albumartist: string;
+	album_id: number;
+	isrc?: string;
+	size: number;
+	genre: string;
+	label: string;
+	samplerate: number;
+	bitrate: number;
+	bpm: number;
+	bitdepth: number;
+	channels: number;
+	format: string;
+	encoder_info: string;
+	encoder_settings: string;
+	initial_key: string;
+	length: number;
+	track: number;
+	tracktotal: number;
+	added: number;
+	catalognum: string;
+	sources: Array<ItemSource>;
+}
+
+export interface AlbumResponseExpanded {
+	id: number;
+	name: string;
+	path: string;
+	albumartist: string;
+	year: number;
+	items: Array<ItemResponse>;
+}
+
+export interface AlbumSource {
+	source: string;
+	album_id: string;
+	artist_id?: string;
+	extra?: Record<string, string>;
+}
+
+export interface AlbumResponse {
+	id: number;
+	name: string;
+	path: string;
+	albumartist: string;
+	year: number;
+	genre: string;
+	label: string;
+	sources: Array<AlbumSource>;
+}
+

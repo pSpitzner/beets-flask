@@ -9,13 +9,13 @@ import {
     FastForward,
     FileIcon,
     FlagIcon,
+    FolderOpen,
     GitPullRequestArrowIcon,
     LucideProps,
     MusicIcon,
     SearchXIcon,
     Tally5Icon,
     UserRoundIcon,
-    FolderOpen,
     TriangleAlertIcon,
     CircleHelpIcon,
     HourglassIcon,
@@ -113,9 +113,10 @@ export function PenaltyTypeIcon({ type, ...props }: { type: string } & LucidePro
  * Source types are the source of a match e.g. spotify.
  */
 export function SourceTypeIcon({ type, ...props }: { type: string } & LucideProps) {
-    switch (type) {
+    switch (type.toLowerCase()) {
         case "spotify":
             return <Spotify {...props} />;
+        case "mb":
         case "musicbrainz":
             return <BrainIcon {...props} />;
         case "asis":

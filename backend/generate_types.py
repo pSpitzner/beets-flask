@@ -1,11 +1,21 @@
 # main.py
+from dbm.ndbm import library
+
 from py2ts import generate_ts
-from py2ts.data import TSInterface
+from py2ts.data import TSInterface, ts_reference_str
 
 from beets_flask.importer.states import (
     SerializedSessionState,
 )
 from beets_flask.server.routes.inbox2 import Folder
+from beets_flask.server.routes.library.resources import (
+    AlbumResponse,
+    AlbumResponseExpanded,
+    AlbumResponseMinimal,
+    AlbumResponseMinimalExpanded,
+    ItemResponse,
+    ItemResponseMinimal,
+)
 from beets_flask.server.routes.tag import FolderStatusResponse
 
 prefix = """/* 
@@ -14,19 +24,36 @@ prefix = """/*
  */
 """
 
+elements = []
+
+# Session state
+elements.append(SerializedSessionState)
+
+# Folder
+elements.append(Folder)
+
+
+# ------------------------------ library routes ------------------------------ #
+
+# Item responses
+elements.append(ItemResponse)
+elements.append(ItemResponseMinimal)
+
+# Album responses
+elements.append(AlbumResponse)
+elements.append(AlbumResponseMinimal)
+elements.append(AlbumResponseExpanded)
+elements.append(AlbumResponseMinimalExpanded)
+
+# ---------------------------------------------------------------------------- #
+
+elements.append(FolderStatusResponse)
+
+
 with open("../frontend/src/pythonTypes.ts", "w") as f:
     f.write(prefix)
 
-    ts_session = generate_ts(SerializedSessionState)
-    assert isinstance(ts_session, TSInterface)
-    f.write(ts_session.full_str())
-    f.write("\n")
-    ts_folder = generate_ts(Folder)
-    assert isinstance(ts_folder, TSInterface)
-    f.write(ts_folder.full_str())
-    f.write("\n")
-    ts_folder = generate_ts(FolderStatusResponse)
-    assert isinstance(ts_folder, TSInterface)
-    f.write(ts_folder.full_str())
+    elements = [generate_ts(e) for e in elements]
+    f.write(ts_reference_str(elements))
 
 print("Typescript types generated successfully!")

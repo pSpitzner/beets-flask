@@ -42,7 +42,7 @@ import { File, Folder, FolderStatus } from "@/pythonTypes";
 
 import { FileTypeIcon, FolderTypeIcon, FolderStatusIcon } from "../common/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ClipboardCopyButton } from "../common/buttons/copy";
+import { ClipboardCopyButton } from "../common/inputs/copy";
 import { statusQueryOptions } from "../common/websocket/status";
 import { Link } from "@tanstack/react-router";
 

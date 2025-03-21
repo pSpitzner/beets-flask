@@ -1,9 +1,16 @@
-import { createContext, Dispatch, SetStateAction, useCallback, useContext, useState } from "react";
+import {
+    createContext,
+    Dispatch,
+    SetStateAction,
+    useCallback,
+    useContext,
+    useState,
+} from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import {
-    MinimalAlbum,
-    MinimalItem,
+    Album,
+    Item,
     queryClient,
     searchQueryOptions,
 } from "@/components/common/_query";
@@ -11,14 +18,14 @@ import { useDebounce } from "@/components/common/hooks/useDebounce";
 
 export type SearchType = "item" | "album";
 
-interface SearchContextType {
+interface SearchContextType<T extends "item" | "album"> {
     query: string;
     setQuery: Dispatch<SetStateAction<string>>;
-    type: SearchType;
+    type: T;
     setType: Dispatch<SetStateAction<SearchType>>;
     selectedResult?: number;
     setSelectedResult: Dispatch<SetStateAction<number | undefined>>;
-    results?: (MinimalItem | MinimalAlbum)[];
+    results?: (T extends "item" ? Item<true> : Album<true, false>)[] | null;
     sentQuery: string;
     isFetching: boolean;
     isError: boolean;
@@ -27,22 +34,23 @@ interface SearchContextType {
     resetSearch: () => void;
 }
 
-const SearchContext = createContext<SearchContextType | null>(null);
+const SearchContext = createContext<SearchContextType<"item" | "album"> | null>(null);
 
 export function SearchContextProvider({ children }: { children: React.ReactNode }) {
     const [query, setQuery] = useState<string>("");
     const [type, setType] = useState<SearchType>("item");
     const [selectedResult, setSelectedResult] = useState<number | undefined>(undefined);
 
-    // Debounce search by 500ms
-    let sentQuery = useDebounce(query, 750);
+    // Debounce search by 750ms
+    let debouncedQuery = useDebounce(query, 750);
+
     // deal with trailing escape-characters the same way as in the backend,
     // so we correctly reflect frontend-side what we are actually searching for
     if (
-        sentQuery.endsWith("\\") &&
-        (sentQuery.length - sentQuery.replace(/\\+$/, "").length) % 2 === 1
+        debouncedQuery.endsWith("\\") &&
+        (debouncedQuery.length - debouncedQuery.replace(/\\+$/, "").length) % 2 === 1
     ) {
-        sentQuery = sentQuery.slice(0, -1);
+        debouncedQuery = debouncedQuery.slice(0, -1);
     }
 
     const {
@@ -51,17 +59,16 @@ export function SearchContextProvider({ children }: { children: React.ReactNode 
         isError,
         error,
     } = useQuery({
-        ...searchQueryOptions<MinimalItem | MinimalAlbum>({
-            searchFor: sentQuery,
-            type,
-        }),
-        enabled: sentQuery.length > 0,
+        ...searchQueryOptions(debouncedQuery, type),
+        enabled: debouncedQuery.length > 0,
     });
 
     // Cancel a currently running query
     // reactquery also does this on demount if abort signals are set
     const cancelSearch = useCallback(() => {
-        queryClient.cancelQueries({ queryKey: ["search", type, query] }).catch(console.error);
+        queryClient
+            .cancelQueries({ queryKey: ["search", type, query] })
+            .catch(console.error);
         setSelectedResult(undefined);
     }, [type, query, setSelectedResult]);
 
@@ -80,8 +87,8 @@ export function SearchContextProvider({ children }: { children: React.ReactNode 
                 setType,
                 selectedResult,
                 setSelectedResult,
-                results: data?.results,
-                sentQuery,
+                results: data,
+                sentQuery: debouncedQuery,
                 isFetching,
                 isError,
                 error,

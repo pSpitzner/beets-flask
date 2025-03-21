@@ -1,67 +1,106 @@
+import { Disc3Icon } from "lucide-react";
 import { useMemo } from "react";
-import z from "zod";
-import { Box, Paper } from "@mui/material";
-import { createFileRoute, Outlet, useParams } from "@tanstack/react-router";
+import { Typography, useMediaQuery } from "@mui/material";
+import {
+    createFileRoute,
+    Link,
+    Outlet,
+    useMatch,
+    useParams,
+} from "@tanstack/react-router";
 
-import { artistQueryOptions, LIB_BROWSE_ROUTE } from "@/components/common/_query";
-import LoadingIndicator from "@/components/common/loadingIndicator";
-import { BrowserHeader } from "@/components/library/browserHeader";
-import List from "@/components/library/list";
+import {
+    albumsByArtistQueryOptions,
+    LIB_BROWSE_ROUTE,
+} from "@/components/common/_query";
 
-import styles from "@/components/library/library.module.scss";
+import { LibraryList, Selection } from "./browse";
+
+import styles from "./library.module.scss";
 
 export const Route = createFileRoute(`${LIB_BROWSE_ROUTE}/$artist`)({
-    loader: (opts) =>
-        opts.context.queryClient.ensureQueryData(
-            artistQueryOptions({
-                name: opts.params.artist,
-                minimal: true,
-                expand: true,
-            })
+    loader: async (opts) =>
+        await opts.context.queryClient.ensureQueryData(
+            albumsByArtistQueryOptions(
+                opts.params.artist,
+                false, //expand
+                true //minimal
+            )
         ),
-    component: ArtistOverview,
-    params: {
-        parse: (params) => ({
-            artist: z.string().parse(params.artist),
-        }),
-    },
+    component: AlbumsRoute,
 });
 
-function ArtistOverview() {
-    const artist = Route.useLoaderData();
-    const params = useParams({ strict: false });
-
-    const data = useMemo(() => {
-        return artist.albums.map((album) => ({
-            to: `${LIB_BROWSE_ROUTE}/$artist/$albumId`,
-            params: { artist: params.artist, albumId: album.id },
-            label: album.name,
-            className: styles.listItem,
-            "data-selected": params.albumId && params.albumId == album.id,
-        }));
-    }, [artist, params]);
-
-    console.log("browse.$artist ", artist, data);
-
-    // for mobile, we only want to show one central column.
-    const isSecondary = Boolean(params.albumId);
-
+function AlbumsRoute() {
     return (
         <>
-            <Paper
-                className={`${styles.column} ${isSecondary ? styles.isSecondary : ""}`}
-            >
-                <Box className={styles.columnLabel}>Album</Box>
-                <BrowserHeader className={styles.browserHeader} />
-                {artist && data ? (
-                    <Box className={styles.listBox}>
-                        <List data={data}>{List.Item}</List>
-                    </Box>
-                ) : (
-                    <LoadingIndicator />
-                )}
-            </Paper>
+            <Selection sx={{ gridColumn: "albums" }}>
+                <Albums />
+            </Selection>
             <Outlet />
         </>
+    );
+}
+
+/** A list of all albums (for the current artist).
+ *
+ * On mobile if an album is selected the
+ * current album is shown as a breadcrumb instead.
+ */
+function Albums() {
+    const albums = Route.useLoaderData();
+    const params = useParams({ strict: false });
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down("laptop"));
+
+    // Allow to deselect the album
+    const match = useMatch({
+        from: `${LIB_BROWSE_ROUTE}/$artist/$albumId`,
+        shouldThrow: false,
+    });
+    const to = match
+        ? `${LIB_BROWSE_ROUTE}/$artist`
+        : `${LIB_BROWSE_ROUTE}/$artist/$albumId`;
+
+    const data = useMemo(() => {
+        return albums.map((album) => ({
+            to:
+                params.albumId == album.id
+                    ? `${LIB_BROWSE_ROUTE}/$artist`
+                    : `${LIB_BROWSE_ROUTE}/$artist/$albumId`,
+            params: { artist: params.artist, albumId: album.id },
+            label: album.name,
+            className: styles.item,
+            "data-selected": params.albumId && params.albumId == album.id,
+        }));
+    }, [albums, params, to]);
+
+    const selectedData = data.find((item) => item["data-selected"] === true);
+
+    if (isMobile && selectedData) {
+        return (
+            <Link
+                to={selectedData.to}
+                params={selectedData.params}
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                    paddingInline: 4,
+                }}
+            >
+                <Disc3Icon size={18} color={"gray"} />
+                <Typography variant="body2" color="text.secondary">
+                    {selectedData.label}
+                </Typography>
+            </Link>
+        );
+    }
+
+    return (
+        <LibraryList
+            data={data}
+            selected={selectedData}
+            label="Albums"
+            labelIcon={<Disc3Icon />}
+        />
     );
 }

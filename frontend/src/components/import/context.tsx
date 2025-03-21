@@ -10,7 +10,7 @@ import {
 import { CandidateState, ImportState, SelectionState } from "./types";
 
 import useQueryParamsState from "../common/hooks/useQueryParamsState";
-import { useSocket } from "../common/hooks/useSocket";
+import useSocket from "../common/websocket/useSocket";
 
 export interface ImportStatus {
     message:

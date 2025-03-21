@@ -32,7 +32,8 @@ RUN --mount=type=cache,target=/var/cache/apk \
     bash \
     tmux \
     shadow \ 
-    git 
+    git \
+    ffmpeg 
 
 # Install our package (backend)
 COPY ./backend /repo/backend
