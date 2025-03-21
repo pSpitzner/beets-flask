@@ -27,6 +27,7 @@ export function customizeFetch() {
         const response = await originalFetch(apiPrefix + input, init);
         if (!response.ok) {
             const data = (await response.json()) as ErrorData;
+            console.log("API error", data);
             throw new APIError(data);
         }
 
@@ -44,8 +45,9 @@ export function customizeFetch() {
 }
 
 interface ErrorData {
-    error: string; //name
-    messages: string;
+    error: string;
+    message: string;
+    description?: string;
     trace?: string;
 }
 
@@ -53,7 +55,7 @@ export class APIError extends Error {
     trace?: string;
 
     constructor(public data: ErrorData) {
-        super(data.messages);
+        super(data.message ?? data.description);
         this.name = data.error;
         this.trace = data.trace ?? undefined;
     }

@@ -10,6 +10,7 @@ import CardActions from "@mui/material/CardActions";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import Accordion from "@mui/material/Accordion";
 import AccordionDetails from "@mui/material/AccordionDetails";
+import { useEffect } from "react";
 
 /** Default component for showing errors
  * Hopefully this should not happen, but they
@@ -21,6 +22,10 @@ import AccordionDetails from "@mui/material/AccordionDetails";
  * Also includes a link to the github issues page.
  */
 export function ErrorCard({ error }: { error: Error }) {
+    useEffect(() => {
+        console.error(error);
+    }, [error]);
+
     return (
         <Card
             sx={(theme) => ({

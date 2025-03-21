@@ -15,13 +15,13 @@ import {
     SearchXIcon,
     Tally5Icon,
     UserRoundIcon,
-    Folder,
     FolderOpen,
     TriangleAlertIcon,
     CircleHelpIcon,
     HourglassIcon,
     TagsIcon,
     CircleCheckBigIcon,
+    FolderIcon,
 } from "lucide-react";
 
 import { CircularProgress } from "@mui/material";
@@ -53,7 +53,7 @@ export function FolderTypeIcon({
         if (isOpen) {
             return <FolderOpen {...props} />;
         }
-        return <Folder {...props} />;
+        return <FolderIcon {...props} />;
     }
 }
 

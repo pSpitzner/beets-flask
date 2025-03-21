@@ -26,6 +26,8 @@ import { Route as FrontpageModalImport } from './routes/_frontpage/_modal'
 import { Route as DebugJobsImport } from './routes/_debug/jobs'
 import { Route as LibraryBrowseArtistImport } from './routes/library/browse.$artist'
 import { Route as FrontpageModalScheduleImport } from './routes/_frontpage/_modal.schedule'
+import { Route as DebugSessionIdImport } from './routes/_debug/session.$id'
+import { Route as DebugDesignIconsImport } from './routes/_debug/design/icons'
 import { Route as LibraryBrowseArtistAlbumIdImport } from './routes/library/browse.$artist.$albumId'
 import { Route as LibraryBrowseArtistAlbumIdItemIdImport } from './routes/library/browse.$artist.$albumId.$itemId'
 
@@ -118,6 +120,18 @@ const FrontpageModalScheduleRoute = FrontpageModalScheduleImport.update({
   id: '/schedule',
   path: '/schedule',
   getParentRoute: () => FrontpageModalRoute,
+} as any)
+
+const DebugSessionIdRoute = DebugSessionIdImport.update({
+  id: '/_debug/session/$id',
+  path: '/session/$id',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const DebugDesignIconsRoute = DebugDesignIconsImport.update({
+  id: '/_debug/design/icons',
+  path: '/design/icons',
+  getParentRoute: () => rootRoute,
 } as any)
 
 const LibraryBrowseArtistAlbumIdRoute = LibraryBrowseArtistAlbumIdImport.update(
@@ -230,6 +244,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TerminalIndexImport
       parentRoute: typeof rootRoute
     }
+    '/_debug/design/icons': {
+      id: '/_debug/design/icons'
+      path: '/design/icons'
+      fullPath: '/design/icons'
+      preLoaderRoute: typeof DebugDesignIconsImport
+      parentRoute: typeof rootRoute
+    }
+    '/_debug/session/$id': {
+      id: '/_debug/session/$id'
+      path: '/session/$id'
+      fullPath: '/session/$id'
+      preLoaderRoute: typeof DebugSessionIdImport
+      parentRoute: typeof rootRoute
+    }
     '/_frontpage/_modal/schedule': {
       id: '/_frontpage/_modal/schedule'
       path: '/schedule'
@@ -327,6 +355,8 @@ export interface FileRoutesByFullPath {
   '/inbox3': typeof Inbox3IndexRoute
   '/tags': typeof TagsIndexRoute
   '/terminal': typeof TerminalIndexRoute
+  '/design/icons': typeof DebugDesignIconsRoute
+  '/session/$id': typeof DebugSessionIdRoute
   '/schedule': typeof FrontpageModalScheduleRoute
   '/library/browse/$artist': typeof LibraryBrowseArtistRouteWithChildren
   '/library/browse/$artist/$albumId': typeof LibraryBrowseArtistAlbumIdRouteWithChildren
@@ -347,6 +377,8 @@ export interface FileRoutesByTo {
   '/inbox3': typeof Inbox3IndexRoute
   '/tags': typeof TagsIndexRoute
   '/terminal': typeof TerminalIndexRoute
+  '/design/icons': typeof DebugDesignIconsRoute
+  '/session/$id': typeof DebugSessionIdRoute
   '/schedule': typeof FrontpageModalScheduleRoute
   '/library/browse/$artist': typeof LibraryBrowseArtistRouteWithChildren
   '/library/browse/$artist/$albumId': typeof LibraryBrowseArtistAlbumIdRouteWithChildren
@@ -368,6 +400,8 @@ export interface FileRoutesById {
   '/inbox3/': typeof Inbox3IndexRoute
   '/tags/': typeof TagsIndexRoute
   '/terminal/': typeof TerminalIndexRoute
+  '/_debug/design/icons': typeof DebugDesignIconsRoute
+  '/_debug/session/$id': typeof DebugSessionIdRoute
   '/_frontpage/_modal/schedule': typeof FrontpageModalScheduleRoute
   '/library/browse/$artist': typeof LibraryBrowseArtistRouteWithChildren
   '/library/browse/$artist/$albumId': typeof LibraryBrowseArtistAlbumIdRouteWithChildren
@@ -390,6 +424,8 @@ export interface FileRouteTypes {
     | '/inbox3'
     | '/tags'
     | '/terminal'
+    | '/design/icons'
+    | '/session/$id'
     | '/schedule'
     | '/library/browse/$artist'
     | '/library/browse/$artist/$albumId'
@@ -409,6 +445,8 @@ export interface FileRouteTypes {
     | '/inbox3'
     | '/tags'
     | '/terminal'
+    | '/design/icons'
+    | '/session/$id'
     | '/schedule'
     | '/library/browse/$artist'
     | '/library/browse/$artist/$albumId'
@@ -428,6 +466,8 @@ export interface FileRouteTypes {
     | '/inbox3/'
     | '/tags/'
     | '/terminal/'
+    | '/_debug/design/icons'
+    | '/_debug/session/$id'
     | '/_frontpage/_modal/schedule'
     | '/library/browse/$artist'
     | '/library/browse/$artist/$albumId'
@@ -449,6 +489,8 @@ export interface RootRouteChildren {
   Inbox3IndexRoute: typeof Inbox3IndexRoute
   TagsIndexRoute: typeof TagsIndexRoute
   TerminalIndexRoute: typeof TerminalIndexRoute
+  DebugDesignIconsRoute: typeof DebugDesignIconsRoute
+  DebugSessionIdRoute: typeof DebugSessionIdRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -465,6 +507,8 @@ const rootRouteChildren: RootRouteChildren = {
   Inbox3IndexRoute: Inbox3IndexRoute,
   TagsIndexRoute: TagsIndexRoute,
   TerminalIndexRoute: TerminalIndexRoute,
+  DebugDesignIconsRoute: DebugDesignIconsRoute,
+  DebugSessionIdRoute: DebugSessionIdRoute,
 }
 
 export const routeTree = rootRoute
@@ -489,7 +533,9 @@ export const routeTree = rootRoute
         "/inbox2/",
         "/inbox3/",
         "/tags/",
-        "/terminal/"
+        "/terminal/",
+        "/_debug/design/icons",
+        "/_debug/session/$id"
       ]
     },
     "/loading": {
@@ -536,6 +582,12 @@ export const routeTree = rootRoute
     },
     "/terminal/": {
       "filePath": "terminal/index.tsx"
+    },
+    "/_debug/design/icons": {
+      "filePath": "_debug/design/icons.tsx"
+    },
+    "/_debug/session/$id": {
+      "filePath": "_debug/session.$id.tsx"
     },
     "/_frontpage/_modal/schedule": {
       "filePath": "_frontpage/_modal.schedule.tsx",

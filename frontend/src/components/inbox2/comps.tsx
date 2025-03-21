@@ -1,8 +1,8 @@
 import {
-    CopyIcon,
     EllipsisVerticalIcon,
     ImportIcon,
     LucideChevronRight,
+    LucideProps,
     RefreshCwIcon,
     TagIcon,
     Trash2Icon,
@@ -20,9 +20,7 @@ import {
 import {
     Box,
     Checkbox,
-    Chip,
     IconButton,
-    ListItemIcon,
     Menu,
     MenuItem,
     SpeedDial,
@@ -40,11 +38,13 @@ import {
     Zoom,
 } from "@mui/material";
 
-import { File, Folder } from "@/pythonTypes";
+import { File, Folder, FolderStatus } from "@/pythonTypes";
 
-import { FileTypeIcon, SourceTypeIcon, FolderTypeIcon } from "../common/icons";
-import { useMutation } from "@tanstack/react-query";
+import { FileTypeIcon, FolderTypeIcon, FolderStatusIcon } from "../common/icons";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { ClipboardCopyButton } from "../common/buttons/copy";
+import { statusQueryOptions } from "../common/websocket/status";
+import { Link } from "@tanstack/react-router";
 
 /* --------------------------------- Context -------------------------------- */
 // Allows to trigger actions on a single or multiple folders
@@ -122,11 +122,11 @@ export function FoldersSelectionProvider({ children }: { children: React.ReactNo
 
 /* ------------------------------ Grid wrapper ------------------------------ */
 
-export const GridWrapper = styled(Box)({
+export const GridWrapper = styled(Box)(({ theme }) => ({
     display: "grid",
     gridTemplateColumns: "[chip] auto [tree] 1fr [actions] auto [selector] auto",
     width: "100%",
-    columnGap: "1rem",
+    columnGap: theme.spacing(1),
     // Fill columns even if content is given in other order
     // Fill columns even if content is given in other order
     gridAutoFlow: "dense",
@@ -140,7 +140,7 @@ export const GridWrapper = styled(Box)({
             rgba(0, 0, 0, 0.01) 100%
         )`,
     },
-});
+}));
 
 const GridRow = styled(Box)({
     display: "grid",
@@ -166,7 +166,11 @@ export function FolderComponent({
     const [isOpen, setIsOpen] = useState(() => {
         // Open if folder does contain other folders
         // else closed (i.e. only file)
-        if (folder.children.some((child) => child.type === "directory")) {
+        if (
+            folder.children.some(
+                (child) => child.type === "directory" && child.is_album
+            )
+        ) {
             return true;
         }
         return false;
@@ -194,13 +198,13 @@ export function FolderComponent({
                 sx={{
                     backgroundColor: isSelected(folder) ? "gray !important" : "inherit",
                     position: "relative",
+                    px: 1,
                 }}
             >
-                <MatchChip
-                    type="spotify"
-                    quality={100}
-                    sx={{ gridColumn: "chip", justifyContent: "center" }}
-                />
+                <Link to={"/session/$id"} params={{ id: folder.hash }}>
+                    <FolderStatusForFolder folder={folder} size={ICON_SIZE} />
+                </Link>
+
                 {/* Folder name and collapsable */}
                 <FolderTreeRow
                     folder={folder}
@@ -405,6 +409,24 @@ function LevelIndentWrapper({
     );
 }
 
+function FolderStatusForFolder({ folder, ...props }: { folder: Folder } & LucideProps) {
+    const { data: status, isError } = useQuery(statusQueryOptions);
+
+    let status_e = undefined;
+
+    status_e = status?.find((s) => s.path === folder.full_path)?.status;
+
+    if (isError) {
+        status_e = FolderStatus.FAILED;
+    }
+
+    if (status_e === undefined) {
+        return <Box />;
+    }
+
+    return <FolderStatusIcon status={status_e} {...props} />;
+}
+
 /**Shows the percentage of the best match and its source */
 function MatchChip({
     type,
@@ -416,20 +438,26 @@ function MatchChip({
     sx?: SxProps<Theme>;
 }) {
     return (
-        <Chip
+        <Box display="flex" gap={0.5} alignItems="center">
+            {/*
+            <Chip
             icon={<SourceTypeIcon type={type} size={ICON_SIZE} />}
             label={quality.toFixed() + "%"}
             size="small"
-            color="success"
-            sx={{
-                minWidth: "4.5rem",
-                justifyContent: "space-between",
-                alignItems: "center",
-                backgroundColor: quality_color(quality),
-                ...sx,
-                fontSize: "0.8rem",
-            }}
-        />
+                color="success"
+                sx={{
+                    minWidth: "4.5rem",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    backgroundColor: quality_color(quality),
+                    ...sx,
+                    fontSize: "0.8rem",
+                }}
+                />
+                */}
+
+            <FolderStatusIcon status={FolderStatus.TAGGED} size={ICON_SIZE} />
+        </Box>
     );
 }
 
