@@ -18,7 +18,6 @@ import {
     useState,
 } from "react";
 import {
-    Badge,
     Box,
     BoxProps,
     Checkbox,
@@ -48,12 +47,14 @@ import {
     FolderTypeIcon,
     FolderStatusIcon,
     SourceTypeIcon,
+    PenaltyTypeIcon,
 } from "../common/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ClipboardCopyButton } from "../common/inputs/copy";
 import { statusQueryOptions } from "../common/websocket/status";
 import { Link } from "@tanstack/react-router";
 import { sessionQueryOptions } from "@/routes/_debug/session.$id";
+import { useConfig } from "../common/hooks/useConfig";
 
 /* --------------------------------- Context -------------------------------- */
 // Allows to trigger actions on a single or multiple folders
@@ -419,6 +420,20 @@ function LevelIndentWrapper({
     );
 }
 
+const StyledChip = styled(Chip)(({ theme }) => ({
+    paddingLeft: theme.spacing(0.5),
+    [theme.breakpoints.down("tablet")]: {
+        paddingLeft: 0,
+        //Remove border on small screens
+        border: "none",
+
+        //Remove label on small screens
+        "& .MuiChip-label": {
+            display: "none",
+        },
+    },
+}));
+
 /** Shows the current import status of the
  * folder.
  */
@@ -439,25 +454,12 @@ function FolderStatusChip({ folder, ...props }: { folder: Folder } & LucideProps
     }
 
     return (
-        <Chip
+        <StyledChip
             icon={<FolderStatusIcon status={status_value} size={ICON_SIZE * 0.85} />}
             label={status_name.charAt(0) + status_name.slice(1).toLowerCase()}
             size="small"
             variant="outlined"
             color="info"
-            sx={(theme) => ({
-                paddingLeft: 0.5,
-                [theme.breakpoints.down("tablet")]: {
-                    paddingLeft: 0,
-                    //Remove border on small screens
-                    border: "none",
-
-                    //Remove label on small screens
-                    "& .MuiChip-label": {
-                        display: "none",
-                    },
-                },
-            })}
         />
     );
 }
@@ -465,6 +467,7 @@ function FolderStatusChip({ folder, ...props }: { folder: Folder } & LucideProps
 function BestCandidateChip({ folder, ...props }: { folder: Folder } & LucideProps) {
     // FIXME: Fetching the full session here is kinda overkill
     let { data: session } = useQuery(sessionQueryOptions(folder.hash));
+    let config = useConfig();
 
     const bestCandidate = session?.tasks
         .flatMap((t) => t.candidates.map((c) => c))
@@ -476,38 +479,53 @@ function BestCandidateChip({ folder, ...props }: { folder: Folder } & LucideProp
     }
 
     let color: "success" | "warning" | "error" = "success";
-    if (bestCandidate.distance > 0.3) {
+    if (bestCandidate.distance > config.match.strong_rec_thresh) {
         color = "warning";
     }
-    if (bestCandidate.distance > 0.5) {
+    if (bestCandidate.distance > config.match.medium_rec_thresh) {
         color = "error";
     }
 
     return (
-        <Chip
+        <StyledChip
             icon={
                 <SourceTypeIcon
                     type={bestCandidate.info.data_source!}
                     size={ICON_SIZE * 0.85}
                 />
             }
-            label={(Math.abs(bestCandidate.distance - 1) * 100).toFixed(2) + "%"}
+            label={(Math.abs(bestCandidate.distance - 1) * 100).toFixed(0) + "%"}
             size="small"
             color={color}
             variant="outlined"
-            sx={(theme) => ({
-                paddingLeft: 0.5,
-                [theme.breakpoints.down("tablet")]: {
-                    paddingLeft: 0,
-                    //Remove border on small screens
-                    border: "none",
+        />
+    );
+}
 
-                    //Remove label on small screens
-                    "& .MuiChip-label": {
-                        display: "none",
-                    },
-                },
-            })}
+function DuplicateChip({ folder }: { folder: Folder }) {
+    let { data: session } = useQuery(sessionQueryOptions(folder.hash));
+
+    //Fixme: Generalize best candidate
+    const bestCandidate = session?.tasks
+        .flatMap((t) => t.candidates.map((c) => c))
+        .filter((c) => c.info.data_source !== "asis")
+        .sort((a, b) => a.distance - b.distance)[0];
+
+    if (!bestCandidate) {
+        return null;
+    }
+
+    if (!bestCandidate.duplicate_in_library) {
+        return null;
+    }
+
+    return (
+        <StyledChip
+            icon={<PenaltyTypeIcon type="duplicate" size={ICON_SIZE * 0.85} />}
+            label="Duplicate"
+            size="small"
+            color="error"
+            variant="outlined"
         />
     );
 }
@@ -530,6 +548,7 @@ function Chips({ folder }: { folder: Folder }) {
                 },
             })}
         >
+            <DuplicateChip folder={folder} />
             <BestCandidateChip folder={folder} />
             <FolderStatusChip folder={folder} />
         </Box>

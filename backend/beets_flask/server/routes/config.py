@@ -7,7 +7,6 @@ fetch settings once from the backend on first page-load.
 from quart import Blueprint, jsonify
 
 from beets_flask.config import get_config
-from beets_flask.logger import log
 
 config_bp = Blueprint("config", __name__, url_prefix="/config")
 

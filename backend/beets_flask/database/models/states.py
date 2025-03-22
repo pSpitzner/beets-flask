@@ -248,6 +248,12 @@ class TaskStateInDb(Base):
     items: Mapped[bytes]
     choice_flag: Mapped[action | None]
 
+    # To allow for continue we need to store the current artist and album
+    # TODO: REMOVE this is not needed!! We can look at the asis candidate for this!
+    # E.g. frontend component to compare two candidates
+    cur_artist: Mapped[str | None]
+    cur_album: Mapped[str | None]
+
     progress: Mapped[Progress]
 
     def __init__(
@@ -259,6 +265,8 @@ class TaskStateInDb(Base):
         candidates: List[CandidateStateInDb] = [],
         progress: Progress = Progress.NOT_STARTED,
         choice_flag: action | None = None,
+        cur_artist: str | None = None,
+        cur_album: str | None = None,
     ):
         super().__init__(id)
         self.toppath = toppath
@@ -267,6 +275,8 @@ class TaskStateInDb(Base):
         self.candidates = candidates
         self.progress = progress
         self.choice_flag = choice_flag
+        self.cur_artist = cur_artist
+        self.cur_album = cur_album
 
     @classmethod
     def from_live_state(cls, state: TaskState) -> TaskStateInDb:
@@ -280,6 +290,8 @@ class TaskStateInDb(Base):
             ],
             progress=state.progress.progress,
             choice_flag=state.task.choice_flag,
+            cur_artist=state.task.cur_artist,
+            cur_album=state.task.cur_album,
         )
         return task
 
@@ -293,6 +305,8 @@ class TaskStateInDb(Base):
             items=pickle.loads(self.items),
         )
         beets_task.choice_flag = self.choice_flag
+        beets_task.cur_artist = self.cur_artist
+        beets_task.cur_album = self.cur_album
 
         live_state = TaskState(beets_task)
         live_state.id = self.id
@@ -328,9 +342,13 @@ class CandidateStateInDb(Base):
     # ~4kb per match
     match: Mapped[bytes]
 
+    # Duplicate ids (if any) (beets_id)
+    duplicate_ids: Mapped[str]
+
     def __init__(
         self,
         match: BeetsAlbumMatch | BeetsTrackMatch,
+        duplicate_ids: List[str] = [],
         id: str | None = None,
     ):
         super().__init__(id)
@@ -347,6 +365,8 @@ class CandidateStateInDb(Base):
                 item._Item__album = None
 
         self.match = pickle.dumps(match)
+        log.warning(f"{duplicate_ids=}")
+        self.duplicate_ids = ";".join(map(str, duplicate_ids))
 
     @classmethod
     def from_live_state(cls, state: CandidateState) -> CandidateStateInDb:
@@ -354,34 +374,23 @@ class CandidateStateInDb(Base):
         candidate = cls(
             id=state.id,
             match=state.match,
+            duplicate_ids=state.duplicate_ids,
         )
+        log.warning(f"{state.duplicate_ids=}")
         return candidate
 
-    def to_live_state(self, task_state: TaskState) -> CandidateState:
+    def to_live_state(self, task_state: TaskState | None) -> CandidateState:
         """Recreate the live CandidateState with underlying task from its stored version in the db."""
+        if task_state is None:
+            task_state = self.task.to_live_state()
         live_state = CandidateState(pickle.loads(self.match), task_state)
         live_state.id = self.id
+        live_state.duplicate_ids = self.duplicate_ids.split(";")
         return live_state
 
     def to_dict(self) -> SerializedCandidateState:
-        # A lot of candidate properties derive from the task, and we do not
-        # save them separately in the db.
-        # Thus, to serialize, we need too recreate the live-task and live-candidate.
 
-        # avoid circular import and SQLA "not bound to a Session" error
-        from beets_flask.database.setup import db_session_factory
-
-        with db_session_factory() as db_session:
-            t_state_db = TaskStateInDb.get_by(
-                TaskStateInDb.id == self.task_id, session=db_session
-            )
-            if t_state_db is None:
-                raise ValueError(f"Task with id {self.task_id} not found.")
-
-            for c_state in t_state_db.to_live_state().candidate_states:
-                if c_state.id == self.id:
-                    return c_state.serialize()
-            raise ValueError(f"Candidate with id {self.id} not found.")
+        return self.to_live_state(self.task.to_live_state()).serialize()
 
 
 __all__ = ["SessionStateInDb", "TaskStateInDb", "CandidateStateInDb"]
