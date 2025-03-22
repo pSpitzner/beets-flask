@@ -1,4 +1,7 @@
 import { PageWrapper } from "@/components/common/page";
+import { UnmatchedTracks } from "@/components/import/candidates/details";
+import { CandidatePreview } from "@/components/import/candidates/preview";
+import { CandidateListItem } from "@/components/import/candidateSelection";
 import { SerializedCandidateState, SerializedSessionState } from "@/pythonTypes";
 import { Box } from "@mui/material";
 import { createFileRoute } from "@tanstack/react-router";
@@ -34,8 +37,8 @@ function RouteComponent() {
             <Box
                 sx={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(5, auto)",
-                    columnGap: 2,
+                    gridTemplateColumns: "1fr",
+                    gap: 1,
                 }}
             >
                 {data.tasks[0].candidates
@@ -49,6 +52,7 @@ function RouteComponent() {
 }
 
 function Candidate({ candidate }: { candidate: SerializedCandidateState }) {
+    return <CandidateListItem candidate={candidate} />;
     return (
         <Box sx={{ display: "contents" }}>
             <Box sx={{ justifySelf: "flex-end" }}>

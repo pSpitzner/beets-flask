@@ -14,6 +14,7 @@ import {
 
 import styles from "./candidates.module.scss";
 import { CandidateState } from "../types";
+import { SerializedCandidateState } from "@/pythonTypes";
 
 export function BeetsDump({ candidate }: { candidate: CandidateState }) {
     const content = candidate.diff_preview ?? "No preview available";
@@ -29,12 +30,15 @@ export function CandidatePreview({
     className,
     sx,
 }: {
-    candidate: CandidateState;
+    candidate: SerializedCandidateState;
     className?: string;
     sx?: SxProps<Theme>;
 }) {
     return (
-        <Box sx={{ display: "flex", flexDirection: "column", ...sx }} className={className}>
+        <Box
+            sx={{ display: "flex", flexDirection: "column", ...sx }}
+            className={className}
+        >
             <Disambiguation candidate={candidate} />
             <DataUrl candidate={candidate} />
             <ArtistChange

@@ -19,12 +19,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import Tooltip from "@mui/material/Tooltip";
 
-import { CandidateState } from "./types";
-
 import styles from "./import.module.scss";
 import mb from "@/assets/musicbrainz.webp";
 import spotify from "@/assets/spotify.png";
 import spotifyBw from "@/assets/spotifyBw.svg";
+import { SerializedCandidateState } from "@/pythonTypes";
 
 const penaltyOrder = [
     "missing_tracks",
@@ -50,7 +49,7 @@ export function PenaltyIconRow({
     candidate,
     showSource = true,
 }: {
-    candidate: CandidateState;
+    candidate: SerializedCandidateState;
     showSource?: boolean;
 }): React.JSX.Element {
     const penalties = useMemo(() => {
@@ -94,7 +93,9 @@ export function PenaltyIconRow({
                 <PenaltyIcon
                     key={p}
                     kind={p}
-                    className={penalties.indexOf(p) === -1 ? styles.inactive : styles.penalty}
+                    className={
+                        penalties.indexOf(p) === -1 ? styles.inactive : styles.penalty
+                    }
                 />
             ))}
             <PenaltyIcon
