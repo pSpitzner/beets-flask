@@ -2,6 +2,8 @@ import Ansi from "@curvenote/ansi-to-react";
 import { SxProps, Theme } from "@mui/material";
 import Box from "@mui/material/Box";
 
+import { SerializedCandidateState } from "@/pythonTypes";
+
 import {
     AlbumChange,
     ArtistChange,
@@ -14,7 +16,6 @@ import {
 
 import styles from "./candidates.module.scss";
 import { CandidateState } from "../types";
-import { SerializedCandidateState } from "@/pythonTypes";
 
 export function BeetsDump({ candidate }: { candidate: CandidateState }) {
     const content = candidate.diff_preview ?? "No preview available";
@@ -35,10 +36,7 @@ export function CandidatePreview({
     sx?: SxProps<Theme>;
 }) {
     return (
-        <Box
-            sx={{ display: "flex", flexDirection: "column", ...sx }}
-            className={className}
-        >
+        <Box sx={{ display: "flex", flexDirection: "column", ...sx }} className={className}>
             <Disambiguation candidate={candidate} />
             <DataUrl candidate={candidate} />
             <ArtistChange

@@ -1,16 +1,16 @@
+import { useEffect } from "react";
+import Accordion from "@mui/material/Accordion";
+import AccordionDetails from "@mui/material/AccordionDetails";
+import AccordionSummary from "@mui/material/AccordionSummary";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
+import CardActions from "@mui/material/CardActions";
 import CardContent from "@mui/material/CardContent";
 import CardMedia from "@mui/material/CardMedia";
 import Link from "@mui/material/Link";
 import Typography from "@mui/material/Typography";
 
 import brokenRecord from "@/assets/broken-record.png";
-import CardActions from "@mui/material/CardActions";
-import AccordionSummary from "@mui/material/AccordionSummary";
-import Accordion from "@mui/material/Accordion";
-import AccordionDetails from "@mui/material/AccordionDetails";
-import { useEffect } from "react";
 
 /** Default component for showing errors
  * Hopefully this should not happen, but they

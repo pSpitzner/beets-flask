@@ -1,10 +1,10 @@
+import { FileWarning } from "lucide-react";
 import Box, { BoxProps } from "@mui/material/Box";
 import Skeleton from "@mui/material/Skeleton";
 import { SxProps } from "@mui/material/styles";
 import { useQuery } from "@tanstack/react-query";
 
 import { APIError, artQueryOptions } from "@/components/common/_query";
-import { FileWarning } from "lucide-react";
 
 interface CoverArtProps {
     type: "item" | "album";

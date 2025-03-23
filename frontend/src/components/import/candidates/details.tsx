@@ -3,13 +3,14 @@ import { ReactNode } from "react";
 import { BoxProps, styled } from "@mui/material";
 import Box from "@mui/material/Box";
 
+import { PenaltyTypeIcon } from "@/components/common/icons";
+import { SerializedCandidateState } from "@/pythonTypes";
+
 import { useDiff } from "./diff";
 
 import styles from "./candidates.module.scss";
 import { useConfig } from "../../common/hooks/useConfig";
-import { PenaltyIcon } from "../icons";
 import { ItemInfo, TrackInfo } from "../types";
-import { SerializedCandidateState } from "@/pythonTypes";
 
 /* ---------------------------------------------------------------------------------- */
 /*                                       Basics                                       */
@@ -35,10 +36,7 @@ export function ArtistChange({ prev, next }: { prev: string; next: string }) {
     return (
         <DetailBox>
             <Col>
-                <PenaltyIcon
-                    kind={"artist"}
-                    className={didChange ? styles.changed : ""}
-                />
+                <PenaltyTypeIcon type={"artist"} className={didChange ? styles.changed : ""} />
                 {inner}
             </Col>
         </DetailBox>
@@ -65,10 +63,7 @@ export function AlbumChange({ prev, next }: { prev: string; next: string }) {
     return (
         <DetailBox>
             <Col>
-                <PenaltyIcon
-                    kind={"album"}
-                    className={didChange ? styles.changed : ""}
-                />
+                <PenaltyTypeIcon type={"album"} className={didChange ? styles.changed : ""} />
                 {inner}
             </Col>
         </DetailBox>
@@ -154,12 +149,12 @@ export function TrackChanges({ candidate }: { candidate: SerializedCandidateStat
             <Col>
                 {tracksChanged ? (
                     <>
-                        <PenaltyIcon kind={"tracks"} className={styles.changed} />
+                        <PenaltyTypeIcon type={"tracks"} className={styles.changed} />
                         <span className={""}>Track changes</span>
                     </>
                 ) : (
                     <>
-                        <PenaltyIcon kind={"tracks"} />
+                        <PenaltyTypeIcon type={"tracks"} />
                         <span className={""}>No severe track changes</span>
                     </>
                 )}
@@ -220,9 +215,7 @@ function TrackDiffRow({
         time: Math.abs(to.time - from.time) > 1,
         index: fromIdx !== toIdx,
     };
-    const numChanges = [changed.title, changed.time, changed.index].filter(
-        (x) => x
-    ).length;
+    const numChanges = [changed.title, changed.time, changed.index].filter((x) => x).length;
 
     function _change_side_helper({
         data,
@@ -389,11 +382,7 @@ export function MissingTracks({ candidate }: { candidate: SerializedCandidateSta
     return (
         <DetailBox>
             <Col>
-                <PenaltyIcon
-                    kind={"missing_tracks"}
-                    size={14}
-                    className={styles.changed}
-                />
+                <PenaltyTypeIcon type={"missing_tracks"} size={14} className={styles.changed} />
                 <span className={""}>Missing tracks: {missingTracks.length}</span>
             </Col>
             <Box className={styles.trackChanges}>
@@ -418,11 +407,7 @@ function PlainTrackRow({ track, idx }: { track: TrackInfo | ItemInfo; idx?: numb
     );
 }
 
-export function UnmatchedTracks({
-    candidate,
-}: {
-    candidate: SerializedCandidateState;
-}) {
+export function UnmatchedTracks({ candidate }: { candidate: SerializedCandidateState }) {
     if (candidate.type !== "album") {
         return null;
     }
@@ -436,11 +421,7 @@ export function UnmatchedTracks({
     return (
         <DetailBox>
             <Col>
-                <PenaltyIcon
-                    kind={"unmatched_tracks"}
-                    size={14}
-                    className={styles.changed}
-                />
+                <PenaltyTypeIcon type={"unmatched_tracks"} size={14} className={styles.changed} />
                 <span className={""}>Unmatched tracks: {unmatchedTracks.length}</span>
             </Col>
             <Box className={styles.trackChanges}>

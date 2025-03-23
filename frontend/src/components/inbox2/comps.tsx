@@ -39,22 +39,23 @@ import {
     useTheme,
     Zoom,
 } from "@mui/material";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 
 import { File, Folder, FolderStatus } from "@/pythonTypes";
 
+import { useConfig } from "../common/hooks/useConfig";
 import {
     FileTypeIcon,
-    FolderTypeIcon,
     FolderStatusIcon,
-    SourceTypeIcon,
+    FolderTypeIcon,
     PenaltyTypeIcon,
+    SourceTypeIcon,
 } from "../common/icons";
-import { useMutation, useQuery } from "@tanstack/react-query";
 import { ClipboardCopyButton } from "../common/inputs/copy";
 import { statusQueryOptions } from "../common/websocket/status";
-import { Link } from "@tanstack/react-router";
 import { sessionQueryOptions } from "@/routes/_debug/session.$id";
-import { useConfig } from "../common/hooks/useConfig";
+import { MatchChip } from "../common/chips";
 
 /* --------------------------------- Context -------------------------------- */
 // Allows to trigger actions on a single or multiple folders
@@ -186,13 +187,9 @@ export function FolderComponent({
     // Create children elements from tree (recursive)
     const childElements = Object.entries(folder.children).map(([_key, values]) => {
         if (values.type === "file") {
-            return (
-                <FileComponent file={values} key={values.full_path} level={level + 1} />
-            );
+            return <FileComponent file={values} key={values.full_path} level={level + 1} />;
         } else if (values.type === "directory") {
-            return (
-                <FolderComponent folder={values} key={values.hash} level={level + 1} />
-            );
+            return <FolderComponent folder={values} key={values.hash} level={level + 1} />;
         }
     });
 
@@ -288,11 +285,7 @@ function FolderTreeRow({
                 />
             </IconButton>
 
-            <FolderTypeIcon
-                isAlbum={folder.is_album}
-                isOpen={isOpen}
-                size={ICON_SIZE}
-            />
+            <FolderTypeIcon isAlbum={folder.is_album} isOpen={isOpen} size={ICON_SIZE} />
 
             <Typography variant="body1" sx={{ paddingBlock: 0.25 }}>
                 {folder.full_path.split("/").pop()}
@@ -441,7 +434,7 @@ function FolderStatusChip({ folder, ...props }: { folder: Folder } & LucideProps
     const { data: status } = useQuery(statusQueryOptions);
 
     // Status enum value
-    let status_value = status?.find((s) => s.path === folder.full_path)?.status;
+    const status_value = status?.find((s) => s.path === folder.full_path)?.status;
 
     // Status enum name
     let status_name: string | undefined = undefined;
@@ -466,8 +459,8 @@ function FolderStatusChip({ folder, ...props }: { folder: Folder } & LucideProps
 
 function BestCandidateChip({ folder, ...props }: { folder: Folder } & LucideProps) {
     // FIXME: Fetching the full session here is kinda overkill
-    let { data: session } = useQuery(sessionQueryOptions(folder.hash));
-    let config = useConfig();
+    const { data: session } = useQuery(sessionQueryOptions(folder.hash));
+    const config = useConfig();
 
     const bestCandidate = session?.tasks
         .flatMap((t) => t.candidates.map((c) => c))
@@ -478,32 +471,11 @@ function BestCandidateChip({ folder, ...props }: { folder: Folder } & LucideProp
         return null;
     }
 
-    let color: "success" | "warning" | "error" = "success";
-    if (bestCandidate.distance > config.match.strong_rec_thresh) {
-        color = "warning";
-    }
-    if (bestCandidate.distance > config.match.medium_rec_thresh) {
-        color = "error";
-    }
-
-    return (
-        <StyledChip
-            icon={
-                <SourceTypeIcon
-                    type={bestCandidate.info.data_source!}
-                    size={ICON_SIZE * 0.85}
-                />
-            }
-            label={(Math.abs(bestCandidate.distance - 1) * 100).toFixed(0) + "%"}
-            size="small"
-            color={color}
-            variant="outlined"
-        />
-    );
+    return <MatchChip source={bestCandidate.info.data_source} distance={bestCandidate.distance} />;
 }
 
 function DuplicateChip({ folder }: { folder: Folder }) {
-    let { data: session } = useQuery(sessionQueryOptions(folder.hash));
+    const { data: session } = useQuery(sessionQueryOptions(folder.hash));
 
     //Fixme: Generalize best candidate
     const bestCandidate = session?.tasks
@@ -608,11 +580,11 @@ export function FolderActions() {
                 folder_paths: selected.paths,
             }),
         })
-            .catch((e) => {
-                console.error("Failed to tag folders", e);
-            })
             .then((r) => {
                 console.log("Tagged ", r);
+            })
+            .catch((e) => {
+                console.error("Failed to tag folders", e);
             });
 
         setTimeout(() => {
@@ -657,11 +629,7 @@ export function FolderActions() {
                 onOpen={() => setOpen(true)}
                 onClose={() => setOpen(false)}
             >
-                <GenericSpeedDialAction
-                    icon={<TagIcon />}
-                    tooltip="Retag"
-                    onClick={onReTag}
-                />
+                <GenericSpeedDialAction icon={<TagIcon />} tooltip="Retag" onClick={onReTag} />
                 <GenericSpeedDialAction
                     icon={<ImportIcon />}
                     tooltip="Auto-import"
@@ -796,15 +764,11 @@ function MoreActions({ f, ...props }: { f: Folder | File } & BoxProps) {
             >
                 <EllipsisVerticalIcon size={ICON_SIZE} />
             </IconButton>
-            <Menu
-                onClose={() => setAnchorEl(null)}
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-            >
+            <Menu onClose={() => setAnchorEl(null)} anchorEl={anchorEl} open={Boolean(anchorEl)}>
                 <MenuItem
                     onClick={() => {
                         // copy full path to clipboard
-                        navigator.clipboard.writeText(f.full_path);
+                        navigator.clipboard.writeText(f.full_path).catch(console.error);
                         setAnchorEl(null);
                     }}
                 >

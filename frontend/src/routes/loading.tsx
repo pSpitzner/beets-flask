@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Loading, LoadingSmall } from "@/components/common/loading";
 import { Box, Button } from "@mui/material";
+import { createFileRoute } from "@tanstack/react-router";
+
+import { Loading, LoadingSmall } from "@/components/common/loading";
 
 export const Route = createFileRoute("/loading")({
     component: RouteComponent,

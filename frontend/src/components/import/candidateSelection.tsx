@@ -10,22 +10,20 @@ import RadioGroup from "@mui/material/RadioGroup";
 import * as HoverCard from "@radix-ui/react-hover-card";
 import { ReactNode } from "@tanstack/react-router";
 
-import {
-    SimilarityBadge,
-    SimilarityBadgeWithText,
-} from "@/components/tags/similarityBadge";
+import { SimilarityBadge, SimilarityBadgeWithText } from "@/components/tags/similarityBadge";
+import { SerializedCandidateState } from "@/pythonTypes";
 
 import { ButtonBar } from "./buttons";
 import { StatusLabel } from "./buttons";
 import { CandidatePreview } from "./candidates/preview";
 import { useImportContext } from "./context";
-import { PenaltyIconRow } from "./icons";
-import { CandidateState, SelectionState } from "./types";
+import { PenaltyIconRow, PenaltyIconsChip } from "./icons";
+import { SelectionState } from "./types";
 
 import "@/main.css";
 import styles from "./import.module.scss";
+import { SourceChip } from "../common/chips";
 import { PageWrapper } from "../common/page";
-import { SerializedCandidateState } from "@/pythonTypes";
 
 /** Wrapper for all selection to align them in a grid based on the view size
  * with automatically wrapping or resizing the items.
@@ -40,9 +38,7 @@ export function AvailableSelections({ extraButtons }: { extraButtons?: ReactNode
             (c) => c.id === selection.current_candidate_id
         );
 
-        components.push(
-            <CandidateList key={selection.id + "selec"} selection={selection} />
-        );
+        components.push(<CandidateList key={selection.id + "selec"} selection={selection} />);
 
         if (candidate) {
             components.push(
@@ -117,9 +113,7 @@ function CandidateList({ selection }: { selection: SelectionState }) {
     return (
         <PageWrapper>
             <SectionHeader text={"Available Candidates"} />
-            <Paper
-                sx={{ display: "flex", flexDirection: "column", paddingTop: ".25rem" }}
-            >
+            <Paper sx={{ display: "flex", flexDirection: "column", paddingTop: ".25rem" }}>
                 <FormControl
                     sx={{
                         marginRight: 0,
@@ -145,12 +139,7 @@ function CandidateList({ selection }: { selection: SelectionState }) {
                                     disableTypography={true}
                                     value={choice.id}
                                     key={choice.id}
-                                    control={
-                                        <Radio
-                                            sx={{ marginTop: "-0.1rem" }}
-                                            size="small"
-                                        />
-                                    }
+                                    control={<Radio sx={{ marginTop: "-0.1rem" }} size="small" />}
                                     label={<CandidateListItem candidate={choice} />}
                                 />
                             );
@@ -158,11 +147,7 @@ function CandidateList({ selection }: { selection: SelectionState }) {
                     </RadioGroup>
                 </FormControl>
                 {selection.candidate_states.length > numCandidatesToShow && (
-                    <Button
-                        className={styles.expandBtn}
-                        variant="text"
-                        onClick={toggleShowAll}
-                    >
+                    <Button className={styles.expandBtn} variant="text" onClick={toggleShowAll}>
                         {showAll ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                     </Button>
                 )}
@@ -171,11 +156,7 @@ function CandidateList({ selection }: { selection: SelectionState }) {
     );
 }
 
-export function CandidateListItem({
-    candidate,
-}: {
-    candidate: SerializedCandidateState;
-}) {
+export function CandidateListItem({ candidate }: { candidate: SerializedCandidateState }) {
     // const artistIsSame = candidate.cur_artist === match.info.artist;
     // const albumIsSame = candidate.cur_album === match.info.album;
 
@@ -193,11 +174,7 @@ export function CandidateListItem({
                         }}
                     >
                         {candidate.id == "asis" ? (
-                            <SimilarityBadgeWithText
-                                text={"asis"}
-                                color={"custom"}
-                                charWidth={4}
-                            />
+                            <SimilarityBadgeWithText text={"asis"} color={"custom"} charWidth={4} />
                         ) : (
                             <SimilarityBadge dist={candidate.distance} charWidth={4} />
                         )}
@@ -225,7 +202,13 @@ export function CandidateListItem({
                 </HoverCard.Content>
             </HoverCard.Root>
 
-            <Box className={styles.penaltyIconRowWrapper}>
+            <Box
+                sx={{
+                    display: "flex",
+                    gap: 0.5,
+                }}
+            >
+                <SourceChip source={candidate.info.data_source!} />
                 <PenaltyIconRow candidate={candidate} />
             </Box>
         </Box>

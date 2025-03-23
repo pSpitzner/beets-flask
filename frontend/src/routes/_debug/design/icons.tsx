@@ -1,6 +1,6 @@
+import { Box, Chip,Typography } from "@mui/material";
 import { createFileRoute } from "@tanstack/react-router";
-import { Typography, Box, Chip } from "@mui/material";
-import { PageWrapper } from "@/components/common/page";
+
 import {
     FileTypeIcon,
     FolderStatusIcon,
@@ -8,6 +8,7 @@ import {
     PenaltyTypeIcon,
     SourceTypeIcon,
 } from "@/components/common/icons";
+import { PageWrapper } from "@/components/common/page";
 import { FolderStatus } from "@/pythonTypes";
 
 export const Route = createFileRoute("/_debug/design/icons")({

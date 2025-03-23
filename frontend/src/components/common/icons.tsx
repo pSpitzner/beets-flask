@@ -4,30 +4,30 @@ import {
     BrainIcon,
     CalendarIcon,
     CassetteTapeIcon,
+    CircleCheckBigIcon,
+    CircleHelpIcon,
     CopyIcon,
     Disc3Icon,
     FastForward,
     FileIcon,
     FlagIcon,
+    FolderIcon,
     FolderOpen,
     GitPullRequestArrowIcon,
+    HourglassIcon,
     LucideProps,
     MusicIcon,
     SearchXIcon,
-    Tally5Icon,
-    UserRoundIcon,
-    TriangleAlertIcon,
-    CircleHelpIcon,
-    HourglassIcon,
     TagsIcon,
-    CircleCheckBigIcon,
-    FolderIcon,
+    Tally5Icon,
+    TriangleAlertIcon,
+    UserRoundIcon,
 } from "lucide-react";
-
-import { CircularProgress } from "@mui/material";
-import { GrowingRipple } from "./loading";
+import { CircularProgress, Tooltip } from "@mui/material";
 
 import { FolderStatus } from "@/pythonTypes";
+
+import { GrowingRipple } from "./loading";
 
 /** Icon to show a folder, shows a disc icon if the folder is an album.
  *
@@ -61,10 +61,7 @@ export function FolderTypeIcon({
  *
  * type: file type to show icon for (normally the ending of the file)
  */
-export function FileTypeIcon({
-    type,
-    ...props
-}: { type: string | undefined } & LucideProps) {
+export function FileTypeIcon({ type, ...props }: { type: string | undefined } & LucideProps) {
     switch (type) {
         case "mp3":
         case "flac":
@@ -77,8 +74,6 @@ export function FileTypeIcon({
 }
 
 /** Icon to show different penalty types.
- *
- * Allows to define icons for the beets penalty types.
  */
 export function PenaltyTypeIcon({ type, ...props }: { type: string } & LucideProps) {
     switch (type) {
@@ -127,11 +122,16 @@ export function SourceTypeIcon({ type, ...props }: { type: string } & LucideProp
     }
 }
 
+export function SourceTypeIconWithTooltip({ type, ...props }: { type: string } & LucideProps) {
+    return (
+        <Tooltip title={type === "asis" ? "Metadata from files" : type}>
+            <SourceTypeIcon type={type} {...props} />
+        </Tooltip>
+    );
+}
+
 /** Shows the status of a folder */
-export function FolderStatusIcon({
-    status,
-    ...props
-}: { status: FolderStatus } & LucideProps) {
+export function FolderStatusIcon({ status, ...props }: { status: FolderStatus } & LucideProps) {
     switch (status) {
         case FolderStatus.UNKNOWN:
             return <CircleHelpIcon {...props} />;
@@ -142,12 +142,7 @@ export function FolderStatusIcon({
         case FolderStatus.PENDING:
             return <GrowingRipple size={props.size} color={props.color} />;
         case FolderStatus.RUNNING:
-            return (
-                <CircularProgress
-                    size={props.size}
-                    sx={{ color: props.color || "inherit" }}
-                />
-            );
+            return <CircularProgress size={props.size} sx={{ color: props.color || "inherit" }} />;
         case FolderStatus.TAGGED:
             return <TagsIcon {...props} />;
         case FolderStatus.IMPORTED:
@@ -173,10 +168,7 @@ function Spotify(props: LucideProps) {
             {...props}
         >
             <path stroke="none" d="M 0,0 H 24 V 24 H 0 Z" fill="none" id="path2" />
-            <g
-                id="g1168"
-                transform="matrix(0.85434442,0,0,0.85434442,1.7478672,-0.03136257)"
-            >
+            <g id="g1168" transform="matrix(0.85434442,0,0,0.85434442,1.7478672,-0.03136257)">
                 <path
                     d="m 6.3949311,14.46672 c 3.7367129,-2.201671 8.2207679,-1.454328 11.2101379,0.7877"
                     id="path6"

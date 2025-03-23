@@ -12,11 +12,11 @@ import {
     Typography,
 } from "@mui/material";
 
+import { MinimalConfig, useConfig } from "@/components/common/hooks/useConfig";
 import { File, Folder } from "@/pythonTypes";
 
 import { FileTypeIcon, SourceTypeIcon } from "../common/icons";
 import { PenaltyIcon } from "../import/icons";
-import { MinimalConfig, useConfig } from "@/components/common/hooks/useConfig";
 
 export function FolderComponent({ folder }: { folder: Folder }) {
     console.log(folder);

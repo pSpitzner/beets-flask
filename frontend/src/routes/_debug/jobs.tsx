@@ -1,11 +1,12 @@
+import { Box, Button, Typography } from "@mui/material";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+
 import { FolderStatusIcon } from "@/components/common/icons";
 import { JSONPretty } from "@/components/common/json";
 import { PageWrapper } from "@/components/common/page";
 import { statusQueryOptions } from "@/components/common/websocket/status";
 import { FolderStatus } from "@/pythonTypes";
-import { Box, Button, Typography } from "@mui/material";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_debug/jobs")({
     component: RouteComponent,

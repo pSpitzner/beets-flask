@@ -7,7 +7,7 @@ import { Link } from "@tanstack/react-router";
 
 import styles from "./list.module.scss";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 interface WrapperProps<D = ListItemData> {
     children: ComponentType<ListChildComponentProps<D[]>>;
     className?: string;

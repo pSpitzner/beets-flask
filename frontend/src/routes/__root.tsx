@@ -3,8 +3,8 @@ import { QueryClient } from "@tanstack/react-query";
 import { HeadContent } from "@tanstack/react-router";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 
-import { TerminalContextProvider } from "@/components/frontpage/terminal";
 import NavBar from "@/components/frontpage/navbar";
+import { TerminalContextProvider } from "@/components/frontpage/terminal";
 
 export const Route = createRootRouteWithContext<{
     queryClient: QueryClient;

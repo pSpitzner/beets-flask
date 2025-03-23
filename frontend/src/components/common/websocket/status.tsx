@@ -9,11 +9,14 @@
  */
 
 import { createContext, useContext, useEffect } from "react";
-import type { Socket } from "socket.io-client";
-import useSocket from "./useSocket";
 import { type QueryClient } from "@tanstack/react-query";
-import { queryClient } from "../_query";
+
 import { FolderStatusResponse } from "@/pythonTypes";
+
+import useSocket from "./useSocket";
+
+import { queryClient } from "../_query";
+import type { Socket } from "socket.io-client";
 interface StatusContextI {
     isConnected: boolean;
     socket: Socket | null;

@@ -12,6 +12,7 @@ import Tooltip from "@mui/material/Tooltip";
 import { useSuspenseQuery } from "@tanstack/react-query";
 
 import { Album as AlbumT, albumQueryOptions } from "@/components/common/_query";
+
 import CoverArt from "./coverArt";
 
 export function AlbumById({ albumId }: { albumId: number }) {

@@ -7,11 +7,11 @@ import { customizeFetch, queryClient } from "@/components/common/_query";
 import { PrefetchConfigQueryClientProvider } from "@/components/common/hooks/useConfig";
 import { StatusContextProvider } from "@/components/common/websocket/status";
 
+import { Loading } from "./components/common/loading";
+import { ErrorCard } from "./errors";
 import ThemeProvider from "./theme";
 
 import { routeTree } from "./routeTree.gen";
-import { Loading } from "./components/common/loading";
-import { ErrorCard } from "./errors";
 
 // we tweak the backend-route on the dev server
 customizeFetch();
@@ -86,7 +86,7 @@ function App() {
 }
 
 // Render the app
-// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+ 
 const rootElement = document.getElementById("app")!;
 if (!rootElement.innerHTML) {
     const root = ReactDOM.createRoot(rootElement);

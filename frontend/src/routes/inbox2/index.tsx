@@ -2,6 +2,7 @@ import { Box } from "@mui/material";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
+import { queryClient } from "@/components/common/_query";
 import {
     FolderActions,
     FolderComponent,
@@ -10,7 +11,6 @@ import {
     SelectedStats,
 } from "@/components/inbox2/comps";
 import { Folder, SerializedCandidateState } from "@/pythonTypes";
-import { queryClient } from "@/components/common/_query";
 
 /* ----------------------------- Data inbox tree ---------------------------- */
 // Tree of inbox folders

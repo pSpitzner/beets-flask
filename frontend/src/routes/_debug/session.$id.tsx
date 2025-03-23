@@ -1,17 +1,13 @@
-import { PageWrapper } from "@/components/common/page";
-import { UnmatchedTracks } from "@/components/import/candidates/details";
-import { CandidatePreview } from "@/components/import/candidates/preview";
-import { CandidateListItem } from "@/components/import/candidateSelection";
-import { SerializedCandidateState, SerializedSessionState } from "@/pythonTypes";
-import { Box } from "@mui/material";
 import { createFileRoute } from "@tanstack/react-router";
+
+import { PageWrapper } from "@/components/common/page";
+import { CandidateItem, CandidateList } from "@/components/import/candidateNew";
+import { SerializedSessionState } from "@/pythonTypes";
 
 export const Route = createFileRoute("/_debug/session/$id")({
     component: RouteComponent,
     loader: async ({ context, params }) => {
-        return await context.queryClient.ensureQueryData(
-            sessionQueryOptions(params.id)
-        );
+        return await context.queryClient.ensureQueryData(sessionQueryOptions(params.id));
     },
 });
 
@@ -34,34 +30,13 @@ function RouteComponent() {
 
     return (
         <PageWrapper>
-            <Box
-                sx={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr",
-                    gap: 1,
-                }}
-            >
+            <CandidateList>
                 {data.tasks[0].candidates
                     .sort((a, b) => a.distance - b.distance)
                     .map((c) => {
-                        return <Candidate candidate={c} />;
+                        return <CandidateItem candidate={c} />;
                     })}
-            </Box>
+            </CandidateList>
         </PageWrapper>
-    );
-}
-
-function Candidate({ candidate }: { candidate: SerializedCandidateState }) {
-    return <CandidateListItem candidate={candidate} />;
-    return (
-        <Box sx={{ display: "contents" }}>
-            <Box sx={{ justifySelf: "flex-end" }}>
-                {(Math.abs(candidate.distance - 1) * 100).toFixed(2)}%
-            </Box>
-            <span>{candidate.info.album}</span>
-            <span>{candidate.info.artist}</span>
-            <span>{candidate.type}</span>
-            <span>{candidate.info.data_url}</span>
-        </Box>
     );
 }

@@ -15,13 +15,13 @@ import {
     useSearchContext,
 } from "@/components/common/hooks/useSearch";
 import { JSONPretty } from "@/components/common/json";
+import { Loading } from "@/components/common/loading";
 import { PageWrapper } from "@/components/common/page";
+import { ItemById } from "@/components/library/item";
+import { AlbumById } from "@/components/library/itemAlbumDetails";
 import List from "@/components/library/list";
 
 import styles from "@/components/library/library.module.scss";
-import { ItemById } from "@/components/library/item";
-import { Loading } from "@/components/common/loading";
-import { AlbumById } from "@/components/library/itemAlbumDetails";
 
 export const Route = createFileRoute("/library/search")({
     component: SearchPage,
