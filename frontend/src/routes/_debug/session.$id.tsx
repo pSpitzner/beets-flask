@@ -1,13 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { PageWrapper } from "@/components/common/page";
-import { CandidateItem, CandidateList } from "@/components/import/candidateNew";
+import { Candidates } from "@/components/import/candidateNew";
 import { SerializedSessionState } from "@/pythonTypes";
 
 export const Route = createFileRoute("/_debug/session/$id")({
     component: RouteComponent,
     loader: async ({ context, params }) => {
-        return await context.queryClient.ensureQueryData(sessionQueryOptions(params.id));
+        return await context.queryClient.ensureQueryData(
+            sessionQueryOptions(params.id)
+        );
     },
 });
 
@@ -30,13 +32,7 @@ function RouteComponent() {
 
     return (
         <PageWrapper>
-            <CandidateList>
-                {data.tasks[0].candidates
-                    .sort((a, b) => a.distance - b.distance)
-                    .map((c) => {
-                        return <CandidateItem candidate={c} />;
-                    })}
-            </CandidateList>
+            <Candidates candidates={data.tasks[0].candidates}></Candidates>
         </PageWrapper>
     );
 }

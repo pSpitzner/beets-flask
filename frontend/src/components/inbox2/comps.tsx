@@ -2,7 +2,6 @@ import {
     EllipsisVerticalIcon,
     ImportIcon,
     LucideChevronRight,
-    LucideProps,
     RefreshCwIcon,
     TagIcon,
     Trash2Icon,
@@ -44,18 +43,16 @@ import { Link } from "@tanstack/react-router";
 
 import { File, Folder, FolderStatus } from "@/pythonTypes";
 
-import { useConfig } from "../common/hooks/useConfig";
+import { MatchChip } from "../common/chips";
 import {
     FileTypeIcon,
     FolderStatusIcon,
     FolderTypeIcon,
     PenaltyTypeIcon,
-    SourceTypeIcon,
 } from "../common/icons";
 import { ClipboardCopyButton } from "../common/inputs/copy";
 import { statusQueryOptions } from "../common/websocket/status";
 import { sessionQueryOptions } from "@/routes/_debug/session.$id";
-import { MatchChip } from "../common/chips";
 
 /* --------------------------------- Context -------------------------------- */
 // Allows to trigger actions on a single or multiple folders
@@ -135,13 +132,12 @@ export function FoldersSelectionProvider({ children }: { children: React.ReactNo
 
 export const GridWrapper = styled(Box)(({ theme }) => ({
     display: "grid",
-    gridTemplateColumns: "[tree] 1fr [chip] auto [actions] auto [selector] auto",
+    // gridTemplateColumns: "[tree] 1fr [chip] auto [actions] auto [selector] auto",
+    gridTemplateColumns: "[selector] auto [tree] 1fr [chip] auto [actions] auto ",
     width: "100%",
-    columnGap: theme.spacing(1),
-    // Fill columns even if content is given in other order
+    columnGap: theme.spacing(1.5),
     // Fill columns even if content is given in other order
     gridAutoFlow: "dense",
-
     // Add zebra striping
     "> div:nth-of-type(odd)": {
         background: `linear-gradient(
@@ -164,6 +160,8 @@ const GridRow = styled(Box)({
 /* ---------------------------- Folder & File component ---------------------------- */
 
 const ICON_SIZE = 20;
+// TODO: calculate dynamic depending on currently shown depth
+const MAX_LEVEL = 5;
 
 export function FolderComponent({
     folder,
@@ -187,14 +185,19 @@ export function FolderComponent({
     // Create children elements from tree (recursive)
     const childElements = Object.entries(folder.children).map(([_key, values]) => {
         if (values.type === "file") {
-            return <FileComponent file={values} key={values.full_path} level={level + 1} />;
+            return (
+                <FileComponent file={values} key={values.full_path} level={level + 1} />
+            );
         } else if (values.type === "directory") {
-            return <FolderComponent folder={values} key={values.hash} level={level + 1} />;
+            return (
+                <FolderComponent folder={values} key={values.hash} level={level + 1} />
+            );
         }
     });
 
     return (
         <>
+            {/* Order inside the gridrow does not matter, set outside. */}
             {/* Current best match including penalties */}
             {/* TODO: Generate with best candidate */}
             <GridRow
@@ -262,18 +265,25 @@ function FolderTreeRow({
     setIsOpen: (open: boolean) => void;
     level?: number;
 }) {
+    const whiteness = Math.max(100 - (MAX_LEVEL - level) * 15, 30);
     return (
         <LevelIndentWrapper
             level={level}
             sx={{
                 gridColumn: "tree",
+                color: `hsl(210deg, 8.75%, ${whiteness}%)`,
             }}
         >
             {/* Collapse/Expand button */}
             <IconButton
                 onClick={() => setIsOpen(!isOpen)}
                 size="small"
-                sx={{ padding: "0px", margin: "0px", marginRight: "-2px" }}
+                sx={{
+                    padding: "0px",
+                    margin: "0px",
+                    marginRight: "-2px",
+                    color: "inherit",
+                }}
                 disableRipple
             >
                 <LucideChevronRight
@@ -285,7 +295,11 @@ function FolderTreeRow({
                 />
             </IconButton>
 
-            <FolderTypeIcon isAlbum={folder.is_album} isOpen={isOpen} size={ICON_SIZE} />
+            <FolderTypeIcon
+                isAlbum={folder.is_album}
+                isOpen={isOpen}
+                size={ICON_SIZE}
+            />
 
             <Typography variant="body1" sx={{ paddingBlock: 0.25 }}>
                 {folder.full_path.split("/").pop()}
@@ -313,44 +327,55 @@ function FileName({ file, level = 0 }: { file: File; level?: number }) {
         >
             <Box
                 sx={{
+                    // for horizontal lines on desktop
                     position: "absolute",
                     left: ICON_SIZE / 2 - 0.5 + ICON_SIZE * (level - 1) + "px",
                     width: ICON_SIZE + "px",
                     height: "1px",
                     backgroundColor: "#495057",
                     flexShrink: 0,
-
-                    // Mobile styling
                     [theme.breakpoints.down("laptop")]: {
                         visibility: "hidden",
                     },
                 }}
-            ></Box>
-            <FileTypeIcon
-                type={type}
-                size={ICON_SIZE * 0.7}
-                style={{
-                    marginLeft: ICON_SIZE * 0.7 + "px",
-                    flexShrink: 0,
-                }}
             />
             <Box
                 sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: theme.spacing(1),
                     overflow: "hidden",
+                    [theme.breakpoints.down("laptop")]: {
+                        color: `hsl(210deg, 8.75%, 30%)`,
+                    },
                 }}
             >
-                <Typography
-                    variant="body1"
+                <FileTypeIcon
+                    type={type}
+                    size={ICON_SIZE * 0.7}
+                    style={{
+                        marginLeft: ICON_SIZE * 0.7 + "px",
+                        flexShrink: 0,
+                    }}
+                />
+                <Box
                     sx={{
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                        position: "relative",
-                        maxWidth: "100%",
                         overflow: "hidden",
                     }}
                 >
-                    {file.full_path.split("/").pop()}
-                </Typography>
+                    <Typography
+                        variant="body1"
+                        sx={{
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            position: "relative",
+                            maxWidth: "100%",
+                            overflow: "hidden",
+                        }}
+                    >
+                        {file.full_path.split("/").pop()}
+                    </Typography>
+                </Box>
             </Box>
         </LevelIndentWrapper>
     );
@@ -381,7 +406,7 @@ function LevelIndentWrapper({
 
                 // Mobile styling
                 [theme.breakpoints.down("laptop")]: {
-                    paddingLeft: "0px",
+                    paddingLeft: `calc(${level} * ${theme.spacing(0.5)})`,
                 },
                 ...sx,
             }}
@@ -401,8 +426,12 @@ function LevelIndentWrapper({
 
                         // Mobile styling show stacked lines
                         [theme.breakpoints.down("laptop")]: {
-                            left: -ICON_SIZE - 2 * i + "px",
-                            borderRight: `1px solid hsl(210deg, 8.75%, ${30 + i * 15}%)`,
+                            //left: -ICON_SIZE + 2 * i + "px",
+                            left: -ICON_SIZE + "px",
+                            borderRight: `2px solid hsl(210deg, 8.75%,
+                                ${Math.max(100 - (MAX_LEVEL - level) * 15, 30)}%)`,
+                            // height: "200%",
+                            // bottom: 0,
                         },
                     }}
                 />
@@ -430,7 +459,7 @@ const StyledChip = styled(Chip)(({ theme }) => ({
 /** Shows the current import status of the
  * folder.
  */
-function FolderStatusChip({ folder, ...props }: { folder: Folder } & LucideProps) {
+function FolderStatusChip({ folder }: { folder: Folder }) {
     const { data: status } = useQuery(statusQueryOptions);
 
     // Status enum value
@@ -457,21 +486,25 @@ function FolderStatusChip({ folder, ...props }: { folder: Folder } & LucideProps
     );
 }
 
-function BestCandidateChip({ folder, ...props }: { folder: Folder } & LucideProps) {
+function BestCandidateChip({ folder }: { folder: Folder }) {
     // FIXME: Fetching the full session here is kinda overkill
     const { data: session } = useQuery(sessionQueryOptions(folder.hash));
-    const config = useConfig();
 
     const bestCandidate = session?.tasks
         .flatMap((t) => t.candidates.map((c) => c))
         .filter((c) => c.info.data_source !== "asis")
         .sort((a, b) => a.distance - b.distance)[0];
 
-    if (!bestCandidate) {
+    if (!bestCandidate || !bestCandidate.info.data_source) {
         return null;
     }
 
-    return <MatchChip source={bestCandidate.info.data_source} distance={bestCandidate.distance} />;
+    return (
+        <MatchChip
+            source={bestCandidate.info.data_source}
+            distance={bestCandidate.distance}
+        />
+    );
 }
 
 function DuplicateChip({ folder }: { folder: Folder }) {
@@ -525,13 +558,6 @@ function Chips({ folder }: { folder: Folder }) {
             <FolderStatusChip folder={folder} />
         </Box>
     );
-}
-
-function quality_color(quality: number) {
-    const h = 355 + (125 * quality) / 100;
-    const s = 130 - (60 * quality) / 100;
-    const l = 45 + Math.abs(0.5 - quality / 100) * 30;
-    return "hsl(" + h + ", " + s + "%, " + l + "%) !important";
 }
 
 /* --------------------------------- Utility --------------------------------- */
@@ -629,7 +655,11 @@ export function FolderActions() {
                 onOpen={() => setOpen(true)}
                 onClose={() => setOpen(false)}
             >
-                <GenericSpeedDialAction icon={<TagIcon />} tooltip="Retag" onClick={onReTag} />
+                <GenericSpeedDialAction
+                    icon={<TagIcon />}
+                    tooltip="Retag"
+                    onClick={onReTag}
+                />
                 <GenericSpeedDialAction
                     icon={<ImportIcon />}
                     tooltip="Auto-import"
@@ -764,7 +794,11 @@ function MoreActions({ f, ...props }: { f: Folder | File } & BoxProps) {
             >
                 <EllipsisVerticalIcon size={ICON_SIZE} />
             </IconButton>
-            <Menu onClose={() => setAnchorEl(null)} anchorEl={anchorEl} open={Boolean(anchorEl)}>
+            <Menu
+                onClose={() => setAnchorEl(null)}
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+            >
                 <MenuItem
                     onClick={() => {
                         // copy full path to clipboard

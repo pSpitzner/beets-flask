@@ -1,6 +1,6 @@
-import { ArrowRight, Link2 } from "lucide-react";
+import { ArrowRight, Link2Icon as LinkIcon } from "lucide-react";
 import { ReactNode } from "react";
-import { BoxProps, styled } from "@mui/material";
+import { BoxProps, styled, useTheme } from "@mui/material";
 import Box from "@mui/material/Box";
 
 import { PenaltyTypeIcon } from "@/components/common/icons";
@@ -11,14 +11,15 @@ import { useDiff } from "./diff";
 import styles from "./candidates.module.scss";
 import { useConfig } from "../../common/hooks/useConfig";
 import { ItemInfo, TrackInfo } from "../types";
+import { Link } from "@tanstack/react-router";
 
 /* ---------------------------------------------------------------------------------- */
 /*                                       Basics                                       */
 /* ---------------------------------------------------------------------------------- */
 
 export function ArtistChange({ prev, next }: { prev: string; next: string }) {
-    const { left, right, didRemove, didAdd } = useDiff(prev, next);
-    const didChange = didRemove || didAdd;
+    const { left, right, didChange } = useDiff(prev, next);
+    const theme = useTheme();
 
     let inner: React.ReactNode;
     if (prev === next) {
@@ -34,18 +35,22 @@ export function ArtistChange({ prev, next }: { prev: string; next: string }) {
     }
 
     return (
-        <DetailBox>
-            <Col>
-                <PenaltyTypeIcon type={"artist"} className={didChange ? styles.changed : ""} />
-                {inner}
-            </Col>
-        </DetailBox>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <PenaltyTypeIcon
+                type="artist"
+                style={{
+                    color: didChange ? theme.palette.diffs.changed : "inherit",
+                }}
+                size={theme.iconSize.sm}
+            />
+            {inner}
+        </Box>
     );
 }
 
 export function AlbumChange({ prev, next }: { prev: string; next: string }) {
-    const { left, right, didRemove, didAdd } = useDiff(prev, next);
-    const didChange = didRemove || didAdd;
+    const { left, right, didChange } = useDiff(prev, next);
+    const theme = useTheme();
 
     let inner: React.ReactNode;
     if (prev === next) {
@@ -61,15 +66,20 @@ export function AlbumChange({ prev, next }: { prev: string; next: string }) {
     }
 
     return (
-        <DetailBox>
-            <Col>
-                <PenaltyTypeIcon type={"album"} className={didChange ? styles.changed : ""} />
-                {inner}
-            </Col>
-        </DetailBox>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <PenaltyTypeIcon
+                type={"album"}
+                style={{
+                    color: didChange ? theme.palette.diffs.changed : "inherit",
+                }}
+                size={theme.iconSize.sm}
+            />
+            {inner}
+        </Box>
     );
 }
 
+/** MusicBrainz, CD, 1999, GB, Beta Recordings, BETA CD 01 LTD */
 export function Disambiguation({
     candidate,
     fields,
@@ -101,27 +111,30 @@ export function Disambiguation({
         return null;
     }
 
-    return (
-        <DetailBox className={styles.disambig}>
-            <Col>{disambigs.join(", ")}</Col>
-        </DetailBox>
-    );
+    return <DetailBox>{disambigs.join(", ")}</DetailBox>;
 }
 
 export function DataUrl({ candidate }: { candidate: SerializedCandidateState }) {
     const info = candidate.info;
+    const theme = useTheme();
+
     if (!info.data_url) {
         return null;
     }
     return (
-        <DetailBox className={styles.dataUrl}>
-            <Col>
-                <a href={info.data_url} target="_blank" rel="noreferrer">
-                    <Link2 size={14} />
-                </a>
-                <span>{info.data_url}</span>
-            </Col>
-        </DetailBox>
+        <Link to={info.data_url} target="_blank" rel="noreferrer">
+            <Box
+                sx={(theme) => ({
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    color: theme.palette.text.secondary,
+                })}
+            >
+                <LinkIcon size={theme.iconSize.sm} />
+                {info.data_url}
+            </Box>
+        </Link>
     );
 }
 
@@ -131,14 +144,15 @@ export function DataUrl({ candidate }: { candidate: SerializedCandidateState }) 
 
 export function TrackChanges({ candidate }: { candidate: SerializedCandidateState }) {
     const config = useConfig();
+    const theme = useTheme();
 
     if (candidate.type !== "album") {
         return null;
     }
 
-    const tracks = candidate.tracks;
-    const items = candidate.items;
-    const mapping = candidate.mapping;
+    const tracks = candidate.tracks!;
+    const items = candidate.items!;
+    const mapping = candidate.mapping!;
     // curious: when only capitalization changes in tracks, we do not get the
     // track change penalty. this leads to a bit of communication issue:
     // reading 'no changes' in the heading but having a bunch of them marked is confusing.
@@ -149,13 +163,19 @@ export function TrackChanges({ candidate }: { candidate: SerializedCandidateStat
             <Col>
                 {tracksChanged ? (
                     <>
-                        <PenaltyTypeIcon type={"tracks"} className={styles.changed} />
-                        <span className={""}>Track changes</span>
+                        <PenaltyTypeIcon
+                            type="tracks"
+                            style={{
+                                color: theme.palette.diffs.changed,
+                            }}
+                            size={theme.iconSize.sm}
+                        />
+                        <span>Track changes</span>
                     </>
                 ) : (
                     <>
-                        <PenaltyTypeIcon type={"tracks"} />
-                        <span className={""}>No severe track changes</span>
+                        <PenaltyTypeIcon type="tracks" size={theme.iconSize.sm} />
+                        <span>No severe track changes</span>
                     </>
                 )}
             </Col>
@@ -215,7 +235,9 @@ function TrackDiffRow({
         time: Math.abs(to.time - from.time) > 1,
         index: fromIdx !== toIdx,
     };
-    const numChanges = [changed.title, changed.time, changed.index].filter((x) => x).length;
+    const numChanges = [changed.title, changed.time, changed.index].filter(
+        (x) => x
+    ).length;
 
     function _change_side_helper({
         data,
@@ -382,7 +404,11 @@ export function MissingTracks({ candidate }: { candidate: SerializedCandidateSta
     return (
         <DetailBox>
             <Col>
-                <PenaltyTypeIcon type={"missing_tracks"} size={14} className={styles.changed} />
+                <PenaltyTypeIcon
+                    type={"missing_tracks"}
+                    size={14}
+                    className={styles.changed}
+                />
                 <span className={""}>Missing tracks: {missingTracks.length}</span>
             </Col>
             <Box className={styles.trackChanges}>
@@ -407,7 +433,11 @@ function PlainTrackRow({ track, idx }: { track: TrackInfo | ItemInfo; idx?: numb
     );
 }
 
-export function UnmatchedTracks({ candidate }: { candidate: SerializedCandidateState }) {
+export function UnmatchedTracks({
+    candidate,
+}: {
+    candidate: SerializedCandidateState;
+}) {
     if (candidate.type !== "album") {
         return null;
     }
@@ -421,7 +451,11 @@ export function UnmatchedTracks({ candidate }: { candidate: SerializedCandidateS
     return (
         <DetailBox>
             <Col>
-                <PenaltyTypeIcon type={"unmatched_tracks"} size={14} className={styles.changed} />
+                <PenaltyTypeIcon
+                    type={"unmatched_tracks"}
+                    size={14}
+                    className={styles.changed}
+                />
                 <span className={""}>Unmatched tracks: {unmatchedTracks.length}</span>
             </Col>
             <Box className={styles.trackChanges}>

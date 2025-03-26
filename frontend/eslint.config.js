@@ -19,7 +19,6 @@ const tslint = {
         },
     },
     rules: {
-        "@typescript-eslint/no-unused-vars": "warn",
         "@typescript-eslint/no-unused-expressions": "warn",
         "@typescript-eslint/no-confusing-void-expression": "off",
         "@typescript-eslint/use-unknown-in-catch-callback-variable": "off",
@@ -34,6 +33,7 @@ const tslint = {
                 checksVoidReturn: false,
             },
         ],
+        "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
     },
 };
 
@@ -76,7 +76,10 @@ export default ts.config(
                         ["^\\."],
                         // Styles (ending with .css, .scss, .sass, or .less)
                         // image imports might also have a media query
-                        ["^.+\\.(css|scss|sass|less)$", "^.+\\.(jpg|jpeg|png|gif|svg)*\\?*"],
+                        [
+                            "^.+\\.(css|scss|sass|less)$",
+                            "^.+\\.(jpg|jpeg|png|gif|svg)*\\?*",
+                        ],
                     ],
                 },
             ],

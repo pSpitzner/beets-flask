@@ -5,6 +5,13 @@ import { createTheme, ThemeProvider as MuiThemeProvider } from "@mui/material/st
 // Global styles
 import "./main.css";
 
+type DiffColors = {
+    added: string;
+    removed: string;
+    changed: string;
+    light: string;
+};
+
 // TS Augmentation to add custom breakpoints (see below)
 declare module "@mui/material/styles" {
     interface BreakpointOverrides {
@@ -18,6 +25,40 @@ declare module "@mui/material/styles" {
         laptop: true;
         desktop: true;
     }
+
+    // Custom colors for to allow colorful beets diffs
+    interface Palette {
+        diffs: DiffColors;
+    }
+    interface PaletteOptions {
+        diffs?: DiffColors;
+    }
+    interface PaletteColor {
+        diffs?: DiffColors;
+    }
+    interface SimplePaletteColorOptions {
+        diffs?: DiffColors;
+    }
+
+    // icon sizes
+    interface Theme {
+        iconSize: {
+            xs: number;
+            sm: number;
+            md: number;
+            lg: number;
+            xl: number;
+        };
+    }
+    interface ThemeOptions {
+        iconSize?: {
+            xs: number;
+            sm: number;
+            md: number;
+            lg: number;
+            xl: number;
+        };
+    }
 }
 
 /** Relative basic theme for now
@@ -27,6 +68,14 @@ declare module "@mui/material/styles" {
  * reusable (global) css variables
  */
 const darkTheme = createTheme({
+    iconSize: {
+        xs: 12,
+        sm: 16,
+        md: 20,
+        lg: 24,
+        xl: 28,
+    },
+
     palette: {
         mode: "dark",
         primary: {
@@ -44,6 +93,12 @@ const darkTheme = createTheme({
         background: {
             default: "#000000",
             paper: "#181A1C",
+        },
+        diffs: {
+            added: "#a4bf8c",
+            removed: "#c0626b",
+            changed: "#ebcb8c",
+            light: "#6c757d",
         },
     },
     components: {

@@ -2,6 +2,8 @@ import * as Diff from "diff";
 import { useEffect, useState } from "react";
 
 import styles from "./candidates.module.scss";
+import useTheme from "@mui/material/styles/useTheme";
+import Box from "@mui/material/Box";
 
 /**
  * Custom hook that calculates (and color codes) the difference between two strings.
@@ -56,15 +58,20 @@ export function useDiff(
         let wasRemoved = false;
 
         diff.forEach((part, index) => {
-            const className = part.added
-                ? styles.added
-                : part.removed
-                  ? styles.removed
-                  : "";
             const span = (
-                <span key={index} className={className}>
+                <Box
+                    key={index}
+                    sx={(theme) => ({
+                        color: part.added
+                            ? theme.palette.diffs.added
+                            : part.removed
+                              ? theme.palette.diffs.removed
+                              : theme.palette.text.primary,
+                    })}
+                    component="span"
+                >
                     {part.value}
-                </span>
+                </Box>
             );
 
             if (part.added) {
@@ -85,5 +92,5 @@ export function useDiff(
         setRemoved(wasRemoved);
     }, [one, other, method]);
 
-    return { left, right, didRemove, didAdd };
+    return { left, right, didRemove, didAdd, didChange: didRemove || didAdd };
 }
