@@ -1,14 +1,6 @@
-import { ChevronDownIcon } from "lucide-react";
-import { ReactNode, useState } from "react";
-import {
-    FormControl,
-    FormControlLabel,
-    FormLabel,
-    IconButton,
-    Radio,
-    RadioGroup,
-    styled,
-} from "@mui/material";
+import { ChevronDownIcon, ChevronsDownUpIcon, ChevronsUpDownIcon } from "lucide-react";
+import { useState } from "react";
+import { Button, ButtonGroup, IconButton, Radio, styled } from "@mui/material";
 import Box from "@mui/material/Box";
 
 import { SerializedCandidateState } from "@/pythonTypes";
@@ -23,49 +15,141 @@ export function Candidates({ candidates }: { candidates: SerializedCandidateStat
         return candidates[0].id;
     });
 
+    const [showDetails, setShowDetails] = useState<
+        Array<SerializedCandidateState["id"]>
+    >(() => {
+        return candidates.map((candidate) => candidate.id);
+    });
+
     return (
-        <GridWrapper>
-            {candidates.map((candidate) => (
-                <CandidateItem
-                    key={candidate.id}
-                    candidate={candidate}
-                    selected={selected == candidate.id}
-                    setSelected={setSelected}
-                />
-            ))}
-        </GridWrapper>
+        <>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                <ButtonGroup
+                    size="small"
+                    sx={{
+                        marginLeft: "auto",
+                    }}
+                    color="secondary"
+                >
+                    <Button
+                        disabled={showDetails.length === candidates.length}
+                        onClick={() =>
+                            setShowDetails(candidates.map((candidate) => candidate.id))
+                        }
+                        startIcon={<ChevronsUpDownIcon size={20} />}
+                    >
+                        Expand all
+                    </Button>
+                    <Button
+                        disabled={showDetails.length === 0}
+                        onClick={() => setShowDetails([])}
+                        startIcon={<ChevronsDownUpIcon size={20} />}
+                    >
+                        Collapse all
+                    </Button>
+                </ButtonGroup>
+
+                <GridWrapper>
+                    {candidates
+                        .sort((a, b) => a.distance - b.distance)
+                        .map((candidate) => (
+                            <CandidateItem
+                                key={candidate.id}
+                                candidate={candidate}
+                                selected={selected == candidate.id}
+                                setSelected={setSelected.bind(null, candidate.id)}
+                                expanded={showDetails.includes(candidate.id)}
+                                toggleExpanded={() => {
+                                    setShowDetails((prev) =>
+                                        prev.includes(candidate.id)
+                                            ? prev.filter((id) => id !== candidate.id)
+                                            : [...prev, candidate.id]
+                                    );
+                                }}
+                            />
+                        ))}
+                </GridWrapper>
+            </Box>
+        </>
     );
 }
 
-/* ------------------------------ Grid wrapper ------------------------------ */
+/* ------------------------------ Grid utils ------------------------------ */
+// Align candidates in a grid, each candidate a row
 
 const GridWrapper = styled(Box)(({ theme }) => ({
     display: "grid",
     gridTemplateColumns:
         "[selector] auto [name] 1fr [match] auto [penalties] auto [toggle] auto",
-    rowGap: theme.spacing(0.5),
     columnGap: theme.spacing(1),
     // Fill columns even if content is given in other order
     gridAutoFlow: "dense",
+}));
+
+const CandidateInfoRow = styled(Box)(({ theme }) => ({
+    // Layout
+    display: "grid",
+    gridColumn: "1 / -1",
+    gridTemplateColumns: "subgrid",
+    gridAutoFlow: "dense",
+    alignItems: "center",
+
+    // Styling
+    backgroundColor: theme.palette.background.paper,
+    borderRadius: theme.shape.borderRadius,
+    padding: theme.spacing(1),
+
+    // Gap between rows
+    marginTop: theme.spacing(1),
+    ":nth-of-type(1)": {
+        marginTop: 0,
+    },
+
+    // Border bottom when details are shown
+    '&[data-expanded="true"]': {
+        borderBottomLeftRadius: 0,
+        borderBottomRightRadius: 0,
+        borderBottom: `1px solid ${theme.palette.divider}`,
+    },
+}));
+
+const CandidateDetailsRow = styled(Box)(({ theme }) => ({
+    // Layout
+    display: "flex",
+    gridColumn: "1 / -1",
+
+    // Styling
+    backgroundColor: theme.palette.background.paper,
+    borderBottomLeftRadius: theme.shape.borderRadius,
+    borderBottomRightRadius: theme.shape.borderRadius,
+    padding: theme.spacing(1),
+
+    // Hide when not expanded
+    "&[data-expanded='false']": {
+        display: "none",
+    },
 }));
 
 export function CandidateItem({
     candidate,
     selected,
     setSelected,
+    expanded,
+    toggleExpanded,
 }: {
     candidate: SerializedCandidateState;
     selected: boolean;
-    setSelected: (id: SerializedCandidateState["id"]) => void;
+    setSelected: () => void;
+    expanded: boolean;
+    toggleExpanded: () => void;
 }) {
-    const [expanded, setExpanded] = useState(true);
     return (
         <>
-            <Box display="contents">
+            <CandidateInfoRow data-expanded={expanded}>
                 <Box gridColumn="selector" display="flex">
                     <Radio
                         checked={selected}
-                        onChange={() => setSelected(candidate.id)}
+                        onChange={setSelected}
                         value={candidate.id}
                         size="small"
                         sx={{
@@ -92,7 +176,7 @@ export function CandidateItem({
                 </Box>
                 <Box gridColumn="toggle" display="flex">
                     <IconButton
-                        onClick={() => setExpanded(!expanded)}
+                        onClick={toggleExpanded}
                         sx={{
                             padding: 0,
                             "& svg": {
@@ -104,18 +188,10 @@ export function CandidateItem({
                         <ChevronDownIcon size={20} />
                     </IconButton>
                 </Box>
-            </Box>
-            <Box
-                sx={{
-                    maxHeight: expanded ? "100%" : 0,
-                    overflow: "hidden",
-                    transition: "max-height 0.15s ease-out",
-                    // force use all space
-                    gridColumn: "1/-1",
-                }}
-            >
+            </CandidateInfoRow>
+            <CandidateDetailsRow data-expanded={expanded}>
                 <CandidatePreview candidate={candidate} />
-            </Box>
+            </CandidateDetailsRow>
         </>
     );
 }
