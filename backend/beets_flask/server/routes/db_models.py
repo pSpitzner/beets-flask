@@ -9,6 +9,7 @@ from beets_flask.database import db_session_factory
 from beets_flask.database.models.base import Base
 from beets_flask.database.models.states import (
     CandidateStateInDb,
+    Folder,
     SessionStateInDb,
     TaskStateInDb,
 )
@@ -90,9 +91,17 @@ def blueprint_for_db_model(model: type[T], url_prefix: str | None = None) -> Blu
         ):
 
             hash = folder_hashes[0]
+
             with db_session_factory() as db_session:
-                item = model.get_by(model.folder_hash == hash, session=db_session)
+                query = (
+                    select(model)
+                    .where((model.folder_hash == hash))
+                    .order_by(model.created_at.desc())
+                    .limit(1)
+                )
+                item = db_session.execute(query).scalars().first()
                 if not item:
+                    # TODO: by path
                     raise InvalidUsage(
                         f"Item with hash {hash} not found", status_code=404
                     )
