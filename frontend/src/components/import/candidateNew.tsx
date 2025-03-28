@@ -8,7 +8,7 @@ import { SerializedCandidateState } from "@/pythonTypes";
 import { PenaltyIconRow } from "./icons";
 
 import { MatchChip } from "../common/chips";
-import { CandidatePreview } from "./candidates/preview";
+import { CandidateDiff } from "./candidates/diff";
 
 export function Candidates({ candidates }: { candidates: SerializedCandidateState[] }) {
     const [selected, setSelected] = useState<SerializedCandidateState["id"]>(() => {
@@ -20,6 +20,12 @@ export function Candidates({ candidates }: { candidates: SerializedCandidateStat
     >(() => {
         return candidates.map((candidate) => candidate.id);
     });
+
+    const asisCandidate = candidates.find((c) => c.info.data_source === "asis");
+
+    if (!asisCandidate) {
+        return <Box>No asis candidate found</Box>;
+    }
 
     return (
         <>
@@ -53,20 +59,29 @@ export function Candidates({ candidates }: { candidates: SerializedCandidateStat
                     {candidates
                         .sort((a, b) => a.distance - b.distance)
                         .map((candidate) => (
-                            <CandidateItem
-                                key={candidate.id}
-                                candidate={candidate}
-                                selected={selected == candidate.id}
-                                setSelected={setSelected.bind(null, candidate.id)}
-                                expanded={showDetails.includes(candidate.id)}
-                                toggleExpanded={() => {
-                                    setShowDetails((prev) =>
-                                        prev.includes(candidate.id)
-                                            ? prev.filter((id) => id !== candidate.id)
-                                            : [...prev, candidate.id]
-                                    );
-                                }}
-                            />
+                            <>
+                                <CandidateInfo
+                                    key={candidate.id}
+                                    candidate={candidate}
+                                    selected={selected == candidate.id}
+                                    setSelected={setSelected.bind(null, candidate.id)}
+                                    expanded={showDetails.includes(candidate.id)}
+                                    toggleExpanded={() => {
+                                        setShowDetails((prev) =>
+                                            prev.includes(candidate.id)
+                                                ? prev.filter(
+                                                      (id) => id !== candidate.id
+                                                  )
+                                                : [...prev, candidate.id]
+                                        );
+                                    }}
+                                />
+                                <CandidateDetails
+                                    candidate={candidate}
+                                    reference={asisCandidate}
+                                    expanded={showDetails.includes(candidate.id)}
+                                />
+                            </>
                         ))}
                 </GridWrapper>
             </Box>
@@ -102,7 +117,7 @@ const CandidateInfoRow = styled(Box)(({ theme }) => ({
     // Gap between rows
     marginTop: theme.spacing(1),
     ":nth-of-type(1)": {
-        marginTop: 0,
+        marginTop: theme.spacing(0),
     },
 
     // Border bottom when details are shown
@@ -130,7 +145,7 @@ const CandidateDetailsRow = styled(Box)(({ theme }) => ({
     },
 }));
 
-export function CandidateItem({
+export function CandidateInfo({
     candidate,
     selected,
     setSelected,
@@ -144,54 +159,65 @@ export function CandidateItem({
     toggleExpanded: () => void;
 }) {
     return (
-        <>
-            <CandidateInfoRow data-expanded={expanded}>
-                <Box gridColumn="selector" display="flex">
-                    <Radio
-                        checked={selected}
-                        onChange={setSelected}
-                        value={candidate.id}
-                        size="small"
-                        sx={{
-                            padding: 0,
-                        }}
-                    />
-                </Box>
-                <Box gridColumn="match" display="flex">
-                    <MatchChip
-                        source={candidate.info.data_source!}
-                        distance={candidate.distance}
-                    />
-                </Box>
-                <Box gridColumn="name" display="flex">
-                    {candidate.info.artist} - {candidate.info.album}
-                </Box>
-                <Box
-                    gridColumn="penalties"
-                    display="flex"
-                    alignItems="center"
-                    height="100%"
+        <CandidateInfoRow data-expanded={expanded}>
+            <Box gridColumn="selector" display="flex">
+                <Radio
+                    checked={selected}
+                    onChange={setSelected}
+                    value={candidate.id}
+                    size="small"
+                    sx={{
+                        padding: 0,
+                    }}
+                />
+            </Box>
+            <Box gridColumn="match" display="flex" justifyContent="flex-end">
+                <MatchChip
+                    source={candidate.info.data_source!}
+                    distance={candidate.distance}
+                />
+            </Box>
+            <Box gridColumn="name" display="flex">
+                {candidate.info.artist} - {candidate.info.album}
+            </Box>
+            <Box
+                gridColumn="penalties"
+                display="flex"
+                alignItems="center"
+                height="100%"
+            >
+                <PenaltyIconRow candidate={candidate} size={20} />
+            </Box>
+            <Box gridColumn="toggle" display="flex">
+                <IconButton
+                    onClick={toggleExpanded}
+                    sx={{
+                        padding: 0,
+                        "& svg": {
+                            // TODO: an small animation would be nice
+                            transform: expanded ? "rotate(180deg)" : undefined,
+                        },
+                    }}
                 >
-                    <PenaltyIconRow candidate={candidate} size={20} />
-                </Box>
-                <Box gridColumn="toggle" display="flex">
-                    <IconButton
-                        onClick={toggleExpanded}
-                        sx={{
-                            padding: 0,
-                            "& svg": {
-                                // TODO: an small animation would be nice
-                                transform: expanded ? "rotate(180deg)" : undefined,
-                            },
-                        }}
-                    >
-                        <ChevronDownIcon size={20} />
-                    </IconButton>
-                </Box>
-            </CandidateInfoRow>
-            <CandidateDetailsRow data-expanded={expanded}>
-                <CandidatePreview candidate={candidate} />
-            </CandidateDetailsRow>
-        </>
+                    <ChevronDownIcon size={20} />
+                </IconButton>
+            </Box>
+        </CandidateInfoRow>
+    );
+}
+
+export function CandidateDetails({
+    candidate,
+    reference,
+    expanded,
+}: {
+    candidate: SerializedCandidateState;
+    reference: SerializedCandidateState;
+    expanded: boolean;
+}) {
+    return (
+        <CandidateDetailsRow data-expanded={expanded}>
+            <CandidateDiff from={reference} to={candidate} />
+        </CandidateDetailsRow>
     );
 }

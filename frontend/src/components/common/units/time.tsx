@@ -42,3 +42,13 @@ export const humanizeDuration = (duration: number) => {
 
     return parts.join(" ");
 };
+
+export const trackLength = (length?: number | null) => {
+    if (length === undefined || length === null) {
+        return "(?:??)";
+    }
+    const hours = Math.floor(length / 3600);
+    const minutes = Math.floor((length % 3600) / 60);
+    const seconds = Math.floor(length % 60);
+    return `(${hours ? `${hours}h ` : ""}${minutes}:${seconds.toString().padStart(2, "0")})`;
+};

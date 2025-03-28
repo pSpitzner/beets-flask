@@ -4,25 +4,7 @@ import Tooltip from "@mui/material/Tooltip";
 
 import { SerializedCandidateState } from "@/pythonTypes";
 
-import { StyledChip } from "../common/chips";
 import { PenaltyTypeIcon } from "../common/icons";
-
-/** A chip showing the current penalties.
- *
- * Has some breakpoints depending on the
- * screen size.
- */
-export function PenaltyIconsChip({ candidate }: { candidate: SerializedCandidateState }) {
-    return (
-        <StyledChip
-            icon={<PenaltyIconRow candidate={candidate} size={20 * 0.85} />}
-            label="Penalties"
-            color="info"
-            variant="outlined"
-            size="small"
-        />
-    );
-}
 
 const penaltyOrder = [
     "missing_tracks",
@@ -55,7 +37,7 @@ export function PenaltyIconRow({
                     sx={(theme) => ({
                         color: candidate.penalties.includes(p) ? "#ebcb8c" : "#403b31",
                         [theme.breakpoints.down("tablet")]: {
-                            display: candidate.penalties.includes(p) ? "flex" : "none",
+                            display: "none",
                         },
                         display: "flex",
                     })}

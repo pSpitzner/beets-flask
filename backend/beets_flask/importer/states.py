@@ -547,7 +547,7 @@ class CandidateState:
         # we lift the match.info to reduce nesting in the frontend.
         info = None
         items = None
-        tracks = None
+        tracks: list[TrackInfo] | None = None
         extra_tracks = None
         extra_items = None
         mapping = None
@@ -560,7 +560,7 @@ class CandidateState:
 
             tracks = []
             for track in self.match.info.tracks or []:
-                tracks.append(TrackInfo.from_instance(track))
+                tracks.append(TrackInfo.from_beets(track))
 
             extra_tracks = []
             for track in self.match.extra_tracks or []:  # type: ignore

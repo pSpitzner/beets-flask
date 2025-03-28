@@ -16,11 +16,13 @@ from typing import (
     NamedTuple,
     TypedDict,
     Union,
+    cast,
 )
 
 from beets import autotag
 from beets.autotag.hooks import AlbumInfo as BeetsAlbumInfo
 from beets.autotag.hooks import AlbumMatch as BeetsAlbumMatch
+from beets.autotag.hooks import Item as BeetsItem
 from beets.autotag.hooks import TrackInfo as BeetsTrackInfo
 from beets.autotag.hooks import TrackMatch as BeetsTrackMatch
 
@@ -35,6 +37,7 @@ __all__ = [
     "BeetsTrackMatch",
     "BeetsAlbumInfo",
     "BeetsTrackInfo",
+    "BeetsItem",
 ]
 
 
@@ -128,6 +131,13 @@ class AlbumInfo(MusicInfo):
     albumdisambig: str | None
 
     # Note: dont add 'tracks' here, our candidate states lift them already from album matches
+    @classmethod
+    def from_beets(cls, info: autotag.AlbumInfo):
+        """Helper to convert from beets AlbumInfo to our AlbumInfo."""
+        return cast(
+            AlbumInfo,
+            cls.from_instance(info),
+        )
 
 
 @dataclass
@@ -140,10 +150,19 @@ class TrackInfo(MusicInfo):
     title: str | None
     length: float | None
     isrc: str | None
-    index: int | None  #  1-based
 
-    def __repr__(self) -> str:
-        return super().__repr__() + f" {self.title=}"
+    # Allows to compute the mapping in the frontend
+    index: int | None  #  1-based
+    medium_index: int | None
+    medium: int | None
+
+    @classmethod
+    def from_beets(cls, info: autotag.TrackInfo):
+        """Helper to convert from beets TrackInfo to our TrackInfo."""
+        return cast(
+            TrackInfo,
+            cls.from_instance(info),
+        )
 
 
 @dataclass
@@ -164,5 +183,10 @@ class ItemInfo(MusicInfo):
     bitrate: int | None
     format: str | None
 
-    def __repr__(self) -> str:
-        return super().__repr__() + f" {self.title=} at {self.path}"
+    @classmethod
+    def from_beets(cls, info: autotag.Item):
+        """Helper to convert from beets Item to our ItemInfo."""
+        return cast(
+            ItemInfo,
+            cls.from_instance(info),
+        )

@@ -6,19 +6,18 @@ import Box from "@mui/material/Box";
 import { PenaltyTypeIcon } from "@/components/common/icons";
 import { SerializedCandidateState } from "@/pythonTypes";
 
-import { useDiff } from "./diff";
-
 import styles from "./candidates.module.scss";
 import { useConfig } from "../../common/hooks/useConfig";
 import { ItemInfo, TrackInfo } from "../types";
 import { Link } from "@tanstack/react-router";
+import { useDiffOld } from "@/components/common/hooks/useDiff";
 
 /* ---------------------------------------------------------------------------------- */
 /*                                       Basics                                       */
 /* ---------------------------------------------------------------------------------- */
 
 export function ArtistChange({ prev, next }: { prev: string; next: string }) {
-    const { left, right, didChange } = useDiff(prev, next);
+    const { left, right, didChange } = useDiffOld(prev, next);
     const theme = useTheme();
 
     let inner: React.ReactNode;
@@ -49,7 +48,7 @@ export function ArtistChange({ prev, next }: { prev: string; next: string }) {
 }
 
 export function AlbumChange({ prev, next }: { prev: string; next: string }) {
-    const { left, right, didChange } = useDiff(prev, next);
+    const { left, right, didChange } = useDiffOld(prev, next);
     const theme = useTheme();
 
     let inner: React.ReactNode;
@@ -139,15 +138,43 @@ export function DataUrl({ candidate }: { candidate: SerializedCandidateState }) 
 }
 
 /* ---------------------------------------------------------------------------------- */
-/*                                    Track Changes                                   */
+/*                                    Tracks Diff                                     */
 /* ---------------------------------------------------------------------------------- */
+// Basically a grid layout showing the changes to all tracks
+// In theory we can compare two generic candidates but the current use is always against
+// the asis candidate
 
-export function TrackChanges({ candidate }: { candidate: SerializedCandidateState }) {
+const TrackChangesGrid = styled(Box)({
+    display: "grid",
+    width: "100%",
+    gridTemplateColumns: `
+        [change-arrow] max-content 
+        [index-from index-to] max-content 
+        [title-from title-to] max-content`,
+});
+
+export function TracksDiff({
+    from,
+    to,
+}: {
+    // FIXME: We might be able to only pass the tracks instead of the full candidate
+    from: SerializedCandidateState;
+    to: SerializedCandidateState;
+}) {
     const config = useConfig();
     const theme = useTheme();
 
-    if (candidate.type !== "album") {
+    if (from.type !== "album" || to.type !== "album") {
         return null;
+    }
+
+    if (!to.penalties.includes("tracks")) {
+        return (
+            <>
+                <PenaltyTypeIcon type="tracks" size={theme.iconSize.sm} />
+                <span>No severe track changes</span>
+            </>
+        );
     }
 
     const tracks = candidate.tracks!;
@@ -179,8 +206,7 @@ export function TrackChanges({ candidate }: { candidate: SerializedCandidateStat
                     </>
                 )}
             </Col>
-            <Box
-                className={styles.trackChanges}
+            <TrackChangesGrid
                 data-show-unchanged-tracks={config.gui.tags.show_unchanged_tracks}
             >
                 {Object.entries(mapping).map(([idx, tdx]) => (
@@ -198,7 +224,7 @@ export function TrackChanges({ candidate }: { candidate: SerializedCandidateStat
                         toIdx={tdx + 1}
                     />
                 ))}
-            </Box>
+            </TrackChangesGrid>
         </DetailBox>
     );
 }
@@ -214,7 +240,7 @@ function TrackDiffRow({
     fromIdx?: number; // from index, 1-based
     toIdx?: number; // next index, 1-based
 }) {
-    const { left: fromNode, right: toNode } = useDiff(fromItem.title, toItem.title);
+    const { left: fromNode, right: toNode } = useDiffOld(fromItem.title, toItem.title);
 
     const from = {
         time: fromItem.length ?? 0,

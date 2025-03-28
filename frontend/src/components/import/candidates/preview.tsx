@@ -10,7 +10,7 @@ import {
     DataUrl,
     Disambiguation,
     MissingTracks,
-    TrackChanges,
+    TracksDiff,
     UnmatchedTracks,
 } from "./details";
 
@@ -36,7 +36,10 @@ export function CandidatePreview({
     sx?: SxProps<Theme>;
 }) {
     return (
-        <Box sx={{ display: "flex", flexDirection: "column", ...sx }} className={className}>
+        <Box
+            sx={{ display: "flex", flexDirection: "column", ...sx }}
+            className={className}
+        >
             <Disambiguation candidate={candidate} />
             <DataUrl candidate={candidate} />
             <ArtistChange
@@ -56,7 +59,7 @@ export function CandidatePreview({
                     rowGap: "0.1rem",
                 }}
             >
-                <TrackChanges candidate={candidate} />
+                <TracksDiff candidate={candidate} />
                 <MissingTracks candidate={candidate} />
                 <UnmatchedTracks candidate={candidate} />
             </Box>
