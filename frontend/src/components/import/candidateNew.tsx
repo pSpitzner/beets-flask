@@ -1,29 +1,41 @@
 import { ChevronDownIcon, ChevronsDownUpIcon, ChevronsUpDownIcon } from "lucide-react";
-import { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Button, ButtonGroup, IconButton, Radio, styled } from "@mui/material";
 import Box from "@mui/material/Box";
 
-import { SerializedCandidateState } from "@/pythonTypes";
+import { SerializedCandidateState, SerializedTaskState } from "@/pythonTypes";
 
 import { PenaltyIconRow } from "./icons";
 
 import { MatchChip } from "../common/chips";
 import { CandidateDiff } from "./candidates/diff";
 
-export function Candidates({ candidates }: { candidates: SerializedCandidateState[] }) {
+export function TaskCandidates({ task }: { task: SerializedTaskState }) {
     const [selected, setSelected] = useState<SerializedCandidateState["id"]>(() => {
-        return candidates[0].id;
+        return task.candidates[0].id;
     });
 
     const [showDetails, setShowDetails] = useState<
         Array<SerializedCandidateState["id"]>
     >(() => {
-        return candidates.map((candidate) => candidate.id);
+        return task.candidates.map((candidate) => candidate.id);
     });
 
-    const asisCandidate = candidates.find((c) => c.info.data_source === "asis");
+    const asisCandidate = useMemo(
+        () => task.candidates.find((c) => c.info.data_source === "asis"),
+        [task.candidates]
+    );
+
+    const sortedCandidates = useMemo(() => {
+        return task.candidates.sort((a, b) => {
+            if (a.info.data_source === "asis") return -1;
+            if (b.info.data_source === "asis") return 1;
+            return a.distance - b.distance;
+        });
+    }, [task.candidates]);
 
     if (!asisCandidate) {
+        // this should not happen :)
         return <Box>No asis candidate found</Box>;
     }
 
@@ -38,9 +50,11 @@ export function Candidates({ candidates }: { candidates: SerializedCandidateStat
                     color="secondary"
                 >
                     <Button
-                        disabled={showDetails.length === candidates.length}
+                        disabled={showDetails.length === task.candidates.length}
                         onClick={() =>
-                            setShowDetails(candidates.map((candidate) => candidate.id))
+                            setShowDetails(
+                                task.candidates.map((candidate) => candidate.id)
+                            )
                         }
                         startIcon={<ChevronsUpDownIcon size={20} />}
                     >
@@ -56,33 +70,30 @@ export function Candidates({ candidates }: { candidates: SerializedCandidateStat
                 </ButtonGroup>
 
                 <GridWrapper>
-                    {candidates
-                        .sort((a, b) => a.distance - b.distance)
-                        .map((candidate) => (
-                            <>
-                                <CandidateInfo
-                                    key={candidate.id}
-                                    candidate={candidate}
-                                    selected={selected == candidate.id}
-                                    setSelected={setSelected.bind(null, candidate.id)}
-                                    expanded={showDetails.includes(candidate.id)}
-                                    toggleExpanded={() => {
-                                        setShowDetails((prev) =>
-                                            prev.includes(candidate.id)
-                                                ? prev.filter(
-                                                      (id) => id !== candidate.id
-                                                  )
-                                                : [...prev, candidate.id]
-                                        );
-                                    }}
-                                />
-                                <CandidateDetails
-                                    candidate={candidate}
-                                    reference={asisCandidate}
-                                    expanded={showDetails.includes(candidate.id)}
-                                />
-                            </>
-                        ))}
+                    {sortedCandidates.map((candidate) => (
+                        <React.Fragment key={candidate.id}>
+                            <CandidateInfo
+                                key={candidate.id}
+                                candidate={candidate}
+                                selected={selected == candidate.id}
+                                setSelected={setSelected.bind(null, candidate.id)}
+                                expanded={showDetails.includes(candidate.id)}
+                                toggleExpanded={() => {
+                                    setShowDetails((prev) =>
+                                        prev.includes(candidate.id)
+                                            ? prev.filter((id) => id !== candidate.id)
+                                            : [...prev, candidate.id]
+                                    );
+                                }}
+                            />
+                            <CandidateDetails
+                                candidate={candidate}
+                                items={task.items}
+                                metadata={task.current_metadata}
+                                expanded={showDetails.includes(candidate.id)}
+                            />
+                        </React.Fragment>
+                    ))}
                 </GridWrapper>
             </Box>
         </>
@@ -208,16 +219,18 @@ export function CandidateInfo({
 
 export function CandidateDetails({
     candidate,
-    reference,
+    items,
+    metadata,
     expanded,
 }: {
     candidate: SerializedCandidateState;
-    reference: SerializedCandidateState;
+    items: SerializedTaskState["items"];
+    metadata: SerializedTaskState["current_metadata"];
     expanded: boolean;
 }) {
     return (
         <CandidateDetailsRow data-expanded={expanded}>
-            <CandidateDiff from={reference} to={candidate} />
+            <CandidateDiff candidate={candidate} items={items} metadata={metadata} />
         </CandidateDetailsRow>
     );
 }

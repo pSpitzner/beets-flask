@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { PageWrapper } from "@/components/common/page";
-import { Candidates } from "@/components/import/candidateNew";
+import { TaskCandidates } from "@/components/import/candidateNew";
 import { SerializedSessionState } from "@/pythonTypes";
 
 export const Route = createFileRoute("/_debug/session/$id")({
@@ -32,7 +32,7 @@ function RouteComponent() {
 
     return (
         <PageWrapper>
-            <Candidates candidates={data.tasks[0].candidates}></Candidates>
+            <TaskCandidates task={data.tasks[0]}></TaskCandidates>
         </PageWrapper>
     );
 }

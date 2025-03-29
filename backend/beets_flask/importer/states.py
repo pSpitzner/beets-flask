@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from enum import Enum
-from functools import total_ordering
 from pathlib import Path
-from typing import List, Literal, Sequence, TypedDict, Union, cast
+from typing import List, Literal, Mapping, Sequence, TypedDict, Union, cast
 from uuid import uuid4 as uuid
 
 import beets.ui.commands as uicommands
@@ -249,9 +247,9 @@ class TaskState:
         return [item for item in self.task.items]
 
     @property
-    def items_minimal(self) -> List[TrackInfo | ItemInfo | AlbumInfo]:
+    def items_minimal(self) -> List[ItemInfo]:
         """Items of the associated task as MinimalItemAndTrackInfo."""
-        return [ItemInfo.from_instance(i) for i in self.task.items]
+        return [ItemInfo.from_beets(i) for i in self.task.items]
 
     @property
     def best_candidate_state(self) -> CandidateState | None:
@@ -279,6 +277,15 @@ class TaskState:
     def choice_flag(self, value: importer.action | None):
         self.task.choice_flag = value
 
+    @property
+    def current_metadata(self) -> Metadata:
+        """Current metadata of the task.
+
+        This is the metadata of the music files on disk.
+        """
+        likelies, consensus = autotag.current_metadata(self.items)
+        return Metadata(**{k: str(v) for k, v in likelies.items()})
+
     # ---------------------------------------------------------------------------- #
 
     def serialize(self) -> SerializedTaskState:
@@ -291,10 +298,11 @@ class TaskState:
 
         return SerializedTaskState(
             id=self.id,
+            items=self.items_minimal,
             candidates=[c.serialize() for c in self.candidate_states],
+            current_metadata=self.current_metadata,
             current_candidate_id=current_id,
             duplicate_action=self.duplicate_action,
-            items=self.items_minimal,
             completed=self.completed,
             toppath=str(self.toppath),
             paths=[str(p) for p in self.paths],
@@ -545,65 +553,44 @@ class CandidateState:
     def serialize(self) -> SerializedCandidateState:
         """JSON representation to match the frontend types."""
         # we lift the match.info to reduce nesting in the frontend.
-        info = None
-        items = None
-        tracks: list[TrackInfo] | None = None
-        extra_tracks = None
-        extra_items = None
-        mapping = None
+        info: TrackInfo | AlbumInfo
+        tracks: list[TrackInfo]
+        mapping: Mapping[int, int] = {}
 
-        if self.type == "track":
-            info = TrackInfo.from_instance(self.match.info)
+        if isinstance(self.match.info, autotag.TrackInfo):
+            # This hardly ever happens, we might support this more in the future
+            info = TrackInfo.from_beets(self.match.info)
+            tracks = [TrackInfo.from_beets(self.match.info)]
+        elif isinstance(self.match.info, autotag.AlbumInfo):
+            info = AlbumInfo.from_beets(self.match.info)
 
-        elif self.type == "album" and isinstance(self.match.info, autotag.AlbumInfo):
-            info = AlbumInfo.from_instance(self.match.info)
-
-            tracks = []
-            for track in self.match.info.tracks or []:
-                tracks.append(TrackInfo.from_beets(track))
-
-            extra_tracks = []
-            for track in self.match.extra_tracks or []:  # type: ignore
-                extra_tracks.append(TrackInfo.from_instance(track))
-
-            items = [ItemInfo.from_instance(i) for i in self.items]
-
-            extra_items = [
-                ItemInfo.from_instance(i)
-                for i in self.match.extra_items or []  # type: ignore
-            ]
+            # Map beets types to our types, allows serialization magic
+            tracks = [TrackInfo.from_beets(track) for track in self.match.info.tracks]
 
             # the mapping of a beets albummatch uses objects, but we don not want
             # to send them over redundantly. convert to an index mapping,
             # where first index is in self.items, and second is in self.match.info.tracks
-            mapping = dict()
             for item, track in self.match.mapping.items():  # type: ignore
                 idx = tdx = None
                 for idx, _ in enumerate(self.items):
                     if item.path == self.items[idx].path:
                         break
-                for tdx, _ in enumerate(self.match.info.tracks):
-                    if track.track_id == self.match.info.tracks[tdx].track_id:
+                for tdx, _ in enumerate(self.tracks):
+                    if track.track_id == self.tracks[tdx].track_id:
                         break
                 if idx is not None and tdx is not None:
                     mapping[idx] = tdx
         else:
-            raise ValueError(f"Unknown type {self.type}")
+            raise ValueError(f"Unknown type of matchinfo {type(self.match.info)}")
 
         res = SerializedCandidateState(
             id=self.id,
-            diff_preview=self.diff_preview,
-            cur_artist=self.cur_artist,
-            cur_album=self.cur_album,
             penalties=self.penalties,
             duplicate_in_library=self.has_duplicates_in_library,
             type=self.type,
             distance=self.distance.distance,
             info=info,
-            items=items,
             tracks=tracks,
-            extra_tracks=extra_tracks,
-            extra_items=extra_items,
             mapping=mapping,
         )
 
@@ -630,12 +617,34 @@ class SerializedSessionState(TypedDict):
     completed: bool
 
 
+class Metadata(TypedDict):
+    """returned from current_metadata"""
+
+    artist: str | None
+    album: str | None
+    albumartist: str | None
+    year: str | None
+    disctotal: str | None
+    mb_albumid: str | None
+    label: str | None
+    barcode: str | None
+    catalognum: str | None
+    country: str | None
+    media: str | None
+    albumdisambig: str | None
+
+
 class SerializedTaskState(TypedDict):
     id: str
+
+    items: List[ItemInfo]
+    current_metadata: Metadata
+
+    # Fetched data
     candidates: List[SerializedCandidateState]
-    current_candidate_id: str | None
+
     duplicate_action: str | None
-    items: List[TrackInfo | ItemInfo | AlbumInfo]
+    current_candidate_id: str | None
     completed: bool
     toppath: str | None
     paths: List[str]
@@ -643,21 +652,17 @@ class SerializedTaskState(TypedDict):
 
 class SerializedCandidateState(TypedDict):
     id: str
-    diff_preview: str | None
-    cur_artist: str
-    cur_album: str
-    penalties: List[str]
     duplicate_in_library: bool
     type: str
+
+    penalties: List[str]
     distance: float
+
     info: TrackInfo | ItemInfo | AlbumInfo
 
-    items: List[TrackInfo | ItemInfo | AlbumInfo] | None
-    tracks: List[TrackInfo] | None
-    extra_tracks: List[TrackInfo] | None
-    extra_items: list[TrackInfo | ItemInfo | AlbumInfo] | None
-
-    mapping: dict[int, int] | None
+    # Mapping from items to tracks index based
+    mapping: dict[int, int]
+    tracks: List[TrackInfo]
 
 
 __all__ = [

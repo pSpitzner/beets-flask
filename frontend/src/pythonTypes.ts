@@ -21,24 +21,8 @@ export interface TrackInfo {
 	length: null | number;
 	isrc: null | string;
 	index: null | number;
-}
-
-export interface ItemInfo {
-	type: "album" | "item" | "track";
-	artist: null | string;
-	album: null | string;
-	data_url: null | string;
-	data_source: null | string;
-	year: null | number;
-	genre: null | string;
-	media: null | string;
-	title: null | string;
-	length: null | number;
-	isrc: null | string;
-	track: null | number;
-	path: null | string;
-	bitrate: null | number;
-	format: null | string;
+	medium_index: null | number;
+	medium: null | number;
 }
 
 export interface AlbumInfo {
@@ -59,27 +43,55 @@ export interface AlbumInfo {
 
 export interface SerializedCandidateState {
 	id: string;
-	diff_preview: null | string;
-	cur_artist: string;
-	cur_album: string;
-	penalties: Array<string>;
 	duplicate_in_library: boolean;
 	type: string;
+	penalties: Array<string>;
 	distance: number;
 	info: AlbumInfo | ItemInfo | TrackInfo;
-	items: Array<AlbumInfo | ItemInfo | TrackInfo> | null;
-	tracks: Array<TrackInfo> | null;
-	extra_tracks: Array<TrackInfo> | null;
-	extra_items: Array<AlbumInfo | ItemInfo | TrackInfo> | null;
-	mapping: Record<number, number> | null;
+	mapping: Record<number, number>;
+	tracks: Array<TrackInfo>;
+}
+
+export interface Metadata {
+	artist: null | string;
+	album: null | string;
+	albumartist: null | string;
+	year: null | string;
+	disctotal: null | string;
+	mb_albumid: null | string;
+	label: null | string;
+	barcode: null | string;
+	catalognum: null | string;
+	country: null | string;
+	media: null | string;
+	albumdisambig: null | string;
+}
+
+export interface ItemInfo {
+	type: "album" | "item" | "track";
+	artist: null | string;
+	album: null | string;
+	data_url: null | string;
+	data_source: null | string;
+	year: null | number;
+	genre: null | string;
+	media: null | string;
+	title: null | string;
+	length: null | number;
+	isrc: null | string;
+	track: null | number;
+	path: null | string;
+	bitrate: null | number;
+	format: null | string;
 }
 
 export interface SerializedTaskState {
 	id: string;
+	items: Array<ItemInfo>;
+	current_metadata: Metadata;
 	candidates: Array<SerializedCandidateState>;
-	current_candidate_id: null | string;
 	duplicate_action: null | string;
-	items: Array<AlbumInfo | ItemInfo | TrackInfo>;
+	current_candidate_id: null | string;
 	completed: boolean;
 	toppath: null | string;
 	paths: Array<string>;
