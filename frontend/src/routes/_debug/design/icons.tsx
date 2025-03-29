@@ -1,21 +1,28 @@
-import { Box, Chip,Typography } from "@mui/material";
+import { Box, Chip, Typography, useTheme } from "@mui/material";
 import { createFileRoute } from "@tanstack/react-router";
 
 import {
+    CollapseAllIcon,
+    DeselectAllIcon,
+    ExpandAllIcon,
     FileTypeIcon,
     FolderStatusIcon,
     FolderTypeIcon,
     PenaltyTypeIcon,
+    SelectAllIcon,
     SourceTypeIcon,
 } from "@/components/common/icons";
 import { PageWrapper } from "@/components/common/page";
 import { FolderStatus } from "@/pythonTypes";
+import { ChevronDown, ChevronDownIcon } from "lucide-react";
 
 export const Route = createFileRoute("/_debug/design/icons")({
     component: RouteComponent,
 });
 
 function RouteComponent() {
+    const theme = useTheme();
+
     return (
         <PageWrapper sx={{ gap: "1rem", display: "flex", flexDirection: "column" }}>
             <Box>
@@ -137,26 +144,74 @@ function RouteComponent() {
                     Artist
                     <Box display="flex" gap={0.5}>
                         <PenaltyTypeIcon type="artist" size={20} />
-                        <PenaltyTypeIcon type="artist" size={20} color={"red"} />
-                        <PenaltyTypeIcon type="artist" size={20} color={"orange"} />
-                        <PenaltyTypeIcon type="artist" size={20} color={"yellow"} />
-                        <PenaltyTypeIcon type="artist" size={20} color={"green"} />
+                        <PenaltyTypeIcon
+                            type="artist"
+                            size={20}
+                            color={theme.palette.success.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="artist"
+                            size={20}
+                            color={theme.palette.warning.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="artist"
+                            size={20}
+                            color={theme.palette.error.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="artist"
+                            size={20}
+                            color={theme.palette.diffs.changed}
+                        />
                     </Box>
                     Album
                     <Box display="flex" gap={0.5}>
                         <PenaltyTypeIcon type="album" size={20} />
-                        <PenaltyTypeIcon type="album" size={20} color={"red"} />
-                        <PenaltyTypeIcon type="album" size={20} color={"orange"} />
-                        <PenaltyTypeIcon type="album" size={20} color={"yellow"} />
-                        <PenaltyTypeIcon type="album" size={20} color={"green"} />
+                        <PenaltyTypeIcon
+                            type="album"
+                            size={20}
+                            color={theme.palette.success.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="album"
+                            size={20}
+                            color={theme.palette.warning.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="album"
+                            size={20}
+                            color={theme.palette.error.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="album"
+                            size={20}
+                            color={theme.palette.diffs.changed}
+                        />
                     </Box>
                     Tracks
                     <Box display="flex" gap={0.5}>
                         <PenaltyTypeIcon type="tracks" size={20} />
-                        <PenaltyTypeIcon type="tracks" size={20} color={"red"} />
-                        <PenaltyTypeIcon type="tracks" size={20} color={"orange"} />
-                        <PenaltyTypeIcon type="tracks" size={20} color={"yellow"} />
-                        <PenaltyTypeIcon type="tracks" size={20} color={"green"} />
+                        <PenaltyTypeIcon
+                            type="tracks"
+                            size={20}
+                            color={theme.palette.success.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="tracks"
+                            size={20}
+                            color={theme.palette.warning.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="tracks"
+                            size={20}
+                            color={theme.palette.error.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="tracks"
+                            size={20}
+                            color={theme.palette.diffs.changed}
+                        />
                     </Box>
                     Unmatched Tracks
                     <Box display="flex" gap={0.5}>
@@ -164,22 +219,22 @@ function RouteComponent() {
                         <PenaltyTypeIcon
                             type="unmatched_tracks"
                             size={20}
-                            color={"red"}
+                            color={theme.palette.success.main}
                         />
                         <PenaltyTypeIcon
                             type="unmatched_tracks"
                             size={20}
-                            color={"orange"}
+                            color={theme.palette.warning.main}
                         />
                         <PenaltyTypeIcon
                             type="unmatched_tracks"
                             size={20}
-                            color={"yellow"}
+                            color={theme.palette.error.main}
                         />
                         <PenaltyTypeIcon
                             type="unmatched_tracks"
                             size={20}
-                            color={"green"}
+                            color={theme.palette.diffs.changed}
                         />
                     </Box>
                     Missing Tracks
@@ -188,63 +243,143 @@ function RouteComponent() {
                         <PenaltyTypeIcon
                             type="missing_tracks"
                             size={20}
-                            color={"red"}
+                            color={theme.palette.success.main}
                         />
                         <PenaltyTypeIcon
                             type="missing_tracks"
                             size={20}
-                            color={"orange"}
+                            color={theme.palette.warning.main}
                         />
                         <PenaltyTypeIcon
                             type="missing_tracks"
                             size={20}
-                            color={"yellow"}
+                            color={theme.palette.error.main}
                         />
                         <PenaltyTypeIcon
                             type="missing_tracks"
                             size={20}
-                            color={"green"}
+                            color={theme.palette.diffs.changed}
                         />
                     </Box>
                     Media
                     <Box display="flex" gap={0.5}>
                         <PenaltyTypeIcon type="media" size={20} />
-                        <PenaltyTypeIcon type="media" size={20} color={"red"} />
-                        <PenaltyTypeIcon type="media" size={20} color={"orange"} />
-                        <PenaltyTypeIcon type="media" size={20} color={"yellow"} />
-                        <PenaltyTypeIcon type="media" size={20} color={"green"} />
+                        <PenaltyTypeIcon
+                            type="media"
+                            size={20}
+                            color={theme.palette.success.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="media"
+                            size={20}
+                            color={theme.palette.warning.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="media"
+                            size={20}
+                            color={theme.palette.error.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="media"
+                            size={20}
+                            color={theme.palette.diffs.changed}
+                        />
                     </Box>
                     Mediums
                     <Box display="flex" gap={0.5}>
                         <PenaltyTypeIcon type="mediums" size={20} />
-                        <PenaltyTypeIcon type="mediums" size={20} color={"red"} />
-                        <PenaltyTypeIcon type="mediums" size={20} color={"orange"} />
-                        <PenaltyTypeIcon type="mediums" size={20} color={"yellow"} />
-                        <PenaltyTypeIcon type="mediums" size={20} color={"green"} />
+                        <PenaltyTypeIcon
+                            type="mediums"
+                            size={20}
+                            color={theme.palette.success.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="mediums"
+                            size={20}
+                            color={theme.palette.warning.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="mediums"
+                            size={20}
+                            color={theme.palette.error.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="mediums"
+                            size={20}
+                            color={theme.palette.diffs.changed}
+                        />
                     </Box>
                     Country
                     <Box display="flex" gap={0.5}>
                         <PenaltyTypeIcon type="country" size={20} />
-                        <PenaltyTypeIcon type="country" size={20} color={"red"} />
-                        <PenaltyTypeIcon type="country" size={20} color={"orange"} />
-                        <PenaltyTypeIcon type="country" size={20} color={"yellow"} />
-                        <PenaltyTypeIcon type="country" size={20} color={"green"} />
+                        <PenaltyTypeIcon
+                            type="country"
+                            size={20}
+                            color={theme.palette.success.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="country"
+                            size={20}
+                            color={theme.palette.warning.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="country"
+                            size={20}
+                            color={theme.palette.error.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="country"
+                            size={20}
+                            color={theme.palette.diffs.changed}
+                        />
                     </Box>
                     Year
                     <Box display="flex" gap={0.5}>
                         <PenaltyTypeIcon type="year" size={20} />
-                        <PenaltyTypeIcon type="year" size={20} color={"red"} />
-                        <PenaltyTypeIcon type="year" size={20} color={"orange"} />
-                        <PenaltyTypeIcon type="year" size={20} color={"yellow"} />
-                        <PenaltyTypeIcon type="year" size={20} color={"green"} />
+                        <PenaltyTypeIcon
+                            type="year"
+                            size={20}
+                            color={theme.palette.success.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="year"
+                            size={20}
+                            color={theme.palette.warning.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="year"
+                            size={20}
+                            color={theme.palette.error.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="year"
+                            size={20}
+                            color={theme.palette.diffs.changed}
+                        />
                     </Box>
                     Duplicate
                     <Box display="flex" gap={0.5}>
                         <PenaltyTypeIcon type="duplicate" size={20} />
-                        <PenaltyTypeIcon type="duplicate" size={20} color={"red"} />
-                        <PenaltyTypeIcon type="duplicate" size={20} color={"orange"} />
-                        <PenaltyTypeIcon type="duplicate" size={20} color={"yellow"} />
-                        <PenaltyTypeIcon type="duplicate" size={20} color={"green"} />
+                        <PenaltyTypeIcon
+                            type="duplicate"
+                            size={20}
+                            color={theme.palette.success.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="duplicate"
+                            size={20}
+                            color={theme.palette.warning.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="duplicate"
+                            size={20}
+                            color={theme.palette.error.main}
+                        />
+                        <PenaltyTypeIcon
+                            type="duplicate"
+                            size={20}
+                            color={theme.palette.diffs.changed}
+                        />
                     </Box>
                 </Box>
             </Box>
@@ -286,6 +421,42 @@ function RouteComponent() {
                         <FolderTypeIcon isAlbum={true} isOpen={false} size={20} />
                         <FolderTypeIcon isAlbum={true} isOpen={true} size={20} />
                     </Box>
+                </Box>
+            </Box>
+            <Box>
+                <Typography
+                    variant="h2"
+                    gutterBottom
+                    sx={{ fontSize: "1.5rem", fontWeight: "bold" }}
+                >
+                    Selection and utils
+                </Typography>
+                <Typography variant="body1">
+                    Selection and utils icons are used to indicate the state of a
+                    checkbox selection or a radio button. Normally these are used in
+                    combination with a button and label.
+                </Typography>
+                <Box
+                    sx={{
+                        display: "grid",
+                        gridTemplateColumns: "auto auto",
+                        columnGap: 2,
+                        justifyContent: "flex-start",
+                        alignItems: "center",
+                        paddingX: 2,
+                        paddingY: 1,
+                    }}
+                >
+                    Deselect all
+                    <DeselectAllIcon size={20} />
+                    Select all
+                    <SelectAllIcon size={20} />
+                    Expand
+                    <ChevronDownIcon size={20} />
+                    Collapse all
+                    <CollapseAllIcon size={20} />
+                    Expand all
+                    <ExpandAllIcon size={20} />
                 </Box>
             </Box>
         </PageWrapper>
