@@ -1,14 +1,3 @@
-@tailwind base;
-
-@tailwind components;
-@tailwind utilities;
-
-/** Incase we need to overwrite the tailwindcss styles 
-@layer components {
-    ...
-}
-*/
-
 main {
     height: 100dvh;
     width: 100dvw;

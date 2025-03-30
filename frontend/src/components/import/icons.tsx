@@ -41,6 +41,7 @@ export function PenaltyIconRow({
                         },
                         display: "flex",
                     })}
+                    key={p}
                 >
                     <PenaltyIconWithTooltip key={p} type={p} size={size} />
                 </Box>

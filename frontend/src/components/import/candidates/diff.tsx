@@ -8,11 +8,16 @@ import {
 } from "@/pythonTypes";
 import { useDiff } from "@/components/common/hooks/useDiff";
 import { PenaltyTypeIcon } from "@/components/common/icons";
-import { ArrowRightIcon, EyeIcon, EyeOffIcon } from "lucide-react";
+import {
+    ArrowRightIcon,
+    EyeIcon,
+    EyeOffIcon,
+    GitPullRequestArrowIcon,
+} from "lucide-react";
 import useTheme from "@mui/material/styles/useTheme";
-import { IconButton, styled } from "@mui/material";
+import { IconButton, styled, Tooltip } from "@mui/material";
 import { trackLength } from "@/components/common/units/time";
-import { ReactNode, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 /* ----------------------------- Candidate Diff ----------------------------- */
 
@@ -26,9 +31,6 @@ export function CandidateDiff({
     metadata: SerializedTaskState["current_metadata"];
     candidate: SerializedCandidateState;
 }) {
-    const [showAll, setShowAll] = useState(false);
-    const theme = useTheme();
-
     return (
         <Box>
             <Disambiguation candidate={candidate} />
@@ -48,50 +50,7 @@ export function CandidateDiff({
             />
 
             {/* Tracks */}
-            <Box>
-                {candidate.penalties.includes("tracks") ? (
-                    <Box
-                        sx={{
-                            "[data-hasChanges=false]": {
-                                display: showAll ? undefined : "none",
-                            },
-                        }}
-                    >
-                        <Box
-                            sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 0.5,
-                                color: theme.palette.diffs.changed,
-                            }}
-                        >
-                            <PenaltyTypeIcon type="tracks" size={theme.iconSize.sm} />
-                            <Box>Track changes</Box>
-                            <IconButton
-                                sx={{ p: 0, color: "inherit", marginLeft: "auto" }}
-                                onClick={() => setShowAll((prev) => !prev)}
-                                size="small"
-                            >
-                                {!showAll ? (
-                                    <EyeIcon size={theme.iconSize.sm} />
-                                ) : (
-                                    <EyeOffIcon size={theme.iconSize.sm} />
-                                )}
-                            </IconButton>
-                        </Box>
-                        <TrackChanges
-                            items={items}
-                            tracks={candidate.tracks}
-                            mapping={candidate.mapping}
-                        />
-                    </Box>
-                ) : (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                        <PenaltyTypeIcon type="tracks" size={theme.iconSize.sm} />
-                        <Box>No severe track changes</Box>
-                    </Box>
-                )}
-            </Box>
+            <TrackDiff items={items} candidate={candidate} />
         </Box>
     );
 }
@@ -117,41 +76,56 @@ const TrackChangesGrid = styled(Box)(({ theme }) => ({
     fontSize: "0.875rem",
     lineHeight: 1.25,
 
+    "[data-haschanges=false]": {
+        color: theme.palette.diffs.light,
+    },
+
     //Column gap
     "> * > *": {
         paddingInline: theme.spacing(0.75),
     },
 }));
 
-/** Shows all track changes as a list/grid */
-function TrackChanges({
-    items,
-    tracks,
-    mapping,
-}: {
-    items: ItemInfo[];
-    tracks: TrackInfo[];
-    mapping: SerializedCandidateState["mapping"];
-}) {
-    // Title change variable
-    // force major change layout for all rows
-    const [titleChange, setTitleChange] = useState(false);
+const TrackDiffContext = createContext<{
+    extra_items: ItemInfo[];
+    extra_tracks: TrackInfo[];
+    pairs: Array<[ItemInfo, TrackInfo]>;
+} | null>(null);
 
-    // create venn diagram
-    let extra_items = [];
-    let extra_tracks = [];
+/** Context provider precomputes
+ * some common values for the track diff view
+ * which we dont want to recompute.
+ */
+function TrackDiffContextProvider({
+    children,
+    candidate,
+    items,
+}: {
+    children: React.ReactNode;
+    candidate: SerializedCandidateState;
+    items: SerializedTaskState["items"];
+}) {
+    // Create Venn diagram
+    // items ∩ tracks = pairs
+    // items' ∩ tracks = extra_items
+    // items ∩ tracks' = extra_tracks
+    let extra_items: ItemInfo[] = [];
+    let extra_tracks: TrackInfo[] = [];
     let pairs: Array<[ItemInfo, TrackInfo]> = [];
-    //const changes;
 
     // mapping is a dict of item_idx -> track_idx
-    for (const item_idx in mapping) {
-        const track_idx = mapping[item_idx];
+    for (const item_idx in candidate.mapping) {
+        const track_idx = candidate.mapping[item_idx];
         const item = items[item_idx];
-        const track = tracks[track_idx];
+        const track = candidate.tracks[track_idx];
         if (item && track) {
             pairs.push([item, track]);
-        } else if (item) extra_items.push(item);
-        else if (track) extra_tracks.push(track);
+        } else {
+            console.warn(
+                `TrackDiffContextProvider: item ${item_idx} or track ${track_idx} not found`
+            );
+        }
+        // TODO: compute extra items and extra tracks
     }
 
     pairs.sort((a, b) => {
@@ -163,21 +137,175 @@ function TrackChanges({
     });
 
     return (
-        <TrackChangesGrid>
-            {pairs.map(([item, track]) => (
-                <TrackDiffRow
-                    key={item.track}
-                    from={item}
-                    to={track}
-                    forceMajorChange={titleChange}
-                    setForceMajorChange={setTitleChange}
-                />
-            ))}
-        </TrackChangesGrid>
+        <TrackDiffContext.Provider value={{ extra_items, extra_tracks, pairs }}>
+            {children}
+        </TrackDiffContext.Provider>
     );
 }
 
-function TrackDiffRow({
+function useTrackDiffContext() {
+    const context = useContext(TrackDiffContext);
+    if (!context) {
+        throw new Error(
+            "useTrackDiffContext must be used within a TrackDiffContextProvider"
+        );
+    }
+    return context;
+}
+
+/** The track diff contains a variety of information.
+ *
+ * - TrackChanges, shows how items (on disk) are mapped to tracks (from the candidate).
+ * - UnmatchedTracks, shows tracks that are not matched to any item.
+ * - UnmatchedItems, shows items that are not missing from the candidate.
+ */
+function TrackDiff({
+    items,
+    candidate,
+}: {
+    items: SerializedTaskState["items"];
+    candidate: SerializedCandidateState;
+}) {
+    const theme = useTheme();
+
+    if (!candidate.penalties.includes("tracks")) {
+        return (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <PenaltyTypeIcon type="tracks" size={theme.iconSize.sm} />
+                <Box>No severe track changes</Box>
+            </Box>
+        );
+    }
+
+    // Show all track changes, unmatched tracks and unmatched items
+    return (
+        <TrackDiffContextProvider candidate={candidate} items={items}>
+            <TrackChanges />
+            <UnmatchedTracks />
+            <ExtraItems />
+        </TrackDiffContextProvider>
+    );
+}
+
+function UnmatchedTracks() {
+    const { extra_tracks } = useTrackDiffContext();
+    const theme = useTheme();
+    if (extra_tracks.length === 0) {
+        return null;
+    }
+    return (
+        <Box>
+            <Box
+                sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    color: theme.palette.diffs.changed,
+                }}
+            >
+                <Tooltip title="Tracks that could not matched to any items on disk (usually because they are missing).">
+                    <GitPullRequestArrowIcon size={theme.iconSize.sm} />
+                </Tooltip>
+                <Box component="span">Unmatched tracks</Box>
+            </Box>
+            TODO
+        </Box>
+    );
+}
+
+function ExtraItems() {
+    const { extra_items } = useTrackDiffContext();
+    const theme = useTheme();
+    if (extra_items.length === 0) {
+        return null;
+    }
+    return (
+        <Box>
+            <Box
+                sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    color: theme.palette.diffs.changed,
+                }}
+            >
+                <Tooltip title="Items that could not matched to any tracks, they will be ignore if this candidate is chosen.">
+                    <GitPullRequestArrowIcon size={theme.iconSize.sm} />
+                </Tooltip>
+                <Box component="span">Unmatched items</Box>
+            </Box>
+            TODO
+        </Box>
+    );
+}
+
+/** Shows all track changes as a list/grid
+ *
+ * has to be used inside a TrackDiffContextProvider
+ */
+function TrackChanges() {
+    const theme = useTheme();
+    const { pairs } = useTrackDiffContext();
+
+    // Show all tracks or only the ones that have changes
+    const [filterNoChanges, setFilterNoChanges] = useState(true);
+    // force major change layout for all rows
+    const [titleChange, setTitleChange] = useState(false);
+
+    if (pairs.length === 0) {
+        return null;
+    }
+
+    return (
+        <Box
+            sx={{
+                "[data-haschanges=false]": {
+                    display: filterNoChanges ? "none" : undefined,
+                },
+            }}
+        >
+            {/*Header*/}
+            <Box
+                sx={(theme) => ({
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    color: theme.palette.diffs.changed,
+                })}
+            >
+                <Tooltip title="Shows which items (on disk) are mapped to tracks (from the candidate). Changes are highlighted in red and green.">
+                    <PenaltyTypeIcon type="tracks" size={theme.iconSize.sm} />
+                </Tooltip>
+                <Box component="span">Track changes</Box>
+                <IconButton
+                    sx={{ p: 0, color: "inherit" }}
+                    onClick={() => setFilterNoChanges((prev) => !prev)}
+                    size="small"
+                >
+                    {filterNoChanges ? (
+                        <EyeIcon size={theme.iconSize.sm} />
+                    ) : (
+                        <EyeOffIcon size={theme.iconSize.sm} />
+                    )}
+                </IconButton>
+            </Box>
+            {/*Changes grid*/}
+            <TrackChangesGrid>
+                {pairs.map(([item, track], i) => (
+                    <TrackChangesRow
+                        key={i}
+                        from={item}
+                        to={track}
+                        forceMajorChange={titleChange}
+                        setForceMajorChange={setTitleChange}
+                    />
+                ))}
+            </TrackChangesGrid>
+        </Box>
+    );
+}
+
+function TrackChangesRow({
     from,
     to,
     forceMajorChange,
@@ -241,7 +369,7 @@ function TrackDiffRow({
     // major change shows changes with arrow i.e. [1] t1 -> [2] t2
     if (forceMajorChange) {
         return (
-            <Box sx={{ display: "contents" }} data-hasChanges={hasChanges}>
+            <Box sx={{ display: "contents" }} data-haschanges={hasChanges}>
                 <Box
                     sx={{
                         gridColumn: "index-from",
@@ -310,7 +438,7 @@ function TrackDiffRow({
                 gridColumn: "1 / -1",
                 gridTemplateColumns: "subgrid",
             }}
-            data-hasChanges={hasChanges}
+            data-haschanges={hasChanges}
         >
             <Box
                 sx={{
@@ -363,7 +491,7 @@ function TrackDiffRow({
                                 ? theme.palette.diffs.added
                                 : part.removed
                                   ? theme.palette.diffs.removed
-                                  : theme.palette.text.primary,
+                                  : "inherit",
 
                             textDecoration: part.removed ? "line-through" : "none",
                         })}
