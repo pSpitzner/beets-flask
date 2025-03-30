@@ -43,7 +43,7 @@ export interface AlbumInfo {
 
 export interface SerializedCandidateState {
 	id: string;
-	duplicate_in_library: boolean;
+	duplicate_ids: Array<string>;
 	type: string;
 	penalties: Array<string>;
 	distance: number;
@@ -79,7 +79,7 @@ export interface ItemInfo {
 	title: null | string;
 	length: null | number;
 	isrc: null | string;
-	track: null | number;
+	index: null | number;
 	path: null | string;
 	bitrate: null | number;
 	format: null | string;

@@ -35,7 +35,9 @@ export function PenaltyIconRow({
             {penaltyOrder.map((p) => (
                 <Box
                     sx={(theme) => ({
-                        color: candidate.penalties.includes(p) ? "#ebcb8c" : "#403b31",
+                        color: candidate.penalties.includes(p)
+                            ? theme.palette.diffs.changed
+                            : theme.palette.diffs.changedLight,
                         [theme.breakpoints.down("tablet")]: {
                             display: "none",
                         },

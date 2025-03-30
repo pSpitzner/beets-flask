@@ -9,6 +9,7 @@ type DiffColors = {
     added: string;
     removed: string;
     changed: string;
+    changedLight: string;
     light: string;
 };
 
@@ -24,6 +25,7 @@ declare module "@mui/material/styles" {
         tablet: true;
         laptop: true;
         desktop: true;
+        hpc: true;
     }
 
     // Custom colors for to allow colorful beets diffs
@@ -71,9 +73,9 @@ const darkTheme = createTheme({
     iconSize: {
         xs: 12,
         sm: 16,
-        md: 20,
-        lg: 24,
-        xl: 28,
+        md: 18,
+        lg: 20,
+        xl: 24,
     },
 
     palette: {
@@ -95,9 +97,12 @@ const darkTheme = createTheme({
             paper: "#181A1C",
         },
         diffs: {
-            added: "#a4bf8c",
-            removed: "#c0626b",
+            // added: "#a4bf8c",
+            added: "#A0D582",
+            // removed: "#c0626b",
+            removed: "#74454B",
             changed: "#ebcb8c",
+            changedLight: "#403b31",
             light: "#6c757d",
         },
     },
@@ -137,6 +142,7 @@ const darkTheme = createTheme({
             tablet: 640,
             laptop: 1024,
             desktop: 1200,
+            hpc: 1800,
         },
     },
 

@@ -43,10 +43,11 @@ export const humanizeDuration = (duration: number) => {
     return parts.join(" ");
 };
 
-export const trackLength = (length?: number | null) => {
+export const trackLengthRep = (length?: number | null) => {
     if (length === undefined || length === null) {
         return "(?:??)";
     }
+    // length is in seconds, but with floating precision
     const hours = Math.floor(length / 3600);
     const minutes = Math.floor((length % 3600) / 60);
     const seconds = Math.floor(length % 60);

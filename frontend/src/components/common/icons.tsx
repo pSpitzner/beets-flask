@@ -10,12 +10,12 @@ import {
     CircleHelpIcon,
     CopyIcon,
     Disc3Icon,
-    FastForward,
     FileIcon,
     FlagIcon,
     FolderIcon,
     FolderOpen,
     GitPullRequestArrowIcon,
+    HardDriveIcon,
     HourglassIcon,
     LayoutListIcon,
     ListChecksIcon,
@@ -122,7 +122,7 @@ export function SourceTypeIcon({ type, ...props }: { type: string } & LucideProp
         case "musicbrainz":
             return <BrainIcon {...props} />;
         case "asis":
-            return <FastForward {...props} />;
+            return <HardDriveIcon {...props} />;
         default:
             console.warn(`Unknown source type: ${type}`);
             return <BadgeAlertIcon {...props} />;

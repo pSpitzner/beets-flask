@@ -586,7 +586,7 @@ class CandidateState:
         res = SerializedCandidateState(
             id=self.id,
             penalties=self.penalties,
-            duplicate_in_library=self.has_duplicates_in_library,
+            duplicate_ids=self.duplicate_ids,
             type=self.type,
             distance=self.distance.distance,
             info=info,
@@ -652,7 +652,7 @@ class SerializedTaskState(TypedDict):
 
 class SerializedCandidateState(TypedDict):
     id: str
-    duplicate_in_library: bool
+    duplicate_ids: List[str]
     type: str
 
     penalties: List[str]

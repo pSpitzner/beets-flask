@@ -385,11 +385,13 @@ class CandidateStateInDb(Base):
             task_state = self.task.to_live_state()
         live_state = CandidateState(pickle.loads(self.match), task_state)
         live_state.id = self.id
-        live_state.duplicate_ids = self.duplicate_ids.split(";")
+        live_state.duplicate_ids = (
+            # edge case: "".split() gives ['']
+            [] if len(self.duplicate_ids) == 0 else self.duplicate_ids.split(";")
+        )
         return live_state
 
     def to_dict(self) -> SerializedCandidateState:
-
         return self.to_live_state(self.task.to_live_state()).serialize()
 
 

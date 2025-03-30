@@ -80,10 +80,16 @@ class MusicInfo(ABC):
     media: str | None
 
     @classmethod
-    def from_instance(
-        cls, info: Union[autotag.TrackInfo, autotag.Item, autotag.AlbumInfo]
+    def _from_instance(
+        cls,
+        info: Union[autotag.TrackInfo, autotag.Item, autotag.AlbumInfo],
+        remap: Dict[str, str] = dict(),
     ):
-        kwargs = class_attributes_to_kwargs(cls, info)
+        """Convert from beets TrackInfo, Item or AlbumInfo to our MusicInfo.
+
+        You should only call this in from_beets() methods of the derived classes.
+        """
+        kwargs = class_attributes_to_kwargs(cls, info, remap=remap)
         if isinstance(info, autotag.TrackInfo):
             kwargs["type"] = "track"
             return TrackInfo(**kwargs)
@@ -103,16 +109,36 @@ class MusicInfo(ABC):
         return res
 
 
-def class_attributes_to_kwargs(cls, obj, keys=None) -> Dict[str, Any]:
+def class_attributes_to_kwargs(
+    cls,
+    obj,
+    keys=None,
+    remap: Dict[str, str] = dict(),
+) -> Dict[str, Any]:
     """Convert the attributes of an object to a dictionary of keyword arguments.
 
     May be used for any class. If `keys` is provided, only those keys are used.
+
+    Remap allows to map the keys of the object to different keys in the dictionary.
+    E.g. if the object has an attribute 'track' and you want to use 'index' in the
+    dictionary, you can use `remap={"track": "index"}`.
+
+    Paramters
+    ---------
+    cls: class
+        The class of the object to convert _to_ e.g. TrackInfo
+    obj: object
+        The object to convert _from_ i.e. Datatype from beets
+
     """
     if keys is None:
         keys = cls.__dataclass_fields__.keys()
+        # {'index', ...}
     kwargs = dict()
     for k in keys:
         kwargs[k] = getattr(obj, k, None)
+    for k in remap.keys():
+        kwargs[remap[k]] = getattr(obj, k, None)
     return kwargs
 
 
@@ -136,7 +162,7 @@ class AlbumInfo(MusicInfo):
         """Helper to convert from beets AlbumInfo to our AlbumInfo."""
         return cast(
             AlbumInfo,
-            cls.from_instance(info),
+            cls._from_instance(info),
         )
 
 
@@ -161,7 +187,7 @@ class TrackInfo(MusicInfo):
         """Helper to convert from beets TrackInfo to our TrackInfo."""
         return cast(
             TrackInfo,
-            cls.from_instance(info),
+            cls._from_instance(info),
         )
 
 
@@ -177,16 +203,37 @@ class ItemInfo(MusicInfo):
     title: str | None
     length: float | None
     isrc: str | None
-    track: int | None  #  1-based, todo: make consistent with TrackInfo.index
+
+    index: int | None  # 1-based
 
     path: str | None
     bitrate: int | None
     format: str | None
+
+    @property
+    def track(self) -> int | None:
+        """Track number of the item.
+
+        In beets vanilla types are somewhat inconsistent, which makes frontend
+        code hard to understand.
+        items.track for files on disk (1-based index for track number)
+        track.index for meta data from candidates (1-based index)
+        we consistently used `.index`
+        """
+        return self.index
 
     @classmethod
     def from_beets(cls, info: autotag.Item):
         """Helper to convert from beets Item to our ItemInfo."""
         return cast(
             ItemInfo,
-            cls.from_instance(info),
+            cls._from_instance(
+                info,
+                # beets' vanilla types are somewhat inconsistent, which makes frontend
+                # code hard to understand.
+                # items.track for files on disk (1-based index for track number)
+                # track.index for meta data from candidates (1-based index)
+                # we consistently used `.index`
+                remap={"track": "index"},
+            ),
         )

@@ -1,6 +1,13 @@
 import { ChevronDownIcon, ChevronsDownUpIcon, ChevronsUpDownIcon } from "lucide-react";
 import React, { useMemo, useState } from "react";
-import { Button, ButtonGroup, IconButton, Radio, styled } from "@mui/material";
+import {
+    Button,
+    ButtonGroup,
+    IconButton,
+    Radio,
+    styled,
+    useTheme,
+} from "@mui/material";
 import Box from "@mui/material/Box";
 
 import { SerializedCandidateState, SerializedTaskState } from "@/pythonTypes";
@@ -169,6 +176,7 @@ export function CandidateInfo({
     expanded: boolean;
     toggleExpanded: () => void;
 }) {
+    const theme = useTheme();
     return (
         <CandidateInfoRow data-expanded={expanded}>
             <Box gridColumn="selector" display="flex">
@@ -196,8 +204,9 @@ export function CandidateInfo({
                 display="flex"
                 alignItems="center"
                 height="100%"
+                gap={0.25}
             >
-                <PenaltyIconRow candidate={candidate} size={20} />
+                <PenaltyIconRow candidate={candidate} size={theme.iconSize.md} />
             </Box>
             <Box gridColumn="toggle" display="flex">
                 <IconButton

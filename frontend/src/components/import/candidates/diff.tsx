@@ -1,23 +1,33 @@
-import Box from "@mui/material/Box";
-import { Disambiguation } from "./details";
+import {
+    ArrowRightIcon,
+    EyeIcon,
+    EyeOffIcon,
+    GitPullRequestArrowIcon,
+    GitPullRequestClosedIcon,
+    LucideIcon,
+} from "lucide-react";
+import React, {
+    createContext,
+    ReactElement,
+    useContext,
+    useEffect,
+    useState,
+} from "react";
+import { IconButton, styled, Tooltip, useMediaQuery } from "@mui/material";
+import Box, { BoxProps } from "@mui/material/Box";
+import useTheme from "@mui/material/styles/useTheme";
+
+import { useDiff } from "@/components/common/hooks/useDiff";
+import { PenaltyTypeIcon } from "@/components/common/icons";
+import { trackLengthRep } from "@/components/common/units/time";
 import {
     ItemInfo,
     SerializedCandidateState,
     SerializedTaskState,
     TrackInfo,
 } from "@/pythonTypes";
-import { useDiff } from "@/components/common/hooks/useDiff";
-import { PenaltyTypeIcon } from "@/components/common/icons";
-import {
-    ArrowRightIcon,
-    EyeIcon,
-    EyeOffIcon,
-    GitPullRequestArrowIcon,
-} from "lucide-react";
-import useTheme from "@mui/material/styles/useTheme";
-import { IconButton, styled, Tooltip } from "@mui/material";
-import { trackLength } from "@/components/common/units/time";
-import { createContext, useContext, useEffect, useState } from "react";
+
+import { Disambiguation } from "./details";
 
 /* ----------------------------- Candidate Diff ----------------------------- */
 
@@ -109,9 +119,9 @@ function TrackDiffContextProvider({
     // items ∩ tracks = pairs
     // items' ∩ tracks = extra_items
     // items ∩ tracks' = extra_tracks
-    let extra_items: ItemInfo[] = [];
-    let extra_tracks: TrackInfo[] = [];
-    let pairs: Array<[ItemInfo, TrackInfo]> = [];
+    const extra_items: ItemInfo[] = [];
+    const extra_tracks: TrackInfo[] = [];
+    const pairs: Array<[ItemInfo, TrackInfo]> = [];
 
     // mapping is a dict of item_idx -> track_idx
     for (const item_idx in candidate.mapping) {
@@ -125,7 +135,20 @@ function TrackDiffContextProvider({
                 `TrackDiffContextProvider: item ${item_idx} or track ${track_idx} not found`
             );
         }
-        // TODO: compute extra items and extra tracks
+    }
+
+    // FIXME: could be a bit more efficient with sets
+    for (let i = 0; i < candidate.tracks.length; i++) {
+        const track = candidate.tracks[i];
+        if (!pairs.some(([item]) => item.index === i)) {
+            extra_tracks.push(track);
+        }
+    }
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (!pairs.some(([, track]) => track.index === i)) {
+            extra_items.push(item);
+        }
     }
 
     pairs.sort((a, b) => {
@@ -168,11 +191,34 @@ function TrackDiff({
 }) {
     const theme = useTheme();
 
+    const [showAllTracks, setShowAllTracks] = useState(true);
+
     if (!candidate.penalties.includes("tracks")) {
         return (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <PenaltyTypeIcon type="tracks" size={theme.iconSize.sm} />
-                <Box>No severe track changes</Box>
+            <Box>
+                <HeadingWithContentToggle
+                    icon={<PenaltyTypeIcon type="tracks" />}
+                    label="No severe track changes"
+                    // tooltip="Shows which items (on disk) are mapped to tracks (from the candidate). Changes are highlighted in red and green."
+                    expanded={showAllTracks}
+                    onExpand={setShowAllTracks}
+                    color={theme.palette.text.primary}
+                />
+                <TrackChangesGrid
+                    sx={{
+                        color: theme.palette.diffs.light,
+                        display: showAllTracks ? undefined : "none",
+                    }}
+                >
+                    {candidate.tracks.map((track, i) => (
+                        <TrackRow
+                            key={i}
+                            index={track.index || 0}
+                            title={track.title || ""}
+                            time={trackLengthRep(track.length)}
+                        />
+                    ))}
+                </TrackChangesGrid>
             </Box>
         );
     }
@@ -180,14 +226,43 @@ function TrackDiff({
     // Show all track changes, unmatched tracks and unmatched items
     return (
         <TrackDiffContextProvider candidate={candidate} items={items}>
-            <TrackChanges />
-            <UnmatchedTracks />
-            <ExtraItems />
+            <TrackDiffInner />
         </TrackDiffContextProvider>
     );
 }
 
-function UnmatchedTracks() {
+function TrackDiffInner() {
+    const { extra_tracks, extra_items, pairs } = useTrackDiffContext();
+    const isDesktop = useMediaQuery((theme) => theme.breakpoints.up("desktop"));
+
+    // sort problematic diffs by number of changes, so big blocks appear first
+    const nodes: Array<[React.ReactNode, number]> = [
+        [<TrackChanges key={1} />, pairs.length],
+        [<ExtraTracks key={2} />, extra_tracks.length],
+        [<ExtraItems key={3} />, extra_items.length],
+    ];
+
+    // but do not do this on mobile
+    if (isDesktop) {
+        nodes.sort((a, b) => b[1] - a[1]);
+    }
+
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "row",
+                rowGap: 1.5,
+                columnGap: 1,
+                flexWrap: "wrap",
+            }}
+        >
+            {nodes.map(([node]) => node)}
+        </Box>
+    );
+}
+
+function ExtraTracks() {
     const { extra_tracks } = useTrackDiffContext();
     const theme = useTheme();
     if (extra_tracks.length === 0) {
@@ -195,20 +270,22 @@ function UnmatchedTracks() {
     }
     return (
         <Box>
-            <Box
-                sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                    color: theme.palette.diffs.changed,
-                }}
-            >
-                <Tooltip title="Tracks that could not matched to any items on disk (usually because they are missing).">
-                    <GitPullRequestArrowIcon size={theme.iconSize.sm} />
-                </Tooltip>
-                <Box component="span">Unmatched tracks</Box>
-            </Box>
-            TODO
+            <HeadingWithContentToggle
+                icon={<GitPullRequestArrowIcon />}
+                label="Unmatched tracks"
+                tooltip="Tracks that could not matched to any items on disk (usually because they are missing)."
+                color={theme.palette.diffs.changed}
+            />
+            <TrackChangesGrid sx={{ color: theme.palette.diffs.light }}>
+                {extra_tracks.map((track, i) => (
+                    <TrackRow
+                        key={i}
+                        index={track.index || 0}
+                        title={track.title || ""}
+                        time={trackLengthRep(track.length)}
+                    />
+                ))}
+            </TrackChangesGrid>
         </Box>
     );
 }
@@ -221,20 +298,72 @@ function ExtraItems() {
     }
     return (
         <Box>
+            <HeadingWithContentToggle
+                icon={<GitPullRequestClosedIcon />}
+                label="Unmatched items"
+                tooltip="Items that could not matched to any tracks, they will be ignore if this candidate is chosen."
+                color={theme.palette.diffs.changed}
+            />
+            <TrackChangesGrid sx={{ color: theme.palette.diffs.light }}>
+                {extra_items.map((item, i) => (
+                    <TrackRow
+                        key={i}
+                        index={item.index || 0}
+                        title={item.title || ""}
+                        time={trackLengthRep(item.length)}
+                    />
+                ))}
+            </TrackChangesGrid>
+        </Box>
+    );
+}
+
+function TrackRow({
+    index,
+    title,
+    time,
+}: {
+    index: number;
+    title: string;
+    time: string;
+}) {
+    return (
+        <Box
+            sx={{
+                display: "grid",
+                gridColumn: "1 / -1",
+                gridTemplateColumns: "subgrid",
+            }}
+        >
+            {/* Index */}
             <Box
                 sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                    color: theme.palette.diffs.changed,
+                    color: "inherit",
+                    textAlign: "right",
                 }}
             >
-                <Tooltip title="Items that could not matched to any tracks, they will be ignore if this candidate is chosen.">
-                    <GitPullRequestArrowIcon size={theme.iconSize.sm} />
-                </Tooltip>
-                <Box component="span">Unmatched items</Box>
+                {index}
             </Box>
-            TODO
+
+            {/* Title */}
+            <Box
+                sx={{
+                    textAlign: "right",
+                    display: "flex",
+                }}
+            >
+                {title}
+            </Box>
+
+            {/* Length */}
+            <Box
+                sx={{
+                    color: "inherit",
+                    textAlign: "right",
+                }}
+            >
+                {time}
+            </Box>
         </Box>
     );
 }
@@ -246,9 +375,10 @@ function ExtraItems() {
 function TrackChanges() {
     const theme = useTheme();
     const { pairs } = useTrackDiffContext();
+    const isDesktop = useMediaQuery((theme) => theme.breakpoints.up("desktop"));
 
     // Show all tracks or only the ones that have changes
-    const [filterNoChanges, setFilterNoChanges] = useState(true);
+    const [showUnchanged, setShowUnchanged] = useState(isDesktop);
     // force major change layout for all rows
     const [titleChange, setTitleChange] = useState(false);
 
@@ -260,35 +390,19 @@ function TrackChanges() {
         <Box
             sx={{
                 "[data-haschanges=false]": {
-                    display: filterNoChanges ? "none" : undefined,
+                    display: showUnchanged ? undefined : "none",
                 },
             }}
         >
             {/*Header*/}
-            <Box
-                sx={(theme) => ({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                    color: theme.palette.diffs.changed,
-                })}
-            >
-                <Tooltip title="Shows which items (on disk) are mapped to tracks (from the candidate). Changes are highlighted in red and green.">
-                    <PenaltyTypeIcon type="tracks" size={theme.iconSize.sm} />
-                </Tooltip>
-                <Box component="span">Track changes</Box>
-                <IconButton
-                    sx={{ p: 0, color: "inherit" }}
-                    onClick={() => setFilterNoChanges((prev) => !prev)}
-                    size="small"
-                >
-                    {filterNoChanges ? (
-                        <EyeIcon size={theme.iconSize.sm} />
-                    ) : (
-                        <EyeOffIcon size={theme.iconSize.sm} />
-                    )}
-                </IconButton>
-            </Box>
+            <HeadingWithContentToggle
+                icon={<PenaltyTypeIcon type="tracks" />}
+                label="Track changes"
+                tooltip="Shows which items (on disk) are mapped to tracks (from the candidate). Changes are highlighted in red and green."
+                expanded={showUnchanged}
+                onExpand={setShowUnchanged}
+                color={theme.palette.diffs.changed}
+            />
             {/*Changes grid*/}
             <TrackChangesGrid>
                 {pairs.map(([item, track], i) => (
@@ -305,6 +419,77 @@ function TrackChanges() {
     );
 }
 
+function HeadingWithContentToggle({
+    icon,
+    label,
+    tooltip,
+    expanded,
+    onExpand,
+    color,
+}: {
+    icon: ReactElement;
+    label: string;
+    tooltip?: string;
+    expanded?: boolean;
+    onExpand?: (expanded: boolean) => void;
+    color?: string;
+}) {
+    const theme = useTheme();
+
+    // Show tooltip if it is defined
+    let ToolTipComp = ({ children }: { children: ReactElement }) => <>{children}</>;
+    if (tooltip) {
+        ToolTipComp = ({ children }: { children: ReactElement }) => (
+            <Tooltip title={tooltip}>{children}</Tooltip>
+        );
+    }
+
+    return (
+        <Box
+            sx={(theme) => ({
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+                color: color || theme.palette.text.primary,
+            })}
+        >
+            <ToolTipComp>
+                <Box display="flex" gap={0.5} alignItems="center">
+                    <Box
+                        sx={(theme) => ({
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            width: theme.iconSize.sm,
+                            height: theme.iconSize.sm,
+                        })}
+                    >
+                        {icon}
+                    </Box>
+                    <Box component="span">{label}</Box>
+                </Box>
+            </ToolTipComp>
+            {(expanded || onExpand) && (
+                <IconButton
+                    sx={{ p: 0, color: "inherit" }}
+                    onClick={() => {
+                        if (onExpand) {
+                            onExpand(!expanded);
+                        }
+                    }}
+                    size="small"
+                >
+                    {expanded ? (
+                        <EyeIcon size={theme.iconSize.sm} />
+                    ) : (
+                        <EyeOffIcon size={theme.iconSize.sm} />
+                    )}
+                </IconButton>
+            )}
+        </Box>
+    );
+}
+
 function TrackChangesRow({
     from,
     to,
@@ -312,7 +497,7 @@ function TrackChangesRow({
     setForceMajorChange,
 }: {
     from: ItemInfo;
-    to: TrackInfo;
+    to: TrackInfo | ItemInfo;
     forceMajorChange: boolean;
     setForceMajorChange: (value: boolean) => void;
 }) {
@@ -321,14 +506,14 @@ function TrackChangesRow({
     const { fromParts, toParts, diff } = useDiffParts(from.title || "", to.title || "");
 
     const fromD = {
-        time: trackLength(from.length),
-        idx: from.track ?? 0,
+        time: trackLengthRep(from.length),
+        idx: from.index ?? 0,
         data: fromParts,
         color: theme.palette.diffs.removed,
         type: "from",
     };
     const toD = {
-        time: trackLength(to.length),
+        time: trackLengthRep(to.length),
         idx: to.index ?? 0,
         data: toParts,
         color: theme.palette.diffs.added,
@@ -337,8 +522,8 @@ function TrackChangesRow({
 
     const changed = {
         title: from.title !== to.title,
-        time: fromD.time !== toD.time,
-        index: from.track !== to.index,
+        time: Math.abs((from.length || 0) - (to.length || 0)) > 5,
+        index: from.index !== to.index,
     };
 
     const hasChanges = changed.title || changed.time || changed.index;
@@ -351,7 +536,7 @@ function TrackChangesRow({
             let total = 0;
             let changed = 0;
             for (let i = 0; i < diff.length; i++) {
-                const part = diff[i]!;
+                const part = diff[i];
                 total += part.count ?? 0;
                 if (part.added || part.removed) {
                     changed += part.count ?? 0;
@@ -370,10 +555,11 @@ function TrackChangesRow({
     if (forceMajorChange) {
         return (
             <Box sx={{ display: "contents" }} data-haschanges={hasChanges}>
+                {/* index */}
                 <Box
                     sx={{
                         gridColumn: "index-from",
-                        color: changed.index ? fromD.color : "inherit",
+                        color: changed.index ? fromD.color : theme.palette.diffs.light,
                         justifyContent: "flex-end",
                         textAlign: "right",
                     }}
@@ -381,17 +567,21 @@ function TrackChangesRow({
                 >
                     {fromD.idx}
                 </Box>
+
+                {/* title and time */}
                 <Box sx={{ gridColumn: "title-from" }}>{fromD.data}</Box>
                 <Box
                     sx={{
                         gridColumn: "length-from",
-                        display: changed.time ? "flex" : "none",
+                        display: "flex",
                         justifyContent: "flex-begin",
-                        color: changed.time ? fromD.color : "inherit",
+                        color: changed.time ? fromD.color : theme.palette.diffs.light,
                     }}
                 >
                     {fromD.time}
                 </Box>
+
+                {/* change arrow */}
                 <Box
                     sx={{
                         gridColumn: "change-arrow",
@@ -401,24 +591,31 @@ function TrackChangesRow({
                         alignItems: "center",
                     }}
                 >
-                    <ArrowRightIcon size={theme.iconSize.xs} />
+                    <ArrowRightIcon
+                        size={theme.iconSize.xs}
+                        color={theme.palette.diffs.changed}
+                    />
                 </Box>
+
+                {/* index */}
                 <Box
                     sx={{
                         gridColumn: "index-to",
-                        color: changed.index ? toD.color : "inherit",
+                        color: changed.index ? toD.color : theme.palette.diffs.light,
                         textAlign: "right",
                     }}
                 >
                     {toD.idx}
                 </Box>
+
+                {/* title and time */}
                 <Box sx={{ gridColumn: "title-to" }}>{toD.data}</Box>
                 <Box
                     sx={{
                         gridColumn: "length-to",
                         justifyContent: "flex-end",
                         display: "flex",
-                        color: changed.time ? toD.color : "inherit",
+                        color: changed.time ? toD.color : theme.palette.diffs.light,
                     }}
                 >
                     {toD.time}
@@ -440,6 +637,7 @@ function TrackChangesRow({
             }}
             data-haschanges={hasChanges}
         >
+            {/* index */}
             <Box
                 sx={{
                     textAlign: "right",
@@ -464,12 +662,15 @@ function TrackChangesRow({
                         >
                             {fromD.idx}
                         </Box>
-                        <ArrowRightIcon size={theme.iconSize.xs} />
+                        <ArrowRightIcon
+                            size={theme.iconSize.xs}
+                            color={theme.palette.diffs.changed}
+                        />
                     </>
                 )}
                 <Box
                     sx={{
-                        color: changed.index ? toD.color : "inherit",
+                        color: changed.index ? toD.color : theme.palette.diffs.light,
                     }}
                 >
                     {toD.idx}
@@ -481,6 +682,7 @@ function TrackChangesRow({
                 sx={{
                     textAlign: "right",
                     display: "flex",
+                    color: changed.title ? "inherit" : theme.palette.diffs.light,
                 }}
             >
                 {diff.map((part, index) => (
@@ -523,12 +725,15 @@ function TrackChangesRow({
                         >
                             {fromD.time}
                         </Box>
-                        <ArrowRightIcon size={theme.iconSize.xs} />
+                        <ArrowRightIcon
+                            size={theme.iconSize.xs}
+                            color={theme.palette.diffs.changed}
+                        />
                     </>
                 )}
                 <Box
                     sx={{
-                        color: changed.time ? toD.color : "inherit",
+                        color: changed.time ? toD.color : theme.palette.diffs.light,
                         textAlign: "right",
                     }}
                 >
