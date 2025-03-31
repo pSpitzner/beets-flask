@@ -12,3 +12,5 @@ pip install -e .[docs]
 cd ../docs
 make html
 ```
+
+This will create a `docs/build/html` folder with the documentation. You can open the `index.html` file in any browser to view the documentation.

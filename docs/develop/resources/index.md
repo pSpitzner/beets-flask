@@ -4,10 +4,14 @@ This document is meant as a primer for developers who want to get started with o
 
 
 ```{admonition} Note
-This document is the old `Resources.md` file. It is currently being restructured, feel free to open an issue or a pull request if you have any suggestions.
+Feel free to open an issue or a pull request if you have any suggestions or questions.
 ```
 
 ```{toctree}
 docker.md
 documentation.md
+frontend.md
+backend.md
 ```
+
+

@@ -1,15 +1,26 @@
+# Backend 
 
-Important entrypoints:
-- invoker
-- importer/session
+Beets-Flask provides a quart application with REST API for the beets music library manager and a library for interacting with beets. 
 
+```{toctree}
+:hidden:
 
+./state_serialize
+```
 
-## State Hierarchy
+## Resumability of import
 
-- SessionState: Reflects the state of the import session.
-  We aim for sessions to be stateless, and everything is stored in the database via the ImportState.
-- TaskState: Reflects a beetstask, but they dont have such a precise real-life meaning.
-  For us, the TaskState mainly holds a list of CandidateStates and the users current choice.
-- CandidateState: Reflects a beets match (i.e. a candidate the user might choose)
+By default beets has very limited support to resume an import after it has been triggered. For instance, once an import is cancled the next time the same folder is imported, beets will start from the beginning. This is not ideal for large imports, especially if you have a lot of plugins and candidate fetches may take a long time.
+
+To overcome this issue we added wrappers for the beets sessions and introduced an serializable session state. This allows us to save the state of the import and resume it later, e.g. in a database. To see an example of this, please check the [state serialization example](./state_serialize).
+
+## Environment variables
+
+The configuration folders can be set via environment variables. This might be useful if you want to run the application in a different environment. The following values are our defaults:
+
+```
+BEETSDIR="/config/beets"
+BEETSFLASKDIR="/config/beets-flask"
+```
+
 
