@@ -7,13 +7,15 @@ import {
 } from "lucide-react";
 import React, {
     createContext,
+    Dispatch,
     ReactElement,
+    SetStateAction,
     useContext,
     useEffect,
     useMemo,
     useState,
 } from "react";
-import { IconButton, styled, Tooltip, useMediaQuery } from "@mui/material";
+import { IconButton, styled, Tooltip, Typography, useMediaQuery } from "@mui/material";
 import Box from "@mui/material/Box";
 import useTheme from "@mui/material/styles/useTheme";
 
@@ -312,6 +314,9 @@ function ExtraTracks() {
                 expanded={expanded}
                 onExpand={setExpanded}
             />
+            <Typography variant="body2" color="diffs.light" pb={0.5}>
+                {extra_tracks.length} extra tracks in candidate
+            </Typography>
             <TrackChangesGrid
                 sx={{
                     color: theme.palette.diffs.light,
@@ -349,6 +354,9 @@ function ExtraItems() {
                 expanded={expanded}
                 onExpand={setExpanded}
             />
+            <Typography variant="body2" color="diffs.light" pb={0.5}>
+                {extra_items.length} extra items on disk
+            </Typography>
             <TrackChangesGrid
                 sx={{
                     color: theme.palette.diffs.light,
@@ -425,6 +433,7 @@ function TrackRow({
 function TrackChanges() {
     const theme = useTheme();
     const { pairs } = useTrackDiffContext();
+    const [changeCounter, setChangeCounter] = useState(0);
     const isDesktop = useMediaQuery((theme) => theme.breakpoints.up("desktop"));
 
     // Show all tracks or only the ones that have changes
@@ -453,6 +462,9 @@ function TrackChanges() {
                 onExpand={setShowUnchanged}
                 color={theme.palette.diffs.changed}
             />
+            <Typography variant="body2" color="diffs.light" pb={0.5}>
+                {changeCounter} changes to tracks
+            </Typography>
             {/*Changes grid*/}
             <TrackChangesGrid>
                 {pairs.map(([item, track], i) => (
@@ -462,6 +474,7 @@ function TrackChanges() {
                         to={track}
                         forceMajorChange={titleChange}
                         setForceMajorChange={setTitleChange}
+                        setChangeCounter={setChangeCounter}
                     />
                 ))}
             </TrackChangesGrid>
@@ -545,11 +558,14 @@ function TrackChangesRow({
     to,
     forceMajorChange,
     setForceMajorChange,
+    setChangeCounter,
 }: {
     from: ItemInfo;
     to: TrackInfo | ItemInfo;
     forceMajorChange: boolean;
     setForceMajorChange: (value: boolean) => void;
+    // HACK: Changes counter
+    setChangeCounter?: Dispatch<SetStateAction<number>>;
 }) {
     // FIXME: the backend types seem wrong, why optional?
     const theme = useTheme();
@@ -599,6 +615,18 @@ function TrackChangesRow({
             }
         }
     }, [changed.title, diff]);
+
+    useEffect(() => {
+        if (setChangeCounter && hasChanges) {
+            setChangeCounter((prev) => prev + 1);
+        }
+
+        return () => {
+            if (setChangeCounter && hasChanges) {
+                setChangeCounter((prev) => prev - 1);
+            }
+        };
+    }, [hasChanges]);
 
     // depending on the number of changes we render a slightly different row
     // major change shows changes with arrow i.e. [1] t1 -> [2] t2
@@ -851,8 +879,28 @@ function GenericDiff({
     method?: "chars" | "words" | "wordsWithSpace" | "full" | "auto";
     icon?: React.ReactNode;
 }) {
-    const { fromParts, toParts, hasAdded, hasRemoved } = useDiffParts(from, to, method);
+    const { fromParts, toParts, hasAdded, hasRemoved, diff } = useDiffParts(
+        from,
+        to,
+        method
+    );
     const theme = useTheme();
+
+    const majorChange = useMemo(() => {
+        //Count changed chars vs unchanged
+        //FIXME: This should be a generic function and not copy pasted
+        let total = 0;
+        let changed = 0;
+        for (let i = 0; i < diff.length; i++) {
+            const part = diff[i];
+            total += part.count ?? 0;
+            if (part.added || part.removed) {
+                changed += part.count ?? 0;
+            }
+        }
+        console.log("Major change", changed, total, diff);
+        return changed / total > 0.9;
+    }, [diff]);
 
     return (
         <Box
@@ -860,7 +908,7 @@ function GenericDiff({
                 display: "flex",
                 flexDirection: "row",
                 gap: 0.5,
-                alignItems: "center",
+                alignItems: "flex-start",
             }}
         >
             <Box
@@ -873,6 +921,8 @@ function GenericDiff({
                     justifyContent: "center",
                     alignItems: "center",
 
+                    height: "1.25rem", // see lineHeight below
+
                     // Define the size of the icon
                     " > *": {
                         width: theme.iconSize.sm,
@@ -882,22 +932,34 @@ function GenericDiff({
             >
                 {icon}
             </Box>
-            <Box
-                sx={{
-                    display: "flex",
-                    flexDirection: "row",
-                    gap: 0.5,
-                    alignItems: "center",
-                }}
-            >
-                {hasAdded || hasRemoved ? (
+            <Box sx={{ lineHeight: 1.25 }}>
+                {majorChange ? (
                     <>
                         {fromParts}
-                        <ArrowRightIcon size={theme.iconSize.xs} />
+                        <ArrowRightIcon
+                            size={theme.iconSize.xs}
+                            color={theme.palette.diffs.changed}
+                        />
                         {toParts}
                     </>
                 ) : (
-                    <>{toParts}</>
+                    diff.map((part, index) => (
+                        <Box
+                            key={index}
+                            sx={(theme) => ({
+                                color: part.added
+                                    ? theme.palette.diffs.added
+                                    : part.removed
+                                      ? theme.palette.diffs.removed
+                                      : "inherit",
+
+                                textDecoration: part.removed ? "line-through" : "none",
+                            })}
+                            component="span"
+                        >
+                            {part.value}
+                        </Box>
+                    ))
                 )}
             </Box>
         </Box>
