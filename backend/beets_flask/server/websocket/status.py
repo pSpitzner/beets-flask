@@ -28,14 +28,14 @@ namespace = "/status"
 @sio_catch_exception
 async def connect(sid, *args):
     """Log connection."""
-    log.warning(f"StatusSocket sid {sid} connected")
+    log.debug(f"StatusSocket sid {sid} connected")
 
 
 @sio.on("update", namespace=namespace)
 @sio_catch_exception
 async def update(sid, data):
     """Allows to propagate status updates to all clients."""
-    log.warning(f"Status update: {data}")
+    log.debug(f"Status update: {data}")
 
     # Emit to all clients
     await sio.emit("update", data, namespace=namespace)
@@ -45,7 +45,7 @@ async def update(sid, data):
 @sio_catch_exception
 async def any_event(event, sid, data):
     """Debug unhandled events."""
-    log.warning(f"StatusSocket sid {sid} undhandled event {event} with data {data}")
+    log.debug(f"StatusSocket sid {sid} undhandled event {event} with data {data}")
 
 
 async def send_folder_status_update(path: str, hash: str, status: FolderStatus):

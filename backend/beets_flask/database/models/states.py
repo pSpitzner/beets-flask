@@ -365,7 +365,6 @@ class CandidateStateInDb(Base):
                 item._Item__album = None
 
         self.match = pickle.dumps(match)
-        log.warning(f"{duplicate_ids=}")
         self.duplicate_ids = ";".join(map(str, duplicate_ids))
 
     @classmethod
@@ -376,7 +375,6 @@ class CandidateStateInDb(Base):
             match=state.match,
             duplicate_ids=state.duplicate_ids,
         )
-        log.warning(f"{state.duplicate_ids=}")
         return candidate
 
     def to_live_state(self, task_state: TaskState | None) -> CandidateState:
@@ -387,7 +385,9 @@ class CandidateStateInDb(Base):
         live_state.id = self.id
         live_state.duplicate_ids = (
             # edge case: "".split() gives ['']
-            [] if len(self.duplicate_ids) == 0 else self.duplicate_ids.split(";")
+            []
+            if len(self.duplicate_ids) == 0
+            else self.duplicate_ids.split(";")
         )
         return live_state
 
