@@ -4,17 +4,17 @@ import {
     EyeOffIcon,
     GitPullRequestArrowIcon,
     GitPullRequestClosedIcon,
-    LucideIcon,
 } from "lucide-react";
 import React, {
     createContext,
     ReactElement,
     useContext,
     useEffect,
+    useMemo,
     useState,
 } from "react";
 import { IconButton, styled, Tooltip, useMediaQuery } from "@mui/material";
-import Box, { BoxProps } from "@mui/material/Box";
+import Box from "@mui/material/Box";
 import useTheme from "@mui/material/styles/useTheme";
 
 import { useDiff } from "@/components/common/hooks/useDiff";
@@ -42,7 +42,7 @@ export function CandidateDiff({
     candidate: SerializedCandidateState;
 }) {
     return (
-        <Box>
+        <Box sx={{ width: "100%" }}>
             <Disambiguation candidate={candidate} />
 
             {/* Artist */}
@@ -73,17 +73,9 @@ export function CandidateDiff({
 const TrackChangesGrid = styled(Box)(({ theme }) => ({
     display: "grid",
     width: "min-content",
-    gridTemplateColumns: `
-        [index-from] max-content
-        [title-from] max-content
-        [length-from] max-content
-        [change-arrow] max-content
-        [index-to] max-content
-        [title-to] max-content
-        [length-to] max-content
-    `,
+    gridTemplateColumns: `repeat(7, max-content)`,
     paddingInline: theme.spacing(2),
-    fontSize: "0.875rem",
+    fontSize: theme.typography.body2.fontSize,
     lineHeight: 1.25,
 
     "[data-haschanges=false]": {
@@ -93,6 +85,28 @@ const TrackChangesGrid = styled(Box)(({ theme }) => ({
     //Column gap
     "> * > *": {
         paddingInline: theme.spacing(0.75),
+    },
+
+    // On mobile the full layout stretches over 2 lines
+    [theme.breakpoints.down("tablet")]: {
+        gridTemplateColumns: `
+            repeat(4, max-content)
+        `,
+
+        // Every 5th child spans 2
+        "> * > *:nth-child(7n)": {
+            gridColumn: "span 2",
+            justifySelf: "flex-start",
+        },
+        // Apply Margin to 2nd row in full layout,
+        // this seperates the different items
+        // we select the first 4 items i.e. [1] t1 ->
+        "[data-full=true] > *:nth-child(-n+4)": {
+            marginTop: theme.spacing(0.75),
+        },
+        "[data-full=true]:first-child > *": {
+            marginTop: 0,
+        },
     },
 }));
 
@@ -119,45 +133,53 @@ function TrackDiffContextProvider({
     // items ∩ tracks = pairs
     // items' ∩ tracks = extra_items
     // items ∩ tracks' = extra_tracks
-    const extra_items: ItemInfo[] = [];
-    const extra_tracks: TrackInfo[] = [];
-    const pairs: Array<[ItemInfo, TrackInfo]> = [];
+    const { extra_items, extra_tracks, pairs } = useMemo(() => {
+        const extra_items: ItemInfo[] = [];
+        const extra_tracks: TrackInfo[] = [];
+        const pairs: Array<[ItemInfo, TrackInfo]> = [];
 
-    // mapping is a dict of item_idx -> track_idx
-    for (const item_idx in candidate.mapping) {
-        const track_idx = candidate.mapping[item_idx];
-        const item = items[item_idx];
-        const track = candidate.tracks[track_idx];
-        if (item && track) {
-            pairs.push([item, track]);
-        } else {
-            console.warn(
-                `TrackDiffContextProvider: item ${item_idx} or track ${track_idx} not found`
-            );
+        // mapping is a dict of item_idx -> track_idx
+        for (const item_idx in candidate.mapping) {
+            const track_idx = candidate.mapping[item_idx];
+            const item = items[item_idx];
+            const track = candidate.tracks[track_idx];
+            if (item && track) {
+                pairs.push([item, track]);
+            } else {
+                console.warn(
+                    `TrackDiffContextProvider: item ${item_idx} or track ${track_idx} not found`
+                );
+            }
         }
-    }
 
-    // FIXME: could be a bit more efficient with sets
-    for (let i = 0; i < candidate.tracks.length; i++) {
-        const track = candidate.tracks[i];
-        if (!pairs.some(([item]) => item.index === i)) {
-            extra_tracks.push(track);
+        // FIXME: could be a bit more efficient with sets
+        for (let i = 0; i < candidate.tracks.length; i++) {
+            const track = candidate.tracks[i];
+            if (!pairs.some(([item]) => item.index === i)) {
+                extra_tracks.push(track);
+            }
         }
-    }
-    for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (!pairs.some(([, track]) => track.index === i)) {
-            extra_items.push(item);
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if (!pairs.some(([, track]) => track.index === i)) {
+                extra_items.push(item);
+            }
         }
-    }
 
-    pairs.sort((a, b) => {
-        const a_idx = a[1].index ?? 0;
-        const b_idx = b[1].index ?? 0;
-        if (a_idx < b_idx) return -1;
-        if (a_idx > b_idx) return 1;
-        return 0;
-    });
+        pairs.sort((a, b) => {
+            const a_idx = a[1].index ?? 0;
+            const b_idx = b[1].index ?? 0;
+            if (a_idx < b_idx) return -1;
+            if (a_idx > b_idx) return 1;
+            return 0;
+        });
+
+        return {
+            extra_items,
+            extra_tracks,
+            pairs,
+        };
+    }, [items, candidate]);
 
     return (
         <TrackDiffContext.Provider value={{ extra_items, extra_tracks, pairs }}>
@@ -191,12 +213,12 @@ function TrackDiff({
 }) {
     const theme = useTheme();
 
-    const [showAllTracks, setShowAllTracks] = useState(true);
+    const [showAllTracks, setShowAllTracks] = useState(false);
 
     if (!candidate.penalties.includes("tracks")) {
         return (
             <Box>
-                <HeadingWithContentToggle
+                <Heading
                     icon={<PenaltyTypeIcon type="tracks" />}
                     label="No severe track changes"
                     // tooltip="Shows which items (on disk) are mapped to tracks (from the candidate). Changes are highlighted in red and green."
@@ -210,14 +232,16 @@ function TrackDiff({
                         display: showAllTracks ? undefined : "none",
                     }}
                 >
-                    {candidate.tracks.map((track, i) => (
-                        <TrackRow
-                            key={i}
-                            index={track.index || 0}
-                            title={track.title || ""}
-                            time={trackLengthRep(track.length)}
-                        />
-                    ))}
+                    {candidate.tracks
+                        .sort((a) => a.index ?? 0)
+                        .map((track, i) => (
+                            <TrackRow
+                                key={i}
+                                index={track.index || 0}
+                                title={track.title || ""}
+                                time={trackLengthRep(track.length)}
+                            />
+                        ))}
                 </TrackChangesGrid>
             </Box>
         );
@@ -249,13 +273,21 @@ function TrackDiffInner() {
 
     return (
         <Box
-            sx={{
+            sx={(theme) => ({
                 display: "flex",
                 flexDirection: "row",
-                rowGap: 1.5,
+                rowGap: 0.25,
                 columnGap: 1,
                 flexWrap: "wrap",
-            }}
+                "> *": {
+                    flexGrow: 1,
+                    flexShrink: 0,
+
+                    [theme.breakpoints.down("tablet")]: {
+                        minWidth: "100%",
+                    },
+                },
+            })}
         >
             {nodes.map(([node]) => node)}
         </Box>
@@ -263,6 +295,8 @@ function TrackDiffInner() {
 }
 
 function ExtraTracks() {
+    const isDesktop = useMediaQuery((theme) => theme.breakpoints.up("desktop"));
+    const [expanded, setExpanded] = useState(isDesktop);
     const { extra_tracks } = useTrackDiffContext();
     const theme = useTheme();
     if (extra_tracks.length === 0) {
@@ -270,27 +304,36 @@ function ExtraTracks() {
     }
     return (
         <Box>
-            <HeadingWithContentToggle
+            <Heading
                 icon={<GitPullRequestArrowIcon />}
                 label="Unmatched tracks"
                 tooltip="Tracks that could not matched to any items on disk (usually because they are missing)."
                 color={theme.palette.diffs.changed}
+                expanded={expanded}
+                onExpand={setExpanded}
             />
-            <TrackChangesGrid sx={{ color: theme.palette.diffs.light }}>
-                {extra_tracks.map((track, i) => (
-                    <TrackRow
-                        key={i}
-                        index={track.index || 0}
-                        title={track.title || ""}
-                        time={trackLengthRep(track.length)}
-                    />
-                ))}
+            <TrackChangesGrid
+                sx={{
+                    color: theme.palette.diffs.light,
+                }}
+            >
+                {expanded &&
+                    extra_tracks.map((track, i) => (
+                        <TrackRow
+                            key={i}
+                            index={track.index || 0}
+                            title={track.title || ""}
+                            time={trackLengthRep(track.length)}
+                        />
+                    ))}
             </TrackChangesGrid>
         </Box>
     );
 }
 
 function ExtraItems() {
+    const isDesktop = useMediaQuery((theme) => theme.breakpoints.up("desktop"));
+    const [expanded, setExpanded] = useState(isDesktop);
     const { extra_items } = useTrackDiffContext();
     const theme = useTheme();
     if (extra_items.length === 0) {
@@ -298,21 +341,28 @@ function ExtraItems() {
     }
     return (
         <Box>
-            <HeadingWithContentToggle
+            <Heading
                 icon={<GitPullRequestClosedIcon />}
                 label="Unmatched items"
                 tooltip="Items that could not matched to any tracks, they will be ignore if this candidate is chosen."
                 color={theme.palette.diffs.changed}
+                expanded={expanded}
+                onExpand={setExpanded}
             />
-            <TrackChangesGrid sx={{ color: theme.palette.diffs.light }}>
-                {extra_items.map((item, i) => (
-                    <TrackRow
-                        key={i}
-                        index={item.index || 0}
-                        title={item.title || ""}
-                        time={trackLengthRep(item.length)}
-                    />
-                ))}
+            <TrackChangesGrid
+                sx={{
+                    color: theme.palette.diffs.light,
+                }}
+            >
+                {expanded &&
+                    extra_items.map((item, i) => (
+                        <TrackRow
+                            key={i}
+                            index={item.index || 0}
+                            title={item.title || ""}
+                            time={trackLengthRep(item.length)}
+                        />
+                    ))}
             </TrackChangesGrid>
         </Box>
     );
@@ -395,7 +445,7 @@ function TrackChanges() {
             }}
         >
             {/*Header*/}
-            <HeadingWithContentToggle
+            <Heading
                 icon={<PenaltyTypeIcon type="tracks" />}
                 label="Track changes"
                 tooltip="Shows which items (on disk) are mapped to tracks (from the candidate). Changes are highlighted in red and green."
@@ -419,7 +469,7 @@ function TrackChanges() {
     );
 }
 
-function HeadingWithContentToggle({
+function Heading({
     icon,
     label,
     tooltip,
@@ -479,7 +529,7 @@ function HeadingWithContentToggle({
                     }}
                     size="small"
                 >
-                    {expanded ? (
+                    {!expanded ? (
                         <EyeIcon size={theme.iconSize.sm} />
                     ) : (
                         <EyeOffIcon size={theme.iconSize.sm} />
@@ -554,25 +604,26 @@ function TrackChangesRow({
     // major change shows changes with arrow i.e. [1] t1 -> [2] t2
     if (forceMajorChange) {
         return (
-            <Box sx={{ display: "contents" }} data-haschanges={hasChanges}>
+            <Box
+                sx={{ display: "contents" }}
+                data-haschanges={hasChanges}
+                data-full={true}
+            >
                 {/* index */}
                 <Box
                     sx={{
-                        gridColumn: "index-from",
                         color: changed.index ? fromD.color : theme.palette.diffs.light,
                         justifyContent: "flex-end",
                         textAlign: "right",
                     }}
-                    data-column="index-from"
                 >
                     {fromD.idx}
                 </Box>
 
                 {/* title and time */}
-                <Box sx={{ gridColumn: "title-from" }}>{fromD.data}</Box>
+                <Box>{fromD.data}</Box>
                 <Box
                     sx={{
-                        gridColumn: "length-from",
                         display: "flex",
                         justifyContent: "flex-begin",
                         color: changed.time ? fromD.color : theme.palette.diffs.light,
@@ -584,7 +635,6 @@ function TrackChangesRow({
                 {/* change arrow */}
                 <Box
                     sx={{
-                        gridColumn: "change-arrow",
                         paddingInline: 1,
                         display: "flex",
                         justifyContent: "center",
@@ -600,7 +650,6 @@ function TrackChangesRow({
                 {/* index */}
                 <Box
                     sx={{
-                        gridColumn: "index-to",
                         color: changed.index ? toD.color : theme.palette.diffs.light,
                         textAlign: "right",
                     }}
@@ -609,10 +658,9 @@ function TrackChangesRow({
                 </Box>
 
                 {/* title and time */}
-                <Box sx={{ gridColumn: "title-to" }}>{toD.data}</Box>
+                <Box>{toD.data}</Box>
                 <Box
                     sx={{
-                        gridColumn: "length-to",
                         justifyContent: "flex-end",
                         display: "flex",
                         color: changed.time ? toD.color : theme.palette.diffs.light,
