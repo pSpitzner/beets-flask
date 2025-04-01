@@ -15,11 +15,13 @@ import {
     FolderIcon,
     FolderOpen,
     GitPullRequestArrowIcon,
+    GitPullRequestClosedIcon,
     HardDriveIcon,
     HourglassIcon,
     LayoutListIcon,
     ListChecksIcon,
     LucideProps,
+    Mic2Icon,
     MusicIcon,
     SearchXIcon,
     TagsIcon,
@@ -90,10 +92,12 @@ export function PenaltyTypeIcon({ type, ...props }: { type: string } & LucidePro
             return <Disc3Icon {...props} />;
         case "tracks":
             return <AudioLinesIcon {...props} />;
+        case "missing_items":
         case "unmatched_tracks":
             return <GitPullRequestArrowIcon {...props} />;
+        case "unmatched_items":
         case "missing_tracks":
-            return <SearchXIcon {...props} />;
+            return <GitPullRequestClosedIcon {...props} />;
         case "media":
             return <CassetteTapeIcon {...props} />;
         case "mediums":
@@ -104,6 +108,8 @@ export function PenaltyTypeIcon({ type, ...props }: { type: string } & LucidePro
             return <CalendarIcon {...props} />;
         case "duplicate":
             return <CopyIcon {...props} />;
+        case "label":
+            return <Mic2Icon {...props} />;
         default:
             console.warn(`Unknown penalty kind: ${type}`);
             return null;
@@ -174,9 +180,9 @@ export function FolderStatusIcon({
 function Spotify(props: LucideProps) {
     return (
         <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
+            width={props.size}
+            height={props.size}
+            viewBox={`-1 0 18 18`}
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
@@ -186,22 +192,21 @@ function Spotify(props: LucideProps) {
             {...props}
         >
             <path stroke="none" d="M 0,0 H 24 V 24 H 0 Z" fill="none" id="path2" />
-            <g
-                id="g1168"
-                transform="matrix(0.85434442,0,0,0.85434442,1.7478672,-0.03136257)"
-            >
-                <path
-                    d="m 6.3949311,14.46672 c 3.7367129,-2.201671 8.2207679,-1.454328 11.2101379,0.7877"
-                    id="path6"
-                />
-                <path
-                    d="m 8.263287,18.991132 c 2.242028,-1.494685 5.978741,-1.494685 7.473426,0.747343"
-                    id="path8"
-                />
-                <path
-                    d="M 4.5265745,10.023022 C 7.5159444,8.5283366 13.494685,7.0336515 19.473425,10.770364"
-                    id="path10"
-                />
+            <g transform="translate(-4.3029676,-7.9256576)" id="g1349">
+                <g id="g1196" transform="translate(0.03227154,1.7049163)">
+                    <path
+                        d="m 6.3949311,14.46672 c 3.7367129,-2.201671 8.2207679,-1.454328 11.2101379,0.7877"
+                        id="path6"
+                    />
+                    <path
+                        d="m 8.263287,18.991132 c 2.242028,-1.494685 5.978741,-1.494685 7.473426,0.747343"
+                        id="path8"
+                    />
+                    <path
+                        d="M 4.5265745,10.023022 C 7.5159444,8.5283366 13.494685,7.0336515 19.473425,10.770364"
+                        id="path10"
+                    />
+                </g>
             </g>
         </svg>
     );

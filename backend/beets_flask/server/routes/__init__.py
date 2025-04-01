@@ -1,5 +1,6 @@
 from quart import Blueprint, Quart
 
+from .art_preview import art_blueprint
 from .config import config_bp
 from .db_models import register_state_models
 from .errors import error_bp
@@ -25,6 +26,8 @@ backend_bp.register_blueprint(monitor_bp)
 backend_bp.register_blueprint(tag_bp)
 backend_bp.register_blueprint(group_bp)
 backend_bp.register_blueprint(inbox_bp2)
+
+backend_bp.register_blueprint(art_blueprint)
 
 
 def register_routes(app: Quart):

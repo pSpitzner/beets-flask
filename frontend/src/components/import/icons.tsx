@@ -7,14 +7,15 @@ import { SerializedCandidateState } from "@/pythonTypes";
 import { PenaltyTypeIcon } from "../common/icons";
 
 const penaltyOrder = [
-    "missing_tracks",
-    "tracks",
-    "unmatched_tracks",
     "artist",
+    "tracks",
     "album",
-    "media",
-    "mediums",
     "year",
+    "label",
+    "media",
+    "missing_tracks",
+    "unmatched_tracks",
+    "mediums",
     "country",
 ];
 

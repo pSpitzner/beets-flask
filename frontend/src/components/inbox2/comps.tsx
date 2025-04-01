@@ -20,7 +20,6 @@ import {
     Box,
     BoxProps,
     Checkbox,
-    Chip,
     IconButton,
     Menu,
     MenuItem,
@@ -38,21 +37,14 @@ import {
     useTheme,
     Zoom,
 } from "@mui/material";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
-import { File, Folder, FolderStatus } from "@/pythonTypes";
+import { File, Folder } from "@/pythonTypes";
 
-import { MatchChip } from "../common/chips";
-import {
-    FileTypeIcon,
-    FolderStatusIcon,
-    FolderTypeIcon,
-    PenaltyTypeIcon,
-} from "../common/icons";
+import { BestCandidateChip, DuplicateChip, FolderStatusChip } from "../common/chips";
+import { FileTypeIcon, FolderTypeIcon } from "../common/icons";
 import { ClipboardCopyButton } from "../common/inputs/copy";
-import { statusQueryOptions } from "../common/websocket/status";
-import { sessionQueryOptions } from "@/routes/_debug/session.$id";
 
 /* --------------------------------- Context -------------------------------- */
 // Allows to trigger actions on a single or multiple folders
@@ -442,99 +434,6 @@ function LevelIndentWrapper({
     );
 }
 
-const StyledChip = styled(Chip)(({ theme }) => ({
-    paddingLeft: theme.spacing(0.5),
-    [theme.breakpoints.down("tablet")]: {
-        paddingLeft: 0,
-        //Remove border on small screens
-        border: "none",
-
-        //Remove label on small screens
-        "& .MuiChip-label": {
-            display: "none",
-        },
-    },
-}));
-
-/** Shows the current import status of the
- * folder.
- */
-function FolderStatusChip({ folder }: { folder: Folder }) {
-    const { data: status } = useQuery(statusQueryOptions);
-
-    // Status enum value
-    const status_value = status?.find((s) => s.path === folder.full_path)?.status;
-
-    // Status enum name
-    let status_name: string | undefined = undefined;
-    if (status_value !== undefined) {
-        status_name = FolderStatus[status_value];
-    }
-
-    if (!status_name || !status_value) {
-        return null;
-    }
-
-    return (
-        <StyledChip
-            icon={<FolderStatusIcon status={status_value} size={ICON_SIZE * 0.85} />}
-            label={status_name.charAt(0) + status_name.slice(1).toLowerCase()}
-            size="small"
-            variant="outlined"
-            color="info"
-        />
-    );
-}
-
-function BestCandidateChip({ folder }: { folder: Folder }) {
-    // FIXME: Fetching the full session here is kinda overkill
-    const { data: session } = useQuery(sessionQueryOptions(folder.hash));
-
-    const bestCandidate = session?.tasks
-        .flatMap((t) => t.candidates.map((c) => c))
-        .filter((c) => c.info.data_source !== "asis")
-        .sort((a, b) => a.distance - b.distance)[0];
-
-    if (!bestCandidate || !bestCandidate.info.data_source) {
-        return null;
-    }
-
-    return (
-        <MatchChip
-            source={bestCandidate.info.data_source}
-            distance={bestCandidate.distance}
-        />
-    );
-}
-
-function DuplicateChip({ folder }: { folder: Folder }) {
-    const { data: session } = useQuery(sessionQueryOptions(folder.hash));
-
-    //Fixme: Generalize best candidate
-    const bestCandidate = session?.tasks
-        .flatMap((t) => t.candidates.map((c) => c))
-        .filter((c) => c.info.data_source !== "asis")
-        .sort((a, b) => a.distance - b.distance)[0];
-
-    if (!bestCandidate) {
-        return null;
-    }
-
-    if (!bestCandidate.duplicate_in_library) {
-        return null;
-    }
-
-    return (
-        <StyledChip
-            icon={<PenaltyTypeIcon type="duplicate" size={ICON_SIZE * 0.85} />}
-            label="Duplicate"
-            size="small"
-            color="error"
-            variant="outlined"
-        />
-    );
-}
-
 /**Shows the percentage of the best match and its source */
 function Chips({ folder }: { folder: Folder }) {
     if (!folder.is_album) {
@@ -550,6 +449,15 @@ function Chips({ folder }: { folder: Folder }) {
                 gap: 0.5,
                 [theme.breakpoints.down("tablet")]: {
                     gap: 1,
+                },
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-end",
+
+                "> div": {
+                    // Feels a bit hacky, but is the only way how to do align
+                    // the chips without adding more grid columns
+                    minWidth: "4.2rem",
                 },
             })}
         >

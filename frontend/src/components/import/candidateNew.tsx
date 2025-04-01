@@ -1,21 +1,47 @@
-import { ChevronDownIcon, ChevronsDownUpIcon, ChevronsUpDownIcon } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import {
+    CalendarIcon,
+    CassetteTapeIcon,
+    ChevronDownIcon,
+    ChevronsDownUpIcon,
+    ChevronsUpDownIcon,
+    ExternalLinkIcon,
+    FlagIcon,
+    HashIcon,
+    MicVocalIcon,
+    SatelliteDishIcon,
+} from "lucide-react";
+import React, { ReactElement, ReactNode, useMemo, useState } from "react";
 import {
     Button,
     ButtonGroup,
+    Divider,
     IconButton,
     Radio,
     styled,
+    Tooltip,
+    Typography,
     useTheme,
 } from "@mui/material";
-import Box from "@mui/material/Box";
+import Box, { BoxProps } from "@mui/material/Box";
 
-import { SerializedCandidateState, SerializedTaskState } from "@/pythonTypes";
+import {
+    AlbumInfo,
+    SerializedCandidateState,
+    SerializedTaskState,
+} from "@/pythonTypes";
 
 import { PenaltyIconRow } from "./icons";
 
 import { MatchChip } from "../common/chips";
-import { CandidateDiff } from "./candidates/diff";
+import {
+    CandidateDiff,
+    GenericDetailsItem,
+    GenericDiff,
+    Heading,
+    TrackDiff,
+} from "./candidates/diff";
+import { PenaltyTypeIcon, SourceTypeIcon } from "../common/icons";
+import { Link } from "@tanstack/react-router";
 
 export function TaskCandidates({ task }: { task: SerializedTaskState }) {
     const [selected, setSelected] = useState<SerializedCandidateState["id"]>(() => {
@@ -161,6 +187,8 @@ const CandidateDetailsRow = styled(Box)(({ theme }) => ({
     "&[data-expanded='false']": {
         display: "none",
     },
+
+    flexDirection: "column",
 }));
 
 export function CandidateInfo({
@@ -237,9 +265,259 @@ export function CandidateDetails({
     metadata: SerializedTaskState["current_metadata"];
     expanded: boolean;
 }) {
+    const theme = useTheme();
+
     return (
         <CandidateDetailsRow data-expanded={expanded}>
-            <CandidateDiff candidate={candidate} items={items} metadata={metadata} />
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                }}
+            >
+                <CandidateOverview candidate={candidate} />
+                <Divider sx={{ marginY: 1 }} />
+                {/* Artist */}
+                <GenericDiff
+                    from={metadata.artist || "Unknown artist"}
+                    to={candidate.info.artist || "Unknown artist"}
+                    icon={<PenaltyTypeIcon type="artist" />}
+                />
+
+                {/* Album */}
+                <GenericDiff
+                    from={metadata.album || "Unknown album"}
+                    to={candidate.info.album || "Unknown album"}
+                    icon={<PenaltyTypeIcon type="album" />}
+                />
+
+                <Box display="flex" alignItems="center" flexWrap="wrap" gap={0.5}>
+                    <CalendarIcon size={theme.iconSize.sm} />
+                    {candidate.info.year}
+                </Box>
+                {candidate.info.media && (
+                    <Box display="flex" alignItems="center" flexWrap="wrap" gap={0.5}>
+                        <CassetteTapeIcon size={theme.iconSize.sm} />
+                        {candidate.info.media}
+                    </Box>
+                )}
+                {/* Label */}
+                {Object.hasOwn(candidate.info, "label") &&
+                    (candidate.info as AlbumInfo).label && (
+                        <Box
+                            display="flex"
+                            alignItems="center"
+                            flexWrap="wrap"
+                            gap={0.5}
+                        >
+                            <MicVocalIcon size={theme.iconSize.sm} />
+                            {(candidate.info as AlbumInfo).label}
+                        </Box>
+                    )}
+
+                {/*Catalog number*/}
+                {Object.hasOwn(candidate.info, "catalognum") &&
+                    (candidate.info as AlbumInfo).catalognum && (
+                        <Box
+                            display="flex"
+                            alignItems="center"
+                            flexWrap="wrap"
+                            gap={0.5}
+                        >
+                            <HashIcon size={theme.iconSize.sm} />
+                            {(candidate.info as AlbumInfo).catalognum}
+                        </Box>
+                    )}
+
+                {/* Country */}
+                {metadata.country || (candidate.info as AlbumInfo).country ? (
+                    <GenericDiff
+                        from={metadata.country || ""}
+                        to={(candidate.info as AlbumInfo).country || ""}
+                        icon={<FlagIcon size={theme.iconSize.sm} />}
+                    />
+                ) : null}
+            </Box>
+
+            {/* Tracks */}
+            <TrackDiff items={items} candidate={candidate} />
         </CandidateDetailsRow>
+    );
+}
+
+function CandidateOverview({ candidate }: { candidate: SerializedCandidateState }) {
+    return (
+        <Box
+            sx={(theme) => ({
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 1,
+
+                [theme.breakpoints.down("tablet")]: {
+                    flexDirection: "column-reverse",
+                    alignItems: "flex-start",
+                    paddingLeft: 1,
+                },
+            })}
+        >
+            <Box
+                sx={(theme) => ({
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    color: "text.secondary",
+                    flexDirection: "column",
+                    gridAutoFlow: "dense",
+                    width: "100%",
+                    flexGrow: 1,
+
+                    [theme.breakpoints.down("laptop")]: {
+                        gridTemplateColumns: "1fr",
+                        gridAutoFlow: "row",
+                    },
+                })}
+            >
+                <SourceDetailItem
+                    data_source={candidate.info.data_source!}
+                    data_url={candidate.info.data_url}
+                />
+                <GenericDetailsItem
+                    icon={<PenaltyTypeIcon type="artist" />}
+                    label={candidate.info.artist || "Unknown artist"}
+                    tooltip="The album artist of this candidate."
+                />
+                <GenericDetailsItem
+                    icon={<PenaltyTypeIcon type="album" />}
+                    label={candidate.info.album || "Unknown album"}
+                    tooltip="The album title of this candidate."
+                />
+                {candidate.info.year && (
+                    <GenericDetailsItem
+                        icon={<PenaltyTypeIcon type="year" />}
+                        label={candidate.info.year}
+                        tooltip="The year of the album was released."
+                    />
+                )}
+                <GenericDetailsItem
+                    icon={<PenaltyTypeIcon type="label" />}
+                    label={(candidate.info as AlbumInfo).label || "-"}
+                    tooltip="The label of this candidate."
+                />
+                <GenericDetailsItem
+                    icon={<PenaltyTypeIcon type="media" />}
+                    label={candidate.info.media}
+                    tooltip="The media type of this candidate."
+                />
+            </Box>
+            <Box
+                sx={(theme) => ({
+                    display: "flex",
+                    alignItems: "center",
+                    width: "72px",
+                    height: "72px",
+
+                    [theme.breakpoints.down("tablet")]: {
+                        width: "100%",
+                        height: "auto",
+                        maxHeight: "200px",
+                    },
+                })}
+            >
+                <ExternalCoverArt data_url={candidate.info.data_url} />
+            </Box>
+        </Box>
+    );
+}
+
+function SourceDetailItem({
+    data_source,
+    data_url,
+    ...props
+}: {
+    data_source: string;
+    data_url?: string | null;
+} & BoxProps) {
+    const theme = useTheme();
+    const isAsis = data_source === "asis";
+
+    const tooltip = isAsis
+        ? "Keep metadata from files"
+        : `Candidate data was fetched from ${data_source}`;
+    const label = isAsis ? "Keep metadata from files" : data_source;
+
+    return (
+        <GenericDetailsItem
+            icon={<SourceTypeIcon type={data_source} />}
+            label={
+                <>
+                    <Box component="span">{label}</Box>
+                    {data_url && (
+                        <Box
+                            sx={{
+                                fontSize: theme.typography.body2.fontSize,
+                                color: "gray",
+                                display: "inline-flex",
+                            }}
+                        >
+                            {"("}
+                            {data_url.split("/").pop()}
+                            <Link
+                                to={data_url}
+                                target="_blank"
+                                style={{
+                                    alignItems: "center",
+                                    display: "flex",
+                                }}
+                            >
+                                <ExternalLinkIcon
+                                    size={theme.iconSize.xs + 1}
+                                    style={{ marginLeft: theme.spacing(0.5) }}
+                                />
+                                {")"}
+                            </Link>
+                        </Box>
+                    )}
+                </>
+            }
+            tooltip={tooltip}
+            {...props}
+        />
+    );
+}
+
+function ExternalCoverArt({
+    data_url,
+    ...props
+}: {
+    data_url?: string | null;
+} & BoxProps) {
+    const [error, setError] = useState(false);
+
+    if (!data_url || error) {
+        return null;
+    }
+
+    return (
+        <Box
+            component="img"
+            src={`/api_v1/art?url=${encodeURIComponent(data_url)}`}
+            loading="lazy"
+            sx={(theme) => ({
+                width: "72px",
+                height: "72px",
+                border: `2px solid ${theme.palette.divider}`,
+                borderRadius: 1,
+                objectFit: "contain",
+                marginRight: 1,
+                color: "text.secondary",
+                display: "flex",
+                alignItems: "center",
+                fontSize: theme.typography.body2.fontSize,
+                textAlign: "center",
+            })}
+            onError={() => {
+                setError(true);
+            }}
+            {...props}
+        />
     );
 }

@@ -9,13 +9,22 @@ import React, {
     createContext,
     Dispatch,
     ReactElement,
+    ReactNode,
     SetStateAction,
     useContext,
     useEffect,
     useMemo,
     useState,
 } from "react";
-import { IconButton, styled, Tooltip, Typography, useMediaQuery } from "@mui/material";
+import {
+    IconButton,
+    styled,
+    SxProps,
+    Theme,
+    Tooltip,
+    Typography,
+    useMediaQuery,
+} from "@mui/material";
 import Box from "@mui/material/Box";
 import useTheme from "@mui/material/styles/useTheme";
 
@@ -44,9 +53,7 @@ export function CandidateDiff({
     candidate: SerializedCandidateState;
 }) {
     return (
-        <Box sx={{ width: "100%" }}>
-            <Disambiguation candidate={candidate} />
-
+        <>
             {/* Artist */}
             <GenericDiff
                 from={metadata.artist || "Unknown artist"}
@@ -63,7 +70,7 @@ export function CandidateDiff({
 
             {/* Tracks */}
             <TrackDiff items={items} candidate={candidate} />
-        </Box>
+        </>
     );
 }
 
@@ -206,7 +213,7 @@ function useTrackDiffContext() {
  * - UnmatchedTracks, shows tracks that are not matched to any item.
  * - UnmatchedItems, shows items that are not missing from the candidate.
  */
-function TrackDiff({
+export function TrackDiff({
     items,
     candidate,
 }: {
@@ -307,7 +314,7 @@ function ExtraTracks() {
     return (
         <Box>
             <Heading
-                icon={<GitPullRequestArrowIcon />}
+                icon={<PenaltyTypeIcon type="unmatched_tracks" />}
                 label="Unmatched tracks"
                 tooltip="Tracks that could not matched to any items on disk (usually because they are missing)."
                 color={theme.palette.diffs.changed}
@@ -347,7 +354,7 @@ function ExtraItems() {
     return (
         <Box>
             <Heading
-                icon={<GitPullRequestClosedIcon />}
+                icon={<PenaltyTypeIcon type="unmatched_items" />}
                 label="Unmatched items"
                 tooltip="Items that could not matched to any tracks, they will be ignore if this candidate is chosen."
                 color={theme.palette.diffs.changed}
@@ -482,56 +489,20 @@ function TrackChanges() {
     );
 }
 
-function Heading({
-    icon,
-    label,
-    tooltip,
+export function Heading({
     expanded,
     onExpand,
     color,
+    ...props
 }: {
-    icon: ReactElement;
-    label: string;
-    tooltip?: string;
+    color?: string;
     expanded?: boolean;
     onExpand?: (expanded: boolean) => void;
-    color?: string;
-}) {
+} & GenericDetailsItemProps) {
     const theme = useTheme();
 
-    // Show tooltip if it is defined
-    let ToolTipComp = ({ children }: { children: ReactElement }) => <>{children}</>;
-    if (tooltip) {
-        ToolTipComp = ({ children }: { children: ReactElement }) => (
-            <Tooltip title={tooltip}>{children}</Tooltip>
-        );
-    }
-
     return (
-        <Box
-            sx={(theme) => ({
-                display: "flex",
-                alignItems: "center",
-                gap: 0.5,
-                color: color || theme.palette.text.primary,
-            })}
-        >
-            <ToolTipComp>
-                <Box display="flex" gap={0.5} alignItems="center">
-                    <Box
-                        sx={(theme) => ({
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            width: theme.iconSize.sm,
-                            height: theme.iconSize.sm,
-                        })}
-                    >
-                        {icon}
-                    </Box>
-                    <Box component="span">{label}</Box>
-                </Box>
-            </ToolTipComp>
+        <GenericDetailsItem {...props} sx={{ color: color || "inherit" }}>
             {(expanded || onExpand) && (
                 <IconButton
                     sx={{ p: 0, color: "inherit" }}
@@ -549,6 +520,74 @@ function Heading({
                     )}
                 </IconButton>
             )}
+        </GenericDetailsItem>
+    );
+}
+
+interface GenericDetailsItemProps {
+    icon: ReactElement;
+    children?: ReactNode;
+    tooltip?: string;
+    label?: ReactNode;
+    sx?: SxProps<Theme>;
+}
+
+/** Generic details item
+ *
+ */
+export function GenericDetailsItem({
+    icon,
+    children,
+    tooltip,
+    label,
+    sx,
+}: GenericDetailsItemProps) {
+    // Show tooltip on hover of label row
+    let ToolTipComp = ({ children }: { children: ReactElement }) => <>{children}</>;
+    if (tooltip) {
+        ToolTipComp = ({ children }: { children: ReactElement }) => (
+            <Tooltip title={tooltip}>{children}</Tooltip>
+        );
+    }
+    // label is string
+    if ((label && typeof label === "string") || typeof label === "number") {
+        label = <Box component="span">{label}</Box>;
+    }
+
+    if (!label) {
+        label = <Box component="span">Unknown</Box>;
+    }
+
+    return (
+        <Box
+            sx={[
+                {
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    ...sx,
+                },
+                ...(Array.isArray(sx) ? sx : [sx]),
+            ]}
+        >
+            {/*Heading/content row*/}
+            <ToolTipComp>
+                <Box display="flex" gap={0.5} alignItems="center">
+                    <Box
+                        sx={(theme) => ({
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            width: theme.iconSize.sm,
+                            height: theme.iconSize.sm,
+                        })}
+                    >
+                        {icon}
+                    </Box>
+                    {label}
+                </Box>
+            </ToolTipComp>
+            {children}
         </Box>
     );
 }
@@ -868,7 +907,7 @@ function useDiffParts(
     return { fromParts, toParts, hasAdded, hasRemoved, diff };
 }
 
-function GenericDiff({
+export function GenericDiff({
     from,
     to,
     method,
@@ -899,7 +938,8 @@ function GenericDiff({
             }
         }
         console.log("Major change", changed, total, diff);
-        return changed / total > 0.9;
+
+        return changed / total > 0.9 && diff.length > 1;
     }, [diff]);
 
     return (
@@ -908,7 +948,7 @@ function GenericDiff({
                 display: "flex",
                 flexDirection: "row",
                 gap: 0.5,
-                alignItems: "flex-start",
+                alignItems: "center",
             }}
         >
             <Box
@@ -920,8 +960,6 @@ function GenericDiff({
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
-
-                    height: "1.25rem", // see lineHeight below
 
                     // Define the size of the icon
                     " > *": {
