@@ -25,6 +25,7 @@ from beets_flask.utility import capture_stdout_stderr
 from .types import (
     AlbumInfo,
     BeetsAlbumMatch,
+    BeetsItem,
     BeetsTrackMatch,
     ItemInfo,
     TrackInfo,
@@ -383,9 +384,10 @@ class CandidateState:
         current meta data in the frontend.
         This is pretty much duct-tape.
         """
-        items = task_state.task.items
+        items: list[BeetsItem] = task_state.task.items
         info, _ = autotag.current_metadata(items)
         info["data_source"] = "asis"
+        info["data_url"] = f"file://{task_state.toppath}"
 
         def _generate_kwargs(item):
             kwargs = {}

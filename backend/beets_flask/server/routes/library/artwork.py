@@ -1,6 +1,7 @@
 import os
 from io import BytesIO
 from typing import TYPE_CHECKING, cast
+from urllib.parse import unquote_plus
 
 from beets import util as beets_util
 from mediafile import Image, MediaFile  # comes with the beets install
@@ -70,6 +71,23 @@ async def album_art(album_id: int):
 
     # Reuse the item art route
     return redirect(url_for(".item_art", item_id=items[0].id))
+
+
+@artwork_pb.route("/file/<string:filepath>/art", methods=["GET"])
+async def file_art(filepath: str):
+    # Decode url encoded filepath
+    filepath = unquote_plus(filepath)
+    filepath = beets_util.syspath(filepath)
+
+    if not os.path.exists(filepath):
+        raise IntegrityError(f"File '{filepath}' does not exist.")
+
+    mediafile = MediaFile(filepath)
+    if not mediafile.images or len(mediafile.images) < 1:
+        raise NotFoundError(f"File has no cover art: '{filepath}'.")
+
+    im: Image = cast(Image, mediafile.images[0])  # typehints suck (beets typical)
+    return await send_image(BytesIO(im.data))
 
 
 # ---------------------------------- Utils ----------------------------------- #

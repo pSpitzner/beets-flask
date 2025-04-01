@@ -4,13 +4,14 @@ Allows fetching of art via different ids. At the moment we support:
 - Spotify album ids (if spotify plugin is enabled)
 """
 
-from platform import release
-from urllib.parse import quote_plus
+import os
+from urllib.parse import quote_plus, unquote_plus
 
 import aiohttp
-from quart import Blueprint, jsonify, redirect, request
+from quart import Blueprint, jsonify, redirect, request, url_for
 
 from beets_flask.logger import log
+from beets_flask.utility import AUDIO_EXTENSIONS
 
 art_blueprint = Blueprint("art", __name__, url_prefix="/art")
 
@@ -21,7 +22,6 @@ async def redirect_external_art():
 
     # Check that url query param is set
     url = request.args.get("url")
-
     if not url:
         return jsonify({"error": "url query param is required."}), 400
 
@@ -31,6 +31,8 @@ async def redirect_external_art():
         redirect_url = await get_spotify_art(url)
     elif "musicbrainz" in url:
         redirect_url = await get_musicbrainz_art(url)
+    elif url.startswith("file://"):
+        return await get_folder_art(url)
 
     if redirect_url:
         return redirect(redirect_url, code=302)
@@ -72,3 +74,32 @@ async def get_musicbrainz_art(url: str) -> str | None:
     release_id = url.split("/")[-1]
 
     return f"https://coverartarchive.org/release/{release_id}/front-250"
+
+
+async def get_folder_art(url: str):
+    """Infers the folder art from a given file path.
+
+    This is a bit of a hack, but it works for now.
+    url="file:///path/to/music/folder"
+    """
+
+    # Check first file for and embedded cover art
+    path = url.split("file://")[-1]
+    print(path)
+    # Check if exists
+    if not os.path.exists(path):
+        return jsonify({"error": f"Path '{path}' does not exist."}), 404
+
+    # Get first file in folder
+    files = [f for f in os.listdir(path) if f.endswith(AUDIO_EXTENSIONS)]
+    if not files or len(files) < 1:
+        return jsonify({"error": "No audio files found in folder."}), 404
+
+    # Redirect to file art endpoint /file/<filepath>/art
+    return redirect(
+        url_for(
+            "backend.library.artwork.file_art",
+            filepath=quote_plus(path + "/" + files[0]),
+        ),
+        code=302,
+    )

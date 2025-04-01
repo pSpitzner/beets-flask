@@ -17,7 +17,10 @@ import {
     Divider,
     IconButton,
     Radio,
+    Skeleton,
     styled,
+    SxProps,
+    Theme,
     Tooltip,
     Typography,
     useTheme,
@@ -440,9 +443,9 @@ function SourceDetailItem({
     const isAsis = data_source === "asis";
 
     const tooltip = isAsis
-        ? "Keep metadata from files"
+        ? "Metadata from files"
         : `Candidate data was fetched from ${data_source}`;
-    const label = isAsis ? "Keep metadata from files" : data_source;
+    const label = isAsis ? "Metadata from files" : data_source;
 
     return (
         <GenericDetailsItem
@@ -459,7 +462,9 @@ function SourceDetailItem({
                             }}
                         >
                             {"("}
-                            {data_url.split("/").pop()}
+                            {data_source !== "asis"
+                                ? data_url.split("/").pop()
+                                : data_url}
                             <Link
                                 to={data_url}
                                 target="_blank"
@@ -491,33 +496,50 @@ function ExternalCoverArt({
     data_url?: string | null;
 } & BoxProps) {
     const [error, setError] = useState(false);
+    const [loaded, setLoaded] = useState(false);
 
     if (!data_url || error) {
         return null;
     }
 
+    const common_style: SxProps<Theme> = (theme) => ({
+        width: "72px",
+        height: "72px",
+        border: `2px solid ${theme.palette.divider}`,
+        borderRadius: 1,
+        objectFit: "contain",
+        marginRight: 1,
+        color: "text.secondary",
+        alignItems: "center",
+        fontSize: theme.typography.body2.fontSize,
+        textAlign: "center",
+    });
+
     return (
-        <Box
-            component="img"
-            src={`/api_v1/art?url=${encodeURIComponent(data_url)}`}
-            loading="lazy"
-            sx={(theme) => ({
-                width: "72px",
-                height: "72px",
-                border: `2px solid ${theme.palette.divider}`,
-                borderRadius: 1,
-                objectFit: "contain",
-                marginRight: 1,
-                color: "text.secondary",
-                display: "flex",
-                alignItems: "center",
-                fontSize: theme.typography.body2.fontSize,
-                textAlign: "center",
-            })}
-            onError={() => {
-                setError(true);
-            }}
-            {...props}
-        />
+        <>
+            <Skeleton
+                variant="rounded"
+                sx={[
+                    common_style,
+                    {
+                        display: loaded ? "none" : "flex",
+                        margin: 0,
+                    },
+                ]}
+            />
+            <Box
+                component="img"
+                src={`/api_v1/art?url=${encodeURIComponent(data_url)}`}
+                sx={[
+                    common_style,
+                    {
+                        display: !loaded ? "none" : "flex",
+                    },
+                ]}
+                onError={() => setError(true)}
+                onLoad={() => setLoaded(true)}
+                {...props}
+            />
+        </>
     );
 }
