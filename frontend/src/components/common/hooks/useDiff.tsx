@@ -8,14 +8,26 @@ import { useEffect, useState } from "react";
  * @returns An diff object containing the changes.
  */
 export function useDiff(
-    from: string = "",
-    to: string = "",
+    from: string | null = "",
+    to: string | null = "",
     method: "chars" | "words" | "wordsWithSpace" | "full" | "auto" = "auto"
 ) {
+    if (from === null) {
+        from = "";
+    }
+    if (to === null) {
+        to = "";
+    }
     const [diff, setDiff] = useState<Diff.Change[]>([]);
 
     useEffect(() => {
         let diff: Diff.Change[] = [];
+
+        if (from.length === 0 && to.length === 0) {
+            setDiff([]);
+            return;
+        }
+
         switch (method) {
             case "auto":
                 diff = Diff.diffChars(from, to);

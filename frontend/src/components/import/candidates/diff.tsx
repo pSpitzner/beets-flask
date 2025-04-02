@@ -1,10 +1,4 @@
-import {
-    ArrowRightIcon,
-    EyeIcon,
-    EyeOffIcon,
-    GitPullRequestArrowIcon,
-    GitPullRequestClosedIcon,
-} from "lucide-react";
+import { ArrowRightIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import React, {
     createContext,
     Dispatch,
@@ -25,7 +19,7 @@ import {
     Typography,
     useMediaQuery,
 } from "@mui/material";
-import Box from "@mui/material/Box";
+import Box, { BoxProps } from "@mui/material/Box";
 import useTheme from "@mui/material/styles/useTheme";
 
 import { useDiff } from "@/components/common/hooks/useDiff";
@@ -38,7 +32,7 @@ import {
     TrackInfo,
 } from "@/pythonTypes";
 
-import { Disambiguation } from "./details";
+import { Change } from "diff";
 
 /* ----------------------------- Candidate Diff ----------------------------- */
 
@@ -288,6 +282,7 @@ function TrackDiffInner() {
                 rowGap: 0.25,
                 columnGap: 1,
                 flexWrap: "wrap",
+                justifyContent: "space-between",
                 "> *": {
                     flexGrow: 1,
                     flexShrink: 0,
@@ -502,7 +497,14 @@ export function Heading({
     const theme = useTheme();
 
     return (
-        <GenericDetailsItem {...props} sx={{ color: color || "inherit" }}>
+        <GenericDetailsItem
+            {...props}
+            sx={{
+                color: color || "inherit",
+                display: "flex",
+                justifyContent: "center",
+            }}
+        >
             {(expanded || onExpand) && (
                 <IconButton
                     sx={{ p: 0, color: "inherit" }}
@@ -530,17 +532,16 @@ interface GenericDetailsItemProps {
     tooltip?: string;
     label?: ReactNode;
     sx?: SxProps<Theme>;
+    icon_color?: string;
 }
 
-/** Generic details item
- *
- */
 export function GenericDetailsItem({
     icon,
     children,
     tooltip,
     label,
     sx,
+    icon_color,
 }: GenericDetailsItemProps) {
     // Show tooltip on hover of label row
     let ToolTipComp = ({ children }: { children: ReactElement }) => <>{children}</>;
@@ -549,7 +550,8 @@ export function GenericDetailsItem({
             <Tooltip title={tooltip}>{children}</Tooltip>
         );
     }
-    // label is string
+
+    // label is string or number
     if ((label && typeof label === "string") || typeof label === "number") {
         label = <Box component="span">{label}</Box>;
     }
@@ -578,8 +580,10 @@ export function GenericDetailsItem({
                             display: "flex",
                             justifyContent: "center",
                             alignItems: "center",
+
                             width: theme.iconSize.sm,
                             height: theme.iconSize.sm,
+                            color: icon_color || "inherit",
                         })}
                     >
                         {icon}
@@ -589,6 +593,42 @@ export function GenericDetailsItem({
             </ToolTipComp>
             {children}
         </Box>
+    );
+}
+
+export function GenericDetailsItemWithDiff({
+    from,
+    to,
+    icon,
+    tooltip,
+    children,
+}: {
+    from?: string | null;
+    to?: string | null;
+    icon: ReactElement;
+    tooltip?: string;
+    children?: ReactNode;
+}) {
+    const { fromParts, toParts, diff, hasAdded, hasRemoved } = useDiffParts(from, to);
+
+    return (
+        <GenericDetailsItem
+            icon={icon}
+            tooltip={tooltip}
+            label={
+                <StyledDiff
+                    fromParts={fromParts}
+                    toParts={toParts}
+                    diff={diff}
+                    threshold={0.8}
+                />
+            }
+            icon_color={
+                hasRemoved || (hasRemoved && hasAdded) ? "diffs.changed" : undefined
+            }
+        >
+            {children}
+        </GenericDetailsItem>
     );
 }
 
@@ -862,8 +902,8 @@ function TrackChangesRow({
 /* ------------------------------ Generic Diff ------------------------------ */
 
 function useDiffParts(
-    from: string,
-    to: string,
+    from?: string | null,
+    to?: string | null,
     method?: "chars" | "words" | "wordsWithSpace" | "full" | "auto"
 ) {
     const diff = useDiff(from, to, method);
@@ -913,34 +953,20 @@ export function GenericDiff({
     method,
     icon,
 }: {
-    from: string;
+    from?: string | null;
     to: string;
     method?: "chars" | "words" | "wordsWithSpace" | "full" | "auto";
     icon?: React.ReactNode;
 }) {
+    if (!from) {
+        from = "";
+    }
+
     const { fromParts, toParts, hasAdded, hasRemoved, diff } = useDiffParts(
         from,
         to,
         method
     );
-    const theme = useTheme();
-
-    const majorChange = useMemo(() => {
-        //Count changed chars vs unchanged
-        //FIXME: This should be a generic function and not copy pasted
-        let total = 0;
-        let changed = 0;
-        for (let i = 0; i < diff.length; i++) {
-            const part = diff[i];
-            total += part.count ?? 0;
-            if (part.added || part.removed) {
-                changed += part.count ?? 0;
-            }
-        }
-        console.log("Major change", changed, total, diff);
-
-        return changed / total > 0.9 && diff.length > 1;
-    }, [diff]);
 
     return (
         <Box
@@ -970,36 +996,94 @@ export function GenericDiff({
             >
                 {icon}
             </Box>
-            <Box sx={{ lineHeight: 1.25 }}>
-                {majorChange ? (
-                    <>
-                        {fromParts}
-                        <ArrowRightIcon
-                            size={theme.iconSize.xs}
-                            color={theme.palette.diffs.changed}
-                        />
-                        {toParts}
-                    </>
-                ) : (
-                    diff.map((part, index) => (
-                        <Box
-                            key={index}
-                            sx={(theme) => ({
-                                color: part.added
-                                    ? theme.palette.diffs.added
-                                    : part.removed
-                                      ? theme.palette.diffs.removed
-                                      : "inherit",
+            <StyledDiff
+                fromParts={fromParts}
+                toParts={toParts}
+                diff={diff}
+                threshold={0.8}
+            />
+        </Box>
+    );
+}
 
-                                textDecoration: part.removed ? "line-through" : "none",
-                            })}
-                            component="span"
-                        >
-                            {part.value}
-                        </Box>
-                    ))
-                )}
+/** Simple string styling and diffing of two strings.
+ *
+ * Very similar to git diff. If the two strings are very different
+ * it will show the diff as a single line with an arrow in between.
+ *
+ * Usage:
+ * ```
+ * const { fromParts, toParts, diff } = useDiffParts(from, to);
+ * <StyledDiff from={fromParts} to={toParts} diff={diff} />
+ */
+export function StyledDiff({
+    fromParts,
+    toParts,
+    diff,
+    threshold = 0.8,
+    ...props
+}: {
+    fromParts: ReactNode[];
+    toParts: ReactNode[];
+    diff: Change[];
+    threshold?: number;
+} & BoxProps) {
+    const theme = useTheme();
+
+    const majorChange = useMemo(() => {
+        //Count changed chars vs unchanged
+        //FIXME: This should be a generic function and not copy pasted
+        let total = 0;
+        let changed = 0;
+        for (let i = 0; i < diff.length; i++) {
+            const part = diff[i];
+            total += part.count ?? 0;
+            if (part.added || part.removed) {
+                changed += part.count ?? 0;
+            }
+        }
+
+        return changed / total > threshold && diff.length > 1;
+    }, [diff, threshold]);
+
+    if (fromParts.length === 0 && toParts.length === 0) {
+        return (
+            <Box sx={{ lineHeight: 1.25 }} {...props}>
+                Unknown
             </Box>
+        );
+    }
+
+    return (
+        <Box sx={{ lineHeight: 1.25 }} {...props}>
+            {majorChange && fromParts.length > 0 && toParts.length > 0 ? (
+                <>
+                    {fromParts}
+                    <ArrowRightIcon
+                        size={theme.iconSize.xs}
+                        color={theme.palette.diffs.changed}
+                    />
+                    {toParts}
+                </>
+            ) : (
+                diff.map((part, index) => (
+                    <Box
+                        key={index}
+                        sx={(theme) => ({
+                            color: part.added
+                                ? theme.palette.diffs.added
+                                : part.removed
+                                  ? theme.palette.diffs.removed
+                                  : "inherit",
+
+                            textDecoration: part.removed ? "line-through" : "none",
+                        })}
+                        component="span"
+                    >
+                        {part.value}
+                    </Box>
+                ))
+            )}
         </Box>
     );
 }

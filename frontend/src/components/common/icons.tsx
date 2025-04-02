@@ -17,6 +17,7 @@ import {
     GitPullRequestArrowIcon,
     GitPullRequestClosedIcon,
     HardDriveIcon,
+    HashIcon,
     HourglassIcon,
     LayoutListIcon,
     ListChecksIcon,
@@ -110,6 +111,8 @@ export function PenaltyTypeIcon({ type, ...props }: { type: string } & LucidePro
             return <CopyIcon {...props} />;
         case "label":
             return <Mic2Icon {...props} />;
+        case "catalognum":
+            return <HashIcon {...props} />;
         default:
             console.warn(`Unknown penalty kind: ${type}`);
             return null;

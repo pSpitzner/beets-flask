@@ -1,16 +1,10 @@
 import {
-    CalendarIcon,
-    CassetteTapeIcon,
     ChevronDownIcon,
     ChevronsDownUpIcon,
     ChevronsUpDownIcon,
     ExternalLinkIcon,
-    FlagIcon,
-    HashIcon,
-    MicVocalIcon,
-    SatelliteDishIcon,
 } from "lucide-react";
-import React, { ReactElement, ReactNode, useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import {
     Button,
     ButtonGroup,
@@ -21,8 +15,6 @@ import {
     styled,
     SxProps,
     Theme,
-    Tooltip,
-    Typography,
     useTheme,
 } from "@mui/material";
 import Box, { BoxProps } from "@mui/material/Box";
@@ -37,15 +29,17 @@ import { PenaltyIconRow } from "./icons";
 
 import { MatchChip } from "../common/chips";
 import {
-    CandidateDiff,
     GenericDetailsItem,
-    GenericDiff,
-    Heading,
+    GenericDetailsItemWithDiff,
     TrackDiff,
 } from "./candidates/diff";
 import { PenaltyTypeIcon, SourceTypeIcon } from "../common/icons";
 import { Link } from "@tanstack/react-router";
 
+/** Show a radio list of task candidates.
+ *
+ * Each item is expandable to show more details about the candidate.
+ */
 export function TaskCandidates({ task }: { task: SerializedTaskState }) {
     const [selected, setSelected] = useState<SerializedCandidateState["id"]>(() => {
         return task.candidates[0].id;
@@ -107,7 +101,7 @@ export function TaskCandidates({ task }: { task: SerializedTaskState }) {
 
                 <GridWrapper>
                     {sortedCandidates.map((candidate) => (
-                        <React.Fragment key={candidate.id}>
+                        <Fragment key={candidate.id}>
                             <CandidateInfo
                                 key={candidate.id}
                                 candidate={candidate}
@@ -128,7 +122,7 @@ export function TaskCandidates({ task }: { task: SerializedTaskState }) {
                                 metadata={task.current_metadata}
                                 expanded={showDetails.includes(candidate.id)}
                             />
-                        </React.Fragment>
+                        </Fragment>
                     ))}
                 </GridWrapper>
             </Box>
@@ -194,6 +188,12 @@ const CandidateDetailsRow = styled(Box)(({ theme }) => ({
     flexDirection: "column",
 }));
 
+/* -------------------------------- Candidate ------------------------------- */
+
+/** Candidate info.
+ *
+ * Shows a row with the major information about the candidate.
+ */
 export function CandidateInfo({
     candidate,
     selected,
@@ -257,6 +257,11 @@ export function CandidateInfo({
     );
 }
 
+/** Candidate details.
+ *
+ * Shows additional information about the candidate. I.e. cover art, metadata, etc.
+ * and also shows the diff of the items.
+ */
 export function CandidateDetails({
     candidate,
     items,
@@ -268,8 +273,6 @@ export function CandidateDetails({
     metadata: SerializedTaskState["current_metadata"];
     expanded: boolean;
 }) {
-    const theme = useTheme();
-
     return (
         <CandidateDetailsRow data-expanded={expanded}>
             <Box
@@ -278,158 +281,129 @@ export function CandidateDetails({
                     flexDirection: "column",
                 }}
             >
-                <CandidateOverview candidate={candidate} />
-                <Divider sx={{ marginY: 1 }} />
-                {/* Artist */}
-                <GenericDiff
-                    from={metadata.artist || "Unknown artist"}
-                    to={candidate.info.artist || "Unknown artist"}
-                    icon={<PenaltyTypeIcon type="artist" />}
-                />
+                {/* Wrapper to show the cover art and the general info */}
+                <Box
+                    sx={(theme) => ({
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 1,
 
-                {/* Album */}
-                <GenericDiff
-                    from={metadata.album || "Unknown album"}
-                    to={candidate.info.album || "Unknown album"}
-                    icon={<PenaltyTypeIcon type="album" />}
-                />
+                        [theme.breakpoints.down("tablet")]: {
+                            flexDirection: "column-reverse",
+                            alignItems: "flex-start",
+                            paddingLeft: 1,
+                        },
+                    })}
+                >
+                    <OverviewChanges candidate={candidate} metadata={metadata} />
+                    <Box
+                        sx={(theme) => ({
+                            display: "flex",
+                            alignItems: "center",
+                            width: "72px",
+                            height: "72px",
 
-                <Box display="flex" alignItems="center" flexWrap="wrap" gap={0.5}>
-                    <CalendarIcon size={theme.iconSize.sm} />
-                    {candidate.info.year}
-                </Box>
-                {candidate.info.media && (
-                    <Box display="flex" alignItems="center" flexWrap="wrap" gap={0.5}>
-                        <CassetteTapeIcon size={theme.iconSize.sm} />
-                        {candidate.info.media}
+                            [theme.breakpoints.down("tablet")]: {
+                                width: "100%",
+                                height: "auto",
+                                maxHeight: "200px",
+                            },
+                        })}
+                    >
+                        <ExternalCoverArt data_url={candidate.info.data_url} />
                     </Box>
-                )}
-                {/* Label */}
-                {Object.hasOwn(candidate.info, "label") &&
-                    (candidate.info as AlbumInfo).label && (
-                        <Box
-                            display="flex"
-                            alignItems="center"
-                            flexWrap="wrap"
-                            gap={0.5}
-                        >
-                            <MicVocalIcon size={theme.iconSize.sm} />
-                            {(candidate.info as AlbumInfo).label}
-                        </Box>
-                    )}
+                </Box>
 
-                {/*Catalog number*/}
-                {Object.hasOwn(candidate.info, "catalognum") &&
-                    (candidate.info as AlbumInfo).catalognum && (
-                        <Box
-                            display="flex"
-                            alignItems="center"
-                            flexWrap="wrap"
-                            gap={0.5}
-                        >
-                            <HashIcon size={theme.iconSize.sm} />
-                            {(candidate.info as AlbumInfo).catalognum}
-                        </Box>
-                    )}
+                <Divider sx={{ marginY: 1 }} />
 
-                {/* Country */}
-                {metadata.country || (candidate.info as AlbumInfo).country ? (
-                    <GenericDiff
-                        from={metadata.country || ""}
-                        to={(candidate.info as AlbumInfo).country || ""}
-                        icon={<FlagIcon size={theme.iconSize.sm} />}
-                    />
-                ) : null}
+                {/* Track/item Diffs */}
+                <TrackDiff items={items} candidate={candidate} />
             </Box>
 
             {/* Tracks */}
-            <TrackDiff items={items} candidate={candidate} />
         </CandidateDetailsRow>
     );
 }
-
-function CandidateOverview({ candidate }: { candidate: SerializedCandidateState }) {
+/** Overview of changes to metadata if track
+ * is applied.
+ *
+ * Two columns on desktop and one on mobile.
+ */
+function OverviewChanges({
+    candidate,
+    metadata,
+}: {
+    candidate: SerializedCandidateState;
+    metadata: SerializedTaskState["current_metadata"];
+}) {
     return (
         <Box
             sx={(theme) => ({
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 1,
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                color: "text.secondary",
+                flexDirection: "column",
+                gridAutoFlow: "dense",
+                width: "100%",
+                flexGrow: 1,
 
-                [theme.breakpoints.down("tablet")]: {
-                    flexDirection: "column-reverse",
-                    alignItems: "flex-start",
-                    paddingLeft: 1,
+                [theme.breakpoints.down("laptop")]: {
+                    gridTemplateColumns: "1fr",
+                    gridAutoFlow: "row",
                 },
             })}
         >
-            <Box
-                sx={(theme) => ({
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    color: "text.secondary",
-                    flexDirection: "column",
-                    gridAutoFlow: "dense",
-                    width: "100%",
-                    flexGrow: 1,
-
-                    [theme.breakpoints.down("laptop")]: {
-                        gridTemplateColumns: "1fr",
-                        gridAutoFlow: "row",
-                    },
-                })}
-            >
-                <SourceDetailItem
-                    data_source={candidate.info.data_source!}
-                    data_url={candidate.info.data_url}
-                />
-                <GenericDetailsItem
-                    icon={<PenaltyTypeIcon type="artist" />}
-                    label={candidate.info.artist || "Unknown artist"}
-                    tooltip="The album artist of this candidate."
-                />
-                <GenericDetailsItem
-                    icon={<PenaltyTypeIcon type="album" />}
-                    label={candidate.info.album || "Unknown album"}
-                    tooltip="The album title of this candidate."
-                />
-                {candidate.info.year && (
-                    <GenericDetailsItem
-                        icon={<PenaltyTypeIcon type="year" />}
-                        label={candidate.info.year}
-                        tooltip="The year of the album was released."
-                    />
-                )}
-                <GenericDetailsItem
-                    icon={<PenaltyTypeIcon type="label" />}
-                    label={(candidate.info as AlbumInfo).label || "-"}
-                    tooltip="The label of this candidate."
-                />
-                <GenericDetailsItem
-                    icon={<PenaltyTypeIcon type="media" />}
-                    label={candidate.info.media}
-                    tooltip="The media type of this candidate."
-                />
-            </Box>
-            <Box
-                sx={(theme) => ({
-                    display: "flex",
-                    alignItems: "center",
-                    width: "72px",
-                    height: "72px",
-
-                    [theme.breakpoints.down("tablet")]: {
-                        width: "100%",
-                        height: "auto",
-                        maxHeight: "200px",
-                    },
-                })}
-            >
-                <ExternalCoverArt data_url={candidate.info.data_url} />
-            </Box>
+            <SourceDetailItem
+                data_source={candidate.info.data_source!}
+                data_url={candidate.info.data_url}
+            />
+            <GenericDetailsItemWithDiff
+                icon={<PenaltyTypeIcon type="artist" />}
+                from={metadata.artist!}
+                to={candidate.info.artist!}
+                tooltip="The album artist of this candidate."
+            />
+            <GenericDetailsItemWithDiff
+                icon={<PenaltyTypeIcon type="album" />}
+                from={metadata.album}
+                to={candidate.info.album}
+                tooltip="The album title of this candidate."
+            />
+            <GenericDetailsItemWithDiff
+                icon={<PenaltyTypeIcon type="year" />}
+                from={metadata.year?.toString()}
+                to={candidate.info.year?.toString()}
+                tooltip="The year of the album was released."
+            />
+            <GenericDetailsItemWithDiff
+                icon={<PenaltyTypeIcon type="label" />}
+                from={metadata.label}
+                to={(candidate.info as AlbumInfo).label}
+                tooltip="The label of this candidate."
+            />
+            <GenericDetailsItemWithDiff
+                icon={<PenaltyTypeIcon type="media" />}
+                from={metadata.media}
+                to={candidate.info.media}
+                tooltip="The media type of this candidate."
+            />
+            <GenericDetailsItemWithDiff
+                icon={<PenaltyTypeIcon type="catalognum" />}
+                from={metadata.catalognum}
+                to={(candidate.info as AlbumInfo).catalognum}
+                tooltip="The catalog number of this candidate."
+            />
+            <GenericDetailsItemWithDiff
+                icon={<PenaltyTypeIcon type="country" />}
+                from={metadata.country}
+                to={(candidate.info as AlbumInfo).country}
+                tooltip="The country in which this candidate was released."
+            />
         </Box>
     );
 }
+
+/* ---------------------------------- utils --------------------------------- */
 
 function SourceDetailItem({
     data_source,
