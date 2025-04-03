@@ -86,7 +86,7 @@ class ProgressState:
 
     def serialize(self) -> SerializedProgressState:
         return SerializedProgressState(
-            progress=self.progress.name,
+            progress=self.progress.name,  # type: ignore mypy does not understand enum see https://github.com/python/mypy/issues/18786
             message=self.message,
             plugin_name=self.plugin_name,
         )

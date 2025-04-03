@@ -195,7 +195,9 @@ def stage(
         # in some edge-cases we get no task. thus, we have to include the generic R
         task: Optional[Task | Ret] = None
         while True:
-            task = yield task  # wait for send to arrive. the first next() always returns None
+            task = (
+                yield task
+            )  # wait for send to arrive. the first next() always returns None
             # yield task, call func which gives new task, yield new task in next()
             # FIXME: Generator support!
             task = func(*(args + (task,)))
@@ -227,7 +229,9 @@ def mutator_stage(
     ) -> Generator[Union[Ret, Task, None], Task, None]:
         task = None
         while True:
-            task = yield task  # wait for send to arrive. the first next() always returns None
+            task = (
+                yield task
+            )  # wait for send to arrive. the first next() always returns None
             # perform function on task, and in next() send the same, modified task
             # funcs prob. modify task in place?
             func(*(args + (task,)))
@@ -300,7 +304,6 @@ def group_albums(
 
     # FIXME: Not really sure we need this tbh, see also task.skip
     tasks.append(SentinelImportTask(task.toppath, task.paths))
-
     yield from tasks
 
 

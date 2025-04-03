@@ -48,7 +48,7 @@ export function TaskCandidates({ task }: { task: SerializedTaskState }) {
     const [showDetails, setShowDetails] = useState<
         Array<SerializedCandidateState["id"]>
     >(() => {
-        return task.candidates.map((candidate) => candidate.id);
+        return [task.candidates[0].id];
     });
 
     const asisCandidate = useMemo(

@@ -327,6 +327,8 @@ class ImportSession(BaseSession):
         if config_overlay.get("import", {}).get("search_ids") is not None:
             raise ValueError("search_ids set in config_overlay. This is not supported.")
 
+        super().__init__(state, config_overlay)
+
         if match_url is not None and state.progress > Progress.NOT_STARTED:
             raise ValueError("Cannot set match_url for pre-populated state.")
 
@@ -336,7 +338,6 @@ class ImportSession(BaseSession):
             duplicate_action = self.get_config_value("import.duplicate_action", str)
 
         self.duplicate_action = duplicate_action.lower()  # type: ignore
-        super().__init__(state, config_overlay)
 
     # ------------------------------ Stages ------------------------------ #
 
@@ -355,32 +356,36 @@ class ImportSession(BaseSession):
         # Better abstraction needed upstream.
         stages.append(user_query(self))
 
-        # plugin stages
-        for stage_func in plugins.early_import_stages():
-            stages.append(
-                plugin_stage(
-                    self,
-                    stage_func,
-                    ProgressState(
-                        Progress.EARLY_IMPORTING,
-                        plugin_name=stage_func.__name__,
+        # Early import stages
+        plugs: list[plugins.BeetsPlugin] = plugins.find_plugins()
+        for p in plugs:
+            for stage in p.get_early_import_stages():
+                stages.append(
+                    plugin_stage(
+                        self,
+                        stage,
+                        ProgressState(
+                            Progress.EARLY_IMPORTING,
+                            plugin_name=stage.__name__,
+                        ),
                     ),
-                ),
-                name="early_plugin_stage_" + stage_func.__name__,
-            )
+                    name=f"early_plugin_stage_{p.__class__.__name__}_{ stage.__name__}",
+                )
 
-        for stage_func in plugins.import_stages():
-            stages.append(
-                plugin_stage(
-                    self,
-                    stage_func,
-                    ProgressState(
-                        Progress.IMPORTING,
-                        plugin_name=stage_func.__name__,
+        # Import stages
+        for p in plugs:
+            for stage in p.get_import_stages():
+                stages.append(
+                    plugin_stage(
+                        self,
+                        stage,
+                        ProgressState(
+                            Progress.IMPORTING,
+                            plugin_name=stage.__name__,
+                        ),
                     ),
-                ),
-                name="plugin_stage_" + stage_func.__name,
-            )
+                    name=f"plugin_stage_{p.__class__.__name__}_{ stage.__name__}",
+                )
 
         # finally, move files
         stages.append(manipulate_files(self))

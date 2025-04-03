@@ -7,7 +7,7 @@ from py2ts.data import TSInterface, ts_reference_str
 from beets_flask.importer.states import (
     SerializedSessionState,
 )
-from beets_flask.server.routes.inbox2 import Folder
+from beets_flask.server.routes.inbox import Folder
 from beets_flask.server.routes.library.resources import (
     AlbumResponse,
     AlbumResponseExpanded,

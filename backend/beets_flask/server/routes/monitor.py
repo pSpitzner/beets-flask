@@ -1,8 +1,8 @@
 from quart import Blueprint
+from rq.job import Job
 from rq.registry import clean_registries
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
-from rq.job import Job
 
 from beets_flask.redis import queues, redis_conn
 

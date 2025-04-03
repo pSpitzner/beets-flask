@@ -1,6 +1,17 @@
 """How errors are propagated to the user.
 
-This module contains the error handling logic for the Quart application. It provides a way to handle errors in a consistent way and return JSON responses to the user.
+This module contains the error handling logic for the Quart application.
+It provides a way to handle errors in a consistent way and return JSON
+responses to the user.
+
+Every error is returned as JSON in the following format:
+{
+    "error": "Error type",
+    "message": "Error message (optional)",
+    "description": "Error description (optional)"
+    "trace": "Error trace (optional)"
+}
+
 """
 
 import json
@@ -202,45 +213,3 @@ async def not_found():
 @error_bp.route("/error/integrityError", methods=["GET"])
 async def integrity_error():
     raise IntegrityError("Integrity error")
-
-
-# PS: I think this is an okay olace for this, as it ensures
-# param parsing with error handler.
-def get_query_param(
-    params: dict,
-    key: str,
-    convert_func: Callable,
-    default: Any = None,
-    error_message: str | None = None,
-):
-    """Safely retrieves and converts a query parameter from the request args.
-
-    Parameters
-    ----------
-    params : dict
-        The request args.
-    key : str
-        The key of the parameter to retrieve.
-    default : any, optional
-        The default value if the parameter is not found, defaults to None.
-    convert_func : callable, optional
-        A function to convert the parameter value, defaults to None. Common example, just use the type: `str`, `int` etc.
-    error_message : str, optional
-        The error message to raise if the conversion fails, defaults to None.
-    """
-    if params is None:
-        return default
-
-    value = params.get(key, None)
-
-    if value is None:
-        return default
-
-    try:
-        value = convert_func(value)
-    except (ValueError, TypeError):
-        if error_message is None:
-            error_message = f"Invalid parameter'{key}'"
-        raise InvalidUsage(error_message)
-
-    return value

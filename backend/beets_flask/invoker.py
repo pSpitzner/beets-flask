@@ -37,6 +37,7 @@ It combines:
 from __future__ import annotations
 
 import functools
+from enum import Enum
 from typing import (
     TYPE_CHECKING,
     Awaitable,
@@ -48,7 +49,6 @@ from typing import (
 
 from deprecated import deprecated
 from rq.decorators import job
-from sqlalchemy import delete
 
 from beets_flask import log
 from beets_flask.database import Tag, db_session_factory
@@ -120,27 +120,53 @@ def emit_status(
     return decorator
 
 
+class EnqueueKind(Enum):
+    """Enum for the different kinds of sessions we can enqueue."""
+
+    PREVIEW = "preview"
+    IMPORT = "import"
+    IMPORT_AS_IS = "import_as_is"
+    AUTO = "auto"
+
+    _AUTO_IMPORT = "auto_import"
+    _AUTO_PREVIEW = "auto_preview"
+
+    @classmethod
+    def from_str(cls, kind: str) -> EnqueueKind:
+        """Convert a string to an EnqueueKind enum.
+
+        Parameters
+        ----------
+        kind : str
+            The string to convert.
+        """
+        try:
+            return cls[kind.upper()]
+        except KeyError:
+            raise ValueError(f"Unknown kind {kind}")
+
+
 @emit_status(before=FolderStatus.PENDING)
-async def enqueue(hash: str, path: str, kind: str, session: Session | None = None):
+async def enqueue(hash: str, path: str, kind: EnqueueKind):
     """Delegate an existing tag to a redis worker, depending on its kind."""
 
     f_on_disk = FolderInDb.get_current_on_disk(hash, path)
     hash = f_on_disk.hash
 
-    if kind == "preview":
+    if kind == EnqueueKind.PREVIEW:
         job = preview_queue.enqueue(run_preview, hash, path, kind)
         __set_job_meta(job, hash, path, kind)
-    elif kind == "import":
+    elif kind == EnqueueKind.IMPORT:
         job = import_queue.enqueue(run_import, hash, path, kind)
         __set_job_meta(job, hash, path, kind)
-    elif kind == "import_as_is":
+    elif kind == EnqueueKind.IMPORT_AS_IS:
         job = import_queue.enqueue(run_import, hash, path, kind)
         __set_job_meta(job, hash, path, kind)
-    elif kind == "auto":
+    elif kind == EnqueueKind.AUTO:
         job = preview_queue.enqueue(run_preview, hash, path, kind)
-        __set_job_meta(job, hash, path, "auto_preview")
+        __set_job_meta(job, hash, path, EnqueueKind._AUTO_PREVIEW)
         job = import_queue.enqueue(run_auto_import, hash, path, kind, depends_on=job)
-        __set_job_meta(job, hash, path, "auto_import")
+        __set_job_meta(job, hash, path, EnqueueKind._AUTO_IMPORT)
     else:
         raise ValueError(f"Unknown kind {kind}")
 
@@ -299,32 +325,14 @@ async def run_auto_import(hash: str, path: str, kind: str) -> list[str] | None:
             db_session.commit()
 
 
-def __set_job_meta(job: Job, hash: str, path: str, kind: str):
+def __set_job_meta(job: Job, hash: str, path: str, kind: EnqueueKind):
     job.meta["folder_hash"] = hash
     job.meta["folder_path"] = path
-    job.meta["job_kind"] = kind
+    job.meta["job_kind"] = kind.value
     job.save_meta()
 
 
-__all__ = ["enqueue"]
-
-
-@deprecated("Old stuff?")
-def tag_status(
-    id: str | None = None, path: str | None = None, session: Session | None = None
-):
-    """Get a tags status.
-
-    Get the status of a tag by its id or path.
-    Returns "untagged" if the tag does not exist or the path was not tagged yet.
-    """
-    with db_session_factory(session) as s:
-        bt = None
-        if id is not None:
-            bt = Tag.get_by(Tag.id == id, session=s)
-        elif path is not None:
-            bt = Tag.get_by(Tag.album_folder == path, session=s)
-        if bt is None or bt.status is None:
-            return "untagged"
-
-        return bt.status
+__all__ = [
+    "enqueue",
+    "EnqueueKind",
+]
