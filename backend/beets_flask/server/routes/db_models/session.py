@@ -9,7 +9,7 @@ from beets_flask.database import db_session_factory
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
 from beets_flask.importer.progress import FolderStatus, Progress
 from beets_flask.logger import log
-from beets_flask.server.routes.errors import InvalidUsage
+from beets_flask.server.routes.errors import InvalidUsage, NotFoundError
 from beets_flask.server.utility import get_folder_params, get_query_param
 
 from .base import ModelAPIBlueprint
@@ -31,9 +31,9 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
     async def get_by_folder(self):
         """Returns the most recent session state for a given folder hash."""
 
-        folder_hashes, folder_paths, _ = await get_folder_params()
+        folder_hashes, folder_paths, _ = await get_folder_params(allow_mismatch=True)
 
-        if len(folder_hashes) != 1 or len(folder_paths) != 1:
+        if len(folder_hashes) != 1:
             raise InvalidUsage("Only one folder hash is supported", status_code=400)
 
         hash = folder_hashes[0]
@@ -48,7 +48,11 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
             item = db_session.execute(query).scalars().first()
             if not item:
                 # TODO: by path, validation of session hash
-                raise InvalidUsage(f"Item with hash {hash} not found", status_code=404)
+                # raise, but we do not want to spam the
+                # frontend console with errors.
+                # we manually handle this in sessionQueryOptions.
+                raise NotFoundError(f"Item with hash {hash} not found", status_code=200)
+
             return jsonify(item.to_dict())
 
     async def enqueue(self):
@@ -110,13 +114,11 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         log.debug(f"Checking status for {len(folder_hashes)} folders")
 
         for q in queues:
-            queued.extend(__get_jobs(q, connection=redis_conn))
-            scheduled.extend(
-                __get_jobs(q.scheduled_job_registry, connection=redis_conn)
-            )
-            started.extend(__get_jobs(q.started_job_registry, connection=redis_conn))
-            failed.extend(__get_jobs(q.failed_job_registry, connection=redis_conn))
-            finished.extend(__get_jobs(q.finished_job_registry, connection=redis_conn))
+            queued.extend(_get_jobs(q, connection=redis_conn))
+            scheduled.extend(_get_jobs(q.scheduled_job_registry, connection=redis_conn))
+            started.extend(_get_jobs(q.started_job_registry, connection=redis_conn))
+            failed.extend(_get_jobs(q.failed_job_registry, connection=redis_conn))
+            finished.extend(_get_jobs(q.finished_job_registry, connection=redis_conn))
 
         for hash, path in zip(folder_hashes, folder_paths):
             # Get metadata for folder if in any job queue
@@ -139,7 +141,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
             ):
                 # meta data has hash, path and kind.
                 # We need the kind to derive the status for completed folders.
-                if meta := __is_hash_in_jobs(hash, jobs):
+                if meta := _is_hash_in_jobs(hash, jobs):
                     if job_status is None:
                         if "import" in meta["job_kind"]:
                             status = FolderStatus.IMPORTED
@@ -194,13 +196,13 @@ class FolderStatusResponse(TypedDict):
     status: FolderStatus
 
 
-def __get_jobs(registry, connection):
+def _get_jobs(registry, connection):
     jobs = Job.fetch_many(registry.get_job_ids(), connection=connection)
     jobs = [j for j in jobs if j is not None]
     return jobs
 
 
-def __is_hash_in_jobs(hash: str, jobs: list[Job]) -> dict[str, str] | None:
+def _is_hash_in_jobs(hash: str, jobs: list[Job]) -> dict[str, str] | None:
     for j in jobs:
         meta = j.get_meta(False)
         if meta.get("folder_hash") == hash:

@@ -503,7 +503,8 @@ export function FolderActions() {
     function onReTag(e: MouseEvent<HTMLDivElement>) {
         setOpen(false);
 
-        fetch("/tag/add", {
+        // TODO: use mutation
+        fetch("/session/enqueue", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

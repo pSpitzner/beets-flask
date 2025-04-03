@@ -1,261 +1,110 @@
-import { ChevronRight } from "lucide-react";
-import React, { useEffect, useState } from "react";
-import { Card, Typography } from "@mui/material";
-import * as Collapsible from "@radix-ui/react-collapsible";
-import { useQuery } from "@tanstack/react-query";
+import { Box } from "@mui/material";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { FsPath, inboxQueryByPathOptions } from "@/components/common/_query";
-import { ContextMenu, defaultActions, SelectionSummary } from "@/components/common/contextMenu";
-import { MinimalConfig, useConfig } from "@/components/common/hooks/useConfig";
-import { SelectionProvider, useSelection } from "@/components/common/hooks/useSelection";
-import { PageWrapper } from "@/components/common/page";
-import { TagSimilarityBadgeWithHover } from "@/components/tags/similarityBadge";
-import { TagStatusIcon } from "@/components/tags/statusIcon";
+import { queryClient } from "@/components/common/_query";
+import {
+    FolderActions,
+    FolderComponent,
+    FoldersSelectionProvider,
+    GridWrapper,
+    SelectedStats,
+} from "@/components/inbox/comps";
+import { Folder } from "@/pythonTypes";
 
-import styles from "@/components/inbox/inbox.module.scss";
+/* ----------------------------- Data inbox tree ---------------------------- */
+// Tree of inbox folders
 
-export const Route = createFileRoute("/inbox/")({
-    component: Inboxes,
+export const inboxQueryOptions = () => ({
+    queryKey: ["inbox"],
+    queryFn: async () => {
+        const response = await fetch(`/inbox/tree`);
+        console.log("inbox tree response", response);
+        return (await response.json()) as Folder[];
+    },
 });
 
-function Inboxes() {
-    const config = useConfig();
-    const inboxes = config.gui.inbox.folders;
+/** Reset cache of the tree
+ * needed for manual refresh.
+ */
+queryClient.setMutationDefaults(["refreshInboxTree"], {
+    mutationFn: async () => {
+        await fetch(`/inbox/tree/refresh`, { method: "POST" });
+    },
+    onSuccess: async () => {
+        // Invalidate the query after the cache has been reset
+        const q = inboxQueryOptions();
 
-    if (Object.keys(inboxes).length == 0) {
-        return <>No inboxes found. Check your config!</>;
-    }
+        // At least 0.5 second delay for loading indicator
+        const ps = [
+            queryClient.cancelQueries(q).then(() => queryClient.invalidateQueries(q)),
+            new Promise((resolve) => setTimeout(resolve, 500)),
+        ];
+        await Promise.all(ps);
+    },
+});
 
-    return (
-        <PageWrapper>
-            {Object.values(inboxes).map((inbox, i) => {
-                return <Inbox key={i} name={inbox.name} path={inbox.path} />;
-            })}
-        </PageWrapper>
-    );
-}
+/* ---------------------------------- Route --------------------------------- */
 
-function Inbox({ name, path }: { name: string; path: string }) {
-    const { data, isLoading, isPending, isError, error } = useQuery(inboxQueryByPathOptions(path));
+export const Route = createFileRoute("/inbox/")({
+    component: RouteComponent,
+    loader: async ({ context }) => {
+        await context.queryClient.ensureQueryData(inboxQueryOptions());
+    },
+});
 
-    const heading = (
-        <Typography gutterBottom variant="h6" component="div">
-            {name}
-        </Typography>
-    );
-
-    if (isLoading || isPending) {
-        return (
-            <Card className={styles.inboxView}>
-                {heading}
-                <>Loading ...</>
-            </Card>
-        );
-    }
-
-    if (isError) {
-        return (
-            <Card className={styles.inboxView}>
-                {heading}
-                Error: {error.message}
-            </Card>
-        );
-    }
+function RouteComponent() {
+    const { data } = useSuspenseQuery(inboxQueryOptions());
 
     return (
-        <SelectionProvider>
-            <Card className={styles.inboxView}>
-                {heading}
-                <FolderTreeView fp={data} />
-            </Card>
-        </SelectionProvider>
-    );
-}
-
-function FolderTreeView({
-    fp,
-    label,
-    level = 0,
-}: {
-    fp: FsPath;
-    label?: string;
-    level?: number;
-}): React.ReactNode {
-    const config = useConfig();
-    const defaultExpandState = fp.is_album && !config.gui.inbox.expand_files ? false : true;
-    const [expanded, setExpanded] = useState<boolean>(defaultExpandState);
-    const numChildren = Object.keys(fp.children).length;
-    const uid = `collapsible-${fp.full_path}`;
-
-    useEffect(() => {
-        const savedState = localStorage.getItem(uid);
-        if (savedState !== null) {
-            setExpanded(JSON.parse(savedState) as boolean);
-        }
-    }, [uid]);
-
-    const handleExpandedChange = (isOpen: boolean) => {
-        setExpanded(isOpen);
-        localStorage.setItem(uid, JSON.stringify(isOpen));
-    };
-
-    if (fp.type === "file") {
-        return <File fp={fp} />;
-    }
-
-    let folder_element = <Folder fp={fp} label={label ?? fp.full_path.replaceAll("/", " / ")} />;
-    if (!fp.is_inbox) {
-        folder_element = (
-            <ContextMenu
-                className={styles.contextMenuHeaderWrapper}
-                identifier={fp.full_path}
-                actions={[<SelectionSummary key={0} />, ...defaultActions]}
+        <>
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    height: "100%",
+                    width: "100%",
+                    alignItems: "center",
+                }}
             >
-                {folder_element}
-            </ContextMenu>
-        );
-    }
-
-    return (
-        <div className={styles.folder} data-empty={numChildren < 1}>
-            <Collapsible.Root open={expanded} onOpenChange={handleExpandedChange}>
-                {folder_element}
-                <Collapsible.Content className={styles.content}>
-                    <SubFolders fp={fp} level={level} />
-                </Collapsible.Content>
-            </Collapsible.Root>
-        </div>
-    );
-}
-
-function SubFolders({ fp, level }: { fp: FsPath; level: number }) {
-    const config = useConfig();
-    return (
-        <>
-            {Object.keys(fp.children).map((name) => {
-                const child = fp.children[name];
-                const [subFp, subName, mergedName] = concatSubFolderNames(fp, name, config);
-                // enable line wrapping
-                return (
-                    <FolderTreeView
-                        key={child.full_path}
-                        fp={subFp.children[subName]}
-                        label={mergedName}
-                        level={level + 1}
-                    />
-                );
-            })}
+                <FoldersSelectionProvider>
+                    <Box
+                        sx={(theme) => {
+                            return {
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "flex-end",
+                                width: "100%",
+                                height: "100%",
+                                maxWidth: "100%",
+                                position: "relative",
+                                paddingBlock: theme.spacing(1),
+                                paddingInline: theme.spacing(2),
+                                backgroundColor: theme.palette.background.paper,
+                                gap: theme.spacing(1),
+                                [theme.breakpoints.up("laptop")]: {
+                                    // Styles for desktop
+                                    margin: theme.spacing(2),
+                                    minWidth: theme.breakpoints.values["laptop"],
+                                    width: "calc(100% - " + theme.spacing(2) + " * 2)",
+                                    maxWidth: theme.breakpoints.values["desktop"],
+                                    height: "unset",
+                                },
+                            };
+                        }}
+                    >
+                        <SelectedStats />
+                        {data.map((folder, i) => (
+                            <GridWrapper>
+                                <FolderComponent key={i} folder={folder} unSelectable />
+                            </GridWrapper>
+                        ))}
+                        <Box sx={{ flexGrow: "grow" }}>
+                            <FolderActions />
+                        </Box>
+                    </Box>
+                </FoldersSelectionProvider>
+            </Box>
         </>
     );
-}
-
-// actual content, wrapped by the context menu
-function Folder({ fp, label }: { fp: FsPath; label: string }) {
-    const { isSelected, toggleSelection, markSelectable } = useSelection();
-    const handleSelect = () => {
-        if (fp.is_album) {
-            toggleSelection(fp.full_path);
-        }
-    };
-    const numChildren = Object.keys(fp.children).length;
-
-    useEffect(() => {
-        // Register as selectable
-        // this needs a lot more work:
-        // - selectable and right-clickable should not be the same.
-        // - inboxes should not be selected with "select all"
-        // - inboxes should show different context menu items (no tagging, but select items within, or tag all children...)
-        if (fp.is_album && numChildren > 0) {
-            markSelectable(fp.full_path);
-        }
-    }, [fp.full_path, fp.is_album, markSelectable, numChildren]);
-
-    return (
-        <div
-            key={`folder-${fp.full_path}`}
-            className={styles.header}
-            data-selected={isSelected(fp.full_path)}
-            onClick={handleSelect}
-        >
-            {numChildren > 0 ? (
-                <Collapsible.Trigger
-                    asChild
-                    className={styles.trigger}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                    }}
-                >
-                    <ChevronRight />
-                </Collapsible.Trigger>
-            ) : (
-                <div>
-                    <ChevronRight />
-                </div>
-            )}
-
-            {fp.is_album && (
-                <div className={styles.albumIcons}>
-                    <TagStatusIcon className={styles.albumIcon} tagPath={fp.full_path} />
-                    <TagSimilarityBadgeWithHover tagPath={fp.full_path} />
-                </div>
-            )}
-
-            <span className={styles.label}>
-                <WrapableAtSlash label={label} />
-            </span>
-        </div>
-    );
-}
-
-function WrapableAtSlash({ label }: { label: string }) {
-    return (
-        <>
-            {label.split(" / ").map((part, i, arr) => (
-                <span key={i}>
-                    {part}
-                    {i < arr.length - 1 && " / "}
-                </span>
-            ))}
-        </>
-    );
-}
-
-function File({ fp: fp }: { fp: FsPath }): React.JSX.Element {
-    if (fp.type !== "file") {
-        throw new TypeError("Expected a file, got a directory");
-    }
-    const fileName = fp.full_path.split("/").pop();
-    return (
-        <div key={`file-${fp.full_path}`} className={styles.file}>
-            <div>{fileName}</div>
-        </div>
-    );
-}
-
-function concatSubFolderNames(
-    parent: FsPath,
-    name: string,
-    config: MinimalConfig,
-    merged = ""
-): [FsPath, string, string] {
-    if (!config.gui.inbox.concat_nested_folders) {
-        return [parent, name, merged + name];
-    }
-
-    const me = parent.children[name];
-    const numChildren = Object.keys(me.children).length;
-
-    let singleChild = null;
-    let singleChildName = null;
-    if (numChildren === 1) {
-        singleChildName = Object.keys(me.children)[0];
-        singleChild = me.children[singleChildName];
-    }
-
-    if (singleChildName && singleChild?.type === "directory") {
-        return concatSubFolderNames(me, singleChildName, config, merged + name + " / ");
-    } else {
-        return [parent, name, merged + name];
-    }
 }

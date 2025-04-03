@@ -12,21 +12,21 @@ import {
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { FolderComponent } from "@/components/inbox3/comps";
+import { FolderComponent } from "@/components/sessiondraft/comps";
 import { Folder } from "@/pythonTypes";
 
 const inboxQueryOptions = () => ({
-    queryKey: ["inbox3"],
+    queryKey: ["inbox"],
     queryFn: async () => {
-        const response = await fetch(`/inbox2/tree`);
+        const response = await fetch(`/inbox/tree`);
         return (await response.json()) as Folder[];
     },
 });
 
-export const Route = createFileRoute("/inbox3/")({
+export const Route = createFileRoute("/sessiondraft/")({
     component: RouteComponent,
     loader: async ({ context }) => {
-        context.queryClient.ensureQueryData(inboxQueryOptions());
+        await context.queryClient.ensureQueryData(inboxQueryOptions());
     },
 });
 

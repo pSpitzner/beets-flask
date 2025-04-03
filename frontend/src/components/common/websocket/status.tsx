@@ -29,7 +29,7 @@ export const statusQueryOptions = {
     queryFn: async () => {
         // fetch initial status
         // further updates will be handled by the socket
-        const response = await fetch("/tag/status");
+        const response = await fetch("/session/status");
         return (await response.json()) as FolderStatusResponse[];
     },
 };
