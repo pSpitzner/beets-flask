@@ -75,7 +75,7 @@ def db_session(db_session_factory):
         yield session
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def beets_lib():
     import beets.library
 

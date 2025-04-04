@@ -2,7 +2,9 @@ from pathlib import Path
 
 import pytest
 from beets import autotag, importer
+from beets.library import Library
 from quart.typing import TestClientProtocol as Client
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
@@ -56,9 +58,15 @@ class TestSessionEndpoint:
     """
 
     @pytest.mark.asyncio
-    async def test_get_all_empty(self, client: Client):
+    async def test_get_all_empty(self, client: Client, db_session: Session):
         # If no database objects are present, the response should be an empty list.
         # And no pagination.
+
+        # Clear library
+        sessions = db_session.execute(select(SessionStateInDb)).scalars().all()
+        for s in sessions:
+            db_session.delete(s)
+        db_session.commit()
 
         response = await client.get("/api_v1/session")
         assert response.status_code == 200

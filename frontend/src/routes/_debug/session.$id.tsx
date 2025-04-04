@@ -42,6 +42,10 @@ export const sessionQueryOptions = (id: string) => ({
 function RouteComponent() {
     const data = Route.useLoaderData();
 
+    if (!data) {
+        return "Session not found";
+    }
+
     return (
         <PageWrapper>
             <TaskCandidates task={data.tasks[0]}></TaskCandidates>

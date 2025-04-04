@@ -48,7 +48,7 @@ export function customizeFetch() {
     };
 }
 
-interface ErrorData {
+export interface ErrorData {
     error: string;
     message: string;
     description?: string;

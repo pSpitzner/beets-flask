@@ -9,7 +9,6 @@ from beets_flask.database.setup import db_session_factory
 from beets_flask.importer.session import PreviewSession
 from beets_flask.importer.states import SessionState
 from beets_flask.invoker import run_import, run_preview
-from beets_flask.server.routes.tag import add_tag
 from tests.test_importer.conftest import (
     VALID_PATHS,
     album_path_absolute,
@@ -61,42 +60,10 @@ class TestPreviewSessions:
         for task in state.task_states:
             for candidate in task.candidate_states:
                 if candidate.id.startswith("asis"):
-                    assert candidate.url is None
+                    assert candidate.url is not None
+                    assert candidate.url.startswith("file://")
                 else:
                     assert candidate.url is not None
                     assert candidate.url.startswith("https")
 
         log.debug(f"State: {state}")
-
-
-# this is more of an integration test,
-# Note: runPreview here in main thread, not the workers
-@pytest.mark.parametrize("path", VALID_PATHS)
-def test_run_preview(path: str, db_session_factory):
-    ap = album_path_absolute(path)
-    use_mock_tag_album(str(ap))
-    log.info(f"Preview on album path: {ap}")
-
-    tag_id = None
-    with db_session_factory() as session:
-        tag = Tag(album_folder=str(ap), kind="preview")
-        session.merge(tag)
-        session.commit()
-        tag_id = tag.id
-
-    run_preview(tag_id)
-
-    comparison = valid_data_for_album_path(ap)
-
-    with db_session_factory() as session:
-        tag = session.query(Tag).get(tag_id)
-        assert tag is not None
-        assert tag.kind == "preview"
-        assert tag.status == "tagged"
-        assert tag.match_url == comparison["match_url"]
-        assert tag.match_album == comparison["match_album"]
-        assert tag.match_artist == comparison["match_artist"]
-        assert tag.num_tracks == comparison["num_tracks"]
-        assert tag.distance == pytest.approx(comparison["distance"], 0.01)
-        assert tag.album_folder_basename == comparison["album_folder_basename"]
-        assert tag.preview is not None

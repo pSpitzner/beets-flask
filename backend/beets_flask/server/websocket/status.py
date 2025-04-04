@@ -18,7 +18,7 @@ from . import sio
 from .errors import sio_catch_exception
 
 if TYPE_CHECKING:
-    from beets_flask.server.routes.tag import FolderStatusResponse
+    from beets_flask.server.routes.db_models.session import FolderStatusResponse
 
 
 namespace = "/status"

@@ -2,7 +2,6 @@ import logging
 from pathlib import Path
 from typing import List
 
-from beets_flask.server.app import Encoder
 import pytest
 from beets import autotag, importer
 
@@ -14,6 +13,7 @@ from beets_flask.importer.states import (
     TaskState,
 )
 from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackInfo
+from beets_flask.server.app import Encoder
 
 from ..conftest import beets_lib_item
 
@@ -163,11 +163,9 @@ class TestCandidateState:
         serialized = candidate.serialize()
         assert isinstance(serialized, dict)
         assert serialized["id"] == candidate.id
-        assert serialized["cur_artist"] == candidate.cur_artist
-        assert serialized["cur_album"] == candidate.cur_album
+        assert serialized["penalties"] == candidate.penalties
         assert serialized["type"] == candidate.type
         assert serialized["distance"] == candidate.distance.distance
-        assert serialized["duplicate_in_library"] == candidate.has_duplicates_in_library
 
         # Can be serialized with json.dumps and Encoder
         import json
