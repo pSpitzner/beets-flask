@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { PageWrapper } from "@/components/common/page";
-import { TaskCandidates } from "@/components/import/candidateNew";
+import { TaskCandidates } from "@/components/import/candidates/candidate";
 import { SerializedSessionState } from "@/pythonTypes";
 import { APIError, ErrorData } from "@/components/common/_query";
 

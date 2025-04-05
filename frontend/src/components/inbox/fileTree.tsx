@@ -1,124 +1,28 @@
-import {
-    EllipsisVerticalIcon,
-    ImportIcon,
-    LucideChevronRight,
-    RefreshCwIcon,
-    TagIcon,
-    Trash2Icon,
-} from "lucide-react";
-import {
-    createContext,
-    forwardRef,
-    MouseEvent,
-    Ref,
-    useCallback,
-    useContext,
-    useEffect,
-    useState,
-} from "react";
+import { LucideChevronRight } from "lucide-react";
+import { useState } from "react";
 import {
     Box,
-    BoxProps,
     Checkbox,
     IconButton,
-    Menu,
-    MenuItem,
-    SpeedDial,
-    SpeedDialAction,
-    SpeedDialActionProps,
-    SpeedDialIcon,
-    SpeedDialProps,
     styled,
     SxProps,
     Theme,
-    Tooltip,
     Typography,
-    useMediaQuery,
     useTheme,
-    Zoom,
 } from "@mui/material";
-import { useMutation } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
 import { File, Folder } from "@/pythonTypes";
 
+import {
+    DeleteAllImportedFolderButton,
+    MoreActions,
+    RefreshAllFoldersButton,
+} from "./actions";
+import { useFolderSelectionContext } from "./folderSelectionContext";
+
 import { BestCandidateChip, DuplicateChip, FolderStatusChip } from "../common/chips";
 import { FileTypeIcon, FolderTypeIcon } from "../common/icons";
-import { ClipboardCopyButton } from "../common/inputs/copy";
-
-/* --------------------------------- Context -------------------------------- */
-// Allows to trigger actions on a single or multiple folders
-
-interface FolderContext {
-    nSelected: number;
-    selected: {
-        hashes: Array<Folder["hash"]>;
-        paths: Array<Folder["full_path"]>;
-    };
-    toggleSelect(folder: Folder): void;
-    isSelected(folder: Folder): boolean;
-    deselectAll(): void;
-}
-
-const FoldersContext = createContext<FolderContext | null>(null);
-
-export function useFoldersContext() {
-    const context = useContext(FoldersContext);
-    if (!context) {
-        throw new Error("useFoldersContext must be used inside a FoldersProvider");
-    }
-    return context;
-}
-
-export function FoldersSelectionProvider({ children }: { children: React.ReactNode }) {
-    // we do not need to store the selected folders directly but can
-    // derive them from their selected hashes and paths, this is more or less an id for folders
-    const [selected, setSelected] = useState<{
-        hashes: Folder["hash"][];
-        paths: Folder["full_path"][];
-    }>({ hashes: [], paths: [] });
-
-    useEffect(() => {
-        console.debug("FoldersSelectionProvider", "selected", selected);
-    }, [selected]);
-
-    const toggleSelect = (folder: Folder) => {
-        setSelected((selected) => {
-            if (selected.hashes.includes(folder.hash)) {
-                const idx = selected.hashes.indexOf(folder.hash);
-
-                selected.paths.splice(idx, 1);
-                selected.hashes.splice(idx, 1);
-                return {
-                    hashes: selected.hashes,
-                    paths: selected.paths,
-                };
-            } else {
-                return {
-                    hashes: [...selected.hashes, folder.hash],
-                    paths: [...selected.paths, folder.full_path],
-                };
-            }
-        });
-    };
-
-    const isSelected = useCallback(
-        (folder: Folder) => selected.hashes.includes(folder.hash),
-        [selected]
-    );
-
-    const deselectAll = () => setSelected({ hashes: [], paths: [] });
-
-    const nSelected = selected.hashes.length;
-
-    return (
-        <FoldersContext.Provider
-            value={{ nSelected, toggleSelect, isSelected, selected, deselectAll }}
-        >
-            {children}
-        </FoldersContext.Provider>
-    );
-}
 
 /* ------------------------------ Grid wrapper ------------------------------ */
 
@@ -172,7 +76,7 @@ export function FolderComponent({
         }
         return false;
     });
-    const { isSelected, toggleSelect } = useFoldersContext();
+    const { isSelected, toggleSelect } = useFolderSelectionContext();
 
     // Create children elements from tree (recursive)
     const childElements = Object.entries(folder.children).map(([_key, values]) => {
@@ -471,7 +375,7 @@ function Chips({ folder }: { folder: Folder }) {
 /* --------------------------------- Utility --------------------------------- */
 
 export function SelectedStats() {
-    const { nSelected } = useFoldersContext();
+    const { nSelected } = useFolderSelectionContext();
 
     return (
         <Box
@@ -483,255 +387,11 @@ export function SelectedStats() {
                 width: "100%",
             }}
         >
-            <RefreshFolders />
-            <DeleteAllImported />
+            <RefreshAllFoldersButton />
+            <DeleteAllImportedFolderButton />
             <Typography fontSize={12} sx={{ marginLeft: "auto" }}>
                 {nSelected} folder{nSelected > 1 ? "s" : null} selected
             </Typography>
-        </Box>
-    );
-}
-
-/* --------------------------------- Actions -------------------------------- */
-// Actions a user can take on a single or multiple folders implemented as speed dial
-
-export function FolderActions() {
-    const [open, setOpen] = useState(false);
-    const { nSelected, selected, deselectAll } = useFoldersContext();
-    const theme = useTheme();
-
-    function onReTag(e: MouseEvent<HTMLDivElement>) {
-        setOpen(false);
-
-        // TODO: use mutation
-        fetch("/session/enqueue", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                kind: "preview",
-                folder_hashes: selected.hashes,
-                folder_paths: selected.paths,
-            }),
-        })
-            .then((r) => {
-                console.log("Tagged ", r);
-            })
-            .catch((e) => {
-                console.error("Failed to tag folders", e);
-            });
-
-        setTimeout(() => {
-            deselectAll();
-        }, 1000);
-    }
-
-    function onAutoImport(e: MouseEvent<HTMLDivElement>) {
-        console.log("Auto-importing on ", selected);
-        setOpen(false);
-        deselectAll();
-    }
-
-    function onDelete(e: MouseEvent<HTMLDivElement>) {
-        console.log("Deleting ", selected);
-        setOpen(false);
-        deselectAll();
-    }
-
-    // Show speed dial only once something is selected
-    // This is done via zoom component
-    const transitionDuration = {
-        enter: theme.transitions.duration.enteringScreen,
-        exit: theme.transitions.duration.leavingScreen,
-    };
-
-    return (
-        <Zoom
-            in={nSelected > 0}
-            timeout={transitionDuration.enter}
-            style={{
-                transitionDelay: `${nSelected > 0 ? transitionDuration.exit : 0}ms`,
-                // FIXME: Transform origin should be centered on button not bottom right
-                // not sure if this is easily doable tho
-                transformOrigin: "bottom right",
-            }}
-            unmountOnExit
-        >
-            <GenericSpeedDial
-                ariaLabel="FolderAction"
-                open={open}
-                onOpen={() => setOpen(true)}
-                onClose={() => setOpen(false)}
-            >
-                <GenericSpeedDialAction
-                    icon={<TagIcon />}
-                    tooltip="Retag"
-                    onClick={onReTag}
-                />
-                <GenericSpeedDialAction
-                    icon={<ImportIcon />}
-                    tooltip="Auto-import"
-                    onClick={onAutoImport}
-                />
-                <GenericSpeedDialAction
-                    icon={<Trash2Icon />}
-                    tooltip={`Delete ${nSelected} folder${nSelected > 1 ? "s" : ""}!`}
-                    onClick={onAutoImport}
-                />
-            </GenericSpeedDial>
-        </Zoom>
-    );
-}
-
-function RefreshFolders() {
-    // See inbox2 route
-    const { mutate, isPending } = useMutation({
-        mutationKey: ["refreshInbox2Tree"],
-    });
-
-    return (
-        <Tooltip title="Refresh folders">
-            <IconButton
-                onClick={() => mutate()}
-                sx={{
-                    animation: isPending ? "spin 1s linear infinite" : "none",
-                    "@keyframes spin": {
-                        from: { transform: "rotate(0deg)" },
-                        to: { transform: "rotate(360deg)" },
-                    },
-                }}
-                disabled={isPending}
-            >
-                <RefreshCwIcon size={ICON_SIZE} />
-            </IconButton>
-        </Tooltip>
-    );
-}
-
-function DeleteAllImported() {
-    return (
-        <Tooltip title="Delete all imported albums">
-            <IconButton>
-                <Trash2Icon size={ICON_SIZE} />
-            </IconButton>
-        </Tooltip>
-    );
-}
-
-/* --------------------------- Speed dial generics -------------------------- */
-// We might want to move this into common namespace
-
-const GenericSpeedDial = forwardRef(function GenericSpeedDial(
-    props: SpeedDialProps,
-    ref: Ref<HTMLDivElement>
-) {
-    // speed dial opens left on big screens
-    const isLaptopUp = useMediaQuery((theme) => theme.breakpoints.up("laptop"));
-
-    return (
-        <SpeedDial
-            color="primary"
-            icon={<SpeedDialIcon />}
-            direction={isLaptopUp ? "left" : undefined}
-            sx={(theme) => {
-                return {
-                    position: "absolute",
-                    bottom: theme.spacing(1),
-                    right: theme.spacing(1),
-                    [theme.breakpoints.up("laptop")]: {
-                        position: "relative",
-                        display: "flex",
-                        bottom: "0",
-                        right: "0",
-                    },
-                };
-            }}
-            ref={ref}
-            {...props}
-        />
-    );
-});
-
-function GenericSpeedDialAction({
-    icon,
-    tooltip,
-    ...props
-}: { icon: React.ReactNode; tooltip: string } & SpeedDialActionProps) {
-    // In theory we should check for touch instead of a breakpoint but tbh
-    // im too lazy to figure out how to do that properly
-    const isMobile = !useMediaQuery((theme) => theme.breakpoints.up("laptop"));
-
-    return (
-        <SpeedDialAction
-            icon={icon}
-            slotProps={{
-                tooltip: {
-                    // show tooltips always on mobile devices
-                    open: isMobile ?? undefined,
-                    title: tooltip,
-                },
-                staticTooltipLabel: {
-                    sx: (theme) => ({
-                        right: "3.5rem",
-                        whiteSpace: "nowrap",
-                        [theme.breakpoints.up("laptop")]: {
-                            bottom: "1.5rem",
-                            right: "0",
-                            display: "flex",
-                        },
-                    }),
-                },
-            }}
-            {...props}
-        />
-    );
-}
-
-/** Simple context menu with some items */
-function MoreActions({ f, ...props }: { f: Folder | File } & BoxProps) {
-    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-
-    return (
-        <Box {...props}>
-            <IconButton
-                onClick={(e) => {
-                    setAnchorEl(e.currentTarget);
-                }}
-                sx={{ padding: "0px", margin: "0px" }}
-                disableRipple
-            >
-                <EllipsisVerticalIcon size={ICON_SIZE} />
-            </IconButton>
-            <Menu
-                onClose={() => setAnchorEl(null)}
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-            >
-                <MenuItem
-                    onClick={() => {
-                        // copy full path to clipboard
-                        navigator.clipboard.writeText(f.full_path).catch(console.error);
-                        setAnchorEl(null);
-                    }}
-                >
-                    <ClipboardCopyButton
-                        text={f.full_path}
-                        icon_props={{
-                            size: ICON_SIZE,
-                        }}
-                        sx={{
-                            margin: 0,
-                            display: "flex",
-                            gap: "0.5rem",
-                            fontSize: "1rem",
-                            padding: "0",
-                        }}
-                    >
-                        Copy Path
-                    </ClipboardCopyButton>
-                </MenuItem>
-            </Menu>
         </Box>
     );
 }

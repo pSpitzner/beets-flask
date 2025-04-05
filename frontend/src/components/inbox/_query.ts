@@ -30,33 +30,6 @@ export const inboxQueryByPathOptions = (path: string) =>
         },
     });
 
-export interface InboxStats {
-    nFiles: number;
-    size: number;
-    nTagged: number;
-    sizeTagged: number;
-    inboxName: string;
-    inboxPath: string;
-    lastTagged?: Date;
-}
-
-export const inboxStatsQueryOptions = () => {
-    return queryOptions({
-        queryKey: ["inbox", "stats"],
-        queryFn: async () => {
-            const response = await fetch(`/inbox/stats`);
-
-            const res = (await response.json()) as InboxStats[];
-
-            for (const stat of res) {
-                if (stat.lastTagged) stat.lastTagged = new Date(stat.lastTagged);
-            }
-
-            return res;
-        },
-    });
-};
-
 // A flat array of paths in the inbox
 export const inboxPathsQueryOptions = (show_files = false) => {
     return queryOptions({
@@ -108,40 +81,5 @@ export const deleteInboxImportedMutation: UseMutationOptions<unknown, Error, str
     },
     onSuccess: async (_data, variables) => {
         await queryClient.invalidateQueries({ queryKey: ["inbox", "path", variables] });
-    },
-};
-
-export const retagInboxNewMutation: UseMutationOptions<unknown, Error, string> = {
-    mutationFn: async (inboxPath: string) => {
-        return await fetch(`/inbox/autotag`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                folder: inboxPath,
-                kind: "preview",
-                with_status: ["untagged"],
-            }),
-        });
-    },
-};
-
-export const retagInboxAllMutation: UseMutationOptions<unknown, Error, string> = {
-    mutationFn: async (inboxPath: string) => {
-        return await fetch(`/inbox/autotag`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                folder: inboxPath,
-                kind: "preview",
-                with_status: ["unmatched", "failed", "tagged", "untagged"],
-            }),
-        });
-    },
-    onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: ["inbox"] });
     },
 };

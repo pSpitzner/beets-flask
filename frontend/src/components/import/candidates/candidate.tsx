@@ -18,6 +18,7 @@ import {
     useTheme,
 } from "@mui/material";
 import Box, { BoxProps } from "@mui/material/Box";
+import { Link } from "@tanstack/react-router";
 
 import {
     AlbumInfo,
@@ -25,16 +26,11 @@ import {
     SerializedTaskState,
 } from "@/pythonTypes";
 
-import { PenaltyIconRow } from "./icons";
+import { GenericDetailsItem, GenericDetailsItemWithDiff, TrackDiff } from "./diff";
 
-import { MatchChip } from "../common/chips";
-import {
-    GenericDetailsItem,
-    GenericDetailsItemWithDiff,
-    TrackDiff,
-} from "./candidates/diff";
-import { PenaltyTypeIcon, SourceTypeIcon } from "../common/icons";
-import { Link } from "@tanstack/react-router";
+import { MatchChip } from "../../common/chips";
+import { PenaltyTypeIcon, SourceTypeIcon } from "../../common/icons";
+import { PenaltyIconRow } from "../icons";
 
 /** Show a radio list of task candidates.
  *
@@ -194,7 +190,7 @@ const CandidateDetailsRow = styled(Box)(({ theme }) => ({
  *
  * Shows a row with the major information about the candidate.
  */
-export function CandidateInfo({
+function CandidateInfo({
     candidate,
     selected,
     setSelected,
@@ -262,7 +258,7 @@ export function CandidateInfo({
  * Shows additional information about the candidate. I.e. cover art, metadata, etc.
  * and also shows the diff of the items.
  */
-export function CandidateDetails({
+function CandidateDetails({
     candidate,
     items,
     metadata,
@@ -359,8 +355,8 @@ function OverviewChanges({
             />
             <GenericDetailsItemWithDiff
                 icon={<PenaltyTypeIcon type="artist" />}
-                from={metadata.artist!}
-                to={candidate.info.artist!}
+                from={metadata.artist}
+                to={candidate.info.artist}
                 tooltip="The album artist of this candidate."
             />
             <GenericDetailsItemWithDiff

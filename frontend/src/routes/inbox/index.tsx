@@ -3,13 +3,13 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { queryClient } from "@/components/common/_query";
+import { FolderActionsSpeedDial } from "@/components/inbox/actions";
 import {
-    FolderActions,
     FolderComponent,
-    FoldersSelectionProvider,
     GridWrapper,
     SelectedStats,
-} from "@/components/inbox/comps";
+} from "@/components/inbox/fileTree";
+import { FolderSelectionProvider } from "@/components/inbox/folderSelectionContext";
 import { Folder } from "@/pythonTypes";
 
 /* ----------------------------- Data inbox tree ---------------------------- */
@@ -59,15 +59,18 @@ function RouteComponent() {
     return (
         <>
             <Box
-                sx={{
+                sx={(theme) => ({
                     display: "flex",
                     flexDirection: "column",
                     height: "100%",
                     width: "100%",
                     alignItems: "center",
-                }}
+                    [theme.breakpoints.up("laptop")]: {
+                        height: "auto",
+                    },
+                })}
             >
-                <FoldersSelectionProvider>
+                <FolderSelectionProvider>
                     <Box
                         sx={(theme) => {
                             return {
@@ -88,7 +91,8 @@ function RouteComponent() {
                                     minWidth: theme.breakpoints.values["laptop"],
                                     width: "calc(100% - " + theme.spacing(2) + " * 2)",
                                     maxWidth: theme.breakpoints.values["desktop"],
-                                    height: "unset",
+                                    height: "auto",
+                                    borderRadius: 1,
                                 },
                             };
                         }}
@@ -99,11 +103,24 @@ function RouteComponent() {
                                 <FolderComponent key={i} folder={folder} unSelectable />
                             </GridWrapper>
                         ))}
-                        <Box sx={{ flexGrow: "grow" }}>
-                            <FolderActions />
+                        <Box
+                            sx={(theme) => ({
+                                width: "100%",
+                                display: "flex",
+                                position: "absolute",
+                                bottom: theme.spacing(2),
+                                justifyContent: "flex-end",
+                                [theme.breakpoints.up("laptop")]: {
+                                    justifyContent: "flex-start",
+                                    position: "relative",
+                                    bottom: "inherit",
+                                },
+                            })}
+                        >
+                            <FolderActionsSpeedDial />
                         </Box>
                     </Box>
-                </FoldersSelectionProvider>
+                </FolderSelectionProvider>
             </Box>
         </>
     );

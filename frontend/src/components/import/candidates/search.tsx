@@ -1,6 +1,5 @@
-import {
-    Search,
-} from "lucide-react";
+// currently unused
+import { Search } from "lucide-react";
 import { forwardRef, useState } from "react";
 import {
     CircularProgress,

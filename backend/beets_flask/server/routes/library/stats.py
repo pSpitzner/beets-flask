@@ -14,7 +14,7 @@ stats_bp = Blueprint("stats", __name__)
 __all__ = ["stats_bp"]
 
 
-class Stats(TypedDict):
+class LibraryStats(TypedDict):
     libraryPath: str
     items: int  # Num Tracks and stuff / num Files
     albums: int  # Num Albums
@@ -47,7 +47,7 @@ async def stats():
 
     disk_usage = shutil.disk_usage(lib_path)
 
-    ret: Stats = {
+    ret: LibraryStats = {
         "libraryPath": str(config["directory"].as_str()),
         "items": items_stats[0][0],
         "albums": album_stats[0][0],

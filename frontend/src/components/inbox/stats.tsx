@@ -10,14 +10,12 @@ import {
     Link as MUILink,
     Tooltip,
 } from "@mui/material";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-
-import { InboxStats, inboxStatsQueryOptions } from "./_query";
 
 import styles from "../library/stats.module.scss";
 import { humanizeBytes } from "../common/units/bytes";
 import { RelativeTime } from "../common/units/time";
+import { InboxStats } from "@/pythonTypes";
 
 /** A component for general inbox
  * statistics, such as the number of
@@ -27,12 +25,10 @@ import { RelativeTime } from "../common/units/time";
  * this is a wrapper component for the
  * InboxStatsItem.
  */
-export function InboxStatsComponent() {
-    const inboxQuery = useSuspenseQuery(inboxStatsQueryOptions());
-
+export function InboxStatsComponent({ inboxStats }: { inboxStats: InboxStats[] }) {
     return (
         <Box>
-            {inboxQuery.data.map((stats, i) => (
+            {inboxStats.map((stats, i) => (
                 <InboxStatsItem key={i} data={stats} />
             ))}
         </Box>

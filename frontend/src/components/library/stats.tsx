@@ -10,10 +10,9 @@ import {
     Link as MUILink,
     Tooltip,
 } from "@mui/material";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
-import { LibraryStats, libraryStatsQueryOptions } from "./_query";
+import { LibraryStats } from "@/routes/_frontpage/index";
 
 import styles from "./stats.module.scss";
 import { humanizeBytes } from "../common/units/bytes";
@@ -23,9 +22,7 @@ import { humanizeDuration, RelativeTime } from "../common/units/time";
  * statistics, such as the number of
  * items. Their runtime, etc.
  */
-export function LibraryStatsComponent() {
-    const librariesQuery = useSuspenseQuery(libraryStatsQueryOptions());
-
+export function LibraryStatsComponent({ stats }: { stats: LibraryStats }) {
     return (
         <Card
             sx={{
@@ -35,7 +32,7 @@ export function LibraryStatsComponent() {
             }}
         >
             <CardContent sx={{ pr: 2, width: "100%" }}>
-                <Header data={librariesQuery.data} />
+                <Header data={stats} />
                 <Divider variant="inset" component="div" sx={{ marginBlock: 0.5 }} />
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                     <Box
@@ -49,21 +46,16 @@ export function LibraryStatsComponent() {
                             alignItems: "center",
                         }}
                     >
+                        <div>Total Runtime: {humanizeDuration(stats.runtime)}</div>
                         <div>
-                            Total Runtime:{" "}
-                            {humanizeDuration(librariesQuery.data.runtime)}
+                            Disk Usage: {humanizeBytes(stats.size)} /{" "}
+                            {humanizeBytes(stats.size + stats.freeSpace)}
                         </div>
-                        <div>
-                            Disk Usage: {humanizeBytes(librariesQuery.data.size)} /{" "}
-                            {humanizeBytes(
-                                librariesQuery.data.size + librariesQuery.data.freeSpace
-                            )}
-                        </div>
-                        <div>Number of tracks: {librariesQuery.data.items}</div>
-                        <div>Number of albums: {librariesQuery.data.albums}</div>
-                        <div>Number of artists: {librariesQuery.data.artists}</div>
-                        <div>Number of genres: {librariesQuery.data.genres}</div>
-                        <div>Number of labels: {librariesQuery.data.labels}</div>
+                        <div>Number of tracks: {stats.items}</div>
+                        <div>Number of albums: {stats.albums}</div>
+                        <div>Number of artists: {stats.artists}</div>
+                        <div>Number of genres: {stats.genres}</div>
+                        <div>Number of labels: {stats.labels}</div>
                     </Box>
                 </Box>
                 <Divider variant="inset" component="div" sx={{ marginBlock: 0.5 }} />

@@ -1,3 +1,4 @@
+import { Change } from "diff";
 import { ArrowRightIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import React, {
     createContext,
@@ -31,8 +32,6 @@ import {
     SerializedTaskState,
     TrackInfo,
 } from "@/pythonTypes";
-
-import { Change } from "diff";
 
 /* ----------------------------- Candidate Diff ----------------------------- */
 
@@ -158,13 +157,13 @@ function TrackDiffContextProvider({
         // FIXME: could be a bit more efficient with sets
         for (let i = 0; i < candidate.tracks.length; i++) {
             const track = candidate.tracks[i];
-            if (!pairs.some(([item]) => item.index === i)) {
+            if (!pairs.some(([, other]) => other.index === track.index)) {
                 extra_tracks.push(track);
             }
         }
         for (let i = 0; i < items.length; i++) {
             const item = items[i];
-            if (!pairs.some(([, track]) => track.index === i)) {
+            if (!pairs.some(([other]) => other.index === item.index)) {
                 extra_items.push(item);
             }
         }
@@ -317,7 +316,7 @@ function ExtraTracks() {
                 onExpand={setExpanded}
             />
             <Typography variant="body2" color="diffs.light" pb={0.5}>
-                {extra_tracks.length} extra tracks in candidate
+                {extra_tracks.length} tracks of candidate not found on disk
             </Typography>
             <TrackChangesGrid
                 sx={{
@@ -357,7 +356,7 @@ function ExtraItems() {
                 onExpand={setExpanded}
             />
             <Typography variant="body2" color="diffs.light" pb={0.5}>
-                {extra_items.length} extra items on disk
+                {extra_items.length} items on disk not part of the candidate
             </Typography>
             <TrackChangesGrid
                 sx={{
@@ -465,7 +464,7 @@ function TrackChanges() {
                 color={theme.palette.diffs.changed}
             />
             <Typography variant="body2" color="diffs.light" pb={0.5}>
-                {changeCounter} changes to tracks
+                {changeCounter} of {pairs.length} tracks changed
             </Typography>
             {/*Changes grid*/}
             <TrackChangesGrid>
@@ -540,7 +539,7 @@ export function GenericDetailsItem({
     children,
     tooltip,
     label,
-    sx,
+    sx = [],
     icon_color,
 }: GenericDetailsItemProps) {
     // Show tooltip on hover of label row
@@ -567,7 +566,6 @@ export function GenericDetailsItem({
                     display: "flex",
                     alignItems: "center",
                     gap: 0.5,
-                    ...sx,
                 },
                 ...(Array.isArray(sx) ? sx : [sx]),
             ]}
