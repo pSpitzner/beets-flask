@@ -4,7 +4,15 @@ import {
     ChevronsUpDownIcon,
     ExternalLinkIcon,
 } from "lucide-react";
-import { Fragment, useMemo, useState } from "react";
+import {
+    createContext,
+    Fragment,
+    ReactNode,
+    useCallback,
+    useContext,
+    useMemo,
+    useState,
+} from "react";
 import {
     Button,
     ButtonGroup,
@@ -41,12 +49,6 @@ export function TaskCandidates({ task }: { task: SerializedTaskState }) {
         return task.candidates[0].id;
     });
 
-    const [showDetails, setShowDetails] = useState<
-        Array<SerializedCandidateState["id"]>
-    >(() => {
-        return [task.candidates[0].id];
-    });
-
     const asisCandidate = useMemo(
         () => task.candidates.find((c) => c.info.data_source === "asis"),
         [task.candidates]
@@ -66,34 +68,9 @@ export function TaskCandidates({ task }: { task: SerializedTaskState }) {
     }
 
     return (
-        <>
+        <CandidatesContextProvider candidates={sortedCandidates}>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                <ButtonGroup
-                    size="small"
-                    sx={{
-                        marginLeft: "auto",
-                    }}
-                    color="secondary"
-                >
-                    <Button
-                        disabled={showDetails.length === task.candidates.length}
-                        onClick={() =>
-                            setShowDetails(
-                                task.candidates.map((candidate) => candidate.id)
-                            )
-                        }
-                        startIcon={<ChevronsUpDownIcon size={20} />}
-                    >
-                        Expand all
-                    </Button>
-                    <Button
-                        disabled={showDetails.length === 0}
-                        onClick={() => setShowDetails([])}
-                        startIcon={<ChevronsDownUpIcon size={20} />}
-                    >
-                        Collapse all
-                    </Button>
-                </ButtonGroup>
+                <TopBar candidates={task.candidates} />
 
                 <GridWrapper>
                     {sortedCandidates.map((candidate) => (
@@ -101,28 +78,93 @@ export function TaskCandidates({ task }: { task: SerializedTaskState }) {
                             <CandidateInfo
                                 key={candidate.id}
                                 candidate={candidate}
-                                selected={selected == candidate.id}
+                                selected={selected === candidate.id}
                                 setSelected={setSelected.bind(null, candidate.id)}
-                                expanded={showDetails.includes(candidate.id)}
-                                toggleExpanded={() => {
-                                    setShowDetails((prev) =>
-                                        prev.includes(candidate.id)
-                                            ? prev.filter((id) => id !== candidate.id)
-                                            : [...prev, candidate.id]
-                                    );
-                                }}
                             />
                             <CandidateDetails
                                 candidate={candidate}
                                 items={task.items}
                                 metadata={task.current_metadata}
-                                expanded={showDetails.includes(candidate.id)}
                             />
                         </Fragment>
                     ))}
                 </GridWrapper>
             </Box>
-        </>
+        </CandidatesContextProvider>
+    );
+}
+
+/* --------------------------------- Context -------------------------------- */
+// Used to manage expanded state i.e. the state of the accordion
+
+const CandidatesContext = createContext<null | {
+    expandedCandidates: Set<SerializedCandidateState["id"]>;
+    isExpanded: (id: SerializedCandidateState["id"]) => boolean;
+    toggleExpanded: (id: SerializedCandidateState["id"]) => void;
+    collapseAll: () => void;
+    setExpandedCandidates: (candidates: Set<SerializedCandidateState["id"]>) => void;
+    expandAll: () => void;
+}>(null);
+
+const useCandidatesContext = () => {
+    const context = useContext(CandidatesContext);
+    if (!context) {
+        throw new Error(
+            "useCandidateContext must be used within a CandidatesContextProvider"
+        );
+    }
+    return context;
+};
+
+function CandidatesContextProvider({
+    children,
+    candidates,
+}: {
+    children: ReactNode;
+    candidates: Array<SerializedCandidateState>;
+}) {
+    const [expanded, setExpanded] = useState<Set<SerializedCandidateState["id"]>>(
+        () => {
+            return new Set([candidates[1].id]);
+        }
+    );
+
+    const isExpanded = useCallback(
+        (id: SerializedCandidateState["id"]) => {
+            return expanded.has(id);
+        },
+        [expanded]
+    );
+
+    return (
+        <CandidatesContext.Provider
+            value={{
+                isExpanded,
+                expandedCandidates: expanded,
+                setExpandedCandidates: setExpanded,
+                collapseAll: () => {
+                    setExpanded(new Set());
+                },
+                toggleExpanded: (id) => {
+                    setExpanded((prev) => {
+                        const copy = new Set(prev);
+
+                        if (copy.has(id)) {
+                            copy.delete(id);
+                        } else {
+                            copy.add(id);
+                        }
+
+                        return copy;
+                    });
+                },
+                expandAll: () => {
+                    setExpanded(new Set(candidates.map((c) => c.id)));
+                },
+            }}
+        >
+            {children}
+        </CandidatesContext.Provider>
     );
 }
 
@@ -184,6 +226,35 @@ const CandidateDetailsRow = styled(Box)(({ theme }) => ({
     flexDirection: "column",
 }));
 
+function TopBar({ candidates }: { candidates: SerializedCandidateState[] }) {
+    const { expandedCandidates, collapseAll, expandAll } = useCandidatesContext();
+
+    return (
+        <ButtonGroup
+            size="small"
+            sx={{
+                marginLeft: "auto",
+            }}
+            color="secondary"
+        >
+            <Button
+                disabled={expandedCandidates.size === candidates.length}
+                onClick={expandAll}
+                startIcon={<ChevronsUpDownIcon size={20} />}
+            >
+                Expand all
+            </Button>
+            <Button
+                disabled={expandedCandidates.size === 0}
+                onClick={collapseAll}
+                startIcon={<ChevronsDownUpIcon size={20} />}
+            >
+                Collapse all
+            </Button>
+        </ButtonGroup>
+    );
+}
+
 /* -------------------------------- Candidate ------------------------------- */
 
 /** Candidate info.
@@ -194,63 +265,64 @@ function CandidateInfo({
     candidate,
     selected,
     setSelected,
-    expanded,
-    toggleExpanded,
 }: {
     candidate: SerializedCandidateState;
     selected: boolean;
     setSelected: () => void;
-    expanded: boolean;
-    toggleExpanded: () => void;
 }) {
+    const { isExpanded, toggleExpanded } = useCandidatesContext();
     const theme = useTheme();
-    return (
-        <CandidateInfoRow data-expanded={expanded}>
-            <Box gridColumn="selector" display="flex">
-                <Radio
-                    checked={selected}
-                    onChange={setSelected}
-                    value={candidate.id}
-                    size="small"
-                    sx={{
-                        padding: 0,
-                    }}
-                />
-            </Box>
-            <Box gridColumn="match" display="flex" justifyContent="flex-end">
-                <MatchChip
-                    source={candidate.info.data_source!}
-                    distance={candidate.distance}
-                />
-            </Box>
-            <Box gridColumn="name" display="flex">
-                {candidate.info.artist} - {candidate.info.album}
-            </Box>
-            <Box
-                gridColumn="penalties"
-                display="flex"
-                alignItems="center"
-                height="100%"
-                gap={0.25}
-            >
-                <PenaltyIconRow candidate={candidate} size={theme.iconSize.md} />
-            </Box>
-            <Box gridColumn="toggle" display="flex">
-                <IconButton
-                    onClick={toggleExpanded}
-                    sx={{
-                        padding: 0,
-                        "& svg": {
-                            // TODO: an small animation would be nice
-                            transform: expanded ? "rotate(180deg)" : undefined,
-                        },
-                    }}
+
+    const expanded = isExpanded(candidate.id);
+    return useMemo(() => {
+        return (
+            <CandidateInfoRow data-expanded={expanded}>
+                <Box gridColumn="selector" display="flex">
+                    <Radio
+                        checked={selected}
+                        onChange={setSelected}
+                        value={candidate.id}
+                        size="small"
+                        sx={{
+                            padding: 0,
+                        }}
+                    />
+                </Box>
+                <Box gridColumn="match" display="flex" justifyContent="flex-end">
+                    <MatchChip
+                        source={candidate.info.data_source!}
+                        distance={candidate.distance}
+                    />
+                </Box>
+                <Box gridColumn="name" display="flex">
+                    {candidate.info.artist} - {candidate.info.album}
+                </Box>
+                <Box
+                    gridColumn="penalties"
+                    display="flex"
+                    alignItems="center"
+                    height="100%"
+                    gap={0.25}
                 >
-                    <ChevronDownIcon size={20} />
-                </IconButton>
-            </Box>
-        </CandidateInfoRow>
-    );
+                    <PenaltyIconRow candidate={candidate} size={theme.iconSize.md} />
+                </Box>
+                <Box gridColumn="toggle" display="flex">
+                    <IconButton
+                        onClick={() => toggleExpanded(candidate.id)}
+                        sx={{
+                            padding: 0,
+                            "& svg": {
+                                // TODO: an small animation would be nice
+                                transform: expanded ? "rotate(180deg)" : undefined,
+                            },
+                        }}
+                    >
+                        <ChevronDownIcon size={20} />
+                    </IconButton>
+                </Box>
+            </CandidateInfoRow>
+        );
+    }, [expanded, selected]);
 }
 
 /** Candidate details.
@@ -262,63 +334,67 @@ function CandidateDetails({
     candidate,
     items,
     metadata,
-    expanded,
 }: {
     candidate: SerializedCandidateState;
     items: SerializedTaskState["items"];
     metadata: SerializedTaskState["current_metadata"];
-    expanded: boolean;
 }) {
-    return (
-        <CandidateDetailsRow data-expanded={expanded}>
-            <Box
-                sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                }}
-            >
-                {/* Wrapper to show the cover art and the general info */}
-                <Box
-                    sx={(theme) => ({
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: 1,
+    const { isExpanded } = useCandidatesContext();
 
-                        [theme.breakpoints.down("tablet")]: {
-                            flexDirection: "column-reverse",
-                            alignItems: "flex-start",
-                            paddingLeft: 1,
-                        },
-                    })}
+    const expanded = isExpanded(candidate.id);
+
+    return useMemo(() => {
+        return (
+            <CandidateDetailsRow data-expanded={expanded}>
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                    }}
                 >
-                    <OverviewChanges candidate={candidate} metadata={metadata} />
+                    {/* Wrapper to show the cover art and the general info */}
                     <Box
                         sx={(theme) => ({
                             display: "flex",
-                            alignItems: "center",
-                            width: "72px",
-                            height: "72px",
+                            alignItems: "flex-start",
+                            gap: 1,
 
                             [theme.breakpoints.down("tablet")]: {
-                                width: "100%",
-                                height: "auto",
-                                maxHeight: "200px",
+                                flexDirection: "column-reverse",
+                                alignItems: "flex-start",
+                                paddingLeft: 1,
                             },
                         })}
                     >
-                        <ExternalCoverArt data_url={candidate.info.data_url} />
+                        <OverviewChanges candidate={candidate} metadata={metadata} />
+                        <Box
+                            sx={(theme) => ({
+                                display: "flex",
+                                alignItems: "center",
+                                width: "72px",
+                                height: "72px",
+
+                                [theme.breakpoints.down("tablet")]: {
+                                    width: "100%",
+                                    height: "auto",
+                                    maxHeight: "200px",
+                                },
+                            })}
+                        >
+                            <ExternalCoverArt data_url={candidate.info.data_url} />
+                        </Box>
                     </Box>
+
+                    <Divider sx={{ marginY: 1 }} />
+
+                    {/* Track/item Diffs */}
+                    <TrackDiff items={items} candidate={candidate} />
                 </Box>
 
-                <Divider sx={{ marginY: 1 }} />
-
-                {/* Track/item Diffs */}
-                <TrackDiff items={items} candidate={candidate} />
-            </Box>
-
-            {/* Tracks */}
-        </CandidateDetailsRow>
-    );
+                {/* Tracks */}
+            </CandidateDetailsRow>
+        );
+    }, [expanded]);
 }
 /** Overview of changes to metadata if track
  * is applied.
