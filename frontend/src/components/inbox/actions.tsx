@@ -5,7 +5,7 @@ import {
     TagIcon,
     Trash2Icon,
 } from "lucide-react";
-import { forwardRef, MouseEvent, Ref, useState } from "react";
+import { forwardRef, Ref, useImperativeHandle, useRef, useState } from "react";
 import {
     Box,
     BoxProps,
@@ -255,19 +255,51 @@ function SpeedDialAction<T>({
     );
 }
 
-/** Simple context menu with some items
- *
- * TODO: Rethink
+/* ------------------------------ More actions ------------------------------ */
+
+/** MoreActions component with three dots icon
+ * and a menu with actions. Allows to be opened
+ * anchored to a specific element or position.
  */
-export function MoreActions({ f, ...props }: { f: Folder | File } & BoxProps) {
-    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+export function MoreActions({
+    f,
+    anchor,
+    setAnchor,
+    ...props
+}: {
+    f: Folder | File;
+    anchor: { top: number; left: number } | HTMLElement | null;
+    setAnchor: (
+        anchor:
+            | {
+                  top: number;
+                  left: number;
+              }
+            | HTMLElement
+            | null
+    ) => void;
+} & BoxProps) {
     const theme = useTheme();
 
+    const closeMenu = () => {
+        setAnchor(null);
+    };
+
     return (
-        <Box {...props}>
+        <Box
+            {...props}
+            onClick={(e) => {
+                // Prevents deselecting the current item when clicking on the menu
+                // This is a bit of a hack, but it works
+                e.preventDefault();
+                e.stopPropagation();
+            }}
+        >
             <IconButton
                 onClick={(e) => {
-                    setAnchorEl(e.currentTarget);
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setAnchor(e.currentTarget);
                 }}
                 sx={{ padding: "0px", margin: "0px" }}
                 disableRipple
@@ -275,34 +307,65 @@ export function MoreActions({ f, ...props }: { f: Folder | File } & BoxProps) {
                 <EllipsisVerticalIcon size={theme.iconSize.lg} />
             </IconButton>
             <Menu
-                onClose={() => setAnchorEl(null)}
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
+                onClose={closeMenu}
+                anchorEl={anchor instanceof Element ? anchor : null}
+                open={anchor !== null}
+                anchorOrigin={{
+                    vertical: "bottom",
+                    horizontal: "right",
+                }}
+                transformOrigin={{
+                    vertical: "top",
+                    horizontal: "right",
+                }}
+                anchorReference={
+                    anchor instanceof Element ? "anchorEl" : "anchorPosition"
+                }
+                anchorPosition={
+                    !(anchor instanceof Element)
+                        ? anchor
+                            ? anchor
+                            : undefined
+                        : undefined
+                }
             >
-                <MenuItem
-                    onClick={() => {
-                        // copy full path to clipboard
-                        navigator.clipboard.writeText(f.full_path).catch(console.error);
-                        setAnchorEl(null);
-                    }}
-                >
-                    <ClipboardCopyButton
-                        text={f.full_path}
-                        icon_props={{
-                            size: theme.iconSize.lg,
-                        }}
-                        sx={{
-                            margin: 0,
-                            display: "flex",
-                            gap: "0.5rem",
-                            fontSize: "1rem",
-                            padding: "0",
-                        }}
-                    >
-                        Copy Path
-                    </ClipboardCopyButton>
-                </MenuItem>
+                <MoreActionsItems f={f} handleClose={closeMenu} />
             </Menu>
         </Box>
+    );
+}
+
+function MoreActionsItems({
+    f,
+    handleClose,
+}: {
+    f: Folder | File;
+    handleClose: () => void;
+}) {
+    return (
+        <>
+            <MenuItem>
+                <ClipboardCopyButton
+                    text={f.full_path}
+                    icon_props={{
+                        size: 24,
+                    }}
+                    sx={{
+                        margin: 0,
+                        display: "flex",
+                        gap: "0.5rem",
+                        fontSize: "1rem",
+                        padding: "0",
+                    }}
+                    onCopied={() => {
+                        setTimeout(() => {
+                            handleClose();
+                        }, 500);
+                    }}
+                >
+                    Copy Path
+                </ClipboardCopyButton>
+            </MenuItem>
+        </>
     );
 }

@@ -1,5 +1,5 @@
 import { LucideChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
     Box,
     Checkbox,
@@ -23,6 +23,7 @@ import { useFolderSelectionContext } from "./folderSelectionContext";
 
 import { BestCandidateChip, DuplicateChip, FolderStatusChip } from "../common/chips";
 import { FileTypeIcon, FolderTypeIcon } from "../common/icons";
+import useMobileSafeContextMenu from "../common/hooks/useMobileSafeContextMenu";
 
 /* ------------------------------ Grid wrapper ------------------------------ */
 
@@ -78,6 +79,45 @@ export function FolderComponent({
     });
     const { isSelected, toggleSelect } = useFolderSelectionContext();
 
+    // Getting a context menu to work is a bit tricky
+    // on mobile devices, so we use a custom hook
+    // to handle the context menu events on long press
+    // we also want to allow to trigger the menu using a button
+    // for this we use a element as anchor
+    const [contextMenuAnchor, setContextMenuAnchor] = useState<
+        | {
+              top: number;
+              left: number;
+          }
+        | HTMLElement
+        | null
+    >(null);
+    const mobileSafeContext = useMobileSafeContextMenu((e) => {
+        e.preventDefault();
+
+        setContextMenuAnchor(
+            contextMenuAnchor === null
+                ? {
+                      top: e.clientY + 2,
+                      left: e.clientX - 6,
+                  }
+                : // repeated contextmenu when it is already open closes it with Chrome 84 on Ubuntu
+                  // Other native context menus might behave different.
+                  // With this behavior we prevent contextmenu from the backdrop to re-locale existing context menus.
+                  null
+        );
+
+        // Prevent text selection lost after opening the context menu on Safari and Firefox
+        const selection = document.getSelection();
+        if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+
+            setTimeout(() => {
+                selection.addRange(range);
+            });
+        }
+    }, 500);
+
     // Create children elements from tree (recursive)
     const childElements = Object.entries(folder.children).map(([_key, values]) => {
         if (values.type === "file") {
@@ -98,21 +138,25 @@ export function FolderComponent({
             {/* TODO: Generate with best candidate */}
             <GridRow
                 sx={(theme) => ({
-                    backgroundColor: isSelected(folder)
-                        ? theme.palette.action.selected + " !important"
-                        : "inherit",
                     paddingInline: theme.spacing(0.5),
                     borderRadius: 1,
                     position: "relative",
-                    "&:hover": {
+                    "&:hover, &[data-contextmenu='true']": {
                         backgroundColor: theme.palette.action.hover + " !important",
                     },
+                    "&[data-selected='true']": {
+                        backgroundColor: theme.palette.action.selected + " !important",
+                    },
                 })}
+                data-selected={isSelected(folder)}
+                data-contextmenu={Boolean(contextMenuAnchor)}
                 onClick={() => toggleSelect(folder)}
+                {...mobileSafeContext}
             >
                 <Link
                     to={"/session/$id"}
                     params={{ id: folder.hash }}
+                    preload="intent"
                     style={{ gridColumn: "chip" }}
                 >
                     <Chips folder={folder} />
@@ -126,7 +170,12 @@ export function FolderComponent({
                     level={level}
                 />
                 {/* More actions*/}
-                <MoreActions f={folder} sx={{ gridColumn: "actions" }} />
+                <MoreActions
+                    f={folder}
+                    anchor={contextMenuAnchor}
+                    setAnchor={setContextMenuAnchor}
+                    sx={{ gridColumn: "actions" }}
+                />
 
                 {/* Selector */}
                 <Checkbox
@@ -135,7 +184,11 @@ export function FolderComponent({
                     }}
                     size="medium"
                     checked={isSelected(folder)}
-                    onChange={() => toggleSelect(folder)}
+                    onChange={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleSelect(folder);
+                    }}
                     style={{ padding: 0 }}
                     disabled={unSelectable}
                 />

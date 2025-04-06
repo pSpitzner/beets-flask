@@ -13,10 +13,14 @@ export function ClipboardCopyButton({
     label,
     children,
     icon_props,
+    onCopied,
     ...props
-}: { text: string; label?: string; icon_props?: LucideProps } & React.ComponentProps<
-    typeof IconButton
->) {
+}: {
+    text: string;
+    label?: string;
+    icon_props?: LucideProps;
+    onCopied?: () => void;
+} & React.ComponentProps<typeof IconButton>) {
     const [copied, setCopied] = useState(false);
 
     return (
@@ -26,6 +30,7 @@ export function ClipboardCopyButton({
                     navigator.clipboard.writeText(text).catch(console.error);
                     setCopied(true);
                     setTimeout(() => setCopied(false), 5000);
+                    onCopied?.();
                 }}
                 disableRipple
                 {...props}
