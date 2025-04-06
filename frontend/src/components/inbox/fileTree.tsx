@@ -97,10 +97,18 @@ export function FolderComponent({
             {/* Current best match including penalties */}
             {/* TODO: Generate with best candidate */}
             <GridRow
-                sx={{
-                    backgroundColor: isSelected(folder) ? "gray !important" : "inherit",
+                sx={(theme) => ({
+                    backgroundColor: isSelected(folder)
+                        ? theme.palette.action.selected + " !important"
+                        : "inherit",
+                    paddingInline: theme.spacing(0.5),
+                    borderRadius: 1,
                     position: "relative",
-                }}
+                    "&:hover": {
+                        backgroundColor: theme.palette.action.hover + " !important",
+                    },
+                })}
+                onClick={() => toggleSelect(folder)}
             >
                 <Link
                     to={"/session/$id"}
@@ -172,7 +180,11 @@ function FolderTreeRow({
         >
             {/* Collapse/Expand button */}
             <IconButton
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={(e) => {
+                    setIsOpen(!isOpen);
+                    e.stopPropagation();
+                    e.preventDefault();
+                }}
                 size="small"
                 sx={{
                     padding: "0px",

@@ -1,4 +1,4 @@
-import { Box } from "@mui/material";
+import { Box, useTheme } from "@mui/material";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -82,12 +82,14 @@ function RouteComponent() {
                                 maxWidth: "100%",
                                 position: "relative",
                                 paddingBlock: theme.spacing(1),
-                                paddingInline: theme.spacing(2),
+                                paddingInline: theme.spacing(1.5),
                                 backgroundColor: theme.palette.background.paper,
                                 gap: theme.spacing(1),
                                 [theme.breakpoints.up("laptop")]: {
                                     // Styles for desktop
-                                    margin: theme.spacing(2),
+                                    marginInline: theme.spacing(2),
+                                    marginTop: theme.spacing(2),
+                                    marginBottom: theme.spacing(1),
                                     minWidth: theme.breakpoints.values["laptop"],
                                     width: "calc(100% - " + theme.spacing(2) + " * 2)",
                                     maxWidth: theme.breakpoints.values["desktop"],
@@ -103,22 +105,25 @@ function RouteComponent() {
                                 <FolderComponent key={i} folder={folder} unSelectable />
                             </GridWrapper>
                         ))}
-                        <Box
-                            sx={(theme) => ({
-                                width: "100%",
-                                display: "flex",
-                                position: "absolute",
-                                bottom: theme.spacing(2),
-                                justifyContent: "flex-end",
-                                [theme.breakpoints.up("laptop")]: {
-                                    justifyContent: "flex-start",
-                                    position: "relative",
-                                    bottom: "inherit",
-                                },
-                            })}
-                        >
-                            <FolderActionsSpeedDial />
-                        </Box>
+                    </Box>
+                    <Box
+                        sx={(theme) => ({
+                            maxWidth: theme.breakpoints.values["desktop"],
+                            width: "100%",
+                            display: "flex",
+                            position: "absolute",
+                            bottom: theme.spacing(2),
+                            right: theme.spacing(2),
+                            justifyContent: "flex-end",
+                            [theme.breakpoints.up("laptop")]: {
+                                justifyContent: "flex-start",
+                                position: "relative",
+                                bottom: "inherit",
+                                right: "inherit",
+                            },
+                        })}
+                    >
+                        <FolderActionsSpeedDial />
                     </Box>
                 </FolderSelectionProvider>
             </Box>

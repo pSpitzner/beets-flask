@@ -90,7 +90,9 @@ const darkTheme = createTheme({
             main: "#ffffff",
         },
         action: {
-            hover: "#212529",
+            // hover: "#212529",
+            hover: "#3A3C3E",
+            selected: "#7C848E22",
         },
         background: {
             default: "#000000",
