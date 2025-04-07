@@ -184,11 +184,6 @@ export function FolderComponent({
                     }}
                     size="medium"
                     checked={isSelected(folder)}
-                    onChange={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        toggleSelect(folder);
-                    }}
                     style={{ padding: 0 }}
                     disabled={unSelectable}
                 />

@@ -316,7 +316,7 @@ export function MoreActions({
                 }}
                 transformOrigin={{
                     vertical: "top",
-                    horizontal: "right",
+                    horizontal: anchor instanceof Element ? "right" : "center",
                 }}
                 anchorReference={
                     anchor instanceof Element ? "anchorEl" : "anchorPosition"

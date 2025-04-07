@@ -39,16 +39,13 @@ import { GenericDetailsItem, GenericDetailsItemWithDiff, TrackDiff } from "./dif
 import { MatchChip } from "../../common/chips";
 import { PenaltyTypeIcon, SourceTypeIcon } from "../../common/icons";
 import { PenaltyIconRow } from "../icons";
+import { CandidateSearch, DuplicateActions, ImportCandidateButton } from "./actions";
 
 /** Show a radio list of task candidates.
  *
  * Each item is expandable to show more details about the candidate.
  */
 export function TaskCandidates({ task }: { task: SerializedTaskState }) {
-    const [selected, setSelected] = useState<SerializedCandidateState["id"]>(() => {
-        return task.candidates[0].id;
-    });
-
     const asisCandidate = useMemo(
         () => task.candidates.find((c) => c.info.data_source === "asis"),
         [task.candidates]
@@ -75,12 +72,7 @@ export function TaskCandidates({ task }: { task: SerializedTaskState }) {
                 <GridWrapper>
                     {sortedCandidates.map((candidate) => (
                         <Fragment key={candidate.id}>
-                            <CandidateInfo
-                                key={candidate.id}
-                                candidate={candidate}
-                                selected={selected === candidate.id}
-                                setSelected={setSelected.bind(null, candidate.id)}
-                            />
+                            <CandidateInfo key={candidate.id} candidate={candidate} />
                             <CandidateDetails
                                 candidate={candidate}
                                 items={task.items}
@@ -89,6 +81,8 @@ export function TaskCandidates({ task }: { task: SerializedTaskState }) {
                         </Fragment>
                     ))}
                 </GridWrapper>
+
+                <BottomBar candidates={task.candidates} />
             </Box>
         </CandidatesContextProvider>
     );
@@ -104,6 +98,9 @@ const CandidatesContext = createContext<null | {
     collapseAll: () => void;
     setExpandedCandidates: (candidates: Set<SerializedCandidateState["id"]>) => void;
     expandAll: () => void;
+
+    selected: SerializedCandidateState["id"];
+    setSelected: (id: SerializedCandidateState["id"]) => void;
 }>(null);
 
 const useCandidatesContext = () => {
@@ -123,6 +120,10 @@ function CandidatesContextProvider({
     children: ReactNode;
     candidates: Array<SerializedCandidateState>;
 }) {
+    const [selected, setSelected] = useState<SerializedCandidateState["id"]>(() => {
+        return candidates[0].id;
+    });
+
     const [expanded, setExpanded] = useState<Set<SerializedCandidateState["id"]>>(
         () => {
             return new Set([candidates[1].id]);
@@ -161,6 +162,8 @@ function CandidatesContextProvider({
                 expandAll: () => {
                     setExpanded(new Set(candidates.map((c) => c.id)));
                 },
+                selected,
+                setSelected,
             }}
         >
             {children}
@@ -255,22 +258,41 @@ function TopBar({ candidates }: { candidates: SerializedCandidateState[] }) {
     );
 }
 
+function BottomBar({ candidates }: { candidates: SerializedCandidateState[] }) {
+    const { selected } = useCandidatesContext();
+
+    const selectedCandidate = useMemo(() => {
+        return candidates.find((c) => c.id === selected);
+    }, [candidates, selected]);
+
+    if (!selectedCandidate) {
+        return "No candidate selected";
+    }
+
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-end",
+            }}
+        >
+            <CandidateSearch />
+            <DuplicateActions sx={{ marginLeft: "auto" }} />
+            <ImportCandidateButton candidate={selectedCandidate} />
+        </Box>
+    );
+}
+
 /* -------------------------------- Candidate ------------------------------- */
 
 /** Candidate info.
  *
  * Shows a row with the major information about the candidate.
  */
-function CandidateInfo({
-    candidate,
-    selected,
-    setSelected,
-}: {
-    candidate: SerializedCandidateState;
-    selected: boolean;
-    setSelected: () => void;
-}) {
-    const { isExpanded, toggleExpanded } = useCandidatesContext();
+function CandidateInfo({ candidate }: { candidate: SerializedCandidateState }) {
+    const { isExpanded, toggleExpanded, selected, setSelected } =
+        useCandidatesContext();
     const theme = useTheme();
 
     const expanded = isExpanded(candidate.id);
@@ -279,8 +301,10 @@ function CandidateInfo({
             <CandidateInfoRow data-expanded={expanded}>
                 <Box gridColumn="selector" display="flex">
                     <Radio
-                        checked={selected}
-                        onChange={setSelected}
+                        checked={selected === candidate.id}
+                        onChange={() => {
+                            setSelected(candidate.id);
+                        }}
                         value={candidate.id}
                         size="small"
                         sx={{
