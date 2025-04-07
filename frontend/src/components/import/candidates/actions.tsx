@@ -17,6 +17,7 @@ import {
     ToggleButtonProps,
     Tooltip,
     Typography,
+    TypographyProps,
     useTheme,
 } from "@mui/material";
 import {
@@ -74,29 +75,29 @@ export function ImportCandidateButton({
     candidate: SerializedCandidateState;
 }) {
     return (
-        <Box
-            sx={{
-                display: "flex",
-                alignItems: "flex-end",
-                flexDirection: "column",
-                justifyContent: "flex-end",
-                gap: 0.5,
+        <Button
+            variant="outlined"
+            color="primary"
+            startIcon={<CheckIcon size={14} />}
+            onClick={() => {
+                alert("TODO: Import " + candidate.info.data_url);
             }}
         >
-            <Typography variant="caption" color="textDisabled">
-                {candidateMatchText({ candidate })}
-            </Typography>
-            <Button
-                variant="outlined"
-                color="primary"
-                startIcon={<CheckIcon size={14} />}
-                onClick={() => {
-                    alert("TODO: Import " + candidate.info.data_url);
-                }}
-            >
-                Import
-            </Button>
-        </Box>
+            Import
+        </Button>
+    );
+}
+
+export function ImportCandidateLabel({
+    candidate,
+    ...props
+}: {
+    candidate: SerializedCandidateState;
+} & TypographyProps) {
+    return (
+        <Typography variant="caption" color="textDisabled" {...props}>
+            {candidateMatchText({ candidate })}
+        </Typography>
     );
 }
 
@@ -223,6 +224,7 @@ export function CandidateSearch() {
                         flexDirection: "column",
                         padding: 0.5,
                         paddingInline: 1,
+                        paddingBlock: 1.5,
                         borderRadius: 1,
                         gap: 1.5,
                         backgroundColor: theme.palette.background.paper,
@@ -230,18 +232,19 @@ export function CandidateSearch() {
                         [theme.breakpoints.down("tablet")]: {
                             width: "100%",
                             height: "100%",
+                            minWidth: "auto",
                         },
                         boxShadow: theme.shadows[4],
                     })}
                 >
                     <Box
-                        sx={(theme) => ({
+                        sx={{
                             display: "flex",
                             width: "100%",
                             gap: 1,
                             alignItems: "center",
                             justifyContent: "space-between",
-                        })}
+                        }}
                     >
                         <Typography variant="h5" component="div">
                             Search for more candidates
@@ -304,6 +307,7 @@ export function CandidateSearch() {
                             display: "flex",
                             justifyContent: "flex-end",
                             gap: 1,
+                            marginTop: "auto",
                         }}
                     >
                         <FormHelperText

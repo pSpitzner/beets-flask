@@ -23,6 +23,7 @@ import {
     styled,
     SxProps,
     Theme,
+    Typography,
     useTheme,
 } from "@mui/material";
 import Box, { BoxProps } from "@mui/material/Box";
@@ -39,7 +40,12 @@ import { GenericDetailsItem, GenericDetailsItemWithDiff, TrackDiff } from "./dif
 import { MatchChip } from "../../common/chips";
 import { PenaltyTypeIcon, SourceTypeIcon } from "../../common/icons";
 import { PenaltyIconRow } from "../icons";
-import { CandidateSearch, DuplicateActions, ImportCandidateButton } from "./actions";
+import {
+    CandidateSearch,
+    DuplicateActions,
+    ImportCandidateButton,
+    ImportCandidateLabel,
+} from "./actions";
 
 /** Show a radio list of task candidates.
  *
@@ -272,14 +278,35 @@ function BottomBar({ candidates }: { candidates: SerializedCandidateState[] }) {
     return (
         <Box
             sx={{
+                width: "100%",
                 display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-end",
+                flexDirection: "column",
+                justifyContent: "flex-end",
+                gap: 0.5,
             }}
         >
-            <CandidateSearch />
-            <DuplicateActions sx={{ marginLeft: "auto" }} />
-            <ImportCandidateButton candidate={selectedCandidate} />
+            <Box
+                sx={{
+                    width: "100%",
+                    display: "flex",
+                    gap: 1,
+                    justifyContent: "flex-end",
+                }}
+            >
+                <Typography variant="caption" color="error">
+                    If an error occurs while importing, we could show it here instead of
+                    the import label.
+                </Typography>
+                <ImportCandidateLabel
+                    candidate={selectedCandidate}
+                    sx={{ textAlign: "right" }}
+                />
+            </Box>
+            <Box sx={{ display: "flex", gap: 1 }}>
+                <CandidateSearch />
+                <DuplicateActions sx={{ marginLeft: "auto" }} />
+                <ImportCandidateButton candidate={selectedCandidate} />
+            </Box>
         </Box>
     );
 }
