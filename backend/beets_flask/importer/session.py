@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, List, Literal
 
 import nest_asyncio
 from beets import autotag, importer, library, plugins
-from beets.ui import UserError, _open_library, colorize, print_
+from beets.ui import UserError, _open_library
 from deprecated import deprecated
 
 from beets_flask.config import get_config
@@ -295,6 +295,42 @@ class PreviewSession(BaseSession):
         return stages
 
 
+class AddCandidatesSession(PreviewSession):
+    """Import session that adds a candidate to the library."""
+
+    def __init__(
+        self,
+        state: SessionState,
+        config_overlay: dict | None = None,
+        search_ids: list[str] = [],
+        search_artist: str | None = None,
+        search_album: str | None = None,
+        **kwargs,
+    ):
+        super().__init__(state, config_overlay, **kwargs)
+
+        # TODO: Reset status of the task to refetch candidates if state is already
+        # in progress. Should be allowed to rerun if not imported yet!
+
+    @property
+    def stages(self) -> StageOrder:
+        stages = super().stages
+        return stages
+
+    def lookup_candidates(self, task: importer.ImportTask):
+        """Amend the found candidate to the already existing candidates (if any)."""
+        # TODO
+        # How do we want to handle search_id, search_artist and
+        # search_album?
+        # SM: I think we should just copy the src of the task.lookup_candidates()
+        # here. Should be fine to handle this ourself, as we are not using the
+        # Singletonimporttask. Should allow us to add the search
+        # See state_serialize.ipynb for how I would call this
+
+        # see ref in lookup_candidates in base session
+        pass
+
+
 class ImportSession(BaseSession):
     """Import session that assumes we already have a match-id."""
 
@@ -369,7 +405,7 @@ class ImportSession(BaseSession):
                             plugin_name=stage.__name__,
                         ),
                     ),
-                    name=f"early_plugin_stage_{p.__class__.__name__}_{ stage.__name__}",
+                    name=f"early_plugin_stage_{p.__class__.__name__}_{stage.__name__}",
                 )
 
         # Import stages
@@ -384,7 +420,7 @@ class ImportSession(BaseSession):
                             plugin_name=stage.__name__,
                         ),
                     ),
-                    name=f"plugin_stage_{p.__class__.__name__}_{ stage.__name__}",
+                    name=f"plugin_stage_{p.__class__.__name__}_{stage.__name__}",
                 )
 
         # finally, move files

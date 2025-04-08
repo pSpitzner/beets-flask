@@ -49,11 +49,12 @@ from typing import (
 
 from deprecated import deprecated
 from rq.decorators import job
+from rq.job import Job
 
 from beets_flask import log
 from beets_flask.database import Tag, db_session_factory
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
-from beets_flask.importer.progress import FolderStatus
+from beets_flask.importer.progress import FolderStatus, Progress
 from beets_flask.importer.session import (
     AsIsImportSession,
     AutoImportSession,
@@ -127,6 +128,7 @@ class EnqueueKind(Enum):
     IMPORT = "import"
     IMPORT_AS_IS = "import_as_is"
     AUTO = "auto"
+    ADD_CANDIDATES = "add_candidates"
 
     _AUTO_IMPORT = "auto_import"
     _AUTO_PREVIEW = "auto_preview"
@@ -147,23 +149,39 @@ class EnqueueKind(Enum):
 
 
 @emit_status(before=FolderStatus.PENDING)
-async def enqueue(hash: str, path: str, kind: EnqueueKind):
-    """Delegate an existing tag to a redis worker, depending on its kind."""
+async def enqueue(hash: str, path: str, kind: EnqueueKind, **kwargs) -> Job:
+    """Delegate an existing tag to a redis worker, depending on its kind.
 
-    f_on_disk = FolderInDb.get_current_on_disk(hash, path)
+    Parameters
+    ----------
+    hash : str
+        The hash of the folder to enqueue.
+    path : str
+        The path of the folder to enqueue.
+    kind : EnqueueKind
+        The kind of the folder to enqueue.
+    kwargs : dict
+        Additional arguments to pass to the worker functions. Might depend on the kind,
+        use with care.
+    """
+
+    f_on_disk = FolderInDb.get_current_on_disk(
+        hash,
+        path,
+    )
     hash = f_on_disk.hash
 
     if kind == EnqueueKind.PREVIEW:
-        job = preview_queue.enqueue(run_preview, hash, path, kind)
+        job = preview_queue.enqueue(run_preview, hash, path, kind, **kwargs)
         __set_job_meta(job, hash, path, kind)
     elif kind == EnqueueKind.IMPORT:
-        job = import_queue.enqueue(run_import, hash, path, kind)
+        job = import_queue.enqueue(run_import, hash, path, kind, **kwargs)
         __set_job_meta(job, hash, path, kind)
     elif kind == EnqueueKind.IMPORT_AS_IS:
-        job = import_queue.enqueue(run_import, hash, path, kind)
+        job = import_queue.enqueue(run_import, hash, path, kind, **kwargs)
         __set_job_meta(job, hash, path, kind)
     elif kind == EnqueueKind.AUTO:
-        job = preview_queue.enqueue(run_preview, hash, path, kind)
+        job = preview_queue.enqueue(run_preview, hash, path, kind, **kwargs)
         __set_job_meta(job, hash, path, EnqueueKind._AUTO_PREVIEW)
         job = import_queue.enqueue(run_auto_import, hash, path, kind, depends_on=job)
         __set_job_meta(job, hash, path, EnqueueKind._AUTO_IMPORT)
@@ -213,6 +231,42 @@ async def run_preview(hash: str, path: str, kind: str):
             db_session.commit()
 
         log.info(f"Preview done. {f_on_disk.hash=} {path=} {kind=}")
+
+
+@job(timeout=600, queue=preview_queue, connection=redis_conn)
+@emit_status(before=FolderStatus.RUNNING, after=FolderStatus.TAGGED)
+async def run_add_candidates(
+    hash: str,
+    path: str,
+    kind: str,
+    stuff: str,
+):
+    """Adds a candidate to an session which is already in the status tagged.
+
+    This only works if all session tasks are tagged. I.e. preview completed.
+    """
+    with db_session_factory() as db_session:
+        log.info(f"Add candidates task on {hash=} {path=} {kind=}")
+        f_on_disk = FolderInDb.get_current_on_disk(hash, path)
+        if hash != f_on_disk.hash:
+            log.warning(
+                f"Folder content has changed since the job was scheduled for {path}. "
+                + f"Using new content ({f_on_disk.hash}) instead of {hash}"
+            )
+
+        s_state_indb = SessionStateInDb.get_by(SessionStateInDb.folder_hash == hash)
+        if s_state_indb is None:
+            raise InvalidUsage(
+                f"Session state not found for {hash=}, this should not happen. "
+                + "Please run preview before queueing auto-import."
+            )
+
+        if s_state_indb.progress != Progress.PREVIEW_COMPLETED:
+            raise InvalidUsage(
+                f"Session state not in preview completed state for {hash=}, "
+            )
+
+        raise NotImplementedError("TODO: Add session for this")
 
 
 @job(timeout=600, queue=import_queue, connection=redis_conn)
