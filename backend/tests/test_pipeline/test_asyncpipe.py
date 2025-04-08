@@ -1,14 +1,15 @@
-import time
-from beets_flask.importer.pipeline import AsyncPipeline
-
+import asyncio
 import logging
+import time
 
 import pytest
-import asyncio
+
+from beets_flask.importer.pipeline import AsyncPipeline
+
 
 @pytest.mark.asyncio
 async def test_smoke_async(caplog):
-    """ Async version of the beets smoke test
+    """Async version of the beets smoke test
     for pipeline
     """
 
@@ -35,11 +36,9 @@ async def test_smoke_async(caplog):
             await asyncio.sleep(0.1)
             log.info("consuming %i" % num)
 
-
     initial_task = produce()
     stages = [work(), consume()]
-    pipeline = AsyncPipeline(initial_task, stages)
-
+    pipeline: AsyncPipeline = AsyncPipeline(initial_task, stages)
 
     await pipeline.run_async()
     assert caplog.record_tuples == [
@@ -61,10 +60,9 @@ async def test_smoke_async(caplog):
     ]
 
 
-
 @pytest.mark.asyncio
 async def test_smoke_sync(caplog):
-    """ Async version of the beets smoke test
+    """Async version of the beets smoke test
     for pipeline
     """
 
@@ -90,11 +88,9 @@ async def test_smoke_sync(caplog):
             time.sleep(0.1)
             log.info("consuming %i" % num)
 
-
     initial_task = produce()
     stages = [work(), consume()]
-    pipeline = AsyncPipeline(initial_task, stages)
-
+    pipeline: AsyncPipeline = AsyncPipeline(initial_task, stages)
 
     await pipeline.run_async()
     assert caplog.record_tuples == [

@@ -121,7 +121,7 @@ class InboxHandler(FileSystemEventHandler):
 
         # trigger cache clear and gui update of inbox directories
         path_to_folder.cache.clear()  # type: ignore
-        update_client_view("inbox")
+        # FIXME: update_client_view("inbox")
 
         try:
             album_folder = album_folders_from_track_paths([fullpath])[0]

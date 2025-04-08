@@ -59,7 +59,7 @@ class Folder:
 
         # Object that contains all tree elements, because
         # we need to fill top down but iterate buttom up
-        lookup: Mapping[str, Folder] = dict()
+        lookup: dict[str, Folder] = dict()
 
         # Iterate over all directories from bottom to top
         for dirpath, dirnames, filenames in os.walk(path, topdown=False):

@@ -1,4 +1,6 @@
 # main.py
+from typing import Any
+
 from py2ts import generate_ts
 from py2ts.data import ts_reference_str
 
@@ -24,7 +26,7 @@ prefix = """/*
  */
 """
 
-elements = []
+elements: list[type] = []
 
 # Session state
 elements.append(SerializedSessionState)
@@ -62,7 +64,6 @@ elements.append(FolderStatusResponse)
 with open("../frontend/src/pythonTypes.ts", "w") as f:
     f.write(prefix)
 
-    elements = [generate_ts(e) for e in elements]
-    f.write(ts_reference_str(elements))
+    f.write(ts_reference_str([generate_ts(e) for e in elements]))
 
 print("✅ Typescript types generated successfully!")

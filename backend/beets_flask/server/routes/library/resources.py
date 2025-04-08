@@ -328,7 +328,7 @@ def _repr_Item(item: Item | None, minimal=False) -> ItemResponse | ItemResponseM
     if not item:
         raise NotFoundError("Item not found")
 
-    out = dict()
+    out: dict[str, Any] = dict()
 
     if minimal:
         keys = [
@@ -418,8 +418,9 @@ def _repr_Item(item: Item | None, minimal=False) -> ItemResponse | ItemResponseM
             out[key] = beets_util.displayable_path(out[key])
 
         # Decode bytes
-        if isinstance(out[key], bytes):
-            out[key] = base64.b64encode(out[key]).decode("ascii")
+        b = out[key]
+        if isinstance(b, bytes):
+            out[key] = base64.b64encode(b).decode("ascii")
 
         # Remove empty values
         if __is_empty(out[key]):
@@ -573,7 +574,7 @@ def _rep(entity: Item | Album | None, expand=False, minimal=False):
         raise ValueError(f"Unknown entity type: {type(entity)}")
 
 
-def __is_empty(value: str, zero_empty: bool = True) -> bool:
+def __is_empty(value: str | None | list[Any], zero_empty: bool = True) -> bool:
     """Check if empty value."""
     if value is None:
         return True

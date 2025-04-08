@@ -557,7 +557,7 @@ class CandidateState:
         # we lift the match.info to reduce nesting in the frontend.
         info: TrackInfo | AlbumInfo
         tracks: list[TrackInfo]
-        mapping: Mapping[int, int] = {}
+        mapping: dict[int, int] = {}
 
         if isinstance(self.match.info, autotag.TrackInfo):
             # This hardly ever happens, we might support this more in the future
