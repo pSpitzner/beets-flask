@@ -93,7 +93,7 @@ export function DuplicateChip({ folder, ...props }: { folder: Folder } & ChipPro
         return null;
     }
 
-    if (bestCandidate.duplicate_ids.length > 0) {
+    if (bestCandidate.duplicate_ids.length == 0) {
         return null;
     }
 

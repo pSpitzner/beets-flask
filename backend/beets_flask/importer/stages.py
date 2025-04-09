@@ -32,7 +32,6 @@ from typing import (
 
 from beets import library, plugins
 from beets.importer import (
-    ImportSession,
     ImportTask,
     ImportTaskFactory,
     SentinelImportTask,
@@ -195,9 +194,7 @@ def stage(
         # in some edge-cases we get no task. thus, we have to include the generic R
         task: Optional[Task | Ret] = None
         while True:
-            task = (
-                yield task
-            )  # wait for send to arrive. the first next() always returns None
+            task = yield task  # wait for send to arrive. the first next() always returns None
             # yield task, call func which gives new task, yield new task in next()
             # FIXME: Generator support!
             task = func(*(args + (task,)))
@@ -229,9 +226,7 @@ def mutator_stage(
     ) -> Generator[Union[Ret, Task, None], Task, None]:
         task = None
         while True:
-            task = (
-                yield task
-            )  # wait for send to arrive. the first next() always returns None
+            task = yield task  # wait for send to arrive. the first next() always returns None
             # perform function on task, and in next() send the same, modified task
             # funcs prob. modify task in place?
             func(*(args + (task,)))
@@ -376,7 +371,7 @@ def offer_match(
 @stage
 @set_progress(Progress.WAITING_FOR_USER_SELECTION)
 def user_query(
-    session: BaseSession,
+    session: ImportSession,
     task: ImportTask,
 ):
     """A coroutine for interfacing with the user about the tagging process.
@@ -435,7 +430,35 @@ def user_query(
             [merged_task], lookup_candidates(session), user_query(session)
         )
 
+    def apply_choice(session: ImportSession, task: ImportTask):
+        # tweaked version of beets apply_choices.
+        # we do not want to rely on the global config object
+        # (in particular, the set_fields, because we always want to set gui_import_id).
+        # see the original:
+        # from beets.importer import apply_choice
+
+        if task.skip:
+            return
+
+        # Change metadata.
+        if task.apply:
+            task.apply_metadata()
+            plugins.send("import_task_apply", session=session, task=task)
+
+        task.add(session.lib)
+        task.set_fields(session.lib)
+
+        # copy of core logic from set_fields()
+        items = task.imported_items()
+        with session.lib.transaction():
+            for item in items:
+                item.set_parse("gui_import_id", session.import_id)
+                item.store()
+            task.album.set_parse("gui_import_id", session.import_id)
+            task.album.store()
+
     apply_choice(session, task)
+
     return task
 
 

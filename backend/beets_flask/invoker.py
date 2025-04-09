@@ -94,7 +94,6 @@ def emit_status(
     def decorator(
         f: Callable[Concatenate[str, str, P], Awaitable[R]],
     ) -> Callable[Concatenate[str, str, P], Awaitable[R]]:
-
         @functools.wraps(f)
         async def wrapper(hash: str, path: str, *args, **kwargs) -> R:
             # FIXME: In theory we could keep the socket client open here
@@ -254,7 +253,9 @@ async def run_add_candidates(
                 + f"Using new content ({f_on_disk.hash}) instead of {hash}"
             )
 
-        s_state_indb = SessionStateInDb.get_by(SessionStateInDb.folder_hash == hash)
+        s_state_indb = SessionStateInDb.get_by(
+            SessionStateInDb.folder_hash == hash, session=db_session
+        )
         if s_state_indb is None:
             raise InvalidUsage(
                 f"Session state not found for {hash=}, this should not happen. "
@@ -302,7 +303,7 @@ async def run_import(hash: str, path: str, kind: str, match_url: str | None = No
             )
 
         s_state_indb = SessionStateInDb.get_by(
-            SessionStateInDb.folder_hash == f_on_disk.hash
+            SessionStateInDb.folder_hash == f_on_disk.hash, session=db_session
         )
 
         if s_state_indb is None:
@@ -359,7 +360,9 @@ async def run_auto_import(hash: str, path: str, kind: str) -> list[str] | None:
                 + f"This is not supported for auto-imports, please re-run preview."
             )
 
-        s_state_indb = SessionStateInDb.get_by(SessionStateInDb.folder_hash == hash)
+        s_state_indb = SessionStateInDb.get_by(
+            SessionStateInDb.folder_hash == hash, session=db_session
+        )
         if s_state_indb is None:
             raise InvalidUsage(
                 f"Session state not found for {hash=}, this should not happen. "

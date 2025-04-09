@@ -254,6 +254,7 @@ export enum EnqueueKind {
 	IMPORT = 'import',
 	IMPORT_AS_IS = 'import_as_is',
 	AUTO = 'auto',
+	ADD_CANDIDATES = 'add_candidates',
 	_AUTO_IMPORT = 'auto_import',
 	_AUTO_PREVIEW = 'auto_preview',
 }

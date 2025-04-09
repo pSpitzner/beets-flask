@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 import logging
 from abc import ABC, abstractmethod
 from copy import deepcopy
@@ -334,6 +335,7 @@ class AddCandidatesSession(PreviewSession):
 class ImportSession(BaseSession):
     """Import session that assumes we already have a match-id."""
 
+    import_id: str
     match_url: str | None
     duplicate_action: Literal["skip", "keep", "remove", "merge", "ask"]
 
@@ -369,6 +371,12 @@ class ImportSession(BaseSession):
             raise ValueError("Cannot set match_url for pre-populated state.")
 
         self.match_url = match_url
+        # what to use as id to put into the beets db?
+        # we also have a SessionState.id, another uuid, but pretty meaningless.
+        # lets use the current timestamp
+        self.import_id = (
+            f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{state.folder_hash}"
+        )
 
         if duplicate_action is None:
             duplicate_action = self.get_config_value("import.duplicate_action", str)

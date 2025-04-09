@@ -121,7 +121,7 @@ export function FolderActionsSpeedDial() {
                     // imports best candidate that is already present, independent of threshold
                     // or retag & import, ignoring any configured thresholds
                     mutationOptions={enqueueMutationOptions}
-                    mutateArgs={{ selected, kind: EnqueueKind.AUTO }}
+                    mutateArgs={{ selected, kind: EnqueueKind.IMPORT }}
                 />
 
                 <SpeedDialAction
