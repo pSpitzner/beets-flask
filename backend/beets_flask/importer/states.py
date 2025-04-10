@@ -132,6 +132,8 @@ class SessionState:
         """JSON representation to match the frontend types."""
         return SerializedSessionState(
             id=self.id,
+            folder_path=str(self.folder_path),
+            folder_hash=str(self.folder_hash),
             tasks=[s.serialize() for s in self.task_states],
             status=self.progress.serialize(),
             completed=self.completed,
@@ -614,6 +616,8 @@ class CandidateState:
 
 class SerializedSessionState(TypedDict):
     id: str
+    folder_path: str
+    folder_hash: str
     tasks: List[SerializedTaskState]
     status: SerializedProgressState
     completed: bool

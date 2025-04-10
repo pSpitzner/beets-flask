@@ -4,6 +4,8 @@ from quart import Response, request
 
 from beets_flask.server.routes.errors import InvalidUsage
 
+from beets_flask.logger import log
+
 
 def get_query_param(
     params: dict,

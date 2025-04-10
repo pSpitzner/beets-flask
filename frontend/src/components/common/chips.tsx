@@ -15,6 +15,8 @@ import { useQuery } from "@tanstack/react-query";
 import { sessionQueryOptions } from "@/routes/_debug/session.$id";
 import { Folder, FolderStatus } from "@/pythonTypes";
 import { statusQueryOptions } from "./websocket/status";
+import { Link } from "@tanstack/react-router";
+import { useMemo } from "react";
 
 export const StyledChip = styled(Chip)(({ theme }) => ({
     paddingLeft: theme.spacing(0.5),
@@ -117,27 +119,41 @@ export function FolderStatusChip({ folder, ...props }: { folder: Folder } & Chip
     const theme = useTheme();
 
     // Status enum value
-    const status_value = status?.find((s) => s.path === folder.full_path)?.status;
+    const folderStatus = useMemo(() => {
+        return status?.find((s) => s.path === folder.full_path);
+    }, [status, folder.full_path]);
 
     // Status enum name
     let status_name: string | undefined = undefined;
-    if (status_value !== undefined) {
-        status_name = FolderStatus[status_value];
+    if (folderStatus !== undefined) {
+        status_name = FolderStatus[folderStatus.status];
     }
 
-    if (!status_name || !status_value) {
+    if (!status_name || !folderStatus) {
         return null;
     }
 
     return (
-        <StyledChip
-            icon={<FolderStatusIcon status={status_value} size={theme.iconSize.sm} />}
-            label={status_name.charAt(0) + status_name.slice(1).toLowerCase()}
-            size="small"
-            variant="outlined"
-            color="info"
-            {...props}
-        />
+        <Link
+            to={"/session/$id"}
+            params={{ id: folderStatus.hash }}
+            preload="intent"
+            style={{ gridColumn: "chip" }}
+        >
+            <StyledChip
+                icon={
+                    <FolderStatusIcon
+                        status={folderStatus.status}
+                        size={theme.iconSize.sm}
+                    />
+                }
+                label={status_name.charAt(0) + status_name.slice(1).toLowerCase()}
+                size="small"
+                variant="outlined"
+                color="info"
+                {...props}
+            />
+        </Link>
     );
 }
 
@@ -150,7 +166,11 @@ export function BestCandidateChip({
     ...props
 }: { folder: Folder } & ChipProps) {
     // FIXME: Fetching the full session here is kinda overkill
-    const { data: session } = useQuery(sessionQueryOptions(folder.hash));
+    // Only use path here, and
+    // TODO: add hash inconsistency warning badge!
+    const { data: session } = useQuery(
+        sessionQueryOptions({ folderPath: folder.full_path })
+    );
 
     const bestCandidate = session?.tasks
         .flatMap((t) => t.candidates.map((c) => c))

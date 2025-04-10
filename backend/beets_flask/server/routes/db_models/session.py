@@ -29,29 +29,41 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         self.blueprint.route("/enqueue", methods=["POST"])(self.enqueue)
 
     async def get_by_folder(self):
-        """Returns the most recent session state for a given folder hash."""
+        """Returns the most recent session state for a given folder hash or path."""
 
         folder_hashes, folder_paths, _ = await get_folder_params(allow_mismatch=True)
 
-        if len(folder_hashes) != 1:
-            raise InvalidUsage("Only one folder hash is supported", status_code=400)
+        if len(folder_hashes) != 1 and len(folder_paths) != 1:
+            raise InvalidUsage(
+                "Provide one folder hash OR one folder path", status_code=400
+            )
 
-        hash = folder_hashes[0]
+        hash = None
+        path = None
+        if len(folder_hashes) != 1 or folder_hashes[0] is None:
+            path = folder_paths[0]
+        else:
+            hash = folder_hashes[0]
 
         with db_session_factory() as db_session:
-            query = (
-                select(self.model)
-                .where((self.model.folder_hash == hash))
-                .order_by(self.model.created_at.desc())
-                .limit(1)
-            )
+            query = select(self.model)
+            if hash is not None:
+                query = query.where(self.model.folder_hash == hash)
+            else:
+                query = query.join(self.model.folder).where(
+                    FolderInDb.full_path == path
+                )
+            query = query.order_by(self.model.created_at.desc()).limit(1)
+
             item = db_session.execute(query).scalars().first()
             if not item:
                 # TODO: by path, validation of session hash
                 # raise, but we do not want to spam the
                 # frontend console with errors.
                 # we manually handle this in sessionQueryOptions.
-                raise NotFoundError(f"Item with hash {hash} not found", status_code=200)
+                raise NotFoundError(
+                    f"Item with {hash=} {path=} not found", status_code=200
+                )
 
             return jsonify(item.to_dict())
 

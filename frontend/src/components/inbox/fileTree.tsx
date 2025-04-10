@@ -34,7 +34,7 @@ export const GridWrapper = styled(Box)(({ theme }) => ({
     width: "100%",
     columnGap: theme.spacing(1.5),
     // Fill columns even if content is given in other order
-    gridAutoFlow: "dense",
+    gridAutoFlow: "column dense",
     // Add zebra striping
     "> div:nth-of-type(odd)": {
         background: `linear-gradient(
@@ -50,7 +50,7 @@ const GridRow = styled(Box)({
     display: "grid",
     gridColumn: "1 / -1",
     gridTemplateColumns: "subgrid",
-    gridAutoFlow: "dense",
+    gridAutoFlow: "column dense",
     alignItems: "center",
 });
 
@@ -153,14 +153,7 @@ export function FolderComponent({
                 onClick={() => toggleSelect(folder)}
                 {...mobileSafeContext}
             >
-                <Link
-                    to={"/session/$id"}
-                    params={{ id: folder.hash }}
-                    preload="intent"
-                    style={{ gridColumn: "chip" }}
-                >
-                    <Chips folder={folder} />
-                </Link>
+                <Chips folder={folder} />
 
                 {/* Folder name and collapsable */}
                 <FolderTreeRow
@@ -409,6 +402,7 @@ function Chips({ folder }: { folder: Folder }) {
             display="flex"
             alignItems="center"
             sx={(theme) => ({
+                gridColumn: "chip",
                 position: "relative",
                 gap: 0.5,
                 [theme.breakpoints.down("tablet")]: {

@@ -99,6 +99,8 @@ export interface SerializedTaskState {
 
 export interface SerializedSessionState {
 	id: string;
+	folder_path: string;
+	folder_hash: string;
 	tasks: Array<SerializedTaskState>;
 	status: SerializedProgressState;
 	completed: boolean;

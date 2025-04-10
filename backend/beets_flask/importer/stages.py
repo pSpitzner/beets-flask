@@ -55,6 +55,7 @@ if TYPE_CHECKING:
         ImportSession,
         InteractiveImportSession,
     )
+    from beets_flask.importer.types import BeetsItem
 
     from .pipeline import Stage
 
@@ -449,7 +450,7 @@ def user_query(
         task.set_fields(session.lib)
 
         # copy of core logic from set_fields()
-        items = task.imported_items()
+        items: list[BeetsItem] = task.imported_items()
         with session.lib.transaction():
             for item in items:
                 item.set_parse("gui_import_id", session.import_id)

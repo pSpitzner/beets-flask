@@ -174,8 +174,8 @@ class SessionStateInDb(Base):
         cascade="all, delete-orphan",
     )
 
-    folder_hash: Mapped[str] = mapped_column(ForeignKey("folder.id"))
     folder: Mapped[FolderInDb] = relationship()
+    folder_hash: Mapped[str] = mapped_column(ForeignKey("folder.id"))
 
     # FIXME: This should be a getter for the which queries the tasks
     progress: Mapped[Progress]
@@ -206,6 +206,10 @@ class SessionStateInDb(Base):
         )
 
         return session
+
+    @property
+    def folder_path(self) -> Path:
+        return self.folder.path
 
     def to_live_state(self) -> SessionState:
         """Recreate the live SessionState with underlying task from its stored version in the db."""
@@ -385,9 +389,7 @@ class CandidateStateInDb(Base):
         live_state.id = self.id
         live_state.duplicate_ids = (
             # edge case: "".split() gives ['']
-            []
-            if len(self.duplicate_ids) == 0
-            else self.duplicate_ids.split(";")
+            [] if len(self.duplicate_ids) == 0 else self.duplicate_ids.split(";")
         )
         return live_state
 

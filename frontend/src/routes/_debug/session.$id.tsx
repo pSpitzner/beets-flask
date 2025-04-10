@@ -1,28 +1,37 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { APIError, ErrorData, queryClient } from "@/components/common/_query";
 import { PageWrapper } from "@/components/common/page";
 import { TaskCandidates } from "@/components/import/candidates/candidate";
 import { SerializedSessionState } from "@/pythonTypes";
-import { APIError, ErrorData } from "@/components/common/_query";
 
 export const Route = createFileRoute("/_debug/session/$id")({
     component: RouteComponent,
     loader: async ({ context, params }) => {
         return await context.queryClient.ensureQueryData(
-            sessionQueryOptions(params.id)
+            sessionQueryOptions({ folderHash: params.id })
         );
     },
 });
 
-export const sessionQueryOptions = (id: string) => ({
-    queryKey: ["session", id],
+export const sessionQueryOptions = ({
+    folderHash,
+    folderPath,
+}: {
+    folderHash?: string;
+    folderPath?: string;
+}) => ({
+    queryKey: ["session", { folderHash, folderPath }],
     queryFn: async () => {
         const response = await fetch(`/session/by_folder`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ folder_hashes: [id], folder_paths: [] }),
+            body: JSON.stringify({
+                folder_hashes: [folderHash],
+                folder_paths: [folderPath],
+            }),
         });
         // make sure we have a folder
         const res = (await response.json()) as SerializedSessionState | ErrorData;
@@ -34,6 +43,11 @@ export const sessionQueryOptions = (id: string) => ({
                 throw new APIError(res);
             }
         }
+
+        queryClient.setQueryData<SerializedSessionState>(
+            ["session", { folderHash: res.folder_hash, folderPath: res.folder_path }],
+            res
+        );
 
         return res;
     },
