@@ -127,11 +127,17 @@ function CandidatesContextProvider({
     candidates: Array<SerializedCandidateState>;
 }) {
     const [selected, setSelected] = useState<SerializedCandidateState["id"]>(() => {
-        return candidates[0].id;
+        if (candidates.length === 1) {
+            return candidates[0].id;
+        }
+        return candidates[1]?.id;
     });
 
     const [expanded, setExpanded] = useState<Set<SerializedCandidateState["id"]>>(
         () => {
+            if (candidates.length === 1) {
+                return new Set([candidates[0].id]);
+            }
             return new Set([candidates[1].id]);
         }
     );

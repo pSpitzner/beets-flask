@@ -1,5 +1,5 @@
 import { LucideChevronRight } from "lucide-react";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import {
     Box,
     Checkbox,
@@ -10,7 +10,6 @@ import {
     Typography,
     useTheme,
 } from "@mui/material";
-import { Link } from "@tanstack/react-router";
 
 import { File, Folder } from "@/pythonTypes";
 
@@ -21,7 +20,12 @@ import {
 } from "./actions";
 import { useFolderSelectionContext } from "./folderSelectionContext";
 
-import { BestCandidateChip, DuplicateChip, FolderStatusChip } from "../common/chips";
+import {
+    BestCandidateChip,
+    DuplicateChip,
+    FolderStatusChip,
+    HashMismatchChip,
+} from "../common/chips";
 import { FileTypeIcon, FolderTypeIcon } from "../common/icons";
 import useMobileSafeContextMenu from "../common/hooks/useMobileSafeContextMenu";
 
@@ -419,6 +423,7 @@ function Chips({ folder }: { folder: Folder }) {
                 },
             })}
         >
+            <HashMismatchChip folder={folder} />
             <DuplicateChip folder={folder} />
             <BestCandidateChip folder={folder} />
             <FolderStatusChip folder={folder} />

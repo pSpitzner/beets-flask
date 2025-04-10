@@ -138,7 +138,7 @@ export function FolderActionsSpeedDial() {
 export function RefreshAllFoldersButton() {
     // See inbox2 route
     const { mutate, isPending } = useMutation({
-        mutationKey: ["refreshInbox2Tree"],
+        mutationKey: ["refreshInboxTree"],
     });
     const theme = useTheme();
 

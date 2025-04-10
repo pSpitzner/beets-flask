@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { Loading, LoadingSmall } from "@/components/common/loading";
 
-export const Route = createFileRoute("/loading")({
+export const Route = createFileRoute("/_debug/design/loading")({
     component: RouteComponent,
 });
 

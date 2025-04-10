@@ -11,7 +11,6 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as LoadingImport } from './routes/loading'
 import { Route as TerminalIndexImport } from './routes/terminal/index'
 import { Route as TagsIndexImport } from './routes/tags/index'
 import { Route as SessiondraftIndexImport } from './routes/sessiondraft/index'
@@ -21,21 +20,17 @@ import { Route as FrontpageIndexImport } from './routes/_frontpage/index'
 import { Route as LibrarySearchImport } from './routes/library/search'
 import { Route as LibraryBrowseImport } from './routes/library/browse'
 import { Route as FrontpageModalImport } from './routes/_frontpage/_modal'
+import { Route as DebugQuerytestImport } from './routes/_debug/query_test'
 import { Route as DebugJobsImport } from './routes/_debug/jobs'
 import { Route as LibraryBrowseArtistImport } from './routes/library/browse.$artist'
 import { Route as FrontpageModalScheduleImport } from './routes/_frontpage/_modal.schedule'
 import { Route as DebugSessionIdImport } from './routes/_debug/session.$id'
+import { Route as DebugDesignLoadingImport } from './routes/_debug/design/loading'
 import { Route as DebugDesignIconsImport } from './routes/_debug/design/icons'
 import { Route as LibraryBrowseArtistAlbumIdImport } from './routes/library/browse.$artist.$albumId'
 import { Route as LibraryBrowseArtistAlbumIdItemIdImport } from './routes/library/browse.$artist.$albumId.$itemId'
 
 // Create/Update Routes
-
-const LoadingRoute = LoadingImport.update({
-  id: '/loading',
-  path: '/loading',
-  getParentRoute: () => rootRoute,
-} as any)
 
 const TerminalIndexRoute = TerminalIndexImport.update({
   id: '/terminal/',
@@ -90,6 +85,12 @@ const FrontpageModalRoute = FrontpageModalImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const DebugQuerytestRoute = DebugQuerytestImport.update({
+  id: '/_debug/query_test',
+  path: '/query_test',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const DebugJobsRoute = DebugJobsImport.update({
   id: '/_debug/jobs',
   path: '/jobs',
@@ -111,6 +112,12 @@ const FrontpageModalScheduleRoute = FrontpageModalScheduleImport.update({
 const DebugSessionIdRoute = DebugSessionIdImport.update({
   id: '/_debug/session/$id',
   path: '/session/$id',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const DebugDesignLoadingRoute = DebugDesignLoadingImport.update({
+  id: '/_debug/design/loading',
+  path: '/design/loading',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -139,18 +146,18 @@ const LibraryBrowseArtistAlbumIdItemIdRoute =
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/loading': {
-      id: '/loading'
-      path: '/loading'
-      fullPath: '/loading'
-      preLoaderRoute: typeof LoadingImport
-      parentRoute: typeof rootRoute
-    }
     '/_debug/jobs': {
       id: '/_debug/jobs'
       path: '/jobs'
       fullPath: '/jobs'
       preLoaderRoute: typeof DebugJobsImport
+      parentRoute: typeof rootRoute
+    }
+    '/_debug/query_test': {
+      id: '/_debug/query_test'
+      path: '/query_test'
+      fullPath: '/query_test'
+      preLoaderRoute: typeof DebugQuerytestImport
       parentRoute: typeof rootRoute
     }
     '/_frontpage/_modal': {
@@ -221,6 +228,13 @@ declare module '@tanstack/react-router' {
       path: '/design/icons'
       fullPath: '/design/icons'
       preLoaderRoute: typeof DebugDesignIconsImport
+      parentRoute: typeof rootRoute
+    }
+    '/_debug/design/loading': {
+      id: '/_debug/design/loading'
+      path: '/design/loading'
+      fullPath: '/design/loading'
+      preLoaderRoute: typeof DebugDesignLoadingImport
       parentRoute: typeof rootRoute
     }
     '/_debug/session/$id': {
@@ -314,8 +328,8 @@ const LibraryBrowseRouteWithChildren = LibraryBrowseRoute._addFileChildren(
 )
 
 export interface FileRoutesByFullPath {
-  '/loading': typeof LoadingRoute
   '/jobs': typeof DebugJobsRoute
+  '/query_test': typeof DebugQuerytestRoute
   '': typeof FrontpageModalRouteWithChildren
   '/library/browse': typeof LibraryBrowseRouteWithChildren
   '/library/search': typeof LibrarySearchRoute
@@ -326,6 +340,7 @@ export interface FileRoutesByFullPath {
   '/tags': typeof TagsIndexRoute
   '/terminal': typeof TerminalIndexRoute
   '/design/icons': typeof DebugDesignIconsRoute
+  '/design/loading': typeof DebugDesignLoadingRoute
   '/session/$id': typeof DebugSessionIdRoute
   '/schedule': typeof FrontpageModalScheduleRoute
   '/library/browse/$artist': typeof LibraryBrowseArtistRouteWithChildren
@@ -334,8 +349,8 @@ export interface FileRoutesByFullPath {
 }
 
 export interface FileRoutesByTo {
-  '/loading': typeof LoadingRoute
   '/jobs': typeof DebugJobsRoute
+  '/query_test': typeof DebugQuerytestRoute
   '': typeof FrontpageModalRouteWithChildren
   '/library/browse': typeof LibraryBrowseRouteWithChildren
   '/library/search': typeof LibrarySearchRoute
@@ -346,6 +361,7 @@ export interface FileRoutesByTo {
   '/tags': typeof TagsIndexRoute
   '/terminal': typeof TerminalIndexRoute
   '/design/icons': typeof DebugDesignIconsRoute
+  '/design/loading': typeof DebugDesignLoadingRoute
   '/session/$id': typeof DebugSessionIdRoute
   '/schedule': typeof FrontpageModalScheduleRoute
   '/library/browse/$artist': typeof LibraryBrowseArtistRouteWithChildren
@@ -355,8 +371,8 @@ export interface FileRoutesByTo {
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
-  '/loading': typeof LoadingRoute
   '/_debug/jobs': typeof DebugJobsRoute
+  '/_debug/query_test': typeof DebugQuerytestRoute
   '/_frontpage/_modal': typeof FrontpageModalRouteWithChildren
   '/library/browse': typeof LibraryBrowseRouteWithChildren
   '/library/search': typeof LibrarySearchRoute
@@ -367,6 +383,7 @@ export interface FileRoutesById {
   '/tags/': typeof TagsIndexRoute
   '/terminal/': typeof TerminalIndexRoute
   '/_debug/design/icons': typeof DebugDesignIconsRoute
+  '/_debug/design/loading': typeof DebugDesignLoadingRoute
   '/_debug/session/$id': typeof DebugSessionIdRoute
   '/_frontpage/_modal/schedule': typeof FrontpageModalScheduleRoute
   '/library/browse/$artist': typeof LibraryBrowseArtistRouteWithChildren
@@ -377,8 +394,8 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/loading'
     | '/jobs'
+    | '/query_test'
     | ''
     | '/library/browse'
     | '/library/search'
@@ -389,6 +406,7 @@ export interface FileRouteTypes {
     | '/tags'
     | '/terminal'
     | '/design/icons'
+    | '/design/loading'
     | '/session/$id'
     | '/schedule'
     | '/library/browse/$artist'
@@ -396,8 +414,8 @@ export interface FileRouteTypes {
     | '/library/browse/$artist/$albumId/$itemId'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/loading'
     | '/jobs'
+    | '/query_test'
     | ''
     | '/library/browse'
     | '/library/search'
@@ -408,6 +426,7 @@ export interface FileRouteTypes {
     | '/tags'
     | '/terminal'
     | '/design/icons'
+    | '/design/loading'
     | '/session/$id'
     | '/schedule'
     | '/library/browse/$artist'
@@ -415,8 +434,8 @@ export interface FileRouteTypes {
     | '/library/browse/$artist/$albumId/$itemId'
   id:
     | '__root__'
-    | '/loading'
     | '/_debug/jobs'
+    | '/_debug/query_test'
     | '/_frontpage/_modal'
     | '/library/browse'
     | '/library/search'
@@ -427,6 +446,7 @@ export interface FileRouteTypes {
     | '/tags/'
     | '/terminal/'
     | '/_debug/design/icons'
+    | '/_debug/design/loading'
     | '/_debug/session/$id'
     | '/_frontpage/_modal/schedule'
     | '/library/browse/$artist'
@@ -436,8 +456,8 @@ export interface FileRouteTypes {
 }
 
 export interface RootRouteChildren {
-  LoadingRoute: typeof LoadingRoute
   DebugJobsRoute: typeof DebugJobsRoute
+  DebugQuerytestRoute: typeof DebugQuerytestRoute
   FrontpageModalRoute: typeof FrontpageModalRouteWithChildren
   LibraryBrowseRoute: typeof LibraryBrowseRouteWithChildren
   LibrarySearchRoute: typeof LibrarySearchRoute
@@ -448,12 +468,13 @@ export interface RootRouteChildren {
   TagsIndexRoute: typeof TagsIndexRoute
   TerminalIndexRoute: typeof TerminalIndexRoute
   DebugDesignIconsRoute: typeof DebugDesignIconsRoute
+  DebugDesignLoadingRoute: typeof DebugDesignLoadingRoute
   DebugSessionIdRoute: typeof DebugSessionIdRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  LoadingRoute: LoadingRoute,
   DebugJobsRoute: DebugJobsRoute,
+  DebugQuerytestRoute: DebugQuerytestRoute,
   FrontpageModalRoute: FrontpageModalRouteWithChildren,
   LibraryBrowseRoute: LibraryBrowseRouteWithChildren,
   LibrarySearchRoute: LibrarySearchRoute,
@@ -464,6 +485,7 @@ const rootRouteChildren: RootRouteChildren = {
   TagsIndexRoute: TagsIndexRoute,
   TerminalIndexRoute: TerminalIndexRoute,
   DebugDesignIconsRoute: DebugDesignIconsRoute,
+  DebugDesignLoadingRoute: DebugDesignLoadingRoute,
   DebugSessionIdRoute: DebugSessionIdRoute,
 }
 
@@ -477,8 +499,8 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
-        "/loading",
         "/_debug/jobs",
+        "/_debug/query_test",
         "/_frontpage/_modal",
         "/library/browse",
         "/library/search",
@@ -489,14 +511,15 @@ export const routeTree = rootRoute
         "/tags/",
         "/terminal/",
         "/_debug/design/icons",
+        "/_debug/design/loading",
         "/_debug/session/$id"
       ]
     },
-    "/loading": {
-      "filePath": "loading.tsx"
-    },
     "/_debug/jobs": {
       "filePath": "_debug/jobs.tsx"
+    },
+    "/_debug/query_test": {
+      "filePath": "_debug/query_test.tsx"
     },
     "/_frontpage/_modal": {
       "filePath": "_frontpage/_modal.tsx",
@@ -533,6 +556,9 @@ export const routeTree = rootRoute
     },
     "/_debug/design/icons": {
       "filePath": "_debug/design/icons.tsx"
+    },
+    "/_debug/design/loading": {
+      "filePath": "_debug/design/loading.tsx"
     },
     "/_debug/session/$id": {
       "filePath": "_debug/session.$id.tsx"

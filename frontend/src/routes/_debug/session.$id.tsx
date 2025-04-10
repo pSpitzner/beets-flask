@@ -4,11 +4,12 @@ import { APIError, ErrorData, queryClient } from "@/components/common/_query";
 import { PageWrapper } from "@/components/common/page";
 import { TaskCandidates } from "@/components/import/candidates/candidate";
 import { SerializedSessionState } from "@/pythonTypes";
+import { Suspense } from "react";
 
 export const Route = createFileRoute("/_debug/session/$id")({
     component: RouteComponent,
-    loader: async ({ context, params }) => {
-        return await context.queryClient.ensureQueryData(
+    loader: ({ context, params }) => {
+        return context.queryClient.ensureQueryData(
             sessionQueryOptions({ folderHash: params.id })
         );
     },
@@ -61,8 +62,10 @@ function RouteComponent() {
     }
 
     return (
-        <PageWrapper>
-            <TaskCandidates task={data.tasks[0]}></TaskCandidates>
-        </PageWrapper>
+        <Suspense fallback={<div>Loading...</div>}>
+            <PageWrapper>
+                <TaskCandidates task={data.tasks[0]}></TaskCandidates>
+            </PageWrapper>
+        </Suspense>
     );
 }

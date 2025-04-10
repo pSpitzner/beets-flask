@@ -85,6 +85,16 @@ class FolderInDb(Base):
 
         return f_in_db
 
+    def to_live_folder(self) -> Folder:
+        """Recreate the live Folder object from its stored version in the db."""
+        return Folder(
+            type="directory",
+            children=[],
+            full_path=self.full_path,
+            hash=self.hash,
+            is_album=self.is_album or False,
+        )
+
     def as_tuple(self) -> tuple[Path, str]:
         """Recreate the live Folder object from its stored version in the db."""
         return (
@@ -211,9 +221,18 @@ class SessionStateInDb(Base):
     def folder_path(self) -> Path:
         return self.folder.path
 
-    def to_live_state(self) -> SessionState:
-        """Recreate the live SessionState with underlying task from its stored version in the db."""
-        s_state = SessionState(self.folder.path)
+    def to_live_state(self, new_folder=True) -> SessionState:
+        """Recreate the live SessionState with underlying task from its stored version in the db.
+
+        HACK: new_folder param is a bit hacky, as if we do not include the children if we
+        are not recomputing the folder hash. Might lead to some issues down the line.
+        """
+
+        if new_folder:
+            s_state = SessionState(self.folder.path)
+        else:
+            s_state = SessionState(self.folder.to_live_folder())
+
         if s_state.folder_hash != self.folder.hash:
             log.warning(
                 f"Folder hash mismatch for {self.folder.path}. "
@@ -224,7 +243,7 @@ class SessionStateInDb(Base):
         return s_state
 
     def to_dict(self) -> SerializedSessionState:
-        return self.to_live_state().serialize()
+        return self.to_live_state(False).serialize()
 
 
 class TaskStateInDb(Base):

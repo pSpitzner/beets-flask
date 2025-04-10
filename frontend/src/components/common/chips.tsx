@@ -17,6 +17,8 @@ import { Folder, FolderStatus } from "@/pythonTypes";
 import { statusQueryOptions } from "./websocket/status";
 import { Link } from "@tanstack/react-router";
 import { useMemo } from "react";
+import { FolderClockIcon } from "lucide-react";
+import { Tooltip } from "@mui/material";
 
 export const StyledChip = styled(Chip)(({ theme }) => ({
     paddingLeft: theme.spacing(0.5),
@@ -82,8 +84,10 @@ export function MatchChip({
 /** Shows a chip if the candidate is a duplicate.
  */
 export function DuplicateChip({ folder, ...props }: { folder: Folder } & ChipProps) {
-    const { data: session } = useQuery(sessionQueryOptions(folder.hash));
     const theme = useTheme();
+    const { data: session } = useQuery(
+        sessionQueryOptions({ folderPath: folder.full_path })
+    );
 
     //Fixme: Generalize best candidate
     const bestCandidate = session?.tasks
@@ -187,5 +191,38 @@ export function BestCandidateChip({
             distance={bestCandidate.distance}
             {...props}
         />
+    );
+}
+
+/** Shows a chip if the folder is not
+ * in sync with the current most recent session.
+ *
+ * This may happen if new files are added or content changed.
+ */
+export function HashMismatchChip({ folder, ...props }: { folder: Folder } & ChipProps) {
+    const theme = useTheme();
+    const { data: session } = useQuery(
+        sessionQueryOptions({ folderPath: folder.full_path })
+    );
+
+    if (!session) {
+        return null;
+    }
+
+    if (session.folder_hash == folder.hash) {
+        return null;
+    }
+
+    return (
+        <Tooltip title="The folder hash does not match the folder hash which was used to tag/import the folder. This might happen if the folder was changed after importing or tagging.">
+            <StyledChip
+                icon={<FolderClockIcon size={theme.iconSize.sm} />}
+                label="Integrity failed"
+                size="small"
+                variant="outlined"
+                color="warning"
+                {...props}
+            />
+        </Tooltip>
     );
 }
