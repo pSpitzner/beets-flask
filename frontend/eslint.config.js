@@ -1,5 +1,6 @@
 import prettierConfig from "eslint-config-prettier";
 import react from "eslint-plugin-react";
+import reactRefresh from "eslint-plugin-react-refresh";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 import globals from "globals";
 import ts from "typescript-eslint";
@@ -98,5 +99,8 @@ export default ts.config(
     },
 
     // apply prettier
-    prettierConfig
+    prettierConfig,
+
+    // apply react-refresh
+    reactRefresh.configs.vite
 );
