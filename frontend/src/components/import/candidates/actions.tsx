@@ -10,6 +10,7 @@ import { useState } from "react";
 import {
     Box,
     Button,
+    CircularProgress,
     DialogContent,
     FormHelperText,
     styled,
@@ -23,7 +24,9 @@ import {
     TypographyProps,
     useTheme,
 } from "@mui/material";
+import { useMutation } from "@tanstack/react-query";
 
+import { addCandidateMutationOptions, enqueueMutationOptions } from "@/api/session";
 import { Dialog } from "@/components/common/dialogs";
 import { SerializedCandidateState } from "@/pythonTypes";
 
@@ -189,9 +192,27 @@ function DuplicateActionButton({
 
 /* -------------------------- Search new candidate -------------------------- */
 
-export function CandidateSearch() {
+export function CandidateSearch({ folderHash }: { folderHash: string }) {
     const theme = useTheme();
     const [open, setOpen] = useState(false);
+    const [search, setSearch] = useState<{
+        ids: string[];
+        artist: string;
+        album: string;
+    }>({
+        ids: [],
+        artist: "",
+        album: "",
+    });
+
+    /** Mutation for the search
+     * this basically triggers an
+     * enqueue of a new task
+     */
+    const { mutateAsync, isPending, isError, error } = useMutation(
+        addCandidateMutationOptions
+    );
+
     return (
         <>
             <Tooltip title="Search for more candidates" placement="top">
@@ -199,7 +220,13 @@ export function CandidateSearch() {
                     variant="outlined"
                     color="secondary"
                     onClick={() => setOpen(true)}
-                    startIcon={<SearchIcon size={14} />}
+                    startIcon={
+                        isPending ? (
+                            <CircularProgress size={theme.iconSize.sm} />
+                        ) : (
+                            <SearchIcon size={theme.iconSize.sm} />
+                        )
+                    }
                 >
                     Search
                 </Button>
@@ -224,6 +251,12 @@ export function CandidateSearch() {
                         placeholder=""
                         multiline
                         helperText="Identifier or URL to search for, can be musicbrainz id, spotify url, etc. depending on your configuration."
+                        onChange={(e) => {
+                            setSearch({
+                                ...search,
+                                ids: e.target.value.split(",").map((id) => id.trim()),
+                            });
+                        }}
                     />
                     <Box>
                         <Box
@@ -239,12 +272,26 @@ export function CandidateSearch() {
                                 id="input-search-artist"
                                 label="Seach by artist"
                                 placeholder="Artist"
+                                value={search.artist}
+                                onChange={(e) => {
+                                    setSearch({
+                                        ...search,
+                                        artist: e.target.value,
+                                    });
+                                }}
                             />
                             <SearchField
                                 sx={{ width: "100%" }}
                                 id="input-search-artist"
                                 label="and album"
                                 placeholder="Album"
+                                value={search.album}
+                                onChange={(e) => {
+                                    setSearch({
+                                        ...search,
+                                        album: e.target.value,
+                                    });
+                                }}
                             />
                         </Box>
                         <FormHelperText
@@ -267,21 +314,36 @@ export function CandidateSearch() {
                             marginTop: "auto",
                         }}
                     >
-                        <FormHelperText
-                            error={true}
-                            sx={{
-                                alignSelf: "flex-end",
-                            }}
-                        >
-                            Something bad happened, show error message here.
-                        </FormHelperText>
+                        {isError && (
+                            <FormHelperText
+                                error={isError}
+                                sx={{
+                                    alignSelf: "flex-end",
+                                }}
+                            >
+                                {error.name}: {error.message}
+                            </FormHelperText>
+                        )}
                         <Button
                             variant="outlined"
                             color="primary"
-                            startIcon={<SearchIcon size={theme.iconSize.sm} />}
-                            onClick={() => {
-                                alert("TODO: Search for candidates");
+                            startIcon={
+                                isPending ? (
+                                    <CircularProgress size={theme.iconSize.sm} />
+                                ) : (
+                                    <SearchIcon size={theme.iconSize.sm} />
+                                )
+                            }
+                            onClick={async () => {
+                                await mutateAsync({
+                                    folder_hash: folderHash,
+                                    search_ids: search.ids,
+                                    search_album: search.album,
+                                    search_artist: search.artist,
+                                });
+                                setOpen(false);
                             }}
+                            disabled={isPending}
                         >
                             Search
                         </Button>

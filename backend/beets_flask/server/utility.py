@@ -1,10 +1,9 @@
-from typing import Any, Awaitable, Callable, TypeVarTuple
-from functools import wraps
-from quart import Response, request
+from typing import Any, Callable, TypeVarTuple
 
-from beets_flask.server.routes.errors import InvalidUsage
+from quart import request
 
 from beets_flask.logger import log
+from beets_flask.server.routes.errors import InvalidUsage
 
 
 def get_query_param(
@@ -77,7 +76,7 @@ async def get_folder_params(
     if not allow_mismatch and len(folder_hashes) != len(folder_paths):
         raise InvalidUsage("folder_hashes and folder_paths must be of the same length")
 
-    if not allow_empty and (len(folder_hashes) == 0 or len(folder_paths) == 0):
+    if not allow_empty and ((len(folder_hashes) + len(folder_paths)) == 0):
         raise InvalidUsage("folder_hashes and folder_paths cannot be empty")
 
     return folder_hashes, folder_paths, params

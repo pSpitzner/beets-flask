@@ -96,17 +96,17 @@ const TrackChangesGrid = styled(Box)(({ theme }) => ({
         `,
 
         // Every 5th child spans 2
-        "> * > *:nth-child(7n)": {
+        "> * > *:nth-of-type(7n)": {
             gridColumn: "span 2",
             justifySelf: "flex-start",
         },
         // Apply Margin to 2nd row in full layout,
         // this seperates the different items
         // we select the first 4 items i.e. [1] t1 ->
-        "[data-full=true] > *:nth-child(-n+4)": {
+        "[data-full=true] > *:nth-of-type(-n+4)": {
             marginTop: theme.spacing(0.75),
         },
-        "[data-full=true]:first-child > *": {
+        "[data-full=true]:first-of-type > *": {
             marginTop: 0,
         },
     },
@@ -567,6 +567,7 @@ export function GenericDetailsItem({
                     alignItems: "center",
                     gap: 0.5,
                 },
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                 ...(Array.isArray(sx) ? sx : [sx]),
             ]}
         >

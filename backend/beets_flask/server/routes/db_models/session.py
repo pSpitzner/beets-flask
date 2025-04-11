@@ -1,5 +1,8 @@
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from typing import TypedDict
 
+from beets_flask.redis import wait_for_job_results
 from quart import jsonify
 from rq.job import Job
 from sqlalchemy import select
@@ -27,6 +30,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         self.blueprint.route("/by_folder", methods=["POST"])(self.get_by_folder)
         self.blueprint.route("/status", methods=["GET"])(self.get_status)
         self.blueprint.route("/enqueue", methods=["POST"])(self.enqueue)
+        self.blueprint.route("/add_candidates", methods=["POST"])(self.add_candidates)
 
     async def get_by_folder(self):
         """Returns the most recent session state for a given folder hash or path."""
@@ -82,20 +86,94 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         kind = get_query_param(params, "kind", str)
         if not isinstance(kind, str):
             raise InvalidUsage(
-                "kind must be one of 'preview', 'import', 'auto', 'import_as_is'"
+                "kind must be one of 'preview', 'import', 'auto', 'import_as_is'",
             )
 
         jobs: list[Job] = []
 
         for hash, path in zip(folder_hashes, folder_paths):
             jobs.append(
-                await invoker.enqueue(hash, path, invoker.EnqueueKind.from_str(kind))
+                await invoker.enqueue(
+                    hash,
+                    path,
+                    invoker.EnqueueKind.from_str(kind),
+                )
             )
 
         return jsonify(
             {
                 "message": f"{len(jobs)} added as kind: {kind}",
                 "jobs": [j.get_meta() for j in jobs],
+            }
+        )
+
+    async def add_candidates(self):
+        """Search for new candidates.
+
+        This starts a new session for a given folder hash.
+        """
+        log.warning("Adding candidates")
+        folder_hashes, folder_paths, params = await get_folder_params(
+            allow_mismatch=True
+        )
+
+        if len(folder_hashes) != 1:
+            raise InvalidUsage("Folder hash must be a single value")
+
+        # Get additional params for search with a bit of validation
+        search_ids: list[str] = get_query_param(params, "search_ids", list, default=[])
+        search_artist: str | None = get_query_param(
+            params, "search_artist", str, default=None
+        )
+        search_album: str | None = get_query_param(
+            params, "search_album", str, default=None
+        )
+
+        search_ids = list(
+            filter(
+                lambda x: isinstance(x, str) and len(x) > 0,
+                search_ids,
+            )
+        )
+
+        if search_artist is not None and search_artist.strip() == "":
+            search_artist = None
+        if search_album is not None and search_album.strip() == "":
+            search_album = None
+
+        if len(search_ids) == 0 and search_artist is None and search_album is None:
+            raise InvalidUsage(
+                "`search_ids`, `search_artist` or `search_album` must be provided!"
+            )
+        log.warning(f"{search_ids=}, {search_artist=}, {search_album=}")
+
+        # Trigger job in queue
+        job = await invoker.enqueue(
+            folder_hashes[0],
+            None,
+            invoker.EnqueueKind.ADD_CANDIDATES,
+            search_ids=search_ids,
+            search_artist=search_artist,
+            search_album=search_album,
+        )
+
+        try:
+            # FIXME: In theory we could return a list of
+            # new candidates here and only fetch a
+            # partial update in the frontend
+            res = await wait_for_job_results(job)
+        except Exception as e:
+            return jsonify(
+                {
+                    "message": f"Job failed: {e}",
+                    "job": job.get_meta(),
+                },
+            ), 500
+
+        return jsonify(
+            {
+                "message": f"search_candidates for {len(folder_hashes)} folders",
+                "jobs": [job.get_meta()],
             }
         )
 

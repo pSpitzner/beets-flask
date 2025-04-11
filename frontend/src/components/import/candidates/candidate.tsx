@@ -51,7 +51,13 @@ import { PenaltyIconRow } from "../icons";
  *
  * Each item is expandable to show more details about the candidate.
  */
-export function TaskCandidates({ task }: { task: SerializedTaskState }) {
+export function TaskCandidates({
+    task,
+    folderHash,
+}: {
+    task: SerializedTaskState;
+    folderHash: string;
+}) {
     const asisCandidate = useMemo(
         () => task.candidates.find((c) => c.info.data_source === "asis"),
         [task.candidates]
@@ -88,7 +94,7 @@ export function TaskCandidates({ task }: { task: SerializedTaskState }) {
                     ))}
                 </GridWrapper>
 
-                <BottomBar candidates={task.candidates} />
+                <BottomBar candidates={task.candidates} folderHash={folderHash} />
             </Box>
         </CandidatesContextProvider>
     );
@@ -270,7 +276,13 @@ function TopBar({ candidates }: { candidates: SerializedCandidateState[] }) {
     );
 }
 
-function BottomBar({ candidates }: { candidates: SerializedCandidateState[] }) {
+function BottomBar({
+    candidates,
+    folderHash,
+}: {
+    candidates: SerializedCandidateState[];
+    folderHash: string;
+}) {
     const { selected } = useCandidatesContext();
 
     const selectedCandidate = useMemo(() => {
@@ -309,7 +321,7 @@ function BottomBar({ candidates }: { candidates: SerializedCandidateState[] }) {
                 />
             </Box>
             <Box sx={{ display: "flex", gap: 1 }}>
-                <CandidateSearch />
+                <CandidateSearch folderHash={folderHash} />
                 <DuplicateActions sx={{ marginLeft: "auto" }} />
                 <ImportCandidateButton candidate={selectedCandidate} />
             </Box>
