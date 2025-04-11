@@ -3,11 +3,11 @@ import ReactDOM from "react-dom/client";
 import Box from "@mui/material/Box";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 
-import { customizeFetch, queryClient } from "@/components/common/_query";
+import { customizeFetch, queryClient } from "@/api/common";
 import { PrefetchConfigQueryClientProvider } from "@/components/common/hooks/useConfig";
+import { Loading } from "@/components/common/loading";
 import { StatusContextProvider } from "@/components/common/websocket/status";
 
-import { Loading } from "./components/common/loading";
 import { ErrorCard } from "./errors";
 import ThemeProvider from "./theme";
 
@@ -74,7 +74,7 @@ declare module "@tanstack/react-router" {
     }
 }
 
-function App() {
+export function App() {
     return (
         <PrefetchConfigQueryClientProvider client={queryClient}>
             <StatusContextProvider client={queryClient}>

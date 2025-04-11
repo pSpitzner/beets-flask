@@ -35,17 +35,17 @@ import {
     SerializedTaskState,
 } from "@/pythonTypes";
 
-import { GenericDetailsItem, GenericDetailsItemWithDiff, TrackDiff } from "./diff";
-
-import { MatchChip } from "../../common/chips";
-import { PenaltyTypeIcon, SourceTypeIcon } from "../../common/icons";
-import { PenaltyIconRow } from "../icons";
 import {
     CandidateSearch,
     DuplicateActions,
     ImportCandidateButton,
     ImportCandidateLabel,
 } from "./actions";
+import { GenericDetailsItem, GenericDetailsItemWithDiff, TrackDiff } from "./diff";
+
+import { MatchChip } from "../../common/chips";
+import { PenaltyTypeIcon, SourceTypeIcon } from "../../common/icons";
+import { PenaltyIconRow } from "../icons";
 
 /** Show a radio list of task candidates.
  *

@@ -1,79 +1,88 @@
-import Button from "@mui/material/Button";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
+import { XIcon } from "lucide-react";
+import { Divider, IconButton, Typography, Zoom } from "@mui/material";
+import MuiDialog, { DialogProps } from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 
-export function ErrorDialog({
-    open,
-    onClose,
-    error,
-}: {
-    open: boolean;
-    onClose: () => void;
-    error?: Error | null;
-}) {
-
-    if (!error) {
-        return
-    }
-
-    return (
-        <>
-            <Dialog
-                open={open}
-                onClose={onClose}
-                aria-labelledby="error-dialog-title"
-                aria-describedby="error-dialog-description"
-            >
-                <DialogTitle id="error-dialog-title">{error.name}</DialogTitle>
-                <DialogContent>
-                    <DialogContentText id="error-dialog-description">
-                        {error.message}
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={onClose}>Noticed</Button>
-                </DialogActions>
-            </Dialog>
-        </>
-    );
-}
-
-
-export function ConfirmDialog({
-    open,
-    onConfirm,
-    onCancel,
+/** Styled dialog that auto expands
+ * to full screen on mobile devices.
+ *
+ * Has a small zoom transition animation.
+ */
+export function Dialog({
     title,
-    children
-}: {
-    open: boolean,
-    onConfirm: () => void,
-    onCancel: () => void,
-    title: string,
-    children?: React.ReactNode
+    title_icon,
+    children,
+    ...props
+}: DialogProps & {
+    onClose: (
+        event: object,
+        reason: "backdropClick" | "escapeKeyDown" | "xIconClick"
+    ) => void;
+    title: React.ReactNode;
+    title_icon?: React.ReactNode;
 }) {
     return (
-        <>
-            <Dialog
-                open={open}
-                onClose={onCancel}
+        <MuiDialog
+            sx={(theme) => ({
+                padding: 0,
+                margin: 0,
+                ".MuiDialog-paper": {
+                    // Auto expand to full screen on mobile devices
+                    minWidth: theme.breakpoints.values.tablet + "px",
+                    maxWidth: theme.breakpoints.values.laptop + "px",
+                    [theme.breakpoints.down("tablet")]: {
+                        width: "100%",
+                        height: "100%",
+                        maxHeight: "100%",
+                        maxWidth: "100%",
+                        minWidth: "100%",
+                        margin: 0,
+                        borderRadius: 0,
+                    },
+                },
+                ".MuiDialogTitle-root": {
+                    paddingInline: theme.spacing(2),
+                    paddingBlock: theme.spacing(1),
+                },
+            })}
+            slots={{
+                transition: Zoom,
+            }}
+            {...props}
+        >
+            <DialogTitle
+                sx={{
+                    display: "flex",
+                    width: "100%",
+                    gap: 1,
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                }}
             >
-                <DialogTitle>{title}</DialogTitle>
-                <DialogContent>
-                    <DialogContentText id="error-dialog-description">
-                        {children}
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions >
-                    <Button onClick={onCancel} sx={{
-                        marginRight: "auto"
-                    }}>No</Button>
-                    <Button onClick={onConfirm} className="ml-auto">Yes</Button>
-                </DialogActions>
-            </Dialog>
-        </>
-    )
+                <Typography
+                    variant="h5"
+                    component="div"
+                    fontWeight="bold"
+                    sx={{ display: "flex", gap: 1, alignItems: "center" }}
+                >
+                    {title_icon}
+                    {title}
+                </Typography>
+                <IconButton
+                    onClick={() => props.onClose({}, "xIconClick")}
+                    sx={{
+                        margin: 0,
+                        padding: 0.5,
+                    }}
+                    aria-label="close"
+                    size="small"
+                    color="warning"
+                >
+                    <XIcon />
+                </IconButton>
+            </DialogTitle>
+            <Divider variant="middle" />
+            {children}
+        </MuiDialog>
+    );
 }
