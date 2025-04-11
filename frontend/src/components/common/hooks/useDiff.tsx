@@ -1,6 +1,6 @@
-import Box from "@mui/material/Box";
 import * as Diff from "diff";
 import { useEffect, useState } from "react";
+import Box from "@mui/material/Box";
 
 /**
  * Custom hook that calculates the difference between two strings.

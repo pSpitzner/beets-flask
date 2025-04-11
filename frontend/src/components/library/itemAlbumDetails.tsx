@@ -11,7 +11,7 @@ import TableRow from "@mui/material/TableRow";
 import Tooltip from "@mui/material/Tooltip";
 import { useSuspenseQuery } from "@tanstack/react-query";
 
-import { Album as AlbumT, albumQueryOptions } from "@/components/common/_query";
+import { Album as AlbumT, albumQueryOptions } from "@/api/library";
 
 import CoverArt from "./coverArt";
 

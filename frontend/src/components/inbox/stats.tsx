@@ -16,7 +16,7 @@ import { InboxStats } from "@/pythonTypes";
 
 import styles from "../library/stats.module.scss";
 import { humanizeBytes } from "../common/units/bytes";
-import { RelativeTime } from "../common/units/time";
+import { relativeTime } from "../common/units/time";
 
 /** A component for general inbox
  * statistics, such as the number of
@@ -174,7 +174,7 @@ function Header({ data }: { data: InboxStats }) {
                             textAlign: "right",
                         }}
                     >
-                        last tag <RelativeTime date={data.lastTagged} />
+                        last tag <relativeTime date={data.lastTagged} />
                     </Box>
                 </Box>
             </Box>

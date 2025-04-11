@@ -11,11 +11,11 @@
 import { createContext, useContext, useEffect } from "react";
 import { type QueryClient } from "@tanstack/react-query";
 
+import { queryClient } from "@/api/common";
 import { FolderStatusResponse } from "@/pythonTypes";
 
 import useSocket from "./useSocket";
 
-import { queryClient } from "../_query";
 import type { Socket } from "socket.io-client";
 interface StatusContextI {
     isConnected: boolean;
@@ -24,6 +24,7 @@ interface StatusContextI {
 
 const StatusContext = createContext<StatusContextI | null>(null);
 
+// FIXME: Move to api folder
 export const statusQueryOptions = {
     queryKey: ["status", "all"],
     queryFn: async () => {

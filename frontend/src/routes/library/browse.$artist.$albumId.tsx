@@ -4,13 +4,13 @@ import z from "zod";
 import { Typography, useMediaQuery } from "@mui/material";
 import { createFileRoute, Link, Outlet, useParams } from "@tanstack/react-router";
 
-import { albumQueryOptions, LIB_BROWSE_ROUTE } from "@/components/common/_query";
+import { albumQueryOptions } from "@/api/library";
 
 import { LibraryList, Selection } from "./browse";
 
 import styles from "./library.module.scss";
 
-export const Route = createFileRoute(`${LIB_BROWSE_ROUTE}/$artist/$albumId`)({
+export const Route = createFileRoute(`/library/browse/$artist/$albumId`)({
     parseParams: (params) => ({
         albumId: z.number().int().parse(parseInt(params.albumId)),
     }),
@@ -50,8 +50,8 @@ function Items() {
         return album.items.map((item) => ({
             to:
                 params.itemId == item.id
-                    ? `${LIB_BROWSE_ROUTE}/$artist/$albumId`
-                    : `${LIB_BROWSE_ROUTE}/$artist/$albumId/$itemId`,
+                    ? `/library/browse/$artist/$albumId`
+                    : `/library/browse/$artist/$albumId/$itemId`,
             params: { artist: params.artist, albumId: params.albumId, itemId: item.id },
             label: item.name,
             className: styles.item,

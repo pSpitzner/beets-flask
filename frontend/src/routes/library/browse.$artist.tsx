@@ -9,16 +9,13 @@ import {
     useParams,
 } from "@tanstack/react-router";
 
-import {
-    albumsByArtistQueryOptions,
-    LIB_BROWSE_ROUTE,
-} from "@/components/common/_query";
+import { albumsByArtistQueryOptions } from "@/api/library";
 
 import { LibraryList, Selection } from "./browse";
 
 import styles from "./library.module.scss";
 
-export const Route = createFileRoute(`${LIB_BROWSE_ROUTE}/$artist`)({
+export const Route = createFileRoute(`/library/browse/$artist`)({
     loader: async (opts) =>
         await opts.context.queryClient.ensureQueryData(
             albumsByArtistQueryOptions(
@@ -53,19 +50,17 @@ function Albums() {
 
     // Allow to deselect the album
     const match = useMatch({
-        from: `${LIB_BROWSE_ROUTE}/$artist/$albumId`,
+        from: `/library/browse/$artist/$albumId`,
         shouldThrow: false,
     });
-    const to = match
-        ? `${LIB_BROWSE_ROUTE}/$artist`
-        : `${LIB_BROWSE_ROUTE}/$artist/$albumId`;
+    const to = match ? `/library/browse/$artist` : `/library/browse/$artist/$albumId`;
 
     const data = useMemo(() => {
         return albums.map((album) => ({
             to:
                 params.albumId == album.id
-                    ? `${LIB_BROWSE_ROUTE}/$artist`
-                    : `${LIB_BROWSE_ROUTE}/$artist/$albumId`,
+                    ? `/library/browse/$artist`
+                    : `/library/browse/$artist/$albumId`,
             params: { artist: params.artist, albumId: album.id },
             label: album.name,
             className: styles.item,

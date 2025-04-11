@@ -4,7 +4,8 @@ import Skeleton from "@mui/material/Skeleton";
 import { SxProps } from "@mui/material/styles";
 import { useQuery } from "@tanstack/react-query";
 
-import { APIError, artQueryOptions } from "@/components/common/_query";
+import { APIError } from "@/api/common";
+import { artQueryOptions } from "@/api/library";
 
 interface CoverArtProps {
     type: "item" | "album";

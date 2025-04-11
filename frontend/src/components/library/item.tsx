@@ -20,9 +20,9 @@ import Box from "@mui/material/Box";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
+import { albumQueryOptions, Item as ItemT, itemQueryOptions } from "@/api/library";
 import { ItemSource as ItemSourceT } from "@/pythonTypes";
 
-import { albumQueryOptions, Item as ItemT, itemQueryOptions } from "./_query";
 import { AudioPlayerItem } from "./audio";
 import CoverArt from "./coverArt";
 
@@ -129,7 +129,11 @@ function SongInfo({ item, ...props }: { item: ItemT<false> } & BoxProps) {
 
                 {/* Album details*/}
                 <Stack direction="row" spacing={0.5} alignItems="center" mt={1}>
-                    <Disc3Icon size={20} strokeWidth={2} color={theme.palette.text.secondary} />
+                    <Disc3Icon
+                        size={20}
+                        strokeWidth={2}
+                        color={theme.palette.text.secondary}
+                    />
                     <Box>
                         <Typography variant="body2" color="text.secondary">
                             {item.album} ({item.year})
@@ -142,7 +146,9 @@ function SongInfo({ item, ...props }: { item: ItemT<false> } & BoxProps) {
                     {item.genre
                         ?.split(/[,;]\s*/)
                         .filter((genre) => genre.length > 0)
-                        .map((genre) => <Chip key={genre} label={genre} size="small" />)}
+                        .map((genre) => (
+                            <Chip key={genre} label={genre} size="small" />
+                        ))}
                 </Stack>
 
                 {/* Playback*/}
@@ -241,8 +247,8 @@ function DetailsTabs({ item, ...props }: { item: ItemT<false> } & BoxProps) {
             </TabPanel>
             <TabPanel value={tab} index={1} sx={{ overflow: "auto", height: "100%" }}>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                    Breakdown of all details from stored by beets for this item. Only includes
-                    non-empty entries!
+                    Breakdown of all details from stored by beets for this item. Only
+                    includes non-empty entries!
                 </Typography>
                 <BasicInfo item={item} />
             </TabPanel>
@@ -275,7 +281,9 @@ function TabPanel(props: TabPanelProps & BoxProps) {
             aria-labelledby={`tab-${index}`}
             {...other}
         >
-            {value === index && <Box sx={{ paddingInline: 1, paddingTop: 2 }}>{children}</Box>}
+            {value === index && (
+                <Box sx={{ paddingInline: 1, paddingTop: 2 }}>{children}</Box>
+            )}
         </Box>
     );
 }
@@ -493,7 +501,11 @@ function ItemSource({ source }: { source: ItemSourceT }) {
                             value.map((v) => (
                                 <Link
                                     key={v}
-                                    href={sourceHref(source.source, v, key.replace(/_ids?/, ""))}
+                                    href={sourceHref(
+                                        source.source,
+                                        v,
+                                        key.replace(/_ids?/, "")
+                                    )}
                                     target="_blank"
                                 >
                                     {v}
@@ -501,7 +513,11 @@ function ItemSource({ source }: { source: ItemSourceT }) {
                             ))
                         ) : (
                             <Link
-                                href={sourceHref(source.source, value, key.replace(/_ids?/, ""))}
+                                href={sourceHref(
+                                    source.source,
+                                    value,
+                                    key.replace(/_ids?/, "")
+                                )}
                                 target="_blank"
                             >
                                 {value}
@@ -628,8 +644,8 @@ function AdvancedTab({ item }: { item: ItemT<false> }) {
                         marginRight: "auto",
                     }}
                 >
-                    All properties of this item. This includes all values stored by beets, omitting
-                    empty entries.
+                    All properties of this item. This includes all values stored by
+                    beets, omitting empty entries.
                 </Typography>
                 <Box
                     sx={{

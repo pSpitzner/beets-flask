@@ -8,7 +8,7 @@ import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { Album, Item } from "@/components/common/_query";
+import { Album, Item } from "@/api/library";
 import {
     SearchContextProvider,
     SearchType,

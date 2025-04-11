@@ -5,7 +5,7 @@ import { SxProps } from "@mui/material/styles";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 
-import { albumQueryOptions, itemQueryOptions } from "@/components/common/_query";
+import { albumQueryOptions, itemQueryOptions } from "@/api/library";
 
 import CoverArt from "./coverArt";
 
@@ -15,22 +15,10 @@ export function BrowserHeader({ ...props }: React.HTMLAttributes<HTMLDivElement>
 
     // although we do not need all the details, we use the same query options as for the browser to use the cache
     // if the parsed id is undefined, the queries return null without server communication
-    const { data: albumData } = useQuery(
-        albumQueryOptions({
-            id: params.albumId,
-            expand: true,
-            minimal: true,
-        })
-    );
+    const { data: albumData } = useQuery(albumQueryOptions(params.albumId, true, true));
     const album = albumData?.name;
 
-    const { data: itemData } = useQuery(
-        itemQueryOptions({
-            id: params.itemId,
-            minimal: false,
-            expand: true,
-        })
-    );
+    const { data: itemData } = useQuery(itemQueryOptions(params.itemId, true));
     const track = itemData?.name;
 
     let coverType: string | undefined = undefined;

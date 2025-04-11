@@ -8,12 +8,8 @@ import {
 } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import {
-    Album,
-    Item,
-    queryClient,
-    searchQueryOptions,
-} from "@/components/common/_query";
+import { queryClient } from "@/api/common";
+import { Album, Item, searchQueryOptions } from "@/api/library";
 import { useDebounce } from "@/components/common/hooks/useDebounce";
 
 export type SearchType = "item" | "album";

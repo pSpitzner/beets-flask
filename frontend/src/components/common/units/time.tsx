@@ -1,4 +1,4 @@
-export const RelativeTime = ({ date }: { date?: Date }) => {
+export const relativeTime = (date?: Date) => {
     if (!date) return "never";
 
     const now = new Date();

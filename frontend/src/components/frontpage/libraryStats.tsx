@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { libraryStatsQueryOptions } from "@/api/library";
 import { JSONPretty } from "@/components/common/json";
-import { RelativeTime } from "@/components/common/units/time";
+import { relativeTime } from "@/components/common/units/time";
 import {
     Card,
     CardActions,
@@ -108,9 +108,5 @@ function LastAddedInfo() {
         return null;
     }
 
-    return (
-        <CardTopInfo>
-            Last added: <RelativeTime date={data.lastItemAdded} />
-        </CardTopInfo>
-    );
+    return <CardTopInfo>Last added: {relativeTime(data.lastItemAdded)}</CardTopInfo>;
 }

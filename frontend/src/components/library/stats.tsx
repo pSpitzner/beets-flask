@@ -16,7 +16,7 @@ import { LibraryStats } from "@/routes/_frontpage/index";
 
 import styles from "./stats.module.scss";
 import { humanizeBytes } from "../common/units/bytes";
-import { humanizeDuration, RelativeTime } from "../common/units/time";
+import { humanizeDuration, relativeTime } from "../common/units/time";
 
 /** A component for general library
  * statistics, such as the number of
@@ -161,7 +161,7 @@ function Header({ data }: { data?: LibraryStats }) {
                             textAlign: "right",
                         }}
                     >
-                        last import <RelativeTime date={data?.lastItemAdded} />
+                        last import <relativeTime date={data?.lastItemAdded} />
                     </Box>
                 </Box>
             </Box>

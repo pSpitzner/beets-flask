@@ -19,7 +19,6 @@ import { Route as FrontpageIndexImport } from './routes/_frontpage/index'
 import { Route as LibrarySearchImport } from './routes/library/search'
 import { Route as LibraryBrowseImport } from './routes/library/browse'
 import { Route as FrontpageModalImport } from './routes/_frontpage/_modal'
-import { Route as DebugQuerytestImport } from './routes/_debug/query_test'
 import { Route as DebugJobsImport } from './routes/_debug/jobs'
 import { Route as LibraryBrowseArtistImport } from './routes/library/browse.$artist'
 import { Route as FrontpageModalScheduleImport } from './routes/_frontpage/_modal.schedule'
@@ -75,12 +74,6 @@ const LibraryBrowseRoute = LibraryBrowseImport.update({
 
 const FrontpageModalRoute = FrontpageModalImport.update({
   id: '/_frontpage/_modal',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const DebugQuerytestRoute = DebugQuerytestImport.update({
-  id: '/_debug/query_test',
-  path: '/query_test',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -144,13 +137,6 @@ declare module '@tanstack/react-router' {
       path: '/jobs'
       fullPath: '/jobs'
       preLoaderRoute: typeof DebugJobsImport
-      parentRoute: typeof rootRoute
-    }
-    '/_debug/query_test': {
-      id: '/_debug/query_test'
-      path: '/query_test'
-      fullPath: '/query_test'
-      preLoaderRoute: typeof DebugQuerytestImport
       parentRoute: typeof rootRoute
     }
     '/_frontpage/_modal': {
@@ -315,7 +301,6 @@ const LibraryBrowseRouteWithChildren = LibraryBrowseRoute._addFileChildren(
 
 export interface FileRoutesByFullPath {
   '/jobs': typeof DebugJobsRoute
-  '/query_test': typeof DebugQuerytestRoute
   '': typeof FrontpageModalRouteWithChildren
   '/library/browse': typeof LibraryBrowseRouteWithChildren
   '/library/search': typeof LibrarySearchRoute
@@ -335,7 +320,6 @@ export interface FileRoutesByFullPath {
 
 export interface FileRoutesByTo {
   '/jobs': typeof DebugJobsRoute
-  '/query_test': typeof DebugQuerytestRoute
   '': typeof FrontpageModalRouteWithChildren
   '/library/browse': typeof LibraryBrowseRouteWithChildren
   '/library/search': typeof LibrarySearchRoute
@@ -356,7 +340,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/_debug/jobs': typeof DebugJobsRoute
-  '/_debug/query_test': typeof DebugQuerytestRoute
   '/_frontpage/_modal': typeof FrontpageModalRouteWithChildren
   '/library/browse': typeof LibraryBrowseRouteWithChildren
   '/library/search': typeof LibrarySearchRoute
@@ -378,7 +361,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/jobs'
-    | '/query_test'
     | ''
     | '/library/browse'
     | '/library/search'
@@ -397,7 +379,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/jobs'
-    | '/query_test'
     | ''
     | '/library/browse'
     | '/library/search'
@@ -416,7 +397,6 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_debug/jobs'
-    | '/_debug/query_test'
     | '/_frontpage/_modal'
     | '/library/browse'
     | '/library/search'
@@ -437,7 +417,6 @@ export interface FileRouteTypes {
 
 export interface RootRouteChildren {
   DebugJobsRoute: typeof DebugJobsRoute
-  DebugQuerytestRoute: typeof DebugQuerytestRoute
   FrontpageModalRoute: typeof FrontpageModalRouteWithChildren
   LibraryBrowseRoute: typeof LibraryBrowseRouteWithChildren
   LibrarySearchRoute: typeof LibrarySearchRoute
@@ -453,7 +432,6 @@ export interface RootRouteChildren {
 
 const rootRouteChildren: RootRouteChildren = {
   DebugJobsRoute: DebugJobsRoute,
-  DebugQuerytestRoute: DebugQuerytestRoute,
   FrontpageModalRoute: FrontpageModalRouteWithChildren,
   LibraryBrowseRoute: LibraryBrowseRouteWithChildren,
   LibrarySearchRoute: LibrarySearchRoute,
@@ -478,7 +456,6 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/_debug/jobs",
-        "/_debug/query_test",
         "/_frontpage/_modal",
         "/library/browse",
         "/library/search",
@@ -494,9 +471,6 @@ export const routeTree = rootRoute
     },
     "/_debug/jobs": {
       "filePath": "_debug/jobs.tsx"
-    },
-    "/_debug/query_test": {
-      "filePath": "_debug/query_test.tsx"
     },
     "/_frontpage/_modal": {
       "filePath": "_frontpage/_modal.tsx",

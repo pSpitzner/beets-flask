@@ -4,13 +4,13 @@ import { styled, Typography, useMediaQuery, useTheme } from "@mui/material";
 import Box from "@mui/material/Box";
 import { createFileRoute, Link, Outlet, useParams } from "@tanstack/react-router";
 
-import { artistsQueryOptions, LIB_BROWSE_ROUTE } from "@/components/common/_query";
+import { artistsQueryOptions } from "@/api/library";
 import { Search } from "@/components/common/inputs/search";
 import List, { ListItemData } from "@/components/library/list";
 
 import styles from "./library.module.scss";
 
-export const Route = createFileRoute(LIB_BROWSE_ROUTE)({
+export const Route = createFileRoute("/library/browse")({
     loader: (opts) => opts.context.queryClient.ensureQueryData(artistsQueryOptions()),
     component: () => <ArtistRoute />,
 });
@@ -43,8 +43,8 @@ function Artists() {
             // Allow to deselect the artist
             to:
                 params.artist == artist.name
-                    ? `${LIB_BROWSE_ROUTE}`
-                    : `${LIB_BROWSE_ROUTE}/$artist`,
+                    ? "/library/browse"
+                    : `/library/browse/$artist`,
             params: { artist: artist.name },
             label: artist.name,
             className: styles.item,
