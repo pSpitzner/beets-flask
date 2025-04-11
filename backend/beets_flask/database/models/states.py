@@ -185,7 +185,7 @@ class SessionStateInDb(Base):
     )
 
     folder: Mapped[FolderInDb] = relationship()
-    folder_hash: Mapped[str] = mapped_column(ForeignKey("folder.id"))
+    folder_hash: Mapped[str] = mapped_column(ForeignKey("folder.id"), unique=True)
 
     # FIXME: This should be a getter for the which queries the tasks
     progress: Mapped[Progress]

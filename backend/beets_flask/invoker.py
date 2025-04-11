@@ -56,6 +56,7 @@ from beets_flask.database import Tag, db_session_factory
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
 from beets_flask.importer.progress import FolderStatus, Progress
 from beets_flask.importer.session import (
+    AddCandidatesSession,
     AsIsImportSession,
     AutoImportSession,
     ImportSession,
@@ -79,7 +80,7 @@ def emit_status(
     before: FolderStatus | None = None, after: FolderStatus | None = None
 ) -> Callable[
     [Callable[Concatenate[str, str, P], Awaitable[R]]],
-    Callable[Concatenate[str, str, P], Awaitable[R]],
+    Callable[Concatenate[str, str | None, P], Awaitable[R]],
 ]:
     """Decorator to propagate status updates to clients.
 
@@ -93,9 +94,21 @@ def emit_status(
 
     def decorator(
         f: Callable[Concatenate[str, str, P], Awaitable[R]],
-    ) -> Callable[Concatenate[str, str, P], Awaitable[R]]:
+    ) -> Callable[Concatenate[str, str | None, P], Awaitable[R]]:
         @functools.wraps(f)
-        async def wrapper(hash: str, path: str, *args, **kwargs) -> R:
+        async def wrapper(hash: str, path: str | None, *args, **kwargs) -> R:
+            # if only a hash is given and no path, we retrieve the path from the db
+            if path is None:
+                with db_session_factory() as db_session:
+                    f_on_disk = FolderInDb.get_by(
+                        FolderInDb.id == hash, session=db_session
+                    )
+                    if f_on_disk is None:
+                        raise InvalidUsage(
+                            f"If only hash is given, it must be in the db."
+                        )
+                    path = f_on_disk.full_path
+
             # FIXME: In theory we could keep the socket client open here
             if before is not None:
                 await send_folder_status_update(
@@ -164,26 +177,23 @@ async def enqueue(hash: str, path: str, kind: EnqueueKind, **kwargs) -> Job:
         use with care.
     """
 
-    f_on_disk = FolderInDb.get_current_on_disk(
-        hash,
-        path,
-    )
-    hash = f_on_disk.hash
-
     if kind == EnqueueKind.PREVIEW:
-        job = preview_queue.enqueue(run_preview, hash, path, kind, **kwargs)
+        job = preview_queue.enqueue(run_preview, hash, path, **kwargs)
         __set_job_meta(job, hash, path, kind)
     elif kind == EnqueueKind.IMPORT:
-        job = import_queue.enqueue(run_import, hash, path, kind, **kwargs)
+        job = import_queue.enqueue(run_import, hash, path, False, **kwargs)
         __set_job_meta(job, hash, path, kind)
     elif kind == EnqueueKind.IMPORT_AS_IS:
-        job = import_queue.enqueue(run_import, hash, path, kind, **kwargs)
+        job = import_queue.enqueue(run_import, hash, path, True, **kwargs)
         __set_job_meta(job, hash, path, kind)
     elif kind == EnqueueKind.AUTO:
-        job = preview_queue.enqueue(run_preview, hash, path, kind, **kwargs)
+        job = preview_queue.enqueue(run_preview, hash, path, **kwargs)
         __set_job_meta(job, hash, path, EnqueueKind._AUTO_PREVIEW)
-        job = import_queue.enqueue(run_auto_import, hash, path, kind, depends_on=job)
+        job = import_queue.enqueue(run_auto_import, hash, path, depends_on=job)
         __set_job_meta(job, hash, path, EnqueueKind._AUTO_IMPORT)
+    elif kind == EnqueueKind.ADD_CANDIDATES:
+        job = preview_queue.enqueue(run_add_candidates, hash, path, **kwargs)
+        __set_job_meta(job, hash, path, kind)
     else:
         raise ValueError(f"Unknown kind {kind}")
 
@@ -194,7 +204,7 @@ async def enqueue(hash: str, path: str, kind: EnqueueKind, **kwargs) -> Job:
 
 @job(timeout=600, queue=preview_queue, connection=redis_conn)
 @emit_status(before=FolderStatus.RUNNING, after=FolderStatus.TAGGED)
-async def run_preview(hash: str, path: str, kind: str):
+async def run_preview(hash: str, path: str):
     """Fetch candidates for a folder using beets.
 
     Will refetch candidates if this is rerun even if candidates exist
@@ -209,7 +219,7 @@ async def run_preview(hash: str, path: str, kind: str):
     """
 
     with db_session_factory() as db_session:
-        log.info(f"Preview task on {hash=} {path=} {kind=}")
+        log.info(f"Preview task on {hash=} {path=}")
         f_on_disk = FolderInDb.get_current_on_disk(hash, path)
         if hash != f_on_disk.hash:
             log.warning(
@@ -229,50 +239,14 @@ async def run_preview(hash: str, path: str, kind: str):
             db_session.merge(s_state_indb)
             db_session.commit()
 
-        log.info(f"Preview done. {f_on_disk.hash=} {path=} {kind=}")
-
-
-@job(timeout=600, queue=preview_queue, connection=redis_conn)
-@emit_status(before=FolderStatus.RUNNING, after=FolderStatus.TAGGED)
-async def run_add_candidates(
-    hash: str,
-    path: str,
-    kind: str,
-    stuff: str,
-):
-    """Adds a candidate to an session which is already in the status tagged.
-
-    This only works if all session tasks are tagged. I.e. preview completed.
-    """
-    with db_session_factory() as db_session:
-        log.info(f"Add candidates task on {hash=} {path=} {kind=}")
-        f_on_disk = FolderInDb.get_current_on_disk(hash, path)
-        if hash != f_on_disk.hash:
-            log.warning(
-                f"Folder content has changed since the job was scheduled for {path}. "
-                + f"Using new content ({f_on_disk.hash}) instead of {hash}"
-            )
-
-        s_state_indb = SessionStateInDb.get_by(
-            SessionStateInDb.folder_hash == hash, session=db_session
-        )
-        if s_state_indb is None:
-            raise InvalidUsage(
-                f"Session state not found for {hash=}, this should not happen. "
-                + "Please run preview before queueing auto-import."
-            )
-
-        if s_state_indb.progress != Progress.PREVIEW_COMPLETED:
-            raise InvalidUsage(
-                f"Session state not in preview completed state for {hash=}, "
-            )
-
-        raise NotImplementedError("TODO: Add session for this")
+        log.info(f"Preview done. {f_on_disk.hash=} {path=}")
 
 
 @job(timeout=600, queue=import_queue, connection=redis_conn)
 @emit_status(before=FolderStatus.RUNNING, after=FolderStatus.IMPORTED)
-async def run_import(hash: str, path: str, kind: str, match_url: str | None = None):
+async def run_import(
+    hash: str, path: str, import_asis: bool, match_url: str | None = None
+):
     """Start Import session for a tag.
 
     Relies on a preview to have been generated before.
@@ -294,7 +268,7 @@ async def run_import(hash: str, path: str, kind: str, match_url: str | None = No
 
     """
     with db_session_factory() as db_session:
-        log.info(f"Import task on {hash=} {path=} {kind=}")
+        log.info(f"Import task on {hash=} {path=}")
         f_on_disk = FolderInDb.get_current_on_disk(hash, path)
         if hash != f_on_disk.hash:
             log.warning(
@@ -319,7 +293,8 @@ async def run_import(hash: str, path: str, kind: str, match_url: str | None = No
         # same id this will raise (see below session.merge)
         db_session.expunge_all()
 
-        if kind == "import_as_is":
+        # FIXME: More generic way to import any candidate
+        if import_asis:
             i_session = AsIsImportSession(s_state_live)
         else:
             i_session = ImportSession(s_state_live, match_url=match_url)
@@ -336,7 +311,7 @@ async def run_import(hash: str, path: str, kind: str, match_url: str | None = No
 
 @job(timeout=600, queue=import_queue, connection=redis_conn)
 @emit_status(before=FolderStatus.RUNNING, after=FolderStatus.IMPORTED)
-async def run_auto_import(hash: str, path: str, kind: str) -> list[str] | None:
+async def run_auto_import(hash: str, path: str) -> list[str] | None:
     """Automatically run an import session.
 
     Runs an import on a tag after a preview has been generated.
@@ -352,7 +327,7 @@ async def run_auto_import(hash: str, path: str, kind: str) -> list[str] | None:
         List of track paths after import, as strings. (empty if nothing imported)
     """
     with db_session_factory() as db_session:
-        log.info(f"Auto Import task on {hash=} {path=} {kind=}")
+        log.info(f"Auto Import task on {hash=} {path=}")
         f_on_disk = FolderInDb.get_current_on_disk(hash, path)
         if hash != f_on_disk.hash:
             raise InvalidUsage(
@@ -380,6 +355,60 @@ async def run_auto_import(hash: str, path: str, kind: str) -> list[str] | None:
             s_state_indb = SessionStateInDb.from_live_state(i_session.state)
             db_session.merge(instance=s_state_indb)
             db_session.commit()
+
+
+@job(timeout=600, queue=preview_queue, connection=redis_conn)
+@emit_status(before=FolderStatus.RUNNING, after=FolderStatus.TAGGED)
+async def run_add_candidates(
+    hash: str,
+    path: str,
+    search_ids: list[str] = [],
+    search_artist: str | None = None,
+    search_album: str | None = None,
+):
+    """Adds a candidate to an session which is already in the status tagged.
+
+    This only works if all session tasks are tagged. I.e. preview completed.
+    """
+    with db_session_factory() as db_session:
+        log.info(f"Add candidates task on {hash=}")
+
+        s_state_indb = SessionStateInDb.get_by(
+            SessionStateInDb.folder_hash == hash, session=db_session
+        )
+        if s_state_indb is None:
+            raise InvalidUsage(
+                f"Session state not found for {hash=}, this should not happen. "
+                + "Please run preview before queueing auto-import."
+            )
+
+        if s_state_indb.progress != Progress.PREVIEW_COMPLETED:
+            raise InvalidUsage(
+                f"Session state not in preview completed state for {hash=}"
+            )
+
+        s_state_live = s_state_indb.to_live_state()
+
+        # we need this expunge, otherwise we cannot overwrite session states:
+        # If object id is in session we cant add a new object to the session with the
+        # same id this will raise (see below session.merge)
+        db_session.expunge_all()
+
+        a_session = AddCandidatesSession(
+            s_state_live,
+            search_ids=search_ids,
+            search_artist=search_artist,
+            search_album=search_album,
+        )
+        try:
+            await a_session.run_async()
+        except Exception as e:
+            log.exception(e)
+        finally:
+            s_state_indb = SessionStateInDb.from_live_state(a_session.state)
+            db_session.merge(instance=s_state_indb)
+            db_session.commit()
+        log.info(f"Add candidates done. {hash=} {path=}")
 
 
 def __set_job_meta(job: Job, hash: str, path: str, kind: EnqueueKind):

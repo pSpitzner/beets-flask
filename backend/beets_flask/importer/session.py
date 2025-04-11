@@ -315,7 +315,7 @@ class AddCandidatesSession(PreviewSession):
         super().__init__(state, config_overlay, **kwargs)
 
         if state.progress > Progress.PREVIEW_COMPLETED:
-            raise ValueError("Cannot set search_ids for import session.")
+            raise ValueError("Cannot run AddCandidatesSession on non-preview state.")
 
         # Reset tasks to allow to rerun lookup candidates
         for task in self.state.task_states:
