@@ -4,7 +4,9 @@
  * /api_v1/inbox
  */
 
-import type { Folder } from "@/pythonTypes";
+import { UseMutationOptions } from "@tanstack/react-query";
+
+import type { Folder, InboxStats } from "@/pythonTypes";
 
 import { queryClient } from "./common";
 
@@ -36,3 +38,50 @@ queryClient.setMutationDefaults(["refreshInboxTree"], {
         await Promise.all(ps);
     },
 });
+
+// Some stats about the inbox(es)
+export const inboxStatsQueryOptions = () => ({
+    queryKey: ["inbox", "stats"],
+    queryFn: async () => {
+        const response = await fetch(`/inbox/stats`);
+        const dat = (await response.json()) as InboxStats[];
+        return dat;
+    },
+});
+
+/* -------------------------------- Mutations ------------------------------- */
+// Here for reference, not used yet but we might need it in the future
+
+const deleteInboxMutation: UseMutationOptions<unknown, Error, string> = {
+    mutationFn: async (inboxPath: string) => {
+        return await fetch(`/inbox/path/${inboxPath}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                with_status: [], // default, delete all, independent of status
+            }),
+        });
+    },
+    onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: ["inbox"] });
+    },
+};
+
+const deleteInboxImportedMutation: UseMutationOptions<unknown, Error, string> = {
+    mutationFn: async (inboxPath: string) => {
+        return await fetch(`/inbox/path/${inboxPath}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                with_status: ["imported"],
+            }),
+        });
+    },
+    onSuccess: async (_data, variables) => {
+        await queryClient.invalidateQueries({ queryKey: ["inbox", "path", variables] });
+    },
+};

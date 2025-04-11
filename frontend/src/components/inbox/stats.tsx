@@ -12,10 +12,11 @@ import {
 } from "@mui/material";
 import { Link } from "@tanstack/react-router";
 
+import { InboxStats } from "@/pythonTypes";
+
 import styles from "../library/stats.module.scss";
 import { humanizeBytes } from "../common/units/bytes";
 import { RelativeTime } from "../common/units/time";
-import { InboxStats } from "@/pythonTypes";
 
 /** A component for general inbox
  * statistics, such as the number of

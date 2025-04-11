@@ -86,7 +86,7 @@ function RouteComponent() {
                         >
                             <SelectedStats />
                             {data.map((folder, i) => (
-                                <GridWrapper>
+                                <GridWrapper key={i}>
                                     <FolderComponent
                                         key={i}
                                         folder={folder}

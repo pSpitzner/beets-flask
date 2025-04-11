@@ -1,9 +1,8 @@
-import { Library, RefreshCcw } from "lucide-react";
-import { Box, Divider, Tooltip } from "@mui/material";
+import { Library } from "lucide-react";
+import { Box, Divider } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 
-import { libraryStatsQueryOptions } from "@/components/common/_query";
-import { IconButtonWithMutation } from "@/components/common/buttons";
+import { libraryStatsQueryOptions } from "@/api/library";
 import { JSONPretty } from "@/components/common/json";
 import { RelativeTime } from "@/components/common/units/time";
 import {
@@ -42,17 +41,6 @@ export function LibraryStats() {
             <Divider className="mt-auto" />
             <CardActions>
                 <div className="flex flex-row space-x-4"></div>
-                <div className="flex flex-row space-x-4">
-                    <IconButtonWithMutation
-                        className="ms-auto"
-                        disabled
-                        color="primary"
-                    >
-                        <Tooltip title="Refresh library stats">
-                            <RefreshCcw size="1em" />
-                        </Tooltip>
-                    </IconButtonWithMutation>
-                </div>
             </CardActions>
         </Card>
     );

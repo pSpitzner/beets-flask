@@ -1,4 +1,5 @@
-import { SerializedSessionState } from "@/pythonTypes";
+import { FolderSelectionContext } from "@/components/inbox/folderSelectionContext";
+import { EnqueueKind, SerializedSessionState } from "@/pythonTypes";
 
 import { APIError, ErrorData, queryClient } from "./common";
 
@@ -40,3 +41,33 @@ export const sessionQueryOptions = ({
         return res;
     },
 });
+
+/* -------------------------------- Mutations ------------------------------- */
+
+/** Enqueue a new task
+ * i.e. tag a folder of import a folder
+ *
+ * We have one entrypoint for invoking session
+ * actions in the backend.
+ */
+export const enqueueMutationOptions = {
+    mutationFn: async ({
+        selected,
+        kind,
+    }: {
+        selected: FolderSelectionContext["selected"];
+        kind: EnqueueKind;
+    }) => {
+        return await fetch("/session/enqueue", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                kind: kind.toString(),
+                folder_hashes: selected.hashes,
+                folder_paths: selected.paths,
+            }),
+        });
+    },
+};

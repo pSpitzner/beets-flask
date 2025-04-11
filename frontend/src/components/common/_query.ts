@@ -3,7 +3,7 @@ import { QueryClient } from "@tanstack/react-query";
 // we re-export all query options here, to have easy imports elsewhere
 export * from "@/components/inbox/_query";
 export * from "@/components/library/_query";
-export * from "@/components/tags/_query";
+export * from "@/components/tags_old/_query";
 
 // Global query client instance
 export const queryClient = new QueryClient({});

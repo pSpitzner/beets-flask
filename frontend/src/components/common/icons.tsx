@@ -24,7 +24,6 @@ import {
     LucideProps,
     Mic2Icon,
     MusicIcon,
-    SearchXIcon,
     TagsIcon,
     Tally5Icon,
     TriangleAlertIcon,

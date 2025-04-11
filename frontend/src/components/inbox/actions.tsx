@@ -5,7 +5,7 @@ import {
     TagIcon,
     Trash2Icon,
 } from "lucide-react";
-import { forwardRef, Ref, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, Ref, useState } from "react";
 import {
     Box,
     BoxProps,
@@ -24,39 +24,13 @@ import {
 } from "@mui/material";
 import { useMutation, UseMutationOptions } from "@tanstack/react-query";
 
+import { enqueueMutationOptions } from "@/api/session";
 import { EnqueueKind, File, Folder } from "@/pythonTypes";
 
-import {
-    FolderSelectionContext,
-    useFolderSelectionContext,
-} from "./folderSelectionContext";
+import { useFolderSelectionContext } from "./folderSelectionContext";
 
 import { SourceTypeIcon } from "../common/icons";
 import { ClipboardCopyButton } from "../common/inputs/copy";
-
-/* -------------------------------- Mutations ------------------------------- */
-
-const enqueueMutationOptions = {
-    mutationFn: async ({
-        selected,
-        kind,
-    }: {
-        selected: FolderSelectionContext["selected"];
-        kind: EnqueueKind;
-    }) => {
-        return await fetch("/session/enqueue", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                kind: kind.toString(),
-                folder_hashes: selected.hashes,
-                folder_paths: selected.paths,
-            }),
-        });
-    },
-};
 
 /* --------------------------------- Actions -------------------------------- */
 // Actions a user can take on a single or multiple folders implemented as speed dial
@@ -64,7 +38,7 @@ const enqueueMutationOptions = {
 export function FolderActionsSpeedDial() {
     const isDesktop = useMediaQuery((theme) => theme.breakpoints.up("laptop"));
     const [open, setOpen] = useState(false);
-    const { nSelected, selected, deselectAll } = useFolderSelectionContext();
+    const { nSelected, selected } = useFolderSelectionContext();
     const theme = useTheme();
 
     // Show speed dial only once something is selected

@@ -11,6 +11,14 @@ import {
     useTheme,
 } from "@mui/material";
 
+import {
+    BestCandidateChip,
+    DuplicateChip,
+    FolderStatusChip,
+    HashMismatchChip,
+} from "@/components/common/chips";
+import useMobileSafeContextMenu from "@/components/common/hooks/useMobileSafeContextMenu";
+import { FileTypeIcon, FolderTypeIcon } from "@/components/common/icons";
 import { File, Folder } from "@/pythonTypes";
 
 import {
@@ -19,15 +27,6 @@ import {
     RefreshAllFoldersButton,
 } from "./actions";
 import { useFolderSelectionContext } from "./folderSelectionContext";
-
-import {
-    BestCandidateChip,
-    DuplicateChip,
-    FolderStatusChip,
-    HashMismatchChip,
-} from "../common/chips";
-import { FileTypeIcon, FolderTypeIcon } from "../common/icons";
-import useMobileSafeContextMenu from "../common/hooks/useMobileSafeContextMenu";
 
 /* ------------------------------ Grid wrapper ------------------------------ */
 
@@ -138,8 +137,6 @@ export function FolderComponent({
     return (
         <>
             {/* Order inside the gridrow does not matter, set outside. */}
-            {/* Current best match including penalties */}
-            {/* TODO: Generate with best candidate */}
             <GridRow
                 sx={(theme) => ({
                     paddingInline: theme.spacing(0.5),
@@ -157,6 +154,7 @@ export function FolderComponent({
                 onClick={() => toggleSelect(folder)}
                 {...mobileSafeContext}
             >
+                {/* Current status of the folder */}
                 <Chips folder={folder} />
 
                 {/* Folder name and collapsable */}
@@ -166,6 +164,7 @@ export function FolderComponent({
                     setIsOpen={setIsOpen}
                     level={level}
                 />
+
                 {/* More actions*/}
                 <MoreActions
                     f={folder}

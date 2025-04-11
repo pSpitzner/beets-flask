@@ -102,5 +102,17 @@ export default ts.config(
     prettierConfig,
 
     // apply react-refresh
-    reactRefresh.configs.vite
+    {
+        plugins: {
+            "react-refresh": reactRefresh
+        },
+        rules: {
+            "react-refresh/only-export-components": [
+                "warn",
+                {
+                    allowConstantExport: true,
+                },
+            ],
+        }
+    }
 );

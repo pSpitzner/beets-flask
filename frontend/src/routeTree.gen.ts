@@ -12,7 +12,6 @@
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as TerminalIndexImport } from './routes/terminal/index'
-import { Route as TagsIndexImport } from './routes/tags/index'
 import { Route as SessiondraftIndexImport } from './routes/sessiondraft/index'
 import { Route as InboxIndexImport } from './routes/inbox/index'
 import { Route as ImportIndexImport } from './routes/import/index'
@@ -35,12 +34,6 @@ import { Route as LibraryBrowseArtistAlbumIdItemIdImport } from './routes/librar
 const TerminalIndexRoute = TerminalIndexImport.update({
   id: '/terminal/',
   path: '/terminal/',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const TagsIndexRoute = TagsIndexImport.update({
-  id: '/tags/',
-  path: '/tags/',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -209,13 +202,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SessiondraftIndexImport
       parentRoute: typeof rootRoute
     }
-    '/tags/': {
-      id: '/tags/'
-      path: '/tags'
-      fullPath: '/tags'
-      preLoaderRoute: typeof TagsIndexImport
-      parentRoute: typeof rootRoute
-    }
     '/terminal/': {
       id: '/terminal/'
       path: '/terminal'
@@ -337,7 +323,6 @@ export interface FileRoutesByFullPath {
   '/import': typeof ImportIndexRoute
   '/inbox': typeof InboxIndexRoute
   '/sessiondraft': typeof SessiondraftIndexRoute
-  '/tags': typeof TagsIndexRoute
   '/terminal': typeof TerminalIndexRoute
   '/design/icons': typeof DebugDesignIconsRoute
   '/design/loading': typeof DebugDesignLoadingRoute
@@ -358,7 +343,6 @@ export interface FileRoutesByTo {
   '/import': typeof ImportIndexRoute
   '/inbox': typeof InboxIndexRoute
   '/sessiondraft': typeof SessiondraftIndexRoute
-  '/tags': typeof TagsIndexRoute
   '/terminal': typeof TerminalIndexRoute
   '/design/icons': typeof DebugDesignIconsRoute
   '/design/loading': typeof DebugDesignLoadingRoute
@@ -380,7 +364,6 @@ export interface FileRoutesById {
   '/import/': typeof ImportIndexRoute
   '/inbox/': typeof InboxIndexRoute
   '/sessiondraft/': typeof SessiondraftIndexRoute
-  '/tags/': typeof TagsIndexRoute
   '/terminal/': typeof TerminalIndexRoute
   '/_debug/design/icons': typeof DebugDesignIconsRoute
   '/_debug/design/loading': typeof DebugDesignLoadingRoute
@@ -403,7 +386,6 @@ export interface FileRouteTypes {
     | '/import'
     | '/inbox'
     | '/sessiondraft'
-    | '/tags'
     | '/terminal'
     | '/design/icons'
     | '/design/loading'
@@ -423,7 +405,6 @@ export interface FileRouteTypes {
     | '/import'
     | '/inbox'
     | '/sessiondraft'
-    | '/tags'
     | '/terminal'
     | '/design/icons'
     | '/design/loading'
@@ -443,7 +424,6 @@ export interface FileRouteTypes {
     | '/import/'
     | '/inbox/'
     | '/sessiondraft/'
-    | '/tags/'
     | '/terminal/'
     | '/_debug/design/icons'
     | '/_debug/design/loading'
@@ -465,7 +445,6 @@ export interface RootRouteChildren {
   ImportIndexRoute: typeof ImportIndexRoute
   InboxIndexRoute: typeof InboxIndexRoute
   SessiondraftIndexRoute: typeof SessiondraftIndexRoute
-  TagsIndexRoute: typeof TagsIndexRoute
   TerminalIndexRoute: typeof TerminalIndexRoute
   DebugDesignIconsRoute: typeof DebugDesignIconsRoute
   DebugDesignLoadingRoute: typeof DebugDesignLoadingRoute
@@ -482,7 +461,6 @@ const rootRouteChildren: RootRouteChildren = {
   ImportIndexRoute: ImportIndexRoute,
   InboxIndexRoute: InboxIndexRoute,
   SessiondraftIndexRoute: SessiondraftIndexRoute,
-  TagsIndexRoute: TagsIndexRoute,
   TerminalIndexRoute: TerminalIndexRoute,
   DebugDesignIconsRoute: DebugDesignIconsRoute,
   DebugDesignLoadingRoute: DebugDesignLoadingRoute,
@@ -508,7 +486,6 @@ export const routeTree = rootRoute
         "/import/",
         "/inbox/",
         "/sessiondraft/",
-        "/tags/",
         "/terminal/",
         "/_debug/design/icons",
         "/_debug/design/loading",
@@ -547,9 +524,6 @@ export const routeTree = rootRoute
     },
     "/sessiondraft/": {
       "filePath": "sessiondraft/index.tsx"
-    },
-    "/tags/": {
-      "filePath": "tags/index.tsx"
     },
     "/terminal/": {
       "filePath": "terminal/index.tsx"
