@@ -13,6 +13,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { inboxQueryOptions } from "@/api/inbox";
 import { Dialog } from "@/components/common/dialogs";
+import { FileTypeIcon, FolderTypeIcon } from "@/components/common/icons";
 import { FolderActionsSpeedDial } from "@/components/inbox/actions";
 import {
     FolderComponent,
@@ -157,11 +158,11 @@ function InfoDescription() {
     return (
         <>
             <IconButton
-                sx={(theme) => ({
+                sx={{
                     m: 0,
                     p: 0,
                     color: "gray",
-                })}
+                }}
                 size="small"
                 onClick={() => {
                     setOpen(true);
@@ -180,6 +181,37 @@ function InfoDescription() {
                     This is your temporary holding area for new music files before
                     they're officially imported into your library. Drop your audio files
                     into the <code>XXX</code> folder to begin processing with Beets.
+                </DialogContent>
+                <DialogContent>
+                    <Typography>Tree view</Typography>
+                    <Box
+                        sx={{
+                            display: "grid",
+                            gridTemplateColumns: "auto 1fr",
+                            padding: 1,
+                            columnGap: 1,
+                            rowGap: 1,
+                        }}
+                    >
+                        <FolderTypeIcon isAlbum={false} isOpen={false} />
+                        <FolderTypeIcon isAlbum={false} isOpen={true} />
+
+                        <FolderTypeIcon isAlbum={true} isOpen={false} />
+                        <FolderTypeIcon isAlbum={true} isOpen={true} />
+
+                        <FileTypeIcon type={"mp3"} />
+                        <FileTypeIcon type={"txt"} />
+                    </Box>
+                </DialogContent>
+                <DialogContent>
+                    <Typography>Actions</Typography>
+                    Can be triggered on rightclick or be long pressing on mobile for a
+                    single folder. You may also select multiple folders and trigger the
+                    actions on all of them at once using the speed dial at the bottom
+                    left (right on mobile).
+                </DialogContent>
+                <DialogContent>
+                    <Typography>Chips</Typography>
                 </DialogContent>
             </Dialog>
         </>

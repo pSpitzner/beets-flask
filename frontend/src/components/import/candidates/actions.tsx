@@ -1,14 +1,17 @@
-import { PageWrapper } from "@/components/common/page";
-import { SerializedCandidateState } from "@/pythonTypes";
+import {
+    CheckIcon,
+    CopyMinusIcon,
+    CopyPlusIcon,
+    MergeIcon,
+    SearchIcon,
+    Trash2Icon,
+} from "lucide-react";
+import { useState } from "react";
 import {
     Box,
-    BoxProps,
     Button,
-    ButtonGroupProps,
-    Divider,
+    DialogContent,
     FormHelperText,
-    IconButton,
-    Modal,
     styled,
     TextField,
     ToggleButton,
@@ -20,16 +23,9 @@ import {
     TypographyProps,
     useTheme,
 } from "@mui/material";
-import {
-    CheckIcon,
-    CopyMinusIcon,
-    CopyPlusIcon,
-    MergeIcon,
-    SearchIcon,
-    Trash2Icon,
-    XIcon,
-} from "lucide-react";
-import { Ref, useState } from "react";
+
+import { Dialog } from "@/components/common/dialogs";
+import { SerializedCandidateState } from "@/pythonTypes";
 
 /** Text that is show as an indicator
  * how good a match is.
@@ -208,58 +204,19 @@ export function CandidateSearch() {
                     Search
                 </Button>
             </Tooltip>
-            <Modal
+            <Dialog
+                title={"Search for more candidates"}
                 open={open}
                 onClose={() => setOpen(false)}
-                slots={{ backdrop: Backdrop }}
-                sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                }}
+                title_icon={<SearchIcon size={theme.iconSize.lg} />}
             >
-                <Box
-                    sx={(theme) => ({
+                <DialogContent
+                    sx={{
                         display: "flex",
                         flexDirection: "column",
-                        padding: 0.5,
-                        paddingInline: 1,
-                        paddingBlock: 1.5,
-                        borderRadius: 1,
                         gap: 1.5,
-                        backgroundColor: theme.palette.background.paper,
-                        minWidth: theme.breakpoints.values.tablet + "px",
-                        [theme.breakpoints.down("tablet")]: {
-                            width: "100%",
-                            height: "100%",
-                            minWidth: "auto",
-                        },
-                        boxShadow: theme.shadows[4],
-                    })}
+                    }}
                 >
-                    <Box
-                        sx={{
-                            display: "flex",
-                            width: "100%",
-                            gap: 1,
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                        }}
-                    >
-                        <Typography variant="h5" component="div">
-                            Search for more candidates
-                        </Typography>
-                        <IconButton
-                            onClick={() => setOpen(false)}
-                            sx={{
-                                margin: 0,
-                                padding: 0.5,
-                            }}
-                        >
-                            <XIcon />
-                        </IconButton>
-                    </Box>
-                    <Divider variant="inset" />
                     <SearchField
                         sx={{ width: "100%" }}
                         id="input-search-id"
@@ -329,42 +286,11 @@ export function CandidateSearch() {
                             Search
                         </Button>
                     </Box>
-                </Box>
-            </Modal>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
-
-const Backdrop = ({
-    open,
-    ref,
-    ...other
-}: {
-    open: boolean;
-    ref: Ref<HTMLDivElement>;
-} & BoxProps) => (
-    <Box
-        ref={ref}
-        {...other}
-        sx={[
-            {
-                position: "fixed",
-                inset: 0,
-                backgroundColor: "#00000033",
-                backdropFilter: "blur(5px)",
-                zIndex: -1,
-                WebkitTapHighlightColor: "transparent",
-            },
-            open
-                ? {
-                      display: "block",
-                  }
-                : {
-                      display: "none",
-                  },
-        ]}
-    />
-);
 
 const SearchField = styled(TextField)(({ theme }) => ({
     // backgroundColor: theme.palette.background.default,

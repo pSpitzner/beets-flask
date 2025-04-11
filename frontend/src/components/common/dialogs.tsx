@@ -1,5 +1,6 @@
 import { XIcon } from "lucide-react";
-import { Divider, IconButton, Typography, Zoom } from "@mui/material";
+import { Ref } from "react";
+import { Box, BoxProps, Divider, IconButton, Typography, Zoom } from "@mui/material";
 import MuiDialog, { DialogProps } from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 
@@ -47,6 +48,7 @@ export function Dialog({
             })}
             slots={{
                 transition: Zoom,
+                backdrop: Backdrop,
             }}
             {...props}
         >
@@ -63,7 +65,12 @@ export function Dialog({
                     variant="h5"
                     component="div"
                     fontWeight="bold"
-                    sx={{ display: "flex", gap: 1, alignItems: "center" }}
+                    sx={{
+                        display: "flex",
+                        paddingBlock: 0.75,
+                        gap: 1,
+                        alignItems: "center",
+                    }}
                 >
                     {title_icon}
                     {title}
@@ -86,3 +93,34 @@ export function Dialog({
         </MuiDialog>
     );
 }
+
+const Backdrop = ({
+    open,
+    ref,
+    ...other
+}: {
+    open: boolean;
+    ref: Ref<HTMLDivElement>;
+} & BoxProps) => (
+    <Box
+        ref={ref}
+        {...other}
+        sx={[
+            {
+                position: "fixed",
+                inset: 0,
+                backgroundColor: "#00000033",
+                backdropFilter: "blur(5px)",
+                zIndex: -1,
+                WebkitTapHighlightColor: "transparent",
+            },
+            open
+                ? {
+                      display: "block",
+                  }
+                : {
+                      display: "none",
+                  },
+        ]}
+    />
+);
