@@ -5,20 +5,21 @@
  * is show instead.
  */
 
+import { FolderClockIcon } from "lucide-react";
+import { useMemo } from "react";
+import { Tooltip } from "@mui/material";
 import Chip, { ChipProps } from "@mui/material/Chip";
 import styled from "@mui/material/styles/styled";
+import useTheme from "@mui/material/styles/useTheme";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+
+import { sessionQueryOptions } from "@/api/session";
+import { Folder, FolderStatus } from "@/pythonTypes";
 
 import { useConfig } from "./hooks/useConfig";
 import { FolderStatusIcon, PenaltyTypeIcon, SourceTypeIconWithTooltip } from "./icons";
-import useTheme from "@mui/material/styles/useTheme";
-import { useQuery } from "@tanstack/react-query";
-import { sessionQueryOptions } from "@/routes/_debug/session.$id";
-import { Folder, FolderStatus } from "@/pythonTypes";
 import { statusQueryOptions } from "./websocket/status";
-import { Link } from "@tanstack/react-router";
-import { useMemo } from "react";
-import { FolderClockIcon } from "lucide-react";
-import { Tooltip } from "@mui/material";
 
 export const StyledChip = styled(Chip)(({ theme }) => ({
     paddingLeft: theme.spacing(0.5),
@@ -104,14 +105,16 @@ export function DuplicateChip({ folder, ...props }: { folder: Folder } & ChipPro
     }
 
     return (
-        <StyledChip
-            icon={<PenaltyTypeIcon type="duplicate" size={theme.iconSize.sm} />}
-            label="Duplicate"
-            size="small"
-            color="error"
-            variant="outlined"
-            {...props}
-        />
+        <Tooltip title="This album is already in your beets library!">
+            <StyledChip
+                icon={<PenaltyTypeIcon type="duplicate" size={theme.iconSize.sm} />}
+                label="Duplicate"
+                size="small"
+                color="error"
+                variant="outlined"
+                {...props}
+            />
+        </Tooltip>
     );
 }
 
@@ -214,7 +217,7 @@ export function HashMismatchChip({ folder, ...props }: { folder: Folder } & Chip
     }
 
     return (
-        <Tooltip title="The folder hash does not match the folder hash which was used to tag/import the folder. This might happen if the folder was changed after importing or tagging.">
+        <Tooltip title="The current folder content does not match the content when the folder was tagged/imported.">
             <StyledChip
                 icon={<FolderClockIcon size={theme.iconSize.sm} />}
                 label="Integrity failed"
