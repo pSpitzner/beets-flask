@@ -1,8 +1,8 @@
 import asyncio
-from datetime import datetime
 import logging
 from abc import ABC, abstractmethod
 from copy import deepcopy
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal
 
@@ -299,6 +299,10 @@ class PreviewSession(BaseSession):
 class AddCandidatesSession(PreviewSession):
     """Import session that adds a candidate to the library."""
 
+    search_ids: list[str]
+    search_artist: str | None
+    search_album: str | None
+
     def __init__(
         self,
         state: SessionState,
@@ -310,26 +314,44 @@ class AddCandidatesSession(PreviewSession):
     ):
         super().__init__(state, config_overlay, **kwargs)
 
-        # TODO: Reset status of the task to refetch candidates if state is already
-        # in progress. Should be allowed to rerun if not imported yet!
+        if state.progress > Progress.PREVIEW_COMPLETED:
+            raise ValueError("Cannot set search_ids for import session.")
 
-    @property
-    def stages(self) -> StageOrder:
-        stages = super().stages
-        return stages
+        # Reset tasks to allow to rerun lookup candidates
+        for task in self.state.task_states:
+            if task.progress >= Progress.PREVIEW_COMPLETED:
+                task.set_progress(Progress.LOOKING_UP_CANDIDATES - 1)
+
+        self.search_ids = search_ids
+        self.search_artist = search_artist
+        self.search_album = search_album
 
     def lookup_candidates(self, task: importer.ImportTask):
         """Amend the found candidate to the already existing candidates (if any)."""
-        # TODO
-        # How do we want to handle search_id, search_artist and
-        # search_album?
-        # SM: I think we should just copy the src of the task.lookup_candidates()
-        # here. Should be fine to handle this ourself, as we are not using the
-        # Singletonimporttask. Should allow us to add the search
-        # See state_serialize.ipynb for how I would call this
+        # see ref in lookup_candidates in beets/importer.py
+        log.debug(
+            f"Using search_ids {self.search_ids}, {self.search_artist}, {self.search_album} for additional candidate lookup."
+        )
 
-        # see ref in lookup_candidates in base session
-        pass
+        artist, album, prop = autotag.tag_album(
+            task.items,
+            search_ids=self.search_ids,
+            search_album=self.search_album,
+            search_artist=self.search_artist,
+        )
+
+        # Add candidates using our custom state
+        task_state = self.state.get_task_state_for_task(task)
+        if task_state is None:
+            raise ValueError("No task state found for task. Should not happen!")
+
+        task_state.add_candidates(prop.candidates)
+
+        # Write additional information to the task
+        # not used by us, but might be useful for plugins
+        task.cur_artist = artist
+        task.cur_album = album
+        task.rec = prop.recommendation
 
 
 class ImportSession(BaseSession):

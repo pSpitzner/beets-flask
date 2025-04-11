@@ -50,6 +50,17 @@ class Progress(Enum):
     def __lt__(self, other: Progress) -> bool:
         return self.value < other.value
 
+    def __sub__(self, other: int) -> Progress:
+        if not isinstance(other, int):
+            raise TypeError("Unsupported type for addition")
+
+        other = min(max(other - self.value, 12), 0)
+
+        return Progress(other)
+
+    def __add__(self, other: int) -> Progress:
+        return self.__sub__(-1 * other)
+
 
 class SerializedProgressState(TypedDict):
     # ugly to repeat, but no way to read the type hint from enum.

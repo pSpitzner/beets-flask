@@ -200,7 +200,7 @@ class TaskState:
 
     def add_candidates(
         self,
-        candidates: List[Union[BeetsAlbumMatch, BeetsTrackMatch]],
+        candidates: Sequence[Union[BeetsAlbumMatch, BeetsTrackMatch]],
         insert_at: int = 0,
     ) -> List[CandidateState]:
         """Add new candidates to the selection state."""
