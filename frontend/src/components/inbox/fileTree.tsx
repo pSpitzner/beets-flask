@@ -415,10 +415,12 @@ function Chips({ folder }: { folder: Folder }) {
                 alignItems: "center",
                 justifyContent: "flex-end",
 
-                "> div": {
-                    // Feels a bit hacky, but is the only way how to do align
-                    // the chips without adding more grid columns
-                    minWidth: "4.2rem",
+                [theme.breakpoints.up("tablet")]: {
+                    "> div": {
+                        // Feels a bit hacky, but is the only way how to do align
+                        // the chips without adding more grid columns
+                        minWidth: "4.2rem",
+                    },
                 },
             })}
         >

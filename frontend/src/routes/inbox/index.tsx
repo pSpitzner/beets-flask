@@ -30,6 +30,7 @@ import {
     PenaltyTypeIcon,
     SourceTypeIcon,
 } from "@/components/common/icons";
+import { PageWrapper } from "@/components/common/page";
 import { FolderActionsSpeedDial } from "@/components/inbox/actions";
 import {
     FolderComponent,
@@ -52,88 +53,68 @@ function RouteComponent() {
 
     return (
         <>
-            <Box
+            <PageWrapper
                 sx={(theme) => ({
                     display: "flex",
                     flexDirection: "column",
                     height: "100%",
                     alignItems: "center",
+                    paddingTop: theme.spacing(1),
+                    paddingInline: theme.spacing(0.5),
                     [theme.breakpoints.up("laptop")]: {
                         height: "auto",
+                        paddingTop: theme.spacing(2),
+                        paddingInline: theme.spacing(1),
                     },
                 })}
             >
-                <Box
-                    sx={(theme) => ({
-                        width: "100%",
-                        maxWidth: "100%",
-                        // Wrapper for dynamic page width
-                        [theme.breakpoints.up("laptop")]: {
-                            height: "auto",
-                            minWidth: theme.breakpoints.values["laptop"],
-                            width: "calc(100% - " + theme.spacing(2) + " * 2)",
+                <InboxRouteHeader />
+                <FolderSelectionProvider>
+                    <Box
+                        sx={(theme) => ({
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-end",
+                            width: "100%",
+                            position: "relative",
+                            paddingBlock: theme.spacing(1),
+                            paddingInline: theme.spacing(1.5),
+                            backgroundColor: theme.palette.background.paper,
+                            gap: theme.spacing(1),
+                            borderRadius: 1,
+                            [theme.breakpoints.up("laptop")]: {
+                                height: "auto",
+                            },
+                        })}
+                    >
+                        <SelectedStats />
+                        {data.map((folder, i) => (
+                            <GridWrapper key={i}>
+                                <FolderComponent key={i} folder={folder} unSelectable />
+                            </GridWrapper>
+                        ))}
+                    </Box>
+                    <Box
+                        sx={(theme) => ({
                             maxWidth: theme.breakpoints.values["desktop"],
-                            // Styles for desktop
-                            marginInline: theme.spacing(2),
-                            marginTop: theme.spacing(2),
-                            marginBottom: theme.spacing(1),
-                        },
-                    })}
-                >
-                    <InboxRouteHeader />
-                    <FolderSelectionProvider>
-                        <Box
-                            sx={(theme) => {
-                                return {
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    alignItems: "flex-end",
-                                    height: "100%",
-                                    position: "relative",
-                                    paddingBlock: theme.spacing(1),
-                                    paddingInline: theme.spacing(1.5),
-                                    backgroundColor: theme.palette.background.paper,
-                                    gap: theme.spacing(1),
-                                    [theme.breakpoints.up("laptop")]: {
-                                        height: "auto",
-                                        borderRadius: 1,
-                                    },
-                                };
-                            }}
-                        >
-                            <SelectedStats />
-                            {data.map((folder, i) => (
-                                <GridWrapper key={i}>
-                                    <FolderComponent
-                                        key={i}
-                                        folder={folder}
-                                        unSelectable
-                                    />
-                                </GridWrapper>
-                            ))}
-                        </Box>
-                        <Box
-                            sx={(theme) => ({
-                                maxWidth: theme.breakpoints.values["desktop"],
-                                width: "100%",
-                                display: "flex",
-                                position: "absolute",
-                                bottom: theme.spacing(2),
-                                right: theme.spacing(2),
-                                justifyContent: "flex-end",
-                                [theme.breakpoints.up("laptop")]: {
-                                    justifyContent: "flex-start",
-                                    position: "relative",
-                                    bottom: "inherit",
-                                    right: "inherit",
-                                },
-                            })}
-                        >
-                            <FolderActionsSpeedDial />
-                        </Box>
-                    </FolderSelectionProvider>
-                </Box>
-            </Box>
+                            width: "100%",
+                            display: "flex",
+                            position: "absolute",
+                            bottom: theme.spacing(2),
+                            right: theme.spacing(2),
+                            justifyContent: "flex-end",
+                            [theme.breakpoints.up("laptop")]: {
+                                justifyContent: "flex-start",
+                                position: "relative",
+                                bottom: "inherit",
+                                right: "inherit",
+                            },
+                        })}
+                    >
+                        <FolderActionsSpeedDial />
+                    </Box>
+                </FolderSelectionProvider>
+            </PageWrapper>
         </>
     );
 }
@@ -382,6 +363,7 @@ function InfoDescription() {
                             rowGap: 0.5,
                             gridTemplateColumns: "min-content auto",
                             alignItems: "center",
+                            pl: 1,
                         }}
                     >
                         <StyledChip
