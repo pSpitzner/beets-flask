@@ -89,6 +89,11 @@ const darkTheme = createTheme({
         secondary: {
             main: "#ffffff",
         },
+        text: {
+            primary: "#ffffff",
+            // overwriting secondary fixes the transparency (bad on icons)
+            secondary: "#ACB3B9",
+        },
         action: {
             // hover: "#212529",
             hover: "#3A3C3E",

@@ -1,8 +1,11 @@
 import {
+    ClipboardIcon,
     EllipsisVerticalIcon,
+    HistoryIcon,
     ImportIcon,
     RefreshCwIcon,
     TagIcon,
+    TerminalIcon,
     Trash2Icon,
 } from "lucide-react";
 import { forwardRef, Ref, useState } from "react";
@@ -89,6 +92,8 @@ export function FolderActionsSpeedDial() {
                     mutateArgs={{ selected, kind: EnqueueKind.PREVIEW }}
                 />
 
+                <Spacer />
+
                 <SpeedDialAction
                     icon={<ImportIcon />}
                     tooltip="Import"
@@ -104,9 +109,56 @@ export function FolderActionsSpeedDial() {
                     mutationOptions={enqueueMutationOptions}
                     mutateArgs={{ selected, kind: EnqueueKind.IMPORT_AS_IS }}
                 />
+
+                <SpeedDialAction
+                    icon={<TerminalIcon />}
+                    tooltip="Import (via terminal)"
+                    mutationOptions={enqueueMutationOptions}
+                    mutateArgs={{}}
+                />
+
+                <Spacer />
+
+                <SpeedDialAction
+                    icon={<ClipboardIcon />}
+                    tooltip="Copy path"
+                    mutationOptions={enqueueMutationOptions}
+                    mutateArgs={{}}
+                />
+
+                <SpeedDialAction
+                    icon={<Trash2Icon />}
+                    tooltip="Delete folder"
+                    mutationOptions={enqueueMutationOptions}
+                    mutateArgs={{}}
+                />
+
+                <SpeedDialAction
+                    icon={<HistoryIcon />}
+                    tooltip="Undo Import"
+                    mutationOptions={enqueueMutationOptions}
+                    mutateArgs={{}}
+                />
             </SpeedDial>
         </Zoom>
     );
+}
+
+function Spacer() {
+    const theme = useTheme();
+    const isDesktop = useMediaQuery((theme) => theme.breakpoints.up("laptop"));
+    return isDesktop ? (
+        <Box
+            sx={{
+                width: "1em",
+                height: "1rem",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                border: "none !important",
+            }}
+        />
+    ) : null;
 }
 
 export function RefreshAllFoldersButton() {
