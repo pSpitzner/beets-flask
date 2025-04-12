@@ -117,7 +117,6 @@ export interface LibraryStats {
 	lastItemAdded: null | number;
 	lastItemModified: null | number;
 	runtime: number;
-	freeSpace: number;
 }
 
 export interface InboxStats {

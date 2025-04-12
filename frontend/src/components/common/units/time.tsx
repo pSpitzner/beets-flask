@@ -11,17 +11,17 @@ export const relativeTime = (date?: Date) => {
     const years = Math.floor(months / 12);
 
     if (seconds < 60) {
-        return `${seconds} seconds ago`;
+        return `${seconds} second${seconds > 1 ? "s" : ""} ago`;
     } else if (minutes < 60) {
-        return `${minutes} minutes ago`;
+        return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
     } else if (hours < 24) {
-        return `${hours} hours ago`;
+        return `${hours} hour${hours > 1 ? "s" : ""} ago`;
     } else if (days < 30) {
-        return `${days} days ago`;
+        return `${days} day${days > 1 ? "s" : ""} ago`;
     } else if (months < 12) {
-        return `${months} months ago`;
+        return `${months} month${months > 1 ? "s" : ""} ago`;
     } else {
-        return `${years} years ago`;
+        return `${years} year${years > 1 ? "s" : ""} ago`;
     }
 };
 

@@ -1,9 +1,11 @@
 import shutil
+from pathlib import Path
 from typing import TYPE_CHECKING, Optional, TypedDict, cast
 
 from quart import Blueprint, g, jsonify
 
 from beets_flask.config import get_config
+from beets_flask.disk import dir_size
 
 if TYPE_CHECKING:
     # For type hinting the global g object
@@ -22,11 +24,10 @@ class LibraryStats(TypedDict):
     genres: int  # Num Genres
     labels: int  # Num Labels
 
-    size: int
+    size: int  # bytes of the library folder
     lastItemAdded: Optional[int]  # UTC timestamp
     lastItemModified: Optional[int]  # UTC timestamp
     runtime: int  # seconds
-    freeSpace: int  # bytes
 
 
 @stats_bp.route("/stats", methods=["GET"])
@@ -45,8 +46,6 @@ async def stats():
 
     lib_path = cast(str, config["directory"].get(str))
 
-    disk_usage = shutil.disk_usage(lib_path)
-
     ret: LibraryStats = {
         "libraryPath": str(config["directory"].as_str()),
         "items": items_stats[0][0],
@@ -54,7 +53,7 @@ async def stats():
         "artists": album_stats[0][3],
         "genres": album_stats[0][1],
         "labels": album_stats[0][2],
-        "size": disk_usage.total,
+        "size": dir_size(Path(lib_path)),
         "lastItemAdded": (
             round(items_stats[0][1] * 1000) if items_stats[0][1] is not None else None
         ),
@@ -62,7 +61,6 @@ async def stats():
             round(items_stats[0][2] * 1000) if items_stats[0][2] is not None else None
         ),
         "runtime": items_stats[0][3],
-        "freeSpace": disk_usage.free,
     }
 
     return jsonify(ret)
