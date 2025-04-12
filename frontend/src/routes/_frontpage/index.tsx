@@ -1,4 +1,5 @@
-import { Box, Divider, Typography } from "@mui/material";
+import { BookOpenIcon, BugIcon, GithubIcon } from "lucide-react";
+import { Box, Link, Typography, useTheme } from "@mui/material";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { inboxStatsQueryOptions } from "@/api/inbox";
@@ -32,11 +33,19 @@ function Index() {
     const [libraryStats, inboxStats] = Route.useLoaderData();
 
     return (
-        <PageWrapper sx={{ paddingBlock: 2 }}>
+        <PageWrapper
+            sx={{
+                paddingTop: 2,
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+            }}
+        >
             <Outlet />
             <Hero />
             <LibraryStatsComponent stats={libraryStats} />
             <InboxStatsComponent inboxStats={inboxStats} />
+            <Footer />
         </PageWrapper>
     );
 }
@@ -118,22 +127,67 @@ function Hero() {
                         Web interface around your favorite music tagger and music
                         library.
                     </Typography>
-                    {/* Copyright */}
-                    <Typography
-                        variant="caption"
-                        sx={{
-                            color: "grey.800",
-                            "@media (max-width: 890px)": {
-                                textAlign: "center",
-                                width: "100%",
-                            },
-                        }}
-                        component="div"
-                    >
-                        &copy; 2025 Beets-flask contributors
-                    </Typography>
                 </Box>
             </Box>
+        </Box>
+    );
+}
+
+function Footer() {
+    const theme = useTheme();
+    return (
+        <Box
+            sx={(theme) => ({
+                paddingBlock: 1,
+                paddingInline: 1,
+                display: "flex",
+                gap: 2,
+                marginTop: "auto",
+                justifyContent: "flex-end",
+                alignItems: "flex-end",
+                // do not show spans with text on mobile
+                [theme.breakpoints.down("tablet")]: {
+                    ">*>span": {
+                        display: "none",
+                    },
+                },
+                a: {
+                    display: "flex",
+                    alignItems: "flex-end",
+                },
+            })}
+        >
+            <Typography
+                variant="caption"
+                sx={{ color: "grey.700", mr: "auto", alignSelf: "flex-end" }}
+            >
+                &copy; 2025 Beets-flask contributors
+            </Typography>
+
+            <Link
+                href="https://beets-flask.readthedocs.io/en/latest/"
+                target="_blank"
+                variant="body2"
+            >
+                <BookOpenIcon size={theme.iconSize.lg} />
+                <Typography variant="caption">&nbsp;Documentation</Typography>
+            </Link>
+            <Link
+                href="https://github.com/pSpitzner/beets-flask"
+                target="_blank"
+                variant="body2"
+            >
+                <GithubIcon size={theme.iconSize.lg} />
+                <Typography variant="caption">&nbsp;GitHub</Typography>
+            </Link>
+            <Link
+                href="https://github.com/pSpitzner/beets-flask/issues/new"
+                target="_blank"
+                variant="body2"
+            >
+                <BugIcon size={theme.iconSize.lg} />
+                <Typography variant="caption">&nbsp;Report a bug</Typography>
+            </Link>
         </Box>
     );
 }
