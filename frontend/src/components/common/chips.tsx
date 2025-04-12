@@ -220,7 +220,7 @@ export function HashMismatchChip({ folder, ...props }: { folder: Folder } & Chip
         <Tooltip title="The current folder content does not match the content when the folder was tagged/imported.">
             <StyledChip
                 icon={<FolderClockIcon size={theme.iconSize.sm} />}
-                label="Integrity failed"
+                label="Integrity"
                 size="small"
                 variant="outlined"
                 color="warning"

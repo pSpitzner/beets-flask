@@ -104,7 +104,7 @@ export function FolderActionsSpeedDial() {
                 />
 
                 <SpeedDialAction
-                    icon={<SourceTypeIcon type={"asis"} />}
+                    icon={<SourceTypeIcon type="asis" />}
                     tooltip="Import (asis)"
                     mutationOptions={enqueueMutationOptions}
                     mutateArgs={{ selected, kind: EnqueueKind.IMPORT_AS_IS }}
