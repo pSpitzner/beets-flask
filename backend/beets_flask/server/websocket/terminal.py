@@ -18,6 +18,8 @@ https://stackoverflow.com/questions/44447473/how-to-make-xterm-js-accept-input
 
 from __future__ import annotations
 
+import asyncio
+
 import libtmux
 from libtmux import Pane, Session, Window
 from libtmux.exc import LibTmuxException
@@ -129,7 +131,10 @@ async def pty_input(sid, data):
     """Write to the child pty."""
     log.debug(f"{sid} input {data}")
     pane.send_keys(data["input"], enter=False)
-    await emit_cursor_position()
+    await asyncio.gather(
+        emit_output(),
+        emit_cursor_position(),
+    )
 
 
 @sio.on("ptyResize", namespace="/terminal")
