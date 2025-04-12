@@ -36,7 +36,7 @@ function Index() {
         <PageWrapper
             sx={{
                 paddingTop: 2,
-                height: "100%",
+                minHeight: "100%",
                 display: "flex",
                 flexDirection: "column",
             }}
@@ -138,7 +138,8 @@ function Footer() {
     return (
         <Box
             sx={(theme) => ({
-                paddingBlock: 1,
+                paddingTop: 3,
+                paddingBottom: 1,
                 paddingInline: 1,
                 display: "flex",
                 gap: 2,
