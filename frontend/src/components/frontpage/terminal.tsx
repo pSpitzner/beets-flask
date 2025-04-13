@@ -150,23 +150,18 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
     );
 
     const onOutput = useCallback(
-        (data: { output: string[] }) => {
+        (data: { output: string[]; x: number; y: number }) => {
             if (!term) return;
-            // term!.clear(); seems to be preferred from the documentation,
-            // but it leaves the prompt on the first line in place - which we here do not want
-            // ideally we would directly access the buffer.
-            // console.log("ptyOutput", data);
-            term.reset();
-            data.output.forEach((line, index) => {
-                if (index < data.output.length - 1) {
-                    term.writeln(line);
-                } else {
-                    // Workaround: strip all trailing whitespaces except for one
-                    // not a perfect fix (one wrong space remains when backspacing)
-                    const stripped_line = line.replace(/\s+$/, " ");
-                    term.write(stripped_line);
-                }
-            });
+            // neither clear nor reset seem to do the full job.
+            // term.clear();
+            // term.reset();
+            term.write("\x1Bc"); // ANSI escape sequence to clear the screen
+
+            // Note: tmux does not remove trailing whitespaces when backspacing.
+            // Therefore we also send the tmux cursor position along with the output
+            // to move the frontend cursor using escape sequences
+            const outputText = data.output.join("\r\n");
+            term.write(outputText + `\x1b[${data.y + 1};${data.x + 1}H`);
         },
         [term]
     );

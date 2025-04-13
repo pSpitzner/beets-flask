@@ -72,50 +72,86 @@ async def emit_output():
     try:
         if is_session_alive():
             current = pane.cmd("capture-pane", "-p", "-N", "-T", "-e").stdout
+            x, y = _get_cursor_position()
         else:
             current = ["Session ended. Reload page to restart!"]
-        await sio.emit("ptyOutput", {"output": current}, namespace="/terminal")
+            x, y = 0, 0
     except Exception as e:
         log.error(f"Error reading from pty: {e}")
-        await sio.emit(
-            "ptyOutput",
-            {"output": f"\nError reading from pty: {e}"},
-            namespace="/terminal",
-        )
+        current = [f"Error reading from pty: {e}"]
+        x, y = 0, 0
+
+    await sio.emit(
+        "ptyOutput", {"output": current, "x": x, "y": y}, namespace="/terminal"
+    )
 
 
-async def emit_output_continuously(sleep_seconds=0.1):
+async def emit_output_continuously(sleep_seconds=0.01):
     # only emit if there was a change
     prev: list[str] = []
+    prev_x, prev_y = 0, 0
     while True:
         await sio.sleep(sleep_seconds)  # type: ignore
         try:
             if is_session_alive():
                 current = pane.cmd("capture-pane", "-p", "-N", "-T", "-e").stdout
+                x, y = _get_cursor_position()
             else:
                 current = ["Session ended. Reload page to restart!"]
+                x, y = 0, 0
             if current != prev:
-                await sio.emit("ptyOutput", {"output": current}, namespace="/terminal")
-                await emit_cursor_position()
+                await sio.emit(
+                    "ptyOutput",
+                    {"output": current, "x": x, "y": y},
+                    namespace="/terminal",
+                )
                 prev = current
-                log.debug(f"emitting {current}")
+                prev_x, prev_y = x, y
+                # log.debug(f"emitting {current} at {x} {y}")
+                log.debug("\n\t".join(_get_scrollback_buffer(10)) + f"\n>>> {current}")
+            elif x != prev_x or y != prev_y:
+                await sio.emit(
+                    "ptyCursorPosition", {"x": x, "y": y}, namespace="/terminal"
+                )
+                prev_x, prev_y = x, y
         except Exception as e:
             log.error(f"Error reading from pty: {e}")
             await sio.emit(
                 "ptyOutput",
-                {"output": f"\nError reading from pty: {e}"},
+                {"output": f"\nError reading from pty: {e}", "x": 0, "y": 0},
                 namespace="/terminal",
             )
             break
 
 
-# sio.start_background_task(target=emit_output_continuously)
+def _get_scrollback_buffer(lines: int = 500) -> list[str]:
+    """Fetch the last N lines of scrollback buffer from tmux.
+
+    Parameters
+    ----------
+        pane: The tmux pane object.
+        lines: Number of scrollback lines to fetch (default: 500).
+
+    Returns
+    -------
+        List of strings representing the scrollback buffer.
+    """
+    try:
+        # Capture the last `lines` from scrollback (excluding the current screen)
+        # - '-S -N': Start from N lines before the current screen
+        # - '-E -1': End at the line before the current screen
+        scrollback = pane.cmd(
+            "capture-pane", "-p", "-N", "-T", "-e", "-S", f"-{lines}", "-E", "-1"
+        ).stdout
+        return scrollback
+    except Exception as e:
+        log.error(f"Failed to fetch scrollback buffer: {e}")
+        return []
 
 
 async def emit_cursor_position():
     try:
-        cursor = pane.cmd("display-message", "-p", "#{cursor_x},#{cursor_y}").stdout
-        x, y = map(int, cursor[0].split(","))
+        x, y = _get_cursor_position()
         await sio.emit("ptyCursorPosition", {"x": x, "y": y}, namespace="/terminal")
     except Exception as e:
         log.error(f"Error reading cursor position: {e}")
@@ -126,15 +162,22 @@ async def emit_cursor_position():
         )
 
 
+def _get_cursor_position():
+    """Get the cursor position."""
+    cursor = pane.cmd("display-message", "-p", "#{cursor_x},#{cursor_y}").stdout
+    x, y = map(int, cursor[0].split(","))
+    return x, y
+
+
 @sio.on("ptyInput", namespace="/terminal")
 async def pty_input(sid, data):
     """Write to the child pty."""
-    log.debug(f"{sid} input {data}")
+    # log.debug(f"{sid} input {data}")
     pane.send_keys(data["input"], enter=False)
-    await asyncio.gather(
-        emit_output(),
-        emit_cursor_position(),
-    )
+    # await asyncio.gather(
+    #     emit_output(),
+    #     emit_cursor_position(),
+    # )
 
 
 @sio.on("ptyResize", namespace="/terminal")
@@ -158,6 +201,9 @@ async def connect(sid, environ):
     """Handle new client connected."""
     log.debug(f"TerminalSocket new client connected {sid}")
     register_tmux()
+    sio.start_background_task(
+        target=emit_output_continuously,
+    )
 
 
 @sio.on("disconnect", namespace="/terminal")

@@ -8,7 +8,7 @@ import {
     TerminalIcon,
     Trash2Icon,
 } from "lucide-react";
-import { forwardRef, Ref, useState } from "react";
+import { forwardRef, Ref, useEffect, useRef, useState } from "react";
 import {
     Box,
     BoxProps,
@@ -34,6 +34,8 @@ import { useFolderSelectionContext } from "./folderSelectionContext";
 
 import { SourceTypeIcon } from "../common/icons";
 import { ClipboardCopyButton } from "../common/inputs/copy";
+import { useTerminalContext } from "../frontpage/terminal";
+import { useNavigate } from "@tanstack/react-router";
 
 /* --------------------------------- Actions -------------------------------- */
 // Actions a user can take on a single or multiple folders implemented as speed dial
@@ -85,7 +87,7 @@ export function FolderActionsSpeedDial() {
                         : undefined
                 }
             >
-                <SpeedDialAction
+                <SpeedDialMutationAction
                     icon={<TagIcon />}
                     tooltip="Retag"
                     mutationOptions={enqueueMutationOptions}
@@ -94,7 +96,7 @@ export function FolderActionsSpeedDial() {
 
                 <Spacer />
 
-                <SpeedDialAction
+                <SpeedDialMutationAction
                     icon={<ImportIcon />}
                     tooltip="Import"
                     // imports best candidate that is already present, independent of threshold
@@ -103,37 +105,32 @@ export function FolderActionsSpeedDial() {
                     mutateArgs={{ selected, kind: EnqueueKind.IMPORT }}
                 />
 
-                <SpeedDialAction
+                <SpeedDialMutationAction
                     icon={<SourceTypeIcon type="asis" />}
                     tooltip="Import (asis)"
                     mutationOptions={enqueueMutationOptions}
                     mutateArgs={{ selected, kind: EnqueueKind.IMPORT_AS_IS }}
                 />
 
-                <SpeedDialAction
-                    icon={<TerminalIcon />}
-                    tooltip="Import (via terminal)"
-                    mutationOptions={enqueueMutationOptions}
-                    mutateArgs={{}}
-                />
+                <TerminalImportAction />
 
                 <Spacer />
 
-                <SpeedDialAction
+                <SpeedDialMutationAction
                     icon={<ClipboardIcon />}
                     tooltip="Copy path"
                     mutationOptions={enqueueMutationOptions}
                     mutateArgs={{}}
                 />
 
-                <SpeedDialAction
+                <SpeedDialMutationAction
                     icon={<Trash2Icon />}
                     tooltip="Delete folder"
                     mutationOptions={enqueueMutationOptions}
                     mutateArgs={{}}
                 />
 
-                <SpeedDialAction
+                <SpeedDialMutationAction
                     icon={<HistoryIcon />}
                     tooltip="Undo Import"
                     mutationOptions={enqueueMutationOptions}
@@ -145,7 +142,6 @@ export function FolderActionsSpeedDial() {
 }
 
 function Spacer() {
-    const theme = useTheme();
     const isDesktop = useMediaQuery((theme) => theme.breakpoints.up("laptop"));
     return isDesktop ? (
         <Box
@@ -233,7 +229,7 @@ const SpeedDial = forwardRef(function SpeedDial(
     );
 });
 
-function SpeedDialAction<T>({
+function SpeedDialMutationAction<T>({
     icon,
     tooltip,
     mutateArgs,
@@ -253,11 +249,35 @@ function SpeedDialAction<T>({
         useMutation(mutationOptions);
 
     return (
-        <MuiSpeedDialAction
+        <SpeedDialAction
             icon={icon}
             onClick={() => {
                 mutate(mutateArgs);
             }}
+            tooltip={tooltip}
+            {...props}
+        />
+    );
+}
+
+function SpeedDialAction({
+    icon,
+    tooltip,
+    onClick,
+    ...props
+}: {
+    icon: React.ReactNode;
+    tooltip: string;
+    onClick?: React.MouseEventHandler<HTMLDivElement>;
+} & SpeedDialActionProps) {
+    // In theory we should check for touch instead of a breakpoint but tbh
+    // im too lazy to figure out how to do that properly
+    const isMobile = !useMediaQuery((theme) => theme.breakpoints.up("laptop"));
+
+    return (
+        <MuiSpeedDialAction
+            icon={icon}
+            onClick={onClick}
             slotProps={{
                 tooltip: {
                     // show tooltips always on mobile devices
@@ -279,6 +299,45 @@ function SpeedDialAction<T>({
             {...props}
         />
     );
+}
+
+/* ---------------------------- Specific Actions ---------------------------- */
+
+function TerminalImportAction({ ...props }: SpeedDialActionProps) {
+    const { inputText, clearInput } = useTerminalContext();
+    const { selected } = useFolderSelectionContext();
+    const text = useRef("");
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const selectedPaths = selected.paths.map(_escapePathForBash);
+        if (selectedPaths.length > 1) {
+            text.current = "\\\n  " + selectedPaths.join(" \\\n  ");
+        } else {
+            text.current = selectedPaths.join(" ");
+        }
+    }, [selected, text]);
+
+    return (
+        <SpeedDialAction
+            icon={<TerminalIcon />}
+            tooltip="Import (cli)"
+            onClick={() => {
+                clearInput();
+                inputText(`beet import -t ${text.current}`);
+                navigate({
+                    to: "/terminal",
+                }).catch(console.error);
+            }}
+            {...props}
+        />
+    );
+}
+
+function _escapePathForBash(path: string) {
+    // escaping path is fishy, but this seems to be the best compromise
+    // https://stackoverflow.com/questions/1779858/how-do-i-escape-a-string-for-a-shell-command-in-node
+    return `'${path.replace(/'/g, `'\\''`)}'`;
 }
 
 /* ------------------------------ More actions ------------------------------ */
