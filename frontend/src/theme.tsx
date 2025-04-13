@@ -39,7 +39,7 @@ declare module "@mui/material/styles" {
         diffs?: DiffColors;
     }
     interface SimplePaletteColorOptions {
-        diffs?: DiffColors;
+        muted?: string;
     }
 
     // icon sizes
@@ -82,12 +82,12 @@ const darkTheme = createTheme({
         mode: "dark",
         primary: {
             main: "#7FFFD4",
-            // muted: "#89a99e",
+            muted: "#89a99e",
         },
-        // tried to add custom colors, but did not work. c.f:
-        // https://stackoverflow.com/questions/50069724/how-to-add-custom-material-ui-palette-colors
         secondary: {
-            main: "#ffffff",
+            // Complementary pink for secondary as compared to primary
+            main: "#ff7faa",
+            muted: "#cca3b0",
         },
         text: {
             primary: "#ffffff",

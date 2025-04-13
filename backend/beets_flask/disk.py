@@ -269,6 +269,25 @@ def dir_size(path: Path) -> int:
         return -1
 
 
+@cached(cache=TTLCache(maxsize=1024, ttl=60), info=True)
+def dir_files(path: Path) -> int:
+    """Count the number of files in a directory."""
+    try:
+        result = subprocess.run(
+            [f"find {str(path.resolve())} | wc -l"],
+            capture_output=True,
+            text=True,
+            check=True,
+            shell=True,
+        )
+        count = int(result.stdout)
+        return count
+    except Exception as e:
+        # this happens e.g. if the directory does not exist.
+        log.error(e)
+        return -1
+
+
 __all__ = [
     "dir_size",
 ]

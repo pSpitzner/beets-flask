@@ -120,10 +120,12 @@ export interface LibraryStats {
 }
 
 export interface InboxStats {
-	nFiles: number;
+	name: string;
+	path: string;
+	tagged_via_gui: number;
+	imported_via_gui: number;
 	size: number;
-	inboxName: string;
-	inboxPath: string;
+	nFiles: number;
 }
 
 export enum FolderStatus {

@@ -6,7 +6,7 @@ from typing import TypedDict
 from quart import Blueprint, jsonify
 
 from beets_flask.database import db_session_factory
-from beets_flask.disk import Folder, path_to_folder
+from beets_flask.disk import Folder, dir_files, dir_size, log, path_to_folder
 from beets_flask.inbox import (
     get_inbox_folders,
     get_inbox_for_path,
@@ -62,10 +62,17 @@ async def delete():
 
 
 class InboxStats(TypedDict):
-    nFiles: int
+    name: str
+    path: str
+
+    # Number of albums tagged via GUI
+    tagged_via_gui: int
+    # Number of albums imported via GUI
+    imported_via_gui: int
+
+    # Bytes of the inbox folder
     size: int
-    inboxName: str
-    inboxPath: str
+    nFiles: int
 
 
 @inbox_bp.route("/stats", methods=["GET"])
@@ -93,40 +100,16 @@ def compute_stats(folder: str):
     if inbox is None:
         return {"error": "Inbox not found", "status": 404}
 
+    p = Path(folder)
+    log.error(f"Computing stats for {folder}, {p}")
+
     ret_map: InboxStats = {
-        "nFiles": 0,
-        "size": 0,
-        "inboxName": inbox["name"],
-        "inboxPath": inbox["path"],
+        "name": inbox["name"],
+        "path": inbox["path"],
+        "nFiles": dir_files(p),
+        "size": dir_size(p),
+        "tagged_via_gui": -1,  # TODO
+        "imported_via_gui": -1,
     }
 
-    # Get filesize
-    with db_session_factory() as session:
-        for current_dir, _, files in os.walk(Path(folder)):
-            for file in files:
-                path = Path(os.path.join(current_dir, file))
-                parse_file(path, ret_map, session)
-
     return ret_map
-
-
-def parse_file(path: Path, map: InboxStats, session=None):
-    """Parse a file and return the stats dict.
-
-    Parameters
-    ----------
-    path: Path
-        The path to the file
-    map: Stats
-         The current stats dict
-    session: Session
-        Optional a session for tagged lookup
-    """
-    if path.suffix.lower() not in AUDIO_EXTENSIONS:
-        return
-
-    map["nFiles"] += 1
-    map["size"] += path.stat().st_size
-
-    # check if already tagged
-    return map

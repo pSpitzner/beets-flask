@@ -1,35 +1,11 @@
-import {
-    BookOpenIcon,
-    BugIcon,
-    ChevronRight,
-    GithubIcon,
-    HardDriveIcon,
-    LibraryIcon,
-    LucideIcon,
-    TimerIcon,
-} from "lucide-react";
-import {
-    Avatar,
-    Box,
-    Button,
-    Card,
-    CardContent,
-    Divider,
-    Link,
-    Tooltip,
-    Typography,
-    useTheme,
-} from "@mui/material";
-import { Link as TanLink } from "@tanstack/react-router";
+import { BookOpenIcon, BugIcon, GithubIcon } from "lucide-react";
+import { Box, Link, Typography, useTheme } from "@mui/material";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { inboxStatsQueryOptions } from "@/api/inbox";
 import { libraryStatsQueryOptions } from "@/api/library";
-import { PenaltyTypeIcon } from "@/components/common/icons";
 import { PageWrapper } from "@/components/common/page";
-import { humanizeBytes } from "@/components/common/units/bytes";
-import { humanizeDuration, relativeTime } from "@/components/common/units/time";
-import { LibraryStatsComponent } from "@/components/library/stats";
+import { InboxStatsCard, LibraryStatsCard } from "@/components/frontend2/statsCard";
 
 /* ------------------------------ Route layout ------------------------------ */
 
@@ -53,7 +29,6 @@ export const Route = createFileRoute("/_frontpage/")({
  * underneath. This may also be used to render a modal.
  */
 function Index() {
-    const theme = useTheme();
     const [libraryStats, inboxStats] = Route.useLoaderData();
 
     return (
@@ -77,206 +52,13 @@ function Index() {
                     paddingInline: 1,
                 }}
             >
-                <Card sx={{ padding: 2 }}>
-                    <Box sx={{ position: "relative" }}>
-                        <Divider
-                            sx={{
-                                position: "absolute",
-                                top: "calc(50% + 1px)",
-                                width: "100%",
-                                backgroundColor: "primary.main",
-                                borderBottomWidth: 2,
-                            }}
-                        />
-                        <Box
-                            sx={{
-                                paddingLeft: 4,
-                                paddingRight: 1,
-                                display: "flex",
-                                alignItems: "flex-start",
-                                justifyContent: "space-between",
-                                zIndex: 1,
-                            }}
-                        >
-                            <Avatar
-                                variant="rounded"
-                                sx={{
-                                    width: 56,
-                                    height: 56,
-                                    backgroundColor: "primary.main",
-                                    "& > img": {
-                                        margin: 0,
-                                        backgroundColor: "common.white",
-                                    },
-                                }}
-                            >
-                                <LibraryIcon size={36} />
-                            </Avatar>
-                            <Tooltip title="Last item added to library.">
-                                <Typography
-                                    sx={{
-                                        fontSize: 14,
-                                        color: "grey.600",
-                                        whiteSpace: "nowrap",
-                                        letterSpacing: "1px",
-                                    }}
-                                >
-                                    last import:{" "}
-                                    {relativeTime(libraryStats.lastItemAdded)}
-                                </Typography>
-                            </Tooltip>
-                        </Box>
-                    </Box>
-                    <CardContent
-                        sx={{
-                            paddingInline: 1,
-                            paddingTop: 2,
-                            m: 0,
-                            paddingBottom: "0 !important",
-                        }}
-                    >
-                        <Typography
-                            fontWeight={600}
-                            fontSize={16}
-                            color="grey.600"
-                            fontFamily="monospace"
-                        >
-                            {libraryStats.libraryPath}
-                        </Typography>
-                        <Typography variant="h5" fontWeight={800} letterSpacing={0.5}>
-                            Library
-                        </Typography>
-                        <Box
-                            sx={{
-                                display: "flex",
-                                gap: 2,
-                                paddingTop: 2.5,
-                                flexWrap: "wrap",
-                            }}
-                        >
-                            <StatItem
-                                title="Total Runtime"
-                                icon={<TimerIcon />}
-                                value={humanizeDuration(libraryStats.runtime)}
-                            />
-                            <StatItem
-                                title="Size"
-                                icon={<HardDriveIcon />}
-                                value={humanizeBytes(libraryStats.size)}
-                            />
-                            <StatItem
-                                title="Items"
-                                icon={<PenaltyTypeIcon type="tracks" />}
-                                value={libraryStats.items}
-                            />
-                            <StatItem
-                                title="Albums"
-                                icon={<PenaltyTypeIcon type="album" />}
-                                value={libraryStats.albums}
-                            />
-                            <StatItem
-                                title="Artists"
-                                icon={<PenaltyTypeIcon type="artist" />}
-                                value={libraryStats.artists}
-                            />
-                            <StatItem
-                                title="Labels"
-                                icon={<PenaltyTypeIcon type="label" />}
-                                value={libraryStats.labels}
-                            />
-                        </Box>
-                        <Box
-                            sx={(theme) => ({
-                                paddingTop: 3,
-                                display: "flex",
-                                gap: 2,
-                                fontWeight: 600,
-                                justifyContent: "flex-end",
-                                [theme.breakpoints.down("tablet")]: {
-                                    ">*": {
-                                        width: "100%",
-                                    },
-                                },
-                            })}
-                        >
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                endIcon={<ChevronRight />}
-                                component={TanLink}
-                                to="/library/browse"
-                                size="large"
-                                sx={{
-                                    fontWeight: 600,
-                                }}
-                            >
-                                Browse Library
-                            </Button>
-                        </Box>
-                    </CardContent>
-                </Card>
+                <LibraryStatsCard libraryStats={libraryStats} />
+                {inboxStats.map((inbox, i) => (
+                    <InboxStatsCard inboxStats={inbox} key={i} />
+                ))}
             </Box>
-            <LibraryStatsComponent stats={libraryStats} />
             <Footer />
         </PageWrapper>
-    );
-}
-
-/* ---------------------------------- Stats --------------------------------- */
-// TODO: Cleanup new stats and move into inbox components (also above)
-
-function StatItem({
-    title,
-    icon,
-    value,
-}: {
-    title: React.ReactNode;
-    icon: React.ReactNode;
-    value: React.ReactNode;
-}) {
-    return (
-        <Box
-            sx={(theme) => ({
-                border: `2px solid ${theme.palette.divider}`,
-                borderRadius: 1,
-                padding: 0.5,
-                minWidth: "100px",
-            })}
-        >
-            <Typography
-                component="div"
-                sx={{
-                    fontSize: 16,
-                    fontWeight: 600,
-                    letterSpacing: "0.5px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                    color: "grey.800",
-                }}
-            >
-                <Box
-                    sx={(theme) => ({
-                        width: theme.iconSize.sm,
-                        height: theme.iconSize.sm,
-                        display: "flex",
-                        alignItems: "center",
-                    })}
-                >
-                    {icon}
-                </Box>
-                {title}
-            </Typography>
-            <Typography
-                variant="h6"
-                fontWeight={600}
-                fontFamily="monospace"
-                color="grey.600"
-                sx={{ paddingLeft: 1, textAlign: "right", width: "100%" }}
-            >
-                {value}
-            </Typography>
-        </Box>
     );
 }
 
