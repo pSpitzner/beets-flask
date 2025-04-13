@@ -69,20 +69,23 @@ def is_session_alive():
 
 
 async def emit_output():
+    history = []
+    x, y = 0, 0
     try:
         if is_session_alive():
             current = pane.cmd("capture-pane", "-p", "-N", "-T", "-e").stdout
+            history = _get_scrollback_buffer(50)
             x, y = _get_cursor_position()
         else:
             current = ["Session ended. Reload page to restart!"]
-            x, y = 0, 0
     except Exception as e:
         log.error(f"Error reading from pty: {e}")
         current = [f"Error reading from pty: {e}"]
-        x, y = 0, 0
 
     await sio.emit(
-        "ptyOutput", {"output": current, "x": x, "y": y}, namespace="/terminal"
+        "ptyOutput",
+        {"output": current, "x": x, "y": y, "history": history},
+        namespace="/terminal",
     )
 
 
@@ -90,11 +93,14 @@ async def emit_output_continuously(sleep_seconds=0.01):
     # only emit if there was a change
     prev: list[str] = []
     prev_x, prev_y = 0, 0
+    history: list[str] = []
     while True:
         await sio.sleep(sleep_seconds)  # type: ignore
         try:
             if is_session_alive():
                 current = pane.cmd("capture-pane", "-p", "-N", "-T", "-e").stdout
+                # TODO: make buffer size configurable and / or only fetch when needed.
+                history = _get_scrollback_buffer(100)
                 x, y = _get_cursor_position()
             else:
                 current = ["Session ended. Reload page to restart!"]
@@ -102,13 +108,13 @@ async def emit_output_continuously(sleep_seconds=0.01):
             if current != prev:
                 await sio.emit(
                     "ptyOutput",
-                    {"output": current, "x": x, "y": y},
+                    {"output": current, "x": x, "y": y, "history": history},
                     namespace="/terminal",
                 )
                 prev = current
                 prev_x, prev_y = x, y
                 # log.debug(f"emitting {current} at {x} {y}")
-                log.debug("\n\t".join(_get_scrollback_buffer(10)) + f"\n>>> {current}")
+                # log.debug("\n\t".join(_get_scrollback_buffer(10)) + f"\n>>> {current}")
             elif x != prev_x or y != prev_y:
                 await sio.emit(
                     "ptyCursorPosition", {"x": x, "y": y}, namespace="/terminal"

@@ -41,6 +41,25 @@ export function Terminal(props: HtmlHTMLAttributes<HTMLDivElement>) {
     // not sure why we cannot restore.
     useEffect(resetTerm, [resetTerm]);
 
+    // PS 2025-04-13: Wanted to use this to only query the history when scrolling
+    // but its super laggy and the scroll pos makes no sense. might be that we
+    // do not use the xterm js buildin scrolling, and scroll an outside div instead?
+    // useEffect(() => {
+    //     if (!term || !socket) return;
+
+    //     const handleScroll = (scrollPos: number) => {
+    //         console.log("Scroll event", scrollPos);
+    //         if (scrollPos > 0) {
+    //             socket.emit("ptyScroll", { scrollPos });
+    //         }
+    //     };
+
+    //     const scrollHandler = term.onScroll(handleScroll);
+    //     return () => {
+    //         scrollHandler.dispose();
+    //     };
+    // }, [term, socket]);
+
     // resetting term also retriggers this guy.
     // having socket as a dependencies should make sure we retrigger when
     // the if socket had connection issues.
@@ -131,6 +150,7 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
                 cursorBlink: true,
                 macOptionIsMeta: true,
                 allowTransparency: true,
+                scrollback: 500,
             });
             t2.write("Connecting...");
             return t2;
@@ -150,18 +170,31 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
     );
 
     const onOutput = useCallback(
-        (data: { output: string[]; x: number; y: number }) => {
+        (data: { output: string[]; x: number; y: number; history: string[] }) => {
             if (!term) return;
             // neither clear nor reset seem to do the full job.
             // term.clear();
             // term.reset();
             term.write("\x1Bc"); // ANSI escape sequence to clear the screen
 
+            if (data.history.length > 0) {
+                term.write(data.history.join("\r\n") + "\r\n");
+            }
+
             // Note: tmux does not remove trailing whitespaces when backspacing.
             // Therefore we also send the tmux cursor position along with the output
             // to move the frontend cursor using escape sequences
-            const outputText = data.output.join("\r\n");
-            term.write(outputText + `\x1b[${data.y + 1};${data.x + 1}H`);
+            // Write current output
+            term.write(data.output.join("\r\n"));
+
+            // if we want history to stay offscreen
+            const remainingRows = Math.max(0, term.rows - data.output.length);
+            if (remainingRows > 0) {
+                term.write("\r\n".repeat(remainingRows));
+            }
+
+            // Position cursor
+            term.write(`\x1b[${data.y + 1};${data.x + 1}H`);
         },
         [term]
     );
