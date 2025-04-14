@@ -67,3 +67,55 @@ class TestPreviewSessions:
                     assert candidate.url.startswith("https")
 
         log.debug(f"State: {state}")
+
+
+"""
+Proposal testing session flows:
+
+There are a number of edge cases when triggering sessions. Might be more 
+I'm missing at the moment. 
+
+-----------
+
+Import best
+- New folder
+- Generate Preview
+- Import best
+
+Import asis
+- New folder
+- Generate Preview
+- Import asis
+
+Import specific candidate
+- New folder
+- Generate Preview
+- Import candidate
+
+------------
+
+any = best | asis | specific candidate
+
+Adding a new candidate
+- New folder
+- Generate Preview
+- Add candidates
+- Import any
+
+Already imported
+- New folder
+- Generate Preview
+- Import any
+- Generate Preview
+- Import any
+- Should somehow error with already imported!
+
+Already imported with action
+- New folder
+- Generate Preview
+- Import any
+- Generate Preview
+- Import any (with action for duplicate)
+- Should import the duplicate depending on the action
+
+"""
