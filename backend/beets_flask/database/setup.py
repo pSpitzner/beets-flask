@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 from functools import wraps
 
+from deprecated import deprecated
 from quart import Quart
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
@@ -119,6 +120,7 @@ def _create_tables(engine) -> None:
     Base.metadata.create_all(bind=engine)
 
 
+@deprecated("Tag and TagGroup models are not used anymore.")
 def _seed_tables() -> None:
     with db_session_factory() as session:
         # By default all tags are in the "Unsorted" group
@@ -130,10 +132,8 @@ def _seed_tables() -> None:
 
 
 def _reset_database():
-    with db_session_factory() as session:
-        try:
-            session.query(TagGroup).delete()
-            session.query(Tag).delete()
+    # Removes all data from the database but keeps schema
+    for t in reversed(Base.metadata.sorted_tables):
+        with db_session_factory() as session:
+            session.execute(t.delete())
             session.commit()
-        except Exception as e:
-            log.warning(f"Error resetting database: {e}")

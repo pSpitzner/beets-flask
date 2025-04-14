@@ -1,19 +1,17 @@
 import logging
 import os
+from abc import ABC
 from pathlib import Path
 
 import pytest
 
-from beets_flask.database.models.tag import Tag
-from beets_flask.database.setup import db_session_factory
+from beets_flask.database.setup import _reset_database
 from beets_flask.importer.session import PreviewSession
 from beets_flask.importer.states import SessionState
-from beets_flask.invoker import run_import, run_preview
 from tests.test_importer.conftest import (
     VALID_PATHS,
     album_path_absolute,
     use_mock_tag_album,
-    valid_data_for_album_path,
 )
 
 log = logging.getLogger(__name__)
@@ -67,6 +65,35 @@ class TestPreviewSessions:
                     assert candidate.url.startswith("https")
 
         log.debug(f"State: {state}")
+
+
+class IsolatedDBMixin(ABC):
+    """
+    A pytest mixin class to reset the database before and after ALL
+    tests in this class are run.
+
+    Usage:
+    ```
+    class TestMyFeature(IsolatedDBMixin):
+        def test_something(self):
+            # add to clean db
+
+        def test_something_else(self):
+            # db has data from previous test
+    ```
+    """
+
+    @pytest.fixture(autouse=True, scope="class")
+    def setup(self):
+        """
+        Automatically reset the database before and after ALL tests in this class.
+
+        Args:
+            db_session_factory: Pytest fixture providing a database session.
+        """
+        _reset_database()
+        yield
+        _reset_database()
 
 
 """
