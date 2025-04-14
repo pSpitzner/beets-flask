@@ -6,7 +6,7 @@ from beets_flask.logger import log
 from beets_flask.server.routes.errors import InvalidUsage
 
 
-def get_query_param(
+def pop_query_param(
     params: dict,
     key: str,
     convert_func: Callable,
@@ -31,7 +31,7 @@ def get_query_param(
     if params is None:
         return default
 
-    value = params.get(key, None)
+    value = params.pop(key, None)
 
     if value is None:
         return default
@@ -70,8 +70,8 @@ async def get_folder_params(
 
     """
     params = await request.get_json()
-    folder_hashes = get_query_param(params, "folder_hashes", list, default=[])
-    folder_paths = get_query_param(params, "folder_paths", list, default=[])
+    folder_hashes = pop_query_param(params, "folder_hashes", list, default=[])
+    folder_paths = pop_query_param(params, "folder_paths", list, default=[])
 
     if not allow_mismatch and len(folder_hashes) != len(folder_paths):
         raise InvalidUsage("folder_hashes and folder_paths must be of the same length")

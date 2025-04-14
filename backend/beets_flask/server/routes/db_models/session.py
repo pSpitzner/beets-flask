@@ -13,7 +13,7 @@ from beets_flask.database.models.states import FolderInDb, SessionStateInDb
 from beets_flask.importer.progress import FolderStatus, Progress
 from beets_flask.logger import log
 from beets_flask.server.routes.errors import InvalidUsage, NotFoundError
-from beets_flask.server.utility import get_folder_params, get_query_param
+from beets_flask.server.utility import get_folder_params, pop_query_param
 
 from .base import ModelAPIBlueprint
 
@@ -50,16 +50,12 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
             hash = folder_hashes[0]
 
         with db_session_factory() as db_session:
-            query = select(self.model)
-            if hash is not None:
-                query = query.where(self.model.folder_hash == hash)
-            else:
-                query = query.join(self.model.folder).where(
-                    FolderInDb.full_path == path
-                )
-            query = query.order_by(self.model.created_at.desc()).limit(1)
+            item = self.model.get_by_hash_and_path(
+                hash=hash,
+                path=path,
+                db_session=db_session,
+            )
 
-            item = db_session.execute(query).scalars().first()
             if not item:
                 # TODO: by path, validation of session hash
                 # raise, but we do not want to spam the
@@ -78,15 +74,14 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         and it has to be a valid album folder.
 
         # Params
-        - `kind` (str): The kind of the tag,
-            "preview", "import", "auto", "import_as_is"
+        - `kind` (str): The kind of the tag. See `invoker.EnqueueKind`.
         """
 
         folder_hashes, folder_paths, params = await get_folder_params()
-        kind = get_query_param(params, "kind", str)
+        kind = pop_query_param(params, "kind", str)
         if not isinstance(kind, str):
             raise InvalidUsage(
-                "kind must be one of 'preview', 'import', 'auto', 'import_as_is'",
+                "kind must be one of " + str(invoker.EnqueueKind.__members__)
             )
 
         jobs: list[Job] = []
@@ -94,9 +89,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         for hash, path in zip(folder_hashes, folder_paths):
             jobs.append(
                 await invoker.enqueue(
-                    hash,
-                    path,
-                    invoker.EnqueueKind.from_str(kind),
+                    hash, path, invoker.EnqueueKind.from_str(kind), **params
                 )
             )
 
@@ -119,13 +112,20 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
 
         if len(folder_hashes) != 1:
             raise InvalidUsage("Folder hash must be a single value")
+        if len(folder_paths) > 1:
+            raise InvalidUsage("Folder path must be a single value")
+
+        hash = folder_hashes[0]
+        path = None
+        if len(folder_paths) == 1:
+            path = folder_paths[0]
 
         # Get additional params for search with a bit of validation
-        search_ids: list[str] = get_query_param(params, "search_ids", list, default=[])
-        search_artist: str | None = get_query_param(
+        search_ids: list[str] = pop_query_param(params, "search_ids", list, default=[])
+        search_artist: str | None = pop_query_param(
             params, "search_artist", str, default=None
         )
-        search_album: str | None = get_query_param(
+        search_album: str | None = pop_query_param(
             params, "search_album", str, default=None
         )
 
@@ -149,9 +149,9 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
 
         # Trigger job in queue
         job = await invoker.enqueue(
-            folder_hashes[0],
-            None,
-            invoker.EnqueueKind.ADD_CANDIDATES,
+            hash,
+            path,
+            invoker.EnqueueKind.PREVIEW_ADD_CANDIDATES,
             search_ids=search_ids,
             search_artist=search_artist,
             search_album=search_album,
@@ -163,12 +163,15 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
             # partial update in the frontend
             res = await wait_for_job_results(job)
         except Exception as e:
-            return jsonify(
-                {
-                    "message": f"Job failed: {e}",
-                    "job": job.get_meta(),
-                },
-            ), 500
+            return (
+                jsonify(
+                    {
+                        "message": f"Job failed: {e}",
+                        "job": job.get_meta(),
+                    },
+                ),
+                500,
+            )
 
         return jsonify(
             {

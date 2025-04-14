@@ -4,10 +4,10 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Literal
+from typing import Any, Callable, List, Literal
 
 import nest_asyncio
-from beets import autotag, importer, library, plugins
+from beets import autotag, importer, plugins
 from beets.ui import UserError, _open_library
 from deprecated import deprecated
 
@@ -33,6 +33,7 @@ from .stages import (
     plugin_stage,
     read_tasks,
     user_query,
+    import_asis
 )
 from .states import ProgressState, SessionState
 
@@ -297,7 +298,12 @@ class PreviewSession(BaseSession):
 
 
 class AddCandidatesSession(PreviewSession):
-    """Import session that adds a candidate to the library."""
+    """
+    Preview session that adds a candidate to the ones already fetched.
+
+    Can only run on a session state of a preview session that already has
+    candidates.
+    """
 
     search_ids: list[str]
     search_artist: str | None
@@ -314,7 +320,7 @@ class AddCandidatesSession(PreviewSession):
     ):
         super().__init__(state, config_overlay, **kwargs)
 
-        if state.progress > Progress.PREVIEW_COMPLETED:
+        if state.progress != Progress.PREVIEW_COMPLETED:
             raise ValueError("Cannot run AddCandidatesSession on non-preview state.")
 
         # Reset tasks to allow to rerun lookup candidates
@@ -333,7 +339,7 @@ class AddCandidatesSession(PreviewSession):
             f"Using search_ids {self.search_ids}, {self.search_artist}, {self.search_album} for additional candidate lookup."
         )
 
-        artist, album, prop = autotag.tag_album(
+        _, _, prop = autotag.tag_album(
             task.items,
             search_ids=self.search_ids,
             search_album=self.search_album,
@@ -347,18 +353,21 @@ class AddCandidatesSession(PreviewSession):
 
         task_state.add_candidates(prop.candidates)
 
-        # Write additional information to the task
-        # not used by us, but might be useful for plugins
-        task.cur_artist = artist
-        task.cur_album = album
-        task.rec = prop.recommendation
+        # Update quality of best candidate, likely not needed for us, only beets cli.
+        task.rec = max(prop.recommendation, task.rec or autotag.Recommendation.none)
 
 
 class ImportSession(BaseSession):
-    """Import session that assumes we already have a match-id."""
+    """
+    Import session that assumes we already have a match-id.
+
+    Should run from an already finished Preview Session, but this
+    is not (yet) enforced.
+    """
 
     import_id: str
     match_url: str | None
+    candidate_id: str | None
     duplicate_action: Literal["skip", "keep", "remove", "merge", "ask"]
 
     def __init__(
@@ -366,6 +375,7 @@ class ImportSession(BaseSession):
         state: SessionState,
         config_overlay: dict | None = None,
         match_url: str | None = None,
+        candidate_id: str | None = None,
         duplicate_action: (
             Literal["skip", "keep", "remove", "merge", "ask"] | None
         ) = None,
@@ -374,9 +384,14 @@ class ImportSession(BaseSession):
 
         Parameters
         ----------
-        match_url : str
-            The URL of the match to import, if any. Normally this should be infered from
+        match_url : optional str
+            The URL of the match to import, if any. Normally this should be inferred from
             the state.
+        candidate_id : optional str
+            Provide the id of a candidate to import. The candidate should have already
+            been fetched into the session state during a previous preview session.
+            Can also be "asis" to pick the asis candidate, not matter its precise id.
+            If None, uses the _best_ found candidate (default)
         duplicate_action : str
             The action to take if duplicates are found. One of "skip", "keep",
             "remove", "merge", "ask". If not specified, the default is read from
@@ -393,6 +408,8 @@ class ImportSession(BaseSession):
             raise ValueError("Cannot set match_url for pre-populated state.")
 
         self.match_url = match_url
+        self.candidate_id = candidate_id
+
         # what to use as id to put into the beets db?
         # we also have a SessionState.id, another uuid, but pretty meaningless.
         # lets use the current timestamp
@@ -415,12 +432,17 @@ class ImportSession(BaseSession):
         ):
             stages.append(group_albums(self))
 
-        stages.append(lookup_candidates(self))
-        stages.append(identify_duplicates(self))
-        stages.append(mark_tasks_preview_completed(self))
-        # FIXME: user_query calls task.choose_match, which calls session.choose_match.
-        # Better abstraction needed upstream.
-        stages.append(user_query(self))
+        if self.candidate_id is not None and self.candidate_id.startswith("asis"):
+            # this branching has to be done here, as it skips the expensive lookup and
+            # user query. this is also consistent with the way beets does it.
+            stages.append(import_asis(self))
+        else:
+            stages.append(lookup_candidates(self))
+            stages.append(identify_duplicates(self))
+            stages.append(mark_tasks_preview_completed(self))
+            # FIXME: user_query calls task.choose_match, which calls session.choose_match.
+            # Better abstraction needed upstream.
+            stages.append(user_query(self))
 
         # Early import stages
         plugs: list[plugins.BeetsPlugin] = plugins.find_plugins()
@@ -474,13 +496,25 @@ class ImportSession(BaseSession):
     def choose_match(self, task: importer.ImportTask):
         self.logger.setLevel(logging.DEBUG)
         self.logger.debug(f"choose_match {task}")
+    
+        # Pick by candidate id if given
+        if self.candidate_id is not None:
+            task_state = self.state.get_task_state_for_task(task)
+            if task_state is None:
+                raise ValueError("No task state found for task.")
+            
+            candidate_state = task_state.get_candidate_state_by_id(self.candidate_id)
+            if candidate_state is None:
+                raise ValueError(f"Candidate with id {self.candidate_id} not found.")
 
-        try:
-            match: BeetsAlbumMatch | BeetsTrackMatch = task.candidates[0]
-        except IndexError:
-            # FIXME: where and how is this handled? TODO: InvalidUrlError
-            log.error(f"No matches found for {task=} {task.candidates=}")
-            raise ValueError("No matches found. Is the provided search URL correct?")
+            match = candidate_state.match
+        else:
+            try:
+                match: BeetsAlbumMatch | BeetsTrackMatch = task.candidates[0]
+            except IndexError:
+                # FIXME: where and how is this handled? TODO: InvalidUrlError
+                log.error(f"No matches found for {task=} {task.candidates=}")
+                raise ValueError("No matches found. Is the provided search URL correct?")
 
         # Let plugins display info
         results = plugins.send("import_task_before_choice", session=self, task=task)
@@ -516,9 +550,10 @@ class ImportSession(BaseSession):
                 task.set_choice(importer.action.SKIP)
 
 
-class AsIsImportSession(ImportSession):
+class BootlegImportSession(ImportSession):
     """
-    Import session to import without modifyin metadata.
+    Import session to import without modifying metadata.
+    No preview session required.
 
     Essentially `beet import --group-albums -A`, ideal for bootlegs and
     just getting a folder into your library where you are sure the metadata is correct.
@@ -565,6 +600,7 @@ class AsIsImportSession(ImportSession):
 class AutoImportSession(ImportSession):
     """
     Generate a preview and import if the best match is good enough.
+    Preview generation is skipped if the provided session state already has a preview.
 
     Wether the import is triggered depends on the specified `import_threshold`, or
     the beets-config setting `match.strong_rec_thresh`.

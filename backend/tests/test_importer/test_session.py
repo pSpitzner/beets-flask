@@ -3,6 +3,7 @@ import os
 from abc import ABC
 from pathlib import Path
 
+from beets_flask.invoker import run_preview
 import pytest
 
 from beets_flask.database.setup import _reset_database
@@ -96,6 +97,26 @@ class IsolatedDBMixin(ABC):
         _reset_database()
 
 
+class TestImportBest(IsolatedDBMixin):
+    @pytest.fixture(autouse=True)
+    def mock_emit_status(self, monkeypatch):
+        """Mock the emit_status decorator"""
+
+        def mock_emit_status(func):
+            def wrapper(*args, **kwargs):
+                return func(*args, **kwargs)
+
+            return wrapper
+
+        monkeypatch.setattr("beets_flask.invoker.emit_status", mock_emit_status)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("path", VALID_PATHS)
+    async def test_preview(self, path: str):
+        """Test the preview of the import process."""
+        await run_preview("test", path)
+
+
 """
 Proposal testing session flows:
 
@@ -135,7 +156,7 @@ Already imported
 - Import any
 - Generate Preview
 - Import any
-- Should somehow error with already imported!
+- Should somehow error with already imported! <-- ask or user config
 
 Already imported with action
 - New folder
@@ -144,5 +165,10 @@ Already imported with action
 - Generate Preview
 - Import any (with action for duplicate)
 - Should import the duplicate depending on the action
+
+
+----------
+
+Autoimport what happens with the progress after a failed auto import
 
 """

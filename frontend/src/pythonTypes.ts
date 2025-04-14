@@ -254,11 +254,11 @@ export interface AlbumResponse {
 
 export enum EnqueueKind {
 	PREVIEW = 'preview',
-	IMPORT = 'import',
-	IMPORT_AS_IS = 'import_as_is',
-	AUTO = 'auto',
-	ADD_CANDIDATES = 'add_candidates',
-	_AUTO_IMPORT = 'auto_import',
-	_AUTO_PREVIEW = 'auto_preview',
+	PREVIEW_ADD_CANDIDATES = 'preview_add_candidates',
+	IMPORT_CANDIDATE = 'import_candidate',
+	IMPORT_AUTO = 'import_auto',
+	IMPORT_BOOTLEG = 'import_bootleg',
+	_AUTO_IMPORT = '_auto_import',
+	_AUTO_PREVIEW = '_auto_preview',
 }
 

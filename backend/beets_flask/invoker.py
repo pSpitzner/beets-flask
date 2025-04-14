@@ -1,37 +1,11 @@
-"""The invoker module is the glue between three concepts.
+"""The invoker module is the glue between three concepts:
 
 It combines:
-- the BeetSessions (interacting with beets, implementing core functions)
-- the Tags (our sql database model, grabbed by the gui to display everything static)
-- the Redis Queue (to run the tasks in the background)
-
-# Thoughts on hash validation:
-- Hash validation on / shortly after route request
-  for doing something on folder
-- Routes take hash + path and warn if current
-  folder hash (cached) does not match passed
-- TODO: watchdog file change invalidate hash cache
-- Database:
-    - get by hash, (check path, should match, md5)
-    - if fails: get by path
-    - outlook todo: inform user on inconsinstency
-    - in any case: here, walk tree, cos we create session
-- New Routes:
-    - get all candidates / tasks / sessions by folder-hash or folder-path
-
-- Tagging / creation:
-    - get real current folder state from disk and work with it.
-    - consistency inform stuff, but in any case
-    - put current path + hash into db
-    - run tagging stuff associated to this path + hash
-    - put tag results into db
-
-- We want to indicate status progress before session
-    starts, and we want to do it for tasks, as they correspond
-    to album folders. For that, we need taskStates in the Db
-    before SessionStates!
-    The current default case is one task per session.
-    Other idea: new backend route with pending folders?
+- different sessions (like preview and import, interacting with beets, implementing core functions)
+- states (session states, candidate states, folder states)
+    - can be live (for working with in beets) or in_db (for storing in sql and sending to frontend)
+- and the Redis Queue (to run the tasks in the background)
+- also triggers status emission to frontend via decorators that invoke the websocket
 """
 
 from __future__ import annotations
@@ -47,33 +21,36 @@ from typing import (
     TypeVar,
 )
 
-from deprecated import deprecated
-from rq.decorators import job
 from rq.job import Job
 
 from beets_flask import log
-from beets_flask.database import Tag, db_session_factory
-from beets_flask.database.models.states import FolderInDb, SessionStateInDb
+from beets_flask.database import db_session_factory
+from beets_flask.database.models.states import (
+    CandidateStateInDb,
+    FolderInDb,
+    SessionStateInDb,
+)
 from beets_flask.importer.progress import FolderStatus, Progress
 from beets_flask.importer.session import (
     AddCandidatesSession,
-    AsIsImportSession,
+    BootlegImportSession,
     AutoImportSession,
     ImportSession,
     PreviewSession,
 )
 from beets_flask.importer.states import SessionState
-from beets_flask.redis import import_queue, preview_queue, redis_conn
+from beets_flask.redis import import_queue, preview_queue
 from beets_flask.server.routes.errors import InvalidUsage
 from beets_flask.server.websocket.status import send_folder_status_update
+from sqlalchemy import select
 
 if TYPE_CHECKING:
     from rq.job import Job
     from sqlalchemy.orm import Session
 
 
-R = TypeVar("R")
-P = ParamSpec("P")
+R = TypeVar("R")  # Return
+P = ParamSpec("P")  # Parameters
 
 
 def emit_status(
@@ -137,13 +114,15 @@ class EnqueueKind(Enum):
     """Enum for the different kinds of sessions we can enqueue."""
 
     PREVIEW = "preview"
-    IMPORT = "import"
-    IMPORT_AS_IS = "import_as_is"
-    AUTO = "auto"
-    ADD_CANDIDATES = "add_candidates"
+    PREVIEW_ADD_CANDIDATES = "preview_add_candidates"
+    IMPORT_CANDIDATE = "import_candidate"
+    IMPORT_AUTO = "import_auto"
+    IMPORT_BOOTLEG = "import_bootleg"
+    # Bootlegs are essentially asis, but does not mean to just import the asis candidate,
+    # it has its own session that also groups albums, and skips previews.
 
-    _AUTO_IMPORT = "auto_import"
-    _AUTO_PREVIEW = "auto_preview"
+    _AUTO_IMPORT = "_auto_import"
+    _AUTO_PREVIEW = "_auto_preview"
 
     @classmethod
     def from_str(cls, kind: str) -> EnqueueKind:
@@ -162,7 +141,7 @@ class EnqueueKind(Enum):
 
 @emit_status(before=FolderStatus.PENDING)
 async def enqueue(hash: str, path: str, kind: EnqueueKind, **kwargs) -> Job:
-    """Delegate an existing tag to a redis worker, depending on its kind.
+    """Delegate a preview or import to a redis worker, depending on its kind.
 
     Parameters
     ----------
@@ -173,38 +152,151 @@ async def enqueue(hash: str, path: str, kind: EnqueueKind, **kwargs) -> Job:
     kind : EnqueueKind
         The kind of the folder to enqueue.
     kwargs : dict
-        Additional arguments to pass to the worker functions. Might depend on the kind,
+        Additional arguments to pass to the worker functions. Depend on the kind,
         use with care.
     """
-
-    if kind == EnqueueKind.PREVIEW:
-        job = preview_queue.enqueue(run_preview, hash, path, **kwargs)
-        __set_job_meta(job, hash, path, kind)
-    elif kind == EnqueueKind.IMPORT:
-        job = import_queue.enqueue(run_import, hash, path, False, **kwargs)
-        __set_job_meta(job, hash, path, kind)
-    elif kind == EnqueueKind.IMPORT_AS_IS:
-        job = import_queue.enqueue(run_import, hash, path, True, **kwargs)
-        __set_job_meta(job, hash, path, kind)
-    elif kind == EnqueueKind.AUTO:
-        job = preview_queue.enqueue(run_preview, hash, path, **kwargs)
-        __set_job_meta(job, hash, path, EnqueueKind._AUTO_PREVIEW)
-        job = import_queue.enqueue(run_auto_import, hash, path, depends_on=job)
-        __set_job_meta(job, hash, path, EnqueueKind._AUTO_IMPORT)
-    elif kind == EnqueueKind.ADD_CANDIDATES:
-        job = preview_queue.enqueue(run_add_candidates, hash, path, **kwargs)
-        __set_job_meta(job, hash, path, kind)
-    else:
-        raise ValueError(f"Unknown kind {kind}")
+    match kind:
+        case EnqueueKind.PREVIEW:
+            job = enqueue_preview(hash, path, **kwargs)
+        case EnqueueKind.PREVIEW_ADD_CANDIDATES:
+            job = enqueue_preview_add_candidates(hash, path, **kwargs)
+        case EnqueueKind.IMPORT_CANDIDATE:
+            job = enqueue_import_candidate(hash, path, **kwargs)
+        case EnqueueKind.IMPORT_AUTO:
+            job = enqueue_import_auto(hash, path, **kwargs)
+        case EnqueueKind.IMPORT_BOOTLEG:
+            job = enqueue_import_bootleg(hash, path, **kwargs)
+        case _:
+            raise InvalidUsage(f"Unknown kind {kind}")
 
     log.debug(f"Enqueued {job.id=} {job.meta=}")
 
     return job
 
 
-@job(timeout=600, queue=preview_queue, connection=redis_conn)
+# --------------------------- Enqueue entry points --------------------------- #
+# Mainly input validation and submitting to the redis queue
+
+
+def enqueue_preview(hash: str, path: str, **kwargs) -> Job:
+    if len(kwargs.keys()) > 0:
+        raise InvalidUsage("EnqueueKind.PREVIEW does not accept any kwargs.")
+    job = preview_queue.enqueue(run_preview, hash, path)
+    __set_job_meta(job, hash, path, EnqueueKind.PREVIEW)
+    return job
+
+
+def enqueue_preview_add_candidates(hash: str, path: str, **kwargs) -> Job:
+
+    # May contain search_ids, search_artist, search_album
+    search_ids = kwargs.pop("search_ids", [])
+    search_artist = kwargs.pop("search_artist", None)
+    search_album = kwargs.pop("search_album", None)
+
+    if len(kwargs.keys()) > 0:
+        raise InvalidUsage(
+            "EnqueueKind.PREVIEW_ADD_CANDIDATES only accepts "
+            + "the following kwargs: search_ids, search_artist, search_album."
+        )
+
+    if len(search_ids) == 0 and search_artist is None and search_album is None:
+        raise InvalidUsage(
+            "EnqueueKind.PREVIEW_ADD_CANDIDATES requires at least one of "
+            + "the following kwargs: search_ids, search_artist, search_album."
+        )
+
+    # kwargs are mixed between our own function and redis enqueue -.-
+    # if we accidentally define a redis kwarg for our function, it will be ignored.
+    # https://python-rq.org/docs/#enqueueing-jobs
+    job = preview_queue.enqueue(
+        run_preview_add_candidates,
+        hash,
+        path,
+        search_ids=search_ids,
+        search_artist=search_artist,
+        search_album=search_album,
+    )
+    __set_job_meta(job, hash, path, EnqueueKind.PREVIEW_ADD_CANDIDATES)
+    return job
+
+
+def enqueue_import_candidate(hash: str, path: str, **kwargs) -> Job:
+    """
+    Imports a candidate that has been fetched in a preview session.
+
+    Kwargs
+    ------
+    candidate_id : str | None
+        A valid candidate id for a candidate that has been fetched in a preview
+        session. If none is given, the best candidate is used.
+    TODO: Also allowed: "asis" (no exact match needed, there is only one
+        asis-candidate).
+    """
+
+    # May contain candidate_id
+    candidate_id: str = kwargs.pop("candidate_id", None)
+
+    if len(kwargs.keys()) > 0:
+        raise InvalidUsage(
+            "EnqueueKind.IMPORT only accepts the following kwargs: candidate_id."
+        )
+
+    # Validate if candidate_id exists
+    if candidate_id is not None:
+        with db_session_factory() as db_session:
+            stmt = select(CandidateStateInDb).where(
+                CandidateStateInDb.id == candidate_id
+            )
+            candidate = db_session.execute(stmt).scalar_one_or_none()
+            if candidate is None:
+                raise InvalidUsage(
+                    f"Candidate with id {candidate_id} does not exist in the database."
+                )
+
+    job = import_queue.enqueue(
+        run_import_candidate, hash, path, candidate_id=candidate_id
+    )
+    __set_job_meta(job, hash, path, EnqueueKind.IMPORT_CANDIDATE)
+    return job
+
+
+def enqueue_import_auto(hash: str, path: str, **kwargs):
+    """
+    Enqueue an automatic import.
+
+    Auto jobs first generate a preview (if needed) and then run an import, which always
+    imports the best candidate - but only if the preview is good enough (as specified
+    in the users beets config)
+
+    This is a two step process, and previews run in another queue (thread) than imports.
+
+    See AutoImportSession for more details.
+    """
+
+    kwargs["auto_import"] = True
+    job1 = preview_queue.enqueue(run_preview, hash, path, **kwargs)
+    __set_job_meta(job1, hash, path, EnqueueKind._AUTO_PREVIEW)
+    job2 = import_queue.enqueue(run_import_auto, hash, path, depends_on=job1, **kwargs)
+    __set_job_meta(job2, hash, path, EnqueueKind._AUTO_IMPORT)
+
+    return job2
+
+
+def enqueue_import_bootleg(hash: str, path: str, **kwargs):
+    job = import_queue.enqueue(run_import_bootleg, hash, path, **kwargs)
+    __set_job_meta(job, hash, path, EnqueueKind.IMPORT_BOOTLEG)
+    return job
+
+
+# -------------------- Functions that run in redis workers ------------------- #
+
+
+# redis preview queue
 @emit_status(before=FolderStatus.RUNNING, after=FolderStatus.TAGGED)
-async def run_preview(hash: str, path: str):
+async def run_preview(
+    hash: str,
+    path: str,
+):
     """Fetch candidates for a folder using beets.
 
     Will refetch candidates if this is rerun even if candidates exist
@@ -227,13 +319,18 @@ async def run_preview(hash: str, path: str):
                 + f"Using new content ({f_on_disk.hash}) instead of {hash}"
             )
 
-        p_session = PreviewSession(SessionState(f_on_disk))
+        # here, in preview, we always want to start from a fresh state
+        # otherwise, the retag action would not work, as preview starting from
+        # an existing state would skip the candidate lookup.
+        s_state_live = SessionState(f_on_disk)
+        p_session = PreviewSession(s_state_live)
         try:
             # TODO: Think about if session exists in db, create new if force_retag?
             # this concerns auto and retagging.
             await p_session.run_async()
         except Exception as e:
             log.exception(e)
+            raise e
         finally:
             s_state_indb = SessionStateInDb.from_live_state(p_session.state)
             db_session.merge(s_state_indb)
@@ -242,124 +339,9 @@ async def run_preview(hash: str, path: str):
         log.info(f"Preview done. {f_on_disk.hash=} {path=}")
 
 
-@job(timeout=600, queue=import_queue, connection=redis_conn)
-@emit_status(before=FolderStatus.RUNNING, after=FolderStatus.IMPORTED)
-async def run_import(
-    hash: str, path: str, import_asis: bool, match_url: str | None = None
-):
-    """Start Import session for a tag.
-
-    Relies on a preview to have been generated before.
-    If it was not, we do it here (blocking the import thread).
-    We do not import if no match is found according to your beets config.
-
-    Parameters
-    ----------
-    tagId:str
-        The ID of the tag to be imported, used to load info from db.
-    import_as_is:
-        If true, we import as-is, **grouping albums** and ignoring the match_url.
-        Effectively like `beet import --group-albums -A`.
-        Default False.
-
-    Returns
-    -------
-        List of track paths after import, as strings. (empty if nothing imported)
-
-    """
-    with db_session_factory() as db_session:
-        log.info(f"Import task on {hash=} {path=}")
-        f_on_disk = FolderInDb.get_current_on_disk(hash, path)
-        if hash != f_on_disk.hash:
-            log.warning(
-                f"Folder content has changed since the job was scheduled for {path}. "
-                + f"Using new content ({f_on_disk.hash}) instead of {hash}"
-            )
-
-        s_state_indb = SessionStateInDb.get_by(
-            SessionStateInDb.folder_hash == f_on_disk.hash, session=db_session
-        )
-
-        if s_state_indb is None:
-            # This also happens when folder content was updated
-            log.debug(f"Creating new session state for {f_on_disk.hash}")
-            s_state_live = SessionState(f_on_disk)
-        else:
-            log.debug(f"Using existing session state for {f_on_disk.hash}")
-            s_state_live = s_state_indb.to_live_state()
-
-        # we need this expunge, otherwise we cannot overwrite session states:
-        # If object id is in session we cant add a new object to the session with the
-        # same id this will raise (see below session.merge)
-        db_session.expunge_all()
-
-        # FIXME: More generic way to import any candidate
-        if import_asis:
-            i_session = AsIsImportSession(s_state_live)
-        else:
-            i_session = ImportSession(s_state_live, match_url=match_url)
-
-        try:
-            await i_session.run_async()
-        except Exception as e:
-            log.exception(e)
-        finally:
-            s_state_indb = SessionStateInDb.from_live_state(i_session.state)
-            db_session.merge(instance=s_state_indb)
-            db_session.commit()
-
-
-@job(timeout=600, queue=import_queue, connection=redis_conn)
-@emit_status(before=FolderStatus.RUNNING, after=FolderStatus.IMPORTED)
-async def run_auto_import(hash: str, path: str) -> list[str] | None:
-    """Automatically run an import session.
-
-    Runs an import on a tag after a preview has been generated.
-    We check preview quality and user settings before running the import.
-
-    Parameters
-    ----------
-    tagId:str
-        The ID of the tag to be imported.
-
-    Returns
-    -------
-        List of track paths after import, as strings. (empty if nothing imported)
-    """
-    with db_session_factory() as db_session:
-        log.info(f"Auto Import task on {hash=} {path=}")
-        f_on_disk = FolderInDb.get_current_on_disk(hash, path)
-        if hash != f_on_disk.hash:
-            raise InvalidUsage(
-                f"Folder content has changed since the job was scheduled for {path}. "
-                + f"This is not supported for auto-imports, please re-run preview."
-            )
-
-        s_state_indb = SessionStateInDb.get_by(
-            SessionStateInDb.folder_hash == hash, session=db_session
-        )
-        if s_state_indb is None:
-            raise InvalidUsage(
-                f"Session state not found for {hash=}, this should not happen. "
-                + "Please run preview before queueing auto-import."
-            )
-
-        s_state_live = s_state_indb.to_live_state()
-        i_session = AutoImportSession(s_state_live)
-
-        try:
-            i_session.run_sync()
-        except Exception as e:
-            log.exception(e)
-        finally:
-            s_state_indb = SessionStateInDb.from_live_state(i_session.state)
-            db_session.merge(instance=s_state_indb)
-            db_session.commit()
-
-
-@job(timeout=600, queue=preview_queue, connection=redis_conn)
+# redis preview queue
 @emit_status(before=FolderStatus.RUNNING, after=FolderStatus.TAGGED)
-async def run_add_candidates(
+async def run_preview_add_candidates(
     hash: str,
     path: str,
     search_ids: list[str] = [],
@@ -371,28 +353,13 @@ async def run_add_candidates(
     This only works if all session tasks are tagged. I.e. preview completed.
     """
     with db_session_factory() as db_session:
-        log.info(f"Add candidates task on {hash=}")
+        log.info(f"Add preview candidates task on {hash=}")
+        s_state_live = _get_live_state_by_folder(hash, path, db_session)
 
-        s_state_indb = SessionStateInDb.get_by(
-            SessionStateInDb.folder_hash == hash, session=db_session
-        )
-        if s_state_indb is None:
-            raise InvalidUsage(
-                f"Session state not found for {hash=}, this should not happen. "
-                + "Please run preview before queueing auto-import."
-            )
-
-        if s_state_indb.progress != Progress.PREVIEW_COMPLETED:
+        if s_state_live.progress != Progress.PREVIEW_COMPLETED:
             raise InvalidUsage(
                 f"Session state not in preview completed state for {hash=}"
             )
-
-        s_state_live = s_state_indb.to_live_state()
-
-        # we need this expunge, otherwise we cannot overwrite session states:
-        # If object id is in session we cant add a new object to the session with the
-        # same id this will raise (see below session.merge)
-        db_session.expunge_all()
 
         a_session = AddCandidatesSession(
             s_state_live,
@@ -404,11 +371,119 @@ async def run_add_candidates(
             await a_session.run_async()
         except Exception as e:
             log.exception(e)
+            raise e
         finally:
             s_state_indb = SessionStateInDb.from_live_state(a_session.state)
             db_session.merge(instance=s_state_indb)
             db_session.commit()
         log.info(f"Add candidates done. {hash=} {path=}")
+
+
+# redis import queue
+@emit_status(before=FolderStatus.RUNNING, after=FolderStatus.IMPORTED)
+async def run_import_candidate(
+    hash: str,
+    path: str,
+    candidate_id: str | None,
+):
+    """
+    If candidate_id is none the best candidate is used.
+    """
+    with db_session_factory() as db_session:
+        log.info(f"Import task on {hash=} {path=}")
+        s_state_live = _get_live_state_by_folder(hash, path, db_session)
+        i_session = ImportSession(s_state_live, candidate_id=candidate_id)
+
+        try:
+            await i_session.run_async()
+        except Exception as e:
+            log.exception(e)
+            raise e
+        finally:
+            s_state_indb = SessionStateInDb.from_live_state(i_session.state)
+            db_session.merge(instance=s_state_indb)
+            db_session.commit()
+
+
+# redis import queue
+@emit_status(before=FolderStatus.RUNNING, after=FolderStatus.IMPORTED)
+async def run_import_auto(hash: str, path: str) -> list[str] | None:
+    with db_session_factory() as db_session:
+        log.info(f"Auto Import task on {hash=} {path=}")
+        s_state_live = _get_live_state_by_folder(hash, path, db_session)
+        i_session = AutoImportSession(s_state_live)
+
+        try:
+            i_session.run_sync()
+        except Exception as e:
+            log.exception(e)
+            raise e
+        finally:
+            s_state_indb = SessionStateInDb.from_live_state(i_session.state)
+            db_session.merge(instance=s_state_indb)
+            db_session.commit()
+
+
+# redis import queue
+@emit_status(before=FolderStatus.RUNNING, after=FolderStatus.IMPORTED)
+async def run_import_bootleg(hash: str, path: str) -> list[str] | None:
+    with db_session_factory() as db_session:
+        log.info(f"Bootleg Import task on {hash=} {path=}")
+        # TODO: sort out how to generate previews for asis candidates
+        s_state_live = _get_live_state_by_folder(
+            hash, path, create_if_not_exists=True, db_session=db_session
+        )
+        i_session = BootlegImportSession(s_state_live)
+
+        try:
+            i_session.run_sync()
+        except Exception as e:
+            log.exception(e)
+            raise e
+        finally:
+            s_state_indb = SessionStateInDb.from_live_state(i_session.state)
+            db_session.merge(instance=s_state_indb)
+            db_session.commit()
+
+
+def _get_live_state_by_folder(
+    hash: str, path: str, db_session: Session, create_if_not_exists=False
+) -> SessionState:
+    f_on_disk = FolderInDb.get_current_on_disk(hash, path)
+    if hash != f_on_disk.hash:
+        log.warning(
+            f"Folder content has changed since the job was scheduled for {path}. "
+            + f"Using new content ({f_on_disk.hash}) instead of {hash}"
+        )
+
+    s_state_indb = SessionStateInDb.get_by_hash_and_path(
+        # we warn about hash change, and want the import to still run
+        # but on the old hash.
+        hash=hash,
+        path=path,
+        db_session=db_session,
+    )
+
+    if s_state_indb is None and create_if_not_exists:
+        s_state_live = SessionState(f_on_disk)
+        return s_state_live
+
+    if s_state_indb is None:
+        # TODO: rq error handling
+        raise InvalidUsage(
+            f"No session state found for {path=} {hash=} "
+            + f"fresh_hash_on_disk={f_on_disk}, this should not happen."
+        )
+
+    log.debug(f"Using existing session state for {path=}")
+    s_state_live = s_state_indb.to_live_state()
+
+    # we need this expunge, otherwise we cannot overwrite session states:
+    # If object id is in session we cant add a new object to the session with the
+    # same id this will raise (see below session.merge)
+    db_session.expunge_all()
+
+    return s_state_live
 
 
 def __set_job_meta(job: Job, hash: str, path: str, kind: EnqueueKind):

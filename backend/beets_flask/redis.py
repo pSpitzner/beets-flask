@@ -10,8 +10,8 @@ from rq.job import Job
 redis_conn = Redis()
 
 # Init our different queues
-preview_queue = Queue("preview", connection=redis_conn)
-import_queue = Queue("import", connection=redis_conn)
+preview_queue = Queue("preview", connection=redis_conn, default_timeout=600)
+import_queue = Queue("import", connection=redis_conn, default_timeout=600)
 
 
 queues = [preview_queue, import_queue]

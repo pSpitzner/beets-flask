@@ -19,9 +19,10 @@ from pathlib import Path
 from typing import List, Optional
 
 from beets.importer import ImportTask, action, library
-from sqlalchemy import ForeignKey, LargeBinary
+from sqlalchemy import ForeignKey, LargeBinary, select
 from sqlalchemy.orm import (
     Mapped,
+    Session,
     mapped_column,
     relationship,
 )
@@ -245,6 +246,41 @@ class SessionStateInDb(Base):
     def to_dict(self) -> SerializedSessionState:
         return self.to_live_state(False).serialize()
 
+    @classmethod
+    def get_by_hash_and_path(
+        cls,
+        hash: str | None,
+        path: Path | str | None,
+        db_session: Optional[Session] = None,
+    ) -> SessionStateInDb | None:
+        """
+        Get a session by its hash and if this fails, try its path.
+
+        If multiple matches, returns the most recent one.
+        """
+        from beets_flask.database import db_session_factory
+
+        with db_session_factory(db_session) as db_session:
+            item = None
+            if hash is not None:
+                query = (
+                    select(cls)
+                    .where(cls.folder_hash == hash)
+                    .order_by(cls.created_at.desc())
+                )
+                item = db_session.execute(query).scalars().first()
+            if item is None and path is not None:
+                # Try to get by path
+                query = (
+                    select(cls)
+                    .join(cls.folder)
+                    .where(FolderInDb.full_path == str(path))
+                    .order_by(cls.created_at.desc())
+                )
+                item = db_session.execute(query).scalars().first()
+
+            return item
+
 
 class TaskStateInDb(Base):
     """Represents an import task.
@@ -408,7 +444,9 @@ class CandidateStateInDb(Base):
         live_state.id = self.id
         live_state.duplicate_ids = (
             # edge case: "".split() gives ['']
-            [] if len(self.duplicate_ids) == 0 else self.duplicate_ids.split(";")
+            []
+            if len(self.duplicate_ids) == 0
+            else self.duplicate_ids.split(";")
         )
         return live_state
 

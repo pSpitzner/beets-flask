@@ -187,6 +187,7 @@ class TaskState:
         return self.task.candidates
 
     @property
+    @deprecated
     def current_candidate_state(self) -> CandidateState | None:
         """Returns the CandidateState of the currently selected candidate."""
         cid = self.current_candidate_id
@@ -215,6 +216,13 @@ class TaskState:
         new_states = [CandidateState(c, self) for c in candidates]
         self.candidate_states[insert_at:insert_at] = new_states
         return new_states
+
+    def get_candidate_state_by_id(self, id: str) -> CandidateState | None:
+        """Get candidate state by id."""
+        for c in self.candidate_states:
+            if c.id == id:
+                return c
+        return None
 
     @property
     def toppath(self) -> Path | None:

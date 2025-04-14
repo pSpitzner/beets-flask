@@ -26,6 +26,7 @@ import {
     Zoom,
 } from "@mui/material";
 import { useMutation, UseMutationOptions } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 
 import { enqueueMutationOptions } from "@/api/session";
 import { EnqueueKind, File, Folder } from "@/pythonTypes";
@@ -35,7 +36,6 @@ import { useFolderSelectionContext } from "./folderSelectionContext";
 import { SourceTypeIcon } from "../common/icons";
 import { ClipboardCopyButton } from "../common/inputs/copy";
 import { useTerminalContext } from "../frontpage/terminal";
-import { useNavigate } from "@tanstack/react-router";
 
 /* --------------------------------- Actions -------------------------------- */
 // Actions a user can take on a single or multiple folders implemented as speed dial
@@ -102,14 +102,14 @@ export function FolderActionsSpeedDial() {
                     // imports best candidate that is already present, independent of threshold
                     // or retag & import, ignoring any configured thresholds
                     mutationOptions={enqueueMutationOptions}
-                    mutateArgs={{ selected, kind: EnqueueKind.IMPORT }}
+                    mutateArgs={{ selected, kind: EnqueueKind.IMPORT_CANDIDATE }}
                 />
 
                 <SpeedDialMutationAction
                     icon={<SourceTypeIcon type="asis" />}
                     tooltip="Import (asis)"
                     mutationOptions={enqueueMutationOptions}
-                    mutateArgs={{ selected, kind: EnqueueKind.IMPORT_AS_IS }}
+                    mutateArgs={{ selected, kind: EnqueueKind.IMPORT_BOOTLEG }}
                 />
 
                 <TerminalImportAction />

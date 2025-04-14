@@ -7,7 +7,7 @@ from sqlalchemy import select
 from beets_flask.database import db_session_factory
 from beets_flask.database.models.base import Base
 from beets_flask.server.routes.errors import InvalidUsage
-from beets_flask.server.utility import get_query_param
+from beets_flask.server.utility import pop_query_param
 
 __all__ = ["ModelAPIBlueprint"]
 
@@ -48,12 +48,12 @@ class ModelAPIBlueprint(Generic[T]):
         params = request.args
         # Cursor is encoded as a string in the format "datetime,id" where date
         # is the creation date as integer and id is the id of the item.
-        cursor = get_query_param(
+        cursor = pop_query_param(
             params,
             "cursor",
             _cursor_from_string,
         )
-        n_items = get_query_param(
+        n_items = pop_query_param(
             params,
             "n_items",
             int,

@@ -39,7 +39,7 @@ from beets.importer import (
     _extend_pipeline,
     _freshen_items,
     action,
-    apply_choice,
+    # apply_choice,
     resolve_duplicates,
 )
 from beets.util import MoveOperation, displayable_path
@@ -431,34 +431,7 @@ def user_query(
             [merged_task], lookup_candidates(session), user_query(session)
         )
 
-    def apply_choice(session: ImportSession, task: ImportTask):
-        # tweaked version of beets apply_choices.
-        # we do not want to rely on the global config object
-        # (in particular, the set_fields, because we always want to set gui_import_id).
-        # see the original:
-        # from beets.importer import apply_choice
-
-        if task.skip:
-            return
-
-        # Change metadata.
-        if task.apply:
-            task.apply_metadata()
-            plugins.send("import_task_apply", session=session, task=task)
-
-        task.add(session.lib)
-        task.set_fields(session.lib)
-
-        # copy of core logic from set_fields()
-        items: list[BeetsItem] = task.imported_items()
-        with session.lib.transaction():
-            for item in items:
-                item.set_parse("gui_import_id", session.import_id)
-                item.store()
-            task.album.set_parse("gui_import_id", session.import_id)
-            task.album.store()
-
-    apply_choice(session, task)
+    _apply_choice(session, task)
 
     return task
 
@@ -495,6 +468,20 @@ def match_threshold(
 
     session.match_threshold(task)
 
+
+@mutator_stage
+@set_progress(Progress.LOOKING_UP_CANDIDATES)
+def import_asis(session, task):
+    """Select the `action.ASIS` choice for all tasks.
+
+    This stage replaces the initial_lookup and user_query stages
+    when the importer is run without autotagging.
+    """
+    if task.skip:
+        return
+
+    task.set_choice(action.ASIS)
+    _apply_choice(session, task)
 
 # --------------------------------- Consumer --------------------------------- #
 
@@ -558,6 +545,34 @@ def mark_tasks_preview_completed(session: BaseSession, task: ImportTask):
     return task
 
 
+
+def _apply_choice(session: ImportSession, task: ImportTask):
+    # tweaked version of beets apply_choices.
+    # we do not want to rely on the global config object
+    # (in particular, the set_fields, because we always want to set gui_import_id).
+    # see the original:
+    # from beets.importer import apply_choice
+
+    if task.skip:
+        return
+
+    # Change metadata.
+    if task.apply:
+        task.apply_metadata()
+        plugins.send("import_task_apply", session=session, task=task)
+
+    task.add(session.lib)
+    task.set_fields(session.lib)
+
+    # copy of core logic from set_fields()
+    items: list[BeetsItem] = task.imported_items()
+    with session.lib.transaction():
+        for item in items:
+            item.set_parse("gui_import_id", session.import_id)
+            item.store()
+        task.album.set_parse("gui_import_id", session.import_id)
+        task.album.store()
+
 __all__ = [
     "read_tasks",
     "group_albums",
@@ -568,4 +583,5 @@ __all__ = [
     "plugin_stage",
     "manipulate_files",
     "mark_tasks_completed",
+    "import_asis",
 ]
