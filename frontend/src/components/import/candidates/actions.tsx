@@ -342,6 +342,7 @@ export function CandidateSearch({ folderHash }: { folderHash: string }) {
                                     search_artist: search.artist,
                                 });
                                 setOpen(false);
+                                setSearch({ ids: [], artist: "", album: "" });
                             }}
                             disabled={isPending}
                         >

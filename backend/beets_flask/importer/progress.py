@@ -38,14 +38,14 @@ class Progress(Enum):
     GROUPING_ALBUMS = 2
     LOOKING_UP_CANDIDATES = 3
     IDENTIFYING_DUPLICATES = 4
-    PREVIEW_COMPLETED = 5
+    PREVIEW_COMPLETED = 5  # dummy, only for comparison and report, has no actual stage
     OFFERING_MATCHES = 6
     WAITING_FOR_USER_SELECTION = 7
     MATCH_THRESHOLD = 8
     EARLY_IMPORTING = 9
     IMPORTING = 10
     MANIPULATING_FILES = 11
-    COMPLETED = 12
+    COMPLETED = 12  # also a dummy
 
     def __lt__(self, other: Progress) -> bool:
         return self.value < other.value

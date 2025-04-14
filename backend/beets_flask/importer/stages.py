@@ -40,7 +40,7 @@ from beets.importer import (
     _freshen_items,
     action,
     # apply_choice,
-    resolve_duplicates,
+    # resolve_duplicates,
 )
 from beets.util import MoveOperation, displayable_path
 from beets.util import pipeline as beets_pipeline
@@ -102,9 +102,14 @@ def set_progress(
                 )
                 return task
 
-            task_progress = session.state.upsert_task(task)
-            if task_progress and task_progress.progress >= progress:
-                log.debug(f"Skipping {progress} for {task}")
+            # We set the progress before the stage runs, thus we need to compare
+            # with the previous progress (-1). Otherwise, we couldnt retry a stage
+            # once it crashed or was aborted - we would skip it.
+            task_progress = session.state.upsert_task(task).progress
+            if task_progress and (task_progress.progress - 1) >= progress:
+                log.debug(
+                    f"Skipping {progress} for {task} because task progress {task_progress.progress=}"
+                )
                 return task
 
             # Set the task's progress
@@ -410,7 +415,10 @@ def user_query(
         )
 
     # Note: this checks the global config for the default action.
-    resolve_duplicates(session, task)
+    found_duplicates = task.find_duplicates(session.lib)
+    # Different than vanilla beets, we do not use a stage for duplicate resolution,
+    # as it only calls the sessions method, anyway.
+    session.resolve_duplicate(task, found_duplicates)
 
     if task.should_merge_duplicates:
         # Create a new task for tagging the current items
@@ -483,6 +491,7 @@ def import_asis(session, task):
     task.set_choice(action.ASIS)
     _apply_choice(session, task)
 
+
 # --------------------------------- Consumer --------------------------------- #
 
 
@@ -533,7 +542,7 @@ def mark_tasks_completed(session: BaseSession, task: ImportTask):
     """
     Wrapper to mark task as completed.
 
-    This is mainly a workaround because our progressd decorator cannot set the
+    This is mainly a workaround because our progress decorator cannot set the
     progress after stage has finished.
     """
     return task
@@ -543,7 +552,6 @@ def mark_tasks_completed(session: BaseSession, task: ImportTask):
 @set_progress(Progress.PREVIEW_COMPLETED)
 def mark_tasks_preview_completed(session: BaseSession, task: ImportTask):
     return task
-
 
 
 def _apply_choice(session: ImportSession, task: ImportTask):
@@ -572,6 +580,7 @@ def _apply_choice(session: ImportSession, task: ImportTask):
             item.store()
         task.album.set_parse("gui_import_id", session.import_id)
         task.album.store()
+
 
 __all__ = [
     "read_tasks",

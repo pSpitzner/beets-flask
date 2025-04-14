@@ -24,6 +24,7 @@ from .stages import (
     StageOrder,
     group_albums,
     identify_duplicates,
+    import_asis,
     lookup_candidates,
     manipulate_files,
     mark_tasks_completed,
@@ -33,7 +34,6 @@ from .stages import (
     plugin_stage,
     read_tasks,
     user_query,
-    import_asis
 )
 from .states import ProgressState, SessionState
 
@@ -181,7 +181,10 @@ class BaseSession(importer.ImportSession, ABC):
 
         This basically skips this stage.
         """
-        self.logger.debug(f"skipping resolve_duplicates {task}")
+        self.logger.warning(
+            "Skipping duplicate resolution. "
+            + f"Your session should implement this! -> {self.__class__.__name__}"
+        )
         task.set_choice(importer.action.SKIP)
 
     def choose_item(self, task: importer.ImportTask):
@@ -496,13 +499,13 @@ class ImportSession(BaseSession):
     def choose_match(self, task: importer.ImportTask):
         self.logger.setLevel(logging.DEBUG)
         self.logger.debug(f"choose_match {task}")
-    
+
         # Pick by candidate id if given
         if self.candidate_id is not None:
             task_state = self.state.get_task_state_for_task(task)
             if task_state is None:
                 raise ValueError("No task state found for task.")
-            
+
             candidate_state = task_state.get_candidate_state_by_id(self.candidate_id)
             if candidate_state is None:
                 raise ValueError(f"Candidate with id {self.candidate_id} not found.")
@@ -514,7 +517,9 @@ class ImportSession(BaseSession):
             except IndexError:
                 # FIXME: where and how is this handled? TODO: InvalidUrlError
                 log.error(f"No matches found for {task=} {task.candidates=}")
-                raise ValueError("No matches found. Is the provided search URL correct?")
+                raise ValueError(
+                    "No matches found. Is the provided search URL correct?"
+                )
 
         # Let plugins display info
         results = plugins.send("import_task_before_choice", session=self, task=task)
@@ -542,12 +547,14 @@ class ImportSession(BaseSession):
             case "merge":
                 task.should_merge_duplicates = True
             case "ask":
-                task.set_choice(importer.action.SKIP)
+                # task.set_choice(importer.action.SKIP)
+                raise UserError(
+                    "Duplicate action 'ask', but no user choice was provided."
+                )
             case _:
-                log.warning(
+                raise UserError(
                     f"Unknown duplicate resolution action: {self.duplicate_action}"
                 )
-                task.set_choice(importer.action.SKIP)
 
 
 class BootlegImportSession(ImportSession):
