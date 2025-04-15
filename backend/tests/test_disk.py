@@ -1,16 +1,8 @@
 import os
 import shutil
-import tempfile
 from pathlib import Path
 
 import pytest
-
-from beets_flask.disk import (
-    album_folders_from_track_paths,
-    all_album_folders,
-    is_album_folder,
-    is_within_multi_dir,
-)
 
 
 def touch(path):
@@ -58,35 +50,40 @@ def base(tmpdir_factory):
     shutil.rmtree(base)
 
 
-@pytest.mark.parametrize(
-    "type",
-    [Path, str, lambda x: str(x).encode("utf-8")],
-)
-def test_is_album_folder_empty(type, base):
-    p = type(base + "/artist/album_empty")
-    assert not is_album_folder(p)
+from beets_flask.disk import is_album_folder
 
 
-@pytest.mark.parametrize(
-    "type",
-    [Path, str, lambda x: str(x).encode("utf-8")],
-)
-def test_is_album_folder_good(type, base):
-    p = type(base + "/artist/album_good")
-    assert is_album_folder(p)
+class TestIsAlbumFolder:
 
+    @pytest.mark.parametrize(
+        "type",
+        [Path, str, lambda x: str(x).encode("utf-8")],
+    )
+    def test_folder_empty(self, type, base):
+        p = type(base + "/artist/album_empty")
+        assert not is_album_folder(p)
 
-def test_is_album_folder_junk(base):
-    assert not is_album_folder(base + "/artist/album_junk")
+    @pytest.mark.parametrize(
+        "type",
+        [Path, str, lambda x: str(x).encode("utf-8")],
+    )
+    def test_folder_good(self, type, base):
+        p = type(base + "/artist/album_good")
+        assert is_album_folder(p)
 
+    def test_folder_junk(self, base):
+        p = base + "/artist/album_junk"
+        assert not is_album_folder(p)
 
-def test_is_album_folder_multi(base):
-    assert is_album_folder(base + "/artist/album_multi/1")
-    assert is_album_folder(base + "/artist/album_multi/1/CD1")
-    assert is_album_folder(base + "/artist/album_multi/1/CD2")
+    def test_folder_multi(self, base):
+        assert is_album_folder(base + "/artist/album_multi/1")
+        assert is_album_folder(base + "/artist/album_multi/1/CD1")
+        assert is_album_folder(base + "/artist/album_multi/1/CD2")
 
 
 def test_all_album_folders_no_subdirs(base):
+
+    from beets_flask.disk import all_album_folders
 
     all_albums = [
         base + "/artist/album_good",
@@ -105,6 +102,8 @@ def test_all_album_folders_no_subdirs(base):
 
 
 def test_all_album_folders_with_subdirs(base):
+
+    from beets_flask.disk import all_album_folders
 
     all_albums_with_subdirs = [
         base + "/artist/album_good",
@@ -126,6 +125,9 @@ def test_all_album_folders_with_subdirs(base):
 
 
 def test_is_within_multi_dir(base):
+
+    from beets_flask.disk import is_within_multi_dir
+
     assert is_within_multi_dir(base + "/artist/album_multi/1/CD1/")
     assert is_within_multi_dir(base + "/artist/album_multi/1/CD2/")
     # should work with and without trailing slashes
@@ -176,6 +178,8 @@ testdata = [
 def test_album_folders_from_track(
     base, input: list[str], use_parent_for_multidisc: bool, expected: list[str]
 ):
+
+    from beets_flask.disk import album_folders_from_track_paths
 
     # Try legacy using string paths
     # TODO: Remove once we have migrated to Path objects

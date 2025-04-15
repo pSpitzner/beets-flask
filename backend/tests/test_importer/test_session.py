@@ -1,12 +1,9 @@
 import logging
 import os
-from abc import ABC
 from pathlib import Path
 
-from beets_flask.invoker import run_preview
 import pytest
 
-from beets_flask.database.setup import _reset_database
 from beets_flask.importer.session import PreviewSession
 from beets_flask.importer.states import SessionState
 from tests.test_importer.conftest import (
@@ -66,109 +63,3 @@ class TestPreviewSessions:
                     assert candidate.url.startswith("https")
 
         log.debug(f"State: {state}")
-
-
-class IsolatedDBMixin(ABC):
-    """
-    A pytest mixin class to reset the database before and after ALL
-    tests in this class are run.
-
-    Usage:
-    ```
-    class TestMyFeature(IsolatedDBMixin):
-        def test_something(self):
-            # add to clean db
-
-        def test_something_else(self):
-            # db has data from previous test
-    ```
-    """
-
-    @pytest.fixture(autouse=True, scope="class")
-    def setup(self):
-        """
-        Automatically reset the database before and after ALL tests in this class.
-
-        Args:
-            db_session_factory: Pytest fixture providing a database session.
-        """
-        _reset_database()
-        yield
-        _reset_database()
-
-
-class TestImportBest(IsolatedDBMixin):
-    @pytest.fixture(autouse=True)
-    def mock_emit_status(self, monkeypatch):
-        """Mock the emit_status decorator"""
-
-        def mock_emit_status(func):
-            def wrapper(*args, **kwargs):
-                return func(*args, **kwargs)
-
-            return wrapper
-
-        monkeypatch.setattr("beets_flask.invoker.emit_status", mock_emit_status)
-
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize("path", VALID_PATHS)
-    async def test_preview(self, path: str):
-        """Test the preview of the import process."""
-        await run_preview("test", path)
-
-
-"""
-Proposal testing session flows:
-
-There are a number of edge cases when triggering sessions. Might be more 
-I'm missing at the moment. 
-
------------
-
-Import best
-- New folder
-- Generate Preview
-- Import best
-
-Import asis
-- New folder
-- Generate Preview
-- Import asis
-
-Import specific candidate
-- New folder
-- Generate Preview
-- Import candidate
-
-------------
-
-any = best | asis | specific candidate
-
-Adding a new candidate
-- New folder
-- Generate Preview
-- Add candidates
-- Import any
-
-Already imported
-- New folder
-- Generate Preview
-- Import any
-- Generate Preview
-- Import any
-- Should somehow error with already imported! <-- ask or user config
-
-Already imported with action
-- New folder
-- Generate Preview
-- Import any
-- Generate Preview
-- Import any (with action for duplicate)
-- Should import the duplicate depending on the action
-
-
-----------
-
-Autoimport what happens with the progress after a failed auto import
-
-"""

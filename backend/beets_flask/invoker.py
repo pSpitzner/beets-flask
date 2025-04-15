@@ -22,6 +22,7 @@ from typing import (
 )
 
 from rq.job import Job
+from sqlalchemy import select
 
 from beets_flask import log
 from beets_flask.database import db_session_factory
@@ -33,8 +34,8 @@ from beets_flask.database.models.states import (
 from beets_flask.importer.progress import FolderStatus, Progress
 from beets_flask.importer.session import (
     AddCandidatesSession,
-    BootlegImportSession,
     AutoImportSession,
+    BootlegImportSession,
     ImportSession,
     PreviewSession,
 )
@@ -42,7 +43,6 @@ from beets_flask.importer.states import SessionState
 from beets_flask.redis import import_queue, preview_queue
 from beets_flask.server.routes.errors import InvalidUsage
 from beets_flask.server.websocket.status import send_folder_status_update
-from sqlalchemy import select
 
 if TYPE_CHECKING:
     from rq.job import Job
@@ -187,7 +187,6 @@ def enqueue_preview(hash: str, path: str, **kwargs) -> Job:
 
 
 def enqueue_preview_add_candidates(hash: str, path: str, **kwargs) -> Job:
-
     # May contain search_ids, search_artist, search_album
     search_ids = kwargs.pop("search_ids", [])
     search_artist = kwargs.pop("search_artist", None)
