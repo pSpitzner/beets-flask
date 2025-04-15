@@ -14,7 +14,12 @@ from deprecated import deprecated
 from beets_flask.config import get_config
 from beets_flask.disk import is_album_folder
 from beets_flask.importer.progress import Progress, ProgressState
-from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackMatch
+from beets_flask.importer.types import (
+    BeetsAlbum,
+    BeetsAlbumMatch,
+    BeetsTrackMatch,
+    DuplicateAction,
+)
 from beets_flask.logger import log
 from beets_flask.utility import capture_stdout_stderr
 
@@ -371,7 +376,7 @@ class ImportSession(BaseSession):
     import_id: str
     match_url: str | None
     candidate_id: str | None
-    duplicate_action: Literal["skip", "keep", "remove", "merge", "ask"]
+    duplicate_action: DuplicateAction | None
 
     def __init__(
         self,
@@ -379,9 +384,7 @@ class ImportSession(BaseSession):
         config_overlay: dict | None = None,
         match_url: str | None = None,
         candidate_id: str | None = None,
-        duplicate_action: (
-            Literal["skip", "keep", "remove", "merge", "ask"] | None
-        ) = None,
+        duplicate_action: DuplicateAction | None = None,
     ):
         """Create new ImportSession.
 
@@ -424,6 +427,16 @@ class ImportSession(BaseSession):
             duplicate_action = self.get_config_value("import.duplicate_action", str)
 
         self.duplicate_action = duplicate_action.lower()  # type: ignore
+
+    async def run_async(self) -> SessionState:
+        # only allow import sessions to run on preview states (not other import states)
+        if self.state.progress > Progress.PREVIEW_COMPLETED:
+            log.error(
+                f"Cannot run {self.__class__.__name__} from states that already "
+                + f"progressed past preview. (i.e. other imports) [{self.state.progress}]"
+            )
+            raise UserError("Already progressed past preview")
+        return await super().run_async()
 
     # ------------------------------ Stages ------------------------------ #
 
@@ -533,10 +546,16 @@ class ImportSession(BaseSession):
 
         return match
 
-    def resolve_duplicate(self, task: importer.ImportTask, found_duplicates):
+    def resolve_duplicate(
+        self, task: importer.ImportTask, found_duplicates: list[BeetsAlbum]
+    ):
         log.debug(
             f"Resolving duplicates for {task} with action {self.duplicate_action}"
         )
+
+        if len(found_duplicates) == 0:
+            log.debug("No duplicates found.")
+            return
         match self.duplicate_action:
             case "skip":
                 task.set_choice(importer.action.SKIP)
@@ -560,6 +579,7 @@ class ImportSession(BaseSession):
 class BootlegImportSession(ImportSession):
     """
     Import session to import without modifying metadata.
+
     No preview session required.
 
     Essentially `beet import --group-albums -A`, ideal for bootlegs and
@@ -776,7 +796,7 @@ class InteractiveImportSession(ImportSession):
                 if self.state.user_response == "abort":
                     self.set_task_progress(
                         task,
-                        ProgressState(Progress.COMPLETED, "aborted"),
+                        ProgressState(Progress.IMPORT_COMPLETED, "aborted"),
                     )
                     return importer.action.SKIP
 

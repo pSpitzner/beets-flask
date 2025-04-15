@@ -22,9 +22,11 @@ from typing import (
 from beets import autotag
 from beets.autotag.hooks import AlbumInfo as BeetsAlbumInfo
 from beets.autotag.hooks import AlbumMatch as BeetsAlbumMatch
-from beets.autotag.hooks import Item as BeetsItem
 from beets.autotag.hooks import TrackInfo as BeetsTrackInfo
 from beets.autotag.hooks import TrackMatch as BeetsTrackMatch
+from beets.library import Album as BeetsAlbum
+from beets.library import Item as BeetsItem
+from beets.library import Library as BeetsLibrary
 
 __all__ = [
     # Our stuff
@@ -32,13 +34,20 @@ __all__ = [
     "TrackInfo",
     "ItemInfo",
     "AlbumInfo",
+    "DuplicateAction",
     # Beets stuff
-    "BeetsAlbumMatch",
-    "BeetsTrackMatch",
+    "BeetsAlbum",
     "BeetsAlbumInfo",
-    "BeetsTrackInfo",
+    "BeetsAlbumMatch",
     "BeetsItem",
+    "BeetsTrackInfo",
+    "BeetsTrackMatch",
+    "BeetsLibrary",
 ]
+
+# to be consistent with beets, here we do not use an enum.
+# (beets uses strings for duplicate actions)
+DuplicateAction = Literal["skip", "keep", "remove", "merge", "ask"]
 
 
 class PromptChoice(NamedTuple):

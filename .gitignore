@@ -178,3 +178,6 @@ node_modules/
 
 
 .vscode/
+
+# TODO: Pickle for tests contains local paths and has to be ignored until fixed
+lookup.pickle

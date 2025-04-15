@@ -227,7 +227,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
                 [
                     FolderStatus.PENDING,
                     FolderStatus.PENDING,
-                    FolderStatus.RUNNING,
+                    FolderStatus.PREVIEWING,
                     FolderStatus.FAILED,
                     None,  # 'finished' needs further differentiation
                 ],
@@ -239,7 +239,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
                         if "import" in meta["job_kind"]:
                             status = FolderStatus.IMPORTED
                         elif "preview" in meta["job_kind"]:
-                            status = FolderStatus.TAGGED
+                            status = FolderStatus.PREVIEWED
                         else:
                             raise ValueError("Unknown job kind")
                     else:
@@ -266,11 +266,11 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
                             case Progress.NOT_STARTED:
                                 status = FolderStatus.NOT_STARTED
                             case Progress.PREVIEW_COMPLETED:
-                                status = FolderStatus.TAGGED
-                            case Progress.COMPLETED:
+                                status = FolderStatus.PREVIEWED
+                            case Progress.IMPORT_COMPLETED:
                                 status = FolderStatus.IMPORTED
                             case _:
-                                status = FolderStatus.RUNNING
+                                status = FolderStatus.PREVIEWING
 
             stats.append(
                 FolderStatusResponse(

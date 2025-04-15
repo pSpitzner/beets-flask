@@ -17,6 +17,7 @@ from typing import (
     Awaitable,
     Callable,
     Concatenate,
+    Literal,
     ParamSpec,
     TypeVar,
 )
@@ -40,6 +41,7 @@ from beets_flask.importer.session import (
     PreviewSession,
 )
 from beets_flask.importer.states import SessionState
+from beets_flask.importer.types import DuplicateAction
 from beets_flask.redis import import_queue, preview_queue
 from beets_flask.server.routes.errors import InvalidUsage
 from beets_flask.server.websocket.status import send_folder_status_update
@@ -94,7 +96,17 @@ def emit_status(
                     status=before,
                 )
 
-            ret = await f(hash, path, *args, **kwargs)
+            try:
+                ret = await f(hash, path, *args, **kwargs)
+            except Exception as e:
+                await send_folder_status_update(
+                    hash=hash,
+                    path=path,
+                    status=FolderStatus.FAILED,
+                    # TODO: add error message to status
+                )
+
+                raise e
 
             if after is not None:
                 await send_folder_status_update(
@@ -234,10 +246,12 @@ def enqueue_import_candidate(hash: str, path: str, **kwargs) -> Job:
 
     # May contain candidate_id
     candidate_id: str = kwargs.pop("candidate_id", None)
+    duplicate_action: DuplicateAction = kwargs.pop("duplicate_action", None)
 
     if len(kwargs.keys()) > 0:
         raise InvalidUsage(
-            "EnqueueKind.IMPORT only accepts the following kwargs: candidate_id."
+            "EnqueueKind.IMPORT only accepts the following kwargs: "
+            + "candidate_id, duplicate_action."
         )
 
     # Validate if candidate_id exists
@@ -253,7 +267,11 @@ def enqueue_import_candidate(hash: str, path: str, **kwargs) -> Job:
                 )
 
     job = import_queue.enqueue(
-        run_import_candidate, hash, path, candidate_id=candidate_id
+        run_import_candidate,
+        hash,
+        path,
+        candidate_id=candidate_id,
+        duplicate_action=duplicate_action,
     )
     __set_job_meta(job, hash, path, EnqueueKind.IMPORT_CANDIDATE)
     return job
@@ -291,7 +309,7 @@ def enqueue_import_bootleg(hash: str, path: str, **kwargs):
 
 
 # redis preview queue
-@emit_status(before=FolderStatus.RUNNING, after=FolderStatus.TAGGED)
+@emit_status(before=FolderStatus.PREVIEWING, after=FolderStatus.PREVIEWED)
 async def run_preview(
     hash: str,
     path: str,
@@ -339,7 +357,7 @@ async def run_preview(
 
 
 # redis preview queue
-@emit_status(before=FolderStatus.RUNNING, after=FolderStatus.TAGGED)
+@emit_status(before=FolderStatus.PREVIEWING, after=FolderStatus.PREVIEWED)
 async def run_preview_add_candidates(
     hash: str,
     path: str,
@@ -379,19 +397,29 @@ async def run_preview_add_candidates(
 
 
 # redis import queue
-@emit_status(before=FolderStatus.RUNNING, after=FolderStatus.IMPORTED)
+@emit_status(before=FolderStatus.IMPORTING, after=FolderStatus.IMPORTED)
 async def run_import_candidate(
     hash: str,
     path: str,
-    candidate_id: str | None,
+    candidate_id: str | None = None,
+    duplicate_action: DuplicateAction | None = None,
 ):
-    """
-    If candidate_id is none the best candidate is used.
+    """Imports a candidate that has been fetched in a preview session.
+
+    Parameters
+    ----------
+    candidate_id : str | None
+        If candidate_id is none the best candidate is used.
+    duplicate_action : DuplicateAction | None
+        If duplicate_action is none, the default action from the config is used.
     """
     with db_session_factory() as db_session:
         log.info(f"Import task on {hash=} {path=}")
         s_state_live = _get_live_state_by_folder(hash, path, db_session)
-        i_session = ImportSession(s_state_live, candidate_id=candidate_id)
+
+        i_session = ImportSession(
+            s_state_live, candidate_id=candidate_id, duplicate_action=duplicate_action
+        )
 
         try:
             await i_session.run_async()
@@ -405,8 +433,9 @@ async def run_import_candidate(
 
 
 # redis import queue
-@emit_status(before=FolderStatus.RUNNING, after=FolderStatus.IMPORTED)
+@emit_status(before=FolderStatus.IMPORTING, after=FolderStatus.IMPORTED)
 async def run_import_auto(hash: str, path: str) -> list[str] | None:
+    # TODO: add duplicate action
     with db_session_factory() as db_session:
         log.info(f"Auto Import task on {hash=} {path=}")
         s_state_live = _get_live_state_by_folder(hash, path, db_session)
@@ -424,10 +453,11 @@ async def run_import_auto(hash: str, path: str) -> list[str] | None:
 
 
 # redis import queue
-@emit_status(before=FolderStatus.RUNNING, after=FolderStatus.IMPORTED)
+@emit_status(before=FolderStatus.IMPORTING, after=FolderStatus.IMPORTED)
 async def run_import_bootleg(hash: str, path: str) -> list[str] | None:
     with db_session_factory() as db_session:
         log.info(f"Bootleg Import task on {hash=} {path=}")
+        # TODO: add duplicate action
         # TODO: sort out how to generate previews for asis candidates
         s_state_live = _get_live_state_by_folder(
             hash, path, create_if_not_exists=True, db_session=db_session

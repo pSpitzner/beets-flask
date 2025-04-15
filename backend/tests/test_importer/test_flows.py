@@ -1,12 +1,14 @@
 from abc import ABC
+from pathlib import Path
 from unittest import mock
 
 import pytest
-from sqlalchemy import select, text
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from beets_flask.database.models.states import SessionStateInDb
-from beets_flask.importer.progress import FolderStatus
+from beets_flask.importer.progress import FolderStatus, Progress
+from beets_flask.importer.types import BeetsLibrary
 from tests.test_importer.conftest import (
     VALID_PATHS,
     album_path_absolute,
@@ -74,29 +76,29 @@ class InvokerStatusMockMixin(ABC):
         print(f"Mocked send_folder_status_update: {kwargs}")
         self.statuses.append(kwargs)
 
-    @pytest.fixture(autouse=True, scope="session")
+    # ??? due to class inheritance, scope="function" effectively becomes class.
+    # What we found is that, as is now, we get a websocket that survives between
+    # different test functions.
+    @pytest.fixture(autouse=True, scope="function")
     def mock(self):
         """Mock the emit_status decorator"""
 
         with mock.patch(
             "beets_flask.invoker.send_folder_status_update",
             self.send_folder_status_update,
-            spec=True,
         ):
             yield
 
-    @pytest.fixture(autouse=True)
-    def reset_statuses(self):
-        """Reset the status stack after each test"""
-        yield
+        # Unexpectetly, this does not reset the statuses after each test.
+        # -> do it manually in the tests as needed.
         self.statuses = []
 
 
 """
 Proposal testing session flows:
 
-There are a number of edge cases when triggering sessions. Might be more 
-I'm missing at the moment. 
+There are a number of edge cases when triggering sessions. Might be more
+I'm missing at the moment.
 
 -----------
 
@@ -149,34 +151,181 @@ Autoimport what happens with the progress after a failed auto import
 """
 
 
-from beets_flask.invoker import run_preview
+from beets_flask.invoker import run_import_candidate, run_preview
 
 
 class TestImportBest(InvokerStatusMockMixin, IsolatedDBMixin):
+    """
+    Import best
+    - New folder
+    - Generate Preview
+    - Import best
+    """
 
-    async def test_preview(self, db_session: Session):
-        """Test the preview of the import process."""
-        path = VALID_PATHS[0]
-        path = album_path_absolute(path)
+    @pytest.fixture()
+    def path(self) -> Path:
+        path = album_path_absolute(VALID_PATHS[0])
         use_mock_tag_album(str(path))
+        return path
+
+    async def test_preview(self, db_session: Session, path: Path):
+        """Test the preview of the import process."""
 
         stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
-        obj_before = db_session.execute(stmt).scalar()
-        assert obj_before is None, "Database should be empty before the test"
+        assert db_session.execute(stmt).scalar() is None, (
+            "Database should be empty before the test"
+        )
 
         await run_preview(
-            "test_hash",
+            "obsolete_hash_preview",
             str(path),
         )
 
-        # Check that status was emitted correctly
+        # Check that status was emitted correctly, we emit once before and once after run
         assert len(self.statuses) == 2
-        assert self.statuses[0]["status"] == FolderStatus.RUNNING
-        assert self.statuses[1]["status"] == FolderStatus.TAGGED
+        assert self.statuses[0]["status"] == FolderStatus.PREVIEWING
+        assert self.statuses[1]["status"] == FolderStatus.PREVIEWED
 
         # Check db contains the tagged folder
         stmt = select(SessionStateInDb)
-        obj_after = db_session.execute(stmt).scalar()
+        s_state_indb = db_session.execute(stmt).scalar()
 
-        assert obj_after is not None
-        assert obj_after.folder.full_path == str(path)
+        assert s_state_indb is not None
+        assert s_state_indb.folder.full_path == str(path)
+
+        # Check preview content is correct
+        s_state_live = s_state_indb.to_live_state()
+        assert s_state_live is not None
+        assert s_state_live.folder_path == path
+        assert len(s_state_live.task_states) == 1
+
+        t_state_live = s_state_live.task_states[0]
+        assert t_state_live.progress == Progress.PREVIEW_COMPLETED
+
+        for c in t_state_live.candidate_states:
+            assert len(c.duplicate_ids) == 0, (
+                "Should not have duplicates in empty library"
+            )
+
+    async def test_import(
+        self, db_session: Session, path: Path, beets_lib: BeetsLibrary
+    ):
+        """
+        Test the import of the tagged folder.
+
+        The preview of the previous test should still exist in the database,
+        because we reset the db via IsolatedDBMixin on scope=class
+        """
+
+        stmt = select(func.count()).select_from(SessionStateInDb)
+        assert db_session.execute(stmt).scalar() == 1, (
+            "Database should contain the one preview session state from the previous test"
+        )
+
+        self.statuses = []
+        await run_import_candidate(
+            "obsolete_hash_import",
+            str(path),
+            candidate_id=None,  # None uses best match
+        )
+
+        # Check that status was emitted correctly, we emit once before and once after run
+        assert len(self.statuses) == 2
+        assert self.statuses[0]["status"] == FolderStatus.IMPORTING
+        assert self.statuses[1]["status"] == FolderStatus.IMPORTED
+
+        # Check db still contains one tagged folder
+        stmt = select(SessionStateInDb)
+        s_state_indb = db_session.execute(stmt).scalar()
+
+        assert s_state_indb is not None
+        assert s_state_indb.folder.full_path == str(path)
+
+        # Check preview content is correct
+        s_state_live = s_state_indb.to_live_state()
+        assert s_state_live is not None
+        assert s_state_live.folder_path == path
+        assert len(s_state_live.task_states) == 1
+
+        t_state_live = s_state_live.task_states[0]
+        assert t_state_live.progress == Progress.IMPORT_COMPLETED
+
+        for c in t_state_live.candidate_states:
+            assert len(c.duplicate_ids) == 0, (
+                "Should not have duplicates in empty library"
+            )
+
+        # Check that we have the items in the beets lib
+        albums = beets_lib.albums()
+        assert len(albums) == 1, "Should have imported one album"
+
+        # gui import ids are set
+        album = albums[0]
+        assert hasattr(album, "gui_import_id"), "Album should have gui_import_id"
+        assert album.gui_import_id is not None, "Album should have gui_import_id"
+
+    async def test_reimport_fails(self, db_session: Session, path: Path):
+        """Reimport should fail if the state is already imported"""
+        stmt = select(func.count()).select_from(SessionStateInDb)
+        assert db_session.execute(stmt).scalar() == 1, (
+            "Database should contain the one preview session state from the previous test"
+        )
+
+        self.statuses = []
+
+        with pytest.raises(
+            Exception,
+            match="Already progressed past preview",
+        ):
+            await run_import_candidate(
+                "obsolete_hash_import",
+                str(path),
+                candidate_id=None,  # None uses best match
+                duplicate_action="ask",
+            )
+
+        assert len(self.statuses) == 2
+        assert self.statuses[0]["status"] == FolderStatus.IMPORTING
+        assert self.statuses[1]["status"] == FolderStatus.FAILED
+
+    async def test_duplicate_import_fails(
+        self, db_session: Session, path: Path, beets_lib: BeetsLibrary
+    ):
+        """
+        Duplicates should normally only happen if you import the same
+        items from a different folder.
+
+        We use the same items but a different folder here ;) A bit
+        hacky but works for our purpose.
+        """
+
+        raise NotImplementedError("FIXME")
+
+        await run_preview(
+            "obsolete_hash_preview",
+            str(path),
+        )
+
+        await run_import_candidate(
+            "obsolete_hash_import",
+            str(path),
+            candidate_id=None,
+            duplicate_action="ask",
+        )
+
+        self.statuses = []
+        with pytest.raises(
+            Exception,
+            match="Already progressed past preview",
+        ):
+            await run_import_candidate(
+                "obsolete_hash_import",
+                str(path / "Chant [SINGLE]"),
+                candidate_id=None,  # None uses best match
+                duplicate_action="ask",  # ask raises on duplicate
+            )
+
+        # Check that status was emitted correctly, we emit once before and once after run
+        assert len(self.statuses) == 2
+        assert self.statuses[0]["status"] == FolderStatus.IMPORTING
+        assert self.statuses[1]["status"] == FolderStatus.FAILED

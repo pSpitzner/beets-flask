@@ -105,6 +105,9 @@ def tag_album(
             return pickle.load(f)
 
     else:
+        # TODO: This pickle contains absolute paths to the files
+        # while undesired (no use in having them in the git repo) its for now the
+        # easiest way... and we hope music brainz does not change its data too often!
         log.debug(f"Using default lookup {album_path=}")
         res = _tag_album(items, search_artist, search_album, search_ids)
         with open(Path(album_path) / "lookup.pickle", "wb") as f:

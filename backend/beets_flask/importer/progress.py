@@ -15,9 +15,10 @@ class FolderStatus(Enum):
     FAILED = -1
     NOT_STARTED = 0
     PENDING = 1
-    RUNNING = 2
-    TAGGED = 3
-    IMPORTED = 4
+    PREVIEWING = 2
+    PREVIEWED = 3
+    IMPORTING = 4
+    IMPORTED = 5
 
     def __str__(self) -> str:
         return self.name.lower()
@@ -45,7 +46,7 @@ class Progress(Enum):
     EARLY_IMPORTING = 9
     IMPORTING = 10
     MANIPULATING_FILES = 11
-    COMPLETED = 12  # also a dummy
+    IMPORT_COMPLETED = 12  # also a dummy
 
     def __lt__(self, other: Progress) -> bool:
         return self.value < other.value

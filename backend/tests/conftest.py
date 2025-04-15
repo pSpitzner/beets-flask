@@ -3,13 +3,14 @@ import os
 import shutil
 from contextlib import _GeneratorContextManager
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Generator
 
 import pytest
 from quart import Quart
 from quart.typing import TestClientProtocol
 from sqlalchemy.orm import Session
 
+from beets_flask.importer.types import BeetsLibrary
 from beets_flask.server.app import create_app
 
 log = logging.getLogger(__name__)
@@ -79,7 +80,7 @@ def db_session(db_session_factory):
 
 
 @pytest.fixture(scope="function")
-def beets_lib():
+def beets_lib() -> Generator[BeetsLibrary, None, None]:
     import beets.library
 
     from beets_flask.config.beets_config import refresh_config

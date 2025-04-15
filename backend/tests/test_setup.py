@@ -19,7 +19,8 @@ from beets_flask.config.beets_config import config
 
 def test_config():
     """Test that config is correctly set up for testing."""
+    import tempfile
 
     dir = os.environ.get("BEETSFLASKDIR")
     assert dir is not None
-    assert "tmp" in dir
+    assert str(tempfile.tempdir) in dir

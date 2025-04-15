@@ -537,7 +537,7 @@ def manipulate_files(
 
 
 @stage
-@set_progress(Progress.COMPLETED)
+@set_progress(Progress.IMPORT_COMPLETED)
 def mark_tasks_completed(session: BaseSession, task: ImportTask):
     """
     Wrapper to mark task as completed.
