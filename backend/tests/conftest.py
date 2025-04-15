@@ -1,8 +1,9 @@
+import logging
 import os
 import shutil
 from contextlib import _GeneratorContextManager
 from pathlib import Path
-from typing import Any, Callable, Generator
+from typing import Callable
 
 import pytest
 from quart import Quart
@@ -10,6 +11,8 @@ from quart.typing import TestClientProtocol
 from sqlalchemy.orm import Session
 
 from beets_flask.server.app import create_app
+
+log = logging.getLogger(__name__)
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -166,3 +169,30 @@ def beets_lib_album(**kwargs):
         **default_kwargs,
     )
     return a
+
+
+# ---------------------------------- Mocking --------------------------------- #
+
+
+@pytest.fixture(autouse=True)
+def local_redis(monkeypatch):
+    """Mock all redis calls with rq
+    see https://python-rq.org/docs/testing/
+    see https://docs.pytest.org/en/7.1.x/how-to/monkeypatch.html#global-patch-example-preventing-requests-from-remote-operations
+    """
+
+    from fakeredis import FakeStrictRedis
+    from rq import Queue
+
+    log.debug("Mocking beets_flask.redis")
+    monkeypatch.setattr(
+        "beets_flask.redis.import_queue",
+        Queue("import", is_async=False, connection=FakeStrictRedis()),
+    )
+    monkeypatch.setattr(
+        "beets_flask.redis.preview_queue",
+        Queue("preview", is_async=False, connection=FakeStrictRedis()),
+    )
+    yield
+    log.debug("Unmocking beets_flask.redis")
+    monkeypatch.undo()
