@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
+import pickle
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Literal, Mapping, Sequence, TypedDict, Union, cast
+from typing import List, Literal, Sequence, TypedDict, Union, cast
 from uuid import uuid4 as uuid
 
 import beets.ui.commands as uicommands
 from beets import autotag, importer, library
 from deprecated import deprecated
 
-from beets_flask import log
 from beets_flask.config import get_config
 from beets_flask.disk import Folder
 from beets_flask.importer.progress import (
@@ -43,8 +43,13 @@ class SessionState:
     _task_states: List[TaskState]
     folder_path: Path
     folder_hash: str
+
     # session-level buttons. continue from choose_match when not None
     user_response: Literal["abort"] | Literal["apply"] | None = None
+
+    # If a session run fails we store the exc here
+    # should be set to none whenever the session is started
+    exc: Exception | None = None
 
     def __init__(self, folder: Folder | Path) -> None:
         # Alternate constructor is part of the SessionStateInDb class

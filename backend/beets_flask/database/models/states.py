@@ -193,17 +193,22 @@ class SessionStateInDb(Base):
 
     tag = relationship("Tag", uselist=False, back_populates="session_state_in_db")
 
+    # If an session run fails we want to store the exception
+    exc: Mapped[bytes | None]
+
     def __init__(
         self,
         folder: FolderInDb,
         id: str | None = None,
         tasks: List[TaskStateInDb] = [],
         progress: Progress = Progress.NOT_STARTED,
+        exc: Exception | None = None,
     ):
         super().__init__(id)
         self.folder = folder
         self.tasks = tasks
         self.progress = progress
+        self.exc = pickle.dumps(exc) if exc is not None else None
 
     @classmethod
     def from_live_state(cls, state: SessionState) -> SessionStateInDb:
@@ -214,6 +219,7 @@ class SessionStateInDb(Base):
             id=state.id,
             tasks=[TaskStateInDb.from_live_state(task) for task in state.task_states],
             progress=state.progress.progress,
+            exc=state.exc,
         )
 
         return session
@@ -241,6 +247,7 @@ class SessionStateInDb(Base):
             )
         s_state.id = self.id
         s_state._task_states = [task.to_live_state(s_state) for task in self.tasks]
+        s_state.exc = pickle.loads(self.exc) if self.exc else None
         return s_state
 
     def to_dict(self) -> SerializedSessionState:
@@ -280,6 +287,11 @@ class SessionStateInDb(Base):
                 item = db_session.execute(query).scalars().first()
 
             return item
+
+    @property
+    def exception(self) -> Exception | None:
+        """Returns the exception of the session if it failed."""
+        return pickle.loads(self.exc) if self.exc else None
 
 
 class TaskStateInDb(Base):

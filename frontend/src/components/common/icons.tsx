@@ -162,14 +162,15 @@ export function FolderStatusIcon({
             return <HourglassIcon {...props} />;
         case FolderStatus.PENDING:
             return <GrowingRipple size={props.size} color={props.color} />;
-        case FolderStatus.RUNNING:
+        case FolderStatus.PREVIEWING:
+        case FolderStatus.IMPORTING:
             return (
                 <CircularProgress
                     size={props.size}
                     sx={{ color: props.color || "inherit" }}
                 />
             );
-        case FolderStatus.TAGGED:
+        case FolderStatus.PREVIEWED:
             return <TagsIcon {...props} />;
         case FolderStatus.IMPORTED:
             return <CircleCheckBigIcon {...props} />;

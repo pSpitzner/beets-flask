@@ -1,3 +1,4 @@
+from datetime import datetime
 from math import e
 from typing import TypedDict
 
@@ -212,6 +213,16 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
             failed.extend(_get_jobs(q.failed_job_registry, connection=redis_conn))
             finished.extend(_get_jobs(q.finished_job_registry, connection=redis_conn))
 
+        def __sort(job: Job) -> datetime | int:
+            """Sort by created_at."""
+            return job.created_at or -1
+
+        # Sort by created_at
+        queued.sort(key=__sort, reverse=True)
+        scheduled.sort(key=__sort, reverse=True)
+        started.sort(key=__sort, reverse=True)
+        failed.sort(key=__sort, reverse=True)
+
         for hash, path in zip(folder_hashes, folder_paths):
             # Get metadata for folder if in any job queue
             status: FolderStatus | None = None
@@ -281,10 +292,6 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
                     else:
                         # PS: This progress <-> state mapping feels inconsistent.
                         # There should be a better place for this.
-
-                        # TODO: If an job failed and is then removed from the queue
-                        # we should somehow mark it as failed in the db to
-                        # show the proper status in the frontend.
                         match s_state_indb.progress:
                             case Progress.NOT_STARTED:
                                 status = FolderStatus.NOT_STARTED
@@ -294,6 +301,14 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
                                 status = FolderStatus.IMPORTED
                             case _:
                                 status = FolderStatus.PREVIEWING
+
+                        e = s_state_indb.exception
+                        if e is not None:
+                            exc = {
+                                "type": type(e).__name__,
+                                "message": str(e),
+                            }
+                            status = FolderStatus.FAILED
 
             stats.append(
                 FolderStatusResponse(path=path, hash=hash, status=status, exc=exc)
@@ -322,6 +337,7 @@ class FolderStatusResponse(TypedDict):
 def _get_jobs(registry, connection):
     jobs = Job.fetch_many(registry.get_job_ids(), connection=connection)
     jobs = [j for j in jobs if j is not None]
+
     return jobs
 
 

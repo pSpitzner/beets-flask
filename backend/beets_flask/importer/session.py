@@ -267,15 +267,19 @@ class BaseSession(importer.ImportSession, ABC):
         log.info(f"Running {self.__class__.__name__} on state<{self.state.id=}>.")
         log.debug(f"Running {len(self.pipeline.stages)} stages.")
 
+        # reset exception state
+        self.state.exc = None
         plugins.send("import_begin", session=self)
         try:
             assert self.pipeline is not None
             await self.pipeline.run_async()
         except importer.ImportAbortError:
             log.debug(f"Interactive import session aborted by user")
+        except Exception as e:
+            self.state.exc = e
+            raise e
 
         log.info(f"Completed {self.__class__.__name__} on state<{self.state.id=}>.")
-
         return self.state
 
 
