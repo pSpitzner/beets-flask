@@ -1,5 +1,6 @@
 import { Suspense } from "react";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { Box } from "@mui/material";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { sessionQueryOptions } from "@/api/session";
@@ -22,6 +23,19 @@ function RouteComponent() {
 
     if (!data) {
         return "Session not found";
+    }
+
+    // Prototype for session exc handling
+    // TODO: Make it nicer and better suited for
+    // different exceptions
+    if (data.exc) {
+        return (
+            <Box>
+                <h1>Failed at {data.status.progress}</h1>
+                <p>{data.exc.message}</p>
+                <pre>{JSON.stringify(data.exc, null, 2)}</pre>
+            </Box>
+        );
     }
 
     return (

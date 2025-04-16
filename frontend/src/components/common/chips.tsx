@@ -141,26 +141,28 @@ export function FolderStatusChip({ folder, ...props }: { folder: Folder } & Chip
     }
 
     return (
-        <Link
-            to={"/session/$id"}
-            params={{ id: folderStatus.hash }}
-            preload="intent"
-            style={{ gridColumn: "chip" }}
-        >
-            <StyledChip
-                icon={
-                    <FolderStatusIcon
-                        status={folderStatus.status}
-                        size={theme.iconSize.sm}
-                    />
-                }
-                label={status_name.charAt(0) + status_name.slice(1).toLowerCase()}
-                size="small"
-                variant="outlined"
-                color="info"
-                {...props}
-            />
-        </Link>
+        <Tooltip title={folderStatus.exc?.message || status_name}>
+            <Link
+                to={"/session/$id"}
+                params={{ id: folderStatus.hash }}
+                preload="intent"
+                style={{ gridColumn: "chip" }}
+            >
+                <StyledChip
+                    icon={
+                        <FolderStatusIcon
+                            status={folderStatus.status}
+                            size={theme.iconSize.sm}
+                        />
+                    }
+                    label={status_name.charAt(0) + status_name.slice(1).toLowerCase()}
+                    size="small"
+                    variant="outlined"
+                    color="info"
+                    {...props}
+                />
+            </Link>
+        </Tooltip>
     );
 }
 

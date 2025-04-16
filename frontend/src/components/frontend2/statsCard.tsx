@@ -9,6 +9,7 @@ import { ReactNode } from "react";
 import {
     Avatar,
     Box,
+    BoxProps,
     Button,
     Card,
     CardContent,
@@ -217,14 +218,23 @@ function CardHeader({
     children,
     color = "primary.main",
     reverse = false,
+    sx,
+    ...props
 }: {
     icon: ReactNode;
     children: ReactNode;
     color?: string;
     reverse?: boolean;
-}) {
+} & BoxProps) {
     return (
-        <Box sx={{ position: "relative" }}>
+        <Box
+            sx={[
+                { position: "relative", flexGrow: 1 },
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                ...(Array.isArray(sx) ? sx : [sx]),
+            ]}
+            {...props}
+        >
             <Divider
                 sx={{
                     position: "absolute",
@@ -298,12 +308,12 @@ function StatItem({
 }) {
     return (
         <Box
-            sx={(theme) => ({
+            sx={{
                 border: `2px solid`,
                 borderRadius: 1,
                 padding: 0.5,
                 minWidth: "100px",
-            })}
+            }}
         >
             <Typography
                 component="div"

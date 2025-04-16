@@ -36,7 +36,7 @@ declare module "@mui/material/styles" {
         diffs?: DiffColors;
     }
     interface PaletteColor {
-        diffs?: DiffColors;
+        muted?: string;
     }
     interface SimplePaletteColorOptions {
         muted?: string;

@@ -130,15 +130,36 @@ function InboxRouteHeader({ ...props }: BoxProps) {
                 display: "flex",
                 justifyContent: "space-between",
                 width: "100%",
-                paddingInline: 1,
                 alignItems: "center",
+                flexGrow: 1,
+                paddingInline: 1,
             }}
             {...props}
         >
-            <Typography variant="h4" component="h1" fontWeight="bold">
+            <Typography
+                variant="h4"
+                component="h1"
+                fontWeight="bold"
+                sx={(theme) => ({
+                    alignSelf: "center",
+                    mr: "auto",
+                })}
+            >
                 Inbox
             </Typography>
-            <InfoDescription />
+            <Box
+                sx={{
+                    alignSelf: "center",
+                    display: "flex",
+                    gap: 1,
+                    zIndex: 1,
+                    p: 0.25,
+                    borderRadius: 1,
+                    color: "primary.muted",
+                }}
+            >
+                <InfoDescription />
+            </Box>
         </Box>
     );
 }
@@ -159,7 +180,7 @@ function InfoDescription() {
                 sx={{
                     m: 0,
                     p: 0,
-                    color: "gray",
+                    color: "inherit",
                 }}
                 size="small"
                 onClick={() => {
