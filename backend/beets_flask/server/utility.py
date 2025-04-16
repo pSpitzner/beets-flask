@@ -3,7 +3,8 @@ from typing import Any, Callable, TypeVarTuple
 from quart import request
 
 from beets_flask.logger import log
-from beets_flask.server.routes.errors import InvalidUsage
+
+from .exceptions import InvalidUsageException
 
 
 def pop_query_param(
@@ -41,7 +42,7 @@ def pop_query_param(
     except (ValueError, TypeError):
         if error_message is None:
             error_message = f"Invalid parameter'{key}'"
-        raise InvalidUsage(error_message)
+        raise InvalidUsageException(error_message)
 
     return value
 
@@ -74,9 +75,11 @@ async def get_folder_params(
     folder_paths = pop_query_param(params, "folder_paths", list, default=[])
 
     if not allow_mismatch and len(folder_hashes) != len(folder_paths):
-        raise InvalidUsage("folder_hashes and folder_paths must be of the same length")
+        raise InvalidUsageException(
+            "folder_hashes and folder_paths must be of the same length"
+        )
 
     if not allow_empty and ((len(folder_hashes) + len(folder_paths)) == 0):
-        raise InvalidUsage("folder_hashes and folder_paths cannot be empty")
+        raise InvalidUsageException("folder_hashes and folder_paths cannot be empty")
 
     return folder_hashes, folder_paths, params

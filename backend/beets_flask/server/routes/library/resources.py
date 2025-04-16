@@ -14,8 +14,6 @@ from typing import (
     Any,
     Awaitable,
     Callable,
-    Iterable,
-    Optional,
     Sequence,
     TypedDict,
     TypeVar,
@@ -25,12 +23,12 @@ from typing import (
 from beets import util as beets_util
 from beets.dbcore import Results
 from beets.library import Album, Item
-from quart import Blueprint, Response, abort, g, jsonify, request, send_file
+from quart import Blueprint, Response, abort, g, jsonify, request
 from typing_extensions import NotRequired
 
 from beets_flask.config import get_config
 from beets_flask.logger import log
-from beets_flask.server.routes.errors import IntegrityError, NotFoundError
+from beets_flask.server.exceptions import NotFoundException
 
 if TYPE_CHECKING:
     # For type hinting the global g object
@@ -158,7 +156,7 @@ def resource(
 async def item(id: int):
     item = g.lib.get_item(id)
     if not item:
-        raise NotFoundError(f"Item with beets_id:'{id}' not found in beets db.")
+        raise NotFoundException(f"Item with beets_id:'{id}' not found in beets db.")
 
     return item
 
@@ -174,7 +172,7 @@ async def item_query(query: str):
 async def album(id: int):
     item = g.lib.get_album(id)
     if not item:
-        raise NotFoundError(f"Album with beets_id:'{id}' not found in beets db.")
+        raise NotFoundException(f"Album with beets_id:'{id}' not found in beets db.")
     return item
 
 
@@ -326,7 +324,7 @@ source_prefixes = ["mb", "spotify", "tidal", "discogs"]
 def _repr_Item(item: Item | None, minimal=False) -> ItemResponse | ItemResponseMinimal:
 
     if not item:
-        raise NotFoundError("Item not found")
+        raise NotFoundException("Item not found")
 
     out: dict[str, Any] = dict()
 
@@ -564,7 +562,7 @@ def _rep(entity: Item | Album | None, expand=False, minimal=False):
     """
 
     if not entity:
-        raise NotFoundError("Entity not found")
+        raise NotFoundException("Entity not found")
 
     if isinstance(entity, Item):
         return _repr_Item(entity, minimal)

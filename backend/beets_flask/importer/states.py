@@ -6,7 +6,7 @@ import pickle
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Literal, Sequence, TypedDict, Union, cast
+from typing import List, Literal, NotRequired, Sequence, TypedDict, Union, cast
 from uuid import uuid4 as uuid
 
 import beets.ui.commands as uicommands
@@ -20,6 +20,7 @@ from beets_flask.importer.progress import (
     ProgressState,
     SerializedProgressState,
 )
+from beets_flask.server.exceptions import SerializedException
 from beets_flask.utility import capture_stdout_stderr
 
 from .types import (
@@ -135,7 +136,8 @@ class SessionState:
 
     def serialize(self) -> SerializedSessionState:
         """JSON representation to match the frontend types."""
-        return SerializedSessionState(
+
+        r = SerializedSessionState(
             id=self.id,
             folder_path=str(self.folder_path),
             folder_hash=str(self.folder_hash),
@@ -143,6 +145,15 @@ class SessionState:
             status=self.progress.serialize(),
             completed=self.completed,
         )
+
+        if self.exc is not None:
+            r["exc"] = {
+                "type": type(self.exc).__name__,
+                "message": str(self.exc),
+                "description": self.exc.__doc__,
+            }
+
+        return r
 
 
 @dataclass(init=False)
@@ -635,9 +646,11 @@ class SerializedSessionState(TypedDict):
     status: SerializedProgressState
     completed: bool
 
+    exc: NotRequired[SerializedException | None]
+
 
 class Metadata(TypedDict):
-    """returned from current_metadata"""
+    """Returned from current_metadata()."""
 
     artist: str | None
     album: str | None

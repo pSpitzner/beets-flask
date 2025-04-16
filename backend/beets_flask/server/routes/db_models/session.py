@@ -12,7 +12,7 @@ from beets_flask.database.models.states import FolderInDb, SessionStateInDb
 from beets_flask.importer.progress import FolderStatus, Progress
 from beets_flask.logger import log
 from beets_flask.redis import wait_for_job_results
-from beets_flask.server.routes.errors import InvalidUsage, NotFoundError
+from beets_flask.server.exceptions import InvalidUsageException, NotFoundException
 from beets_flask.server.utility import get_folder_params, pop_query_param
 
 from .base import ModelAPIBlueprint
@@ -38,7 +38,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         folder_hashes, folder_paths, _ = await get_folder_params(allow_mismatch=True)
 
         if len(folder_hashes) != 1 and len(folder_paths) != 1:
-            raise InvalidUsage(
+            raise InvalidUsageException(
                 "Provide one folder hash OR one folder path", status_code=400
             )
 
@@ -61,7 +61,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
                 # raise, but we do not want to spam the
                 # frontend console with errors.
                 # we manually handle this in sessionQueryOptions.
-                raise NotFoundError(
+                raise NotFoundException(
                     f"Item with {hash=} {path=} not found", status_code=200
                 )
 
@@ -80,7 +80,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         folder_hashes, folder_paths, params = await get_folder_params()
         kind = pop_query_param(params, "kind", str)
         if not isinstance(kind, str):
-            raise InvalidUsage(
+            raise InvalidUsageException(
                 "kind must be one of " + str(invoker.EnqueueKind.__members__)
             )
 
@@ -111,9 +111,9 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         )
 
         if len(folder_hashes) != 1:
-            raise InvalidUsage("Folder hash must be a single value")
+            raise InvalidUsageException("Folder hash must be a single value")
         if len(folder_paths) > 1:
-            raise InvalidUsage("Folder path must be a single value")
+            raise InvalidUsageException("Folder path must be a single value")
 
         hash = folder_hashes[0]
         path = None
@@ -142,7 +142,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
             search_album = None
 
         if len(search_ids) == 0 and search_artist is None and search_album is None:
-            raise InvalidUsage(
+            raise InvalidUsageException(
                 "`search_ids`, `search_artist` or `search_album` must be provided!"
             )
         log.warning(f"{search_ids=}, {search_artist=}, {search_album=}")
@@ -282,10 +282,10 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
                     f"Checking folder status via session from db: {path} ({hash})"
                 )
                 with db_session_factory() as db_session:
-                    stmt = select(SessionStateInDb).where(
+                    stmt_s = select(SessionStateInDb).where(
                         SessionStateInDb.folder_hash == hash
                     )
-                    s_state_indb = db_session.execute(stmt).scalars().first()
+                    s_state_indb = db_session.execute(stmt_s).scalars().first()
                     if s_state_indb is None:
                         # We have no idea about this folder, this should not happen.
                         status = FolderStatus.UNKNOWN

@@ -10,7 +10,7 @@ from beets import util as beets_util
 from quart import Blueprint, g
 from tinytag import TinyTag
 
-from beets_flask.server.routes.errors import IntegrityError, NotFoundError
+from beets_flask.server.exceptions import IntegrityException, NotFoundException
 
 if TYPE_CHECKING:
     # For type hinting the global g object
@@ -31,12 +31,14 @@ async def item_metadata(item_id: int):
     # it is also used in artwork.py
     item = g.lib.get_item(item_id)
     if not item:
-        raise NotFoundError(f"Item with beets_id:'{item_id}' not found in beets db.")
+        raise NotFoundException(
+            f"Item with beets_id:'{item_id}' not found in beets db."
+        )
 
     # File
     item_path = beets_util.syspath(item.path)
     if not os.path.exists(item_path):
-        raise IntegrityError(
+        raise IntegrityException(
             f"Item file '{item_path}' does not exist for item beets_id:'{item_id}'."
         )
 

@@ -3,7 +3,7 @@ from quart import Blueprint, Quart
 from .art_preview import art_blueprint
 from .config import config_bp
 from .db_models import register_state_models
-from .errors import error_bp
+from .exception import error_bp
 from .frontend import frontend_bp
 from .inbox import inbox_bp
 from .library import library_bp

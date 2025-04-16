@@ -9,7 +9,7 @@ from PIL import Image as PILImage
 from quart import Blueprint, g, make_response, redirect, send_file, url_for
 
 from beets_flask.logger import log
-from beets_flask.server.routes.errors import IntegrityError, NotFoundError
+from beets_flask.server.exceptions import IntegrityException, NotFoundException
 
 if TYPE_CHECKING:
     # For type hinting the global g object
@@ -27,19 +27,21 @@ async def item_art(item_id: int):
     # Item from beets library
     item = g.lib.get_item(item_id)
     if not item:
-        raise NotFoundError(f"Item with beets_id:'{item_id}' not found in beets db.")
+        raise NotFoundException(
+            f"Item with beets_id:'{item_id}' not found in beets db."
+        )
 
     # File
     item_path = beets_util.syspath(item.path)
     if not os.path.exists(item_path):
-        raise IntegrityError(
+        raise IntegrityException(
             f"Item file '{item_path}' does not exist for item beets_id:'{item_id}'."
         )
 
     # Get image with mediafile library (comes with beets)
     mediafile = MediaFile(item_path)
     if not mediafile.images or len(mediafile.images) < 1:
-        raise NotFoundError(f"Item has no cover art: '{item_id}'.")
+        raise NotFoundException(f"Item has no cover art: '{item_id}'.")
 
     # TODO: Support multiple images
     im: Image = cast(Image, mediafile.images[0])  # typehints suck (beets typical)
@@ -53,13 +55,15 @@ async def album_art(album_id: int):
     # Album from beets library
     album = g.lib.get_album(album_id)
     if not album:
-        raise NotFoundError(f"Album with beets_id:'{album_id}' not found in beets db.")
+        raise NotFoundException(
+            f"Album with beets_id:'{album_id}' not found in beets db."
+        )
 
     # Has art set on album level
     if album.artpath:
         art_path = beets_util.syspath(album.artpath)
         if not os.path.exists(art_path):
-            raise IntegrityError(
+            raise IntegrityException(
                 f"Album art file '{art_path}' does not exist for album beets_id:'{album_id}'."
             )
         return await send_image(BytesIO(open(art_path, "rb").read()))
@@ -67,7 +71,7 @@ async def album_art(album_id: int):
     # Check the first item in the album for embedded cover art
     items = album.items()
     if not items or len(items) < 1:
-        raise IntegrityError(f"Album has no items: '{album_id}'.")
+        raise IntegrityException(f"Album has no items: '{album_id}'.")
 
     # Reuse the item art route
     return redirect(url_for(".item_art", item_id=items[0].id))
@@ -80,11 +84,11 @@ async def file_art(filepath: str):
     filepath = beets_util.syspath(filepath)
 
     if not os.path.exists(filepath):
-        raise IntegrityError(f"File '{filepath}' does not exist.")
+        raise IntegrityException(f"File '{filepath}' does not exist.")
 
     mediafile = MediaFile(filepath)
     if not mediafile.images or len(mediafile.images) < 1:
-        raise NotFoundError(f"File has no cover art: '{filepath}'.")
+        raise NotFoundException(f"File has no cover art: '{filepath}'.")
 
     im: Image = cast(Image, mediafile.images[0])  # typehints suck (beets typical)
     return await send_image(BytesIO(im.data))

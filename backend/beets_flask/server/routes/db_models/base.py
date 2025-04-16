@@ -6,7 +6,7 @@ from sqlalchemy import select
 
 from beets_flask.database import db_session_factory
 from beets_flask.database.models.base import Base
-from beets_flask.server.routes.errors import InvalidUsage
+from beets_flask.server.routes.exception import InvalidUsageException
 from beets_flask.server.utility import pop_query_param
 
 __all__ = ["ModelAPIBlueprint"]
@@ -74,7 +74,9 @@ class ModelAPIBlueprint(Generic[T]):
         with db_session_factory() as session:
             item = self.model.get_by(self.model.id == id, session=session)
             if not item:
-                raise InvalidUsage(f"Item with id {id} not found", status_code=404)
+                raise InvalidUsageException(
+                    f"Item with id {id} not found", status_code=404
+                )
 
             return item.to_dict()
 

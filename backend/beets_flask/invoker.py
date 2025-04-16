@@ -43,7 +43,7 @@ from beets_flask.importer.session import (
 from beets_flask.importer.states import SessionState
 from beets_flask.importer.types import DuplicateAction
 from beets_flask.redis import import_queue, preview_queue
-from beets_flask.server.routes.errors import InvalidUsage
+from beets_flask.server.routes.exception import InvalidUsageException
 from beets_flask.server.websocket.status import send_folder_status_update
 
 if TYPE_CHECKING:
@@ -83,7 +83,7 @@ def emit_status(
                         FolderInDb.id == hash, session=db_session
                     )
                     if f_on_disk is None:
-                        raise InvalidUsage(
+                        raise InvalidUsageException(
                             f"If only hash is given, it must be in the db."
                         )
                     path = f_on_disk.full_path
@@ -206,7 +206,7 @@ async def enqueue(hash: str, path: str, kind: EnqueueKind, **kwargs) -> Job:
         case EnqueueKind.IMPORT_BOOTLEG:
             job = enqueue_import_bootleg(hash, path, **kwargs)
         case _:
-            raise InvalidUsage(f"Unknown kind {kind}")
+            raise InvalidUsageException(f"Unknown kind {kind}")
 
     log.debug(f"Enqueued {job.id=} {job.meta=}")
 
@@ -219,7 +219,7 @@ async def enqueue(hash: str, path: str, kind: EnqueueKind, **kwargs) -> Job:
 
 def enqueue_preview(hash: str, path: str, **kwargs) -> Job:
     if len(kwargs.keys()) > 0:
-        raise InvalidUsage("EnqueueKind.PREVIEW does not accept any kwargs.")
+        raise InvalidUsageException("EnqueueKind.PREVIEW does not accept any kwargs.")
     job = preview_queue.enqueue(run_preview, hash, path)
     __set_job_meta(job, hash, path, EnqueueKind.PREVIEW)
     return job
@@ -232,13 +232,13 @@ def enqueue_preview_add_candidates(hash: str, path: str, **kwargs) -> Job:
     search_album = kwargs.pop("search_album", None)
 
     if len(kwargs.keys()) > 0:
-        raise InvalidUsage(
+        raise InvalidUsageException(
             "EnqueueKind.PREVIEW_ADD_CANDIDATES only accepts "
             + "the following kwargs: search_ids, search_artist, search_album."
         )
 
     if len(search_ids) == 0 and search_artist is None and search_album is None:
-        raise InvalidUsage(
+        raise InvalidUsageException(
             "EnqueueKind.PREVIEW_ADD_CANDIDATES requires at least one of "
             + "the following kwargs: search_ids, search_artist, search_album."
         )
@@ -276,7 +276,7 @@ def enqueue_import_candidate(hash: str, path: str, **kwargs) -> Job:
     duplicate_action: DuplicateAction = kwargs.pop("duplicate_action", None)
 
     if len(kwargs.keys()) > 0:
-        raise InvalidUsage(
+        raise InvalidUsageException(
             "EnqueueKind.IMPORT only accepts the following kwargs: "
             + "candidate_id, duplicate_action."
         )
@@ -289,7 +289,7 @@ def enqueue_import_candidate(hash: str, path: str, **kwargs) -> Job:
             )
             candidate = db_session.execute(stmt).scalar_one_or_none()
             if candidate is None:
-                raise InvalidUsage(
+                raise InvalidUsageException(
                     f"Candidate with id {candidate_id} does not exist in the database."
                 )
 
@@ -402,7 +402,7 @@ async def run_preview_add_candidates(
         s_state_live = _get_live_state_by_folder(hash, path, db_session)
 
         if s_state_live.progress != Progress.PREVIEW_COMPLETED:
-            raise InvalidUsage(
+            raise InvalidUsageException(
                 f"Session state not in preview completed state for {hash=}"
             )
 
@@ -528,7 +528,7 @@ def _get_live_state_by_folder(
 
     if s_state_indb is None:
         # TODO: rq error handling
-        raise InvalidUsage(
+        raise InvalidUsageException(
             f"No session state found for {path=} {hash=} "
             + f"fresh_hash_on_disk={f_on_disk}, this should not happen."
         )
