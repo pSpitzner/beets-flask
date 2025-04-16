@@ -1,5 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 
+import { SerializedException } from "@/pythonTypes";
+
 // Global query client instance
 export const queryClient = new QueryClient({});
 
@@ -26,7 +28,7 @@ export function customizeFetch() {
         // console.log("fetching", apiPrefix + input);
         const response = await originalFetch(apiPrefix + input, init);
         if (!response.ok) {
-            const data = (await response.json()) as ErrorData;
+            const data = (await response.json()) as SerializedException;
             throw new APIError(data);
         }
 
@@ -43,19 +45,15 @@ export function customizeFetch() {
     };
 }
 
-export interface ErrorData {
-    error: string;
-    message: string;
+export class APIError extends Error {
     description?: string;
     trace?: string;
-}
 
-export class APIError extends Error {
-    trace?: string;
-
-    constructor(public data: ErrorData) {
+    constructor(public data: SerializedException) {
         super(data.message ?? data.description);
-        this.name = data.error;
+        this.name = data.type;
+        this.message = data.message;
+        this.description = data.description ?? undefined;
         this.trace = data.trace ?? undefined;
     }
 }

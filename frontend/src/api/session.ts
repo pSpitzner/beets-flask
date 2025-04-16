@@ -1,9 +1,13 @@
 import { UseMutationOptions } from "@tanstack/react-query";
 
 import { FolderSelectionContext } from "@/components/inbox/folderSelectionContext";
-import { EnqueueKind, SerializedSessionState } from "@/pythonTypes";
+import {
+    EnqueueKind,
+    SerializedException,
+    SerializedSessionState,
+} from "@/pythonTypes";
 
-import { APIError, ErrorData, queryClient } from "./common";
+import { APIError, queryClient } from "./common";
 
 export const sessionQueryOptions = ({
     folderHash,
@@ -25,14 +29,13 @@ export const sessionQueryOptions = ({
             }),
         });
         // make sure we have a folder
-        const res = (await response.json()) as SerializedSessionState | ErrorData;
+        const res = (await response.json()) as
+            | SerializedSessionState
+            | SerializedException;
         // check if we have error as a key in res
-        if ("error" in res) {
-            if (res["error"] == "Not Found") {
-                return undefined;
-            } else {
-                throw new APIError(res);
-            }
+        if ("type" in res) {
+            // if we have an error, throw it
+            throw new APIError(res);
         }
 
         queryClient.setQueryData<SerializedSessionState>(
