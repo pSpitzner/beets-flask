@@ -355,8 +355,9 @@ async def run_preview(
         The path of the folder for which to run the preview.
     """
 
+    log.info(f"Preview task on {hash=} {path=}")
+
     with db_session_factory() as db_session:
-        log.info(f"Preview task on {hash=} {path=}")
         f_on_disk = FolderInDb.get_current_on_disk(hash, path)
         if hash != f_on_disk.hash:
             log.warning(
@@ -373,15 +374,12 @@ async def run_preview(
             # TODO: Think about if session exists in db, create new if force_retag?
             # this concerns auto and retagging.
             await p_session.run_async()
-        except Exception as e:
-            log.exception(e)
-            raise e
         finally:
             s_state_indb = SessionStateInDb.from_live_state(p_session.state)
             db_session.merge(s_state_indb)
             db_session.commit()
 
-        log.info(f"Preview done. {f_on_disk.hash=} {path=}")
+    log.info(f"Preview done. {hash=} {path=}")
 
 
 # redis preview queue
@@ -398,8 +396,9 @@ async def run_preview_add_candidates(
 
     This only works if all session tasks are tagged. I.e. preview completed.
     """
+    log.info(f"Add preview candidates task on {hash=}")
+
     with db_session_factory() as db_session:
-        log.info(f"Add preview candidates task on {hash=}")
         s_state_live = _get_live_state_by_folder(hash, path, db_session)
 
         if s_state_live.progress != Progress.PREVIEW_COMPLETED:
@@ -415,14 +414,12 @@ async def run_preview_add_candidates(
         )
         try:
             await a_session.run_async()
-        except Exception as e:
-            log.exception(e)
-            raise e
         finally:
             s_state_indb = SessionStateInDb.from_live_state(a_session.state)
             db_session.merge(instance=s_state_indb)
             db_session.commit()
-        log.info(f"Add candidates done. {hash=} {path=}")
+
+    log.info(f"Add candidates done. {hash=} {path=}")
 
 
 # redis import queue
@@ -443,8 +440,9 @@ async def run_import_candidate(
     duplicate_action : DuplicateAction | None
         If duplicate_action is none, the default action from the config is used.
     """
+    log.info(f"Import task on {hash=} {path=}")
+
     with db_session_factory() as db_session:
-        log.info(f"Import task on {hash=} {path=}")
         s_state_live = _get_live_state_by_folder(hash, path, db_session)
 
         i_session = ImportSession(
@@ -458,14 +456,17 @@ async def run_import_candidate(
             db_session.merge(instance=s_state_indb)
             db_session.commit()
 
+    log.info(f"Import candidate done. {hash=} {path=}")
+
 
 # redis import queue
 @exception_as_return_value
 @emit_status(before=FolderStatus.IMPORTING, after=FolderStatus.IMPORTED)
 async def run_import_auto(hash: str, path: str) -> list[str] | None:
     # TODO: add duplicate action
+    log.info(f"Auto Import task on {hash=} {path=}")
+
     with db_session_factory() as db_session:
-        log.info(f"Auto Import task on {hash=} {path=}")
         s_state_live = _get_live_state_by_folder(hash, path, db_session)
         i_session = AutoImportSession(s_state_live)
 
@@ -476,13 +477,16 @@ async def run_import_auto(hash: str, path: str) -> list[str] | None:
             db_session.merge(instance=s_state_indb)
             db_session.commit()
 
+    log.info(f"Auto Import done. {hash=} {path=}")
+
 
 # redis import queue
 @exception_as_return_value
 @emit_status(before=FolderStatus.IMPORTING, after=FolderStatus.IMPORTED)
 async def run_import_bootleg(hash: str, path: str) -> list[str] | None:
+    log.info(f"Bootleg Import task on {hash=} {path=}")
+
     with db_session_factory() as db_session:
-        log.info(f"Bootleg Import task on {hash=} {path=}")
         # TODO: add duplicate action
         # TODO: sort out how to generate previews for asis candidates
         s_state_live = _get_live_state_by_folder(
@@ -496,6 +500,8 @@ async def run_import_bootleg(hash: str, path: str) -> list[str] | None:
             s_state_indb = SessionStateInDb.from_live_state(i_session.state)
             db_session.merge(instance=s_state_indb)
             db_session.commit()
+
+    log.info(f"Bootleg Import done. {hash=} {path=}")
 
 
 def _get_live_state_by_folder(
