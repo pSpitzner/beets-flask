@@ -1,8 +1,6 @@
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
+from math import e
 from typing import TypedDict
 
-from beets_flask.redis import wait_for_job_results
 from quart import jsonify
 from rq.job import Job
 from sqlalchemy import select
@@ -12,6 +10,7 @@ from beets_flask.database import db_session_factory
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
 from beets_flask.importer.progress import FolderStatus, Progress
 from beets_flask.logger import log
+from beets_flask.redis import wait_for_job_results
 from beets_flask.server.routes.errors import InvalidUsage, NotFoundError
 from beets_flask.server.utility import get_folder_params, pop_query_param
 
@@ -216,6 +215,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         for hash, path in zip(folder_hashes, folder_paths):
             # Get metadata for folder if in any job queue
             status: FolderStatus | None = None
+            exc: ExceptionResponse | None = None
             for jobs, job_status in zip(
                 [
                     queued,
@@ -234,7 +234,8 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
             ):
                 # meta data has hash, path and kind.
                 # We need the kind to derive the status for completed folders.
-                if meta := _is_hash_in_jobs(hash, jobs):
+                if meta_job := _is_hash_in_jobs(hash, jobs):
+                    meta, job = meta_job
                     if job_status is None:
                         if "import" in meta["job_kind"]:
                             status = FolderStatus.IMPORTED
@@ -244,6 +245,24 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
                             raise ValueError("Unknown job kind")
                     else:
                         status = job_status
+
+                    # Additional check the return value of the job for
+                    # exception values
+
+                    # We normally catch failed jobs early on but just
+                    # in case we also check
+                    res = job.latest_result()
+                    if (
+                        res is not None
+                        and res.return_value is not None
+                        and isinstance(res.return_value, Exception)
+                    ):
+                        exc = {
+                            "type": type(res.return_value).__name__,
+                            "message": str(res.return_value),
+                        }
+                        status = FolderStatus.FAILED
+
                     break
 
             # We couldn't find the folder in any job queue. do lookup in db
@@ -262,6 +281,10 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
                     else:
                         # PS: This progress <-> state mapping feels inconsistent.
                         # There should be a better place for this.
+
+                        # TODO: If an job failed and is then removed from the queue
+                        # we should somehow mark it as failed in the db to
+                        # show the proper status in the frontend.
                         match s_state_indb.progress:
                             case Progress.NOT_STARTED:
                                 status = FolderStatus.NOT_STARTED
@@ -273,20 +296,27 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
                                 status = FolderStatus.PREVIEWING
 
             stats.append(
-                FolderStatusResponse(
-                    path=path,
-                    hash=hash,
-                    status=status,
-                )
+                FolderStatusResponse(path=path, hash=hash, status=status, exc=exc)
             )
 
         return jsonify(stats)
+
+
+class ExceptionResponse(TypedDict):
+    """Allows to serialize exceptions and pass them to the user.
+
+    This is used when a preview fails, i.e. FolderStatus.FAILED
+    """
+
+    type: str  # type(exc).__name__ e.g. UserError
+    message: str  # str(exc)
 
 
 class FolderStatusResponse(TypedDict):
     path: str
     hash: str
     status: FolderStatus
+    exc: ExceptionResponse | None
 
 
 def _get_jobs(registry, connection):
@@ -295,9 +325,9 @@ def _get_jobs(registry, connection):
     return jobs
 
 
-def _is_hash_in_jobs(hash: str, jobs: list[Job]) -> dict[str, str] | None:
+def _is_hash_in_jobs(hash: str, jobs: list[Job]) -> tuple[dict[str, str], Job] | None:
     for j in jobs:
         meta = j.get_meta(False)
         if meta.get("folder_hash") == hash:
-            return meta
+            return meta, j
     return None

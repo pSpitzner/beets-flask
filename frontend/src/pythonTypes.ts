@@ -128,20 +128,27 @@ export interface InboxStats {
 	nFiles: number;
 }
 
+export interface ExceptionResponse {
+	type: string;
+	message: string;
+}
+
 export enum FolderStatus {
 	UNKNOWN = -2,
 	FAILED = -1,
 	NOT_STARTED = 0,
 	PENDING = 1,
-	RUNNING = 2,
-	TAGGED = 3,
-	IMPORTED = 4,
+	PREVIEWING = 2,
+	PREVIEWED = 3,
+	IMPORTING = 4,
+	IMPORTED = 5,
 }
 
 export interface FolderStatusResponse {
 	path: string;
 	hash: string;
 	status: FolderStatus;
+	exc: ExceptionResponse | null;
 }
 
 export interface File {

@@ -6,8 +6,7 @@ a preview is finished.
 
 from __future__ import annotations
 
-import asyncio
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING
 
 import socketio
 
@@ -18,7 +17,10 @@ from . import sio
 from .errors import sio_catch_exception
 
 if TYPE_CHECKING:
-    from beets_flask.server.routes.db_models.session import FolderStatusResponse
+    from beets_flask.server.routes.db_models.session import (
+        ExceptionResponse,
+        FolderStatusResponse,
+    )
 
 
 namespace = "/status"
@@ -48,18 +50,35 @@ async def any_event(event, sid, data):
     log.debug(f"StatusSocket sid {sid} undhandled event {event} with data {data}")
 
 
-async def send_folder_status_update(path: str, hash: str, status: FolderStatus):
-    await send_folder_status_response_update(
-        {
-            "path": path,
-            "hash": hash,
-            "status": status,
+async def send_folder_status_update(
+    path: str, hash: str, status: FolderStatus, exc: Exception | None = None
+):
+    """Send a status update to propagate to all clients.
+
+    Allows to pass an exception to the status update.
+    This is used when a preview fails, i.e. FolderStatus.FAILED
+    """
+
+    e: ExceptionResponse | None = None
+
+    if exc is not None:
+        e = {
+            "type": type(exc).__name__,
+            "message": str(exc),
         }
-    )
+
+    s: FolderStatusResponse = {
+        "path": path,
+        "hash": hash,
+        "status": status,
+        "exc": e,
+    }
+
+    await send_folder_status_response_update(s)
 
 
 async def send_folder_status_response_update(
-    status: FolderStatusResponse | dict[str, str | FolderStatus],
+    status: FolderStatusResponse,
 ):
     """Send a status update to propagate to all clients.
 

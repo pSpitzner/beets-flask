@@ -99,11 +99,13 @@ def emit_status(
             try:
                 ret = await f(hash, path, *args, **kwargs)
             except Exception as e:
+                # if the function fails, we want to send a failed status update
+                # and raise the exception again.
                 await send_folder_status_update(
                     hash=hash,
                     path=path,
                     status=FolderStatus.FAILED,
-                    # TODO: add error message to status
+                    exc=e,
                 )
 
                 raise e
@@ -120,6 +122,31 @@ def emit_status(
         return wrapper
 
     return decorator
+
+
+def exception_as_return_value(
+    f: Callable[P, Awaitable[R]],
+) -> Callable[P, Awaitable[R | Exception]]:
+    """Decorator to catch exceptions and return them as a values.
+
+    This is used to catch exceptions in the redis worker and return them
+    as a values we can use in the frontend. Sadly standard exeption handling
+    in rq is lacking!
+    """
+
+    @functools.wraps(f)
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R | Exception:
+        try:
+            ret = await f(*args, **kwargs)
+        except Exception as e:
+            log.error(e)
+            # uncomment for traceback
+            # log.exception(e)
+            return e
+
+        return ret
+
+    return wrapper
 
 
 class EnqueueKind(Enum):
@@ -309,6 +336,7 @@ def enqueue_import_bootleg(hash: str, path: str, **kwargs):
 
 
 # redis preview queue
+@exception_as_return_value
 @emit_status(before=FolderStatus.PREVIEWING, after=FolderStatus.PREVIEWED)
 async def run_preview(
     hash: str,
@@ -357,6 +385,7 @@ async def run_preview(
 
 
 # redis preview queue
+@exception_as_return_value
 @emit_status(before=FolderStatus.PREVIEWING, after=FolderStatus.PREVIEWED)
 async def run_preview_add_candidates(
     hash: str,
@@ -397,6 +426,7 @@ async def run_preview_add_candidates(
 
 
 # redis import queue
+@exception_as_return_value
 @emit_status(before=FolderStatus.IMPORTING, after=FolderStatus.IMPORTED)
 async def run_import_candidate(
     hash: str,
@@ -423,9 +453,6 @@ async def run_import_candidate(
 
         try:
             await i_session.run_async()
-        except Exception as e:
-            log.exception(e)
-            raise e
         finally:
             s_state_indb = SessionStateInDb.from_live_state(i_session.state)
             db_session.merge(instance=s_state_indb)
@@ -433,6 +460,7 @@ async def run_import_candidate(
 
 
 # redis import queue
+@exception_as_return_value
 @emit_status(before=FolderStatus.IMPORTING, after=FolderStatus.IMPORTED)
 async def run_import_auto(hash: str, path: str) -> list[str] | None:
     # TODO: add duplicate action
@@ -443,9 +471,6 @@ async def run_import_auto(hash: str, path: str) -> list[str] | None:
 
         try:
             i_session.run_sync()
-        except Exception as e:
-            log.exception(e)
-            raise e
         finally:
             s_state_indb = SessionStateInDb.from_live_state(i_session.state)
             db_session.merge(instance=s_state_indb)
@@ -453,6 +478,7 @@ async def run_import_auto(hash: str, path: str) -> list[str] | None:
 
 
 # redis import queue
+@exception_as_return_value
 @emit_status(before=FolderStatus.IMPORTING, after=FolderStatus.IMPORTED)
 async def run_import_bootleg(hash: str, path: str) -> list[str] | None:
     with db_session_factory() as db_session:
@@ -466,9 +492,6 @@ async def run_import_bootleg(hash: str, path: str) -> list[str] | None:
 
         try:
             i_session.run_sync()
-        except Exception as e:
-            log.exception(e)
-            raise e
         finally:
             s_state_indb = SessionStateInDb.from_live_state(i_session.state)
             db_session.merge(instance=s_state_indb)
