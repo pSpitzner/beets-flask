@@ -13,6 +13,7 @@ Why not just have State and StateInDb in the same class?
 
 from __future__ import annotations
 
+from datetime import datetime
 import os
 import pickle
 from pathlib import Path
@@ -186,7 +187,9 @@ class SessionStateInDb(Base):
     )
 
     folder: Mapped[FolderInDb] = relationship()
-    folder_hash: Mapped[str] = mapped_column(ForeignKey("folder.id"), unique=True)
+    folder_hash: Mapped[str] = mapped_column(ForeignKey("folder.id"))
+    # PS: we dont want a unique constraint for folder_hashes, in order to be able to
+    # create new previews after a previous (e.g. failed) import.
 
     # FIXME: This should be a getter for the which queries the tasks
     progress: Mapped[Progress]
@@ -456,9 +459,7 @@ class CandidateStateInDb(Base):
         live_state.id = self.id
         live_state.duplicate_ids = (
             # edge case: "".split() gives ['']
-            []
-            if len(self.duplicate_ids) == 0
-            else self.duplicate_ids.split(";")
+            [] if len(self.duplicate_ids) == 0 else self.duplicate_ids.split(";")
         )
         return live_state
 

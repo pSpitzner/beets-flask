@@ -103,6 +103,7 @@ async def send_folder_status_response_update(
             if isinstance(status["status"], FolderStatus)
             else status["status"]
         ),
+        "exc": status["exc"],
     }
     # We need to use call (instead of emit) as otherwise the event is not emitted
     # if we close the client immediately after connecting
