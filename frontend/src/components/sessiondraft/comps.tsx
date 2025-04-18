@@ -12,7 +12,7 @@ import {
     Typography,
 } from "@mui/material";
 
-import { MinimalConfig, useConfig } from "@/components/common/hooks/useConfig";
+import { useConfig } from "@/api/config";
 import { File, Folder } from "@/pythonTypes";
 
 import { FileTypeIcon, SourceTypeIcon } from "../common/icons";

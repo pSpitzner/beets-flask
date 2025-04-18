@@ -21,11 +21,7 @@ import useMobileSafeContextMenu from "@/components/common/hooks/useMobileSafeCon
 import { FileTypeIcon, FolderTypeIcon } from "@/components/common/icons";
 import { File, Folder } from "@/pythonTypes";
 
-import {
-    DeleteAllImportedFolderButton,
-    MoreActions,
-    RefreshAllFoldersButton,
-} from "./actions";
+import { MoreActions } from "./actions";
 import { useFolderSelectionContext } from "./folderSelectionContext";
 
 /* ------------------------------ Grid wrapper ------------------------------ */
@@ -442,14 +438,12 @@ export function SelectedStats() {
             sx={{
                 display: "flex",
                 gap: "1rem",
-                alignItems: "flex-end",
+                alignItems: "flex-start",
                 justifyContent: "flex-start",
                 width: "100%",
             }}
         >
-            <RefreshAllFoldersButton />
-            <DeleteAllImportedFolderButton />
-            <Typography fontSize={12} sx={{ marginLeft: "auto" }}>
+            <Typography fontSize={12} variant="body2">
                 {nSelected} folder{nSelected > 1 ? "s" : null} selected
             </Typography>
         </Box>

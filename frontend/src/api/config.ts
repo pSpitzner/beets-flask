@@ -1,11 +1,4 @@
-import { useEffect } from "react";
-import {
-    QueryClient,
-    QueryClientProvider,
-    queryOptions,
-    useSuspenseQuery,
-} from "@tanstack/react-query";
-import { ReactNode } from "@tanstack/react-router";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export interface MinimalConfig {
     gui: {
@@ -15,7 +8,7 @@ export interface MinimalConfig {
             folders: Record<
                 string,
                 {
-                    autotag: boolean;
+                    autotag: false | "preview" | "import";
                     last_tagged: string | null;
                     name: string;
                     path: string;
@@ -45,10 +38,10 @@ export interface MinimalConfig {
     };
 }
 
-const configQueryOptions = () =>
+export const configQueryOptions = () =>
     queryOptions({
         queryKey: ["config"],
-        queryFn: async function fetchInboxes() {
+        queryFn: async () => {
             const response = await fetch(`/config`);
             return (await response.json()) as MinimalConfig;
         },
@@ -58,17 +51,3 @@ export const useConfig = () => {
     const { data } = useSuspenseQuery(configQueryOptions());
     return data;
 };
-
-export function PrefetchConfigQueryClientProvider({
-    client,
-    children,
-}: {
-    client: QueryClient;
-    children: ReactNode;
-}) {
-    useEffect(() => {
-        client.prefetchQuery(configQueryOptions()).catch(console.error);
-    }, [client]);
-
-    return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
-}

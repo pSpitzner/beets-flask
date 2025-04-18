@@ -1,10 +1,11 @@
-import { StrictMode } from "react";
+import { ReactNode, StrictMode, useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import Box from "@mui/material/Box";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 
 import { customizeFetch, queryClient } from "@/api/common";
-import { PrefetchConfigQueryClientProvider } from "@/components/common/hooks/useConfig";
+import { configQueryOptions } from "@/api/config";
 import { Loading } from "@/components/common/loading";
 import { StatusContextProvider } from "@/components/common/websocket/status";
 
@@ -72,6 +73,20 @@ declare module "@tanstack/react-router" {
     interface Register {
         router: typeof router;
     }
+}
+
+export function PrefetchConfigQueryClientProvider({
+    client,
+    children,
+}: {
+    client: QueryClient;
+    children: ReactNode;
+}) {
+    useEffect(() => {
+        client.prefetchQuery(configQueryOptions()).catch(console.error);
+    }, [client]);
+
+    return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }
 
 export function App() {

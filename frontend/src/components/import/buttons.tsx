@@ -14,12 +14,13 @@ import {
 import Box from "@mui/material/Box";
 import FormControl from "@mui/material/FormControl";
 
+import { useConfig } from "@/api/config";
+
 import { CandidateSearch } from "./candidates/search";
 import { useImportContext } from "./context";
 import { SelectionState } from "./types";
 
 import styles from "./import.module.scss";
-import { useConfig } from "../common/hooks/useConfig";
 import { PageWrapper } from "../common/page";
 
 export function ButtonBar({

@@ -1,4 +1,5 @@
 import {
+    CarIcon,
     ClipboardIcon,
     FolderClockIcon,
     HistoryIcon,
@@ -13,13 +14,16 @@ import {
     Box,
     BoxProps,
     DialogContent,
+    Divider,
     IconButton,
+    Tooltip,
     Typography,
     useTheme,
 } from "@mui/material";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
+import { MinimalConfig, useConfig } from "@/api/config";
 import { inboxQueryOptions } from "@/api/inbox";
 import { MatchChip, StyledChip } from "@/components/common/chips";
 import { Dialog } from "@/components/common/dialogs";
@@ -49,6 +53,7 @@ export const Route = createFileRoute("/inbox/")({
 });
 
 function RouteComponent() {
+    const config = useConfig();
     const { data } = useSuspenseQuery(inboxQueryOptions());
 
     return (
@@ -77,22 +82,81 @@ function RouteComponent() {
                             alignItems: "flex-end",
                             width: "100%",
                             position: "relative",
-                            paddingBlock: theme.spacing(1),
-                            paddingInline: theme.spacing(1.5),
-                            backgroundColor: theme.palette.background.paper,
-                            gap: theme.spacing(1),
-                            borderRadius: 1,
                             [theme.breakpoints.up("laptop")]: {
                                 height: "auto",
                             },
                         })}
                     >
-                        <SelectedStats />
-                        {data.map((folder, i) => (
-                            <GridWrapper key={i}>
-                                <FolderComponent key={i} folder={folder} unSelectable />
-                            </GridWrapper>
-                        ))}
+                        {data.map((folder, i) => {
+                            const fc = Object.entries(config.gui.inbox.folders).find(
+                                ([_k, v]) => v.path === folder.full_path
+                            );
+                            const folder_config = fc![1];
+
+                            return (
+                                <Box
+                                    key={i}
+                                    sx={{
+                                        width: "100%",
+                                        backgroundColor: "background.paper",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        paddingBlock: 1.5,
+                                        paddingInline: 1.5,
+                                        borderRadius: 1,
+                                        gap: 1,
+                                    }}
+                                >
+                                    <Box
+                                        sx={{
+                                            position: "relative",
+                                            width: "100%",
+                                            zIndex: 0,
+                                            display: "flex",
+                                            justifyContent: "flex-end",
+                                            alignItems: "center",
+                                            gap: 2,
+                                        }}
+                                    >
+                                        <Divider
+                                            sx={(theme) => ({
+                                                position: "absolute",
+                                                top: "50%",
+                                                zIndex: -1,
+                                                left: 0,
+                                                borderColor: "primary.muted",
+
+                                                // outer padding
+                                                width: `calc(100% + ${theme.spacing(3)})`,
+                                                marginLeft: theme.spacing(-1.5),
+                                            })}
+                                        />
+                                        <AutoTagIcon autotag={"import"} />
+
+                                        <Typography
+                                            variant="caption"
+                                            component="code"
+                                            fontFamily="monospace"
+                                            sx={{
+                                                backgroundColor: "background.paper",
+                                                padding: 0.5,
+                                                paddingInline: 1,
+                                                borderRadius: 1,
+                                                color: "primary.main",
+                                                borderColor: "primary.muted",
+                                                border: `1px solid`,
+                                            }}
+                                        >
+                                            {folder_config.name}: {folder.full_path}
+                                        </Typography>
+                                    </Box>
+                                    <GridWrapper>
+                                        <FolderComponent folder={folder} unSelectable />
+                                    </GridWrapper>
+                                    <SelectedStats />
+                                </Box>
+                            );
+                        })}
                     </Box>
                     <Box
                         sx={(theme) => ({
@@ -131,7 +195,6 @@ function InboxRouteHeader({ ...props }: BoxProps) {
                 justifyContent: "space-between",
                 width: "100%",
                 alignItems: "center",
-                flexGrow: 1,
                 paddingInline: 1,
             }}
             {...props}
@@ -140,10 +203,10 @@ function InboxRouteHeader({ ...props }: BoxProps) {
                 variant="h4"
                 component="h1"
                 fontWeight="bold"
-                sx={(theme) => ({
+                sx={{
                     alignSelf: "center",
                     mr: "auto",
-                })}
+                }}
             >
                 Inbox
             </Typography>
@@ -438,5 +501,52 @@ function InfoDescription() {
                 </DialogContent>
             </Dialog>
         </>
+    );
+}
+
+function AutoTagIcon({
+    autotag,
+}: {
+    autotag: MinimalConfig["gui"]["inbox"]["folders"][string]["autotag"];
+}) {
+    // TODO: We might want some icons for this indicator
+    let title: string;
+    let indicator: string;
+    if (autotag === false) {
+        title = "Automatic generation of previews and automatic imports disabled.";
+        indicator = "N";
+    } else if (autotag === "preview") {
+        title = "Automatic generation of previews for this inbox is enabled.";
+        indicator = "P";
+    } else if (autotag === "import") {
+        title =
+            "Automatic import of files into your library if `strong_rec_thresh` is met for this inbox.";
+        indicator = "I";
+    } else {
+        return null;
+    }
+
+    return (
+        <Tooltip title={title}>
+            <Box
+                sx={{
+                    px: 1,
+                    height: "100%",
+                    borderRadius: "50%",
+                    aspectRatio: "1/1",
+                    backgroundColor: "background.paper",
+                    border: "1px solid",
+                    borderColor: "primary.muted",
+                    color: "primary.muted",
+                    width: "1.25rem",
+                    display: "flex",
+                    fontSize: "0.75rem",
+                    justifyContent: "center",
+                    alignItems: "center",
+                }}
+            >
+                {indicator}
+            </Box>
+        </Tooltip>
     );
 }

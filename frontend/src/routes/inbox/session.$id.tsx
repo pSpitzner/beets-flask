@@ -7,7 +7,7 @@ import { sessionQueryOptions } from "@/api/session";
 import { PageWrapper } from "@/components/common/page";
 import { TaskCandidates } from "@/components/import/candidates/candidate";
 
-export const Route = createFileRoute("/_debug/session/$id")({
+export const Route = createFileRoute("/inbox/session/$id")({
     component: RouteComponent,
     loader: async ({ context, params }) => {
         await context.queryClient.prefetchQuery(

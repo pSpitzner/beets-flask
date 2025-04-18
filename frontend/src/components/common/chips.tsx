@@ -14,10 +14,10 @@ import useTheme from "@mui/material/styles/useTheme";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
+import { useConfig } from "@/api/config";
 import { sessionQueryOptions } from "@/api/session";
 import { Folder, FolderStatus } from "@/pythonTypes";
 
-import { useConfig } from "./hooks/useConfig";
 import { FolderStatusIcon, PenaltyTypeIcon, SourceTypeIconWithTooltip } from "./icons";
 import { statusQueryOptions } from "./websocket/status";
 
@@ -143,7 +143,7 @@ export function FolderStatusChip({ folder, ...props }: { folder: Folder } & Chip
     return (
         <Tooltip title={folderStatus.exc?.message || status_name}>
             <Link
-                to={"/session/$id"}
+                to={"/inbox/session/$id"}
                 params={{ id: folderStatus.hash }}
                 preload="intent"
                 style={{ gridColumn: "chip" }}
