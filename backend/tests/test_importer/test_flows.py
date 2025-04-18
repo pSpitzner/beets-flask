@@ -1,3 +1,4 @@
+import os
 from abc import ABC
 from pathlib import Path
 from unittest import mock
@@ -54,6 +55,54 @@ class IsolatedDBMixin(ABC):
         self.reset_database()
 
 
+class IsolatedBeetsLibraryMixin(ABC):
+    """
+    A pytest mixin class to reset the beets library before and after ALL
+    tests in this class are run.
+
+    Usage:
+    ```
+    class TestMyFeature(IsolatedBeetsLibraryMixin):
+        def test_something(self):
+            # add to clean db
+
+        def test_something_else(self):
+            # db has data from previous test
+    ```
+    """
+
+    @pytest.fixture(autouse=True, scope="class")
+    def beets_lib_setup(
+        self,
+    ):
+        """Automatically reset the beets library before and after ALL tests in this class."""
+        import beets.library
+
+        from beets_flask.config.beets_config import refresh_config
+
+        try:
+            os.remove(os.environ["BEETSDIR"] + "/library.db")
+        except OSError:
+            pass
+        lib = beets.library.Library(path=os.environ["BEETSDIR"] + "/library.db")
+        refresh_config()
+        # Reset the beets library to a clean state
+        yield
+        # Reset the beets library to a clean state
+        os.remove(os.environ["BEETSDIR"] + "/library.db")
+
+    @property
+    def beets_lib(self) -> BeetsLibrary:
+        """Return the beets library instance."""
+        import beets.library
+
+        from beets_flask.config.beets_config import refresh_config
+
+        lib = beets.library.Library(path=os.environ["BEETSDIR"] + "/library.db")
+        refresh_config()
+        return lib
+
+
 class InvokerStatusMockMixin(ABC):
     """
     Allows to test without a running websocket server for
@@ -73,7 +122,6 @@ class InvokerStatusMockMixin(ABC):
 
     async def send_folder_status_update(self, **kwargs):
         """Mock the emit_status decorator"""
-        print(f"Mocked send_folder_status_update: {kwargs}")
         self.statuses.append(kwargs)
 
     # ??? due to class inheritance, scope="function" effectively becomes class.
@@ -154,7 +202,9 @@ Autoimport what happens with the progress after a failed auto import
 from beets_flask.invoker import run_import_candidate, run_preview
 
 
-class TestImportBest(InvokerStatusMockMixin, IsolatedDBMixin):
+class TestImportBest(
+    InvokerStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
+):
     """
     Import best
     - New folder
@@ -172,9 +222,9 @@ class TestImportBest(InvokerStatusMockMixin, IsolatedDBMixin):
         """Test the preview of the import process."""
 
         stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
-        assert db_session.execute(stmt).scalar() is None, (
-            "Database should be empty before the test"
-        )
+        assert (
+            db_session.execute(stmt).scalar() is None
+        ), "Database should be empty before the test"
 
         await run_preview(
             "obsolete_hash_preview",
@@ -203,13 +253,11 @@ class TestImportBest(InvokerStatusMockMixin, IsolatedDBMixin):
         assert t_state_live.progress == Progress.PREVIEW_COMPLETED
 
         for c in t_state_live.candidate_states:
-            assert len(c.duplicate_ids) == 0, (
-                "Should not have duplicates in empty library"
-            )
+            assert (
+                len(c.duplicate_ids) == 0
+            ), "Should not have duplicates in empty library"
 
-    async def test_import(
-        self, db_session: Session, path: Path, beets_lib: BeetsLibrary
-    ):
+    async def test_import(self, db_session: Session, path: Path):
         """
         Test the import of the tagged folder.
 
@@ -218,9 +266,9 @@ class TestImportBest(InvokerStatusMockMixin, IsolatedDBMixin):
         """
 
         stmt = select(func.count()).select_from(SessionStateInDb)
-        assert db_session.execute(stmt).scalar() == 1, (
-            "Database should contain the one preview session state from the previous test"
-        )
+        assert (
+            db_session.execute(stmt).scalar() == 1
+        ), "Database should contain the one preview session state from the previous test"
 
         self.statuses = []
         await run_import_candidate(
@@ -251,12 +299,12 @@ class TestImportBest(InvokerStatusMockMixin, IsolatedDBMixin):
         assert t_state_live.progress == Progress.IMPORT_COMPLETED
 
         for c in t_state_live.candidate_states:
-            assert len(c.duplicate_ids) == 0, (
-                "Should not have duplicates in empty library"
-            )
+            assert (
+                len(c.duplicate_ids) == 0
+            ), "Should not have duplicates in empty library"
 
         # Check that we have the items in the beets lib
-        albums = beets_lib.albums()
+        albums = self.beets_lib.albums()
         assert len(albums) == 1, "Should have imported one album"
 
         # gui import ids are set
@@ -265,32 +313,33 @@ class TestImportBest(InvokerStatusMockMixin, IsolatedDBMixin):
         assert album.gui_import_id is not None, "Album should have gui_import_id"
 
     async def test_reimport_fails(self, db_session: Session, path: Path):
-        """Reimport should fail if the state is already imported"""
+        """Reimport should fail if the state is already imported.
+
+        We use errors as values here so we need to check the return value
+        """
         stmt = select(func.count()).select_from(SessionStateInDb)
-        assert db_session.execute(stmt).scalar() == 1, (
-            "Database should contain the one preview session state from the previous test"
-        )
+        assert (
+            db_session.execute(stmt).scalar() == 1
+        ), "Database should contain the one preview session state from the previous test"
 
         self.statuses = []
 
-        with pytest.raises(
-            Exception,
-            match="Already progressed past preview",
-        ):
-            await run_import_candidate(
-                "obsolete_hash_import",
-                str(path),
-                candidate_id=None,  # None uses best match
-                duplicate_action="ask",
-            )
+        exc = await run_import_candidate(
+            "obsolete_hash_import",
+            str(path),
+            candidate_id=None,  # None uses best match
+            duplicate_action="ask",
+        )
+
+        assert exc is not None
+        assert isinstance(exc, Exception)
+        assert str(exc) == "Already progressed past preview"
 
         assert len(self.statuses) == 2
         assert self.statuses[0]["status"] == FolderStatus.IMPORTING
         assert self.statuses[1]["status"] == FolderStatus.FAILED
 
-    async def test_duplicate_import_fails(
-        self, db_session: Session, path: Path, beets_lib: BeetsLibrary
-    ):
+    async def test_duplicate_import_fails(self, path: Path):
         """
         Duplicates should normally only happen if you import the same
         items from a different folder.
@@ -299,33 +348,23 @@ class TestImportBest(InvokerStatusMockMixin, IsolatedDBMixin):
         hacky but works for our purpose.
         """
 
-        raise NotImplementedError("FIXME")
+        # Check item already in beets library
+        albums = self.beets_lib.albums()
+        assert len(albums) == 1, "Should have imported one album"
 
         await run_preview(
             "obsolete_hash_preview",
-            str(path),
+            str(path / "Chant [SINGLE]"),
         )
 
-        await run_import_candidate(
+        exc = await run_import_candidate(
             "obsolete_hash_import",
-            str(path),
-            candidate_id=None,
-            duplicate_action="ask",
+            str(path / "Chant [SINGLE]"),
+            candidate_id=None,  # None uses best match
+            duplicate_action="ask",  # ask raises on duplicate
         )
 
-        self.statuses = []
-        with pytest.raises(
-            Exception,
-            match="Already progressed past preview",
-        ):
-            await run_import_candidate(
-                "obsolete_hash_import",
-                str(path / "Chant [SINGLE]"),
-                candidate_id=None,  # None uses best match
-                duplicate_action="ask",  # ask raises on duplicate
-            )
-
-        # Check that status was emitted correctly, we emit once before and once after run
-        assert len(self.statuses) == 2
-        assert self.statuses[0]["status"] == FolderStatus.IMPORTING
-        assert self.statuses[1]["status"] == FolderStatus.FAILED
+        # FIXME: We might want to raise our own exception here
+        assert exc is not None
+        assert isinstance(exc, Exception)
+        assert str(exc) == "Duplicate action 'ask', but no user choice was provided."

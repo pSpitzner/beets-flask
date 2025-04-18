@@ -119,7 +119,7 @@ asyncio_mode = "auto"
 log_format = "%(relativeCreated)-8d [%(levelname)-5s] %(name)s %(filename)-8s:%(lineno)d %(message)s"
 
 [tool.coverage.report]
-omit = ["*/tests/*", "dirhash.py"]
+omit = ["*/tests/*"]
 
 [tool.mypy]
 check_untyped_defs = true
