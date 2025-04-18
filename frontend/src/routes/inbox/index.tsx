@@ -1,5 +1,4 @@
 import {
-    CarIcon,
     ClipboardIcon,
     FolderClockIcon,
     HistoryIcon,
@@ -124,27 +123,25 @@ function RouteComponent() {
                                                 top: "50%",
                                                 zIndex: -1,
                                                 left: 0,
-                                                borderColor: "primary.muted",
+                                                borderColor: "primary.main",
 
                                                 // outer padding
                                                 width: `calc(100% + ${theme.spacing(3)})`,
                                                 marginLeft: theme.spacing(-1.5),
                                             })}
                                         />
-                                        <AutoTagIcon autotag={"import"} />
+                                        <AutoTagIcon autotag={"preview"} />
 
                                         <Typography
                                             variant="caption"
                                             component="code"
                                             fontFamily="monospace"
                                             sx={{
-                                                backgroundColor: "background.paper",
                                                 padding: 0.5,
                                                 paddingInline: 1,
                                                 borderRadius: 1,
-                                                color: "primary.main",
-                                                borderColor: "primary.muted",
-                                                border: `1px solid`,
+                                                color: "black",
+                                                backgroundColor: "primary.main",
                                             }}
                                         >
                                             {folder_config.name}: {folder.full_path}
@@ -536,11 +533,13 @@ function AutoTagIcon({
                     aspectRatio: "1/1",
                     backgroundColor: "background.paper",
                     border: "1px solid",
-                    borderColor: "primary.muted",
-                    color: "primary.muted",
+                    borderColor: "primary.main",
+                    color: "primary.main",
                     width: "1.25rem",
                     display: "flex",
                     fontSize: "0.75rem",
+                    textAlign: "center",
+                    fontWeight: "bold",
                     justifyContent: "center",
                     alignItems: "center",
                 }}
