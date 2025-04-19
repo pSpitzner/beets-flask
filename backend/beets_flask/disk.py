@@ -41,7 +41,9 @@ class Folder:
     is_album: bool
 
     @classmethod
-    def from_path(cls, path: Path | str, subdirs=True) -> Folder:
+    def from_path(
+        cls, path: Path | str, subdirs=True, cache: Cache[str, bytes] | None = None
+    ) -> Folder:
         """Create a Folder object from a path."""
 
         if isinstance(path, str):
@@ -55,7 +57,8 @@ class Folder:
         album_folders = all_album_folders(path, subdirs=subdirs)
 
         # Cache for the dirhash function
-        cache: Cache[str, bytes] = Cache(maxsize=2**16)
+        if cache is None:
+            cache = Cache(maxsize=2**16)
 
         # Object that contains all tree elements, because
         # we need to fill top down but iterate buttom up

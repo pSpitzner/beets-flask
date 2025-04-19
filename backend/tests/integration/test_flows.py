@@ -249,7 +249,7 @@ class TestImportBest(
         albums = self.beets_lib.albums()
         assert len(albums) == 1, "Should have imported one album"
 
-        # TODO: If a session failed before how do we want to handle this?
+        # TODO: If a session failed before how do we want to handle/this?
         stmt = (
             select(SessionStateInDb).join(FolderInDb).where(FolderInDb.full_path == p)
         )
@@ -270,7 +270,7 @@ class TestImportBest(
             duplicate_action=duplicate_action,
         )
 
-        # Shouldn't raise an error
+        # Shouldn't return an error
         assert exc is None
         assert len(self.statuses) == 2
         assert self.statuses[0]["status"] == FolderStatus.IMPORTING

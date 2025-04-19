@@ -3,6 +3,8 @@ import shutil
 from pathlib import Path
 from typing import TypedDict
 
+from beets_flask.server.exceptions import InvalidUsageException
+from cachetools import Cache
 from quart import Blueprint, jsonify
 
 from beets_flask.database import db_session_factory
@@ -46,14 +48,52 @@ async def refresh_cache():
 async def delete():
     """Remove all folders provided in the request body via folder_paths.
 
-    TODO: Add parameter to delete only empty folders.
-    TODO: Add parameter to delete only folders which have been imported.
+    Parameters
+    ----------
+    folder_paths : list[str]
+        The paths to the folders to remove.
+    folder_hashes : list[str]
+        The hashes of the folders to remove.
     """
 
-    folder_hashes, folder_paths, params = await get_folder_params()
-    for fp in folder_paths:
-        shutil.rmtree(fp)
-    return jsonify("Ok")
+    folder_hashes, folder_paths, params = await get_folder_params(allow_empty=False)
+
+    folder_paths = [Path(folder) for folder in folder_paths]
+
+    # Deduplicate based on both path and hash (order-preserving)
+    seen = set()
+    folder_paths_and_hashes = []
+    for path, hash in zip(folder_paths, folder_hashes):
+        if (path, hash) not in seen:
+            seen.add((path, hash))
+            folder_paths_and_hashes.append((path, hash))
+
+    # Sort by length of the path (longest first, to delete the most nested folders first)
+    folder_paths_and_hashes = sorted(
+        folder_paths_and_hashes, key=lambda x: len(x[0].parts), reverse=True
+    )
+
+    # Check that all hashes are (still) valid
+    cache: Cache[str, bytes] = Cache(maxsize=2**16)
+    folders: list[Folder] = []
+    for folder_path, folder_hash in folder_paths_and_hashes:
+        f = Folder.from_path(folder_path, cache=cache)
+        folders.append(f)
+        if f.hash != folder_hash:
+            raise InvalidUsageException(
+                "Folder hash does not match the current folder hash! Please refresh your hashes before deleting!",
+            )
+
+    # Delete the folders
+    for f in folders:
+        shutil.rmtree(f.full_path)
+
+    return jsonify(
+        {
+            "deleted": [f.full_path for f in folders],
+            "hashes": [f.hash for f in folders],
+        }
+    )
 
 
 # ------------------------------------------------------------------------------------ #
