@@ -75,6 +75,7 @@ class TestImportBest(
     - Import best candidate
     - Trying to reimport same session should fail
     - Trying to import another session with duplicate candidate should fail
+    - Revert import should work
     """
 
     @pytest.fixture()
@@ -239,6 +240,16 @@ class TestImportBest(
         """Test the duplicate action with a different action.
 
         This should not return an error but just do the action (if not ask).
+        """
+        raise NotImplementedError("Implement me")
+
+    @pytest.mark.skip(reason="Implement")
+    async def test_revert(self, db_session: Session, path: Path):
+        """Test the revert of the import process.
+
+        This should remove the items from the beets library and
+        set the progress back to PREVIEW_COMPLETED. Also the disk
+        items should be removed/moved back.
         """
         raise NotImplementedError("Implement me")
 
