@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
 from beets_flask.importer.states import SessionState
 from tests.conftest import beets_lib_item
-from tests.test_importer.test_states import get_album_match
+from tests.unit.test_importer.test_states import get_album_match
 
 
 @pytest.fixture

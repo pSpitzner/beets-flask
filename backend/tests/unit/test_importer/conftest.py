@@ -37,7 +37,7 @@ def album_paths(tmpdir_factory):
 
 
 def album_path_absolute(path: str):
-    return Path(__file__).parent.parent / "data" / "audio" / path
+    return Path(__file__).parent.parent.parent / "data" / "audio" / path
 
 
 def valid_data_for_album_path(path: str | Path) -> dict:

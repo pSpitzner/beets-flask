@@ -6,7 +6,8 @@ import pytest
 
 from beets_flask.importer.session import PreviewSession
 from beets_flask.importer.states import SessionState
-from tests.test_importer.conftest import (
+
+from .conftest import (
     VALID_PATHS,
     album_path_absolute,
     use_mock_tag_album,
@@ -24,7 +25,7 @@ def test_generate_lookup():
     They should normally exist in the repository already.
     """
     for path in VALID_PATHS:
-        path = Path(__file__).parent.parent / "data" / "audio" / path
+        path = Path(__file__).parent.parent.parent / "data" / "audio" / path
         use_mock_tag_album(str(path))
 
         state = SessionState(path)

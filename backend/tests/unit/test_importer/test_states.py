@@ -8,14 +8,12 @@ from beets import autotag, importer
 from beets_flask.importer.states import (
     CandidateState,
     Progress,
-    ProgressState,
     SessionState,
     TaskState,
 )
 from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackInfo
 from beets_flask.server.app import Encoder
-
-from ..conftest import beets_lib_item
+from tests.conftest import beets_lib_item
 
 log = logging.getLogger(__name__)
 

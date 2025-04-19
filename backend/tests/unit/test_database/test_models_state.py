@@ -7,9 +7,8 @@ from beets import autotag, importer
 from beets_flask.database.models.states import SessionStateInDb
 from beets_flask.importer.session import SessionState
 from beets_flask.importer.stages import Progress
-
-from ..conftest import beets_lib_item
-from ..test_importer.test_states import get_album_match
+from tests.conftest import beets_lib_item
+from tests.unit.test_importer.test_states import get_album_match
 
 log = logging.getLogger(__name__)
 

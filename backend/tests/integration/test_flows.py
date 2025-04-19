@@ -17,7 +17,7 @@ from beets_flask.database.models.states import SessionStateInDb
 from beets_flask.importer.progress import FolderStatus
 from beets_flask.invoker import Progress, run_import_candidate, run_preview
 from tests.mixins.database import IsolatedBeetsLibraryMixin, IsolatedDBMixin
-from tests.test_importer.conftest import (
+from tests.unit.test_importer.conftest import (
     VALID_PATHS,
     album_path_absolute,
     use_mock_tag_album,

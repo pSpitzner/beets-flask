@@ -21,7 +21,7 @@ async def test_smoke_async(caplog):
     async def produce():
         for i in range(5):
             log.info("producing %i" % i)
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.05)
             yield i
 
     async def work():
@@ -33,7 +33,7 @@ async def test_smoke_async(caplog):
     async def consume():
         while True:
             num = yield
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.05)
             log.info("consuming %i" % num)
 
     initial_task = produce()
@@ -72,20 +72,20 @@ async def test_smoke_sync(caplog):
     def produce():
         for i in range(5):
             log.info("producing %i" % i)
-            time.sleep(0.1)
+            time.sleep(0.05)
             yield i
 
     def work():
         num = yield
         while True:
             log.info("working %i" % num)
-            time.sleep(0.1)
+            time.sleep(0.05)
             num = yield num * 2
 
     def consume():
         while True:
             num = yield
-            time.sleep(0.1)
+            time.sleep(0.05)
             log.info("consuming %i" % num)
 
     initial_task = produce()

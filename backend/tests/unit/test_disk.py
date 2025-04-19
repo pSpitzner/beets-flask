@@ -19,7 +19,7 @@ def base(tmpdir_factory):
 
     # music files and misc
     os.makedirs(os.path.join(base, "artist/album_good"))
-    source = Path(__file__).parent / "data" / "audio"
+    source = Path(__file__).parent.parent / "data" / "audio"
     dest = Path(base) / "artist" / "album_good"
     shutil.copytree(source, dest, dirs_exist_ok=True)
 
