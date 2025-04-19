@@ -125,9 +125,7 @@ function RouteComponent() {
                                                 left: 0,
                                                 borderColor: "primary.main",
 
-                                                // outer padding
-                                                width: `calc(100% + ${theme.spacing(3)})`,
-                                                marginLeft: theme.spacing(-1.5),
+                                                width: `100%`,
                                             })}
                                         />
                                         <AutoTagIcon autotag={"preview"} />
@@ -141,6 +139,7 @@ function RouteComponent() {
                                                 paddingInline: 1,
                                                 borderRadius: 1,
                                                 color: "black",
+                                                marginRight: 2,
                                                 backgroundColor: "primary.main",
                                             }}
                                         >

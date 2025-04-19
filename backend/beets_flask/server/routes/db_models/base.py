@@ -45,7 +45,7 @@ class ModelAPIBlueprint(Generic[T]):
         self.blueprint.route("/id/<id>", methods=["GET"])(self.get_by_id)
 
     async def get_all(self):
-        params = request.args
+        params = dict(request.args)
         # Cursor is encoded as a string in the format "datetime,id" where date
         # is the creation date as integer and id is the id of the item.
         cursor = pop_query_param(
