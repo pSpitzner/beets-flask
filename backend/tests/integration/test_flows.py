@@ -13,7 +13,7 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from beets_flask.database.models.states import SessionStateInDb
+from beets_flask.database.models.states import FolderInDb, SessionStateInDb
 from beets_flask.importer.progress import FolderStatus
 from beets_flask.invoker import Progress, run_import_candidate, run_preview
 from tests.mixins.database import IsolatedBeetsLibraryMixin, IsolatedDBMixin
@@ -235,13 +235,46 @@ class TestImportBest(
         assert isinstance(exc, Exception)
         assert str(exc) == "Duplicate action 'ask', but no user choice was provided."
 
-    @pytest.mark.skip(reason="Implement")
-    async def test_duplicate_with_action(self):
+    @pytest.mark.parametrize("duplicate_action", ["skip", "merge", "remove", "keep"])
+    async def test_duplicate_with_action(
+        self, db_session: Session, path: Path, duplicate_action
+    ):
         """Test the duplicate action with a different action.
 
         This should not return an error but just do the action (if not ask).
         """
-        raise NotImplementedError("Implement me")
+
+        # Check item already in beets library
+        p = str(path / "Chant [SINGLE]")
+        albums = self.beets_lib.albums()
+        assert len(albums) == 1, "Should have imported one album"
+
+        # TODO: If a session failed before how do we want to handle this?
+        stmt = (
+            select(SessionStateInDb).join(FolderInDb).where(FolderInDb.full_path == p)
+        )
+        session_state = db_session.execute(stmt).scalar()
+        assert session_state is not None
+
+        # Reset progress to PREVIEW_COMPLETED
+        for task in session_state.tasks:
+            task.progress = Progress.PREVIEW_COMPLETED
+
+        db_session.commit()
+
+        self.statuses = []
+        exc = await run_import_candidate(
+            "obsolete_hash_import",
+            p,
+            candidate_id=None,  # None uses best match
+            duplicate_action=duplicate_action,
+        )
+
+        # Shouldn't raise an error
+        assert exc is None
+        assert len(self.statuses) == 2
+        assert self.statuses[0]["status"] == FolderStatus.IMPORTING
+        assert self.statuses[1]["status"] == FolderStatus.IMPORTED
 
     @pytest.mark.skip(reason="Implement")
     async def test_revert(self, db_session: Session, path: Path):
