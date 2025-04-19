@@ -52,36 +52,58 @@ export const inboxStatsQueryOptions = () => ({
 /* -------------------------------- Mutations ------------------------------- */
 // Here for reference, not used yet but we might need it in the future
 
-const deleteInboxMutation: UseMutationOptions<unknown, Error, string> = {
-    mutationFn: async (inboxPath: string) => {
-        return await fetch(`/inbox/path/${inboxPath}`, {
+export const deleteFoldersMutationOptions: UseMutationOptions<
+    Response | undefined,
+    Error,
+    {
+        folderPaths: string[];
+        folderHashes: string[];
+    },
+    {
+        previousInbox: Folder[] | undefined;
+    }
+> = {
+    mutationFn: async ({ folderPaths, folderHashes }) => {
+        return await fetch(`/inbox/delete`, {
             method: "DELETE",
             headers: {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                with_status: [], // default, delete all, independent of status
+                folder_paths: folderPaths,
+                folder_hashs: folderHashes,
             }),
         });
     },
-    onSuccess: async () => {
-        await queryClient.invalidateQueries({ queryKey: ["inbox"] });
-    },
-};
 
-const deleteInboxImportedMutation: UseMutationOptions<unknown, Error, string> = {
-    mutationFn: async (inboxPath: string) => {
-        return await fetch(`/inbox/path/${inboxPath}`, {
-            method: "DELETE",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                with_status: ["imported"],
-            }),
+    // Optimistic update
+    onMutate: async ({ folderPaths, folderHashes }) => {
+        // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+        await queryClient.cancelQueries({ queryKey: ["inbox"] });
+        // Snapshot the previous value
+        const previousInbox: Folder[] | undefined = queryClient.getQueryData(["inbox"]);
+        // Optimistically update to the new value
+        queryClient.setQueryData(["inbox"], (old: Folder[] | undefined) => {
+            if (!old) return old;
+            return old.filter((folder) => {
+                const folderPath = folder.full_path;
+                const folderHash = folder.hash;
+                return (
+                    !folderPaths.includes(folderPath) &&
+                    !folderHashes.includes(folderHash)
+                );
+            });
         });
+        // Return a context object with the snapshotted value
+        return { previousInbox };
     },
-    onSuccess: async (_data, variables) => {
-        await queryClient.invalidateQueries({ queryKey: ["inbox", "path", variables] });
+    onError: (_err, _variables, context) => {
+        // If the mutation fails, use the context returned from onMutate
+        queryClient.setQueryData(["inbox"], context?.previousInbox);
+    },
+
+    // If the mutation is successful, invalidate the query, this should trigger a refetch
+    onSettled: async () => {
+        await queryClient.invalidateQueries({ queryKey: ["inbox"] });
     },
 };
