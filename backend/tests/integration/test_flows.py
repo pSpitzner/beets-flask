@@ -234,6 +234,14 @@ class TestImportBest(
         assert isinstance(exc, Exception)
         assert str(exc) == "Duplicate action 'ask', but no user choice was provided."
 
+    @pytest.mark.skip(reason="Implement")
+    async def test_duplicate_with_action(self):
+        """Test the duplicate action with a different action.
+
+        This should not return an error but just do the action (if not ask).
+        """
+        raise NotImplementedError("Implement me")
+
 
 class TestImportAsis(
     InvokerStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
@@ -253,4 +261,21 @@ class TestImportAsis(
 
     @pytest.mark.skip(reason="Implement")
     def test_import_asis(self, db_session: Session, path: Path):
+        raise NotImplementedError("Implement me")
+
+
+class TestImportCandidate(
+    InvokerStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
+):
+    """Test a typical import using the specific candidate.
+
+    The flow is as follows:
+    - Generate Preview
+    - Import specific candidate
+    - Trying to reimport same session should fail
+    - Trying to import another session with duplicate candidate should fail
+    """
+
+    @pytest.mark.skip(reason="Implement")
+    def test_import_candidate(self, db_session: Session, path: Path):
         raise NotImplementedError("Implement me")
