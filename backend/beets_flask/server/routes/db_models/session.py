@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from datetime import datetime
 from math import e
-from typing import TypedDict
+from typing import Literal, Tuple, TypedDict
 
 from quart import jsonify
 from rq.job import Job
@@ -185,17 +187,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
 
         folder_hashes, folder_paths, _ = await get_folder_params()
 
-        from beets_flask.redis import queues, redis_conn
-
-        folder_hashes, folder_paths, params = await get_folder_params()
-
         stats: list[FolderStatusResponse] = []
-
-        queued: list[Job] = []
-        scheduled: list[Job] = []
-        started: list[Job] = []
-        failed: list[Job] = []
-        finished: list[Job] = []
 
         if len(folder_hashes) == 0:
             stmt = select(FolderInDb).order_by(FolderInDb.created_at.desc())
@@ -206,128 +198,32 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
 
         log.debug(f"Checking status for {len(folder_hashes)} folders")
 
-        for q in queues:
-            queued.extend(_get_jobs(q, connection=redis_conn))
-            scheduled.extend(_get_jobs(q.scheduled_job_registry, connection=redis_conn))
-            started.extend(_get_jobs(q.started_job_registry, connection=redis_conn))
-            failed.extend(_get_jobs(q.failed_job_registry, connection=redis_conn))
-            finished.extend(_get_jobs(q.finished_job_registry, connection=redis_conn))
-
-        def __sort(job: Job) -> datetime | int:
-            """Sort by created_at."""
-            return job.created_at or -1
-
-        # Sort by created_at
-        queued.sort(key=__sort, reverse=True)
-        scheduled.sort(key=__sort, reverse=True)
-        started.sort(key=__sort, reverse=True)
-        failed.sort(key=__sort, reverse=True)
-
         for hash, path in zip(folder_hashes, folder_paths):
-            # Get metadata for folder if in any job queue
-            # This is essentially only needed for sessions that are not in the db yet
+            log.debug(f"Checking folder status via session from db: {path} ({hash})")
+            db_status, db_date, db_exc = _get_folder_status_from_db(hash)
+            log.debug(f"Found {db_status=} {db_date=} {db_exc=}")
+
             log.debug(f"Checking folder status via job queues: {path} ({hash})")
-            status: FolderStatus | None = None
-            exc: ExceptionResponse | None = None
-            for jobs, job_status in zip(
-                [
-                    queued,
-                    scheduled,
-                    started,
-                    failed,
-                    finished,
-                ],
-                [
-                    FolderStatus.PENDING,
-                    FolderStatus.PENDING,
-                    FolderStatus.PREVIEWING,
-                    FolderStatus.FAILED,
-                    None,  # 'finished' needs further differentiation
-                ],
-            ):
-                # meta data has hash, path and kind.
-                # We need the kind to derive the status for completed folders.
-                if meta_job := _is_hash_in_jobs(hash, jobs):
-                    meta, job = meta_job
-                    if job_status is None:
-                        if "import" in meta["job_kind"]:
-                            status = FolderStatus.IMPORTED
-                        elif "preview" in meta["job_kind"]:
-                            status = FolderStatus.PREVIEWED
-                        else:
-                            raise ValueError("Unknown job kind")
-                    else:
-                        status = job_status
+            job_status, job_date, job_exc = _get_folder_status_from_queues(hash)
+            log.debug(f"Found {job_status=} {job_date=} {job_exc=}")
 
-                    # Additional check the return value of the job for
-                    # exception values
+            # just for None casting, timezones prevent comparing
+            if db_date is not None:
+                db_date = db_date.replace(tzinfo=None)
+            if job_date is not None:
+                job_date = job_date.replace(tzinfo=None)
 
-                    # We normally catch failed jobs early on but just
-                    # in case we also check
-                    res = job.latest_result()
-                    if (
-                        res is not None
-                        and res.return_value is not None
-                        and isinstance(res.return_value, Exception)
-                    ):
-                        exc = {
-                            "type": type(res.return_value).__name__,
-                            "message": str(res.return_value),
-                        }
-                        status = FolderStatus.FAILED
+            status = FolderStatus.UNKNOWN
+            exc = None
+            if db_date is None and job_date is None:
+                pass
+            elif (db_date or datetime.min) >= (job_date or datetime.min):
+                status = db_status
+                exc = db_exc
+            else:
+                status = job_status
+                exc = job_exc
 
-                    log.debug(f"Found {status=} {exc=}")
-                    break
-
-            # We couldn't find the folder in any job queue. do lookup in db
-            # PS 2025-04-17: This is still inconsistent.
-            # We want to be able to have multiple sessions in db for the same hash + path
-            # in order to regenerate preivews after a previous import.
-            # Problem is that, therefore, folder+hash entries can appear in multiple
-            # job queues above, and we do not sort by date yet.
-            # Therefore we here effectively overwrite all of them except the ones
-            # where we dont have an entry in the db yet.
-            # (also, started <-> PREVIEWING is still inconsistent -.-)
-            if status is None or status in [
-                FolderStatus.IMPORTED,
-                FolderStatus.PREVIEWED,
-                FolderStatus.FAILED,
-            ]:
-                log.debug(
-                    f"Checking folder status via session from db: {path} ({hash})"
-                )
-                with db_session_factory() as db_session:
-                    stmt_s = (
-                        select(SessionStateInDb)
-                        .where(SessionStateInDb.folder_hash == hash)
-                        .order_by(SessionStateInDb.updated_at.desc())
-                    )
-                    s_state_indb = db_session.execute(stmt_s).scalars().first()
-                    if s_state_indb is None:
-                        # We have no idea about this folder, this should not happen.
-                        status = FolderStatus.UNKNOWN
-                    else:
-                        # PS: This progress <-> state mapping feels inconsistent.
-                        # There should be a better place for this.
-                        match s_state_indb.progress:
-                            case Progress.NOT_STARTED:
-                                status = FolderStatus.NOT_STARTED
-                            case Progress.PREVIEW_COMPLETED:
-                                status = FolderStatus.PREVIEWED
-                            case Progress.IMPORT_COMPLETED:
-                                status = FolderStatus.IMPORTED
-                            case _:
-                                status = FolderStatus.PREVIEWING
-
-                        e = s_state_indb.exception
-                        if e is not None:
-                            exc = {
-                                "type": type(e).__name__,
-                                "message": str(e),
-                            }
-                            status = FolderStatus.FAILED
-
-                log.debug(f"Found {status=} {exc=}")
             stats.append(
                 FolderStatusResponse(path=path, hash=hash, status=status, exc=exc)
             )
@@ -352,6 +248,159 @@ class FolderStatusResponse(TypedDict):
     exc: ExceptionResponse | None
 
 
+def _get_folder_status_from_db(
+    hash: str,
+) -> Tuple[FolderStatus, datetime | None, ExceptionResponse | None]:
+    # lookup status in db
+    # PS 2025-04-17: This is still inconsistent.
+    # We want to be able to have multiple sessions in db for the same hash + path
+    # in order to regenerate preivews after a previous import.
+    # Problem is that, therefore, folder+hash entries can appear in multiple
+    # job queues above, and we do not sort by date yet.
+    # Therefore we here effectively overwrite all of them except the ones
+    # where we dont have an entry in the db yet.
+    # (also, started <-> PREVIEWING is still inconsistent -.-)
+
+    with db_session_factory() as db_session:
+        stmt_s = (
+            select(SessionStateInDb)
+            .where(SessionStateInDb.folder_hash == hash)
+            .order_by(SessionStateInDb.updated_at.desc())
+        )
+        s_state_indb = db_session.execute(stmt_s).scalars().first()
+        if s_state_indb is None:
+            return FolderStatus.UNKNOWN, None, None
+        else:
+            # PS: This progress <-> state mapping feels inconsistent.
+            # There should be a better place for this.
+            status = FolderStatus.UNKNOWN
+            if s_state_indb.progress == Progress.NOT_STARTED:
+                status = FolderStatus.NOT_STARTED
+            elif s_state_indb.progress < Progress.PREVIEW_COMPLETED:
+                status = FolderStatus.PREVIEWING
+            elif s_state_indb.progress == Progress.PREVIEW_COMPLETED:
+                status = FolderStatus.PREVIEWED
+            elif s_state_indb.progress < Progress.IMPORT_COMPLETED:
+                status = FolderStatus.IMPORTING
+            elif s_state_indb.progress == Progress.IMPORT_COMPLETED:
+                status = FolderStatus.IMPORTED
+
+            if s_state_indb.exception is not None:
+                exc = ExceptionResponse(
+                    type=type(e).__name__,
+                    message=str(e),
+                )
+                status = FolderStatus.FAILED
+            else:
+                exc = None
+
+            return status, s_state_indb.updated_at, exc
+
+
+def _get_folder_status_from_queues(
+    hash: str,
+) -> Tuple[FolderStatus, datetime | None, ExceptionResponse | None]:
+    from beets_flask.redis import queues, redis_conn
+
+    # could not simply import queues from beets_flask.redis ?
+    # queues = [import_queue, preview_queue]
+
+    # hold a list of jobs, sorted by the queue/job status
+    q_kinds: dict[str, list[Job]] = {
+        "queued": [],
+        "scheduled": [],
+        "started": [],
+        "failed": [],
+        "finished": [],
+    }
+
+    for q in queues:
+        q_kinds["queued"].extend(_get_jobs(q, connection=redis_conn))
+        q_kinds["scheduled"].extend(
+            _get_jobs(q.scheduled_job_registry, connection=redis_conn)
+        )
+        q_kinds["started"].extend(
+            _get_jobs(q.started_job_registry, connection=redis_conn)
+        )
+        q_kinds["failed"].extend(
+            _get_jobs(q.failed_job_registry, connection=redis_conn)
+        )
+        q_kinds["finished"].extend(
+            _get_jobs(q.finished_job_registry, connection=redis_conn)
+        )
+
+    # We always want the latest info, no matter from which queue.
+    job_date = None
+    status = FolderStatus.UNKNOWN
+    exc = None
+
+    for kind in q_kinds.keys():
+        jobs = q_kinds[kind]
+
+        meta_job_date = _is_hash_in_jobs(hash, jobs)
+        if meta_job_date is None:
+            # Hash not found
+            continue
+
+        meta, job, _job_date = meta_job_date
+        if job_date is None or _job_date > job_date:
+            job_date = _job_date
+        else:
+            # Job is not newer than from other queue
+            continue
+
+        if kind in ["queued", "scheduled"]:
+            status = FolderStatus.PENDING
+        elif kind == "failed":
+            status = FolderStatus.FAILED
+        elif kind == "started":
+            if "import" in meta["job_kind"]:
+                status = FolderStatus.IMPORTING
+            elif "preview" in meta["job_kind"]:
+                status = FolderStatus.PREVIEWING
+            else:
+                raise ValueError("Unknown job kind")
+        elif kind == "finished":
+            if "import" in meta["job_kind"]:
+                status = FolderStatus.IMPORTED
+            elif "preview" in meta["job_kind"]:
+                status = FolderStatus.PREVIEWED
+            else:
+                raise ValueError("Unknown job kind")
+        else:
+            status = FolderStatus.UNKNOWN
+
+        # Additional check the return value of the job for
+        # exception values
+
+        # log.debug(
+        #     f"Job details:\n"
+        #     + f"{job.enqueued_at=}\n"
+        #     + f"{job.started_at=}\n"
+        #     + f"{job.created_at=}\n"
+        #     + f"{job.ended_at=}\n"
+        #     + f"{job.enqueue_at_front=}"
+        # )
+
+        # We normally catch failed jobs early on but just
+        # in case we also check
+        res = job.latest_result()
+        if (
+            res is not None
+            and res.return_value is not None
+            and isinstance(res.return_value, Exception)
+        ):
+            exc = ExceptionResponse(
+                type=type(res.return_value).__name__,
+                message=str(res.return_value),
+            )
+            status = FolderStatus.FAILED
+        else:
+            exc = None
+
+    return status, job_date, exc
+
+
 def _get_jobs(registry, connection):
     jobs = Job.fetch_many(registry.get_job_ids(), connection=connection)
     jobs = [j for j in jobs if j is not None]
@@ -359,9 +408,23 @@ def _get_jobs(registry, connection):
     return jobs
 
 
-def _is_hash_in_jobs(hash: str, jobs: list[Job]) -> tuple[dict[str, str], Job] | None:
+def _is_hash_in_jobs(
+    hash: str, jobs: list[Job]
+) -> tuple[dict[str, str], Job, datetime] | None:
     for j in jobs:
         meta = j.get_meta(False)
         if meta.get("folder_hash") == hash:
-            return meta, j
+            # jobs dont have an updated_at attribute.
+            job_dates = [
+                d
+                for d in [
+                    j.enqueued_at,  # at least this one should never be None.
+                    j.started_at,
+                    j.created_at,
+                    j.ended_at,
+                ]
+                if d is not None
+            ]
+
+            return meta, j, max(job_dates)
     return None
