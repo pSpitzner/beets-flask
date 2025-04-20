@@ -103,12 +103,15 @@ def set_progress(
                 return task
 
             # We set the progress before the stage runs, thus we need to compare
-            # with the previous progress (-1). Otherwise, we couldnt retry a stage
-            # once it crashed or was aborted - we would skip it.
-            task_progress = session.state.upsert_task(task).progress
-            if task_progress and (task_progress.progress - 1) >= progress:
+            # with - and redo - the previous progress.
+            # Otherwise, we couldn't retry a stage once it crashed or was aborted.
+            # For jobs that did not fail, we have extra progress levels (dummies) that
+            # do not need any compute to redo. They are the most common point to resume
+            # from (PREVIEW_COMPLETED in particular).
+            prev_progress = session.state.upsert_task(task).progress
+            if prev_progress > progress:
                 log.debug(
-                    f"Skipping {progress} for {task} because task progress {task_progress.progress=}"
+                    f"Skipping {progress} for {task} because task progress {prev_progress=}"
                 )
                 return task
 

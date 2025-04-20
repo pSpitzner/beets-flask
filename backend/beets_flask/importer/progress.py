@@ -49,14 +49,17 @@ class Progress(Enum):
     IMPORT_COMPLETED = 12  # also a dummy
 
     def __lt__(self, other: Progress) -> bool:
+
+    def __lt__(self, other: Progress | ProgressState) -> bool:
+        if isinstance(other, ProgressState):
+            other = other.progress
         return self.value < other.value
 
     def __sub__(self, other: int) -> Progress:
         if not isinstance(other, int):
             raise TypeError("Unsupported type for addition")
 
-        other = min(max(other - self.value, 12), 0)
-
+        other = max(min(self.value - other, 12), 0)
         return Progress(other)
 
     def __add__(self, other: int) -> Progress:
