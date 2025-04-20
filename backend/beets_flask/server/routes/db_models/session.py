@@ -284,6 +284,10 @@ def _get_folder_status_from_db(
                 status = FolderStatus.IMPORTING
             elif s_state_indb.progress == Progress.IMPORT_COMPLETED:
                 status = FolderStatus.IMPORTED
+            elif s_state_indb.progress == Progress.DELETING:
+                status = FolderStatus.DELETING
+            elif s_state_indb.progress == Progress.DELETION_COMPLETED:
+                status = FolderStatus.DELETED
 
             if s_state_indb.exception is not None:
                 exc = ExceptionResponse(

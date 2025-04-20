@@ -3,7 +3,6 @@ import shutil
 from pathlib import Path
 from typing import TypedDict
 
-from beets_flask.server.exceptions import InvalidUsageException
 from cachetools import Cache
 from quart import Blueprint, jsonify
 
@@ -13,6 +12,7 @@ from beets_flask.inbox import (
     get_inbox_folders,
     get_inbox_for_path,
 )
+from beets_flask.server.exceptions import InvalidUsageException
 from beets_flask.server.utility import get_folder_params
 from beets_flask.utility import AUDIO_EXTENSIONS
 

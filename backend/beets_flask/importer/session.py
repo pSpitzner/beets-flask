@@ -17,6 +17,7 @@ from beets_flask.importer.progress import Progress, ProgressState
 from beets_flask.importer.types import (
     BeetsAlbum,
     BeetsAlbumMatch,
+    BeetsLibrary,
     BeetsTrackMatch,
     DuplicateAction,
 )
@@ -70,6 +71,9 @@ class BaseSession(importer.ImportSession, ABC):
 
     pipeline: AsyncPipeline[importer.ImportTask, Any] | None = None
     config_overlay: dict
+
+    # FIXME: only for typehint until we update beets
+    lib: BeetsLibrary  # type: ignore
 
     def __init__(
         self,
@@ -377,7 +381,6 @@ class ImportSession(BaseSession):
     is not (yet) enforced.
     """
 
-    import_id: str
     match_url: str | None
     candidate_id: str | None
     duplicate_action: DuplicateAction | None
@@ -420,13 +423,6 @@ class ImportSession(BaseSession):
         self.match_url = match_url
         self.candidate_id = candidate_id
 
-        # what to use as id to put into the beets db?
-        # we also have a SessionState.id, another uuid, but pretty meaningless.
-        # lets use the current timestamp
-        self.import_id = (
-            f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{state.folder_hash}"
-        )
-
         if duplicate_action is None:
             duplicate_action = self.get_config_value("import.duplicate_action", str)
 
@@ -434,12 +430,21 @@ class ImportSession(BaseSession):
 
     async def run_async(self) -> SessionState:
         # only allow import sessions to run on preview states (not other import states)
-        if self.state.progress > Progress.PREVIEW_COMPLETED:
+        if self.state.progress == Progress.IMPORT_COMPLETED:
             log.error(
                 f"Cannot run {self.__class__.__name__} from states that already "
-                + f"progressed past preview. (i.e. other imports) [{self.state.progress}]"
+                + f"completed an import. (i.e. other imports) [{self.state.progress}]"
             )
-            raise UserError("Already progressed past preview")
+            self.state.exc = UserError("Cannot redo imports. Try undo and/or retag!")
+            raise self.state.exc
+        elif self.state.progress > Progress.PREVIEW_COMPLETED:
+            log.warning(
+                f"Resetting state from {self.state.progress} to PREVIEW_COMPLETED for "
+                + f"import session {self.state.id}."
+            )
+            for task in self.state.task_states:
+                task.set_progress(Progress.PREVIEW_COMPLETED)
+
         return await super().run_async()
 
     # ------------------------------ Stages ------------------------------ #
@@ -699,6 +704,7 @@ class AutoImportSession(ImportSession):
         return True
 
 
+@deprecated
 class InteractiveImportSession(ImportSession):
     """Interactive Import Session.
 
@@ -912,3 +918,73 @@ class InteractiveImportSession(ImportSession):
         state = await super().run_async()
 
         return state
+
+
+class UndoSession(BaseSession):
+    delete_files: bool
+
+    def __init__(
+        self,
+        state: SessionState,
+        config_overlay: dict | None = None,
+        delete_files: bool = False,
+        **kwargs,
+    ):
+        super().__init__(state, config_overlay, **kwargs)
+        self.delete_files = delete_files
+
+    async def run_async(self) -> SessionState:
+        """Undo an import.
+
+        A bit of a hack to reuse the BaseSession as we do
+        not operate on tasks here but makes things easier in
+        calling this in the invoker.
+
+        Note: this Session should only be run in the (single-thread) import queue,
+        because we want to limit beets-library and file interactions to be serial
+        to avoid conflicts.
+        """
+        if self.state.progress != Progress.IMPORT_COMPLETED:
+            log.error(
+                f"Cannot undo import from state {self.state.progress}. "
+                + "Only imports can be undone."
+            )
+            self.state.exc = UserError(
+                "Cannot undo if never imported! You need to import to undo first."
+            )
+            raise self.state.exc
+
+        for task in self.state.task_states:
+            task.set_progress(Progress.DELETING)
+
+        try:
+            self.delete_from_beets()
+        except Exception as e:
+            self.state.exc = e
+            raise e
+
+        # Update our state and progress
+        for task in self.state.task_states:
+            task.set_progress(Progress.DELETION_COMPLETED)
+
+        return self.state
+
+    def delete_from_beets(
+        self,
+    ):
+        """Low-level, delete the items from the beets library."""
+
+        # We set a gui_import_id in the beets database this is equal to the session id
+        # see _apply_choice in stages.py
+        items = self.lib.items(f"gui_import_id:{self.state.id}")
+
+        if len(items) == 0:
+            raise ValueError("No items found that match this import session id.")
+
+        with self.lib.transaction():
+            for item in items:
+                item.remove(self.delete_files)
+
+    @property
+    def stages(self):
+        return StageOrder()

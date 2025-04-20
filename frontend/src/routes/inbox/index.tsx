@@ -90,7 +90,8 @@ function RouteComponent() {
                             const fc = Object.entries(config.gui.inbox.folders).find(
                                 ([_k, v]) => v.path === folder.full_path
                             );
-                            const folder_config = fc![1];
+
+                            const folder_config = fc ? fc[1] : { name: "Inbox" };
 
                             return (
                                 <Box

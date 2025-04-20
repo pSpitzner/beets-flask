@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import itertools
+from datetime import datetime
 from enum import Enum
 from functools import total_ordering, wraps
 from typing import (
@@ -572,16 +573,24 @@ def _apply_choice(session: ImportSession, task: ImportTask):
         task.apply_metadata()
         plugins.send("import_task_apply", session=session, task=task)
 
+    items = task.items
+    for item in items:
+        item._db = session.lib
+    task.items = items
+
     task.add(session.lib)
     task.set_fields(session.lib)
 
     # copy of core logic from set_fields()
     items: list[BeetsItem] = task.imported_items()
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     with session.lib.transaction():
         for item in items:
-            item.set_parse("gui_import_id", session.import_id)
+            item.set_parse("gui_import_id", session.state.id)
+            item.set_parse("gui_import_date", timestamp)
             item.store()
-        task.album.set_parse("gui_import_id", session.import_id)
+        task.album.set_parse("gui_import_id", session.state.id)
+        task.album.set_parse("gui_import_date", timestamp)
         task.album.store()
 
 

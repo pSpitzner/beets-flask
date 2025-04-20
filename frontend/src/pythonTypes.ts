@@ -150,6 +150,8 @@ export enum FolderStatus {
 	PREVIEWED = 3,
 	IMPORTING = 4,
 	IMPORTED = 5,
+	DELETING = 6,
+	DELETED = 7,
 }
 
 export interface FolderStatusResponse {
@@ -272,6 +274,7 @@ export enum EnqueueKind {
 	PREVIEW_ADD_CANDIDATES = 'preview_add_candidates',
 	IMPORT_CANDIDATE = 'import_candidate',
 	IMPORT_AUTO = 'import_auto',
+	IMPORT_UNDO = 'import_undo',
 	IMPORT_BOOTLEG = 'import_bootleg',
 	_AUTO_IMPORT = '_auto_import',
 	_AUTO_PREVIEW = '_auto_preview',

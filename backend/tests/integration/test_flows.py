@@ -9,13 +9,19 @@ from abc import ABC
 from pathlib import Path
 from unittest import mock
 
+from beets_flask.disk import Folder
 import pytest
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
 from beets_flask.importer.progress import FolderStatus
-from beets_flask.invoker import Progress, run_import_candidate, run_preview
+from beets_flask.invoker import (
+    Progress,
+    run_import_candidate,
+    run_import_undo,
+    run_preview,
+)
 from tests.mixins.database import IsolatedBeetsLibraryMixin, IsolatedDBMixin
 from tests.unit.test_importer.conftest import (
     VALID_PATHS,
@@ -88,9 +94,9 @@ class TestImportBest(
         """Test the preview of the import process."""
 
         stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
-        assert (
-            db_session.execute(stmt).scalar() is None
-        ), "Database should be empty before the test"
+        assert db_session.execute(stmt).scalar() is None, (
+            "Database should be empty before the test"
+        )
 
         await run_preview(
             "obsolete_hash_preview",
@@ -119,9 +125,9 @@ class TestImportBest(
         assert t_state_live.progress == Progress.PREVIEW_COMPLETED
 
         for c in t_state_live.candidate_states:
-            assert (
-                len(c.duplicate_ids) == 0
-            ), "Should not have duplicates in empty library"
+            assert len(c.duplicate_ids) == 0, (
+                "Should not have duplicates in empty library"
+            )
 
     async def test_import(self, db_session: Session, path: Path):
         """
@@ -132,9 +138,9 @@ class TestImportBest(
         """
 
         stmt = select(func.count()).select_from(SessionStateInDb)
-        assert (
-            db_session.execute(stmt).scalar() == 1
-        ), "Database should contain the one preview session state from the previous test"
+        assert db_session.execute(stmt).scalar() == 1, (
+            "Database should contain the one preview session state from the previous test"
+        )
 
         self.statuses = []
         await run_import_candidate(
@@ -165,9 +171,9 @@ class TestImportBest(
         assert t_state_live.progress == Progress.IMPORT_COMPLETED
 
         for c in t_state_live.candidate_states:
-            assert (
-                len(c.duplicate_ids) == 0
-            ), "Should not have duplicates in empty library"
+            assert len(c.duplicate_ids) == 0, (
+                "Should not have duplicates in empty library"
+            )
 
         # Check that we have the items in the beets lib
         albums = self.beets_lib.albums()
@@ -184,9 +190,9 @@ class TestImportBest(
         We use errors as values here so we need to check the return value
         """
         stmt = select(func.count()).select_from(SessionStateInDb)
-        assert (
-            db_session.execute(stmt).scalar() == 1
-        ), "Database should contain the one preview session state from the previous test"
+        assert db_session.execute(stmt).scalar() == 1, (
+            "Database should contain the one preview session state from the previous test"
+        )
 
         self.statuses = []
 
@@ -199,7 +205,7 @@ class TestImportBest(
 
         assert exc is not None
         assert isinstance(exc, Exception)
-        assert str(exc) == "Already progressed past preview"
+        assert str(exc) == "Cannot redo imports. Try undo and/or retag!"
 
         assert len(self.statuses) == 2
         assert self.statuses[0]["status"] == FolderStatus.IMPORTING
@@ -235,6 +241,77 @@ class TestImportBest(
         assert isinstance(exc, Exception)
         assert str(exc) == "Duplicate action 'ask', but no user choice was provided."
 
+    async def test_undo(self, db_session: Session, path: Path):
+        """Test the undo of the import process.
+
+        This should remove the items from the beets library and
+        set the progress back to PREVIEW_COMPLETED. Also the disk
+        items should be removed/moved back.
+        """
+
+        f = Folder.from_path(path)
+
+        items = self.beets_lib.items()
+        item = items[0]
+        assert item is not None, "Should have imported at least one item for this test."
+        imported_path = Path(item.path.decode("utf-8"))
+
+        self.statuses = []
+        exc = await run_import_undo(
+            f.hash,
+            str(path),
+            delete_files=True,
+        )
+
+        assert exc is None
+        assert len(self.statuses) == 2
+        assert self.statuses[0]["status"] == FolderStatus.DELETING
+        assert self.statuses[1]["status"] == FolderStatus.DELETED
+
+        #
+        items = self.beets_lib.items()
+        assert len(items) == 0, "Should have removed all items from beets library"
+        assert not imported_path.exists(), "Should have removed the imported files"
+
+    async def test_undo_fails(self, db_session: Session, path: Path):
+        f = Folder.from_path(path)
+
+        exc = await run_import_undo(
+            f.hash,
+            str(path),
+            delete_files=True,
+        )
+
+        assert exc is not None
+        assert isinstance(exc, Exception)
+        assert "Cannot undo if never imported" in str(exc)
+
+    # WIP 2025-04-20
+    async def test_reimport_after_undo(self, db_session: Session, path: Path):
+        # Case two: Import session valid but no beets items
+        exc = await run_import_candidate(
+            "obsolete_hash_import",
+            str(path),
+            candidate_id=None,  # None uses best match
+        )
+        assert exc is None
+
+        # items = self.beets_lib.items()
+        # with self.beets_lib.transaction() as tx:
+        #     for item in items:
+        #         item.remove()
+
+        # exc = await run_import_undo(
+        #     f.hash,
+        #     str(path),
+        #     delete_files=True,
+        # )
+
+        # assert exc is not None
+        # assert isinstance(exc, Exception)
+        # assert str(exc) == "No items found that match this import session id."
+
+    @pytest.mark.skip(reason="Implement")
     @pytest.mark.parametrize("duplicate_action", ["skip", "merge", "remove", "keep"])
     async def test_duplicate_with_action(
         self, db_session: Session, path: Path, duplicate_action
@@ -249,7 +326,8 @@ class TestImportBest(
         albums = self.beets_lib.albums()
         assert len(albums) == 1, "Should have imported one album"
 
-        # TODO: If a session failed before how do we want to handle/this?
+        # Reset session state to PREVIEW_COMPLETED to allow to reuse it on
+        # multiple runs of this test
         stmt = (
             select(SessionStateInDb).join(FolderInDb).where(FolderInDb.full_path == p)
         )
@@ -259,7 +337,6 @@ class TestImportBest(
         # Reset progress to PREVIEW_COMPLETED
         for task in session_state.tasks:
             task.progress = Progress.PREVIEW_COMPLETED
-
         db_session.commit()
 
         self.statuses = []
@@ -275,16 +352,6 @@ class TestImportBest(
         assert len(self.statuses) == 2
         assert self.statuses[0]["status"] == FolderStatus.IMPORTING
         assert self.statuses[1]["status"] == FolderStatus.IMPORTED
-
-    @pytest.mark.skip(reason="Implement")
-    async def test_revert(self, db_session: Session, path: Path):
-        """Test the revert of the import process.
-
-        This should remove the items from the beets library and
-        set the progress back to PREVIEW_COMPLETED. Also the disk
-        items should be removed/moved back.
-        """
-        raise NotImplementedError("Implement me")
 
 
 class TestImportAsis(

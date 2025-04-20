@@ -39,6 +39,7 @@ from beets_flask.importer.session import (
     BootlegImportSession,
     ImportSession,
     PreviewSession,
+    UndoSession,
 )
 from beets_flask.importer.states import SessionState
 from beets_flask.importer.types import DuplicateAction
@@ -139,7 +140,7 @@ def exception_as_return_value(
         try:
             ret = await f(*args, **kwargs)
         except Exception as e:
-            log.error(e)
+            log.exception(e)
             # uncomment for traceback
             # log.exception(e)
             return e
@@ -156,6 +157,7 @@ class EnqueueKind(Enum):
     PREVIEW_ADD_CANDIDATES = "preview_add_candidates"
     IMPORT_CANDIDATE = "import_candidate"
     IMPORT_AUTO = "import_auto"
+    IMPORT_UNDO = "import_undo"
     IMPORT_BOOTLEG = "import_bootleg"
     # Bootlegs are essentially asis, but does not mean to just import the asis candidate,
     # it has its own session that also groups albums, and skips previews.
@@ -205,6 +207,8 @@ async def enqueue(hash: str, path: str, kind: EnqueueKind, **kwargs) -> Job:
             job = enqueue_import_auto(hash, path, **kwargs)
         case EnqueueKind.IMPORT_BOOTLEG:
             job = enqueue_import_bootleg(hash, path, **kwargs)
+        case EnqueueKind.IMPORT_UNDO:
+            job = enqueue_import_undo(hash, path, **kwargs)
         case _:
             raise InvalidUsageException(f"Unknown kind {kind}")
 
@@ -329,6 +333,20 @@ def enqueue_import_auto(hash: str, path: str, **kwargs):
 def enqueue_import_bootleg(hash: str, path: str, **kwargs):
     job = import_queue.enqueue(run_import_bootleg, hash, path, **kwargs)
     __set_job_meta(job, hash, path, EnqueueKind.IMPORT_BOOTLEG)
+    return job
+
+
+def enqueue_import_undo(hash: str, path: str, **kwargs):
+    delete_files: bool = kwargs.pop("delete_files", True)
+
+    if len(kwargs.keys()) > 0:
+        raise InvalidUsageException(
+            "EnqueueKind.IMPORT_UNDO only accepts the following kwargs: "
+            + "delete_files."
+        )
+
+    job = import_queue.enqueue(run_import_undo, hash, path, delete_files=delete_files)
+    __set_job_meta(job, hash, path, EnqueueKind.IMPORT_UNDO)
     return job
 
 
@@ -462,7 +480,7 @@ async def run_import_candidate(
 # redis import queue
 @exception_as_return_value
 @emit_status(before=FolderStatus.IMPORTING, after=FolderStatus.IMPORTED)
-async def run_import_auto(hash: str, path: str) -> list[str] | None:
+async def run_import_auto(hash: str, path: str):
     # TODO: add duplicate action
     log.info(f"Auto Import task on {hash=} {path=}")
 
@@ -483,7 +501,7 @@ async def run_import_auto(hash: str, path: str) -> list[str] | None:
 # redis import queue
 @exception_as_return_value
 @emit_status(before=FolderStatus.IMPORTING, after=FolderStatus.IMPORTED)
-async def run_import_bootleg(hash: str, path: str) -> list[str] | None:
+async def run_import_bootleg(hash: str, path: str):
     log.info(f"Bootleg Import task on {hash=} {path=}")
 
     with db_session_factory() as db_session:
@@ -502,6 +520,25 @@ async def run_import_bootleg(hash: str, path: str) -> list[str] | None:
             db_session.commit()
 
     log.info(f"Bootleg Import done. {hash=} {path=}")
+
+
+@exception_as_return_value
+@emit_status(before=FolderStatus.DELETING, after=FolderStatus.DELETED)
+async def run_import_undo(hash: str, path: str, delete_files: bool):
+    log.info(f"Import Undo task on {hash=} {path=}")
+
+    with db_session_factory() as db_session:
+        s_state_live = _get_live_state_by_folder(hash, path, db_session)
+        i_session = UndoSession(s_state_live, delete_files=delete_files)
+
+        try:
+            await i_session.run_async()
+        finally:
+            s_state_indb = SessionStateInDb.from_live_state(i_session.state)
+            db_session.merge(instance=s_state_indb)
+            db_session.commit()
+
+    log.info(f"Import Undo done. {hash=} {path=}")
 
 
 def _get_live_state_by_folder(

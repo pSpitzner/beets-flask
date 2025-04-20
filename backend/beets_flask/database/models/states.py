@@ -13,9 +13,9 @@ Why not just have State and StateInDb in the same class?
 
 from __future__ import annotations
 
-from datetime import datetime
 import os
 import pickle
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
@@ -187,9 +187,9 @@ class SessionStateInDb(Base):
     )
 
     folder: Mapped[FolderInDb] = relationship()
-    folder_hash: Mapped[str] = mapped_column(ForeignKey("folder.id"))
-    # PS: we dont want a unique constraint for folder_hashes, in order to be able to
-    # create new previews after a previous (e.g. failed) import.
+    folder_hash: Mapped[str] = mapped_column(ForeignKey("folder.id"), unique=True)
+    # PS 2025-04-20: We are still debating if we want to enforce a 1:1 mapping between
+    # sessions and folders.
 
     # FIXME: This should be a getter for the which queries the tasks
     progress: Mapped[Progress]
@@ -345,6 +345,12 @@ class TaskStateInDb(Base):
         super().__init__(id)
         self.toppath = toppath
         self.paths = pickle.dumps(paths)
+
+        for item in items:
+            # Remove db from all items as it can't be pickled
+            item._db = None
+            item._Item__album = None
+
         self.items = pickle.dumps(items)
         self.candidates = candidates
         self.progress = progress

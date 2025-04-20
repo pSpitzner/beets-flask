@@ -9,7 +9,10 @@ from beets_flask.logger import log
 
 
 class FolderStatus(Enum):
-    """The status of a folder."""
+    """The status of a folder.
+
+    Order does not matter, but we need to be able to check equality
+    """
 
     UNKNOWN = -2
     FAILED = -1
@@ -19,6 +22,8 @@ class FolderStatus(Enum):
     PREVIEWED = 3
     IMPORTING = 4
     IMPORTED = 5
+    DELETING = 6
+    DELETED = 7
 
     def __str__(self) -> str:
         return self.name.lower()
@@ -35,20 +40,28 @@ class Progress(Enum):
     """
 
     NOT_STARTED = 0
-    READING_FILES = 1
-    GROUPING_ALBUMS = 2
-    LOOKING_UP_CANDIDATES = 3
-    IDENTIFYING_DUPLICATES = 4
-    PREVIEW_COMPLETED = 5  # dummy, only for comparison and report, has no actual stage
-    OFFERING_MATCHES = 6
-    WAITING_FOR_USER_SELECTION = 7
-    MATCH_THRESHOLD = 8
-    EARLY_IMPORTING = 9
-    IMPORTING = 10
-    MANIPULATING_FILES = 11
-    IMPORT_COMPLETED = 12  # also a dummy
 
-    def __lt__(self, other: Progress) -> bool:
+    # PreviewSession
+    READING_FILES = 10
+    GROUPING_ALBUMS = 11
+    LOOKING_UP_CANDIDATES = 12
+    IDENTIFYING_DUPLICATES = 13
+
+    PREVIEW_COMPLETED = 20  # dummy, only for comparison and report, has no actual stage
+    DELETION_COMPLETED = 21  # dummy. after a successful deletion, we can restart import
+
+    # ImportSession
+    OFFERING_MATCHES = 30
+    WAITING_FOR_USER_SELECTION = 31
+    MATCH_THRESHOLD = 32
+    EARLY_IMPORTING = 33
+    IMPORTING = 34
+    MANIPULATING_FILES = 35
+
+    IMPORT_COMPLETED = 40  # also a dummy
+
+    # UndoSession
+    DELETING = 50
 
     def __lt__(self, other: Progress | ProgressState) -> bool:
         if isinstance(other, ProgressState):

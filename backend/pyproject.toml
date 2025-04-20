@@ -108,7 +108,8 @@ convention = "numpy"
 
 
 [tool.pytest.ini_options]
-addopts = ["--import-mode=importlib", "--cov=beets_flask"]
+# addopts = ["--import-mode=importlib", "--cov=beets_flask"]
+addopts = ["--import-mode=importlib"]
 filterwarnings = [
     "error",
     "ignore::sqlalchemy.exc.SAWarning",
