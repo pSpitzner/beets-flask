@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from beets.importer import ImportTask, action, library
-from sqlalchemy import ForeignKey, LargeBinary, select
+from sqlalchemy import ForeignKey, ForeignKeyConstraint, LargeBinary, UniqueConstraint, func, select
 from sqlalchemy.orm import (
     Mapped,
     Session,
@@ -177,6 +177,9 @@ class SessionStateInDb(Base):
 
     __tablename__ = "session"
 
+
+    
+
     tasks: Mapped[List[TaskStateInDb]] = relationship(
         back_populates="session",
         # all: All operations cascade i.e. session.merge!
@@ -187,9 +190,17 @@ class SessionStateInDb(Base):
     )
 
     folder: Mapped[FolderInDb] = relationship()
-    folder_hash: Mapped[str] = mapped_column(ForeignKey("folder.id"), unique=True)
-    # PS 2025-04-20: We are still debating if we want to enforce a 1:1 mapping between
-    # sessions and folders.
+    folder_hash: Mapped[str] = mapped_column(ForeignKey("folder.id"))
+    folder_revision: Mapped[int] = mapped_column(default=0)
+    __table_args__ = (
+        UniqueConstraint('folder_hash', 'folder_revision', name='uq_folder_hash_revision'),
+    )
+    # We have folder revisions to allow multiple sessions for the same folder hash,
+    # the purpose being that we want to keep old sessions around. E.g. to not loose
+    # old data when regenerating previews.
+    # but at the same time, we want a soft 1:1 mapping between folder hash and session.
+    # Thus, revisions are needed: the session-hash link always uses the highest revision.
+
 
     # FIXME: This should be a getter for the which queries the tasks
     progress: Mapped[Progress]
@@ -276,19 +287,24 @@ class SessionStateInDb(Base):
                 query = (
                     select(cls)
                     .where(cls.folder_hash == hash)
-                    .order_by(cls.created_at.desc())
+                    # hash+revision combos have unique constraints 
+                    # and sessions always point to the latest / highest revision.
+                    .order_by(cls.folder_revision.desc())
                 )
                 item = db_session.execute(query).scalars().first()
             if item is None and path is not None:
                 # Try to get by path
+                # paths do not have revisions, always use last updated session
                 query = (
                     select(cls)
                     .join(cls.folder)
                     .where(FolderInDb.full_path == str(path))
-                    .order_by(cls.created_at.desc())
+                    .order_by(
+                        cls.updated_at.desc(), cls.folder_revision.desc()
+                    )
                 )
                 item = db_session.execute(query).scalars().first()
-
+                
             return item
 
     @property

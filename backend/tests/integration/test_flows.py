@@ -11,7 +11,7 @@ from unittest import mock
 
 from beets_flask.disk import Folder
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
@@ -129,6 +129,36 @@ class TestImportBest(
             assert len(c.duplicate_ids) == 0, (
                 "Should not have duplicates in empty library"
             )
+            
+    async def test_regenerate_preview(self, db_session: Session, path: Path):
+        """Test the regeneration of the preview of the import process.
+
+        We start from an earlier preview, and want to make sure that
+        the new preview creates a state with a higher folder_revision,
+        keeping the old one in tact.
+        """
+        f = Folder.from_path(path)
+
+
+        exc = await run_preview(
+            f.hash,
+            str(path),
+        )
+        assert exc is None, "Should not return an error"
+        
+        stmt = select(SessionStateInDb.folder_revision)
+        revisions = db_session.execute(stmt).scalars().all()
+
+        assert 0 in revisions
+        assert 1 in revisions
+        assert len(revisions) == 2, "Should have two revisions in the database"
+
+        # clean up the second session
+        stmt = delete(SessionStateInDb).where(
+            SessionStateInDb.folder_hash == f.hash, SessionStateInDb.folder_revision == 1
+        )
+        db_session.execute(stmt)
+        db_session.commit()
 
     async def test_import(self, db_session: Session, path: Path):
         """
@@ -300,7 +330,6 @@ class TestImportBest(
             str(path),
             candidate_id=None,  # None uses best match
         )
-        raise Exception
         assert exc is None
 
         # Check that we have the items in the beets lib

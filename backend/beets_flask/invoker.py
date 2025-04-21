@@ -23,7 +23,7 @@ from typing import (
 )
 
 from rq.job import Job
-from sqlalchemy import select
+from sqlalchemy import func, select, update
 
 from beets_flask import log
 from beets_flask.database import db_session_factory
@@ -201,10 +201,10 @@ async def enqueue(hash: str, path: str, kind: EnqueueKind, **kwargs) -> Job:
             job = enqueue_preview(hash, path, **kwargs)
         case EnqueueKind.PREVIEW_ADD_CANDIDATES:
             job = enqueue_preview_add_candidates(hash, path, **kwargs)
-        case EnqueueKind.IMPORT_CANDIDATE:
-            job = enqueue_import_candidate(hash, path, **kwargs)
         case EnqueueKind.IMPORT_AUTO:
             job = enqueue_import_auto(hash, path, **kwargs)
+        case EnqueueKind.IMPORT_CANDIDATE:
+            job = enqueue_import_candidate(hash, path, **kwargs)
         case EnqueueKind.IMPORT_BOOTLEG:
             job = enqueue_import_bootleg(hash, path, **kwargs)
         case EnqueueKind.IMPORT_UNDO:
@@ -359,11 +359,17 @@ def enqueue_import_undo(hash: str, path: str, **kwargs):
 async def run_preview(
     hash: str,
     path: str,
+    
 ):
     """Fetch candidates for a folder using beets.
 
     Will refetch candidates if this is rerun even if candidates exist
     in the db.
+
+    Current convention is we have one session for one folder *has*, but 
+    We might have multiple sessions for the same folder **path**.
+    Previews will **reset** any previous session state in the database, if they
+    exist for the same folder hash.
 
     Parameters
     ----------
@@ -382,18 +388,27 @@ async def run_preview(
                 f"Folder content has changed since the job was scheduled for {path}. "
                 + f"Using new content ({f_on_disk.hash}) instead of {hash}"
             )
-
+            
+            
         # here, in preview, we always want to start from a fresh state
-        # otherwise, the retag action would not work, as preview starting from
         # an existing state would skip the candidate lookup.
+        # otherwise, the retag action would not work, as preview starting from
         s_state_live = SessionState(f_on_disk)
         p_session = PreviewSession(s_state_live)
+    
+
         try:
-            # TODO: Think about if session exists in db, create new if force_retag?
-            # this concerns auto and retagging.
             await p_session.run_async()
         finally:
+            # Get max revision for this folder hash
+            stmt = select(func.max(SessionStateInDb.folder_revision)).where(
+                SessionStateInDb.folder_hash == hash,
+            )
+            max_rev = db_session.execute(stmt).scalar_one_or_none()
+            new_rev = 0 if max_rev is None else max_rev + 1
             s_state_indb = SessionStateInDb.from_live_state(p_session.state)
+            s_state_indb.folder_revision = new_rev
+            
             db_session.merge(s_state_indb)
             db_session.commit()
 

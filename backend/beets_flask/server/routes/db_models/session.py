@@ -251,21 +251,11 @@ class FolderStatusResponse(TypedDict):
 def _get_folder_status_from_db(
     hash: str,
 ) -> Tuple[FolderStatus, datetime | None, ExceptionResponse | None]:
-    # lookup status in db
-    # PS 2025-04-17: This is still inconsistent.
-    # We want to be able to have multiple sessions in db for the same hash + path
-    # in order to regenerate preivews after a previous import.
-    # Problem is that, therefore, folder+hash entries can appear in multiple
-    # job queues above, and we do not sort by date yet.
-    # Therefore we here effectively overwrite all of them except the ones
-    # where we dont have an entry in the db yet.
-    # (also, started <-> PREVIEWING is still inconsistent -.-)
-
     with db_session_factory() as db_session:
         stmt_s = (
             select(SessionStateInDb)
             .where(SessionStateInDb.folder_hash == hash)
-            .order_by(SessionStateInDb.updated_at.desc())
+            .order_by(SessionStateInDb.folder_revision.desc())
         )
         s_state_indb = db_session.execute(stmt_s).scalars().first()
         if s_state_indb is None:
