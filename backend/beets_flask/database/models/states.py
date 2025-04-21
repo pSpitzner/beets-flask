@@ -319,6 +319,7 @@ class TaskStateInDb(Base):
 
     # To reconstruct the beets task we need to store a few of its attributes
     paths: Mapped[bytes]
+    old_paths: Mapped[bytes | None]
     items: Mapped[bytes]
     choice_flag: Mapped[action | None]
 
@@ -335,6 +336,7 @@ class TaskStateInDb(Base):
         id: str | None = None,
         toppath: bytes | None = None,
         paths: List[bytes] = [],
+        old_paths: List[bytes] | None = None,
         items: List[library.Item] = [],
         candidates: List[CandidateStateInDb] = [],
         progress: Progress = Progress.NOT_STARTED,
@@ -345,6 +347,7 @@ class TaskStateInDb(Base):
         super().__init__(id)
         self.toppath = toppath
         self.paths = pickle.dumps(paths)
+        self.old_paths = pickle.dumps(old_paths) if old_paths else None
 
         for item in items:
             # Remove db from all items as it can't be pickled
@@ -361,6 +364,11 @@ class TaskStateInDb(Base):
     @classmethod
     def from_live_state(cls, state: TaskState) -> TaskStateInDb:
         """Create the DB representation of a live TaskState."""
+        if hasattr(state.task, "old_paths"):
+            old_paths = state.task.old_paths
+        else:
+            old_paths = None
+        
         task = cls(
             toppath=state.task.toppath,
             paths=state.task.paths,
@@ -372,6 +380,8 @@ class TaskStateInDb(Base):
             choice_flag=state.task.choice_flag,
             cur_artist=state.task.cur_artist,
             cur_album=state.task.cur_album,
+            old_paths=old_paths
+
         )
         return task
 
@@ -387,6 +397,11 @@ class TaskStateInDb(Base):
         beets_task.choice_flag = self.choice_flag
         beets_task.cur_artist = self.cur_artist
         beets_task.cur_album = self.cur_album
+        old_paths: list[bytes] | None = (
+            pickle.loads(self.old_paths) if self.old_paths else None
+        )
+        # TODO: Update type hints once beets is updated
+        beets_task.old_paths = old_paths # type: ignore
 
         live_state = TaskState(beets_task)
         live_state.id = self.id

@@ -10,6 +10,7 @@ import itertools
 from datetime import datetime
 from enum import Enum
 from functools import total_ordering, wraps
+from re import I
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -573,16 +574,26 @@ def _apply_choice(session: ImportSession, task: ImportTask):
         task.apply_metadata()
         plugins.send("import_task_apply", session=session, task=task)
 
-    items = task.items
-    for item in items:
+    # Needed to reinsert items into the db if they were removed earlier
+    item: BeetsItem
+    for item in task.imported_items():
         item._db = session.lib
-    task.items = items
+        item.album_id = None
+        item.id = None
 
     task.add(session.lib)
     task.set_fields(session.lib)
 
     # copy of core logic from set_fields()
     items: list[BeetsItem] = task.imported_items()
+    
+    # HACK: To allow an reimport after an undo, we need to use the old
+    # paths of the items. This is a bit hacky, but I did not find
+    # a better way to do this while maintaining the original beets logic.
+    if task.old_paths:
+        for (i, item) in enumerate(items):
+            item.path = task.old_paths[i]
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     with session.lib.transaction():
         for item in items:

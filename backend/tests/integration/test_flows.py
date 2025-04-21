@@ -120,7 +120,8 @@ class TestImportBest(
         assert s_state_live is not None
         assert s_state_live.folder_path == path
         assert len(s_state_live.task_states) == 1
-
+        assert s_state_live.tasks[0].old_paths is None
+        
         t_state_live = s_state_live.task_states[0]
         assert t_state_live.progress == Progress.PREVIEW_COMPLETED
 
@@ -143,12 +144,14 @@ class TestImportBest(
         )
 
         self.statuses = []
-        await run_import_candidate(
+        exc = await run_import_candidate(
             "obsolete_hash_import",
             str(path),
             candidate_id=None,  # None uses best match
         )
-
+        assert exc is None, "Should not return an error"
+        #raise NotImplementedError("Implement me")
+        
         # Check that status was emitted correctly, we emit once before and once after run
         assert len(self.statuses) == 2
         assert self.statuses[0]["status"] == FolderStatus.IMPORTING
@@ -166,6 +169,7 @@ class TestImportBest(
         assert s_state_live is not None
         assert s_state_live.folder_path == path
         assert len(s_state_live.task_states) == 1
+        assert s_state_live.tasks[0].old_paths is not None
 
         t_state_live = s_state_live.task_states[0]
         assert t_state_live.progress == Progress.IMPORT_COMPLETED
@@ -178,11 +182,14 @@ class TestImportBest(
         # Check that we have the items in the beets lib
         albums = self.beets_lib.albums()
         assert len(albums) == 1, "Should have imported one album"
+        items = albums[0].items()
+        assert len(items) == 1, "Should have imported one item"
 
         # gui import ids are set
         album = albums[0]
         assert hasattr(album, "gui_import_id"), "Album should have gui_import_id"
         assert album.gui_import_id is not None, "Album should have gui_import_id"
+        
 
     async def test_reimport_fails(self, db_session: Session, path: Path):
         """Reimport should fail if the state is already imported.
@@ -274,6 +281,8 @@ class TestImportBest(
         assert not imported_path.exists(), "Should have removed the imported files"
 
     async def test_undo_fails(self, db_session: Session, path: Path):
+        """ If the session is not in a imported state we should fail.
+        """
         f = Folder.from_path(path)
 
         exc = await run_import_undo(
@@ -286,7 +295,6 @@ class TestImportBest(
         assert isinstance(exc, Exception)
         assert "Cannot undo if never imported" in str(exc)
 
-    # WIP 2025-04-20
     async def test_reimport_after_undo(self, db_session: Session, path: Path):
         # Case two: Import session valid but no beets items
         exc = await run_import_candidate(
@@ -295,21 +303,36 @@ class TestImportBest(
             candidate_id=None,  # None uses best match
         )
         assert exc is None
+        
+        
+        # Check that we have the items in the beets lib
+        albums = self.beets_lib.albums()
+        assert len(albums) == 1, "Should have imported one album"
+        items = albums[0].items()
+        assert len(items) == 1, "Should have imported one item"
 
-        # items = self.beets_lib.items()
-        # with self.beets_lib.transaction() as tx:
-        #     for item in items:
-        #         item.remove()
+        # Check files have been imported
+        imported_path = Path(items[0].path.decode("utf-8"))
+        assert imported_path.exists(), "Should have imported the files"
+        assert imported_path.is_file(), "Should have imported the files"
 
-        # exc = await run_import_undo(
-        #     f.hash,
-        #     str(path),
-        #     delete_files=True,
-        # )
+    async def test_undo_with_missing_beets_items(self, db_session: Session, path: Path):
+        f = Folder.from_path(path)
+        items = self.beets_lib.items()
 
-        # assert exc is not None
-        # assert isinstance(exc, Exception)
-        # assert str(exc) == "No items found that match this import session id."
+        with self.beets_lib.transaction() as tx:
+            for item in items:
+                item.remove()
+
+        exc = await run_import_undo(
+            f.hash,
+            str(path),
+            delete_files=True,
+        )
+
+        assert exc is not None
+        assert isinstance(exc, Exception)
+        assert str(exc) == "No items found that match this import session id."
 
     @pytest.mark.skip(reason="Implement")
     @pytest.mark.parametrize("duplicate_action", ["skip", "merge", "remove", "keep"])
