@@ -122,26 +122,32 @@ export function DuplicateChip({ folder, ...props }: { folder: Folder } & ChipPro
  * folder.
  */
 export function FolderStatusChip({ folder, ...props }: { folder: Folder } & ChipProps) {
-    const { data: status } = useQuery(statusQueryOptions);
+    const { data: statuses } = useQuery(statusQueryOptions);
     const theme = useTheme();
 
     // Status enum value
     const folderStatus = useMemo(() => {
-        return status?.find((s) => s.path === folder.full_path);
-    }, [status, folder.full_path]);
+        return statuses?.find((s) => s.path === folder.full_path);
+    }, [statuses, folder.full_path]);
 
-    // Status enum name
-    let status_name: string | undefined = undefined;
-    if (folderStatus !== undefined) {
-        status_name = FolderStatus[folderStatus.status];
-    }
-
-    if (!status_name || !folderStatus) {
+    if (!folderStatus) {
         return null;
     }
 
+    let status_name: string;
+    switch (folderStatus.status) {
+        case FolderStatus.PREVIEWING:
+            status_name = "Tagging";
+            break;
+        case FolderStatus.PREVIEWED:
+            status_name = "Tagged";
+            break;
+        default:
+            status_name = FolderStatus[folderStatus.status];
+    }
+
     return (
-        <Tooltip title={folderStatus.exc?.message || status_name}>
+        <Tooltip title={folderStatus.exc?.message || undefined}>
             <Link
                 to={"/inbox/session/$id"}
                 params={{ id: folderStatus.hash }}
