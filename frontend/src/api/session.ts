@@ -3,6 +3,8 @@ import { UseMutationOptions } from "@tanstack/react-query";
 import { FolderSelectionContext } from "@/components/inbox/folderSelectionContext";
 import {
     EnqueueKind,
+    FolderStatus,
+    FolderStatusResponse,
     SerializedException,
     SerializedSessionState,
 } from "@/pythonTypes";
@@ -87,14 +89,15 @@ export async function invalidateSession(
  * We have one entrypoint for invoking session
  * actions in the backend.
  */
-export const enqueueMutationOptions = {
-    mutationFn: async ({
-        selected,
-        kind,
-    }: {
+export const enqueueMutationOptions: UseMutationOptions<
+    Response | undefined,
+    Error,
+    {
         selected: FolderSelectionContext["selected"];
         kind: EnqueueKind;
-    }) => {
+    }
+> = {
+    mutationFn: async ({ selected, kind }) => {
         return await fetch("/session/enqueue", {
             method: "POST",
             headers: {
@@ -105,6 +108,36 @@ export const enqueueMutationOptions = {
                 folder_hashes: selected.hashes,
                 folder_paths: selected.paths,
             }),
+        });
+    },
+
+    // Optimistic update for status
+    onMutate: async ({ selected, kind }) => {
+        const queryKey = statusQueryOptions.queryKey;
+        await queryClient.cancelQueries({ queryKey });
+
+        queryClient.setQueryData<FolderStatusResponse[]>(queryKey, (old) => {
+            if (!old) return old;
+            const found = new Set();
+            const nex = old.map((status) => {
+                if (selected.hashes.includes(status.hash)) {
+                    status.status = FolderStatus.PENDING;
+                    status.exc = null;
+                    found.add(status.hash);
+                }
+                return status;
+            });
+            for (const hash of selected.hashes) {
+                if (!found.has(hash)) {
+                    nex.push({
+                        path: selected.paths[selected.hashes.indexOf(hash)],
+                        hash: hash,
+                        status: FolderStatus.PENDING,
+                        exc: null,
+                    });
+                }
+            }
+            return nex;
         });
     },
 };
@@ -151,5 +184,16 @@ export const addCandidateMutationOptions: UseMutationOptions<
             new Promise((resolve) => setTimeout(resolve, 500)),
         ];
         await Promise.all(ps);
+    },
+};
+
+/* ----------------------------- Session status ----------------------------- */
+export const statusQueryOptions = {
+    queryKey: ["status", "all"],
+    queryFn: async () => {
+        // fetch initial status
+        // further updates will be handled by the socket
+        const response = await fetch("/session/status");
+        return (await response.json()) as FolderStatusResponse[];
     },
 };

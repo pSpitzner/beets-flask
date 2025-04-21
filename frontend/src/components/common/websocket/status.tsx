@@ -12,7 +12,7 @@ import { createContext, useContext, useEffect } from "react";
 import { type QueryClient } from "@tanstack/react-query";
 
 import { queryClient } from "@/api/common";
-import { invalidateSession } from "@/api/session";
+import { invalidateSession, statusQueryOptions } from "@/api/session";
 import { FolderStatus, FolderStatusResponse } from "@/pythonTypes";
 
 import useSocket from "./useSocket";
@@ -24,17 +24,6 @@ interface StatusContextI {
 }
 
 const StatusContext = createContext<StatusContextI | null>(null);
-
-// FIXME: Move to api folder
-export const statusQueryOptions = {
-    queryKey: ["status", "all"],
-    queryFn: async () => {
-        // fetch initial status
-        // further updates will be handled by the socket
-        const response = await fetch("/session/status");
-        return (await response.json()) as FolderStatusResponse[];
-    },
-};
 
 export function StatusContextProvider({
     children,
@@ -77,17 +66,11 @@ export function StatusContextProvider({
             );
 
             // If tagged or imported refetch the session
-            console.debug(
-                "StatusSocket",
-                "update",
-                updateData,
-                updateData.status,
-                FolderStatus.TAGGED,
-                updateData.status == FolderStatus.TAGGED
-            );
+            console.debug("StatusSocket", "update", updateData);
             if (
                 updateData.status == FolderStatus.IMPORTED ||
-                updateData.status == FolderStatus.TAGGED
+                updateData.status == FolderStatus.PREVIEWED ||
+                updateData.status == FolderStatus.DELETED
             ) {
                 invalidateSession(updateData.hash, updateData.path, false).catch(
                     console.error

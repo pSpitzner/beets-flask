@@ -15,11 +15,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
 import { useConfig } from "@/api/config";
-import { sessionQueryOptions } from "@/api/session";
+import { sessionQueryOptions, statusQueryOptions } from "@/api/session";
 import { Folder, FolderStatus } from "@/pythonTypes";
 
 import { FolderStatusIcon, PenaltyTypeIcon, SourceTypeIconWithTooltip } from "./icons";
-import { statusQueryOptions } from "./websocket/status";
 
 export const StyledChip = styled(Chip)(({ theme }) => ({
     paddingLeft: theme.spacing(0.5),

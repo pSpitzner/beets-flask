@@ -81,9 +81,9 @@ export const deleteFoldersMutationOptions: UseMutationOptions<
         // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
         await queryClient.cancelQueries({ queryKey: ["inbox"] });
         // Snapshot the previous value
-        const previousInbox: Folder[] | undefined = queryClient.getQueryData(["inbox"]);
+        const previousInbox = queryClient.getQueryData<Folder[]>(["inbox"]);
         // Optimistically update to the new value
-        queryClient.setQueryData(["inbox"], (old: Folder[] | undefined) => {
+        queryClient.setQueryData<Folder[]>(["inbox"], (old) => {
             if (!old) return old;
             return old.filter((folder) => {
                 const folderPath = folder.full_path;
