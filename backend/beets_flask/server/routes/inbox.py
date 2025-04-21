@@ -87,6 +87,9 @@ async def delete():
     # Delete the folders
     for f in folders:
         shutil.rmtree(f.full_path)
+        
+    # Clear the cache for the deleted folders
+    path_to_folder.cache.clear() # type: ignore
 
     return jsonify(
         {

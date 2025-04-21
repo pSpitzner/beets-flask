@@ -12,6 +12,7 @@ import { forwardRef, Ref, useEffect, useRef, useState } from "react";
 import {
     Box,
     BoxProps,
+    CircularProgress,
     IconButton,
     Menu,
     MenuItem,
@@ -28,6 +29,7 @@ import {
 import { useMutation, UseMutationOptions } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
+import { deleteFoldersMutationOptions } from "@/api/inbox";
 import { enqueueMutationOptions } from "@/api/session";
 import { EnqueueKind, File, Folder } from "@/pythonTypes";
 
@@ -123,12 +125,7 @@ export function FolderActionsSpeedDial() {
                     mutateArgs={{}}
                 />
 
-                <SpeedDialMutationAction
-                    icon={<Trash2Icon />}
-                    tooltip="Delete folder"
-                    mutationOptions={enqueueMutationOptions}
-                    mutateArgs={{}}
-                />
+                <DeleteFoldersAction />
 
                 <SpeedDialMutationAction
                     icon={<HistoryIcon />}
@@ -136,6 +133,8 @@ export function FolderActionsSpeedDial() {
                     mutationOptions={enqueueMutationOptions}
                     mutateArgs={{}}
                 />
+
+                <RefreshAllFoldersButton />
             </SpeedDial>
         </Zoom>
     );
@@ -328,6 +327,28 @@ function TerminalImportAction({ ...props }: SpeedDialActionProps) {
                 navigate({
                     to: "/terminal",
                 }).catch(console.error);
+            }}
+            {...props}
+        />
+    );
+}
+
+function DeleteFoldersAction({ ...props }: SpeedDialActionProps) {
+    const { selected, deselectAll } = useFolderSelectionContext();
+    const { mutate, isPending } = useMutation(deleteFoldersMutationOptions);
+
+    // TODO: confirm popup + modifier key (alt? strg/cmd?) to skip confirmation
+
+    return (
+        <SpeedDialAction
+            icon={!isPending ? <Trash2Icon /> : <CircularProgress />}
+            tooltip="Delete folders"
+            onClick={() => {
+                mutate({
+                    folderPaths: selected.paths,
+                    folderHashes: selected.hashes,
+                });
+                deselectAll();
             }}
             {...props}
         />

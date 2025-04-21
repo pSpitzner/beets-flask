@@ -6,7 +6,7 @@
 
 import { UseMutationOptions } from "@tanstack/react-query";
 
-import type { Folder, InboxStats } from "@/pythonTypes";
+import type { File, Folder, InboxStats } from "@/pythonTypes";
 
 import { queryClient } from "./common";
 
@@ -71,7 +71,7 @@ export const deleteFoldersMutationOptions: UseMutationOptions<
             },
             body: JSON.stringify({
                 folder_paths: folderPaths,
-                folder_hashs: folderHashes,
+                folder_hashes: folderHashes,
             }),
         });
     },
@@ -85,14 +85,10 @@ export const deleteFoldersMutationOptions: UseMutationOptions<
         // Optimistically update to the new value
         queryClient.setQueryData<Folder[]>(["inbox"], (old) => {
             if (!old) return old;
-            return old.filter((folder) => {
-                const folderPath = folder.full_path;
-                const folderHash = folder.hash;
-                return (
-                    !folderPaths.includes(folderPath) &&
-                    !folderHashes.includes(folderHash)
-                );
-            });
+            // needs structured clone to trigger the rerender and avoid setstate issues
+            const new_folders = structuredClone(old);
+            deleteFromFolder(folderHashes, folderPaths, new_folders);
+            return new_folders;
         });
         // Return a context object with the snapshotted value
         return { previousInbox };
@@ -107,3 +103,28 @@ export const deleteFoldersMutationOptions: UseMutationOptions<
         await queryClient.invalidateQueries({ queryKey: ["inbox"] });
     },
 };
+
+function deleteFromFolder(
+    hashes: string[],
+    paths: string[],
+    folders: (Folder | File)[]
+) {
+    // break recursion
+    if (folders.length === 0) {
+        return;
+    }
+
+    // delete children if matches
+    for (let i = 0; i < folders.length; i++) {
+        const f = folders[i];
+        if (
+            f.type === "directory" &&
+            (hashes.includes(f.hash) || paths.includes(f.full_path))
+        ) {
+            folders.splice(i, 1);
+            i--;
+        } else if (f.type === "directory") {
+            deleteFromFolder(hashes, paths, f.children);
+        }
+    }
+}
