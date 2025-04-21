@@ -316,25 +316,6 @@ class TestImportBest(
         assert imported_path.exists(), "Should have imported the files"
         assert imported_path.is_file(), "Should have imported the files"
 
-    async def test_undo_with_missing_beets_items(self, db_session: Session, path: Path):
-        f = Folder.from_path(path)
-        items = self.beets_lib.items()
-
-        with self.beets_lib.transaction() as tx:
-            for item in items:
-                item.remove()
-
-        exc = await run_import_undo(
-            f.hash,
-            str(path),
-            delete_files=True,
-        )
-
-        assert exc is not None
-        assert isinstance(exc, Exception)
-        assert str(exc) == "No items found that match this import session id."
-
-    @pytest.mark.skip(reason="Implement")
     @pytest.mark.parametrize("duplicate_action", ["skip", "merge", "remove", "keep"])
     async def test_duplicate_with_action(
         self, db_session: Session, path: Path, duplicate_action
@@ -375,6 +356,24 @@ class TestImportBest(
         assert len(self.statuses) == 2
         assert self.statuses[0]["status"] == FolderStatus.IMPORTING
         assert self.statuses[1]["status"] == FolderStatus.IMPORTED
+
+    async def test_undo_with_missing_beets_items(self, db_session: Session, path: Path):
+        f = Folder.from_path(path)
+        items = self.beets_lib.items()
+
+        with self.beets_lib.transaction() as tx:
+            for item in items:
+                item.remove()
+
+        exc = await run_import_undo(
+            f.hash,
+            str(path),
+            delete_files=True,
+        )
+
+        assert exc is not None
+        assert isinstance(exc, Exception)
+        assert str(exc) == "No items found that match this import session id."
 
 
 class TestImportAsis(
