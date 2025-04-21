@@ -515,20 +515,26 @@ def manipulate_files(
         if task.should_remove_duplicates:
             task.remove_duplicates(session.lib)
 
-        if session.config["move"]:
-            operation = MoveOperation.MOVE
-        elif session.config["copy"]:
+        if session.config["copy"]:
             operation = MoveOperation.COPY
-        elif session.config["link"]:
-            operation = MoveOperation.LINK
-        elif session.config["hardlink"]:
-            operation = MoveOperation.HARDLINK
-        elif session.config["reflink"] == "auto":
-            operation = MoveOperation.REFLINK_AUTO
-        elif session.config["reflink"]:
-            operation = MoveOperation.REFLINK
+        # elif session.config["move"]:
+        #     operation = MoveOperation.MOVE
+        # elif session.config["link"]:
+        #     operation = MoveOperation.LINK
+        # elif session.config["hardlink"]:
+        #     operation = MoveOperation.HARDLINK
+        # elif session.config["reflink"] == "auto":
+        #     operation = MoveOperation.REFLINK_AUTO
+        # elif session.config["reflink"]:
+        #     operation = MoveOperation.REFLINK
+        # else:
+        #     operation = None
         else:
-            operation = None
+            log.warning(
+                "Beets-flask does not yet support other import modes than 'copy'. "
+                + "Please consider updating your config."
+            )
+            operation = MoveOperation.COPY
 
         task.manipulate_files(
             operation,
@@ -574,7 +580,7 @@ def _apply_choice(session: ImportSession, task: ImportTask):
         task.apply_metadata()
         plugins.send("import_task_apply", session=session, task=task)
 
-    # Needed to reinsert items into the db if they were removed earlier
+    # We need to reinsert items into the db if they were removed earlier
     item: BeetsItem
     for item in task.imported_items():
         item._db = session.lib
@@ -586,13 +592,6 @@ def _apply_choice(session: ImportSession, task: ImportTask):
 
     # copy of core logic from set_fields()
     items: list[BeetsItem] = task.imported_items()
-    
-    # HACK: To allow an reimport after an undo, we need to use the old
-    # paths of the items. This is a bit hacky, but I did not find
-    # a better way to do this while maintaining the original beets logic.
-    if task.old_paths:
-        for (i, item) in enumerate(items):
-            item.path = task.old_paths[i]
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     with session.lib.transaction():

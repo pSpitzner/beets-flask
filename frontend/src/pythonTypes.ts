@@ -98,7 +98,7 @@ export interface SerializedTaskState {
 	current_metadata: Metadata;
 	candidates: Array<SerializedCandidateState>;
 	duplicate_action: null | string;
-	current_candidate_id: null | string;
+	chosen_candidate_id: null | string;
 	completed: boolean;
 	toppath: null | string;
 	paths: Array<string>;

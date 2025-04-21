@@ -309,10 +309,21 @@ class TaskStateInDb(Base):
 
     # Relationships
     session_id: Mapped[str] = mapped_column(ForeignKey("session.id"))
-    session: Mapped[SessionStateInDb] = relationship(back_populates="tasks")
+    session: Mapped[SessionStateInDb] = relationship(
+        back_populates="tasks",
+        foreign_keys=[session_id],
+    )
 
     candidates: Mapped[List[CandidateStateInDb]] = relationship(
-        back_populates="task", cascade="all, delete-orphan"
+        back_populates="task",
+        foreign_keys="[CandidateStateInDb.task_id]",
+        cascade="all, delete-orphan",
+    )
+    # Set at the end of the import session
+    chosen_candidate_id: Mapped[str | None] = mapped_column(ForeignKey("candidate.id"))
+    chosen_candidate: Mapped[CandidateStateInDb | None] = relationship(
+        back_populates="task",
+        foreign_keys=[chosen_candidate_id],
     )
 
     toppath: Mapped[bytes | None]
@@ -320,6 +331,8 @@ class TaskStateInDb(Base):
     # To reconstruct the beets task we need to store a few of its attributes
     paths: Mapped[bytes]
     old_paths: Mapped[bytes | None]
+    # old_paths contain original file paths, but are only set when files are moved.
+    # (which breaks some deep links that before were identical to paths, but no more!)
     items: Mapped[bytes]
     choice_flag: Mapped[action | None]
 
@@ -339,6 +352,7 @@ class TaskStateInDb(Base):
         old_paths: List[bytes] | None = None,
         items: List[library.Item] = [],
         candidates: List[CandidateStateInDb] = [],
+        chosen_candidate_id: str | None = None,
         progress: Progress = Progress.NOT_STARTED,
         choice_flag: action | None = None,
         cur_artist: str | None = None,
@@ -356,6 +370,7 @@ class TaskStateInDb(Base):
 
         self.items = pickle.dumps(items)
         self.candidates = candidates
+        self.chosen_candidate_id = chosen_candidate_id
         self.progress = progress
         self.choice_flag = choice_flag
         self.cur_artist = cur_artist
@@ -368,7 +383,7 @@ class TaskStateInDb(Base):
             old_paths = state.task.old_paths
         else:
             old_paths = None
-        
+
         task = cls(
             toppath=state.task.toppath,
             paths=state.task.paths,
@@ -376,12 +391,12 @@ class TaskStateInDb(Base):
             candidates=[
                 CandidateStateInDb.from_live_state(c) for c in state.candidate_states
             ],
+            chosen_candidate_id=state.chosen_candidate_state_id,
             progress=state.progress.progress,
             choice_flag=state.task.choice_flag,
             cur_artist=state.task.cur_artist,
             cur_album=state.task.cur_album,
-            old_paths=old_paths
-
+            old_paths=old_paths,
         )
         return task
 
@@ -401,13 +416,14 @@ class TaskStateInDb(Base):
             pickle.loads(self.old_paths) if self.old_paths else None
         )
         # TODO: Update type hints once beets is updated
-        beets_task.old_paths = old_paths # type: ignore
+        beets_task.old_paths = old_paths  # type: ignore
 
         live_state = TaskState(beets_task)
         live_state.id = self.id
         live_state.candidate_states = [
             c.to_live_state(live_state) for c in self.candidates
         ]
+        live_state.chosen_candidate_state_id = self.chosen_candidate_id
         live_state.progress.progress = self.progress
 
         # Set candidate of beets_task
@@ -431,7 +447,10 @@ class CandidateStateInDb(Base):
     __tablename__ = "candidate"
 
     task_id: Mapped[str] = mapped_column(ForeignKey("task.id"))
-    task: Mapped[TaskStateInDb] = relationship(back_populates="candidates")
+    task: Mapped[TaskStateInDb] = relationship(
+        back_populates="candidates",
+        foreign_keys=[task_id],
+    )
 
     # Should deserialize to AlbumMatch|TrackMatch
     # ~4kb per match

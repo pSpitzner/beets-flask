@@ -168,6 +168,7 @@ class TaskState:
     id: str
     task: importer.ImportTask
     candidate_states: List[CandidateState]
+    chosen_candidate_state_id: str | None = None
     progress = ProgressState()
 
     # the completed state blocks the choose_match function
@@ -178,11 +179,6 @@ class TaskState:
     # None if no choice has been made yet
     # (or the frontend has not marked the default selection)
     duplicate_action: Literal["skip", "keep", "remove", "merge"] | None = None
-
-    current_candidate_id: str | None = None
-    current_search_id: str | None = None
-    current_search_artist: str | None = None
-    current_search_album: str | None = None
 
     def __init__(
         self,
@@ -201,19 +197,6 @@ class TaskState:
     ) -> Sequence[BeetsAlbumMatch | BeetsTrackMatch]:
         """Task candidates, i.e. possible matches to choose from."""
         return self.task.candidates
-
-    @property
-    @deprecated
-    def current_candidate_state(self) -> CandidateState | None:
-        """Returns the CandidateState of the currently selected candidate."""
-        cid = self.current_candidate_id
-        if cid is None:
-            return None
-
-        for c in self.candidate_states:
-            if c.id == cid:
-                return c
-        return None
 
     def add_candidates(
         self,
@@ -239,6 +222,12 @@ class TaskState:
             if c.id == id:
                 return c
         return None
+
+    @property
+    def chosen_candidate_state(self) -> CandidateState | None:
+        if self.chosen_candidate_state_id is None:
+            return None
+        return self.get_candidate_state_by_id(self.chosen_candidate_state_id)
 
     @property
     def toppath(self) -> Path | None:
@@ -309,6 +298,7 @@ class TaskState:
         """Current metadata of the task.
 
         This is the metadata of the music files on disk.
+        (In a beets context, cur_artist and cur_album)
         """
         likelies, consensus = autotag.current_metadata(self.items)
         return Metadata(**{k: str(v) for k, v in likelies.items()})
@@ -317,18 +307,12 @@ class TaskState:
 
     def serialize(self) -> SerializedTaskState:
         """JSON representation to match the frontend types."""
-        # Workaround to show initial selection on frontend
-        # if no candidate has been selected yet
-        current_id = self.current_candidate_id
-        if current_id is None and len(self.candidate_states) > 0:
-            current_id = self.candidate_states[0].id
-
         return SerializedTaskState(
             id=self.id,
             items=self.items_minimal,
             candidates=[c.serialize() for c in self.candidate_states],
             current_metadata=self.current_metadata,
-            current_candidate_id=current_id,
+            chosen_candidate_id=self.chosen_candidate_state_id,
             duplicate_action=self.duplicate_action,
             completed=self.completed,
             toppath=str(self.toppath),
@@ -676,7 +660,7 @@ class SerializedTaskState(TypedDict):
     candidates: List[SerializedCandidateState]
 
     duplicate_action: str | None
-    current_candidate_id: str | None
+    chosen_candidate_id: str | None
     completed: bool
     toppath: str | None
     paths: List[str]

@@ -121,7 +121,7 @@ class TestImportBest(
         assert s_state_live.folder_path == path
         assert len(s_state_live.task_states) == 1
         assert s_state_live.tasks[0].old_paths is None
-        
+
         t_state_live = s_state_live.task_states[0]
         assert t_state_live.progress == Progress.PREVIEW_COMPLETED
 
@@ -150,8 +150,8 @@ class TestImportBest(
             candidate_id=None,  # None uses best match
         )
         assert exc is None, "Should not return an error"
-        #raise NotImplementedError("Implement me")
-        
+        # raise NotImplementedError("Implement me")
+
         # Check that status was emitted correctly, we emit once before and once after run
         assert len(self.statuses) == 2
         assert self.statuses[0]["status"] == FolderStatus.IMPORTING
@@ -178,6 +178,7 @@ class TestImportBest(
             assert len(c.duplicate_ids) == 0, (
                 "Should not have duplicates in empty library"
             )
+        assert t_state_live.chosen_candidate_state_id is not None
 
         # Check that we have the items in the beets lib
         albums = self.beets_lib.albums()
@@ -189,7 +190,6 @@ class TestImportBest(
         album = albums[0]
         assert hasattr(album, "gui_import_id"), "Album should have gui_import_id"
         assert album.gui_import_id is not None, "Album should have gui_import_id"
-        
 
     async def test_reimport_fails(self, db_session: Session, path: Path):
         """Reimport should fail if the state is already imported.
@@ -275,14 +275,12 @@ class TestImportBest(
         assert self.statuses[0]["status"] == FolderStatus.DELETING
         assert self.statuses[1]["status"] == FolderStatus.DELETED
 
-        #
         items = self.beets_lib.items()
         assert len(items) == 0, "Should have removed all items from beets library"
         assert not imported_path.exists(), "Should have removed the imported files"
 
     async def test_undo_fails(self, db_session: Session, path: Path):
-        """ If the session is not in a imported state we should fail.
-        """
+        """If the session is not in a imported state we should fail."""
         f = Folder.from_path(path)
 
         exc = await run_import_undo(
@@ -302,9 +300,9 @@ class TestImportBest(
             str(path),
             candidate_id=None,  # None uses best match
         )
+        raise Exception
         assert exc is None
-        
-        
+
         # Check that we have the items in the beets lib
         albums = self.beets_lib.albums()
         assert len(albums) == 1, "Should have imported one album"

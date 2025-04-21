@@ -522,26 +522,22 @@ class ImportSession(BaseSession):
         self.logger.setLevel(logging.DEBUG)
         self.logger.debug(f"choose_match {task}")
 
+        task_state = self.state.get_task_state_for_task(task)
+        if task_state is None:
+            raise ValueError("No task state found for task.")
+
         # Pick by candidate id if given
         if self.candidate_id is not None:
-            task_state = self.state.get_task_state_for_task(task)
-            if task_state is None:
-                raise ValueError("No task state found for task.")
-
             candidate_state = task_state.get_candidate_state_by_id(self.candidate_id)
             if candidate_state is None:
                 raise ValueError(f"Candidate with id {self.candidate_id} not found.")
-
-            match = candidate_state.match
         else:
-            try:
-                match: BeetsAlbumMatch | BeetsTrackMatch = task.candidates[0]
-            except IndexError:
-                # FIXME: where and how is this handled? TODO: InvalidUrlError
-                log.error(f"No matches found for {task=} {task.candidates=}")
-                raise ValueError(
-                    "No matches found. Is the provided search URL correct?"
-                )
+            candidate_state = task_state.best_candidate_state
+            if candidate_state is None:
+                raise ValueError(f"No candidate found.")
+
+        # update task_state to keep track of the choice in the database
+        task_state.chosen_candidate_state_id = candidate_state.id
 
         # Let plugins display info
         results = plugins.send("import_task_before_choice", session=self, task=task)
@@ -553,7 +549,7 @@ class ImportSession(BaseSession):
                 f"Plugins returned actions, which is not supported for {self.__class__.__name__}"
             )
 
-        return match
+        return candidate_state.match
 
     def resolve_duplicate(
         self, task: importer.ImportTask, found_duplicates: list[BeetsAlbum]
@@ -944,6 +940,7 @@ class UndoSession(BaseSession):
         because we want to limit beets-library and file interactions to be serial
         to avoid conflicts.
         """
+
         if self.state.progress != Progress.IMPORT_COMPLETED:
             log.error(
                 f"Cannot undo import from state {self.state.progress}. "
@@ -954,8 +951,28 @@ class UndoSession(BaseSession):
             )
             raise self.state.exc
 
-        for task in self.state.task_states:
-            task.set_progress(Progress.DELETING)
+        for t_state in self.state.task_states:
+            t_state.set_progress(Progress.DELETING)
+
+        # Revert the movement of items that beets does during manipulate_files()
+        # TODO: support Move operations (currently we only allow copy)
+
+        # HACK: To allow an reimport after an undo, we need to use the old
+        # paths of the items. This is a bit hacky, but We did not find
+        # a better way to do this while maintaining the original beets logic.
+        # -> the old_paths attribute of a beets_task is set during task.manipulate_files()
+        # Unfortunately, here task.imported_items() does not work yet (.match not set)
+
+        for t_state in self.state.task_states:
+            chosen_candidate = t_state.chosen_candidate_state
+            if chosen_candidate is None:
+                raise ValueError("No chosen candidate found for task.")
+            if t_state.task.old_paths is None:
+                raise ValueError("No old paths found for task.")
+            for idx, item in enumerate(chosen_candidate.match.mapping.keys()):  # type: ignore
+                # yes, keys are the items and need to be updated!
+                # mapping maps objects to objects.
+                item.path = t_state.task.old_paths[idx]
 
         try:
             self.delete_from_beets()
@@ -964,8 +981,8 @@ class UndoSession(BaseSession):
             raise e
 
         # Update our state and progress
-        for task in self.state.task_states:
-            task.set_progress(Progress.DELETION_COMPLETED)
+        for t_state in self.state.task_states:
+            t_state.set_progress(Progress.DELETION_COMPLETED)
 
         return self.state
 
