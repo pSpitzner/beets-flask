@@ -14,7 +14,11 @@ from beets_flask.database.models.states import FolderInDb, SessionStateInDb
 from beets_flask.importer.progress import FolderStatus, Progress
 from beets_flask.logger import log
 from beets_flask.redis import wait_for_job_results
-from beets_flask.server.exceptions import InvalidUsageException, NotFoundException
+from beets_flask.server.exceptions import (
+    InvalidUsageException,
+    NotFoundException,
+    SerializedException,
+)
 from beets_flask.server.utility import get_folder_params, pop_query_param
 
 from .base import ModelAPIBlueprint
@@ -231,26 +235,16 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         return jsonify(stats)
 
 
-class ExceptionResponse(TypedDict):
-    """Allows to serialize exceptions and pass them to the user.
-
-    This is used when a preview fails, i.e. FolderStatus.FAILED
-    """
-
-    type: str  # type(exc).__name__ e.g. UserError
-    message: str  # str(exc)
-
-
 class FolderStatusResponse(TypedDict):
     path: str
     hash: str
     status: FolderStatus
-    exc: ExceptionResponse | None
+    exc: SerializedException | None
 
 
 def _get_folder_status_from_db(
     hash: str,
-) -> Tuple[FolderStatus, datetime | None, ExceptionResponse | None]:
+) -> Tuple[FolderStatus, datetime | None, SerializedException | None]:
     with db_session_factory() as db_session:
         stmt_s = (
             select(SessionStateInDb)
@@ -280,10 +274,7 @@ def _get_folder_status_from_db(
                 status = FolderStatus.DELETED
 
             if s_state_indb.exception is not None:
-                exc = ExceptionResponse(
-                    type=type(e).__name__,
-                    message=str(e),
-                )
+                exc = s_state_indb.exception
                 status = FolderStatus.FAILED
             else:
                 exc = None
@@ -293,7 +284,7 @@ def _get_folder_status_from_db(
 
 def _get_folder_status_from_queues(
     hash: str,
-) -> Tuple[FolderStatus, datetime | None, ExceptionResponse | None]:
+) -> Tuple[FolderStatus, datetime | None, SerializedException | None]:
     from beets_flask.redis import queues, redis_conn
 
     # could not simply import queues from beets_flask.redis ?
@@ -382,11 +373,16 @@ def _get_folder_status_from_queues(
         if (
             res is not None
             and res.return_value is not None
-            and isinstance(res.return_value, Exception)
+            # HACK: SerializedException contains a type and message attribute
+            and isinstance(res.return_value, dict)
+            and "type" in res.return_value
+            and "message" in res.return_value
         ):
-            exc = ExceptionResponse(
-                type=type(res.return_value).__name__,
-                message=str(res.return_value),
+            exc = SerializedException(
+                type=res.return_value["type"],
+                message=res.return_value["message"],
+                description=res.return_value.get("description"),
+                trace=res.return_value.get("trace"),
             )
             status = FolderStatus.FAILED
         else:

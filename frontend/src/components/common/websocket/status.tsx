@@ -65,12 +65,11 @@ export function StatusContextProvider({
                 }
             );
 
-            // If tagged or imported refetch the session
-            console.debug("StatusSocket", "update", updateData);
             if (
                 updateData.status == FolderStatus.IMPORTED ||
                 updateData.status == FolderStatus.PREVIEWED ||
-                updateData.status == FolderStatus.DELETED
+                updateData.status == FolderStatus.DELETED ||
+                updateData.status == FolderStatus.FAILED
             ) {
                 invalidateSession(updateData.hash, updateData.path, false).catch(
                     console.error

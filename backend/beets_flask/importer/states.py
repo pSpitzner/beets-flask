@@ -147,11 +147,7 @@ class SessionState:
         )
 
         if self.exc is not None:
-            r["exc"] = {
-                "type": type(self.exc).__name__,
-                "message": str(self.exc),
-                "description": self.exc.__doc__,
-            }
+            r["exc"] = self.exc
 
         return r
 

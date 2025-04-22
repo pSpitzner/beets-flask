@@ -136,9 +136,11 @@ export interface InboxStats {
 	nFiles: number;
 }
 
-export interface ExceptionResponse {
+export interface SerializedException {
 	type: string;
 	message: string;
+	description?: null | string;
+	trace?: null | string;
 }
 
 export enum FolderStatus {
@@ -158,7 +160,7 @@ export interface FolderStatusResponse {
 	path: string;
 	hash: string;
 	status: FolderStatus;
-	exc: ExceptionResponse | null;
+	exc: SerializedException | null;
 }
 
 export interface File {

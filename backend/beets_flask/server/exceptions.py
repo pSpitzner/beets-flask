@@ -1,3 +1,4 @@
+import traceback
 from typing import NotRequired, TypedDict
 
 
@@ -74,13 +75,18 @@ def to_serialized_exception(
     SerializedException
         The serialized exception.
     """
+
+    tb: str | None = None
+
+    if exception.__traceback__ is not None:
+        tb = "".join(traceback.format_tb(exception.__traceback__))
+
     return SerializedException(
         type=exception.__class__.__name__,
         message=str(exception),
         description=exception.__doc__,
-        trace=exception.__traceback__ and str(exception.__traceback__),
+        trace=tb,
     )
-
 
 
 __all__ = [
@@ -89,5 +95,5 @@ __all__ = [
     "InvalidUsageException",
     "NotFoundException",
     "IntegrityException",
-    "to_serialized_exception"
+    "to_serialized_exception",
 ]
