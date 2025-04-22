@@ -81,20 +81,7 @@ class Progress(Enum):
 
 class SerializedProgressState(TypedDict):
     # ugly to repeat, but no way to read the type hint from enum.
-    progress: Literal[
-        "NOT_STARTED",
-        "READING_FILES",
-        "GROUPING_ALBUMS",
-        "LOOKING_UP_CANDIDATES",
-        "IDENTIFYING_DUPLICATES",
-        "OFFERING_MATCHES",
-        "WAITING_FOR_USER_SELECTION",
-        "MATCH_THRESHOLD",
-        "EARLY_IMPORTING",
-        "IMPORTING",
-        "MANIPULATING_FILES",
-        "COMPLETED",
-    ]
+    progress: Progress
     message: str | None
     plugin_name: str | None
 
@@ -114,8 +101,7 @@ class ProgressState:
 
     def serialize(self) -> SerializedProgressState:
         return SerializedProgressState(
-            # mypy does not understand enum see https://github.com/python/mypy/issues/18786
-            progress=self.progress.name,  # type: ignore
+            progress=self.progress,
             message=self.message,
             plugin_name=self.plugin_name,
         )
