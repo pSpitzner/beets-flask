@@ -20,7 +20,15 @@ from pathlib import Path
 from typing import List, Optional
 
 from beets.importer import ImportTask, action, library
-from sqlalchemy import ForeignKey, ForeignKeyConstraint, LargeBinary, UniqueConstraint, func, select
+from beets_flask.server.exceptions import SerializedException
+from sqlalchemy import (
+    ForeignKey,
+    ForeignKeyConstraint,
+    LargeBinary,
+    UniqueConstraint,
+    func,
+    select,
+)
 from sqlalchemy.orm import (
     Mapped,
     Session,
@@ -177,9 +185,6 @@ class SessionStateInDb(Base):
 
     __tablename__ = "session"
 
-
-    
-
     tasks: Mapped[List[TaskStateInDb]] = relationship(
         back_populates="session",
         # all: All operations cascade i.e. session.merge!
@@ -193,14 +198,15 @@ class SessionStateInDb(Base):
     folder_hash: Mapped[str] = mapped_column(ForeignKey("folder.id"))
     folder_revision: Mapped[int] = mapped_column(default=0)
     __table_args__ = (
-        UniqueConstraint('folder_hash', 'folder_revision', name='uq_folder_hash_revision'),
+        UniqueConstraint(
+            "folder_hash", "folder_revision", name="uq_folder_hash_revision"
+        ),
     )
     # We have folder revisions to allow multiple sessions for the same folder hash,
     # the purpose being that we want to keep old sessions around. E.g. to not loose
     # old data when regenerating previews.
     # but at the same time, we want a soft 1:1 mapping between folder hash and session.
     # Thus, revisions are needed: the session-hash link always uses the highest revision.
-
 
     # FIXME: This should be a getter for the which queries the tasks
     progress: Mapped[Progress]
@@ -216,13 +222,13 @@ class SessionStateInDb(Base):
         id: str | None = None,
         tasks: List[TaskStateInDb] = [],
         progress: Progress = Progress.NOT_STARTED,
-        exc: Exception | None = None,
+        exc: SerializedException | None = None,
     ):
         super().__init__(id)
         self.folder = folder
         self.tasks = tasks
         self.progress = progress
-        self.exc = pickle.dumps(exc) if exc is not None else None
+        self.exc = pickle.dumps(exc) if exc else None
 
     @classmethod
     def from_live_state(cls, state: SessionState) -> SessionStateInDb:
@@ -287,7 +293,7 @@ class SessionStateInDb(Base):
                 query = (
                     select(cls)
                     .where(cls.folder_hash == hash)
-                    # hash+revision combos have unique constraints 
+                    # hash+revision combos have unique constraints
                     # and sessions always point to the latest / highest revision.
                     .order_by(cls.folder_revision.desc())
                 )
@@ -299,16 +305,14 @@ class SessionStateInDb(Base):
                     select(cls)
                     .join(cls.folder)
                     .where(FolderInDb.full_path == str(path))
-                    .order_by(
-                        cls.updated_at.desc(), cls.folder_revision.desc()
-                    )
+                    .order_by(cls.updated_at.desc(), cls.folder_revision.desc())
                 )
                 item = db_session.execute(query).scalars().first()
-                
+
             return item
 
     @property
-    def exception(self) -> Exception | None:
+    def exception(self) -> SerializedException | None:
         """Returns the exception of the session if it failed."""
         return pickle.loads(self.exc) if self.exc else None
 

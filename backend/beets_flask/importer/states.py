@@ -50,7 +50,7 @@ class SessionState:
 
     # If a session run fails we store the exc here
     # should be set to none whenever the session is started
-    exc: Exception | None = None
+    exc: SerializedException | None = None
 
     def __init__(self, folder: Folder | Path) -> None:
         # Alternate constructor is part of the SessionStateInDb class

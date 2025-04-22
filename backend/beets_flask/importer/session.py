@@ -22,6 +22,7 @@ from beets_flask.importer.types import (
     DuplicateAction,
 )
 from beets_flask.logger import log
+from beets_flask.server.exceptions import to_serialized_exception
 from beets_flask.utility import capture_stdout_stderr
 
 from .communicator import WebsocketCommunicator
@@ -280,7 +281,7 @@ class BaseSession(importer.ImportSession, ABC):
         except importer.ImportAbortError:
             log.debug(f"Interactive import session aborted by user")
         except Exception as e:
-            self.state.exc = e
+            self.state.exc = to_serialized_exception(e)
             raise e
 
         log.info(f"Completed {self.__class__.__name__} on state<{self.state.id=}>.")

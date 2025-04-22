@@ -9,12 +9,12 @@ from abc import ABC
 from pathlib import Path
 from unittest import mock
 
-from beets_flask.disk import Folder
 import pytest
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
+from beets_flask.disk import Folder
 from beets_flask.importer.progress import FolderStatus
 from beets_flask.invoker import (
     Progress,
@@ -129,7 +129,7 @@ class TestImportBest(
             assert len(c.duplicate_ids) == 0, (
                 "Should not have duplicates in empty library"
             )
-            
+
     async def test_regenerate_preview(self, db_session: Session, path: Path):
         """Test the regeneration of the preview of the import process.
 
@@ -139,13 +139,12 @@ class TestImportBest(
         """
         f = Folder.from_path(path)
 
-
         exc = await run_preview(
             f.hash,
             str(path),
         )
         assert exc is None, "Should not return an error"
-        
+
         stmt = select(SessionStateInDb.folder_revision)
         revisions = db_session.execute(stmt).scalars().all()
 
@@ -155,7 +154,8 @@ class TestImportBest(
 
         # clean up the second session
         stmt = delete(SessionStateInDb).where(
-            SessionStateInDb.folder_hash == f.hash, SessionStateInDb.folder_revision == 1
+            SessionStateInDb.folder_hash == f.hash,
+            SessionStateInDb.folder_revision == 1,
         )
         db_session.execute(stmt)
         db_session.commit()
@@ -241,8 +241,7 @@ class TestImportBest(
         )
 
         assert exc is not None
-        assert isinstance(exc, Exception)
-        assert str(exc) == "Cannot redo imports. Try undo and/or retag!"
+        assert exc["message"] == "Cannot redo imports. Try undo and/or retag!"
 
         assert len(self.statuses) == 2
         assert self.statuses[0]["status"] == FolderStatus.IMPORTING
@@ -275,8 +274,9 @@ class TestImportBest(
 
         # FIXME: We might want to raise our own exception here
         assert exc is not None
-        assert isinstance(exc, Exception)
-        assert str(exc) == "Duplicate action 'ask', but no user choice was provided."
+        assert (
+            exc["message"] == "Duplicate action 'ask', but no user choice was provided."
+        )
 
     async def test_undo(self, db_session: Session, path: Path):
         """Test the undo of the import process.
@@ -320,8 +320,7 @@ class TestImportBest(
         )
 
         assert exc is not None
-        assert isinstance(exc, Exception)
-        assert "Cannot undo if never imported" in str(exc)
+        assert "Cannot undo if never imported" in exc["message"]
 
     async def test_reimport_after_undo(self, db_session: Session, path: Path):
         # Case two: Import session valid but no beets items
@@ -399,8 +398,7 @@ class TestImportBest(
         )
 
         assert exc is not None
-        assert isinstance(exc, Exception)
-        assert str(exc) == "No items found that match this import session id."
+        assert exc["message"] == "No items found that match this import session id."
 
 
 class TestImportAsis(

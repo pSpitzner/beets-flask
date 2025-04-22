@@ -17,7 +17,6 @@ from typing import (
     Awaitable,
     Callable,
     Concatenate,
-    Literal,
     ParamSpec,
     TypeVar,
 )
@@ -44,6 +43,7 @@ from beets_flask.importer.session import (
 from beets_flask.importer.states import SessionState
 from beets_flask.importer.types import DuplicateAction
 from beets_flask.redis import import_queue, preview_queue
+from beets_flask.server.exceptions import SerializedException, to_serialized_exception
 from beets_flask.server.routes.exception import InvalidUsageException
 from beets_flask.server.websocket.status import send_folder_status_update
 
@@ -127,7 +127,7 @@ def emit_status(
 
 def exception_as_return_value(
     f: Callable[P, Awaitable[R]],
-) -> Callable[P, Awaitable[R | Exception]]:
+) -> Callable[P, Awaitable[R | SerializedException]]:
     """Decorator to catch exceptions and return them as a values.
 
     This is used to catch exceptions in the redis worker and return them
@@ -136,14 +136,14 @@ def exception_as_return_value(
     """
 
     @functools.wraps(f)
-    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R | Exception:
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R | SerializedException:
         try:
-            ret = await f(*args, **kwargs)
+            ret = await f(*args, **kwargs)            
         except Exception as e:
             log.exception(e)
-            # uncomment for traceback
-            # log.exception(e)
-            return e
+            # Some exceptions are not serializable, so we need to convert them to a
+            # serialized format. E.g. OSErrors
+            return to_serialized_exception(e)
 
         return ret
 

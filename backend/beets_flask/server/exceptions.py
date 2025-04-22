@@ -57,10 +57,37 @@ class IntegrityException(ApiException):
     status_code: int = 409
 
 
+def to_serialized_exception(
+    exception: Exception,
+) -> SerializedException:
+    """Convert an exception to a serialized format.
+
+    Parameters
+    ----------
+    exception : Exception
+        The exception to serialize.
+    description : str | None, optional
+        A description of the error, by default None
+
+    Returns
+    -------
+    SerializedException
+        The serialized exception.
+    """
+    return SerializedException(
+        type=exception.__class__.__name__,
+        message=str(exception),
+        description=exception.__doc__,
+        trace=exception.__traceback__ and str(exception.__traceback__),
+    )
+
+
+
 __all__ = [
     "SerializedException",
     "ApiException",
     "InvalidUsageException",
     "NotFoundException",
     "IntegrityException",
+    "to_serialized_exception"
 ]
