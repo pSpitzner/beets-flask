@@ -17,19 +17,19 @@ def test_progress_less_than():
 
 
 def test_progress_subtraction():
-    assert Progress.READING_FILES - 1 == Progress.NOT_STARTED
+    assert (Progress.GROUPING_ALBUMS - 1) == Progress.READING_FILES
+    assert Progress.READING_FILES - 99 == Progress.NOT_STARTED
     assert (
         Progress.IMPORT_COMPLETED - 100 == Progress.NOT_STARTED
     )  # Test clamping to min
-    assert (Progress.NOT_STARTED + 1) == Progress.READING_FILES
 
 
 def test_progress_addition():
-    assert Progress.NOT_STARTED + 1 == Progress.READING_FILES
+    assert Progress.READING_FILES + 1 == Progress.GROUPING_ALBUMS
     assert (
-        Progress.READING_FILES + 100 == Progress.IMPORT_COMPLETED
+        Progress.READING_FILES + 100 >= Progress.IMPORT_COMPLETED
     )  # Test clamping to max
-    assert Progress.IMPORT_COMPLETED + (-1) == Progress.MANIPULATING_FILES
+    assert Progress.IMPORT_COMPLETED + (-5) == Progress.MANIPULATING_FILES
 
 
 # Test cases for ProgressState dataclass

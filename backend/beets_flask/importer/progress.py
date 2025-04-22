@@ -72,7 +72,7 @@ class Progress(Enum):
         if not isinstance(other, int):
             raise TypeError("Unsupported type for addition")
 
-        other = max(min(self.value - other, 12), 0)
+        other = max(min(self.value - other, 50), 0)
         return Progress(other)
 
     def __add__(self, other: int) -> Progress:
