@@ -60,6 +60,8 @@ function RootComponent() {
                         // if we want to move Navbar bottom
                         // marginTop: { xs: 0, md: "64px" },
                         overflow: "auto",
+                        display: "flex",
+                        flexDirection: "column",
                     })}
                 >
                     <Box sx={{ height: "100%" }}>

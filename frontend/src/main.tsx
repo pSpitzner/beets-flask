@@ -9,6 +9,7 @@ import { configQueryOptions } from "@/api/config";
 import { Loading } from "@/components/common/loading";
 import { StatusContextProvider } from "@/components/common/websocket/status";
 
+import { PageWrapper } from "./components/common/page";
 import { ErrorCard } from "./errors";
 import ThemeProvider from "./theme";
 
@@ -54,17 +55,15 @@ const router = createRouter({
 
     // Error handling
     defaultErrorComponent: ({ error }) => (
-        <Box
+        <PageWrapper
             sx={{
-                display: "flex",
-                width: "100%",
                 height: "100%",
-                justifyContent: "center",
-                alignItems: "center",
             }}
         >
-            <ErrorCard error={error} />
-        </Box>
+            <Box sx={{ my: "auto", width: "100%" }}>
+                <ErrorCard error={error} />
+            </Box>
+        </PageWrapper>
     ),
 });
 

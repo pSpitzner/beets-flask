@@ -1,7 +1,6 @@
-import { useEffect } from "react";
-import Accordion from "@mui/material/Accordion";
-import AccordionDetails from "@mui/material/AccordionDetails";
-import AccordionSummary from "@mui/material/AccordionSummary";
+import { ArrowLeftIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Avatar, Button, CardHeader, Divider, Paper, useTheme } from "@mui/material";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardActions from "@mui/material/CardActions";
@@ -9,6 +8,9 @@ import CardContent from "@mui/material/CardContent";
 import CardMedia from "@mui/material/CardMedia";
 import Link from "@mui/material/Link";
 import Typography from "@mui/material/Typography";
+import { useRouter } from "@tanstack/react-router";
+
+import { SerializedException } from "./pythonTypes";
 
 import brokenRecord from "@/assets/broken-record.png";
 
@@ -27,31 +29,139 @@ export function ErrorCard({ error }: { error: Error }) {
     }, [error]);
 
     return (
-        <Card
-            sx={(theme) => ({
-                maxWidth: theme.breakpoints.values.laptop,
-                margin: "auto",
-                padding: "0.25rem",
-                gap: "0.5rem",
-                display: "flex",
-                flexDirection: "column",
-            })}
-        >
-            <Box sx={{ display: "flex", gap: "1rem" }}>
-                <CardContent>
-                    <Typography
-                        gutterBottom
-                        sx={{ color: "text.secondary", fontSize: 14 }}
+        <GenericErrorCard
+            title="Unexpected Error"
+            subtitle="Oh no! Seems like we dropped a beat!"
+            color="primary"
+            exc={{
+                type: error.name,
+                message: error.message,
+                description: error.message,
+                trace: error.stack,
+            }}
+            showSocials={true}
+        />
+    );
+}
+
+export function GenericErrorCard({
+    title,
+    subtitle,
+    color,
+    exc,
+    showSocials = false,
+}: {
+    title: string;
+    subtitle: string;
+    color: "primary" | "secondary";
+    exc: SerializedException;
+    showSocials?: boolean;
+}) {
+    const theme = useTheme();
+    const router = useRouter();
+    const [showDetails, setShowDetails] = useState(false);
+
+    return (
+        <Card elevation={3} sx={{ width: "100%" }}>
+            {/* Card Header */}
+            <CardHeader
+                avatar={
+                    <Avatar
+                        sx={{
+                            bgcolor: `${color}.muted`,
+                            width: 60,
+                            height: 60,
+                        }}
                     >
-                        {error.name}
+                        <CardMedia
+                            component="img"
+                            image={brokenRecord}
+                            sx={{
+                                height: "auto",
+                                objectFit: "contain",
+                            }}
+                            title="broken record"
+                        />
+                    </Avatar>
+                }
+                title={
+                    <Typography variant="h5" fontWeight="bold">
+                        {title}
                     </Typography>
-                    <Typography
-                        variant="h5"
-                        component="div"
-                        sx={{ fontWeight: "bold", fontSize: 20 }}
-                    >
-                        Oh no! Seems like we dropped a beat!
+                }
+                subheader={subtitle}
+                sx={{
+                    pb: 3,
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
+                    "& .MuiCardHeader-subheader": {
+                        color: "text.secondary",
+                    },
+                }}
+            />
+            <CardContent sx={{ pt: 3, overflow: "auto" }}>
+                <Box sx={{ mb: 3 }}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Error Type
                     </Typography>
+                    <Paper variant="outlined" sx={{ p: 1.5, bgcolor: "#0a0a0a" }}>
+                        <Typography variant="body1" fontFamily="monospace">
+                            {exc.type}
+                        </Typography>
+                    </Paper>
+                </Box>
+
+                <Box sx={{ mb: 3 }}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Message
+                    </Typography>
+                    <Paper variant="outlined" sx={{ p: 1.5, bgcolor: "#0a0a0a" }}>
+                        <Typography variant="body1" fontFamily="monospace">
+                            {exc.message}
+                        </Typography>
+                    </Paper>
+                </Box>
+
+                {showDetails && (
+                    <>
+                        <Box sx={{ mb: 1 }}>
+                            <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                gutterBottom
+                            >
+                                Description
+                            </Typography>
+                            <Paper
+                                variant="outlined"
+                                sx={{ p: 1.5, bgcolor: "#0a0a0a", overflowX: "auto" }}
+                            >
+                                <Typography variant="body2" fontFamily="monospace">
+                                    {exc.description || "No description available"}
+                                </Typography>
+                            </Paper>
+                        </Box>
+                        <Box sx={{ mb: 1 }}>
+                            <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                gutterBottom
+                            >
+                                Stack Trace
+                            </Typography>
+                            <Paper
+                                variant="outlined"
+                                sx={{ p: 1.5, bgcolor: "#0a0a0a", overflowX: "auto" }}
+                            >
+                                <Typography variant="body2" fontFamily="monospace">
+                                    <pre>{exc.trace || "No stack trace available"}</pre>
+                                </Typography>
+                            </Paper>
+                        </Box>
+                    </>
+                )}
+
+                {showSocials && (
                     <Typography
                         variant="body2"
                         sx={{ color: "text.secondary", marginTop: "0.2rem" }}
@@ -62,53 +172,55 @@ export function ErrorCard({ error }: { error: Error }) {
                         </Link>
                         .
                     </Typography>
-                </CardContent>
-                <CardMedia
-                    component="img"
-                    image={brokenRecord}
-                    sx={{ maxWidth: "150px", height: "auto", objectFit: "contain" }}
-                    title="broken record"
-                />
-            </Box>
-            <CardActions>
-                <div style={{ width: "100%" }}>
-                    <Accordion
-                        disableGutters
-                        sx={(theme) => ({
-                            width: "100%",
-                            padding: 0,
-                            backgroundColor: "transparent",
-                            border: `1px solid ${theme.palette.divider}`,
-                        })}
+                )}
+            </CardContent>
+
+            <Divider />
+
+            <CardActions sx={{ justifyContent: "space-between", p: 2 }}>
+                <Button
+                    variant="outlined"
+                    onClick={() => setShowDetails(!showDetails)}
+                    startIcon={
+                        showDetails ? (
+                            <ChevronDownIcon size={theme.iconSize.sm} />
+                        ) : (
+                            <ChevronUpIcon size={theme.iconSize.sm} />
+                        )
+                    }
+                    size="small"
+                    color={color}
+                >
+                    {showDetails ? "Hide Details" : "Show Details"}
+                </Button>
+                <Box sx={{ display: "flex", gap: 1, ml: "auto" }}>
+                    <Button
+                        variant="outlined"
+                        startIcon={<ArrowLeftIcon size={theme.iconSize.sm} />}
+                        sx={{ mr: 1 }}
+                        size="small"
+                        color={color}
+                        onClick={async () => {
+                            if (router.history.canGoBack()) {
+                                router.history.back();
+                            } else {
+                                await router.navigate({ to: "/" });
+                            }
+                        }}
                     >
-                        <AccordionSummary>
-                            <Typography component="span">Error Message</Typography>
-                        </AccordionSummary>
-                        <AccordionDetails sx={{ display: "flex", fontSize: 12 }}>
-                            <pre>{error?.message}</pre>
-                        </AccordionDetails>
-                    </Accordion>
-                    <Accordion
-                        disableGutters
-                        sx={(theme) => ({
-                            width: "100%",
-                            padding: 0,
-                            margin: 0,
-                            backgroundColor: "transparent",
-                            border: `1px solid ${theme.palette.divider}`,
-                            borderTop: "none",
-                        })}
+                        Go Back
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color={color}
+                        size="small"
+                        onClick={async () => {
+                            await router.invalidate();
+                        }}
                     >
-                        <AccordionSummary>
-                            <Typography component="span">Stack Trace</Typography>
-                        </AccordionSummary>
-                        <AccordionDetails
-                            sx={{ display: "flex", fontSize: 12, overflow: "auto" }}
-                        >
-                            <pre>{error?.stack}</pre>
-                        </AccordionDetails>
-                    </Accordion>
-                </div>
+                        Retry
+                    </Button>
+                </Box>
             </CardActions>
         </Card>
     );
