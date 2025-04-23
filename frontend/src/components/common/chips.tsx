@@ -16,7 +16,7 @@ import { Link } from "@tanstack/react-router";
 
 import { useConfig } from "@/api/config";
 import { sessionQueryOptions, statusQueryOptions } from "@/api/session";
-import { Folder, FolderStatus } from "@/pythonTypes";
+import { Folder, FolderStatus, Progress } from "@/pythonTypes";
 
 import { FolderStatusIcon, PenaltyTypeIcon, SourceTypeIconWithTooltip } from "./icons";
 
@@ -103,6 +103,9 @@ export function DuplicateChip({ folder, ...props }: { folder: Folder } & ChipPro
         return null;
     }
 
+    if (session.status.progress >= Progress.IMPORT_COMPLETED) {
+        return null;
+    }
     return (
         <Tooltip title="This album is already in your beets library!">
             <StyledChip

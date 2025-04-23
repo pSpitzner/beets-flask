@@ -624,6 +624,8 @@ class SerializedSessionState(TypedDict):
     folder_hash: str
     tasks: List[SerializedTaskState]
     status: SerializedProgressState
+
+    # TODO: This seems unused, should be removed
     completed: bool
 
     exc: NotRequired[SerializedException | None]
