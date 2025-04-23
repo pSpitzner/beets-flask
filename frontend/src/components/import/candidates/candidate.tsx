@@ -10,7 +10,9 @@ import {
     ReactNode,
     useCallback,
     useContext,
+    useEffect,
     useMemo,
+    useRef,
     useState,
 } from "react";
 import {
@@ -212,10 +214,11 @@ const CandidateInfoRow = styled(Box)(({ theme }) => ({
     // Styling
     backgroundColor: theme.palette.background.paper,
     borderRadius: theme.shape.borderRadius,
-    padding: theme.spacing(1),
+    paddingInline: theme.spacing(1),
+    paddingBlock: theme.spacing(0.5),
 
     // Gap between rows
-    marginTop: theme.spacing(1),
+    marginTop: theme.spacing(0.5),
     ":nth-of-type(1)": {
         marginTop: theme.spacing(0),
     },
@@ -225,6 +228,10 @@ const CandidateInfoRow = styled(Box)(({ theme }) => ({
         borderBottomLeftRadius: 0,
         borderBottomRightRadius: 0,
         borderBottom: `1px solid ${theme.palette.divider}`,
+    },
+
+    '&[data-selected="true"]': {
+        backgroundColor: theme.palette.action.selected,
     },
 }));
 
@@ -244,37 +251,52 @@ const CandidateDetailsRow = styled(Box)(({ theme }) => ({
         display: "none",
     },
 
+    '&[data-selected="true"]': {
+        backgroundColor: theme.palette.action.selected,
+    },
+
     flexDirection: "column",
 }));
 
 function TopBar({ candidates }: { candidates: SerializedCandidateState[] }) {
+    const theme = useTheme();
     const { expandedCandidates, collapseAll, expandAll } = useCandidatesContext();
 
     return (
-        <ButtonGroup
-            size="small"
-            sx={{
-                marginLeft: "auto",
-            }}
-            color="secondary"
-        >
-            <Button
-                disabled={expandedCandidates.size === candidates.length}
-                onClick={expandAll}
-                startIcon={<ChevronsUpDownIcon size={20} />}
+        <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
+            <Typography variant="caption">
+                Choose one of the following candidate to import. The selected candidate
+                will be used to update the metadata of the files.
+            </Typography>
+            <ButtonGroup
+                size="small"
+                sx={{
+                    marginLeft: "auto",
+                }}
+                color="secondary"
             >
-                Expand all
-            </Button>
-            <Button
-                disabled={expandedCandidates.size === 0}
-                onClick={collapseAll}
-                startIcon={<ChevronsDownUpIcon size={20} />}
-            >
-                Collapse all
-            </Button>
-        </ButtonGroup>
+                <IconButton
+                    color="secondary"
+                    disabled={expandedCandidates.size === candidates.length}
+                    onClick={expandAll}
+                    title="Expand all"
+                >
+                    <ChevronsUpDownIcon size={theme.iconSize.lg} />
+                </IconButton>
+                <IconButton
+                    color="secondary"
+                    disabled={expandedCandidates.size === 0}
+                    onClick={collapseAll}
+                    title="Collapse all"
+                >
+                    <ChevronsDownUpIcon size={theme.iconSize.lg} />
+                </IconButton>
+            </ButtonGroup>
+        </Box>
     );
 }
+
+/* ----------------------------- Trigger import ----------------------------- */
 
 function BottomBar({
     candidates,
@@ -283,6 +305,10 @@ function BottomBar({
     candidates: SerializedCandidateState[];
     folderHash: string;
 }) {
+    const [duplicateAction, setDuplicateAction] = useState<
+        "skip" | "merge" | "keep" | "remove" | null
+    >(null);
+
     const { selected } = useCandidatesContext();
 
     const selectedCandidate = useMemo(() => {
@@ -290,8 +316,15 @@ function BottomBar({
     }, [candidates, selected]);
 
     if (!selectedCandidate) {
+        // should not happen!
         return "No candidate selected";
     }
+    let duplicateError: string | null = null;
+    if (selectedCandidate.duplicate_ids.length > 0 && !duplicateAction) {
+        duplicateError = `Please choose an action on how to resolve the duplicates from the library.`;
+    }
+
+    const isError = duplicateError !== null;
 
     return (
         <Box
@@ -301,6 +334,7 @@ function BottomBar({
                 flexDirection: "column",
                 justifyContent: "flex-end",
                 gap: 0.5,
+                mt: 2,
             }}
         >
             <Box
@@ -311,19 +345,33 @@ function BottomBar({
                     justifyContent: "flex-end",
                 }}
             >
-                <Typography variant="caption" color="error">
-                    If an error occurs while importing, we could show it here instead of
-                    the import label.
+                <Typography
+                    variant="caption"
+                    color="error"
+                    display={isError ? "block" : "none"}
+                >
+                    {duplicateError}
                 </Typography>
                 <ImportCandidateLabel
                     candidate={selectedCandidate}
-                    sx={{ textAlign: "right" }}
+                    sx={{ textAlign: "right", display: isError ? "none" : "block" }}
                 />
             </Box>
             <Box sx={{ display: "flex", gap: 1 }}>
                 <CandidateSearch folderHash={folderHash} />
-                <DuplicateActions sx={{ marginLeft: "auto" }} />
-                <ImportCandidateButton candidate={selectedCandidate} />
+                <Box sx={{ display: "flex", gap: 1, marginLeft: "auto" }}>
+                    {selectedCandidate.duplicate_ids.length > 0 && (
+                        <DuplicateActions
+                            selectedCandidate={selectedCandidate}
+                            duplicateAction={duplicateAction}
+                            setDuplicateAction={setDuplicateAction}
+                        />
+                    )}
+                    <ImportCandidateButton
+                        candidate={selectedCandidate}
+                        duplicateAction={duplicateAction}
+                    />
+                </Box>
             </Box>
         </Box>
     );
@@ -336,14 +384,28 @@ function BottomBar({
  * Shows a row with the major information about the candidate.
  */
 function CandidateInfo({ candidate }: { candidate: SerializedCandidateState }) {
+    const ref = useRef<HTMLDivElement>(null);
     const { isExpanded, toggleExpanded, selected, setSelected } =
         useCandidatesContext();
     const theme = useTheme();
 
     const expanded = isExpanded(candidate.id);
+
+    useEffect(() => {
+        // Set css data-expanded attribute to the ref element
+        // using ref for performance reasons
+        if (ref.current) {
+            ref.current.setAttribute("data-expanded", String(expanded));
+            ref.current.setAttribute(
+                "data-selected",
+                String(selected === candidate.id)
+            );
+        }
+    }, [expanded, selected]);
+
     return useMemo(() => {
         return (
-            <CandidateInfoRow data-expanded={expanded}>
+            <CandidateInfoRow ref={ref}>
                 <Box gridColumn="selector" display="flex">
                     <Radio
                         checked={selected === candidate.id}
@@ -408,13 +470,26 @@ function CandidateDetails({
     items: SerializedTaskState["items"];
     metadata: SerializedTaskState["current_metadata"];
 }) {
-    const { isExpanded } = useCandidatesContext();
+    const ref = useRef<HTMLDivElement>(null);
+    const { isExpanded, selected } = useCandidatesContext();
 
     const expanded = isExpanded(candidate.id);
 
+    useEffect(() => {
+        // Set css data-expanded attribute to the ref element
+        // using ref for performance reasons
+        if (ref.current) {
+            ref.current.setAttribute("data-expanded", String(expanded));
+            ref.current.setAttribute(
+                "data-selected",
+                String(selected === candidate.id)
+            );
+        }
+    }, [expanded, selected]);
+
     return useMemo(() => {
         return (
-            <CandidateDetailsRow data-expanded={expanded}>
+            <CandidateDetailsRow ref={ref}>
                 <Box
                     sx={{
                         display: "flex",
@@ -463,7 +538,7 @@ function CandidateDetails({
                 {/* Tracks */}
             </CandidateDetailsRow>
         );
-    }, [expanded]);
+    }, []);
 }
 /** Overview of changes to metadata if track
  * is applied.

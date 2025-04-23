@@ -1,5 +1,16 @@
-import { ArrowLeftIcon } from "lucide-react";
-import { Box, Button, styled, Typography, useTheme } from "@mui/material";
+import { ArrowLeftIcon, FolderIcon, ImportIcon, TagIcon } from "lucide-react";
+import {
+    Avatar,
+    Box,
+    Button,
+    Divider,
+    Step,
+    StepLabel,
+    Stepper,
+    styled,
+    Typography,
+    useTheme,
+} from "@mui/material";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 
@@ -183,13 +194,85 @@ function RouteComponent() {
     }
 
     // Session is running or finished but no exception
+
     switch (data.status.progress) {
         case Progress.PREVIEW_COMPLETED:
         case Progress.DELETION_COMPLETED:
             return (
-                <PageWrapper>
-                    <h1>Generated previews</h1>
-                    <pre>TODO</pre>
+                <PageWrapper
+                    sx={(theme) => ({
+                        [theme.breakpoints.up("laptop")]: {
+                            padding: 2,
+                            gap: 2,
+                        },
+                        padding: 0.5,
+                        gap: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                    })}
+                >
+                    Stepper needs more work or maybe we just remove it
+                    <SessionStepper step="preview" />
+                    <Box
+                        sx={{
+                            display: "flex",
+                            gap: 2,
+                            alignItems: "center",
+                            padding: 2,
+                            bgcolor: "background.paper",
+                            borderRadius: 1,
+                        }}
+                    >
+                        <Avatar
+                            sx={{
+                                color: "white",
+                                bgcolor: "secondary.main",
+                            }}
+                        >
+                            <FolderIcon />
+                        </Avatar>
+                        <Box>
+                            <Typography
+                                variant="body2"
+                                component="div"
+                                sx={{
+                                    fontWeight: 600,
+                                }}
+                            >
+                                {data.folder_path}
+                            </Typography>
+                            <Typography variant="body2" component="div">
+                                {data.folder_hash}
+                            </Typography>
+                        </Box>
+                        <Box sx={{ ml: "auto", alignSelf: "flex-start" }}>
+                            <Typography variant="caption" component="div">
+                                Includes{" "}
+                                {data.tasks.reduce(
+                                    (acc, task) => acc + task.items.length,
+                                    0
+                                )}{" "}
+                                items
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            width: "100%",
+                            gap: 1,
+                            justifyContent: "space-between",
+                            backgroundColor: "background.paper",
+                            borderRadius: 1,
+                            padding: 2,
+                            flexDirection: "column",
+                        }}
+                    >
+                        <TaskCandidates
+                            task={data.tasks[0]}
+                            folderHash={data.folder_hash}
+                        ></TaskCandidates>
+                    </Box>
                 </PageWrapper>
             );
         case Progress.IMPORT_COMPLETED:
@@ -248,5 +331,162 @@ function SessionException({
             exc={exc}
             showSocials={true}
         />
+    );
+}
+
+import StepConnector, { stepConnectorClasses } from "@mui/material/StepConnector";
+
+const ColorlibConnector = styled(StepConnector)(({ theme }) => ({
+    [`&.${stepConnectorClasses.alternativeLabel}`]: {
+        top: 19,
+    },
+    [`&.${stepConnectorClasses.active}`]: {
+        [`& .${stepConnectorClasses.line}`]: {
+            backgroundImage: `linear-gradient( 95deg,${theme.palette.secondary.muted} 0%, ${theme.palette.secondary.main} 100%)`,
+        },
+    },
+    [`&.${stepConnectorClasses.completed}`]: {
+        [`& .${stepConnectorClasses.line}`]: {
+            backgroundImage: `linear-gradient( 95deg, ${theme.palette.secondary.muted} 0%,  ${theme.palette.secondary.muted} 100%)`,
+        },
+    },
+    [`& .${stepConnectorClasses.line}`]: {
+        height: 3,
+        border: 0,
+        backgroundColor: "#eaeaf0",
+        borderRadius: 1,
+        ...theme.applyStyles("dark", {
+            backgroundColor: theme.palette.grey[800],
+        }),
+    },
+}));
+
+const ColorlibStepIconRoot = styled(Box)<{
+    ownerState: { completed?: boolean; active?: boolean };
+}>(({ theme }) => ({
+    backgroundColor: "#ccc",
+    zIndex: 1,
+    color: theme.palette.common.white,
+    width: 40,
+    height: 40,
+    display: "flex",
+    borderRadius: "50%",
+    justifyContent: "center",
+    alignItems: "center",
+
+    ...theme.applyStyles("dark", {
+        backgroundColor: theme.palette.grey[700],
+    }),
+    variants: [
+        {
+            props: ({ ownerState }) => ownerState.active,
+            style: {
+                backgroundImage: `linear-gradient( 136deg,${theme.palette.secondary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                boxShadow: "0 4px 10px 0 rgba(0,0,0,.25)",
+            },
+        },
+        {
+            props: ({ ownerState }) => ownerState.completed,
+            style: {
+                backgroundImage: `linear-gradient( 95deg, ${theme.palette.secondary.muted} 0%,  ${theme.palette.secondary.muted} 100%)`,
+            },
+        },
+    ],
+}));
+
+import { StepIconProps } from "@mui/material/StepIcon";
+
+import { TaskCandidates } from "@/components/import/candidates/candidate";
+
+function ColorlibStepIcon(props: StepIconProps) {
+    const { active, completed, className } = props;
+
+    return (
+        <ColorlibStepIconRoot ownerState={{ completed, active }} className={className}>
+            {props.icon}
+        </ColorlibStepIconRoot>
+    );
+}
+
+function SessionStepper({ step }: { step: "preview" | "import" }) {
+    const options = [
+        {
+            label: "Created",
+            icon: <FolderIcon />,
+        },
+        {
+            label: "Tagged",
+            icon: <TagIcon />,
+        },
+        {
+            label: "Imported",
+            icon: <ImportIcon />,
+        },
+    ];
+
+    return (
+        <Stepper
+            alternativeLabel
+            activeStep={step === "preview" ? 1 : 2}
+            connector={<ColorlibConnector />}
+            sx={{
+                width: "100%",
+
+                ".MuiStep-alternativeLabel:nth-of-type(1)": {
+                    flexGrow: 0.5,
+                    paddingLeft: 0,
+                    "& > * ": {
+                        "& > *": {
+                            display: "flex",
+                            width: "auto",
+                        },
+                        justifyContent: "flex-start",
+                        alignItems: "flex-start",
+                        flexShrink: 1,
+                    },
+                },
+
+                ".MuiStep-alternativeLabel:nth-of-type(3)": {
+                    flexGrow: 0.5,
+                    paddingRight: 0,
+                    "& > * ": {
+                        "& > *": {
+                            display: "flex",
+                            width: "auto",
+                        },
+                        justifyContent: "flex-end",
+                        alignItems: "flex-end",
+                        flexShrink: 1,
+                    },
+                    ".MuiStepConnector-root": {
+                        width: "calc(200% - 20px)",
+                        left: "-100%",
+                    },
+                },
+
+                ".MuiStepLabel-label": {
+                    marginTop: 0.75,
+                    "&.Mui-completed": {
+                        color: "secondary.muted",
+                    },
+                    "&.Mui-active": {
+                        color: "secondary.main",
+                    },
+                },
+            }}
+        >
+            {options.map(({ label, icon }) => (
+                <Step key={label}>
+                    <StepLabel
+                        slots={{
+                            stepIcon: ColorlibStepIcon,
+                        }}
+                        icon={icon}
+                    >
+                        {label}
+                    </StepLabel>
+                </Step>
+            ))}
+        </Stepper>
     );
 }

@@ -1,4 +1,5 @@
 import {
+    ArrowRightIcon,
     CheckIcon,
     CopyMinusIcon,
     CopyPlusIcon,
@@ -70,17 +71,25 @@ function candidateMatchText({ candidate }: { candidate: SerializedCandidateState
 
 export function ImportCandidateButton({
     candidate,
+    duplicateAction = null,
 }: {
     candidate: SerializedCandidateState;
+    duplicateAction: string | null;
 }) {
+    const theme = useTheme();
+
+    const pendingDuplicateAction =
+        candidate.duplicate_ids.length > 0 && !duplicateAction;
+
     return (
         <Button
-            variant="outlined"
-            color="primary"
-            startIcon={<CheckIcon size={14} />}
+            variant="contained"
+            color="secondary"
+            endIcon={<ArrowRightIcon size={theme.iconSize.sm} />}
             onClick={() => {
                 alert("TODO: Import " + candidate.info.data_url);
             }}
+            disabled={pendingDuplicateAction}
         >
             Import
         </Button>
@@ -127,19 +136,46 @@ const DuplicateActionButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
 /** Actions which are shown if a candidate is already
  * existing in the database. I.e. duplicate
  */
-export function DuplicateActions({ ...props }: Omit<ToggleButtonGroupProps, "color">) {
+export function DuplicateActions({
+    setDuplicateAction,
+    duplicateAction,
+    selectedCandidate,
+    ...props
+}: Omit<ToggleButtonGroupProps, "color"> & {
+    duplicateAction: "skip" | "merge" | "keep" | "remove" | null;
+    setDuplicateAction: (action: "skip" | "merge" | "keep" | "remove" | null) => void;
+    selectedCandidate: SerializedCandidateState;
+}) {
+    const actions = ["skip", "merge", "keep", "remove"] as const;
+
     return (
         <DuplicateActionButtonGroup
             exclusive
-            color="primary"
-            disabled={true}
+            color="secondary"
+            disabled={selectedCandidate.duplicate_ids.length === 0}
             aria-label="duplicate actions"
+            title={
+                selectedCandidate.duplicate_ids.length > 0
+                    ? "This candidate is a duplicate of an existing item"
+                    : "No duplicates found"
+            }
             {...props}
         >
-            <DuplicateActionButton value="skip" />
-            <DuplicateActionButton value="merge" />
-            <DuplicateActionButton value="keep" />
-            <DuplicateActionButton value="remove" />
+            {actions.map((action) => (
+                <DuplicateActionButton
+                    key={action}
+                    value={action}
+                    selected={duplicateAction === action}
+                    onClick={() => {
+                        if (action === duplicateAction) {
+                            setDuplicateAction(null);
+                            return;
+                        }
+                        setDuplicateAction(action);
+                    }}
+                    color="secondary"
+                />
+            ))}
         </DuplicateActionButtonGroup>
     );
 }
