@@ -406,12 +406,14 @@ function CandidateInfo({ candidate }: { candidate: SerializedCandidateState }) {
         }
     }, [expanded, selected]);
 
+    const candidateSelected = selected === candidate.id;
+
     return useMemo(() => {
         return (
             <CandidateInfoRow ref={ref}>
                 <Box gridColumn="selector" display="flex">
                     <Radio
-                        checked={selected === candidate.id}
+                        checked={candidateSelected}
                         onChange={() => {
                             setSelected(candidate.id);
                         }}
@@ -457,7 +459,7 @@ function CandidateInfo({ candidate }: { candidate: SerializedCandidateState }) {
                 </Box>
             </CandidateInfoRow>
         );
-    }, [expanded, selected]);
+    }, [expanded, candidateSelected]);
 }
 
 /** Candidate details.
