@@ -81,7 +81,7 @@ export function TaskCandidates({
     return (
         <CandidatesContextProvider candidates={sortedCandidates}>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                <TopBar candidates={task.candidates} />
+                <TopBar candidates={task.candidates} folderHash={folderHash} />
 
                 <GridWrapper>
                     {sortedCandidates.map((candidate) => (
@@ -258,23 +258,27 @@ const CandidateDetailsRow = styled(Box)(({ theme }) => ({
     flexDirection: "column",
 }));
 
-function TopBar({ candidates }: { candidates: SerializedCandidateState[] }) {
+function TopBar({
+    candidates,
+    folderHash,
+}: {
+    candidates: SerializedCandidateState[];
+    folderHash: string;
+}) {
     const theme = useTheme();
     const { expandedCandidates, collapseAll, expandAll } = useCandidatesContext();
 
     return (
-        <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
-            <Typography variant="caption">
-                Choose one of the following candidate to import. The selected candidate
-                will be used to update the metadata of the files.
-            </Typography>
-            <ButtonGroup
-                size="small"
-                sx={{
-                    marginLeft: "auto",
-                }}
-                color="secondary"
-            >
+        <Box
+            sx={{
+                display: "flex",
+                gap: 1,
+                alignItems: "flex-end",
+                justifyContent: "flex-end",
+            }}
+        >
+            <CandidateSearch folderHash={folderHash} />
+            <ButtonGroup size="small" color="secondary">
                 <IconButton
                     color="secondary"
                     disabled={expandedCandidates.size === candidates.length}
@@ -358,7 +362,6 @@ function BottomBar({
                 />
             </Box>
             <Box sx={{ display: "flex", gap: 1 }}>
-                <CandidateSearch folderHash={folderHash} />
                 <Box sx={{ display: "flex", gap: 1, marginLeft: "auto" }}>
                     {selectedCandidate.duplicate_ids.length > 0 && (
                         <DuplicateActions
@@ -417,6 +420,7 @@ function CandidateInfo({ candidate }: { candidate: SerializedCandidateState }) {
                         sx={{
                             padding: 0,
                         }}
+                        color="secondary"
                     />
                 </Box>
                 <Box gridColumn="match" display="flex" justifyContent="flex-end">

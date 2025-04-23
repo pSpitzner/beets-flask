@@ -255,10 +255,14 @@ export function CandidateSearch({ folderHash }: { folderHash: string }) {
                 <Button
                     variant="outlined"
                     color="secondary"
+                    size="small"
                     onClick={() => setOpen(true)}
                     startIcon={
                         isPending ? (
-                            <CircularProgress size={theme.iconSize.sm} />
+                            <CircularProgress
+                                size={theme.iconSize.sm}
+                                color="secondary"
+                            />
                         ) : (
                             <SearchIcon size={theme.iconSize.sm} />
                         )

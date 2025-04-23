@@ -3,7 +3,6 @@ import {
     Avatar,
     Box,
     Button,
-    Divider,
     Step,
     StepLabel,
     Stepper,
@@ -213,6 +212,7 @@ function RouteComponent() {
                 >
                     Stepper needs more work or maybe we just remove it
                     <SessionStepper step="preview" />
+                    {/* Session info */}
                     <Box
                         sx={{
                             display: "flex",
@@ -260,7 +260,7 @@ function RouteComponent() {
                         sx={{
                             display: "flex",
                             width: "100%",
-                            gap: 1,
+                            gap: 2,
                             justifyContent: "space-between",
                             backgroundColor: "background.paper",
                             borderRadius: 1,
@@ -268,6 +268,38 @@ function RouteComponent() {
                             flexDirection: "column",
                         }}
                     >
+                        <Box
+                            sx={{
+                                display: "flex",
+                                gap: 2,
+                                alignItems: "center",
+                            }}
+                        >
+                            <Avatar
+                                sx={{
+                                    color: "white",
+                                    bgcolor: "secondary.main",
+                                }}
+                            >
+                                <TagIcon />
+                            </Avatar>
+                            <Box>
+                                <Typography
+                                    variant="body2"
+                                    component="div"
+                                    sx={{
+                                        fontWeight: 600,
+                                    }}
+                                >
+                                    Select a candidate
+                                </Typography>
+                                <Typography variant="body2" component="div">
+                                    Choose one of the following candidates to import.
+                                    The selected candidate will be used to update the
+                                    metadata of the files.
+                                </Typography>
+                            </Box>
+                        </Box>
                         <TaskCandidates
                             task={data.tasks[0]}
                             folderHash={data.folder_hash}
