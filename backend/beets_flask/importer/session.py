@@ -436,8 +436,9 @@ class ImportSession(BaseSession):
                 f"Cannot run {self.__class__.__name__} from states that already "
                 + f"completed an import. (i.e. other imports) [{self.state.progress}]"
             )
-            self.state.exc = UserError("Cannot redo imports. Try undo and/or retag!")
-            raise self.state.exc
+            e = UserError("Cannot redo imports. Try undo and/or retag!")
+            self.state.exc = to_serialized_exception(e)
+            raise e
         elif self.state.progress > Progress.PREVIEW_COMPLETED:
             log.warning(
                 f"Resetting state from {self.state.progress} to PREVIEW_COMPLETED for "
@@ -947,10 +948,11 @@ class UndoSession(BaseSession):
                 f"Cannot undo import from state {self.state.progress}. "
                 + "Only imports can be undone."
             )
-            self.state.exc = UserError(
+            e = UserError(
                 "Cannot undo if never imported! You need to import to undo first."
             )
-            raise self.state.exc
+            self.state.exc = to_serialized_exception(e)
+            raise e
 
         for t_state in self.state.task_states:
             t_state.set_progress(Progress.DELETING)
@@ -978,7 +980,7 @@ class UndoSession(BaseSession):
         try:
             self.delete_from_beets()
         except Exception as e:
-            self.state.exc = e
+            self.state.exc = to_serialized_exception(e)
             raise e
 
         # Update our state and progress

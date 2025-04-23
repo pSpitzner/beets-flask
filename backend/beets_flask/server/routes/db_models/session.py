@@ -81,6 +81,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
 
         # Params
         - `kind` (str): The kind of the tag. See `invoker.EnqueueKind`.
+
         """
 
         folder_hashes, folder_paths, params = await get_folder_params()
@@ -128,12 +129,8 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
 
         # Get additional params for search with a bit of validation
         search_ids: list[str] = pop_query_param(params, "search_ids", list, default=[])
-        search_artist: str | None = pop_query_param(
-            params, "search_artist", str, default=None
-        )
-        search_album: str | None = pop_query_param(
-            params, "search_album", str, default=None
-        )
+        search_artist: str | None = pop_query_param(params, "search_artist", str)
+        search_album: str | None = pop_query_param(params, "search_album", str)
 
         search_ids = list(
             filter(
