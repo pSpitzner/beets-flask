@@ -95,9 +95,12 @@ export const enqueueMutationOptions: UseMutationOptions<
     {
         selected: FolderSelectionContext["selected"];
         kind: EnqueueKind;
+
+        // Allow for extra params
+        [key: string]: unknown;
     }
 > = {
-    mutationFn: async ({ selected, kind }) => {
+    mutationFn: async ({ selected, kind, ...extra }) => {
         return await fetch("/session/enqueue", {
             method: "POST",
             headers: {
@@ -107,6 +110,7 @@ export const enqueueMutationOptions: UseMutationOptions<
                 kind: kind.toString(),
                 folder_hashes: selected.hashes,
                 folder_paths: selected.paths,
+                ...extra,
             }),
         });
     },

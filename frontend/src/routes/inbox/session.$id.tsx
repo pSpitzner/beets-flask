@@ -3,9 +3,8 @@ import {
     Avatar,
     Box,
     Button,
-    Step,
-    StepLabel,
-    Stepper,
+    Card,
+    CardHeader,
     styled,
     Typography,
     useTheme,
@@ -192,133 +191,18 @@ function RouteComponent() {
         );
     }
 
-    // Session is running or finished but no exception
-
+    // Show loading indicator is session is not completed
+    // FIXME: This is more of theoretical thing. We do not have
+    // a websocket connection yet to communicate the progress
+    // of a session thus the loading indicator is not really
+    // used yet.
+    // Should be used in the future tho.
     switch (data.status.progress) {
         case Progress.PREVIEW_COMPLETED:
         case Progress.DELETION_COMPLETED:
-            return (
-                <PageWrapper
-                    sx={(theme) => ({
-                        [theme.breakpoints.up("laptop")]: {
-                            padding: 2,
-                            gap: 2,
-                        },
-                        padding: 0.5,
-                        gap: 1,
-                        display: "flex",
-                        flexDirection: "column",
-                    })}
-                >
-                    Stepper needs more work or maybe we just remove it
-                    <SessionStepper step="preview" />
-                    {/* Session info */}
-                    <Box
-                        sx={{
-                            display: "flex",
-                            gap: 2,
-                            alignItems: "center",
-                            padding: 2,
-                            bgcolor: "background.paper",
-                            borderRadius: 1,
-                        }}
-                    >
-                        <Avatar
-                            sx={{
-                                color: "white",
-                                bgcolor: "secondary.main",
-                            }}
-                        >
-                            <FolderIcon />
-                        </Avatar>
-                        <Box>
-                            <Typography
-                                variant="body2"
-                                component="div"
-                                sx={{
-                                    fontWeight: 600,
-                                }}
-                            >
-                                {data.folder_path}
-                            </Typography>
-                            <Typography variant="body2" component="div">
-                                {data.folder_hash}
-                            </Typography>
-                        </Box>
-                        <Box sx={{ ml: "auto", alignSelf: "flex-start" }}>
-                            <Typography variant="caption" component="div">
-                                Includes{" "}
-                                {data.tasks.reduce(
-                                    (acc, task) => acc + task.items.length,
-                                    0
-                                )}{" "}
-                                items
-                            </Typography>
-                        </Box>
-                    </Box>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            width: "100%",
-                            gap: 2,
-                            justifyContent: "space-between",
-                            backgroundColor: "background.paper",
-                            borderRadius: 1,
-                            padding: 2,
-                            flexDirection: "column",
-                        }}
-                    >
-                        <Box
-                            sx={{
-                                display: "flex",
-                                gap: 2,
-                                alignItems: "center",
-                            }}
-                        >
-                            <Avatar
-                                sx={{
-                                    color: "white",
-                                    bgcolor: "secondary.main",
-                                }}
-                            >
-                                <TagIcon />
-                            </Avatar>
-                            <Box>
-                                <Typography
-                                    variant="body2"
-                                    component="div"
-                                    sx={{
-                                        fontWeight: 600,
-                                    }}
-                                >
-                                    Select a candidate
-                                </Typography>
-                                <Typography variant="body2" component="div">
-                                    Choose one of the following candidates to import.
-                                    The selected candidate will be used to update the
-                                    metadata of the files.
-                                </Typography>
-                            </Box>
-                        </Box>
-                        <TaskCandidates
-                            task={data.tasks[0]}
-                            folderHash={data.folder_hash}
-                        ></TaskCandidates>
-                    </Box>
-                </PageWrapper>
-            );
         case Progress.IMPORT_COMPLETED:
-            return (
-                <PageWrapper>
-                    <h1>Folder imported</h1>
-                    <pre>TODO</pre>
-                </PageWrapper>
-            );
+            break;
         default:
-            // In theory we can show a loading indicator for each
-            // of the sessions state here. We do not have
-            // a websocket connection yet to communicate the progress
-            // of a session but we could add this in the future
             return (
                 <PageWrapper
                     sx={{
@@ -333,6 +217,45 @@ function RouteComponent() {
                 </PageWrapper>
             );
     }
+
+    return (
+        <PageWrapper
+            sx={(theme) => ({
+                [theme.breakpoints.up("laptop")]: {
+                    padding: 2,
+                    gap: 2,
+                },
+                padding: 0.5,
+                gap: 1,
+                display: "flex",
+                flexDirection: "column",
+            })}
+        >
+            <Box
+                sx={{
+                    display: "flex",
+                    gap: 2,
+                    alignItems: "center",
+                    flexDirection: "column",
+                    padding: 2,
+                }}
+            >
+                Stepper needs more work or maybe we just remove it
+                <SessionStepper
+                    step={
+                        data.status.progress < Progress.IMPORT_COMPLETED
+                            ? "preview"
+                            : "import"
+                    }
+                />
+            </Box>
+            {/* Session info */}
+            <SessionOverviewCard session={data} />
+            {/* Session preview card */}
+            <SessionPreviewCard session={data} />
+            <SessionImportCard session={data} />
+        </PageWrapper>
+    );
 }
 
 /** Shown if an session exception occurs
@@ -341,6 +264,8 @@ function RouteComponent() {
  * all exceptions are handled equally but in theory we could e.g.
  * handle the duplicate 'ask' exception differently.
  */
+import { SessionStepper } from "@/components/experimental/stepper";
+import { TaskCandidates } from "@/components/import/candidates/candidate";
 import { GenericErrorCard } from "@/errors";
 
 function SessionException({
@@ -366,159 +291,178 @@ function SessionException({
     );
 }
 
-import StepConnector, { stepConnectorClasses } from "@mui/material/StepConnector";
-
-const ColorlibConnector = styled(StepConnector)(({ theme }) => ({
-    [`&.${stepConnectorClasses.alternativeLabel}`]: {
-        top: 19,
-    },
-    [`&.${stepConnectorClasses.active}`]: {
-        [`& .${stepConnectorClasses.line}`]: {
-            backgroundImage: `linear-gradient( 95deg,${theme.palette.secondary.muted} 0%, ${theme.palette.secondary.main} 100%)`,
-        },
-    },
-    [`&.${stepConnectorClasses.completed}`]: {
-        [`& .${stepConnectorClasses.line}`]: {
-            backgroundImage: `linear-gradient( 95deg, ${theme.palette.secondary.muted} 0%,  ${theme.palette.secondary.muted} 100%)`,
-        },
-    },
-    [`& .${stepConnectorClasses.line}`]: {
-        height: 3,
-        border: 0,
-        backgroundColor: "#eaeaf0",
-        borderRadius: 1,
-        ...theme.applyStyles("dark", {
-            backgroundColor: theme.palette.grey[800],
-        }),
-    },
-}));
-
-const ColorlibStepIconRoot = styled(Box)<{
-    ownerState: { completed?: boolean; active?: boolean };
-}>(({ theme }) => ({
-    backgroundColor: "#ccc",
-    zIndex: 1,
-    color: theme.palette.common.white,
-    width: 40,
-    height: 40,
-    display: "flex",
-    borderRadius: "50%",
-    justifyContent: "center",
-    alignItems: "center",
-
-    ...theme.applyStyles("dark", {
-        backgroundColor: theme.palette.grey[700],
-    }),
-    variants: [
-        {
-            props: ({ ownerState }) => ownerState.active,
-            style: {
-                backgroundImage: `linear-gradient( 136deg,${theme.palette.secondary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-                boxShadow: "0 4px 10px 0 rgba(0,0,0,.25)",
-            },
-        },
-        {
-            props: ({ ownerState }) => ownerState.completed,
-            style: {
-                backgroundImage: `linear-gradient( 95deg, ${theme.palette.secondary.muted} 0%,  ${theme.palette.secondary.muted} 100%)`,
-            },
-        },
-    ],
-}));
-
-import { StepIconProps } from "@mui/material/StepIcon";
-
-import { TaskCandidates } from "@/components/import/candidates/candidate";
-
-function ColorlibStepIcon(props: StepIconProps) {
-    const { active, completed, className } = props;
-
+/** Shows the general session information
+ * should be independent of the session state
+ * e.g. folder path, number of items, etc.
+ */
+function SessionOverviewCard({ session }: { session: SerializedSessionState }) {
     return (
-        <ColorlibStepIconRoot ownerState={{ completed, active }} className={className}>
-            {props.icon}
-        </ColorlibStepIconRoot>
+        <Box
+            sx={{
+                display: "flex",
+                gap: 2,
+                alignItems: "center",
+                padding: 2,
+                bgcolor: "background.paper",
+                borderRadius: 1,
+            }}
+        >
+            <Avatar
+                sx={{
+                    color: "white",
+                    bgcolor: "secondary.main",
+                }}
+            >
+                <FolderIcon />
+            </Avatar>
+            <Box>
+                <Typography
+                    variant="body2"
+                    component="div"
+                    sx={{
+                        fontWeight: 600,
+                    }}
+                >
+                    {session.folder_path}
+                </Typography>
+                <Typography variant="body2" component="div">
+                    {session.folder_hash}
+                </Typography>
+            </Box>
+            <Box sx={{ ml: "auto", alignSelf: "flex-start" }}>
+                <Typography variant="caption" component="div">
+                    Includes{" "}
+                    {session.tasks.reduce((acc, task) => acc + task.items.length, 0)}{" "}
+                    items
+                </Typography>
+            </Box>
+        </Box>
     );
 }
 
-function SessionStepper({ step }: { step: "preview" | "import" }) {
-    const options = [
-        {
-            label: "Created",
-            icon: <FolderIcon />,
-        },
-        {
-            label: "Tagged",
-            icon: <TagIcon />,
-        },
-        {
-            label: "Imported",
-            icon: <ImportIcon />,
-        },
-    ];
+/** Shows the  */
 
-    return (
-        <Stepper
-            alternativeLabel
-            activeStep={step === "preview" ? 1 : 2}
-            connector={<ColorlibConnector />}
-            sx={{
-                width: "100%",
-
-                ".MuiStep-alternativeLabel:nth-of-type(1)": {
-                    flexGrow: 0.5,
-                    paddingLeft: 0,
-                    "& > * ": {
-                        "& > *": {
-                            display: "flex",
-                            width: "auto",
-                        },
-                        justifyContent: "flex-start",
-                        alignItems: "flex-start",
-                        flexShrink: 1,
-                    },
-                },
-
-                ".MuiStep-alternativeLabel:nth-of-type(3)": {
-                    flexGrow: 0.5,
-                    paddingRight: 0,
-                    "& > * ": {
-                        "& > *": {
-                            display: "flex",
-                            width: "auto",
-                        },
-                        justifyContent: "flex-end",
-                        alignItems: "flex-end",
-                        flexShrink: 1,
-                    },
-                    ".MuiStepConnector-root": {
-                        width: "calc(200% - 20px)",
-                        left: "-100%",
-                    },
-                },
-
-                ".MuiStepLabel-label": {
-                    marginTop: 0.75,
-                    "&.Mui-completed": {
-                        color: "secondary.muted",
-                    },
-                    "&.Mui-active": {
-                        color: "secondary.main",
-                    },
-                },
-            }}
-        >
-            {options.map(({ label, icon }) => (
-                <Step key={label}>
-                    <StepLabel
-                        slots={{
-                            stepIcon: ColorlibStepIcon,
+function SessionPreviewCard({ session }: { session: SerializedSessionState }) {
+    // Show selected candidate if progress is
+    // imported
+    if (session.status.progress < Progress.IMPORT_COMPLETED) {
+        return (
+            <Card sx={{ padding: 2 }}>
+                <Box
+                    sx={{
+                        display: "flex",
+                        gap: 2,
+                        alignItems: "center",
+                    }}
+                >
+                    <Avatar
+                        sx={{
+                            color: "white",
+                            bgcolor: "secondary.main",
                         }}
-                        icon={icon}
                     >
-                        {label}
-                    </StepLabel>
-                </Step>
-            ))}
-        </Stepper>
+                        <TagIcon />
+                    </Avatar>
+                    <Box>
+                        <Typography
+                            variant="body2"
+                            component="div"
+                            sx={{
+                                fontWeight: 600,
+                            }}
+                        >
+                            Select a candidate
+                        </Typography>
+                        <Typography variant="body2" component="div">
+                            Choose one of the following candidates to import. The
+                            selected candidate will be used to update the metadata of
+                            the files.
+                        </Typography>
+                    </Box>
+                </Box>
+                <TaskCandidates
+                    task={session.tasks[0]}
+                    folderHash={session.folder_hash}
+                    folderPath={session.folder_path}
+                />
+            </Card>
+        );
+    } else if (session.status.progress === Progress.IMPORT_COMPLETED) {
+        return (
+            <Card sx={{ padding: 2 }}>
+                <Box
+                    sx={{
+                        display: "flex",
+                        gap: 2,
+                        alignItems: "center",
+                    }}
+                >
+                    <Avatar
+                        sx={{
+                            color: "white",
+                            bgcolor: "secondary.main",
+                        }}
+                    >
+                        <TagIcon />
+                    </Avatar>
+                    <Box>
+                        <Typography
+                            variant="body2"
+                            component="div"
+                            sx={{
+                                fontWeight: 600,
+                            }}
+                        >
+                            Candidate selected
+                        </Typography>
+                        <Typography variant="body2" component="div">
+                            TODO: show selected candidate
+                        </Typography>
+                    </Box>
+                </Box>
+            </Card>
+        );
+    }
+
+    return null;
+}
+
+function SessionImportCard({ session }: { session: SerializedSessionState }) {
+    if (session.status.progress < Progress.IMPORT_COMPLETED) {
+        return null;
+    }
+    return (
+        <Card sx={{ padding: 2 }}>
+            <Box
+                sx={{
+                    display: "flex",
+                    gap: 2,
+                    alignItems: "center",
+                }}
+            >
+                <Avatar
+                    sx={{
+                        color: "white",
+                        bgcolor: "secondary.main",
+                    }}
+                >
+                    <ImportIcon />
+                </Avatar>
+                <Box>
+                    <Typography
+                        variant="body2"
+                        component="div"
+                        sx={{
+                            fontWeight: 600,
+                        }}
+                    >
+                        Import completed
+                    </Typography>
+                    <Typography variant="body2" component="div">
+                        TODO: show import result. Needs a bit more thought I guess.
+                    </Typography>
+                </Box>
+            </Box>
+        </Card>
     );
 }

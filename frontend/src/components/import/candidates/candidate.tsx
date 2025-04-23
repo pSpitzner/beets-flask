@@ -16,7 +16,6 @@ import {
     useState,
 } from "react";
 import {
-    Button,
     ButtonGroup,
     Divider,
     IconButton,
@@ -56,9 +55,11 @@ import { PenaltyIconRow } from "../icons";
 export function TaskCandidates({
     task,
     folderHash,
+    folderPath,
 }: {
     task: SerializedTaskState;
     folderHash: string;
+    folderPath: string;
 }) {
     const asisCandidate = useMemo(
         () => task.candidates.find((c) => c.info.data_source === "asis"),
@@ -96,7 +97,11 @@ export function TaskCandidates({
                     ))}
                 </GridWrapper>
 
-                <BottomBar candidates={task.candidates} folderHash={folderHash} />
+                <BottomBar
+                    candidates={task.candidates}
+                    folderHash={folderHash}
+                    folderPath={folderPath}
+                />
             </Box>
         </CandidatesContextProvider>
     );
@@ -305,9 +310,11 @@ function TopBar({
 function BottomBar({
     candidates,
     folderHash,
+    folderPath,
 }: {
     candidates: SerializedCandidateState[];
     folderHash: string;
+    folderPath: string;
 }) {
     const [duplicateAction, setDuplicateAction] = useState<
         "skip" | "merge" | "keep" | "remove" | null
@@ -373,6 +380,8 @@ function BottomBar({
                     <ImportCandidateButton
                         candidate={selectedCandidate}
                         duplicateAction={duplicateAction}
+                        folderHash={folderHash}
+                        folderPath={folderPath}
                     />
                 </Box>
             </Box>

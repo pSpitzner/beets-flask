@@ -29,7 +29,7 @@ import { useMutation } from "@tanstack/react-query";
 
 import { addCandidateMutationOptions, enqueueMutationOptions } from "@/api/session";
 import { Dialog } from "@/components/common/dialogs";
-import { SerializedCandidateState } from "@/pythonTypes";
+import { EnqueueKind, SerializedCandidateState } from "@/pythonTypes";
 
 /** Text that is show as an indicator
  * how good a match is.
@@ -72,11 +72,16 @@ function candidateMatchText({ candidate }: { candidate: SerializedCandidateState
 export function ImportCandidateButton({
     candidate,
     duplicateAction = null,
+    folderHash,
+    folderPath,
 }: {
     candidate: SerializedCandidateState;
     duplicateAction: string | null;
+    folderHash: string;
+    folderPath: string;
 }) {
     const theme = useTheme();
+    const { mutateAsync } = useMutation(enqueueMutationOptions);
 
     const pendingDuplicateAction =
         candidate.duplicate_ids.length > 0 && !duplicateAction;
@@ -86,8 +91,17 @@ export function ImportCandidateButton({
             variant="contained"
             color="secondary"
             endIcon={<ArrowRightIcon size={theme.iconSize.sm} />}
-            onClick={() => {
-                alert("TODO: Import " + candidate.info.data_url);
+            onClick={async () => {
+                console.log("Importing candidate", candidate.id);
+                await mutateAsync({
+                    selected: {
+                        paths: [folderPath],
+                        hashes: [folderHash],
+                    },
+                    kind: EnqueueKind.IMPORT_CANDIDATE,
+                    candidate_id: candidate.id,
+                    duplicate_action: duplicateAction,
+                });
             }}
             disabled={pendingDuplicateAction}
         >
