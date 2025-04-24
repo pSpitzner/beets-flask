@@ -30,6 +30,7 @@ import { useMutation } from "@tanstack/react-query";
 import { addCandidateMutationOptions, enqueueMutationOptions } from "@/api/session";
 import { Dialog } from "@/components/common/dialogs";
 import { EnqueueKind, SerializedCandidateState } from "@/pythonTypes";
+import { useStatusSocket } from "@/components/common/websocket/status";
 
 /** Text that is show as an indicator
  * how good a match is.
@@ -244,6 +245,7 @@ function DuplicateActionButton({
 
 export function CandidateSearch({ folderHash }: { folderHash: string }) {
     const theme = useTheme();
+    const socket = useStatusSocket().socket;
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState<{
         ids: string[];
@@ -390,6 +392,8 @@ export function CandidateSearch({ folderHash }: { folderHash: string }) {
                             }
                             onClick={async () => {
                                 await mutateAsync({
+                                    socket: socket,
+                                    // PS@SM: where to handle socket null check? Doing it deeper inside the mutation options seems wrong. do an early return above?
                                     folder_hash: folderHash,
                                     search_ids: search.ids,
                                     search_album: search.album,

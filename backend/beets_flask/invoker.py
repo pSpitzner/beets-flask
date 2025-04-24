@@ -10,6 +10,7 @@ It combines:
 
 from __future__ import annotations
 
+import asyncio
 import functools
 from enum import Enum
 from typing import (
@@ -17,8 +18,12 @@ from typing import (
     Awaitable,
     Callable,
     Concatenate,
+    NotRequired,
+    Optional,
     ParamSpec,
+    TypedDict,
     TypeVar,
+    Unpack,
 )
 
 from rq.job import Job
@@ -45,7 +50,10 @@ from beets_flask.importer.types import DuplicateAction
 from beets_flask.redis import import_queue, preview_queue
 from beets_flask.server.exceptions import SerializedException, to_serialized_exception
 from beets_flask.server.routes.exception import InvalidUsageException
-from beets_flask.server.websocket.status import send_folder_status_update
+from beets_flask.server.websocket.status import (
+    send_folder_status_update,
+    send_job_status_update,
+)
 
 if TYPE_CHECKING:
     from rq.job import Job
@@ -56,7 +64,7 @@ R = TypeVar("R")  # Return
 P = ParamSpec("P")  # Parameters
 
 
-def emit_status(
+def emit_folder_status(
     before: FolderStatus | None = None, after: FolderStatus | None = None
 ) -> Callable[
     [Callable[Concatenate[str, str, P], Awaitable[R]]],
@@ -125,6 +133,30 @@ def emit_status(
     return decorator
 
 
+def emit_update_on_job_change(job, connection, result, *args, **kwargs):
+    """
+    Callback for rq enqueue functions to emit a job status update via websocket.
+
+    See https://python-rq.org/docs/#success-callback
+    """
+    log.debug(f"job update for socket {job=} {connection=} {result=} {args=} {kwargs=}")
+
+    # circular imports, we need better structure
+    from beets_flask.server.routes.db_models.session import JobStatusUpdate
+
+    try:
+        asyncio.run(
+            send_job_status_update(
+                JobStatusUpdate(
+                    message="Job status update",
+                    job_meta=job.get_meta(),
+                )
+            )
+        )
+    except Exception as e:
+        log.error(f"Failed to emit job update: {e}", exc_info=True)
+
+
 def exception_as_return_value(
     f: Callable[P, Awaitable[R]],
 ) -> Callable[P, Awaitable[R | SerializedException]]:
@@ -138,7 +170,7 @@ def exception_as_return_value(
     @functools.wraps(f)
     async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R | SerializedException:
         try:
-            ret = await f(*args, **kwargs)            
+            ret = await f(*args, **kwargs)
         except Exception as e:
             log.exception(e)
             # Some exceptions are not serializable, so we need to convert them to a
@@ -180,8 +212,14 @@ class EnqueueKind(Enum):
             raise ValueError(f"Unknown kind {kind}")
 
 
-@emit_status(before=FolderStatus.PENDING)
-async def enqueue(hash: str, path: str, kind: EnqueueKind, **kwargs) -> Job:
+@emit_folder_status(before=FolderStatus.PENDING)
+async def enqueue(
+    hash: str,
+    path: str,
+    kind: EnqueueKind,
+    extra_meta: ExtraJobMeta | None = None,
+    **kwargs,
+) -> Job:
     """Delegate a preview or import to a redis worker, depending on its kind.
 
     Parameters
@@ -192,23 +230,29 @@ async def enqueue(hash: str, path: str, kind: EnqueueKind, **kwargs) -> Job:
         The path of the folder to enqueue.
     kind : EnqueueKind
         The kind of the folder to enqueue.
+    extra_meta: ExtraJobMeta, optional
+        Extra meta data to pass to the job. E.g. use this to assign a reference
+        for the frontend to the job, so we can track it via the websocket.
     kwargs : dict
         Additional arguments to pass to the worker functions. Depend on the kind,
         use with care.
     """
+    if extra_meta is None:
+        extra_meta = ExtraJobMeta()
+
     match kind:
         case EnqueueKind.PREVIEW:
-            job = enqueue_preview(hash, path, **kwargs)
+            job = enqueue_preview(hash, path, extra_meta, **kwargs)
         case EnqueueKind.PREVIEW_ADD_CANDIDATES:
-            job = enqueue_preview_add_candidates(hash, path, **kwargs)
+            job = enqueue_preview_add_candidates(hash, path, extra_meta, **kwargs)
         case EnqueueKind.IMPORT_AUTO:
-            job = enqueue_import_auto(hash, path, **kwargs)
+            job = enqueue_import_auto(hash, path, extra_meta, **kwargs)
         case EnqueueKind.IMPORT_CANDIDATE:
-            job = enqueue_import_candidate(hash, path, **kwargs)
+            job = enqueue_import_candidate(hash, path, extra_meta, **kwargs)
         case EnqueueKind.IMPORT_BOOTLEG:
-            job = enqueue_import_bootleg(hash, path, **kwargs)
+            job = enqueue_import_bootleg(hash, path, extra_meta, **kwargs)
         case EnqueueKind.IMPORT_UNDO:
-            job = enqueue_import_undo(hash, path, **kwargs)
+            job = enqueue_import_undo(hash, path, extra_meta, **kwargs)
         case _:
             raise InvalidUsageException(f"Unknown kind {kind}")
 
@@ -221,15 +265,17 @@ async def enqueue(hash: str, path: str, kind: EnqueueKind, **kwargs) -> Job:
 # Mainly input validation and submitting to the redis queue
 
 
-def enqueue_preview(hash: str, path: str, **kwargs) -> Job:
+def enqueue_preview(hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs) -> Job:
     if len(kwargs.keys()) > 0:
         raise InvalidUsageException("EnqueueKind.PREVIEW does not accept any kwargs.")
     job = preview_queue.enqueue(run_preview, hash, path)
-    __set_job_meta(job, hash, path, EnqueueKind.PREVIEW)
+    __set_job_meta(job, hash, path, EnqueueKind.PREVIEW, extra_meta)
     return job
 
 
-def enqueue_preview_add_candidates(hash: str, path: str, **kwargs) -> Job:
+def enqueue_preview_add_candidates(
+    hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs
+) -> Job:
     # May contain search_ids, search_artist, search_album
     search_ids = kwargs.pop("search_ids", [])
     search_artist = kwargs.pop("search_artist", None)
@@ -257,12 +303,15 @@ def enqueue_preview_add_candidates(hash: str, path: str, **kwargs) -> Job:
         search_ids=search_ids,
         search_artist=search_artist,
         search_album=search_album,
+        on_success=emit_update_on_job_change,
     )
-    __set_job_meta(job, hash, path, EnqueueKind.PREVIEW_ADD_CANDIDATES)
+    __set_job_meta(job, hash, path, EnqueueKind.PREVIEW_ADD_CANDIDATES, extra_meta)
     return job
 
 
-def enqueue_import_candidate(hash: str, path: str, **kwargs) -> Job:
+def enqueue_import_candidate(
+    hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs
+) -> Job:
     """
     Imports a candidate that has been fetched in a preview session.
 
@@ -304,11 +353,11 @@ def enqueue_import_candidate(hash: str, path: str, **kwargs) -> Job:
         candidate_id=candidate_id,
         duplicate_action=duplicate_action,
     )
-    __set_job_meta(job, hash, path, EnqueueKind.IMPORT_CANDIDATE)
+    __set_job_meta(job, hash, path, EnqueueKind.IMPORT_CANDIDATE, extra_meta)
     return job
 
 
-def enqueue_import_auto(hash: str, path: str, **kwargs):
+def enqueue_import_auto(hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs):
     """
     Enqueue an automatic import.
 
@@ -323,20 +372,22 @@ def enqueue_import_auto(hash: str, path: str, **kwargs):
 
     kwargs["auto_import"] = True
     job1 = preview_queue.enqueue(run_preview, hash, path, **kwargs)
-    __set_job_meta(job1, hash, path, EnqueueKind._AUTO_PREVIEW)
+    __set_job_meta(job1, hash, path, EnqueueKind._AUTO_PREVIEW, extra_meta)
+    # TODO: we need a way to only to only assign the on_success callback (likely coming
+    # via a kwarg) to the second job!
     job2 = import_queue.enqueue(run_import_auto, hash, path, depends_on=job1, **kwargs)
-    __set_job_meta(job2, hash, path, EnqueueKind._AUTO_IMPORT)
+    __set_job_meta(job2, hash, path, EnqueueKind._AUTO_IMPORT, extra_meta)
 
     return job2
 
 
-def enqueue_import_bootleg(hash: str, path: str, **kwargs):
+def enqueue_import_bootleg(hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs):
     job = import_queue.enqueue(run_import_bootleg, hash, path, **kwargs)
-    __set_job_meta(job, hash, path, EnqueueKind.IMPORT_BOOTLEG)
+    __set_job_meta(job, hash, path, EnqueueKind.IMPORT_BOOTLEG, extra_meta)
     return job
 
 
-def enqueue_import_undo(hash: str, path: str, **kwargs):
+def enqueue_import_undo(hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs):
     delete_files: bool = kwargs.pop("delete_files", True)
 
     if len(kwargs.keys()) > 0:
@@ -346,7 +397,7 @@ def enqueue_import_undo(hash: str, path: str, **kwargs):
         )
 
     job = import_queue.enqueue(run_import_undo, hash, path, delete_files=delete_files)
-    __set_job_meta(job, hash, path, EnqueueKind.IMPORT_UNDO)
+    __set_job_meta(job, hash, path, EnqueueKind.IMPORT_UNDO, extra_meta)
     return job
 
 
@@ -355,18 +406,17 @@ def enqueue_import_undo(hash: str, path: str, **kwargs):
 
 # redis preview queue
 @exception_as_return_value
-@emit_status(before=FolderStatus.PREVIEWING, after=FolderStatus.PREVIEWED)
+@emit_folder_status(before=FolderStatus.PREVIEWING, after=FolderStatus.PREVIEWED)
 async def run_preview(
     hash: str,
     path: str,
-    
 ):
     """Fetch candidates for a folder using beets.
 
     Will refetch candidates if this is rerun even if candidates exist
     in the db.
 
-    Current convention is we have one session for one folder *has*, but 
+    Current convention is we have one session for one folder *has*, but
     We might have multiple sessions for the same folder **path**.
     Previews will **reset** any previous session state in the database, if they
     exist for the same folder hash.
@@ -388,14 +438,12 @@ async def run_preview(
                 f"Folder content has changed since the job was scheduled for {path}. "
                 + f"Using new content ({f_on_disk.hash}) instead of {hash}"
             )
-            
-            
+
         # here, in preview, we always want to start from a fresh state
         # an existing state would skip the candidate lookup.
         # otherwise, the retag action would not work, as preview starting from
         s_state_live = SessionState(f_on_disk)
         p_session = PreviewSession(s_state_live)
-    
 
         try:
             await p_session.run_async()
@@ -408,7 +456,7 @@ async def run_preview(
             new_rev = 0 if max_rev is None else max_rev + 1
             s_state_indb = SessionStateInDb.from_live_state(p_session.state)
             s_state_indb.folder_revision = new_rev
-            
+
             db_session.merge(s_state_indb)
             db_session.commit()
 
@@ -417,7 +465,7 @@ async def run_preview(
 
 # redis preview queue
 @exception_as_return_value
-@emit_status(before=FolderStatus.PREVIEWING, after=FolderStatus.PREVIEWED)
+@emit_folder_status(before=FolderStatus.PREVIEWING, after=FolderStatus.PREVIEWED)
 async def run_preview_add_candidates(
     hash: str,
     path: str,
@@ -457,7 +505,7 @@ async def run_preview_add_candidates(
 
 # redis import queue
 @exception_as_return_value
-@emit_status(before=FolderStatus.IMPORTING, after=FolderStatus.IMPORTED)
+@emit_folder_status(before=FolderStatus.IMPORTING, after=FolderStatus.IMPORTED)
 async def run_import_candidate(
     hash: str,
     path: str,
@@ -494,7 +542,7 @@ async def run_import_candidate(
 
 # redis import queue
 @exception_as_return_value
-@emit_status(before=FolderStatus.IMPORTING, after=FolderStatus.IMPORTED)
+@emit_folder_status(before=FolderStatus.IMPORTING, after=FolderStatus.IMPORTED)
 async def run_import_auto(hash: str, path: str):
     # TODO: add duplicate action
     log.info(f"Auto Import task on {hash=} {path=}")
@@ -515,7 +563,7 @@ async def run_import_auto(hash: str, path: str):
 
 # redis import queue
 @exception_as_return_value
-@emit_status(before=FolderStatus.IMPORTING, after=FolderStatus.IMPORTED)
+@emit_folder_status(before=FolderStatus.IMPORTING, after=FolderStatus.IMPORTED)
 async def run_import_bootleg(hash: str, path: str):
     log.info(f"Bootleg Import task on {hash=} {path=}")
 
@@ -538,7 +586,7 @@ async def run_import_bootleg(hash: str, path: str):
 
 
 @exception_as_return_value
-@emit_status(before=FolderStatus.DELETING, after=FolderStatus.DELETED)
+@emit_folder_status(before=FolderStatus.DELETING, after=FolderStatus.DELETED)
 async def run_import_undo(hash: str, path: str, delete_files: bool):
     log.info(f"Import Undo task on {hash=} {path=}")
 
@@ -596,11 +644,30 @@ def _get_live_state_by_folder(
     return s_state_live
 
 
-def __set_job_meta(job: Job, hash: str, path: str, kind: EnqueueKind):
+def __set_job_meta(
+    job: Job, hash: str, path: str, kind: EnqueueKind, extra: ExtraJobMeta
+):
     job.meta["folder_hash"] = hash
     job.meta["folder_path"] = path
+    job.meta["job_id"] = job.id
     job.meta["job_kind"] = kind.value
+    job.meta["job_frontend_ref"] = extra.get("job_frontend_ref", None)
     job.save_meta()
+
+
+class ExtraJobMeta(TypedDict):
+    job_frontend_ref: NotRequired[str | None]
+
+
+class RequiredJobMeta(TypedDict):
+    folder_hash: str
+    folder_path: str
+    job_id: str
+    job_kind: str  # PS EnqueueKind not json serializable
+
+
+class JobMeta(RequiredJobMeta, ExtraJobMeta):
+    pass
 
 
 __all__ = [

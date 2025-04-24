@@ -138,6 +138,24 @@ export interface LibraryStats {
 	runtime: number;
 }
 
+export interface JobStatusUpdate {
+	message: string;
+	job_meta: JobMeta;
+}
+
+export interface JobMeta {
+	folder_hash: string;
+	folder_path: string;
+	job_id: string;
+	job_kind: string;
+	job_frontend_ref?: null | string;
+}
+
+export interface JobEnqueueResponse {
+	message: string;
+	job_metas: Array<JobMeta>;
+}
+
 export interface InboxStats {
 	name: string;
 	path: string;

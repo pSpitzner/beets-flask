@@ -1,15 +1,20 @@
 import { UseMutationOptions } from "@tanstack/react-query";
 
+import { useStatusSocket } from "@/components/common/websocket/status";
 import { FolderSelectionContext } from "@/components/inbox/folderSelectionContext";
 import {
     EnqueueKind,
     FolderStatus,
     FolderStatusResponse,
+    JobEnqueueResponse,
+    JobStatusUpdate,
     SerializedException,
     SerializedSessionState,
 } from "@/pythonTypes";
 
 import { APIError, queryClient } from "./common";
+
+import { Socket } from "socket.io-client";
 
 export const sessionQueryOptions = ({
     folderHash,
@@ -157,6 +162,7 @@ export const addCandidateMutationOptions: UseMutationOptions<
     unknown,
     APIError,
     {
+        socket: Socket;
         folder_hash: string;
         search_ids: string[];
         search_artist?: string;
@@ -164,8 +170,54 @@ export const addCandidateMutationOptions: UseMutationOptions<
     }
 > = {
     mutationKey: ["add_candidate"],
-    mutationFn: async ({ folder_hash, search_ids, search_artist, search_album }) => {
-        return await fetch("/session/add_candidates", {
+    mutationFn: async ({
+        socket,
+        folder_hash,
+        search_ids,
+        search_artist,
+        search_album,
+    }) => {
+        async function waitForJobUpdate({
+            socket,
+            jobRef,
+        }: {
+            socket: Socket;
+            jobRef: string;
+        }) {
+            let handleUpdate: (data: JobStatusUpdate) => void;
+
+            const promiseTimeout = new Promise((reject) => {
+                setTimeout(() => {
+                    socket.off("job_update", handleUpdate);
+                    reject(Error("Timeout"));
+                }, 60_000);
+            });
+
+            const promiseSuccess = new Promise((resolve) => {
+                handleUpdate = (data: JobStatusUpdate) => {
+                    console.log("Socket Job update", data);
+                    if (data.job_meta.job_frontend_ref === jobRef) {
+                        console.log("Match!", data);
+                        socket.off("job_update", handleUpdate);
+                        resolve(data);
+                        // TODO: on failure `reject(data);`
+                    } else {
+                        console.log("No Match!", data, jobRef);
+                    }
+                };
+                socket.on("job_update", handleUpdate);
+            });
+
+            return Promise.race([promiseSuccess, promiseTimeout]);
+        }
+
+        const jobRef = `${folder_hash}-${Date.now()}-${Math.random()}`;
+        const promiseResult = waitForJobUpdate({
+            socket,
+            jobRef: jobRef,
+        });
+
+        const res = await fetch("/session/add_candidates", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -175,8 +227,14 @@ export const addCandidateMutationOptions: UseMutationOptions<
                 search_ids,
                 search_artist,
                 search_album,
+                job_frontend_ref: jobRef,
             }),
         });
+
+        // no need to process, just for debugging, errors handled in custom fetch
+        const _data = (await res.json()) as JobEnqueueResponse;
+
+        return promiseResult;
     },
     onSuccess: async (data, variables) => {
         // Invalidate the query after the cache has been reset

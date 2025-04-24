@@ -1,4 +1,4 @@
-from typing import Any, Callable, TypeVarTuple
+from typing import TYPE_CHECKING, Any, Callable, TypeVarTuple
 
 from quart import request
 
@@ -45,6 +45,29 @@ def pop_query_param(
         raise InvalidUsageException(error_message)
 
     return value
+
+
+def pop_extra_meta(params: dict):
+    """Extract fields that qualify as extra metadata from your request.
+
+    Currently only "job_frontend_ref".
+    TODO: type validation, once this gets used more.
+
+    Parameters
+    ----------
+    params : dict
+        The request args.
+    """
+
+    if params is None:
+        params = {}
+
+    # avoid circular import
+    from beets_flask.invoker import ExtraJobMeta
+
+    return ExtraJobMeta(
+        job_frontend_ref=params.pop("job_frontend_ref", None),
+    )
 
 
 T = TypeVarTuple("T")

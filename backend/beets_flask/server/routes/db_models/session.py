@@ -19,7 +19,11 @@ from beets_flask.server.exceptions import (
     NotFoundException,
     SerializedException,
 )
-from beets_flask.server.utility import get_folder_params, pop_query_param
+from beets_flask.server.utility import (
+    get_folder_params,
+    pop_extra_meta,
+    pop_query_param,
+)
 
 from .base import ModelAPIBlueprint
 
@@ -101,10 +105,10 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
             )
 
         return jsonify(
-            {
-                "message": f"{len(jobs)} added as kind: {kind}",
-                "jobs": [j.get_meta() for j in jobs],
-            }
+            JobEnqueueResponse(
+                message=f"{len(jobs)} added as kind: {kind}",
+                job_metas=[j.get_meta() for j in jobs],  # type: ignore
+            )
         )
 
     async def add_candidates(self):
@@ -126,6 +130,8 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         path = None
         if len(folder_paths) == 1:
             path = folder_paths[0]
+
+        extra_meta = pop_extra_meta(params)
 
         # Get additional params for search with a bit of validation
         search_ids: list[str] = pop_query_param(params, "search_ids", list, default=[])
@@ -155,32 +161,17 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
             hash,
             path,
             invoker.EnqueueKind.PREVIEW_ADD_CANDIDATES,
+            extra_meta=extra_meta,
             search_ids=search_ids,
             search_artist=search_artist,
             search_album=search_album,
         )
 
-        try:
-            # FIXME: In theory we could return a list of
-            # new candidates here and only fetch a
-            # partial update in the frontend
-            res = await wait_for_job_results(job)
-        except Exception as e:
-            return (
-                jsonify(
-                    {
-                        "message": f"Job failed: {e}",
-                        "job": job.get_meta(),
-                    },
-                ),
-                500,
-            )
-
         return jsonify(
-            {
-                "message": f"search_candidates for {len(folder_hashes)} folders",
-                "jobs": [job.get_meta()],
-            }
+            JobEnqueueResponse(
+                message=f"searching_candidates for {len(folder_hashes)} folders",
+                job_metas=[job.get_meta()],  # type: ignore
+            )
         )
 
     async def get_status(self):
@@ -230,6 +221,20 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
             )
 
         return jsonify(stats)
+
+
+class JobStatusUpdate(TypedDict):
+    # PS 2025-04-24: this seems 1:1 JobEnqueueResponse except for one vs multiple jobs.
+    # Maybe we add num_jobs to the response, and give it a more general name?
+    # Same for FolderStatusResponse, we can probably make do with a similar single type.
+
+    message: str
+    job_meta: invoker.JobMeta
+
+
+class JobEnqueueResponse(TypedDict):
+    message: str
+    job_metas: list[invoker.JobMeta]
 
 
 class FolderStatusResponse(TypedDict):

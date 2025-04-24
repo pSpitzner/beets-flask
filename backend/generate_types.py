@@ -8,7 +8,11 @@ from beets_flask.importer.states import (
     SerializedSessionState,
 )
 from beets_flask.invoker import EnqueueKind
-from beets_flask.server.routes.db_models.session import FolderStatusResponse
+from beets_flask.server.routes.db_models.session import (
+    FolderStatusResponse,
+    JobEnqueueResponse,
+    JobStatusUpdate,
+)
 from beets_flask.server.routes.inbox import Folder, InboxStats
 from beets_flask.server.routes.library.resources import (
     AlbumResponse,
@@ -59,6 +63,8 @@ elements.append(AlbumResponseMinimalExpanded)
 # ---------------------------------------------------------------------------- #
 
 elements.append(FolderStatusResponse)
+elements.append(JobEnqueueResponse)
+elements.append(JobStatusUpdate)
 
 
 with open("../frontend/src/pythonTypes.ts", "w") as f:

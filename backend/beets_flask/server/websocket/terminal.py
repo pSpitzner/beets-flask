@@ -220,4 +220,4 @@ async def disconnect(sid):
 
 @sio.on("*", namespace="/terminal")
 async def any_event(event, sid, data):
-    log.debug(f"TerminalSocket sid {sid} undhandled event {event} with data {data}")
+    log.debug(f"TerminalSocket sid {sid} unhandled event {event} with data {data}")

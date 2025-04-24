@@ -6,7 +6,7 @@ a preview is finished.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 import socketio
 
@@ -18,8 +18,8 @@ from .errors import sio_catch_exception
 
 if TYPE_CHECKING:
     from beets_flask.server.routes.db_models.session import (
-        ExceptionResponse,
         FolderStatusResponse,
+        JobStatusUpdate,
     )
 
 
@@ -43,11 +43,21 @@ async def update(sid, data):
     await sio.emit("update", data, namespace=namespace)
 
 
+@sio.on("job_update", namespace=namespace)
+@sio_catch_exception
+async def job_update(sid, data):
+    """Allows to propagate status updates to all clients."""
+    log.debug(f"Job update: {data}")
+
+    # Emit to all clients
+    await sio.emit("job_update", data, namespace=namespace)
+
+
 @sio.on("*", namespace=namespace)
 @sio_catch_exception
 async def any_event(event, sid, data):
     """Debug unhandled events."""
-    log.debug(f"StatusSocket sid {sid} undhandled event {event} with data {data}")
+    log.debug(f"StatusSocket sid {sid} unhandled event {event} with data {data}")
 
 
 async def send_folder_status_update(
@@ -108,8 +118,21 @@ async def send_folder_status_response_update(
     # We need to use call (instead of emit) as otherwise the event is not emitted
     # if we close the client immediately after connecting
     await client.call(
+        # PS@SM maybe we rename "update" to be consisten with below? maybe "folder_update"
         "update",
         data,
+        namespace=namespace,
+        timeout=5,
+    )
+    await client.disconnect()
+
+
+async def send_job_status_update(status: JobStatusUpdate):
+    client = socketio.AsyncClient()
+    await client.connect("ws://127.0.0.1:5001", namespaces=[namespace])
+    await client.call(
+        "job_update",
+        status,
         namespace=namespace,
         timeout=5,
     )
