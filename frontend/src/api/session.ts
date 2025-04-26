@@ -186,11 +186,15 @@ export const addCandidateMutationOptions: UseMutationOptions<
         }) {
             let handleUpdate: (data: JobStatusUpdate) => void;
 
-            const promiseTimeout = new Promise((reject) => {
+            const promiseTimeout = new Promise<never>((_, reject) => {
                 setTimeout(() => {
                     socket.off("job_update", handleUpdate);
-                    reject(Error("Timeout"));
-                }, 60_000);
+                    reject(
+                        new Error(
+                            "Timeout: Candidate lookup took longer than 30 seconds"
+                        )
+                    );
+                }, 30_000);
             });
 
             const promiseSuccess = new Promise((resolve) => {

@@ -12,6 +12,7 @@ import {
     Box,
     Button,
     CircularProgress,
+    colors,
     DialogContent,
     FormHelperText,
     styled,
@@ -292,122 +293,139 @@ export function CandidateSearch({ folderHash }: { folderHash: string }) {
                 open={open}
                 onClose={() => setOpen(false)}
                 title_icon={<SearchIcon size={theme.iconSize.lg} />}
+                disableRestoreFocus={true}
+                color="secondary"
             >
-                <DialogContent
-                    sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 1.5,
+                <form
+                    onSubmit={async (e) => {
+                        e.preventDefault();
+                        try {
+                            const res = await mutateAsync({
+                                socket: socket,
+                                // PS@SM: where to handle socket null check? Doing it deeper inside the mutation options seems wrong. do an early return above?
+                                folder_hash: folderHash,
+                                search_ids: search.ids,
+                                search_album: search.album,
+                                search_artist: search.artist,
+                            });
+                            setOpen(false);
+                            setSearch({ ids: [], artist: "", album: "" });
+                        } catch (e) {
+                            // dont close the dialog
+                            console.error(e);
+                        }
                     }}
                 >
-                    <SearchField
-                        sx={{ width: "100%" }}
-                        id="input-search-id"
-                        label="Seach by Id"
-                        placeholder=""
-                        multiline
-                        helperText="Identifier or URL to search for, can be musicbrainz id, spotify url, etc. depending on your configuration."
-                        onChange={(e) => {
-                            setSearch({
-                                ...search,
-                                ids: e.target.value.split(",").map((id) => id.trim()),
-                            });
+                    <DialogContent
+                        sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 1.5,
                         }}
-                    />
-                    <Box>
+                    >
+                        <SearchField
+                            sx={{ width: "100%" }}
+                            id="input-search-id"
+                            label="Seach by Id"
+                            placeholder=""
+                            autoFocus
+                            helperText="Identifier or URL to search for, can be musicbrainz id, spotify url, etc. depending on your configuration."
+                            onChange={(e) => {
+                                setSearch({
+                                    ...search,
+                                    ids: e.target.value
+                                        .split(",")
+                                        .map((id) => id.trim()),
+                                });
+                            }}
+                        />
+                        <Box>
+                            <Box
+                                sx={{
+                                    width: "100%",
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    gap: "1rem",
+                                }}
+                            >
+                                <SearchField
+                                    sx={{ width: "100%" }}
+                                    id="input-search-artist"
+                                    label="Seach by artist"
+                                    placeholder="Artist"
+                                    value={search.artist}
+                                    onChange={(e) => {
+                                        setSearch({
+                                            ...search,
+                                            artist: e.target.value,
+                                        });
+                                    }}
+                                />
+                                <SearchField
+                                    sx={{ width: "100%" }}
+                                    id="input-search-artist"
+                                    label="and album"
+                                    placeholder="Album"
+                                    value={search.album}
+                                    onChange={(e) => {
+                                        setSearch({
+                                            ...search,
+                                            album: e.target.value,
+                                        });
+                                    }}
+                                />
+                            </Box>
+                            <FormHelperText
+                                sx={(theme) => ({
+                                    marginInline: "1rem",
+                                    color: theme.palette.text.disabled,
+                                    fontSize: theme.typography.caption.fontSize,
+                                })}
+                            >
+                                Search by artist and album name to find more candidates.
+                                Might take a while.
+                            </FormHelperText>
+                        </Box>
                         <Box
                             sx={{
                                 width: "100%",
                                 display: "flex",
-                                flexDirection: "row",
-                                gap: "1rem",
+                                justifyContent: "flex-end",
+                                gap: 1,
+                                marginTop: "auto",
                             }}
                         >
-                            <SearchField
-                                sx={{ width: "100%" }}
-                                id="input-search-artist"
-                                label="Seach by artist"
-                                placeholder="Artist"
-                                value={search.artist}
-                                onChange={(e) => {
-                                    setSearch({
-                                        ...search,
-                                        artist: e.target.value,
-                                    });
-                                }}
-                            />
-                            <SearchField
-                                sx={{ width: "100%" }}
-                                id="input-search-artist"
-                                label="and album"
-                                placeholder="Album"
-                                value={search.album}
-                                onChange={(e) => {
-                                    setSearch({
-                                        ...search,
-                                        album: e.target.value,
-                                    });
-                                }}
-                            />
-                        </Box>
-                        <FormHelperText
-                            sx={(theme) => ({
-                                marginInline: "1rem",
-                                color: theme.palette.text.disabled,
-                                fontSize: theme.typography.caption.fontSize,
-                            })}
-                        >
-                            Search by artist and album name to find more candidates.
-                            Might take a while.
-                        </FormHelperText>
-                    </Box>
-                    <Box
-                        sx={{
-                            width: "100%",
-                            display: "flex",
-                            justifyContent: "flex-end",
-                            gap: 1,
-                            marginTop: "auto",
-                        }}
-                    >
-                        {isError && (
-                            <FormHelperText
-                                error={isError}
-                                sx={{
-                                    alignSelf: "flex-end",
-                                }}
+                            {isError && (
+                                <FormHelperText
+                                    error={isError}
+                                    sx={{
+                                        alignSelf: "flex-end",
+                                    }}
+                                >
+                                    {error.name}: {error.message}
+                                </FormHelperText>
+                            )}
+                            <Button
+                                variant="outlined"
+                                color="secondary"
+                                type="submit"
+                                startIcon={
+                                    isPending ? (
+                                        <CircularProgress
+                                            color="secondary"
+                                            size={theme.iconSize.sm}
+                                        />
+                                    ) : (
+                                        <SearchIcon size={theme.iconSize.sm} />
+                                    )
+                                }
+                                disabled={isPending}
                             >
-                                {error.name}: {error.message}
-                            </FormHelperText>
-                        )}
-                        <Button
-                            variant="outlined"
-                            color="primary"
-                            startIcon={
-                                isPending ? (
-                                    <CircularProgress size={theme.iconSize.sm} />
-                                ) : (
-                                    <SearchIcon size={theme.iconSize.sm} />
-                                )
-                            }
-                            onClick={async () => {
-                                await mutateAsync({
-                                    socket: socket,
-                                    // PS@SM: where to handle socket null check? Doing it deeper inside the mutation options seems wrong. do an early return above?
-                                    folder_hash: folderHash,
-                                    search_ids: search.ids,
-                                    search_album: search.album,
-                                    search_artist: search.artist,
-                                });
-                                setOpen(false);
-                                setSearch({ ids: [], artist: "", album: "" });
-                            }}
-                            disabled={isPending}
-                        >
-                            Search
-                        </Button>
-                    </Box>
-                </DialogContent>
+                                Search
+                            </Button>
+                        </Box>
+                    </DialogContent>
+                </form>
             </Dialog>
         </>
     );
@@ -422,10 +440,15 @@ const SearchField = styled(TextField)(({ theme }) => ({
             borderColor: theme.palette.divider,
         },
         "&:hover fieldset": {
-            borderColor: theme.palette.primary.main,
+            borderColor: theme.palette.secondary.main,
         },
         "&.Mui-focused fieldset": {
-            borderColor: theme.palette.primary.main,
+            borderColor: theme.palette.secondary.main,
+        },
+    },
+    "& .MuiInputLabel-root": {
+        "&.Mui-focused": {
+            color: theme.palette.secondary.main,
         },
     },
     ".MuiFormHelperText-root": {

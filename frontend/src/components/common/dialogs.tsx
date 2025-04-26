@@ -1,6 +1,14 @@
 import { XIcon } from "lucide-react";
 import { Ref } from "react";
-import { Box, BoxProps, Divider, IconButton, Typography, Zoom } from "@mui/material";
+import {
+    Box,
+    BoxProps,
+    Divider,
+    IconButton,
+    IconButtonOwnProps,
+    Typography,
+    Zoom,
+} from "@mui/material";
 import MuiDialog, { DialogProps } from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 
@@ -13,6 +21,7 @@ export function Dialog({
     title,
     title_icon,
     children,
+    color = "primary",
     ...props
 }: DialogProps & {
     onClose: (
@@ -21,6 +30,7 @@ export function Dialog({
     ) => void;
     title: React.ReactNode;
     title_icon?: React.ReactNode;
+    color?: IconButtonOwnProps["color"];
 }) {
     return (
         <MuiDialog
@@ -83,7 +93,7 @@ export function Dialog({
                     }}
                     aria-label="close"
                     size="small"
-                    color="warning"
+                    color={color}
                 >
                     <XIcon />
                 </IconButton>
