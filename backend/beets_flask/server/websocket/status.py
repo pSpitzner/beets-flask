@@ -12,13 +12,14 @@ import socketio
 
 from beets_flask.importer.progress import FolderStatus
 from beets_flask.logger import log
+from beets_flask.server.exceptions import to_serialized_exception
 
 from . import sio
 from .errors import sio_catch_exception
 
 if TYPE_CHECKING:
     from beets_flask.server.routes.db_models.session import (
-        FolderStatusResponse,
+        FolderStatusUpdate,
         JobStatusUpdate,
     )
 
@@ -33,24 +34,23 @@ async def connect(sid, *args):
     log.debug(f"StatusSocket sid {sid} connected")
 
 
-@sio.on("update", namespace=namespace)
+@sio.on("folder_status_update", namespace=namespace)
 @sio_catch_exception
 async def update(sid, data):
     """Allows to propagate status updates to all clients."""
-    log.debug(f"Status update: {data}")
 
     # Emit to all clients
-    await sio.emit("update", data, namespace=namespace)
+    await sio.emit("folder_status_update", data, namespace=namespace)
 
 
-@sio.on("job_update", namespace=namespace)
+@sio.on("job_status_update", namespace=namespace)
 @sio_catch_exception
 async def job_update(sid, data):
     """Allows to propagate status updates to all clients."""
     log.debug(f"Job update: {data}")
 
     # Emit to all clients
-    await sio.emit("job_update", data, namespace=namespace)
+    await sio.emit("job_status_update", data, namespace=namespace)
 
 
 @sio.on("*", namespace=namespace)
@@ -69,35 +69,20 @@ async def send_folder_status_update(
     This is used when a preview fails, i.e. FolderStatus.FAILED
     """
 
-    e: ExceptionResponse | None = None
-
-    if exc is not None:
-        e = {
-            "type": type(exc).__name__,
-            "message": str(exc),
-        }
-
-    s: FolderStatusResponse = {
+    s: FolderStatusUpdate = {
         "path": path,
         "hash": hash,
         "status": status,
-        "exc": e,
+        "exc": exc if exc is None else to_serialized_exception(exc),
     }
 
-    await send_folder_status_response_update(s)
+    # Send a status update to propagate to all clients.
 
+    # We use a simple client here as this code may be called from
+    # redis workers which do not have access to the sio instance.
 
-async def send_folder_status_response_update(
-    status: FolderStatusResponse,
-):
-    """Send a status update to propagate to all clients.
-
-    We use a simple client here as this code may be called from
-    redis workers which do not have access to the sio instance.
-
-    See /status/update sio endpoint above for how this is handled
-    on the server.
-    """
+    # See /status/update sio endpoint above for how this is handled
+    # on the server.
 
     client = socketio.AsyncClient()
     # FIXME: Static URL is difficult to maintain and testing does not work
@@ -106,20 +91,18 @@ async def send_folder_status_response_update(
 
     # HACK: Serialize FolderStatus, maybe we can fix this using the standard encoder in the future
     data = {
-        "path": status["path"],
-        "hash": status["hash"],
+        "path": s["path"],
+        "hash": s["hash"],
         "status": (
-            status["status"].value
-            if isinstance(status["status"], FolderStatus)
-            else status["status"]
+            s["status"].value if isinstance(s["status"], FolderStatus) else s["status"]
         ),
-        "exc": status["exc"],
+        "exc": s["exc"],
     }
+
     # We need to use call (instead of emit) as otherwise the event is not emitted
     # if we close the client immediately after connecting
     await client.call(
-        # PS@SM maybe we rename "update" to be consisten with below? maybe "folder_update"
-        "update",
+        "folder_status_update",
         data,
         namespace=namespace,
         timeout=5,
@@ -131,7 +114,7 @@ async def send_job_status_update(status: JobStatusUpdate):
     client = socketio.AsyncClient()
     await client.connect("ws://127.0.0.1:5001", namespaces=[namespace])
     await client.call(
-        "job_update",
+        "job_status_update",
         status,
         namespace=namespace,
         timeout=5,

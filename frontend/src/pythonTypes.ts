@@ -138,11 +138,6 @@ export interface LibraryStats {
 	runtime: number;
 }
 
-export interface JobStatusUpdate {
-	message: string;
-	job_meta: JobMeta;
-}
-
 export interface JobMeta {
 	folder_hash: string;
 	folder_path: string;
@@ -151,8 +146,9 @@ export interface JobMeta {
 	job_frontend_ref?: null | string;
 }
 
-export interface JobEnqueueResponse {
+export interface JobStatusUpdate {
 	message: string;
+	num_jobs: number;
 	job_metas: Array<JobMeta>;
 }
 
@@ -185,7 +181,7 @@ export enum FolderStatus {
 	DELETED = 7,
 }
 
-export interface FolderStatusResponse {
+export interface FolderStatusUpdate {
 	path: string;
 	hash: string;
 	status: FolderStatus;

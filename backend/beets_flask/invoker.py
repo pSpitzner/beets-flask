@@ -149,7 +149,8 @@ def emit_update_on_job_change(job, connection, result, *args, **kwargs):
             send_job_status_update(
                 JobStatusUpdate(
                     message="Job status update",
-                    job_meta=job.get_meta(),
+                    num_jobs=1,
+                    job_metas=[job.get_meta()],
                 )
             )
         )

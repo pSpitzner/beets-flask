@@ -77,10 +77,10 @@ export function StatusContextProvider({
             }
         }
 
-        socket.on("update", handleUpdate);
+        socket.on("folder_status_update", handleUpdate);
 
         return () => {
-            socket.off("update", handleUpdate);
+            socket.off("folder_status_update", handleUpdate);
         };
     }, [socket, client]);
 

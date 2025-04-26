@@ -6,7 +6,6 @@ import {
     EnqueueKind,
     FolderStatus,
     FolderStatusResponse,
-    JobEnqueueResponse,
     JobStatusUpdate,
     SerializedException,
     SerializedSessionState,
@@ -188,7 +187,7 @@ export const addCandidateMutationOptions: UseMutationOptions<
 
             const promiseTimeout = new Promise<never>((_, reject) => {
                 setTimeout(() => {
-                    socket.off("job_update", handleUpdate);
+                    socket.off("job_status_update", handleUpdate);
                     reject(
                         new Error(
                             "Timeout: Candidate lookup took longer than 30 seconds"
@@ -200,16 +199,15 @@ export const addCandidateMutationOptions: UseMutationOptions<
             const promiseSuccess = new Promise((resolve) => {
                 handleUpdate = (data: JobStatusUpdate) => {
                     console.log("Socket Job update", data);
-                    if (data.job_meta.job_frontend_ref === jobRef) {
-                        console.log("Match!", data);
-                        socket.off("job_update", handleUpdate);
-                        resolve(data);
-                        // TODO: on failure `reject(data);`
-                    } else {
-                        console.log("No Match!", data, jobRef);
-                    }
+                    data.job_metas.forEach((meta) => {
+                        if (meta.job_frontend_ref === jobRef) {
+                            console.log("Match!", data);
+                            socket.off("job_status_update", handleUpdate);
+                            resolve(data);
+                        }
+                    });
                 };
-                socket.on("job_update", handleUpdate);
+                socket.on("job_status_update", handleUpdate);
             });
 
             return Promise.race([promiseSuccess, promiseTimeout]);
@@ -236,7 +234,7 @@ export const addCandidateMutationOptions: UseMutationOptions<
         });
 
         // no need to process, just for debugging, errors handled in custom fetch
-        const _data = (await res.json()) as JobEnqueueResponse;
+        const _data = (await res.json()) as JobStatusUpdate;
 
         return promiseResult;
     },

@@ -9,8 +9,7 @@ from beets_flask.importer.states import (
 )
 from beets_flask.invoker import EnqueueKind
 from beets_flask.server.routes.db_models.session import (
-    FolderStatusResponse,
-    JobEnqueueResponse,
+    FolderStatusUpdate,
     JobStatusUpdate,
 )
 from beets_flask.server.routes.inbox import Folder, InboxStats
@@ -62,8 +61,7 @@ elements.append(AlbumResponseMinimalExpanded)
 
 # ---------------------------------------------------------------------------- #
 
-elements.append(FolderStatusResponse)
-elements.append(JobEnqueueResponse)
+elements.append(FolderStatusUpdate)
 elements.append(JobStatusUpdate)
 
 

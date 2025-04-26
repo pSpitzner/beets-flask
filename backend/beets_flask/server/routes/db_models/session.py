@@ -105,8 +105,9 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
             )
 
         return jsonify(
-            JobEnqueueResponse(
+            JobStatusUpdate(
                 message=f"{len(jobs)} added as kind: {kind}",
+                num_jobs=len(jobs),
                 job_metas=[j.get_meta() for j in jobs],  # type: ignore
             )
         )
@@ -168,8 +169,9 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         )
 
         return jsonify(
-            JobEnqueueResponse(
+            JobStatusUpdate(
                 message=f"searching_candidates for {len(folder_hashes)} folders",
+                num_jobs=1,
                 job_metas=[job.get_meta()],  # type: ignore
             )
         )
@@ -179,7 +181,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
 
         folder_hashes, folder_paths, _ = await get_folder_params()
 
-        stats: list[FolderStatusResponse] = []
+        stats: list[FolderStatusUpdate] = []
 
         if len(folder_hashes) == 0:
             stmt = select(FolderInDb).order_by(FolderInDb.created_at.desc())
@@ -217,27 +219,19 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
                 exc = job_exc
 
             stats.append(
-                FolderStatusResponse(path=path, hash=hash, status=status, exc=exc)
+                FolderStatusUpdate(path=path, hash=hash, status=status, exc=exc)
             )
 
         return jsonify(stats)
 
 
 class JobStatusUpdate(TypedDict):
-    # PS 2025-04-24: this seems 1:1 JobEnqueueResponse except for one vs multiple jobs.
-    # Maybe we add num_jobs to the response, and give it a more general name?
-    # Same for FolderStatusResponse, we can probably make do with a similar single type.
-
     message: str
-    job_meta: invoker.JobMeta
-
-
-class JobEnqueueResponse(TypedDict):
-    message: str
+    num_jobs: int
     job_metas: list[invoker.JobMeta]
 
 
-class FolderStatusResponse(TypedDict):
+class FolderStatusUpdate(TypedDict):
     path: str
     hash: str
     status: FolderStatus
