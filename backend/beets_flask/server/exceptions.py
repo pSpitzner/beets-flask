@@ -59,22 +59,23 @@ class IntegrityException(ApiException):
 
 
 def to_serialized_exception(
-    exception: Exception,
-) -> SerializedException:
+    exception: Exception | None,
+) -> SerializedException | None:
     """Convert an exception to a serialized format.
 
     Parameters
     ----------
-    exception : Exception
+    exception : Exception | None
         The exception to serialize.
-    description : str | None, optional
-        A description of the error, by default None
 
     Returns
     -------
     SerializedException
         The serialized exception.
     """
+
+    if exception is None:
+        return None
 
     tb: str | None = None
 

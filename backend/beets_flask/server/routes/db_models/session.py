@@ -24,6 +24,7 @@ from beets_flask.server.utility import (
     pop_extra_meta,
     pop_query_param,
 )
+from beets_flask.server.websocket.status import FolderStatusUpdate, JobStatusUpdate
 
 from .base import ModelAPIBlueprint
 
@@ -223,19 +224,6 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
             )
 
         return jsonify(stats)
-
-
-class JobStatusUpdate(TypedDict):
-    message: str
-    num_jobs: int
-    job_metas: list[invoker.JobMeta]
-
-
-class FolderStatusUpdate(TypedDict):
-    path: str
-    hash: str
-    status: FolderStatus
-    exc: SerializedException | None
 
 
 def _get_folder_status_from_db(

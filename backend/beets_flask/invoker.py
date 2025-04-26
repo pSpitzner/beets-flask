@@ -51,8 +51,9 @@ from beets_flask.redis import import_queue, preview_queue
 from beets_flask.server.exceptions import SerializedException, to_serialized_exception
 from beets_flask.server.routes.exception import InvalidUsageException
 from beets_flask.server.websocket.status import (
-    send_folder_status_update,
-    send_job_status_update,
+    FolderStatusUpdate,
+    JobStatusUpdate,
+    send_status_update,
 )
 
 if TYPE_CHECKING:
@@ -99,10 +100,12 @@ def emit_folder_status(
 
             # FIXME: In theory we could keep the socket client open here
             if before is not None:
-                await send_folder_status_update(
-                    hash=hash,
-                    path=path,
-                    status=before,
+                await send_status_update(
+                    FolderStatusUpdate(
+                        hash=hash,
+                        path=path,
+                        status=before,
+                    )
                 )
 
             try:
@@ -110,20 +113,24 @@ def emit_folder_status(
             except Exception as e:
                 # if the function fails, we want to send a failed status update
                 # and raise the exception again.
-                await send_folder_status_update(
-                    hash=hash,
-                    path=path,
-                    status=FolderStatus.FAILED,
-                    exc=e,
+                await send_status_update(
+                    FolderStatusUpdate(
+                        hash=hash,
+                        path=path,
+                        status=FolderStatus.FAILED,
+                        exc=to_serialized_exception(e),
+                    )
                 )
 
                 raise e
 
             if after is not None:
-                await send_folder_status_update(
-                    hash=hash,
-                    path=path,
-                    status=after,
+                await send_status_update(
+                    FolderStatusUpdate(
+                        hash=hash,
+                        path=path,
+                        status=after,
+                    )
                 )
 
             return ret
@@ -141,12 +148,9 @@ def emit_update_on_job_change(job, connection, result, *args, **kwargs):
     """
     log.debug(f"job update for socket {job=} {connection=} {result=} {args=} {kwargs=}")
 
-    # circular imports, we need better structure
-    from beets_flask.server.routes.db_models.session import JobStatusUpdate
-
     try:
         asyncio.run(
-            send_job_status_update(
+            send_status_update(
                 JobStatusUpdate(
                     message="Job status update",
                     num_jobs=1,
