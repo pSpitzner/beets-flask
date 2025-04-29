@@ -13,18 +13,13 @@ Why not just have State and StateInDb in the same class?
 
 from __future__ import annotations
 
-import os
 import pickle
-from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
 from beets.importer import ImportTask, action, library
-from beets_flask.server.exceptions import SerializedException
 from sqlalchemy import (
     ForeignKey,
-    ForeignKeyConstraint,
-    LargeBinary,
     UniqueConstraint,
     func,
     select,
@@ -48,6 +43,7 @@ from beets_flask.importer.states import (
     TaskState,
 )
 from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackMatch
+from beets_flask.server.exceptions import SerializedException
 
 
 class FolderInDb(Base):

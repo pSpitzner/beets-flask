@@ -1,5 +1,8 @@
 import traceback
-from typing import NotRequired, TypedDict
+from functools import wraps
+from typing import Awaitable, Callable, NotRequired, ParamSpec, TypedDict, TypeVar
+
+from beets_flask.logger import log
 
 
 class SerializedException(TypedDict):
@@ -59,8 +62,8 @@ class IntegrityException(ApiException):
 
 
 def to_serialized_exception(
-    exception: Exception | None,
-) -> SerializedException | None:
+    exception: Exception,
+) -> SerializedException:
     """Convert an exception to a serialized format.
 
     Parameters
@@ -88,6 +91,35 @@ def to_serialized_exception(
         description=exception.__doc__,
         trace=tb,
     )
+
+
+P = ParamSpec("P")  # Parameters
+R = TypeVar("R")  # Return
+
+
+def exception_as_return_value(
+    f: Callable[P, Awaitable[R]],
+) -> Callable[P, Awaitable[R | SerializedException]]:
+    """Decorator to catch exceptions and return them as a values.
+
+    This is used to catch exceptions in the redis worker and return them
+    as a values we can use in the frontend. Sadly standard exeption handling
+    in rq is lacking!
+    """
+
+    @wraps(f)
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R | SerializedException:
+        try:
+            ret = await f(*args, **kwargs)
+        except Exception as e:
+            log.exception(e)
+            # Some exceptions are not serializable, so we need to convert them to a
+            # serialized format. E.g. OSErrors
+            return to_serialized_exception(e)
+
+        return ret
+
+    return wrapper
 
 
 __all__ = [

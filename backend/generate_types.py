@@ -56,17 +56,15 @@ elements.append(AlbumResponseMinimal)
 elements.append(AlbumResponseExpanded)
 elements.append(AlbumResponseMinimalExpanded)
 
-# ---------------------------------------------------------------------------- #
+# ------------------------------ Status updates ------------------------------ #
 
-# FIXME: py2ts cant handle classes that contain type annotations where the
-# type was imported with `it TYPE_CHECKING`
-# elements.append(FolderStatusUpdate)
-# elements.append(JobStatusUpdate)
+elements.append(FolderStatusUpdate)
+elements.append(JobStatusUpdate)
 
 
-# with open("../frontend/src/pythonTypes.ts", "w") as f:
-#     f.write(prefix)
+with open("../frontend/src/pythonTypes.ts", "w") as f:
+    f.write(prefix)
 
-#     f.write(ts_reference_str([generate_ts(e) for e in elements]))
+    f.write(ts_reference_str([generate_ts(e) for e in elements]))
 
-# print("✅ Typescript types generated successfully!")
+print("✅ Typescript types generated successfully!")

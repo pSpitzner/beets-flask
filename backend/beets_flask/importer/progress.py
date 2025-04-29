@@ -3,30 +3,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 from functools import total_ordering
-from typing import TYPE_CHECKING, Literal, TypedDict
+from typing import TypedDict
 
 from beets_flask.logger import log
 
-
-class FolderStatus(Enum):
-    """The status of a folder.
-
-    Order does not matter, but we need to be able to check equality
-    """
-
-    UNKNOWN = -2
-    FAILED = -1
-    NOT_STARTED = 0
-    PENDING = 1
-    PREVIEWING = 2
-    PREVIEWED = 3
-    IMPORTING = 4
-    IMPORTED = 5
-    DELETING = 6
-    DELETED = 7
-
-    def __str__(self) -> str:
-        return self.name.lower()
+__all__ = [
+    "FolderStatus",
+    "Progress",
+    "SerializedProgressState",
+    "ProgressState",
+]
 
 
 @total_ordering
@@ -119,49 +105,22 @@ class ProgressState:
         return self.progress == other.progress
 
 
-class SessionStatus(Enum):
-    """The status of a session.
+class FolderStatus(Enum):
+    """The status of a folder.
 
-    For now reflects the old tag status (lower-cased strings).
-
-    I like the simplification this allows in the front-end, where we use three or so icons
-    - pending
-    - running (something)
-    - done as
-        - tagged (i.e. previewed, requiring action)
-        - imported
-        - duplicate (requiring action... potentially,
-          but now clue what we do if defaul action is override)
-        - failed
-
-    Let's rethink how we do this mapping since we now have the more detailed task progress.
-
+    Order does not matter, but we need to be able to check equality
     """
 
+    UNKNOWN = -2
+    FAILED = -1
     NOT_STARTED = 0
     PENDING = 1
-    TAGGING = 2
-    TAGGED = 3
+    PREVIEWING = 2
+    PREVIEWED = 3
     IMPORTING = 4
     IMPORTED = 5
-    FAILED = 6
-    UNMATCHED = 7
-    DUPLICATE = 8
-
-    def __str__(self) -> str:
-        return self.name.lower()
-
-
-class SessionKind(Enum):
-    """The kind of session.
-
-    For now reflects the old tag kind (lower-cased strings).
-    """
-
-    PREVIEW = 0
-    IMPORT = 1
-    IMPORT_AS_IS = 2
-    AUTO = 3
+    DELETING = 6
+    DELETED = 7
 
     def __str__(self) -> str:
         return self.name.lower()

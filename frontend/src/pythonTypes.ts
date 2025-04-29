@@ -150,6 +150,8 @@ export interface JobStatusUpdate {
 	message: string;
 	num_jobs: number;
 	job_metas: Array<JobMeta>;
+	exc: SerializedException | null;
+	event: "job_status_update";
 }
 
 export interface InboxStats {
@@ -186,6 +188,7 @@ export interface FolderStatusUpdate {
 	hash: string;
 	status: FolderStatus;
 	exc: SerializedException | null;
+	event: "folder_status_update";
 }
 
 export interface File {

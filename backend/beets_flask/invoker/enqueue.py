@@ -1,42 +1,20 @@
-"""The invoker module is the glue between three concepts:
-
-It combines:
-- different sessions (like preview and import, interacting with beets, implementing core functions)
-- states (session states, candidate states, folder states)
-    - can be live (for working with in beets) or in_db (for storing in sql and sending to frontend)
-- and the Redis Queue (to run the tasks in the background)
-- also triggers status emission to frontend via decorators that invoke the websocket
-"""
-
 from __future__ import annotations
 
 import asyncio
-import functools
 from enum import Enum
-from typing import (
-    TYPE_CHECKING,
-    Awaitable,
-    Callable,
-    Concatenate,
-    NotRequired,
-    Optional,
-    ParamSpec,
-    TypedDict,
-    TypeVar,
-    Unpack,
-)
+from typing import TYPE_CHECKING
 
-from rq.job import Job
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
 
-from beets_flask import log
 from beets_flask.database import db_session_factory
 from beets_flask.database.models.states import (
     CandidateStateInDb,
     FolderInDb,
+    SessionState,
     SessionStateInDb,
 )
-from beets_flask.importer.progress import FolderStatus, Progress
+from beets_flask.importer.progress import FolderStatus
 from beets_flask.importer.session import (
     AddCandidatesSession,
     AutoImportSession,
@@ -45,99 +23,24 @@ from beets_flask.importer.session import (
     PreviewSession,
     UndoSession,
 )
-from beets_flask.importer.states import SessionState
+from beets_flask.importer.states import Progress
 from beets_flask.importer.types import DuplicateAction
+from beets_flask.logger import log
 from beets_flask.redis import import_queue, preview_queue
-from beets_flask.server.exceptions import SerializedException, to_serialized_exception
-from beets_flask.server.routes.exception import InvalidUsageException
+from beets_flask.server.exceptions import (
+    InvalidUsageException,
+    exception_as_return_value,
+)
 from beets_flask.server.websocket.status import (
-    FolderStatusUpdate,
     JobStatusUpdate,
+    emit_folder_status,
     send_status_update,
 )
 
+from .job import ExtraJobMeta, _set_job_meta
+
 if TYPE_CHECKING:
     from rq.job import Job
-    from sqlalchemy.orm import Session
-
-
-R = TypeVar("R")  # Return
-P = ParamSpec("P")  # Parameters
-
-
-def emit_folder_status(
-    before: FolderStatus | None = None, after: FolderStatus | None = None
-) -> Callable[
-    [Callable[Concatenate[str, str, P], Awaitable[R]]],
-    Callable[Concatenate[str, str | None, P], Awaitable[R]],
-]:
-    """Decorator to propagate status updates to clients.
-
-    Parameters
-    ----------
-    before: FolderStatus, optional
-        The status before the function is called. If none is given, no status update is sent.
-    after: FolderStatus, optional
-        The status after the function is called. If none is given, no status update is sent.
-    """
-
-    def decorator(
-        f: Callable[Concatenate[str, str, P], Awaitable[R]],
-    ) -> Callable[Concatenate[str, str | None, P], Awaitable[R]]:
-        @functools.wraps(f)
-        async def wrapper(hash: str, path: str | None, *args, **kwargs) -> R:
-            # if only a hash is given and no path, we retrieve the path from the db
-            if path is None:
-                with db_session_factory() as db_session:
-                    f_on_disk = FolderInDb.get_by(
-                        FolderInDb.id == hash, session=db_session
-                    )
-                    if f_on_disk is None:
-                        raise InvalidUsageException(
-                            f"If only hash is given, it must be in the db."
-                        )
-                    path = f_on_disk.full_path
-
-            # FIXME: In theory we could keep the socket client open here
-            if before is not None:
-                await send_status_update(
-                    FolderStatusUpdate(
-                        hash=hash,
-                        path=path,
-                        status=before,
-                    )
-                )
-
-            try:
-                ret = await f(hash, path, *args, **kwargs)
-            except Exception as e:
-                # if the function fails, we want to send a failed status update
-                # and raise the exception again.
-                await send_status_update(
-                    FolderStatusUpdate(
-                        hash=hash,
-                        path=path,
-                        status=FolderStatus.FAILED,
-                        exc=to_serialized_exception(e),
-                    )
-                )
-
-                raise e
-
-            if after is not None:
-                await send_status_update(
-                    FolderStatusUpdate(
-                        hash=hash,
-                        path=path,
-                        status=after,
-                    )
-                )
-
-            return ret
-
-        return wrapper
-
-    return decorator
 
 
 def emit_update_on_job_change(job, connection, result, *args, **kwargs):
@@ -160,31 +63,6 @@ def emit_update_on_job_change(job, connection, result, *args, **kwargs):
         )
     except Exception as e:
         log.error(f"Failed to emit job update: {e}", exc_info=True)
-
-
-def exception_as_return_value(
-    f: Callable[P, Awaitable[R]],
-) -> Callable[P, Awaitable[R | SerializedException]]:
-    """Decorator to catch exceptions and return them as a values.
-
-    This is used to catch exceptions in the redis worker and return them
-    as a values we can use in the frontend. Sadly standard exeption handling
-    in rq is lacking!
-    """
-
-    @functools.wraps(f)
-    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R | SerializedException:
-        try:
-            ret = await f(*args, **kwargs)
-        except Exception as e:
-            log.exception(e)
-            # Some exceptions are not serializable, so we need to convert them to a
-            # serialized format. E.g. OSErrors
-            return to_serialized_exception(e)
-
-        return ret
-
-    return wrapper
 
 
 class EnqueueKind(Enum):
@@ -274,7 +152,7 @@ def enqueue_preview(hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs) ->
     if len(kwargs.keys()) > 0:
         raise InvalidUsageException("EnqueueKind.PREVIEW does not accept any kwargs.")
     job = preview_queue.enqueue(run_preview, hash, path)
-    __set_job_meta(job, hash, path, EnqueueKind.PREVIEW, extra_meta)
+    _set_job_meta(job, hash, path, EnqueueKind.PREVIEW, extra_meta)
     return job
 
 
@@ -310,7 +188,7 @@ def enqueue_preview_add_candidates(
         search_album=search_album,
         on_success=emit_update_on_job_change,
     )
-    __set_job_meta(job, hash, path, EnqueueKind.PREVIEW_ADD_CANDIDATES, extra_meta)
+    _set_job_meta(job, hash, path, EnqueueKind.PREVIEW_ADD_CANDIDATES, extra_meta)
     return job
 
 
@@ -358,7 +236,7 @@ def enqueue_import_candidate(
         candidate_id=candidate_id,
         duplicate_action=duplicate_action,
     )
-    __set_job_meta(job, hash, path, EnqueueKind.IMPORT_CANDIDATE, extra_meta)
+    _set_job_meta(job, hash, path, EnqueueKind.IMPORT_CANDIDATE, extra_meta)
     return job
 
 
@@ -377,18 +255,18 @@ def enqueue_import_auto(hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs
 
     kwargs["auto_import"] = True
     job1 = preview_queue.enqueue(run_preview, hash, path, **kwargs)
-    __set_job_meta(job1, hash, path, EnqueueKind._AUTO_PREVIEW, extra_meta)
+    _set_job_meta(job1, hash, path, EnqueueKind._AUTO_PREVIEW, extra_meta)
     # TODO: we need a way to only to only assign the on_success callback (likely coming
     # via a kwarg) to the second job!
     job2 = import_queue.enqueue(run_import_auto, hash, path, depends_on=job1, **kwargs)
-    __set_job_meta(job2, hash, path, EnqueueKind._AUTO_IMPORT, extra_meta)
+    _set_job_meta(job2, hash, path, EnqueueKind._AUTO_IMPORT, extra_meta)
 
     return job2
 
 
 def enqueue_import_bootleg(hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs):
     job = import_queue.enqueue(run_import_bootleg, hash, path, **kwargs)
-    __set_job_meta(job, hash, path, EnqueueKind.IMPORT_BOOTLEG, extra_meta)
+    _set_job_meta(job, hash, path, EnqueueKind.IMPORT_BOOTLEG, extra_meta)
     return job
 
 
@@ -402,11 +280,12 @@ def enqueue_import_undo(hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs
         )
 
     job = import_queue.enqueue(run_import_undo, hash, path, delete_files=delete_files)
-    __set_job_meta(job, hash, path, EnqueueKind.IMPORT_UNDO, extra_meta)
+    _set_job_meta(job, hash, path, EnqueueKind.IMPORT_UNDO, extra_meta)
     return job
 
 
 # -------------------- Functions that run in redis workers ------------------- #
+# We might want to move these to their own file, but for now we keep them here
 
 
 # redis preview queue
@@ -647,35 +526,3 @@ def _get_live_state_by_folder(
     db_session.expunge_all()
 
     return s_state_live
-
-
-def __set_job_meta(
-    job: Job, hash: str, path: str, kind: EnqueueKind, extra: ExtraJobMeta
-):
-    job.meta["folder_hash"] = hash
-    job.meta["folder_path"] = path
-    job.meta["job_id"] = job.id
-    job.meta["job_kind"] = kind.value
-    job.meta["job_frontend_ref"] = extra.get("job_frontend_ref", None)
-    job.save_meta()
-
-
-class ExtraJobMeta(TypedDict):
-    job_frontend_ref: NotRequired[str | None]
-
-
-class RequiredJobMeta(TypedDict):
-    folder_hash: str
-    folder_path: str
-    job_id: str
-    job_kind: str  # PS EnqueueKind not json serializable
-
-
-class JobMeta(RequiredJobMeta, ExtraJobMeta):
-    pass
-
-
-__all__ = [
-    "enqueue",
-    "EnqueueKind",
-]

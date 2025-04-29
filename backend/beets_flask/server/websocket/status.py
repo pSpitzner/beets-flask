@@ -6,23 +6,46 @@ a preview is finished.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
-from typing import TYPE_CHECKING, Literal, TypedDict
+from abc import ABC
+from dataclasses import dataclass
+from functools import wraps
+from typing import Awaitable, Callable, Concatenate, Literal, ParamSpec, TypeVar
 
 import socketio
 from quart import json
 
+from beets_flask.database import db_session_factory
+from beets_flask.database.models.states import FolderInDb
+from beets_flask.importer.progress import FolderStatus
+from beets_flask.invoker.job import JobMeta
 from beets_flask.logger import log
-from beets_flask.server.exceptions import SerializedException, to_serialized_exception
+from beets_flask.server.exceptions import (
+    InvalidUsageException,
+    SerializedException,
+    to_serialized_exception,
+)
 
 from . import sio
 from .errors import sio_catch_exception
 
 
-if TYPE_CHECKING:
-    from beets_flask.importer.progress import FolderStatus
-    from beets_flask.invoker import JobMeta
+@dataclass
+class JobStatusUpdate:
+    message: str
+    num_jobs: int
+    job_metas: list[JobMeta]
+    exc: SerializedException | None = None
+    event: Literal["job_status_update"] = "job_status_update"
+
+
+@dataclass
+class FolderStatusUpdate:
+    path: str
+    hash: str
+    status: FolderStatus
+    exc: SerializedException | None = None
+    event: Literal["folder_status_update"] = "folder_status_update"
 
 
 namespace = "/status"
@@ -89,24 +112,85 @@ async def send_status_update(status: FolderStatusUpdate | JobStatusUpdate):
     await client.disconnect()
 
 
+R = TypeVar("R")  # Return
+P = ParamSpec("P")  # Parameters
+
+
+def emit_folder_status(
+    before: FolderStatus | None = None, after: FolderStatus | None = None
+) -> Callable[
+    [Callable[Concatenate[str, str, P], Awaitable[R]]],
+    Callable[Concatenate[str, str | None, P], Awaitable[R]],
+]:
+    """Decorator to propagate status updates to clients.
+
+    Parameters
+    ----------
+    before: FolderStatus, optional
+        The status before the function is called. If none is given, no status update is sent.
+    after: FolderStatus, optional
+        The status after the function is called. If none is given, no status update is sent.
+    """
+
+    def decorator(
+        f: Callable[Concatenate[str, str, P], Awaitable[R]],
+    ) -> Callable[Concatenate[str, str | None, P], Awaitable[R]]:
+        @wraps(f)
+        async def wrapper(hash: str, path: str | None, *args, **kwargs) -> R:
+            # if only a hash is given and no path, we retrieve the path from the db
+            if path is None:
+                with db_session_factory() as db_session:
+                    f_on_disk = FolderInDb.get_by(
+                        FolderInDb.id == hash, session=db_session
+                    )
+                    if f_on_disk is None:
+                        raise InvalidUsageException(
+                            f"If only hash is given, it must be in the db."
+                        )
+                    path = f_on_disk.full_path
+
+            # FIXME: In theory we could keep the socket client open here
+            if before is not None:
+                await send_status_update(
+                    FolderStatusUpdate(
+                        hash=hash,
+                        path=path,
+                        status=before,
+                    )
+                )
+
+            try:
+                ret = await f(hash, path, *args, **kwargs)
+            except Exception as e:
+                # if the function fails, we want to send a failed status update
+                # and raise the exception again.
+                await send_status_update(
+                    FolderStatusUpdate(
+                        hash=hash,
+                        path=path,
+                        status=FolderStatus.FAILED,
+                        exc=to_serialized_exception(e),
+                    )
+                )
+
+                raise e
+
+            if after is not None:
+                await send_status_update(
+                    FolderStatusUpdate(
+                        hash=hash,
+                        path=path,
+                        status=after,
+                    )
+                )
+
+            return ret
+
+        return wrapper
+
+    return decorator
+
+
 def register_status():
     # we need this to at least allow loading the module at the right time
     pass
-
-
-@dataclass
-class JobStatusUpdate:
-    message: str
-    num_jobs: int
-    job_metas: list[JobMeta]
-    exc: SerializedException | None = None
-    event: str = "job_status_update"
-
-
-@dataclass
-class FolderStatusUpdate:
-    path: str
-    hash: str
-    status: FolderStatus
-    exc: SerializedException | None = None
-    event: str = "folder_status_update"
