@@ -38,6 +38,7 @@ export function StatusContextProvider({
         if (!socket) return;
 
         function handleUpdate(updateData: FolderStatusUpdate) {
+            console.log("Status update", updateData);
             // update folder status
             queryClient.setQueryData<FolderStatusUpdate[]>(
                 statusQueryOptions.queryKey,

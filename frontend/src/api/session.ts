@@ -106,10 +106,10 @@ export async function invalidateSession(
  * actions in the backend.
  */
 export const enqueueMutationOptions: UseMutationOptions<
-    JobStatusUpdate[],
+    JobStatusUpdate[] | undefined,
     Error,
     {
-        socket: Socket;
+        socket?: Socket;
         selected: FolderSelectionContext["selected"];
         kind: EnqueueKind;
 

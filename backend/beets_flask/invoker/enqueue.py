@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Awaitable, Callable, ParamSpec, TypeVar
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -41,6 +41,7 @@ from .job import ExtraJobMeta, _set_job_meta
 
 if TYPE_CHECKING:
     from rq.job import Job
+    from rq.queue import Queue
 
 
 def emit_update_on_job_change(job, connection, result, *args, **kwargs):
@@ -63,6 +64,31 @@ def emit_update_on_job_change(job, connection, result, *args, **kwargs):
         )
     except Exception as e:
         log.error(f"Failed to emit job update: {e}", exc_info=True)
+
+
+P = ParamSpec("P")  # Parameters
+R = TypeVar("R")  # Return
+
+
+def _enqueue(
+    queue: Queue,
+    f: Callable[P, R | Awaitable[R]],
+    *args: P.args,
+    **kwargs: P.kwargs,
+) -> Job:
+    """Enqueue a job in redis.
+
+    Helper that sets some shared behavior and allows
+    to for proper type hinting.
+    """
+
+    job = queue.enqueue(
+        f,
+        *args,
+        **kwargs,
+        on_success=emit_update_on_job_change,
+    )
+    return job
 
 
 class EnqueueKind(Enum):
@@ -151,7 +177,7 @@ async def enqueue(
 def enqueue_preview(hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs) -> Job:
     if len(kwargs.keys()) > 0:
         raise InvalidUsageException("EnqueueKind.PREVIEW does not accept any kwargs.")
-    job = preview_queue.enqueue(run_preview, hash, path)
+    job = _enqueue(preview_queue, run_preview, hash, path)
     _set_job_meta(job, hash, path, EnqueueKind.PREVIEW, extra_meta)
     return job
 
@@ -179,14 +205,14 @@ def enqueue_preview_add_candidates(
     # kwargs are mixed between our own function and redis enqueue -.-
     # if we accidentally define a redis kwarg for our function, it will be ignored.
     # https://python-rq.org/docs/#enqueueing-jobs
-    job = preview_queue.enqueue(
+    job = _enqueue(
+        preview_queue,
         run_preview_add_candidates,
         hash,
         path,
         search_ids=search_ids,
         search_artist=search_artist,
         search_album=search_album,
-        on_success=emit_update_on_job_change,
     )
     _set_job_meta(job, hash, path, EnqueueKind.PREVIEW_ADD_CANDIDATES, extra_meta)
     return job
@@ -229,7 +255,8 @@ def enqueue_import_candidate(
                     f"Candidate with id {candidate_id} does not exist in the database."
                 )
 
-    job = import_queue.enqueue(
+    job = _enqueue(
+        import_queue,
         run_import_candidate,
         hash,
         path,
@@ -254,18 +281,26 @@ def enqueue_import_auto(hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs
     """
 
     kwargs["auto_import"] = True
+
+    # We only assign the on_success callback (likely coming
+    # via a kwarg) to the second job!
     job1 = preview_queue.enqueue(run_preview, hash, path, **kwargs)
     _set_job_meta(job1, hash, path, EnqueueKind._AUTO_PREVIEW, extra_meta)
-    # TODO: we need a way to only to only assign the on_success callback (likely coming
-    # via a kwarg) to the second job!
-    job2 = import_queue.enqueue(run_import_auto, hash, path, depends_on=job1, **kwargs)
+    job2 = _enqueue(
+        import_queue,
+        run_import_auto,
+        hash,
+        path,
+        **kwargs,
+        depends_on=job1,  # type: ignore a bit of an hack to get depends_on working
+    )
     _set_job_meta(job2, hash, path, EnqueueKind._AUTO_IMPORT, extra_meta)
 
     return job2
 
 
 def enqueue_import_bootleg(hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs):
-    job = import_queue.enqueue(run_import_bootleg, hash, path, **kwargs)
+    job = _enqueue(import_queue, run_import_bootleg, hash, path, **kwargs)
     _set_job_meta(job, hash, path, EnqueueKind.IMPORT_BOOTLEG, extra_meta)
     return job
 
@@ -279,13 +314,20 @@ def enqueue_import_undo(hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs
             + "delete_files."
         )
 
-    job = import_queue.enqueue(run_import_undo, hash, path, delete_files=delete_files)
+    job = _enqueue(
+        import_queue,
+        run_import_undo,
+        hash,
+        path,
+        delete_files=delete_files,
+    )
     _set_job_meta(job, hash, path, EnqueueKind.IMPORT_UNDO, extra_meta)
     return job
 
 
 # -------------------- Functions that run in redis workers ------------------- #
-# We might want to move these to their own file, but for now we keep them here
+# TODO: We might want to move these to their own file, for a bit better separation of
+# concerns.
 
 
 # redis preview queue

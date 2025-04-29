@@ -37,6 +37,7 @@ import { useFolderSelectionContext } from "./folderSelectionContext";
 
 import { SourceTypeIcon } from "../common/icons";
 import { ClipboardCopyButton } from "../common/inputs/copy";
+import { useStatusSocket } from "../common/websocket/status";
 import { useTerminalContext } from "../frontpage/terminal";
 
 /* --------------------------------- Actions -------------------------------- */
@@ -47,6 +48,7 @@ export function FolderActionsSpeedDial() {
     const [open, setOpen] = useState(false);
     const { nSelected, selected } = useFolderSelectionContext();
     const theme = useTheme();
+    const { socket } = useStatusSocket();
 
     // Show speed dial only once something is selected
     // This is done via zoom component
@@ -93,7 +95,11 @@ export function FolderActionsSpeedDial() {
                     icon={<TagIcon />}
                     tooltip="Retag"
                     mutationOptions={enqueueMutationOptions}
-                    mutateArgs={{ selected, kind: EnqueueKind.PREVIEW }}
+                    mutateArgs={{
+                        socket: socket,
+                        selected,
+                        kind: EnqueueKind.PREVIEW,
+                    }}
                 />
 
                 <Spacer />
@@ -228,7 +234,12 @@ const SpeedDial = forwardRef(function SpeedDial(
     );
 });
 
-function SpeedDialMutationAction<T>({
+interface MutationActionProps<D, E, V> {
+    mutateArgs: V;
+    mutationOptions: UseMutationOptions<D, E, V>;
+}
+
+function SpeedDialMutationAction<D, E, V>({
     icon,
     tooltip,
     mutateArgs,
@@ -237,9 +248,8 @@ function SpeedDialMutationAction<T>({
 }: {
     icon: React.ReactNode;
     tooltip: string;
-    mutationOptions: UseMutationOptions<unknown, Error, T>;
-    mutateArgs: T;
-} & SpeedDialActionProps) {
+} & MutationActionProps<D, E, V> &
+    SpeedDialActionProps) {
     // In theory we should check for touch instead of a breakpoint but tbh
     // im too lazy to figure out how to do that properly
     const isMobile = !useMediaQuery((theme) => theme.breakpoints.up("laptop"));
@@ -254,6 +264,13 @@ function SpeedDialMutationAction<T>({
                 mutate(mutateArgs);
             }}
             tooltip={tooltip}
+            sx={{
+                animation: isPending ? "spin 1s linear infinite" : "none",
+                "@keyframes spin": {
+                    from: { transform: "rotate(0deg)" },
+                    to: { transform: "rotate(360deg)" },
+                },
+            }}
             {...props}
         />
     );
