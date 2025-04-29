@@ -4,7 +4,7 @@ from datetime import datetime
 from math import e
 from typing import Literal, Tuple, TypedDict
 
-from quart import jsonify
+from quart import jsonify, request
 from rq.job import Job
 from sqlalchemy import select
 
@@ -20,7 +20,7 @@ from beets_flask.server.exceptions import (
     SerializedException,
 )
 from beets_flask.server.utility import (
-    get_folder_params,
+    pop_folder_params,
     pop_extra_meta,
     pop_query_param,
 )
@@ -46,7 +46,8 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
     async def get_by_folder(self):
         """Returns the most recent session state for a given folder hash or path."""
 
-        folder_hashes, folder_paths, _ = await get_folder_params(allow_mismatch=True)
+        params = await request.get_json()
+        folder_hashes, folder_paths = pop_folder_params(params, allow_mismatch=True)
 
         if len(folder_hashes) != 1 and len(folder_paths) != 1:
             raise InvalidUsageException(
@@ -88,20 +89,26 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         - `kind` (str): The kind of the tag. See `invoker.EnqueueKind`.
 
         """
-
-        folder_hashes, folder_paths, params = await get_folder_params()
+        params = await request.get_json()
+        folder_hashes, folder_paths = pop_folder_params(params)
         kind = pop_query_param(params, "kind", str)
         if not isinstance(kind, str):
             raise InvalidUsageException(
                 "kind must be one of " + str(invoker.EnqueueKind.__members__)
             )
 
+        extra_meta = pop_extra_meta(params, n_jobs=len(folder_hashes))
+
         jobs: list[Job] = []
 
-        for hash, path in zip(folder_hashes, folder_paths):
+        for hash, path, meta in zip(folder_hashes, folder_paths, extra_meta):
             jobs.append(
                 await invoker.enqueue(
-                    hash, path, invoker.EnqueueKind.from_str(kind), **params
+                    hash,
+                    path,
+                    invoker.EnqueueKind.from_str(kind),
+                    extra_meta=meta,
+                    **params,
                 )
             )
 
@@ -119,21 +126,20 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         This starts a new session for a given folder hash.
         """
         log.warning("Adding candidates")
-        folder_hashes, folder_paths, params = await get_folder_params(
-            allow_mismatch=True
-        )
+        params = await request.get_json()
+        folder_hashes, folder_paths = pop_folder_params(params, allow_mismatch=True)
 
         if len(folder_hashes) != 1:
             raise InvalidUsageException("Folder hash must be a single value")
         if len(folder_paths) > 1:
             raise InvalidUsageException("Folder path must be a single value")
 
+        extra_meta = pop_extra_meta(params, n_jobs=len(folder_hashes))
+
         hash = folder_hashes[0]
         path = None
         if len(folder_paths) == 1:
             path = folder_paths[0]
-
-        extra_meta = pop_extra_meta(params)
 
         # Get additional params for search with a bit of validation
         search_ids: list[str] = pop_query_param(params, "search_ids", list, default=[])
@@ -163,7 +169,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
             hash,
             path,
             invoker.EnqueueKind.PREVIEW_ADD_CANDIDATES,
-            extra_meta=extra_meta,
+            extra_meta=extra_meta[0],
             search_ids=search_ids,
             search_artist=search_artist,
             search_album=search_album,
@@ -180,7 +186,8 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
     async def get_status(self):
         """Get all pending tasks."""
 
-        folder_hashes, folder_paths, _ = await get_folder_params()
+        params = await request.get_json()
+        folder_hashes, folder_paths = pop_folder_params(params)
 
         stats: list[FolderStatusUpdate] = []
 

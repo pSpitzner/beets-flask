@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import TypedDict
 
 from cachetools import Cache
-from quart import Blueprint, jsonify
+from quart import Blueprint, jsonify, request
 
 from beets_flask.database import db_session_factory
 from beets_flask.disk import Folder, dir_files, dir_size, log, path_to_folder
@@ -13,7 +13,7 @@ from beets_flask.inbox import (
     get_inbox_for_path,
 )
 from beets_flask.server.exceptions import InvalidUsageException
-from beets_flask.server.utility import get_folder_params
+from beets_flask.server.utility import pop_folder_params
 from beets_flask.utility import AUDIO_EXTENSIONS
 
 inbox_bp = Blueprint("inbox", __name__, url_prefix="/inbox")
@@ -55,8 +55,8 @@ async def delete():
     folder_hashes : list[str]
         The hashes of the folders to remove.
     """
-
-    folder_hashes, folder_paths, params = await get_folder_params(allow_empty=False)
+    params = await request.get_json()
+    folder_hashes, folder_paths = pop_folder_params(params, allow_empty=False)
 
     folder_paths = [Path(folder) for folder in folder_paths]
 
@@ -87,9 +87,9 @@ async def delete():
     # Delete the folders
     for f in folders:
         shutil.rmtree(f.full_path)
-        
+
     # Clear the cache for the deleted folders
-    path_to_folder.cache.clear() # type: ignore
+    path_to_folder.cache.clear()  # type: ignore
 
     return jsonify(
         {

@@ -1,19 +1,21 @@
-from typing import TYPE_CHECKING, Any, Callable, TypeVarTuple
+from typing import Callable, TypeVar
 
-from quart import request
-
+from beets_flask.invoker.job import ExtraJobMeta
 from beets_flask.logger import log
 
 from .exceptions import InvalidUsageException
+
+R = TypeVar("R")
+D = TypeVar("D")
 
 
 def pop_query_param(
     params: dict,
     key: str,
-    convert_func: Callable,
-    default: Any = None,
+    convert_func: Callable[..., R],
+    default: D = None,
     error_message: str | None = None,
-):
+) -> D | R:
     """Safely retrieves and converts a query parameter from the request args.
 
     Parameters
@@ -47,11 +49,11 @@ def pop_query_param(
     return value
 
 
-def pop_extra_meta(params: dict):
+def pop_extra_meta(params: dict, n_jobs=1) -> list[ExtraJobMeta]:
     """Extract fields that qualify as extra metadata from your request.
 
-    Currently only "job_frontend_ref".
-    TODO: type validation, once this gets used more.
+    Used for adding metadata to jobs that are not strictly required for the job to run. But
+    are useful for tracking the job in the frontend.
 
     Parameters
     ----------
@@ -59,28 +61,33 @@ def pop_extra_meta(params: dict):
         The request args.
     """
 
-    if params is None:
-        params = {}
-
-    # avoid circular import
-    from beets_flask.invoker import ExtraJobMeta
-
-    return ExtraJobMeta(
-        job_frontend_ref=params.pop("job_frontend_ref", None),
+    job_refs = pop_query_param(
+        params=params, key="job_frontend_ref", convert_func=list, default=None
     )
 
+    if job_refs is None:
+        return [{} for _ in range(n_jobs)]
+    if not isinstance(job_refs, list):
+        raise InvalidUsageException("job_frontend_ref must be a list")
+    if len(job_refs) != n_jobs:
+        raise InvalidUsageException(
+            f"job_frontend_ref must be a list of length {n_jobs}"
+        )
 
-T = TypeVarTuple("T")
+    return [ExtraJobMeta(job_frontend_ref=job_ref) for job_ref in job_refs]
 
 
-async def get_folder_params(
+def pop_folder_params(
+    params: dict,
     allow_mismatch: bool = False,
     allow_empty: bool = True,
-) -> tuple[list[str], list[str], Any]:
+) -> tuple[list[str], list[str]]:
     """Get folder hashes and paths from the request parameters.
 
     Parameters
     ----------
+    params : dict
+        The request args.
     allow_mismatch : bool, optional
         Allow the folder hashes and paths to have different lengths, by default False
     allow_empty : bool, optional
@@ -93,7 +100,6 @@ async def get_folder_params(
         params : Any
 
     """
-    params = await request.get_json()
     folder_hashes = pop_query_param(params, "folder_hashes", list, default=[])
     folder_paths = pop_query_param(params, "folder_paths", list, default=[])
 
@@ -105,4 +111,4 @@ async def get_folder_params(
     if not allow_empty and ((len(folder_hashes) + len(folder_paths)) == 0):
         raise InvalidUsageException("folder_hashes and folder_paths cannot be empty")
 
-    return folder_hashes, folder_paths, params
+    return folder_hashes, folder_paths

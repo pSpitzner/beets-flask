@@ -106,9 +106,10 @@ export async function invalidateSession(
  * actions in the backend.
  */
 export const enqueueMutationOptions: UseMutationOptions<
-    Response | undefined,
+    JobStatusUpdate[],
     Error,
     {
+        socket: Socket;
         selected: FolderSelectionContext["selected"];
         kind: EnqueueKind;
 
@@ -116,8 +117,20 @@ export const enqueueMutationOptions: UseMutationOptions<
         [key: string]: unknown;
     }
 > = {
-    mutationFn: async ({ selected, kind, ...extra }) => {
-        return await fetch("/session/enqueue", {
+    mutationFn: async ({ socket, selected, kind, ...extra }) => {
+        // Generate a unique job reference for each folder
+        // to avoid collisions
+        const jobRefs = [];
+        for (const hash of selected.hashes) {
+            jobRefs.push(`${hash}-${Date.now()}-${Math.random()}`);
+        }
+
+        const promiseResult = waitForJobUpdate({
+            socket: socket,
+            jobRef: jobRefs,
+        });
+
+        const res = await fetch("/session/enqueue", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -126,9 +139,16 @@ export const enqueueMutationOptions: UseMutationOptions<
                 kind: kind.toString(),
                 folder_hashes: selected.hashes,
                 folder_paths: selected.paths,
+                job_frontend_refs: jobRefs,
                 ...extra,
             }),
         });
+
+        // no need to process, just for debugging, errors handled in custom fetch
+        const _data = (await res.json()) as JobStatusUpdate;
+
+        // Wait for the job to finish
+        return await promiseResult;
     },
 
     // Optimistic update for status
@@ -171,7 +191,7 @@ export const enqueueMutationOptions: UseMutationOptions<
  */
 
 export const addCandidateMutationOptions: UseMutationOptions<
-    unknown,
+    JobStatusUpdate[],
     APIError,
     {
         socket: Socket;
@@ -189,43 +209,6 @@ export const addCandidateMutationOptions: UseMutationOptions<
         search_artist,
         search_album,
     }) => {
-        async function waitForJobUpdate({
-            socket,
-            jobRef,
-        }: {
-            socket: Socket;
-            jobRef: string;
-        }) {
-            let handleUpdate: (data: JobStatusUpdate) => void;
-
-            const promiseTimeout = new Promise<never>((_, reject) => {
-                setTimeout(() => {
-                    socket.off("job_status_update", handleUpdate);
-                    reject(
-                        new Error(
-                            "Timeout: Candidate lookup took longer than 30 seconds"
-                        )
-                    );
-                }, 30_000);
-            });
-
-            const promiseSuccess = new Promise((resolve) => {
-                handleUpdate = (data: JobStatusUpdate) => {
-                    console.log("Socket Job update", data);
-                    data.job_metas.forEach((meta) => {
-                        if (meta.job_frontend_ref === jobRef) {
-                            console.log("Match!", data);
-                            socket.off("job_status_update", handleUpdate);
-                            resolve(data);
-                        }
-                    });
-                };
-                socket.on("job_status_update", handleUpdate);
-            });
-
-            return Promise.race([promiseSuccess, promiseTimeout]);
-        }
-
         const jobRef = `${folder_hash}-${Date.now()}-${Math.random()}`;
         const promiseResult = waitForJobUpdate({
             socket,
@@ -249,9 +232,9 @@ export const addCandidateMutationOptions: UseMutationOptions<
         // no need to process, just for debugging, errors handled in custom fetch
         const _data = (await res.json()) as JobStatusUpdate;
 
-        return promiseResult;
+        return await promiseResult;
     },
-    onSuccess: async (data, variables) => {
+    onSuccess: async (_data, variables) => {
         // Invalidate the query after the cache has been reset
         const q = sessionQueryOptions({ folderHash: variables.folder_hash });
 
@@ -263,6 +246,63 @@ export const addCandidateMutationOptions: UseMutationOptions<
         await Promise.all(ps);
     },
 };
+
+/** Wait for a job update
+ *
+ * Waits for a status update via the webssocket
+ * connection.
+ */
+async function waitForJobUpdate({
+    socket,
+    jobRef,
+    timeout = 30_000,
+}: {
+    socket: Socket;
+    jobRef: string | string[];
+    timeout?: number;
+}) {
+    let handleUpdate: (data: JobStatusUpdate) => void;
+    const jobRefs = Array.isArray(jobRef) ? jobRef : [jobRef];
+
+    // keep track of matched refs
+    const matchedRefs = new Set<string>();
+    const matches: JobStatusUpdate[] = [];
+
+    const promiseTimeout = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+            socket.off("job_status_update", handleUpdate);
+            reject(
+                new Error(
+                    "Timeout: Waiting for a job update took longer than 30 seconds"
+                )
+            );
+        }, timeout);
+    });
+
+    const promiseSuccess = new Promise<JobStatusUpdate[]>((resolve) => {
+        handleUpdate = (data: JobStatusUpdate) => {
+            console.log("Socket Job update", data);
+            data.job_metas.forEach((meta) => {
+                if (!meta.job_frontend_ref) {
+                    return;
+                }
+                if (jobRefs.includes(meta.job_frontend_ref)) {
+                    matchedRefs.add(meta.job_frontend_ref);
+                    matches.push(data);
+
+                    // Resolve only when all jobRefs are matched
+                    if (matchedRefs.size === jobRefs.length) {
+                        socket.off("job_status_update", handleUpdate);
+                        resolve(matches);
+                    }
+                }
+            });
+        };
+        socket.on("job_status_update", handleUpdate);
+    });
+
+    return Promise.race([promiseSuccess, promiseTimeout]);
+}
 
 /* ----------------------------- Session status ----------------------------- */
 export const statusQueryOptions = {

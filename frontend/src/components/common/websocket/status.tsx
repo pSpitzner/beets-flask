@@ -13,7 +13,7 @@ import { type QueryClient } from "@tanstack/react-query";
 
 import { queryClient } from "@/api/common";
 import { invalidateSession, statusQueryOptions } from "@/api/session";
-import { FolderStatus, FolderStatusResponse } from "@/pythonTypes";
+import { FolderStatus, FolderStatusUpdate } from "@/pythonTypes";
 
 import useSocket from "./useSocket";
 
@@ -37,9 +37,9 @@ export function StatusContextProvider({
     useEffect(() => {
         if (!socket) return;
 
-        function handleUpdate(updateData: FolderStatusResponse) {
+        function handleUpdate(updateData: FolderStatusUpdate) {
             // update folder status
-            queryClient.setQueryData<FolderStatusResponse[]>(
+            queryClient.setQueryData<FolderStatusUpdate[]>(
                 statusQueryOptions.queryKey,
                 (prev) => {
                     if (!prev) return [updateData];
