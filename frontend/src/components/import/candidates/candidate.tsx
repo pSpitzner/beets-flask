@@ -107,6 +107,73 @@ export function TaskCandidates({
     );
 }
 
+export function SelectedCandidate({
+    task,
+    folderHash,
+    folderPath,
+}: {
+    task: SerializedTaskState;
+    folderHash: string;
+    folderPath: string;
+}) {
+    // Chosen candidate
+    const candidate = task.candidates.find(
+        (cand) => cand.id === task.chosen_candidate_id
+    );
+    if (!candidate) {
+        throw new Error(
+            "No candidate selected. This should not happen for imported tasks."
+        );
+    }
+
+    return (
+        <Box
+            sx={(theme) => ({
+                display: "flex",
+                gap: 1,
+
+                [theme.breakpoints.down("tablet")]: {
+                    alignItems: "flex-start",
+                    paddingLeft: 1,
+                    flexDirection: "column-reverse",
+                },
+            })}
+        >
+            <Box
+                sx={{
+                    display: "block",
+                    width: "100%",
+                }}
+            >
+                <OverviewChanges
+                    candidate={candidate}
+                    metadata={task.current_metadata}
+                />
+            </Box>
+            <Box
+                sx={(theme) => ({
+                    display: "flex",
+                    width: "80px",
+                    height: "80px",
+                    alignSelf: "center",
+
+                    [theme.breakpoints.down("tablet")]: {
+                        width: "100%",
+                        height: "auto",
+                        alignSelf: "inherit",
+                        maxHeight: "200px",
+                    },
+                })}
+            >
+                <ExternalCoverArt
+                    data_url={candidate.info.data_url}
+                    sx={{ width: "80px", height: "80px" }}
+                />
+            </Box>
+        </Box>
+    );
+}
+
 /* --------------------------------- Context -------------------------------- */
 // Used to manage expanded state i.e. the state of the accordion
 
@@ -395,7 +462,15 @@ function BottomBar({
  *
  * Shows a row with the major information about the candidate.
  */
-function CandidateInfo({ candidate }: { candidate: SerializedCandidateState }) {
+function CandidateInfo({
+    candidate,
+    slotProps = {},
+}: {
+    candidate: SerializedCandidateState;
+    slotProps?: {
+        selector?: BoxProps;
+    };
+}) {
     const ref = useRef<HTMLDivElement>(null);
     const { isExpanded, toggleExpanded, selected, setSelected } =
         useCandidatesContext();
@@ -420,7 +495,7 @@ function CandidateInfo({ candidate }: { candidate: SerializedCandidateState }) {
     return useMemo(() => {
         return (
             <CandidateInfoRow ref={ref}>
-                <Box gridColumn="selector" display="flex">
+                <Box gridColumn="selector" display="flex" {...slotProps.selector}>
                     <Radio
                         checked={candidateSelected}
                         onChange={() => {
@@ -578,7 +653,7 @@ function OverviewChanges({
                 width: "100%",
                 flexGrow: 1,
 
-                [theme.breakpoints.down("laptop")]: {
+                [theme.breakpoints.down("tablet")]: {
                     gridTemplateColumns: "1fr",
                     gridAutoFlow: "row",
                 },
@@ -696,6 +771,7 @@ function SourceDetailItem({
 
 function ExternalCoverArt({
     data_url,
+    sx,
     ...props
 }: {
     data_url?: string | null;
@@ -740,6 +816,8 @@ function ExternalCoverArt({
                     {
                         display: !loaded ? "none" : "flex",
                     },
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                    ...(Array.isArray(sx) ? sx : [sx]),
                 ]}
                 onError={() => setError(true)}
                 onLoad={() => setLoaded(true)}

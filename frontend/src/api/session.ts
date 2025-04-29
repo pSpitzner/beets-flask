@@ -43,7 +43,7 @@ export const sessionQueryOptions = ({
             throw new APIError(res);
         }
 
-        // Parse dates
+        // Parse dates as they are returned as strings
         res.created_at = new Date(res.created_at);
         res.updated_at = new Date(res.updated_at);
         for (const task of res.tasks) {

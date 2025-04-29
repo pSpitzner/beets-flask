@@ -10,7 +10,7 @@ import {
     useTheme,
 } from "@mui/material";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 
 import { sessionQueryOptions } from "@/api/session";
 import { Loading } from "@/components/common/loading";
@@ -249,6 +249,7 @@ function RouteComponent() {
                     }
                 />
             </Box>
+
             {/* Session info */}
             <SessionOverviewCard session={data} />
             {/* Session preview card */}
@@ -264,8 +265,13 @@ function RouteComponent() {
  * all exceptions are handled equally but in theory we could e.g.
  * handle the duplicate 'ask' exception differently.
  */
+import { JSONPretty } from "@/components/common/json";
+import { humanizeDuration, relativeTime } from "@/components/common/units/time";
 import { SessionStepper } from "@/components/experimental/stepper";
-import { TaskCandidates } from "@/components/import/candidates/candidate";
+import {
+    SelectedCandidate,
+    TaskCandidates,
+} from "@/components/import/candidates/candidate";
 import { GenericErrorCard } from "@/errors";
 
 function SessionException({
@@ -330,7 +336,7 @@ function SessionOverviewCard({ session }: { session: SerializedSessionState }) {
                 </Typography>
             </Box>
             <Box sx={{ ml: "auto", alignSelf: "flex-start" }}>
-                <Typography variant="caption" component="div">
+                <Typography variant="caption" component="div" textAlign="right">
                     Includes{" "}
                     {session.tasks.reduce((acc, task) => acc + task.items.length, 0)}{" "}
                     items
@@ -345,6 +351,11 @@ function SessionOverviewCard({ session }: { session: SerializedSessionState }) {
 function SessionPreviewCard({ session }: { session: SerializedSessionState }) {
     // Show selected candidate if progress is
     // imported
+    // Chosen candidate
+    const candidate = session.tasks[0].candidates.find(
+        (cand) => cand.id === session.tasks[0].chosen_candidate_id
+    );
+
     if (session.status.progress < Progress.IMPORT_COMPLETED) {
         return (
             <Card sx={{ padding: 2 }}>
@@ -395,6 +406,7 @@ function SessionPreviewCard({ session }: { session: SerializedSessionState }) {
                         display: "flex",
                         gap: 2,
                         alignItems: "center",
+                        mb: 1,
                     }}
                 >
                     <Avatar
@@ -413,13 +425,23 @@ function SessionPreviewCard({ session }: { session: SerializedSessionState }) {
                                 fontWeight: 600,
                             }}
                         >
-                            Candidate selected
+                            Selected Candidate
                         </Typography>
                         <Typography variant="body2" component="div">
-                            TODO: show selected candidate
+                            {candidate!.info.artist} - {candidate!.info.album}
+                        </Typography>
+                    </Box>
+                    <Box sx={{ ml: "auto", alignSelf: "flex-start" }}>
+                        <Typography variant="caption" component="div" textAlign="right">
+                            Metadata fetched {relativeTime(candidate?.created_at)}
                         </Typography>
                     </Box>
                 </Box>
+                <SelectedCandidate
+                    task={session.tasks[0]}
+                    folderHash={session.folder_hash}
+                    folderPath={session.folder_path}
+                />
             </Card>
         );
     }
@@ -431,8 +453,13 @@ function SessionImportCard({ session }: { session: SerializedSessionState }) {
     if (session.status.progress < Progress.IMPORT_COMPLETED) {
         return null;
     }
+
     return (
-        <Card sx={{ padding: 2 }}>
+        <Card
+            sx={{
+                padding: 2,
+            }}
+        >
             <Box
                 sx={{
                     display: "flex",
@@ -444,6 +471,7 @@ function SessionImportCard({ session }: { session: SerializedSessionState }) {
                     sx={{
                         color: "white",
                         bgcolor: "secondary.main",
+                        zIndex: 1,
                     }}
                 >
                     <ImportIcon />
@@ -456,10 +484,15 @@ function SessionImportCard({ session }: { session: SerializedSessionState }) {
                             fontWeight: 600,
                         }}
                     >
-                        Import completed
+                        Imported into beets library
                     </Typography>
                     <Typography variant="body2" component="div">
-                        TODO: show import result. Needs a bit more thought I guess.
+                        TODO: How to get the beets id here?
+                    </Typography>
+                </Box>
+                <Box sx={{ ml: "auto", alignSelf: "flex-start" }}>
+                    <Typography variant="caption" component="div" textAlign="right">
+                        Imported {relativeTime(session?.updated_at)}
                     </Typography>
                 </Box>
             </Box>
