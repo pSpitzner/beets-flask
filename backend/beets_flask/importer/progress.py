@@ -105,7 +105,7 @@ class ProgressState:
         return self.progress == other.progress
 
 
-class FolderStatus(Enum):
+class FolderStatus(int, Enum):
     """The status of a folder.
 
     Order does not matter, but we need to be able to check equality

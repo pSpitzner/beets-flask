@@ -6,14 +6,13 @@ a preview is finished.
 
 from __future__ import annotations
 
+import dataclasses
 import json
-from abc import ABC
 from dataclasses import dataclass
 from functools import wraps
 from typing import Awaitable, Callable, Concatenate, Literal, ParamSpec, TypeVar
 
 import socketio
-from quart import json
 
 from beets_flask.database import db_session_factory
 from beets_flask.database.models.states import FolderInDb
@@ -105,7 +104,7 @@ async def send_status_update(status: FolderStatusUpdate | JobStatusUpdate):
     # if we close the client immediately after connecting
     await client.call(
         status.event,
-        status,
+        dataclasses.asdict(status),
         namespace=namespace,
         timeout=5,
     )

@@ -62,16 +62,16 @@ def pop_extra_meta(params: dict, n_jobs=1) -> list[ExtraJobMeta]:
     """
 
     job_refs = pop_query_param(
-        params=params, key="job_frontend_ref", convert_func=list, default=None
+        params=params, key="job_frontend_refs", convert_func=list, default=None
     )
 
     if job_refs is None:
         return [{} for _ in range(n_jobs)]
     if not isinstance(job_refs, list):
-        raise InvalidUsageException("job_frontend_ref must be a list")
+        raise InvalidUsageException("job_frontend_refs must be a list")
     if len(job_refs) != n_jobs:
         raise InvalidUsageException(
-            f"job_frontend_ref must be a list of length {n_jobs}"
+            f"job_frontend_refs must be a list of length {n_jobs}"
         )
 
     return [ExtraJobMeta(job_frontend_ref=job_ref) for job_ref in job_refs]
