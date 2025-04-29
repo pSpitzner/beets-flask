@@ -61,6 +61,8 @@ export interface AlbumInfo {
 
 export interface SerializedCandidateState {
 	id: string;
+	created_at: Date;
+	updated_at: Date;
 	duplicate_ids: Array<string>;
 	type: string;
 	penalties: Array<string>;
@@ -105,6 +107,8 @@ export interface ItemInfo {
 
 export interface SerializedTaskState {
 	id: string;
+	created_at: Date;
+	updated_at: Date;
 	items: Array<ItemInfo>;
 	current_metadata: Metadata;
 	candidates: Array<SerializedCandidateState>;
@@ -117,11 +121,12 @@ export interface SerializedTaskState {
 
 export interface SerializedSessionState {
 	id: string;
+	created_at: Date;
+	updated_at: Date;
 	folder_path: string;
 	folder_hash: string;
 	tasks: Array<SerializedTaskState>;
 	status: SerializedProgressState;
-	completed: boolean;
 	exc?: SerializedException | null;
 }
 

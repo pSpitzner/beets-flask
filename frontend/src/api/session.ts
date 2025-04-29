@@ -1,11 +1,10 @@
 import { UseMutationOptions } from "@tanstack/react-query";
 
-import { useStatusSocket } from "@/components/common/websocket/status";
 import { FolderSelectionContext } from "@/components/inbox/folderSelectionContext";
 import {
     EnqueueKind,
     FolderStatus,
-    FolderStatusResponse,
+    FolderStatusUpdate,
     JobStatusUpdate,
     SerializedException,
     SerializedSessionState,
@@ -42,6 +41,19 @@ export const sessionQueryOptions = ({
         if ("type" in res) {
             // if we have an error, throw it
             throw new APIError(res);
+        }
+
+        // Parse dates
+        res.created_at = new Date(res.created_at);
+        res.updated_at = new Date(res.updated_at);
+        for (const task of res.tasks) {
+            task.created_at = new Date(task.created_at);
+            task.updated_at = new Date(task.updated_at);
+
+            for (const cand of task.candidates) {
+                cand.created_at = new Date(cand.created_at);
+                cand.updated_at = new Date(cand.updated_at);
+            }
         }
 
         queryClient.setQueryData<SerializedSessionState>(
@@ -124,7 +136,7 @@ export const enqueueMutationOptions: UseMutationOptions<
         const queryKey = statusQueryOptions.queryKey;
         await queryClient.cancelQueries({ queryKey });
 
-        queryClient.setQueryData<FolderStatusResponse[]>(queryKey, (old) => {
+        queryClient.setQueryData<FolderStatusUpdate[]>(queryKey, (old) => {
             if (!old) return old;
             const found = new Set();
             const nex = old.map((status) => {
@@ -142,6 +154,7 @@ export const enqueueMutationOptions: UseMutationOptions<
                         hash: hash,
                         status: FolderStatus.PENDING,
                         exc: null,
+                        event: "folder_status_update",
                     });
                 }
             }
@@ -258,6 +271,6 @@ export const statusQueryOptions = {
         // fetch initial status
         // further updates will be handled by the socket
         const response = await fetch("/session/status");
-        return (await response.json()) as FolderStatusResponse[];
+        return (await response.json()) as FolderStatusUpdate[];
     },
 };

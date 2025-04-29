@@ -262,6 +262,8 @@ class SessionStateInDb(Base):
                 f"Expected {self.folder.hash} but got {s_state.folder_hash}."
             )
         s_state.id = self.id
+        s_state.created_at = self.created_at
+        s_state.updated_at = self.updated_at
         s_state._task_states = [task.to_live_state(s_state) for task in self.tasks]
         s_state.exc = pickle.loads(self.exc) if self.exc else None
         return s_state
@@ -436,6 +438,8 @@ class TaskStateInDb(Base):
 
         live_state = TaskState(beets_task)
         live_state.id = self.id
+        live_state.created_at = self.created_at
+        live_state.updated_at = self.updated_at
         live_state.candidate_states = [
             c.to_live_state(live_state) for c in self.candidates
         ]
@@ -513,6 +517,8 @@ class CandidateStateInDb(Base):
             task_state = self.task.to_live_state()
         live_state = CandidateState(pickle.loads(self.match), task_state)
         live_state.id = self.id
+        live_state.created_at = self.created_at
+        live_state.updated_at = self.updated_at
         live_state.duplicate_ids = (
             # edge case: "".split() gives ['']
             [] if len(self.duplicate_ids) == 0 else self.duplicate_ids.split(";")

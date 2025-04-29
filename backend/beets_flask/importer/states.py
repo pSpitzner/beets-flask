@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-import pickle
 import time
+from abc import ABC
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import List, Literal, NotRequired, Sequence, TypedDict, Union, cast
 from uuid import uuid4 as uuid
@@ -33,8 +34,32 @@ from .types import (
 )
 
 
+class BaseState(ABC):
+    """Base class for all states.
+
+    Some shared functionality, but mostly common attributes.
+    """
+
+    id: str
+    created_at: datetime
+    updated_at: datetime
+
+    def __init__(self) -> None:
+        self.id = str(uuid())
+        self.created_at = datetime.now()
+        self.updated_at = datetime.now()
+
+    def serialize(self) -> SerializedBaseState:
+        """Serialize the state to a dictionary."""
+        return {
+            "id": self.id,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
+
 @dataclass(init=False)
-class SessionState:
+class SessionState(BaseState):
     """Highest level state of an import session.
 
     Contains task (selection) states for each task.
@@ -53,8 +78,9 @@ class SessionState:
     exc: SerializedException | None = None
 
     def __init__(self, folder: Folder | Path) -> None:
+        super().__init__()
+
         # Alternate constructor is part of the SessionStateInDb class
-        self.id = str(uuid())
         self._task_states = []
         if isinstance(folder, str):
             folder = Path(folder)
@@ -81,10 +107,6 @@ class SessionState:
     @property
     def tasks(self):
         return [s.task for s in self.task_states]
-
-    @property
-    def completed(self):
-        return all([s.completed for s in self.task_states])
 
     @property
     def progress(self):
@@ -128,22 +150,15 @@ class SessionState:
 
         return state
 
-    @deprecated
-    def await_completion(self):
-        while not self.completed:
-            time.sleep(0.5)
-        return True
-
     def serialize(self) -> SerializedSessionState:
         """JSON representation to match the frontend types."""
 
         r = SerializedSessionState(
-            id=self.id,
+            **super().serialize(),
             folder_path=str(self.folder_path),
             folder_hash=str(self.folder_hash),
             tasks=[s.serialize() for s in self.task_states],
             status=self.progress.serialize(),
-            completed=self.completed,
         )
 
         if self.exc is not None:
@@ -153,7 +168,7 @@ class SessionState:
 
 
 @dataclass(init=False)
-class TaskState:
+class TaskState(BaseState):
     """State representation of a beets ImportTask.
 
     In the frontend, a selection of the available candidates in the task may be needed
@@ -161,7 +176,6 @@ class TaskState:
     Has a list of associated CandidateStates, that represent `matches` in beets.
     """
 
-    id: str
     task: importer.ImportTask
     candidate_states: List[CandidateState]
     chosen_candidate_state_id: str | None = None
@@ -180,7 +194,6 @@ class TaskState:
         self,
         task: importer.ImportTask,
     ) -> None:
-        self.id: str = str(uuid())
         # we might run into inconsistencies here, if candidates of the task
         # change. but I do not know when or why they would.
         self.task = task
@@ -304,7 +317,7 @@ class TaskState:
     def serialize(self) -> SerializedTaskState:
         """JSON representation to match the frontend types."""
         return SerializedTaskState(
-            id=self.id,
+            **super().serialize(),
             items=self.items_minimal,
             candidates=[c.serialize() for c in self.candidate_states],
             current_metadata=self.current_metadata,
@@ -332,7 +345,7 @@ class TaskState:
 
 
 @dataclass(init=False)
-class CandidateState:
+class CandidateState(BaseState):
     """
     State representation of a single candidate (match) for an import task.
 
@@ -592,7 +605,7 @@ class CandidateState:
             raise ValueError(f"Unknown type of matchinfo {type(self.match.info)}")
 
         res = SerializedCandidateState(
-            id=self.id,
+            **super().serialize(),
             penalties=self.penalties,
             duplicate_ids=self.duplicate_ids,
             type=self.type,
@@ -605,34 +618,16 @@ class CandidateState:
         return res
 
 
-# class AsIsCandidateState(CandidateState):
-#     """Just a thin wrapper so we can preset the "as is" nicely in frontend, inlcuding
-#     a preview of tracks and meta data.
-#     """
-
-#     pass
-
-
 # ---------------------------- Serialization types --------------------------- #
 # Used for getting typehints in the frontend. I.e. we generate the types from
 # these typed dicts! See the generate_types.py script for more information.
 
 
-class SerializedSessionState(TypedDict):
-    id: str
-    folder_path: str
-    folder_hash: str
-    tasks: List[SerializedTaskState]
-    status: SerializedProgressState
-
-    # TODO: This seems unused, should be removed
-    completed: bool
-
-    exc: NotRequired[SerializedException | None]
-
-
 class Metadata(TypedDict):
-    """Returned from current_metadata()."""
+    """Returned from current_metadata().
+
+    FIXME: I think this should not be defined here!
+    """
 
     artist: str | None
     album: str | None
@@ -648,9 +643,27 @@ class Metadata(TypedDict):
     albumdisambig: str | None
 
 
-class SerializedTaskState(TypedDict):
-    id: str
+class SerializedBaseState(TypedDict):
+    """Serialized base state.
 
+    This is used to serialize the base state to a dictionary.
+    """
+
+    id: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class SerializedSessionState(SerializedBaseState):
+    folder_path: str
+    folder_hash: str
+    tasks: List[SerializedTaskState]
+    status: SerializedProgressState
+
+    exc: NotRequired[SerializedException | None]
+
+
+class SerializedTaskState(SerializedBaseState):
     items: List[ItemInfo]
     current_metadata: Metadata
 
@@ -664,8 +677,7 @@ class SerializedTaskState(TypedDict):
     paths: List[str]
 
 
-class SerializedCandidateState(TypedDict):
-    id: str
+class SerializedCandidateState(SerializedBaseState):
     duplicate_ids: List[str]
     type: str
 
