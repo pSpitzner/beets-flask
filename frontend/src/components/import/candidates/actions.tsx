@@ -1,6 +1,5 @@
 import {
     ArrowRightIcon,
-    CheckIcon,
     CopyMinusIcon,
     CopyPlusIcon,
     MergeIcon,
@@ -12,7 +11,6 @@ import {
     Box,
     Button,
     CircularProgress,
-    colors,
     DialogContent,
     FormHelperText,
     styled,
@@ -30,8 +28,8 @@ import { useMutation } from "@tanstack/react-query";
 
 import { addCandidateMutationOptions, enqueueMutationOptions } from "@/api/session";
 import { Dialog } from "@/components/common/dialogs";
-import { EnqueueKind, SerializedCandidateState } from "@/pythonTypes";
 import { useStatusSocket } from "@/components/common/websocket/status";
+import { EnqueueKind, SerializedCandidateState } from "@/pythonTypes";
 
 /** Text that is show as an indicator
  * how good a match is.

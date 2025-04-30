@@ -29,7 +29,7 @@ export function customizeFetch() {
         const response = await originalFetch(apiPrefix + input, init);
         if (!response.ok) {
             const data = (await response.json()) as SerializedException;
-            throw new APIError(data);
+            throw new APIError(data, response.status);
         }
 
         if (response.headers.get("Content-Type") == "application/json") {
@@ -46,14 +46,16 @@ export function customizeFetch() {
 }
 
 export class APIError extends Error {
+    statusCode?: number;
     description?: string;
     trace?: string;
 
-    constructor(public data: SerializedException) {
+    constructor(data: SerializedException, statusCode?: number) {
         super(data.message ?? data.description);
         this.name = data.type;
         this.message = data.message;
         this.description = data.description ?? undefined;
         this.trace = data.trace ?? undefined;
+        this.statusCode = statusCode;
     }
 }

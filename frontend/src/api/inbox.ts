@@ -39,6 +39,30 @@ queryClient.setMutationDefaults(["refreshInboxTree"], {
     },
 });
 
+// A specific folder
+export const inboxFolderQueryOptions = (path: string, hash?: string) => ({
+    queryKey: [
+        "inbox",
+        {
+            path,
+            hash,
+        },
+    ],
+    queryFn: async () => {
+        const response = await fetch(`/inbox/folder`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                folder_paths: [path],
+                folder_hashes: hash ? [hash] : [],
+            }),
+        });
+        return (await response.json()) as Folder;
+    },
+});
+
 // Some stats about the inbox(es)
 export const inboxStatsQueryOptions = () => ({
     queryKey: ["inbox", "stats"],

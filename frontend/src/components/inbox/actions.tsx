@@ -12,6 +12,7 @@ import { forwardRef, Ref, useEffect, useRef, useState } from "react";
 import {
     Box,
     BoxProps,
+    Button,
     CircularProgress,
     IconButton,
     Menu,
@@ -31,7 +32,7 @@ import { useNavigate } from "@tanstack/react-router";
 
 import { deleteFoldersMutationOptions } from "@/api/inbox";
 import { enqueueMutationOptions } from "@/api/session";
-import { EnqueueKind, File, Folder } from "@/pythonTypes";
+import { EnqueueKind, File, Folder, JobStatusUpdate } from "@/pythonTypes";
 
 import { useFolderSelectionContext } from "./folderSelectionContext";
 
@@ -490,5 +491,50 @@ function MoreActionsItems({
                 </ClipboardCopyButton>
             </MenuItem>
         </>
+    );
+}
+
+/* ---------------------- Simple Buttons with feedback ---------------------- */
+
+export function RetagButton({
+    folderPaths,
+    folderHashes,
+    onRetag,
+    ...props
+}: {
+    folderPaths: string[];
+    folderHashes: string[];
+    onRetag?: (update: JobStatusUpdate[]) => void;
+} & React.ComponentProps<typeof Button>) {
+    const theme = useTheme();
+    const { socket } = useStatusSocket();
+    // TODO: How to show errors?
+    const { mutateAsync, isPending, error, isError } =
+        useMutation(enqueueMutationOptions);
+
+    return (
+        <Button
+            size="small"
+            onClick={async () => {
+                if (!socket) {
+                    console.error("No socket connection");
+                    return;
+                }
+                const r = await mutateAsync({
+                    socket,
+                    selected: {
+                        paths: folderPaths,
+                        hashes: folderHashes,
+                    },
+                    kind: EnqueueKind.PREVIEW,
+                });
+                onRetag?.(r);
+            }}
+            loading={isPending}
+            endIcon={<TagIcon size={theme.iconSize.sm} />}
+            {...props}
+        >
+            (Re)tag
+        </Button>
     );
 }

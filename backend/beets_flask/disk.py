@@ -6,6 +6,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import (
+    Iterator,
     List,
     Literal,
     Mapping,
@@ -105,6 +106,15 @@ class Folder:
     @property
     def path(self) -> Path:
         return Path(self.full_path)
+
+    def walk(self) -> Iterator[Folder | File]:
+        """Walk the folder and yield all files and folders."""
+        yield self
+        for child in self.children:
+            if isinstance(child, Folder):
+                yield from child.walk()
+            else:
+                yield child
 
 
 class File(TypedDict):
