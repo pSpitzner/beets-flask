@@ -6,7 +6,9 @@ has a well defined path to follow.
 """
 
 from abc import ABC
+from lib2to3.fixes.fix_idioms import TYPE
 from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
@@ -16,7 +18,7 @@ from sqlalchemy.orm import Session
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
 from beets_flask.disk import Folder
 from beets_flask.importer.progress import FolderStatus
-from beets_flask.invoker import (
+from beets_flask.invoker.enqueue import (
     Progress,
     run_import_candidate,
     run_import_undo,
@@ -28,6 +30,8 @@ from tests.unit.test_importer.conftest import (
     album_path_absolute,
     use_mock_tag_album,
 )
+
+from beets_flask.server.websocket.status import JobStatusUpdate, FolderStatusUpdate
 
 
 class InvokerStatusMockMixin(ABC):
@@ -45,11 +49,11 @@ class InvokerStatusMockMixin(ABC):
     """
 
     # list[{path: str, hash: str, status: FolderStatus}]
-    statuses: list[dict] = []
+    statuses: list[FolderStatusUpdate] = []
 
-    async def send_folder_status_update(self, **kwargs):
+    async def send_status_update(self, status):
         """Mock the emit_status decorator"""
-        self.statuses.append(kwargs)
+        self.statuses.append(status)
 
     # ??? due to class inheritance, scope="function" effectively becomes class.
     # What we found is that, as is now, we get a websocket that survives between
@@ -59,8 +63,8 @@ class InvokerStatusMockMixin(ABC):
         """Mock the emit_status decorator"""
 
         with mock.patch(
-            "beets_flask.invoker.send_folder_status_update",
-            self.send_folder_status_update,
+            "beets_flask.server.websocket.status.send_status_update",
+            self.send_status_update,
         ):
             yield
 
@@ -105,8 +109,8 @@ class TestImportBest(
 
         # Check that status was emitted correctly, we emit once before and once after run
         assert len(self.statuses) == 2
-        assert self.statuses[0]["status"] == FolderStatus.PREVIEWING
-        assert self.statuses[1]["status"] == FolderStatus.PREVIEWED
+        assert self.statuses[0].status == FolderStatus.PREVIEWING
+        assert self.statuses[1].status == FolderStatus.PREVIEWED
 
         # Check db contains the tagged folder
         stmt = select(SessionStateInDb)
@@ -184,8 +188,8 @@ class TestImportBest(
 
         # Check that status was emitted correctly, we emit once before and once after run
         assert len(self.statuses) == 2
-        assert self.statuses[0]["status"] == FolderStatus.IMPORTING
-        assert self.statuses[1]["status"] == FolderStatus.IMPORTED
+        assert self.statuses[0].status == FolderStatus.IMPORTING
+        assert self.statuses[1].status == FolderStatus.IMPORTED
 
         # Check db still contains one tagged folder
         stmt = select(SessionStateInDb)
@@ -244,8 +248,8 @@ class TestImportBest(
         assert exc["message"] == "Cannot redo imports. Try undo and/or retag!"
 
         assert len(self.statuses) == 2
-        assert self.statuses[0]["status"] == FolderStatus.IMPORTING
-        assert self.statuses[1]["status"] == FolderStatus.FAILED
+        assert self.statuses[0].status == FolderStatus.IMPORTING
+        assert self.statuses[1].status == FolderStatus.FAILED
 
     async def test_duplicate_import_fails(self, path: Path):
         """
@@ -302,8 +306,8 @@ class TestImportBest(
 
         assert exc is None
         assert len(self.statuses) == 2
-        assert self.statuses[0]["status"] == FolderStatus.DELETING
-        assert self.statuses[1]["status"] == FolderStatus.DELETED
+        assert self.statuses[0].status == FolderStatus.DELETING
+        assert self.statuses[1].status == FolderStatus.DELETED
 
         items = self.beets_lib.items()
         assert len(items) == 0, "Should have removed all items from beets library"
@@ -380,8 +384,8 @@ class TestImportBest(
         # Shouldn't return an error
         assert exc is None
         assert len(self.statuses) == 2
-        assert self.statuses[0]["status"] == FolderStatus.IMPORTING
-        assert self.statuses[1]["status"] == FolderStatus.IMPORTED
+        assert self.statuses[0].status == FolderStatus.IMPORTING
+        assert self.statuses[1].status == FolderStatus.IMPORTED
 
     async def test_undo_with_missing_beets_items(self, db_session: Session, path: Path):
         f = Folder.from_path(path)

@@ -19,6 +19,8 @@ from beets_flask.importer.session import (
     AddCandidatesSession,
     AutoImportSession,
     BootlegImportSession,
+    CandidateChoice,
+    ImportChoice,
     ImportSession,
     PreviewSession,
     UndoSession,
@@ -435,25 +437,32 @@ async def run_preview_add_candidates(
 async def run_import_candidate(
     hash: str,
     path: str,
-    candidate_id: str | None = None,
+    candidate_id: CandidateChoice
+    | dict[str, CandidateChoice]
+    | None = ImportChoice.BEST,
     duplicate_action: DuplicateAction | None = None,
 ):
     """Imports a candidate that has been fetched in a preview session.
 
     Parameters
     ----------
-    candidate_id : str | None
+    candidate_id : optional
         If candidate_id is none the best candidate is used.
     duplicate_action : DuplicateAction | None
         If duplicate_action is none, the default action from the config is used.
     """
     log.info(f"Import task on {hash=} {path=}")
 
+    if candidate_id is None:
+        candidate_id = ImportChoice.BEST
+
     with db_session_factory() as db_session:
         s_state_live = _get_live_state_by_folder(hash, path, db_session)
 
         i_session = ImportSession(
-            s_state_live, candidate_id=candidate_id, duplicate_action=duplicate_action
+            s_state_live,
+            candidate_id=candidate_id,
+            duplicate_action=duplicate_action,
         )
 
         try:

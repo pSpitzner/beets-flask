@@ -1,10 +1,11 @@
 import asyncio
+from collections import defaultdict
 import logging
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, List, Literal
+from typing import Any, Callable, List, Literal, Mapping
 
 import nest_asyncio
 from beets import autotag, importer, plugins
@@ -374,6 +375,19 @@ class AddCandidatesSession(PreviewSession):
         task.rec = max(prop.recommendation, task.rec or autotag.Recommendation.none)
 
 
+from enum import Enum
+
+
+class ImportChoice(Enum):
+    """Enum for the import choice."""
+
+    ASIS = 1
+    BEST = 2
+
+
+CandidateChoice = str | ImportChoice
+
+
 class ImportSession(BaseSession):
     """
     Import session that assumes we already have a match-id.
@@ -383,7 +397,7 @@ class ImportSession(BaseSession):
     """
 
     match_url: str | None
-    candidate_id: str | None
+    candidate_id_mapping: Mapping[str, CandidateChoice | None]
     duplicate_action: DuplicateAction | None
 
     def __init__(
@@ -391,7 +405,7 @@ class ImportSession(BaseSession):
         state: SessionState,
         config_overlay: dict | None = None,
         match_url: str | None = None,
-        candidate_id: str | None = None,
+        candidate_id: CandidateChoice | dict[str, CandidateChoice] = ImportChoice.BEST,
         duplicate_action: DuplicateAction | None = None,
     ):
         """Create new ImportSession.
@@ -401,11 +415,14 @@ class ImportSession(BaseSession):
         match_url : optional str
             The URL of the match to import, if any. Normally this should be inferred from
             the state.
-        candidate_id : optional str
-            Provide the id of a candidate to import. The candidate should have already
-            been fetched into the session state during a previous preview session.
-            Can also be "asis" to pick the asis candidate, not matter its precise id.
-            If None, uses the _best_ found candidate (default)
+
+        candidate_id : optional
+            Either id of candidate(s) or the import choice. This is used to determine which
+            candidate to import. If a dict is given, the keys are the task ids and the
+            values are the candidate ids. You can also use the import choice enum
+            `ImportChoice.ASIS` or `ImportChoice.BEST` to indicate that you want to
+            import the candidate as-is or the best candidate.
+            FIXME: at the moment asis is broken
         duplicate_action : str
             The action to take if duplicates are found. One of "skip", "keep",
             "remove", "merge", "ask". If not specified, the default is read from
@@ -422,7 +439,20 @@ class ImportSession(BaseSession):
             raise ValueError("Cannot set match_url for pre-populated state.")
 
         self.match_url = match_url
-        self.candidate_id = candidate_id
+
+        # Create a mapping for which candidate to import for each task.
+        # uses a default dict to allow for a single candidate id
+        task_states = self.state.task_states
+        if len(task_states) > 1 and isinstance(candidate_id, str):
+            # doesnt match the enum!
+            raise ValueError(
+                "Candidate_id must be a dict with task ids as keys if multiple tasks are given"
+            )
+        if isinstance(candidate_id, dict):
+            self.candidate_id_mapping = defaultdict(lambda: None)
+            self.candidate_id_mapping.update(candidate_id)
+        else:
+            self.candidate_id_mapping = defaultdict(lambda: candidate_id)
 
         if duplicate_action is None:
             duplicate_action = self.get_config_value("import.duplicate_action", str)
@@ -458,18 +488,24 @@ class ImportSession(BaseSession):
             "import.singletons"
         ):
             stages.append(group_albums(self))
-
-        if self.candidate_id is not None and self.candidate_id.startswith("asis"):
+        """
+        # FIXME: Does not really work with multi task sessions.
+        if (
+            self.candidate_id_mapping is not None
+            and self.candidate_id_mapping.startswith("asis")
+        ):
             # this branching has to be done here, as it skips the expensive lookup and
             # user query. this is also consistent with the way beets does it.
+        
             stages.append(import_asis(self))
         else:
-            stages.append(lookup_candidates(self))
-            stages.append(identify_duplicates(self))
-            stages.append(mark_tasks_preview_completed(self))
-            # FIXME: user_query calls task.choose_match, which calls session.choose_match.
-            # Better abstraction needed upstream.
-            stages.append(user_query(self))
+        """
+        stages.append(lookup_candidates(self))
+        stages.append(identify_duplicates(self))
+        stages.append(mark_tasks_preview_completed(self))
+        # FIXME: user_query calls task.choose_match, which calls session.choose_match.
+        # Better abstraction needed upstream.
+        stages.append(user_query(self))
 
         # Early import stages
         plugs: list[plugins.BeetsPlugin] = plugins.find_plugins()
@@ -528,15 +564,22 @@ class ImportSession(BaseSession):
         if task_state is None:
             raise ValueError("No task state found for task.")
 
-        # Pick by candidate id if given
-        if self.candidate_id is not None:
-            candidate_state = task_state.get_candidate_state_by_id(self.candidate_id)
+        # Pick the candidate to import
+        candidate_id = self.candidate_id_mapping[task_state.id]
+        if candidate_id is None:  # none indicates no candidate give, should error
+            raise ValueError(
+                f"Candidate id is None for task {task_state.id}. Please provide a candidate id!"
+            )
+        if isinstance(candidate_id, str):
+            candidate_state = task_state.get_candidate_state_by_id(candidate_id)
             if candidate_state is None:
-                raise ValueError(f"Candidate with id {self.candidate_id} not found.")
-        else:
+                raise ValueError(f"Candidate with id {candidate_id} not found.")
+        elif candidate_id == ImportChoice.BEST:
             candidate_state = task_state.best_candidate_state
             if candidate_state is None:
                 raise ValueError(f"No candidate found.")
+        else:
+            raise NotImplementedError("ImportChoice.ASIS not implemented yet.")
 
         # update task_state to keep track of the choice in the database
         task_state.chosen_candidate_state_id = candidate_state.id
