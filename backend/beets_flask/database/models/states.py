@@ -113,7 +113,7 @@ class FolderInDb(Base):
         """
         Convenience property to get the id.
 
-        Note: Although the id is just the hash, when querying the db, you **must** use `FolderInDb.id == hash`. Sqlalchemy does resolve properties.
+        Note: Although the id is just the hash, when querying the db, you **must** use `FolderInDb.id == hash`. Sqlalchemy does not resolve properties.
         """
         return self.id
 

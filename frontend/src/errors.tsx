@@ -1,4 +1,4 @@
-import { ArrowLeftIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Avatar, Button, CardHeader, Divider, Paper, useTheme } from "@mui/material";
 import Box from "@mui/material/Box";
@@ -10,6 +10,7 @@ import Link from "@mui/material/Link";
 import Typography from "@mui/material/Typography";
 import { useRouter } from "@tanstack/react-router";
 
+import { BackButton } from "./components/common/inputs/back";
 import { SerializedException } from "./pythonTypes";
 
 import brokenRecord from "@/assets/broken-record.png";
@@ -194,22 +195,7 @@ export function GenericErrorCard({
                     {showDetails ? "Hide Details" : "Show Details"}
                 </Button>
                 <Box sx={{ display: "flex", gap: 1, ml: "auto" }}>
-                    <Button
-                        variant="outlined"
-                        startIcon={<ArrowLeftIcon size={theme.iconSize.sm} />}
-                        sx={{ mr: 1 }}
-                        size="small"
-                        color={color}
-                        onClick={async () => {
-                            if (router.history.canGoBack()) {
-                                router.history.back();
-                            } else {
-                                await router.navigate({ to: "/" });
-                            }
-                        }}
-                    >
-                        Go Back
-                    </Button>
+                    <BackButton variant="outlined" color={color} sx={{ mr: 1 }} />
                     <Button
                         variant="contained"
                         color={color}
