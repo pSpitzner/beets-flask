@@ -1,4 +1,4 @@
-import { Box } from "@mui/material";
+import { Box, PaletteColor, styled, Typography, useTheme } from "@mui/material";
 
 import styles from "./loading.module.scss";
 
@@ -123,3 +123,61 @@ export function GrowingRipple({
         </Box>
     );
 }
+
+export function LoadingWithFeedback({
+    feedback,
+    color,
+}: {
+    feedback: string;
+    color: PaletteColor | string;
+}) {
+    const theme = useTheme();
+
+    if (typeof color === "string") {
+        color = theme.palette[color as keyof typeof theme.palette] as PaletteColor;
+    }
+
+    return (
+        <>
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    maxWidth: "120px",
+                    justifyContent: "center",
+                    alignItems: "center",
+                }}
+            >
+                <Loading noteColor={color.muted} />
+            </Box>
+            <Box>
+                <NeonSignText sx={{ marginTop: 2.5 }} colorPalette={color}>
+                    {feedback}
+                </NeonSignText>
+            </Box>
+        </>
+    );
+}
+
+const NeonSignText = styled(Typography)<{ colorPalette: PaletteColor }>(
+    ({ colorPalette }) => ({
+        textShadow: `0 0 5px #fff, 0 0 10px #fff, 0 0 15px #fff, 
+        0 0 20px ${colorPalette.main},
+        0 0 30px ${colorPalette.main},
+        0 0 40px ${colorPalette.main},
+        0 0 50px ${colorPalette.main},
+        0 0 75px ${colorPalette.main}`,
+        letterSpacing: "5px",
+        // Add a bit of flicker
+        animation: "flicker 2s infinite",
+        "@keyframes flicker": {
+            "0%, 18%, 22%, 25%, 53%, 57%, 100%": {
+                opacity: 1,
+            },
+            "20%, 24%, 55%": {
+                opacity: 0.5,
+            },
+        },
+        color: colorPalette.muted,
+    })
+);

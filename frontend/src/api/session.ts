@@ -106,10 +106,10 @@ export async function invalidateSession(
  * actions in the backend.
  */
 export const enqueueMutationOptions: UseMutationOptions<
-    JobStatusUpdate[] | undefined,
+    JobStatusUpdate[],
     Error,
     {
-        socket?: Socket;
+        socket: Socket;
         selected: FolderSelectionContext["selected"];
         kind: EnqueueKind;
 
@@ -159,7 +159,8 @@ export const enqueueMutationOptions: UseMutationOptions<
         queryClient.setQueryData<FolderStatusUpdate[]>(queryKey, (old) => {
             if (!old) return old;
             const found = new Set();
-            const nex = old.map((status) => {
+            let nex = structuredClone(old);
+            nex = nex.map((status) => {
                 if (selected.hashes.includes(status.hash)) {
                     status.status = FolderStatus.PENDING;
                     status.exc = null;
