@@ -48,44 +48,36 @@ import { MatchChip } from "../../common/chips";
 import { PenaltyTypeIcon, SourceTypeIcon } from "../../common/icons";
 import { PenaltyIconRow } from "../icons";
 
-/** Show a radio list of task candidates.
+/**
+ * Renders a selection interface for import candidates, allowing users to choose
+ * between multiple metadata matching options for a given task.
  *
- * Each item is expandable to show more details about the candidate.
+ * @example
+ * <CandidateSelector
+ *   task={importTask}
+ *   selected={selectedId}
+ *   onChange={handleSelectionChange}
+ * />
  */
-export function TaskCandidates({
+export function CandidateSelector({
     task,
-    folderHash,
-    folderPath,
+    selected,
+    onChange,
 }: {
     task: SerializedTaskState;
-    folderHash: string;
-    folderPath: string;
+    selected: SerializedCandidateState["id"];
+    onChange: (id: SerializedCandidateState["id"]) => void;
 }) {
-    const asisCandidate = useMemo(
-        () => task.candidates.find((c) => c.info.data_source === "asis"),
-        [task.candidates]
-    );
-
-    const sortedCandidates = useMemo(() => {
-        return task.candidates.sort((a, b) => {
-            if (a.info.data_source === "asis") return -1;
-            if (b.info.data_source === "asis") return 1;
-            return a.distance - b.distance;
-        });
-    }, [task.candidates]);
-
-    if (!asisCandidate) {
-        // this should not happen :)
-        return <Box>No asis candidate found</Box>;
-    }
-
     return (
-        <CandidatesContextProvider candidates={sortedCandidates}>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                <TopBar candidates={task.candidates} folderHash={folderHash} />
-
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+            <CandidateSelectionContextProvider
+                candidates={task.candidates}
+                selected={selected}
+                setSelected={onChange}
+            >
+                <TopBar task={task} />
                 <GridWrapper>
-                    {sortedCandidates.map((candidate) => (
+                    {task.candidates.map((candidate) => (
                         <Fragment key={candidate.id}>
                             <CandidateInfo key={candidate.id} candidate={candidate} />
                             <CandidateDetails
@@ -96,14 +88,8 @@ export function TaskCandidates({
                         </Fragment>
                     ))}
                 </GridWrapper>
-
-                <BottomBar
-                    candidates={task.candidates}
-                    folderHash={folderHash}
-                    folderPath={folderPath}
-                />
-            </Box>
-        </CandidatesContextProvider>
+            </CandidateSelectionContextProvider>
+        </Box>
     );
 }
 
@@ -177,7 +163,7 @@ export function SelectedCandidate({
 /* --------------------------------- Context -------------------------------- */
 // Used to manage expanded state i.e. the state of the accordion
 
-const CandidatesContext = createContext<null | {
+const CandidateSelectionContext = createContext<null | {
     expandedCandidates: Set<SerializedCandidateState["id"]>;
     isExpanded: (id: SerializedCandidateState["id"]) => boolean;
     toggleExpanded: (id: SerializedCandidateState["id"]) => void;
@@ -189,8 +175,8 @@ const CandidatesContext = createContext<null | {
     setSelected: (id: SerializedCandidateState["id"]) => void;
 }>(null);
 
-const useCandidatesContext = () => {
-    const context = useContext(CandidatesContext);
+const useCandidateSelection = () => {
+    const context = useContext(CandidateSelectionContext);
     if (!context) {
         throw new Error(
             "useCandidateContext must be used within a CandidatesContextProvider"
@@ -199,20 +185,17 @@ const useCandidatesContext = () => {
     return context;
 };
 
-function CandidatesContextProvider({
+function CandidateSelectionContextProvider({
     children,
     candidates,
+    selected,
+    setSelected,
 }: {
     children: ReactNode;
     candidates: Array<SerializedCandidateState>;
+    selected: SerializedCandidateState["id"];
+    setSelected: (id: SerializedCandidateState["id"]) => void;
 }) {
-    const [selected, setSelected] = useState<SerializedCandidateState["id"]>(() => {
-        if (candidates.length === 1) {
-            return candidates[0].id;
-        }
-        return candidates[1]?.id;
-    });
-
     const [expanded, setExpanded] = useState<Set<SerializedCandidateState["id"]>>(
         () => {
             if (candidates.length === 1) {
@@ -230,7 +213,7 @@ function CandidatesContextProvider({
     );
 
     return (
-        <CandidatesContext.Provider
+        <CandidateSelectionContext.Provider
             value={{
                 isExpanded,
                 expandedCandidates: expanded,
@@ -259,7 +242,7 @@ function CandidatesContextProvider({
             }}
         >
             {children}
-        </CandidatesContext.Provider>
+        </CandidateSelectionContext.Provider>
     );
 }
 
@@ -319,6 +302,10 @@ const CandidateDetailsRow = styled(Box)(({ theme }) => ({
     padding: theme.spacing(1),
 
     // Hide when not expanded
+    // TODO: would be nice to not render the details at all
+    // would prevent the images from loading
+    // should also prevent the long loading time when switching
+    // tasks
     "&[data-expanded='false']": {
         display: "none",
     },
@@ -330,15 +317,9 @@ const CandidateDetailsRow = styled(Box)(({ theme }) => ({
     flexDirection: "column",
 }));
 
-function TopBar({
-    candidates,
-    folderHash,
-}: {
-    candidates: SerializedCandidateState[];
-    folderHash: string;
-}) {
+function TopBar({ task }: { task: SerializedTaskState }) {
     const theme = useTheme();
-    const { expandedCandidates, collapseAll, expandAll } = useCandidatesContext();
+    const { expandedCandidates, collapseAll, expandAll } = useCandidateSelection();
 
     return (
         <Box
@@ -349,11 +330,11 @@ function TopBar({
                 justifyContent: "flex-end",
             }}
         >
-            <CandidateSearch folderHash={folderHash} />
+            <CandidateSearch folderHash={"ASD"} />
             <ButtonGroup size="small" color="secondary">
                 <IconButton
                     color="secondary"
-                    disabled={expandedCandidates.size === candidates.length}
+                    disabled={expandedCandidates.size === task.candidates.length}
                     onClick={expandAll}
                     title="Expand all"
                 >
@@ -374,6 +355,7 @@ function TopBar({
 
 /* ----------------------------- Trigger import ----------------------------- */
 
+// DEPRECATED: this is not used anymore just for reference
 function BottomBar({
     candidates,
     folderHash,
@@ -387,7 +369,7 @@ function BottomBar({
         "skip" | "merge" | "keep" | "remove" | null
     >(null);
 
-    const { selected } = useCandidatesContext();
+    const { selected } = useCandidateSelection();
 
     const selectedCandidate = useMemo(() => {
         return candidates.find((c) => c.id === selected);
@@ -473,7 +455,7 @@ function CandidateInfo({
 }) {
     const ref = useRef<HTMLDivElement>(null);
     const { isExpanded, toggleExpanded, selected, setSelected } =
-        useCandidatesContext();
+        useCandidateSelection();
     const theme = useTheme();
 
     const expanded = isExpanded(candidate.id);
@@ -533,7 +515,6 @@ function CandidateInfo({
                         sx={{
                             padding: 0,
                             "& svg": {
-                                // TODO: an small animation would be nice
                                 transform: expanded ? "rotate(180deg)" : undefined,
                             },
                         }}
@@ -561,7 +542,7 @@ function CandidateDetails({
     metadata: SerializedTaskState["current_metadata"];
 }) {
     const ref = useRef<HTMLDivElement>(null);
-    const { isExpanded, selected } = useCandidatesContext();
+    const { isExpanded, selected } = useCandidateSelection();
 
     const expanded = isExpanded(candidate.id);
 

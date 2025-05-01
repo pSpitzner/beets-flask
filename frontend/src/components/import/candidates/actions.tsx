@@ -147,6 +147,8 @@ const DuplicateActionButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
     },
 }));
 
+export type DuplicateAction = "skip" | "merge" | "keep" | "remove";
+
 /** Actions which are shown if a candidate is already
  * existing in the database. I.e. duplicate
  */
@@ -156,8 +158,8 @@ export function DuplicateActions({
     selectedCandidate,
     ...props
 }: Omit<ToggleButtonGroupProps, "color"> & {
-    duplicateAction: "skip" | "merge" | "keep" | "remove" | null;
-    setDuplicateAction: (action: "skip" | "merge" | "keep" | "remove" | null) => void;
+    duplicateAction: DuplicateAction | null;
+    setDuplicateAction: (action: DuplicateAction | null) => void;
     selectedCandidate: SerializedCandidateState;
 }) {
     const actions = ["skip", "merge", "keep", "remove"] as const;
@@ -198,7 +200,7 @@ function DuplicateActionButton({
     value,
     ...props
 }: {
-    value: "skip" | "merge" | "keep" | "remove";
+    value: DuplicateAction;
 } & Omit<ToggleButtonProps, "value" | "type">) {
     const theme = useTheme();
 
@@ -297,6 +299,8 @@ export function CandidateSearch({ folderHash }: { folderHash: string }) {
                 <form
                     onSubmit={async (e) => {
                         e.preventDefault();
+                        alert("Search broken for multi task sessions");
+                        return;
                         try {
                             const res = await mutateAsync({
                                 socket: socket,

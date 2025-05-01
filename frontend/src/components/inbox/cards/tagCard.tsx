@@ -1,0 +1,437 @@
+import {
+    ArrowDownIcon,
+    ArrowLeftIcon,
+    ArrowRightIcon,
+    ImportIcon,
+    TagIcon,
+} from "lucide-react";
+import React, { Suspense, useEffect, useMemo, useState, useTransition } from "react";
+import {
+    Box,
+    Button,
+    Card,
+    CircularProgress,
+    Divider,
+    Typography,
+    useTheme,
+} from "@mui/material";
+import { useQuery } from "@tanstack/react-query";
+
+import { sessionQueryOptions } from "@/api/session";
+import { LoadingWithFeedback } from "@/components/common/loading";
+import {
+    DuplicateAction,
+    DuplicateActions,
+    ImportCandidateLabel,
+} from "@/components/import/candidates/actions";
+import { CandidateSelector } from "@/components/import/candidates/candidateSelector";
+import {
+    Folder,
+    SerializedCandidateState,
+    SerializedSessionState,
+    SerializedTaskState,
+} from "@/pythonTypes";
+
+import { CardHeader } from "./common";
+
+/** Everything preview/tag related, there are 2 different preview states
+ * 1. SelectingCandidate: Session found, candidates fetched, waiting for user to select
+ * 2. SelectedCandidate: Session found, candidate chosen by user and imported
+ */
+export function TagCard({
+    folderHash,
+    folderPath,
+}: {
+    folderHash: string;
+    folderPath: string;
+}) {
+    const { data: session } = useQuery(
+        sessionQueryOptions({
+            folderPath,
+            folderHash,
+        })
+    );
+
+    if (!session) {
+        return null;
+    }
+
+    // TODO: 2. SelectedCandidate: Session found, candidate chosen by user and imported
+
+    return (
+        <Card
+            sx={{
+                display: "flex",
+                gap: 2,
+                flexDirection: "column",
+                padding: 2,
+                bgcolor: "background.paper",
+            }}
+        >
+            <UserSelection session={session} />
+        </Card>
+    );
+}
+
+/** Allows to process one or multiple tasks of a session
+ * i.e. choose a candidate for each task.
+ *
+ * More or less a stepper showing one task at a time.
+ */
+function UserSelection({ session }: { session: SerializedSessionState }) {
+    const [currentTaskIdx, setCurrentTaskIdx] = useState<number>(0);
+    const currentTask = session.tasks[currentTaskIdx];
+
+    // Transition to the next task, otherwise the UI will freeze
+    const [isPending, startTransition] = useTransition();
+    const handleTaskChange = (newIdx: number) => {
+        startTransition(() => {
+            setCurrentTaskIdx(newIdx);
+        });
+    };
+
+    //id mapping for duplicate actions and select candidates
+    //i.e. task[n] corresponds to duplicateActions[n]
+    const [duplicateActions, setDuplicateActions] = useState<
+        Map<string, DuplicateAction>
+    >(new Map());
+    const [selectCandidates, setSelectCandidates] = useState<Map<string, string>>(
+        () => {
+            // Initial candidates are always sorted after fetch (see api/session.ts)
+            // starting with asis than sorted by distance/penalty
+            const m = new Map<string, string>();
+            session.tasks.forEach((task) => {
+                const candidates = task.candidates;
+                if (candidates.length === 1) {
+                    m.set(task.id, candidates[0].id);
+                } else {
+                    m.set(task.id, candidates[1].id);
+                }
+            });
+            return m;
+        }
+    );
+    const selectedCandidate = useMemo(() => {
+        const candidate = currentTask.candidates.find(
+            (cand) => cand.id === selectCandidates.get(currentTask.id)
+        );
+        return candidate;
+    }, [currentTask, selectCandidates]);
+
+    return (
+        <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 2 }}>
+            <SelectionHeader session={session} currentTaskIdx={currentTaskIdx} />
+            <Divider />
+            <CandidateSelectionArea
+                key={currentTask.id}
+                isPending={isPending}
+                currentTask={currentTask}
+                selectedCandidateId={selectedCandidate!.id}
+                onCandidateChange={(id) => {
+                    setSelectCandidates((prev) => {
+                        const newMap = new Map(prev);
+                        newMap.set(currentTask.id, id);
+                        return newMap;
+                    });
+                }}
+            />
+            <SelectionFooter
+                isPending={isPending}
+                selectedCandidate={selectedCandidate}
+                selectedDuplicateAction={duplicateActions.get(currentTask.id) ?? null}
+                currentTaskIdx={currentTaskIdx}
+                totalTasks={session.tasks.length}
+                onDuplicateActionChange={(action, taskIdx) => {
+                    const task = session.tasks[taskIdx];
+                    setDuplicateActions((prev) => {
+                        const newMap = new Map(prev);
+                        if (action === null) {
+                            newMap.delete(task.id);
+                            return newMap;
+                        }
+                        newMap.set(task.id, action);
+                        return newMap;
+                    });
+                }}
+                onTaskChange={(newIdx) => handleTaskChange(newIdx)}
+            />
+        </Box>
+    );
+}
+
+/** Allows for a fixed height if a children is loading
+ *
+ * This can be used to add a transition loading effect without
+ * unnecessary layout shifts.
+ *
+ */
+function SizeFixedWithLoading({
+    isLoading,
+    children,
+    color = "secondary",
+    loadingComponent = undefined,
+}: {
+    isLoading: boolean;
+    children: React.ReactNode;
+    loadingComponent?: React.ReactNode;
+    color?: "primary" | "secondary";
+}) {
+    const ref = React.useRef<HTMLDivElement>(null);
+    const [height, setHeight] = useState<number>(0);
+
+    useEffect(() => {
+        if (!ref.current) return;
+
+        //Resize observer
+        const observer = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                setHeight(entry.contentRect.height);
+            }
+        });
+        observer.observe(ref.current);
+        return () => {
+            observer.disconnect();
+        };
+    }, []);
+
+    if (isLoading) {
+        return (
+            <Box
+                sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    height: height + "px",
+                }}
+            >
+                {loadingComponent != null ? <CircularProgress color={color} /> : null}
+            </Box>
+        );
+    }
+
+    return <Box ref={ref}>{children}</Box>;
+}
+
+/** Header section component */
+function SelectionHeader({
+    session,
+    currentTaskIdx,
+}: {
+    session: SerializedSessionState;
+    currentTaskIdx: number;
+}) {
+    return (
+        <CardHeader
+            icon={<TagIcon />}
+            title={`Select candidate${session.tasks.length > 1 ? "s" : ""}`}
+            subtitle="Choose one of the following candidates to import. The selected candidate will be used to update the metadata of the files."
+        >
+            {session.tasks.length > 1 && (
+                <Box sx={{ ml: "auto", alignSelf: "flex-start" }}>
+                    <Typography variant="caption" component="div" textAlign="right">
+                        task {currentTaskIdx + 1} of {session.tasks.length}
+                    </Typography>
+                </Box>
+            )}
+        </CardHeader>
+    );
+}
+
+/** Main selection area component */
+function CandidateSelectionArea({
+    isPending,
+    currentTask,
+    selectedCandidateId,
+    onCandidateChange,
+}: {
+    isPending: boolean;
+    currentTask: SerializedTaskState;
+    selectedCandidateId: SerializedCandidateState["id"];
+    onCandidateChange: (id: string) => void;
+}) {
+    return (
+        <SizeFixedWithLoading isLoading={isPending}>
+            <CandidateSelector
+                key={currentTask.id}
+                task={currentTask}
+                selected={selectedCandidateId}
+                onChange={onCandidateChange}
+            />
+        </SizeFixedWithLoading>
+    );
+}
+
+/** Footer with action buttons and status */
+function SelectionFooter({
+    isPending,
+    selectedCandidate,
+    selectedDuplicateAction,
+    currentTaskIdx,
+    totalTasks,
+    onDuplicateActionChange,
+    onTaskChange,
+}: {
+    isPending: boolean;
+    currentTaskIdx: number;
+    selectedCandidate: SerializedCandidateState | undefined;
+    selectedDuplicateAction: DuplicateAction | null;
+    totalTasks: number;
+    onDuplicateActionChange: (action: DuplicateAction | null, taskIdx: number) => void;
+    onTaskChange: (newIdx: number) => void;
+}) {
+    // Check if their are duplicates
+    const hasDuplicates =
+        selectedCandidate != undefined && selectedCandidate.duplicate_ids.length > 0;
+
+    let errorMsg: string | undefined;
+    if (hasDuplicates && !selectedDuplicateAction) {
+        errorMsg = `Please choose an action on how to resolve the duplicates from the library.`;
+    }
+
+    return (
+        <Box
+            sx={{
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "flex-end",
+                gap: 0.5,
+            }}
+        >
+            <SizeFixedWithLoading
+                isLoading={isPending}
+                color="secondary"
+                loadingComponent={null}
+            >
+                <StatusBar errorMsg={errorMsg} selectedCandidate={selectedCandidate} />
+            </SizeFixedWithLoading>
+            <ActionButtons
+                isPending={isPending}
+                currentTaskIdx={currentTaskIdx}
+                totalTasks={totalTasks}
+                selectedCandidate={selectedCandidate}
+                selectedDuplicateAction={selectedDuplicateAction}
+                onDuplicateActionChange={onDuplicateActionChange}
+                onTaskChange={onTaskChange}
+                nextDisabled={!!errorMsg}
+            />
+        </Box>
+    );
+}
+
+/** Status display component */
+function StatusBar({
+    errorMsg,
+    selectedCandidate,
+}: {
+    errorMsg?: string;
+    selectedCandidate: SerializedCandidateState | undefined;
+}) {
+    return (
+        <Box
+            sx={{
+                width: "100%",
+                display: "flex",
+                gap: 1,
+                justifyContent: "flex-end",
+            }}
+        >
+            {errorMsg ? (
+                <Typography variant="caption" color="error">
+                    {errorMsg}
+                </Typography>
+            ) : (
+                <ImportCandidateLabel
+                    candidate={selectedCandidate!}
+                    sx={{ textAlign: "right" }}
+                />
+            )}
+        </Box>
+    );
+}
+
+/** Action buttons component */
+function ActionButtons({
+    isPending,
+    currentTaskIdx,
+    totalTasks,
+    selectedCandidate,
+    selectedDuplicateAction,
+    onDuplicateActionChange,
+    onTaskChange,
+    nextDisabled,
+}: {
+    isPending: boolean;
+    currentTaskIdx: number;
+    totalTasks: number;
+    selectedCandidate: SerializedCandidateState | undefined;
+    selectedDuplicateAction: DuplicateAction | null;
+    onDuplicateActionChange: (action: DuplicateAction | null, taskIdx: number) => void;
+    onTaskChange: (newIdx: number) => void;
+    nextDisabled?: boolean;
+}) {
+    const theme = useTheme();
+
+    const isLastTask = currentTaskIdx === totalTasks - 1;
+    const isFirstTask = currentTaskIdx === 0;
+
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                gap: 2,
+                width: "100%",
+                justifyContent: "flex-end",
+            }}
+        >
+            {!isFirstTask && (
+                <Button
+                    onClick={() => onTaskChange(currentTaskIdx - 1)}
+                    loading={isPending}
+                    variant="outlined"
+                    color="secondary"
+                    sx={{ mr: "auto" }}
+                    startIcon={<ArrowLeftIcon size={theme.iconSize.sm} />}
+                >
+                    Previous
+                </Button>
+            )}
+
+            {!isPending &&
+                selectedCandidate &&
+                selectedCandidate?.duplicate_ids.length > 0 && (
+                    <DuplicateActions
+                        selectedCandidate={selectedCandidate}
+                        duplicateAction={selectedDuplicateAction}
+                        setDuplicateAction={(action) =>
+                            onDuplicateActionChange(action, currentTaskIdx)
+                        }
+                    />
+                )}
+
+            {!isLastTask ? (
+                <Button
+                    onClick={() => onTaskChange(currentTaskIdx + 1)}
+                    loading={isPending}
+                    variant="contained"
+                    color="secondary"
+                    endIcon={<ArrowRightIcon size={theme.iconSize.sm} />}
+                    disabled={nextDisabled}
+                >
+                    Next
+                </Button>
+            ) : (
+                <Button
+                    loading={isPending}
+                    variant="contained"
+                    color="secondary"
+                    endIcon={<ArrowDownIcon size={theme.iconSize.sm} />}
+                    disabled={nextDisabled}
+                    // TODO: Rebind import action
+                >
+                    Import
+                </Button>
+            )}
+        </Box>
+    );
+}

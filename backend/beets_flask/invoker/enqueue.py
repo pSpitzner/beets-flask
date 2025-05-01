@@ -236,8 +236,12 @@ def enqueue_import_candidate(
     """
 
     # May contain candidate_id
-    candidate_id: str = kwargs.pop("candidate_id", None)
-    duplicate_action: DuplicateAction = kwargs.pop("duplicate_action", None)
+    candidate_id: CandidateChoice | dict[str, CandidateChoice] | None = kwargs.pop(
+        "candidate_id", None
+    )
+    duplicate_action: DuplicateAction | dict[str, DuplicateAction] | None = kwargs.pop(
+        "duplicate_action", None
+    )
 
     if len(kwargs.keys()) > 0:
         raise InvalidUsageException(
@@ -247,12 +251,30 @@ def enqueue_import_candidate(
 
     # Validate if candidate_id exists
     if candidate_id is not None:
-        with db_session_factory() as db_session:
-            stmt = select(CandidateStateInDb).where(
-                CandidateStateInDb.id == candidate_id
+        candidate_ids = []
+        if isinstance(candidate_id, dict):
+            candidate_ids = candidate_id.values()
+        elif isinstance(candidate_id, str):
+            candidate_ids = [candidate_id]
+        else:
+            raise InvalidUsageException(
+                "candidate_id must be a string or a dict of strings or none."
             )
-            candidate = db_session.execute(stmt).scalar_one_or_none()
-            if candidate is None:
+
+        if len(candidate_ids) == 0:
+            raise InvalidUsageException(
+                "candidate_id must be a string or a dict of strings or none."
+            )
+
+        # Check if candidate_id exists in the database
+        with db_session_factory() as db_session:
+            stmt = (
+                select(func.count())
+                .select_from(CandidateStateInDb)
+                .where(CandidateStateInDb.id.in_(candidate_ids))
+            )
+            nCandidates = db_session.execute(stmt).scalar()
+            if nCandidates is None or nCandidates != len(candidate_ids):
                 raise InvalidUsageException(
                     f"Candidate with id {candidate_id} does not exist in the database."
                 )

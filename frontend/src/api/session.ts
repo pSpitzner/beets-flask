@@ -54,6 +54,13 @@ export const sessionQueryOptions = ({
                 cand.created_at = new Date(cand.created_at);
                 cand.updated_at = new Date(cand.updated_at);
             }
+
+            // Sort candidates by score
+            task.candidates = task.candidates.sort((a, b) => {
+                if (a.info.data_source === "asis") return -1;
+                if (b.info.data_source === "asis") return 1;
+                return a.distance - b.distance;
+            });
         }
 
         queryClient.setQueryData<SerializedSessionState>(
