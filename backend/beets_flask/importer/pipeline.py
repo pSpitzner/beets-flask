@@ -14,6 +14,7 @@ from typing import (
     Generator,
     Generic,
     Iterable,
+    Literal,
     Optional,
     ParamSpec,
     Sequence,
@@ -27,8 +28,8 @@ from typing import (
 )
 
 from beets import importer
+from beets.util.pipeline import MultiMessage, _allmsgs
 from beets.util.pipeline import Pipeline as BeetsPipeline
-from beets.util.pipeline import _allmsgs
 
 from beets_flask.logger import log
 
@@ -41,7 +42,10 @@ R = TypeVar("R")  # return
 
 # yield : Task or None, send : Task, return : None
 Task = TypeVar("Task", bound=Any)
-Stage = Generator[Optional[Task], Task, R] | AsyncGenerator[Optional[Task], Task]
+Stage = (
+    Generator[Task | MultiMessage | Literal["__PIPELINE_BUBBLE__"] | None, Task, R]
+    | AsyncGenerator[Optional[Task], Task]
+)
 
 
 class AsyncPipeline(Generic[Task, R]):

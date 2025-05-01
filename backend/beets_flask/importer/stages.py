@@ -6,6 +6,7 @@ This allows us to keep track of the import state and communicate it to the front
 from __future__ import annotations
 
 import asyncio
+from inspect import isgenerator, isgeneratorfunction
 import itertools
 from datetime import datetime
 from enum import Enum
@@ -133,7 +134,11 @@ class StageOrder(dict):
     Returned by each sessions `.stages` property.
     """
 
-    def append(self, stage: Stage[ImportTask, Any], name: str | None = None):
+    def append(
+        self,
+        stage: Stage[ImportTask, Any],
+        name: str | None = None,
+    ):
         """Append a stage to the Order."""
 
         name = name or str(getattr(stage, "__name__", f"unknown_stage"))
@@ -182,7 +187,7 @@ Task = TypeVar(
 
 
 def stage(
-    func: Callable[[*Arg, Task], Ret],
+    func: Callable[[*Arg, Task], Ret | Generator[Task, Any, None]],
 ) -> Callable[[*Arg], Generator[Ret | Task | None, Task, None]]:
     """Decorate a function to become a simple stage.
 
@@ -203,11 +208,15 @@ def stage(
     @wraps(func)
     def coro(*args: *Arg) -> Generator[Ret | Task | None, Task, None]:
         # in some edge-cases we get no task. thus, we have to include the generic R
-        task: Optional[Task | Ret] = None
+        task: Optional[Task | Ret | Generator[Task]] = None
         while True:
-            task = yield task  # wait for send to arrive. the first next() always returns None
+            if isgenerator(task):
+                for t in task:
+                    task = yield t
+            else:
+                t: Task | None | Ret = cast(Task | None | Ret, task)
+                task = yield t  # wait for send to arrive. the first next() always returns None
             # yield task, call func which gives new task, yield new task in next()
-            # FIXME: Generator support!
             task = func(*(args + (task,)))
 
     return coro
@@ -296,7 +305,7 @@ def __group(item: library.Item) -> tuple[str, str]:
 def group_albums(
     session: BaseSession,
     task: ImportTask,
-):
+) -> Generator[ImportTask, Any, None]:
     """Highly likely this will work?? Hopefully.
 
     Yielding might not work as expected yet.
@@ -384,7 +393,7 @@ def offer_match(
 def user_query(
     session: ImportSession,
     task: ImportTask,
-):
+) -> ImportTask | beets_pipeline.MultiMessage | Literal["__PIPELINE_BUBBLE__"]:
     """A coroutine for interfacing with the user about the tagging process.
 
     The coroutine accepts an ImportTask objects. It uses the
