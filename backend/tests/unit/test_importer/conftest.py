@@ -71,6 +71,7 @@ def valid_data_for_album_path(path: str | Path) -> dict:
 
 # ----------------- Monkeypath beets to use cached responses ----------------- #
 
+import hashlib
 import pickle
 
 from beets import autotag
@@ -99,9 +100,16 @@ def tag_album(
     global album_path
     log.debug(f"Using monkey patched lookup {album_path=}")
 
-    if (Path(album_path) / "lookup.pickle").exists():
+    # Compute items hash based on the items
+
+    m = hashlib.md5()
+    for item in items:
+        m.update(item.path)
+    items_hash = m.hexdigest()[:8]
+
+    if (Path(album_path) / f"lookup_{items_hash}.pickle").exists():
         log.debug(f"Using cached lookup {album_path=}")
-        with open(Path(album_path) / "lookup.pickle", "rb") as f:
+        with open(Path(album_path) / f"lookup_{items_hash}.pickle", "rb") as f:
             return pickle.load(f)
 
     else:
@@ -110,7 +118,7 @@ def tag_album(
         # easiest way... and we hope music brainz does not change its data too often!
         log.debug(f"Using default lookup {album_path=}")
         res = _tag_album(items, search_artist, search_album, search_ids)
-        with open(Path(album_path) / "lookup.pickle", "wb") as f:
+        with open(Path(album_path) / f"lookup_{items_hash}.pickle", "wb") as f:
             pickle.dump(res, f)
 
         return res

@@ -405,6 +405,124 @@ class TestImportBest(
         assert exc["message"] == "No items found that match this import session id."
 
 
+class TestChooseCandidatesSingleTask(
+    InvokerStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
+):
+    """Test a typical import using a choosen candidate."""
+
+    @pytest.fixture()
+    def path_single_task(self) -> Path:
+        path = album_path_absolute(VALID_PATHS[0])
+        use_mock_tag_album(str(path))
+        return path
+
+    async def test_choose_candidates(
+        self,
+        db_session: Session,
+        path_single_task: Path,
+    ):
+        """Test the import of the tagged folder using a candidate id (single task in session)"""
+
+        exc = await run_preview(
+            "obsolete_hash_preview",
+            str(path_single_task),
+        )
+        assert exc is None, "Should not return an error"
+
+        # Check db contains the tagged folder
+        stmt = select(SessionStateInDb)
+        s_state_indb = db_session.execute(stmt).scalar()
+
+        assert s_state_indb is not None
+        assert s_state_indb.folder.full_path == str(path_single_task)
+        assert len(s_state_indb.tasks) == 1
+
+        choosen_candidate = s_state_indb.tasks[0].candidates[-2]
+
+        exc = await run_import_candidate(
+            "obsolete_hash_import",
+            str(path_single_task),
+            candidate_id=choosen_candidate.id,
+        )
+        assert exc is None, "Should not return an error"
+
+        # Check db still contains one tagged folder
+        stmt = select(SessionStateInDb)
+        s_state_indb = db_session.execute(stmt).scalar()
+        assert s_state_indb is not None
+        assert s_state_indb.folder.full_path == str(path_single_task)
+
+        # Check choosen candidate is the one we imported
+        s_state_live = s_state_indb.to_live_state()
+        assert s_state_live is not None
+        assert s_state_live.folder_path == path_single_task
+        assert len(s_state_live.task_states) == 1
+        assert s_state_live.tasks[0].old_paths is not None
+        t_state_live = s_state_live.task_states[0]
+        assert t_state_live.progress == Progress.IMPORT_COMPLETED
+        assert t_state_live.chosen_candidate_state is not None
+        assert t_state_live.chosen_candidate_state_id == choosen_candidate.id
+
+
+class TestChooseCandidatesMultipleTasks(
+    InvokerStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
+):
+    """Test a typical import of a multiple tasks using choosen candidates."""
+
+    @pytest.fixture()
+    def path_multiple_tasks(self) -> Path:
+        path = album_path_absolute("multi")
+        use_mock_tag_album(str(path))
+        return path
+
+    async def test_choose_candidates_multiple_tasks(
+        self,
+        db_session: Session,
+        path_multiple_tasks: Path,
+    ):
+        """Test the import of the tagged folder."""
+
+        exc = await run_preview(
+            "obsolete_hash_preview",
+            str(path_multiple_tasks),
+        )
+        assert exc is None, "Should not return an error"
+
+        # Check db contains the tagged folder with multiple tasks
+        stmt = select(SessionStateInDb)
+        s_state_indb = db_session.execute(stmt).scalar()
+        assert s_state_indb is not None
+        assert len(s_state_indb.tasks) > 1, "Should have multiple tasks"
+
+        # For each task, choose a different candidate
+
+        candidates = {}
+        for task in s_state_indb.tasks:
+            print(task.paths)
+            print([c.metadata for c in task.candidates])
+            assert len(task.candidates) > 2, "Should have candidates"
+            candidates[task.id] = task.candidates[-2].id
+
+        # Check that we have the same number of candidates as tasks
+        assert len(candidates) == len(s_state_indb.tasks), (
+            "Should have same number of candidates as tasks"
+        )
+
+        exc = await run_import_candidate(
+            "obsolete_hash_import",
+            str(path_multiple_tasks),
+            candidate_id=candidates,
+        )
+        assert exc is None, "Should not return an error"
+
+        # Check db still contains one tagged folder
+        stmt = select(SessionStateInDb)
+        s_state_indb = db_session.execute(stmt).scalar()
+        assert s_state_indb is not None
+        assert s_state_indb.folder.full_path == str(path_multiple_tasks)
+        assert len(s_state_indb.tasks) > 1, "Should have multiple tasks"
+
+
 class TestImportAsis(
     InvokerStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
 ):
