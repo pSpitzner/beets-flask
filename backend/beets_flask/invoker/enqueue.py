@@ -440,7 +440,7 @@ async def run_import_candidate(
     candidate_id: CandidateChoice
     | dict[str, CandidateChoice]
     | None = ImportChoice.BEST,
-    duplicate_action: DuplicateAction | None = None,
+    duplicate_action: DuplicateAction | dict[str, DuplicateAction] | None = None,
 ):
     """Imports a candidate that has been fetched in a preview session.
 
@@ -448,7 +448,7 @@ async def run_import_candidate(
     ----------
     candidate_id : optional
         If candidate_id is none the best candidate is used.
-    duplicate_action : DuplicateAction | None
+    duplicate_action : optional
         If duplicate_action is none, the default action from the config is used.
     """
     log.info(f"Import task on {hash=} {path=}")

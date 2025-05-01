@@ -464,7 +464,7 @@ class TestChooseCandidatesSingleTask(
         assert t_state_live.chosen_candidate_state_id == choosen_candidate.id
 
 
-class TestChooseCandidatesMultipleTasks(
+class TestMultipleTasks(
     InvokerStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
 ):
     """Test a typical import of a multiple tasks using choosen candidates."""
@@ -521,6 +521,56 @@ class TestChooseCandidatesMultipleTasks(
         assert s_state_indb is not None
         assert s_state_indb.folder.full_path == str(path_multiple_tasks)
         assert len(s_state_indb.tasks) > 1, "Should have multiple tasks"
+
+    @pytest.mark.parametrize("duplicate_action", ["skip", "merge", "remove", "keep"])
+    async def test_duplicate_action(
+        self,
+        db_session: Session,
+        path_multiple_tasks: Path,
+        duplicate_action: str,
+    ):
+        """Test the import of the tagged folder with duplicate action."""
+
+        # Check db contains the tagged folder with multiple tasks
+        stmt = select(SessionStateInDb)
+        s_state_indb = db_session.execute(stmt).scalar()
+        assert s_state_indb is not None
+        assert len(s_state_indb.tasks) > 1, "Should have multiple tasks"
+
+        # Reset session state to PREVIEW_COMPLETED to allow to reuse it on
+        # multiple runs of this test
+        stmt = (
+            select(SessionStateInDb)
+            .join(FolderInDb)
+            .where(FolderInDb.full_path == str(path_multiple_tasks))
+        )
+        session_state = db_session.execute(stmt).scalar()
+        assert session_state is not None
+        # Reset progress to PREVIEW_COMPLETED
+        for task in session_state.tasks:
+            task.progress = Progress.PREVIEW_COMPLETED
+        db_session.commit()
+
+        # For each task, choose a different candidate and duplicate action
+        duplicate_actions = {}
+        candidates = {}
+        for task in s_state_indb.tasks:
+            assert len(task.candidates) > 2, "Should have candidates"
+            candidates[task.id] = task.candidates[-2].id
+            duplicate_actions[task.id] = duplicate_action
+
+        # Check that we have the same number of candidates as tasks
+        assert len(candidates) == len(s_state_indb.tasks), (
+            "Should have same number of candidates as tasks"
+        )
+
+        exc = await run_import_candidate(
+            "obsolete_hash_import",
+            str(path_multiple_tasks),
+            candidate_id=candidates,
+            duplicate_action=duplicate_actions,
+        )
+        assert exc is None, "Should not return an error"
 
 
 class TestImportAsis(

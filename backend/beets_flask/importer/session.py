@@ -1,7 +1,7 @@
 import asyncio
-from collections import defaultdict
 import logging
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
@@ -398,7 +398,7 @@ class ImportSession(BaseSession):
 
     match_url: str | None
     candidate_id_mapping: Mapping[str, CandidateChoice | None]
-    duplicate_action: DuplicateAction | None
+    duplicate_action: Mapping[str, DuplicateAction]
 
     def __init__(
         self,
@@ -406,7 +406,7 @@ class ImportSession(BaseSession):
         config_overlay: dict | None = None,
         match_url: str | None = None,
         candidate_id: CandidateChoice | dict[str, CandidateChoice] = ImportChoice.BEST,
-        duplicate_action: DuplicateAction | None = None,
+        duplicate_action: DuplicateAction | None | dict[str, DuplicateAction] = None,
     ):
         """Create new ImportSession.
 
@@ -425,8 +425,8 @@ class ImportSession(BaseSession):
             FIXME: at the moment asis is broken
         duplicate_action : str
             The action to take if duplicates are found. One of "skip", "keep",
-            "remove", "merge", "ask". If not specified, the default is read from
-            the user config.
+            "remove", "merge", "ask". If None, the default is read from
+            the user config and applied to all tasks.
         """
 
         config_overlay = {} if config_overlay is None else config_overlay
@@ -440,11 +440,10 @@ class ImportSession(BaseSession):
 
         self.match_url = match_url
 
+        task_states = self.state.task_states
         # Create a mapping for which candidate to import for each task.
         # uses a default dict to allow for a single candidate id
-        task_states = self.state.task_states
         if len(task_states) > 1 and isinstance(candidate_id, str):
-            # doesnt match the enum!
             raise ValueError(
                 "Candidate_id must be a dict with task ids as keys if multiple tasks are given"
             )
@@ -454,10 +453,23 @@ class ImportSession(BaseSession):
         else:
             self.candidate_id_mapping = defaultdict(lambda: candidate_id)
 
+        # Create a mapping for the duplicate action
+        # each task might have a different action, if none is given
+        # the default action is used from the config
+        if len(task_states) > 1 and isinstance(duplicate_action, str):
+            raise ValueError(
+                "Duplicate_action must be a dict with task ids as keys if multiple tasks are given"
+            )
+        default_action: DuplicateAction = self.get_config_value(
+            "import.duplicate_action", str
+        )
         if duplicate_action is None:
-            duplicate_action = self.get_config_value("import.duplicate_action", str)
-
-        self.duplicate_action = duplicate_action.lower()  # type: ignore
+            duplicate_action = default_action
+        if isinstance(duplicate_action, dict):
+            self.duplicate_action = defaultdict(lambda: default_action)
+            self.duplicate_action.update(duplicate_action)
+        else:
+            self.duplicate_action = defaultdict(lambda: duplicate_action)
 
     async def run_async(self) -> SessionState:
         # only allow import sessions to run on preview states (not other import states)
@@ -604,9 +616,14 @@ class ImportSession(BaseSession):
         )
 
         if len(found_duplicates) == 0:
-            log.debug("No duplicates found.")
+            log.debug(f"No duplicates found for")
             return
-        match self.duplicate_action:
+
+        task_state = self.state.get_task_state_for_task(task)
+        if task_state is None:
+            raise ValueError("No task state found for task.")
+        task_duplicate_action = self.duplicate_action[task_state.id]
+        match task_duplicate_action:
             case "skip":
                 task.set_choice(importer.action.SKIP)
             case "keep":
