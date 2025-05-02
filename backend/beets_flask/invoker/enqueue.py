@@ -191,20 +191,11 @@ def enqueue_preview_add_candidates(
     # May contain search_ids, search_artist, search_album
     # As always to allow task mapping
 
-    search_ids = kwargs.pop("search_ids", [])
-    search_artist = kwargs.pop("search_artist", None)
-    search_album = kwargs.pop("search_album", None)
-
+    search = kwargs.pop("search", None)
     if len(kwargs.keys()) > 0:
         raise InvalidUsageException(
-            "EnqueueKind.PREVIEW_ADD_CANDIDATES only accepts "
-            + "the following kwargs: search_ids, search_artist, search_album."
-        )
-
-    if len(search_ids) == 0 and search_artist is None and search_album is None:
-        raise InvalidUsageException(
-            "EnqueueKind.PREVIEW_ADD_CANDIDATES requires at least one of "
-            + "the following kwargs: search_ids, search_artist, search_album."
+            "EnqueueKind.PREVIEW_ADD_CANDIDATES only accepts the following kwargs: "
+            + "search"
         )
 
     # kwargs are mixed between our own function and redis enqueue -.-
@@ -215,9 +206,7 @@ def enqueue_preview_add_candidates(
         run_preview_add_candidates,
         hash,
         path,
-        search_ids=search_ids,
-        search_artist=search_artist,
-        search_album=search_album,
+        search=search,
     )
     _set_job_meta(job, hash, path, EnqueueKind.PREVIEW_ADD_CANDIDATES, extra_meta)
     return job

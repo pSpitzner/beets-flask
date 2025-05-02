@@ -403,6 +403,7 @@ class TaskStateInDb(Base):
             old_paths = None
 
         task = cls(
+            id=state.id,
             toppath=state.task.toppath,
             paths=state.task.paths,
             items=state.task.items,

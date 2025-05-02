@@ -6,6 +6,7 @@ import {
     Divider,
     IconButton,
     IconButtonOwnProps,
+    styled,
     Typography,
     Zoom,
 } from "@mui/material";
@@ -104,33 +105,13 @@ export function Dialog({
     );
 }
 
-const Backdrop = ({
-    open,
-    ref,
-    ...other
-}: {
-    open: boolean;
-    ref: Ref<HTMLDivElement>;
-} & BoxProps) => (
-    <Box
-        ref={ref}
-        {...other}
-        sx={[
-            {
-                position: "fixed",
-                inset: 0,
-                backgroundColor: "#00000033",
-                backdropFilter: "blur(5px)",
-                zIndex: -1,
-                WebkitTapHighlightColor: "transparent",
-            },
-            open
-                ? {
-                      display: "block",
-                  }
-                : {
-                      display: "none",
-                  },
-        ]}
-    />
-);
+import MuiBackdrop from "@mui/material/Backdrop";
+
+const Backdrop = styled(MuiBackdrop)(() => ({
+    position: "fixed",
+    inset: 0,
+    backgroundColor: "#00000033",
+    backdropFilter: "blur(5px)",
+    zIndex: -1,
+    WebkitTapHighlightColor: "transparent",
+}));

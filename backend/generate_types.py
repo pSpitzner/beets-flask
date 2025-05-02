@@ -1,4 +1,5 @@
 # main.py
+from types import UnionType
 from typing import Any
 
 from py2ts import generate_ts
@@ -8,6 +9,10 @@ from beets_flask.importer.states import (
     SerializedSessionState,
 )
 from beets_flask.invoker import EnqueueKind
+from beets_flask.invoker.enqueue import (
+    ImportChoice,
+    Search,
+)
 from beets_flask.server.routes.inbox import Folder, InboxStats
 from beets_flask.server.routes.library.resources import (
     AlbumResponse,
@@ -26,7 +31,7 @@ prefix = """/*
  */
 """
 
-elements: list[type] = []
+elements: list[type | UnionType] = []
 
 # Session state
 elements.append(SerializedSessionState)
@@ -38,8 +43,11 @@ elements.append(Folder)
 elements.append(InboxStats)
 
 
-# Invoker
+# Invoker / enqueue
 elements.append(EnqueueKind)
+elements.append(Search)
+elements.append(ImportChoice)
+
 
 # ------------------------------ library routes ------------------------------ #
 

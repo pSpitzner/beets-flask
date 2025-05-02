@@ -1,13 +1,16 @@
-import { UseMutationOptions } from "@tanstack/react-query";
+import { Query, UseMutationOptions } from "@tanstack/react-query";
 
 import { FolderSelectionContext } from "@/components/inbox/folderSelectionContext";
 import {
     EnqueueKind,
     FolderStatus,
     FolderStatusUpdate,
+    ImportChoice,
     JobStatusUpdate,
+    Search,
     SerializedException,
     SerializedSessionState,
+    SerializedTaskState,
 } from "@/pythonTypes";
 
 import { APIError, queryClient } from "./common";
@@ -106,6 +109,31 @@ export async function invalidateSession(
 
 /* -------------------------------- Mutations ------------------------------- */
 
+// see related invoker/enqueue.py functions for more details
+type TaskIdMap<T> = {
+    [key: SerializedTaskState["id"]]: T;
+};
+
+interface EnqueuePreviewAddCandidate {
+    kind: EnqueueKind.PREVIEW_ADD_CANDIDATES;
+    search: Search | TaskIdMap<Search>;
+}
+
+interface EnqueuePreview {
+    kind: EnqueueKind.PREVIEW;
+}
+
+interface EnqueueImportCandidate {
+    kind: EnqueueKind.IMPORT_CANDIDATE;
+    candidate_id?: string | ImportChoice | TaskIdMap<string | ImportChoice>;
+    duplicate_action?: "skip" | "keep" | "remove" | "merge" | null;
+}
+
+type EnqueueParams =
+    | EnqueuePreviewAddCandidate
+    | EnqueuePreview
+    | EnqueueImportCandidate;
+
 /** Enqueue a new task
  * i.e. tag a folder of import a folder
  *
@@ -116,13 +144,9 @@ export const enqueueMutationOptions: UseMutationOptions<
     JobStatusUpdate[],
     Error,
     {
-        socket: Socket;
+        socket: Socket | null;
         selected: FolderSelectionContext["selected"];
-        kind: EnqueueKind;
-
-        // Allow for extra params
-        [key: string]: unknown;
-    }
+    } & EnqueueParams
 > = {
     mutationFn: async ({ socket, selected, kind, ...extra }) => {
         // Generate a unique job reference for each folder
@@ -157,9 +181,8 @@ export const enqueueMutationOptions: UseMutationOptions<
         // Wait for the job to finish
         return await promiseResult;
     },
-
     // Optimistic update for status
-    onMutate: async ({ selected, kind }) => {
+    onMutate: async ({ selected }) => {
         const queryKey = statusQueryOptions.queryKey;
         await queryClient.cancelQueries({ queryKey });
 
@@ -189,38 +212,71 @@ export const enqueueMutationOptions: UseMutationOptions<
             return nex;
         });
     },
+    // Fetch new session on success
+    onSuccess: async (_data, { selected }) => {
+        const predicate = (query: Query) => {
+            if (query.queryKey[0] !== "session") return false;
+            if (!query.queryKey[1]) return false;
+            // Lets just invalidate all session with this path or hash
+            const { folderHash: qHash, folderPath: qPath } = query.queryKey[1] as {
+                folderHash?: string;
+                folderPath?: string;
+            };
+
+            let containsPath = false;
+            let containsHash = false;
+            if (qPath && selected.paths.length > 0) {
+                containsPath = selected.paths.includes(qPath);
+            }
+            if (qHash && selected.hashes.length > 0) {
+                containsHash = selected.hashes.includes(qHash);
+            }
+            return containsPath || containsHash;
+        };
+
+        const ps = [
+            queryClient
+                .cancelQueries({
+                    predicate,
+                })
+                .then(() =>
+                    queryClient.invalidateQueries({
+                        predicate,
+                    })
+                ),
+            new Promise((resolve) => setTimeout(resolve, 500)),
+            // For loading spinner
+        ];
+        await Promise.all(ps);
+    },
 };
 
 /** Add/Search a candidate
  * for a given session.
  *
- * A session can be uniquly indetified by
+ * A session can be uniquely identified by
  * its folder_hash.
+ *
+ * Mostly an overload of the enqueue mutation.
+ * FIXME: We might want to remove this
  */
-
 export const addCandidateMutationOptions: UseMutationOptions<
     JobStatusUpdate[],
     APIError,
     {
-        socket: Socket;
-        folder_hash: string;
-        search_ids: string[];
-        search_artist?: string;
-        search_album?: string;
-    }
+        socket: Socket | null;
+        task_id: string;
+    } & Omit<EnqueuePreviewAddCandidate, "kind">
 > = {
-    mutationKey: ["add_candidate"],
-    mutationFn: async ({
-        socket,
-        folder_hash,
-        search_ids,
-        search_artist,
-        search_album,
-    }) => {
-        const jobRef = `${folder_hash}-${Date.now()}-${Math.random()}`;
+    ...enqueueMutationOptions,
+    mutationFn: async ({ socket, task_id, ...extra }) => {
+        // Generate a unique job reference for each folder
+        // to avoid collisions
+        const jobRefs = [`${task_id}-${Date.now()}-${Math.random()}`];
+
         const promiseResult = waitForJobUpdate({
-            socket,
-            jobRef: jobRef,
+            socket: socket,
+            jobRef: jobRefs,
         });
 
         const res = await fetch("/session/add_candidates", {
@@ -229,46 +285,78 @@ export const addCandidateMutationOptions: UseMutationOptions<
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                folder_hashes: [folder_hash],
-                search_ids,
-                search_artist,
-                search_album,
-                job_frontend_ref: jobRef,
+                task_id: task_id,
+                job_frontend_refs: jobRefs,
+                ...extra,
             }),
         });
 
         // no need to process, just for debugging, errors handled in custom fetch
         const _data = (await res.json()) as JobStatusUpdate;
 
+        // Wait for the job to finish
         return await promiseResult;
     },
-    onSuccess: async (_data, variables) => {
-        // Invalidate the query after the cache has been reset
-        const q = sessionQueryOptions({ folderHash: variables.folder_hash });
+    onSuccess: async (_data, { ...variables }, context) => {
+        return await enqueueMutationOptions.onSuccess?.(
+            _data,
+            {
+                ...variables,
+                kind: EnqueueKind.PREVIEW_ADD_CANDIDATES,
+                selected: {
+                    hashes: [_data[0].job_metas[0].folder_hash],
+                    paths: [_data[0].job_metas[0].folder_path],
+                },
+            },
+            context
+        );
+    },
+    onMutate: (variables) => {
+        return;
+    },
+    onError: (error, variables, context) => {
+        return;
+    },
+    onSettled: async (_data, error, variables, context) => {
+        if (!_data) {
+            return;
+        }
 
-        // At least 0.5 second delay for loading indicator
-        const ps = [
-            queryClient.cancelQueries(q).then(() => queryClient.invalidateQueries(q)),
-            new Promise((resolve) => setTimeout(resolve, 500)),
-        ];
-        await Promise.all(ps);
+        return await enqueueMutationOptions.onSettled?.(
+            _data,
+            error,
+            {
+                ...variables,
+                kind: EnqueueKind.PREVIEW_ADD_CANDIDATES,
+                selected: {
+                    hashes: [_data[0].job_metas[0].folder_hash],
+                    paths: [_data[0].job_metas[0].folder_path],
+                },
+            },
+            context
+        );
     },
 };
 
 /** Wait for a job update
  *
  * Waits for a status update via the webssocket
- * connection.
+ * connection. If no socket is provided, it will
+ * resolve to the first job update.
  */
 async function waitForJobUpdate({
     socket,
     jobRef,
     timeout = 30_000,
 }: {
-    socket: Socket;
+    socket: Socket | null;
     jobRef: string | string[];
     timeout?: number;
 }) {
+    if (!socket) {
+        return Promise.resolve([] as JobStatusUpdate[]);
+    }
+
     let handleUpdate: (data: JobStatusUpdate) => void;
     const jobRefs = Array.isArray(jobRef) ? jobRef : [jobRef];
 

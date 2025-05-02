@@ -130,6 +130,12 @@ export interface SerializedSessionState {
 	exc?: SerializedException | null;
 }
 
+export interface Search {
+	search_ids: Array<string>;
+	search_artist: null | string;
+	search_album: null | string;
+}
+
 export interface LibraryStats {
 	libraryPath: string;
 	items: number;
@@ -302,6 +308,11 @@ export interface AlbumResponse {
 	genre: string;
 	label: string;
 	sources: Array<AlbumSource>;
+}
+
+export enum ImportChoice {
+	ASIS = 1,
+	BEST = 2,
 }
 
 export enum EnqueueKind {

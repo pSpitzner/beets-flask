@@ -29,7 +29,12 @@ import { useMutation } from "@tanstack/react-query";
 import { addCandidateMutationOptions, enqueueMutationOptions } from "@/api/session";
 import { Dialog } from "@/components/common/dialogs";
 import { useStatusSocket } from "@/components/common/websocket/status";
-import { EnqueueKind, SerializedCandidateState } from "@/pythonTypes";
+import {
+    EnqueueKind,
+    Search,
+    SerializedCandidateState,
+    SerializedTaskState,
+} from "@/pythonTypes";
 
 /** Text that is show as an indicator
  * how good a match is.
@@ -76,10 +81,11 @@ export function ImportCandidateButton({
     folderPath,
 }: {
     candidate: SerializedCandidateState;
-    duplicateAction: string | null;
+    duplicateAction: "skip" | "keep" | "remove" | "merge" | null;
     folderHash: string;
     folderPath: string;
 }) {
+    const { socket } = useStatusSocket();
     const theme = useTheme();
     const { mutateAsync } = useMutation(enqueueMutationOptions);
 
@@ -93,7 +99,9 @@ export function ImportCandidateButton({
             endIcon={<ArrowRightIcon size={theme.iconSize.sm} />}
             onClick={async () => {
                 console.log("Importing candidate", candidate.id);
+
                 await mutateAsync({
+                    socket,
                     selected: {
                         paths: [folderPath],
                         hashes: [folderHash],
@@ -244,18 +252,14 @@ function DuplicateActionButton({
 
 /* -------------------------- Search new candidate -------------------------- */
 
-export function CandidateSearch({ folderHash }: { folderHash: string }) {
+export function CandidateSearch({ task }: { task: SerializedTaskState }) {
     const theme = useTheme();
     const socket = useStatusSocket().socket;
     const [open, setOpen] = useState(false);
-    const [search, setSearch] = useState<{
-        ids: string[];
-        artist: string;
-        album: string;
-    }>({
-        ids: [],
-        artist: "",
-        album: "",
+    const [search, setSearch] = useState<Search>({
+        search_ids: [],
+        search_artist: null,
+        search_album: null,
     });
 
     /** Mutation for the search
@@ -299,19 +303,21 @@ export function CandidateSearch({ folderHash }: { folderHash: string }) {
                 <form
                     onSubmit={async (e) => {
                         e.preventDefault();
-                        alert("Search broken for multi task sessions");
-                        return;
+
                         try {
                             const res = await mutateAsync({
                                 socket: socket,
-                                // PS@SM: where to handle socket null check? Doing it deeper inside the mutation options seems wrong. do an early return above?
-                                folder_hash: folderHash,
-                                search_ids: search.ids,
-                                search_album: search.album,
-                                search_artist: search.artist,
+                                task_id: task.id,
+                                search: {
+                                    [task.id]: search,
+                                },
                             });
                             setOpen(false);
-                            setSearch({ ids: [], artist: "", album: "" });
+                            setSearch({
+                                search_ids: [],
+                                search_artist: "",
+                                search_album: "",
+                            });
                         } catch (e) {
                             // dont close the dialog
                             console.error(e);
@@ -335,7 +341,7 @@ export function CandidateSearch({ folderHash }: { folderHash: string }) {
                             onChange={(e) => {
                                 setSearch({
                                     ...search,
-                                    ids: e.target.value
+                                    search_ids: e.target.value
                                         .split(",")
                                         .map((id) => id.trim()),
                                 });
@@ -355,11 +361,11 @@ export function CandidateSearch({ folderHash }: { folderHash: string }) {
                                     id="input-search-artist"
                                     label="Seach by artist"
                                     placeholder="Artist"
-                                    value={search.artist}
+                                    value={search.search_artist || ""}
                                     onChange={(e) => {
                                         setSearch({
                                             ...search,
-                                            artist: e.target.value,
+                                            search_artist: e.target.value,
                                         });
                                     }}
                                 />
@@ -368,11 +374,11 @@ export function CandidateSearch({ folderHash }: { folderHash: string }) {
                                     id="input-search-artist"
                                     label="and album"
                                     placeholder="Album"
-                                    value={search.album}
+                                    value={search.search_album || ""}
                                     onChange={(e) => {
                                         setSearch({
                                             ...search,
-                                            album: e.target.value,
+                                            search_album: e.target.value,
                                         });
                                     }}
                                 />

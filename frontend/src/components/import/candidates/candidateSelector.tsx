@@ -317,7 +317,13 @@ const CandidateDetailsRow = styled(Box)(({ theme }) => ({
     flexDirection: "column",
 }));
 
-function TopBar({ task }: { task: SerializedTaskState }) {
+function TopBar({
+    task,
+    folderHash,
+}: {
+    task: SerializedTaskState;
+    folderHash: string;
+}) {
     const theme = useTheme();
     const { expandedCandidates, collapseAll, expandAll } = useCandidateSelection();
 
@@ -330,7 +336,7 @@ function TopBar({ task }: { task: SerializedTaskState }) {
                 justifyContent: "flex-end",
             }}
         >
-            <CandidateSearch folderHash={"ASD"} />
+            <CandidateSearch task={task} />
             <ButtonGroup size="small" color="secondary">
                 <IconButton
                     color="secondary"

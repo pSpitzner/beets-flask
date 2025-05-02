@@ -74,6 +74,7 @@ declare module "@tanstack/react-router" {
     }
 }
 
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 export function PrefetchConfigQueryClientProvider({
     client,
     children,
@@ -85,7 +86,13 @@ export function PrefetchConfigQueryClientProvider({
         client.prefetchQuery(configQueryOptions()).catch(console.error);
     }, [client]);
 
-    return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+    return (
+        <QueryClientProvider client={client}>
+            {" "}
+            <ReactQueryDevtools initialIsOpen={false} />
+            {children}
+        </QueryClientProvider>
+    );
 }
 
 export function App() {

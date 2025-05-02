@@ -10,7 +10,11 @@ from sqlalchemy import select
 
 from beets_flask import invoker
 from beets_flask.database import db_session_factory
-from beets_flask.database.models.states import FolderInDb, SessionStateInDb
+from beets_flask.database.models.states import (
+    FolderInDb,
+    SessionStateInDb,
+    TaskStateInDb,
+)
 from beets_flask.importer.progress import FolderStatus, Progress
 from beets_flask.logger import log
 from beets_flask.redis import wait_for_job_results
@@ -20,8 +24,8 @@ from beets_flask.server.exceptions import (
     SerializedException,
 )
 from beets_flask.server.utility import (
-    pop_folder_params,
     pop_extra_meta,
+    pop_folder_params,
     pop_query_param,
 )
 from beets_flask.server.websocket.status import FolderStatusUpdate, JobStatusUpdate
@@ -54,17 +58,10 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
                 "Provide one folder hash OR one folder path", status_code=400
             )
 
-        hash = None
-        path = None
-        if len(folder_hashes) != 1 or folder_hashes[0] is None:
-            path = folder_paths[0]
-        else:
-            hash = folder_hashes[0]
-
         with db_session_factory() as db_session:
             item = self.model.get_by_hash_and_path(
-                hash=hash,
-                path=path,
+                hash=folder_hashes[0],
+                path=folder_paths[0],
                 db_session=db_session,
             )
 
@@ -74,7 +71,8 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
                 # frontend console with errors.
                 # we manually handle this in sessionQueryOptions.
                 raise NotFoundException(
-                    f"Item with {hash=} {path=} not found", status_code=200
+                    f"Item with {folder_hashes=} {folder_paths=} not found",
+                    status_code=200,
                 )
 
             return jsonify(item.to_dict())
@@ -123,61 +121,58 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
     async def add_candidates(self):
         """Search for new candidates.
 
-        This starts a new session for a given folder hash.
+        Helper function which is pretty similar to enqueue. But only allows for a single
+        folder hash and path.
         """
         log.warning("Adding candidates")
         params = await request.get_json()
-        folder_hashes, folder_paths = pop_folder_params(params, allow_mismatch=True)
+        task_id = pop_query_param(params, "task_id", str)
+        session_id = pop_query_param(params, "session_id", str)
 
-        if len(folder_hashes) != 1:
-            raise InvalidUsageException("Folder hash must be a single value")
-        if len(folder_paths) > 1:
-            raise InvalidUsageException("Folder path must be a single value")
+        folder_hash: str | None = None
+        folder_path: str | None = None
+        with db_session_factory() as db_session:
+            # Get path, hash by task_id
+            if session_id is not None:
+                stmt = select(SessionStateInDb).where(SessionStateInDb.id == session_id)
+                session_indb = db_session.execute(stmt).scalar_one_or_none()
+                if session_indb is None:
+                    raise InvalidUsageException(
+                        f"Session with session_id {session_id} not found",
+                    )
 
-        extra_meta = pop_extra_meta(params, n_jobs=len(folder_hashes))
+                folder_path = session_indb.folder.full_path
+                folder_hash = session_indb.folder.hash
 
-        hash = folder_hashes[0]
-        path = None
-        if len(folder_paths) == 1:
-            path = folder_paths[0]
+            if task_id is not None:
+                stmt = select(TaskStateInDb).where(TaskStateInDb.id == task_id)
+                task_indb = db_session.execute(stmt).scalar_one_or_none()
+                if task_indb is None:
+                    raise InvalidUsageException(
+                        f"Task with task_id {task_id} not found",
+                    )
 
-        # Get additional params for search with a bit of validation
-        search_ids: list[str] = pop_query_param(params, "search_ids", list, default=[])
-        search_artist: str | None = pop_query_param(params, "search_artist", str)
-        search_album: str | None = pop_query_param(params, "search_album", str)
+                folder_path = task_indb.session.folder.full_path
+                folder_hash = task_indb.session.folder.hash
 
-        search_ids = list(
-            filter(
-                lambda x: isinstance(x, str) and len(x) > 0,
-                search_ids,
-            )
-        )
-
-        if search_artist is not None and search_artist.strip() == "":
-            search_artist = None
-        if search_album is not None and search_album.strip() == "":
-            search_album = None
-
-        if len(search_ids) == 0 and search_artist is None and search_album is None:
+        if folder_hash is None or folder_path is None:
             raise InvalidUsageException(
-                "`search_ids`, `search_artist` or `search_album` must be provided!"
+                "task_id or session_id must be provided",
             )
-        log.warning(f"{search_ids=}, {search_artist=}, {search_album=}")
 
-        # Trigger job in queue
+        extra_meta = pop_extra_meta(params, n_jobs=1)
+
         job = await invoker.enqueue(
-            hash,
-            path,
+            folder_hash,
+            folder_path,
             invoker.EnqueueKind.PREVIEW_ADD_CANDIDATES,
             extra_meta=extra_meta[0],
-            search_ids=search_ids,
-            search_artist=search_artist,
-            search_album=search_album,
+            **params,
         )
 
         return jsonify(
             JobStatusUpdate(
-                message=f"searching_candidates for {len(folder_hashes)} folders",
+                message=f"searching_candidates for {folder_path} folders",
                 num_jobs=1,
                 job_metas=[job.get_meta()],  # type: ignore
             )
