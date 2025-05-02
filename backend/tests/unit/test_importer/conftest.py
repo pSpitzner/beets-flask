@@ -105,6 +105,12 @@ def tag_album(
     m = hashlib.md5()
     for item in items:
         m.update(item.path)
+    if search_artist:
+        m.update(search_artist.encode("utf-8"))
+    if search_album:
+        m.update(search_album.encode("utf-8"))
+    for search_id in search_ids:
+        m.update(search_id.encode("utf-8"))
     items_hash = m.hexdigest()[:8]
 
     if (Path(album_path) / f"lookup_{items_hash}.pickle").exists():

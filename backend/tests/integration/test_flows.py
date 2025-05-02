@@ -23,6 +23,7 @@ from beets_flask.invoker.enqueue import (
     run_import_candidate,
     run_import_undo,
     run_preview,
+    run_preview_add_candidates,
 )
 from tests.mixins.database import IsolatedBeetsLibraryMixin, IsolatedDBMixin
 from tests.unit.test_importer.conftest import (
@@ -133,6 +134,46 @@ class TestImportBest(
             assert len(c.duplicate_ids) == 0, (
                 "Should not have duplicates in empty library"
             )
+
+    async def test_search_candidates(self, db_session: Session, path: Path):
+        """Test the search candidates of the import process.
+
+        This should be done in the preview step, but we want to test
+        it separately to make sure that the candidates are found correctly.
+        """
+
+        stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
+        s_state_indb = db_session.execute(stmt).scalar()
+
+        assert s_state_indb is not None
+        assert len(s_state_indb.tasks) == 1
+
+        id_99_red_balloons = "189002e7-3285-4e2e-92a3-7f6c30d407a2"
+        exc = await run_preview_add_candidates(
+            "obsolete_hash_preview",
+            str(path),
+            search={
+                "search_ids": [
+                    id_99_red_balloons,
+                ],  # Nena 99 Red Balloons
+                "search_artist": None,
+                "search_album": None,
+            },
+        )
+
+        assert exc is None, "Should not return an error"
+
+        stmt = select(SessionStateInDb)
+        s_state_indb = db_session.execute(stmt).scalar()
+        assert s_state_indb is not None
+        assert s_state_indb.folder.full_path == str(path)
+
+        # candidates now contain the search results
+        s_state_live = s_state_indb.to_live_state()
+        assert len(s_state_live.task_states) == 1
+        t_state_live = s_state_live.task_states[0]
+        album_ids = [c.match.info.album_id for c in t_state_live.candidate_states]
+        assert id_99_red_balloons in album_ids, "Should have added the new candidate"
 
     async def test_regenerate_preview(self, db_session: Session, path: Path):
         """Test the regeneration of the preview of the import process.

@@ -404,6 +404,14 @@ class AddCandidatesSession(PreviewSession):
                 search_album=None,
             )
 
+        if (
+            search["search_artist"] is not None
+            and search["search_artist"].strip() == ""
+        ):
+            search["search_artist"] = None
+        if search["search_album"] is not None and search["search_album"].strip() == "":
+            search["search_album"] = None
+
         log.debug(f"Using {search=} for {task_state.id=}, {task_state.paths=}")
 
         _, _, prop = autotag.tag_album(

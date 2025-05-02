@@ -420,9 +420,7 @@ async def run_preview(
 @exception_as_return_value
 @emit_folder_status(before=FolderStatus.PREVIEWING, after=FolderStatus.PREVIEWED)
 async def run_preview_add_candidates(
-    hash: str,
-    path: str,
-    search: Search | dict[str, Search] | None = None,
+    hash: str, path: str, search: Search | dict[str, Search]
 ):
     """Adds a candidate to an session which is already in the status tagged.
 
@@ -440,9 +438,7 @@ async def run_preview_add_candidates(
 
         a_session = AddCandidatesSession(
             s_state_live,
-            search_ids=search_ids,
-            search_artist=search_artist,
-            search_album=search_album,
+            search=search,
         )
         try:
             await a_session.run_async()
