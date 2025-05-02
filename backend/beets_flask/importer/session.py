@@ -3,9 +3,8 @@ import logging
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from copy import deepcopy
-from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, List, Literal, Mapping
+from typing import Any, Callable, List, Mapping, TypedDict, TypeGuard
 
 import nest_asyncio
 from beets import autotag, importer, plugins
@@ -315,6 +314,39 @@ class PreviewSession(BaseSession):
         return stages
 
 
+class Search(TypedDict):
+    """Search for a candidate.
+
+    This is used to search for a candidate in the preview session.
+    """
+
+    search_ids: list[str]
+    search_artist: str | None
+    search_album: str | None
+
+
+def is_search(d: Any) -> TypeGuard[Search]:
+    """Check if the given dict is a Search object."""
+    return (
+        d is not None
+        and isinstance(d, dict)
+        and "search_ids" in d
+        and isinstance(d["search_ids"], list)
+    )
+
+
+def is_search_mapping(
+    d: Search | Mapping[str, Search],
+) -> TypeGuard[Mapping[str, Search]]:
+    """Check if the given dict is a Mapping object."""
+    return (
+        d is not None
+        and isinstance(d, dict)
+        and all(isinstance(k, str) for k in d.keys())
+        and all(is_search(v) for v in d.values())
+    )
+
+
 class AddCandidatesSession(PreviewSession):
     """
     Preview session that adds a candidate to the ones already fetched.
@@ -323,17 +355,13 @@ class AddCandidatesSession(PreviewSession):
     candidates.
     """
 
-    search_ids: list[str]
-    search_artist: str | None
-    search_album: str | None
+    search: Mapping[str, Search]
 
     def __init__(
         self,
         state: SessionState,
         config_overlay: dict | None = None,
-        search_ids: list[str] = [],
-        search_artist: str | None = None,
-        search_album: str | None = None,
+        search: Search | Mapping[str, Search] | None = None,
         **kwargs,
     ):
         super().__init__(state, config_overlay, **kwargs)
@@ -341,33 +369,55 @@ class AddCandidatesSession(PreviewSession):
         if state.progress != Progress.PREVIEW_COMPLETED:
             raise ValueError("Cannot run AddCandidatesSession on non-preview state.")
 
-        # Reset tasks to allow to rerun lookup candidates
+        # Validate given search
+        if search is None:
+            self.search = {}
+        elif is_search(search):
+            if len(self.state.task_states) > 1:
+                raise ValueError(
+                    "search must be a Mapping[str, Search] if multiple tasks are given"
+                )
+            self.search = defaultdict(lambda: search)
+        elif is_search_mapping(search):
+            self.search = search
+        else:
+            raise ValueError("search must be a Search or Mapping[str, Search]")
+
+        # Reset task progress only for tasks that have search values
+        # other tasks are skipped
         for task in self.state.task_states:
             if task.progress >= Progress.PREVIEW_COMPLETED:
+                try:
+                    self.search[task.id]
+                except KeyError:
+                    # this task does not have a search value
+                    continue
                 task.set_progress(Progress.LOOKING_UP_CANDIDATES - 1)
-
-        self.search_ids = search_ids
-        self.search_artist = search_artist
-        self.search_album = search_album
 
     def lookup_candidates(self, task: importer.ImportTask):
         """Amend the found candidate to the already existing candidates (if any)."""
         # see ref in lookup_candidates in beets/importer.py
-        log.debug(
-            f"Using search_ids {self.search_ids}, {self.search_artist}, {self.search_album} for additional candidate lookup."
-        )
+
+        task_state = self.state.get_task_state_for_task(task)
+        if task_state is None:
+            raise ValueError("No task state found for task.")
+        try:
+            search = self.search[task_state.id]
+        except KeyError:
+            search = Search(
+                search_ids=[],
+                search_artist=None,
+                search_album=None,
+            )
+
+        log.debug(f"Using {search=} for {task_state.id=}, {task_state.paths=}")
 
         _, _, prop = autotag.tag_album(
             task.items,
-            search_ids=self.search_ids,
-            search_album=self.search_album,
-            search_artist=self.search_artist,
+            search_ids=search["search_ids"],
+            search_album=search["search_album"],
+            search_artist=search["search_artist"],
         )
-
-        # Add candidates using our custom state
-        task_state = self.state.get_task_state_for_task(task)
-        if task_state is None:
-            raise ValueError("No task state found for task. Should not happen!")
 
         task_state.add_candidates(prop.candidates)
 

@@ -23,6 +23,7 @@ from beets_flask.importer.session import (
     ImportChoice,
     ImportSession,
     PreviewSession,
+    Search,
     UndoSession,
 )
 from beets_flask.importer.states import Progress
@@ -188,6 +189,8 @@ def enqueue_preview_add_candidates(
     hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs
 ) -> Job:
     # May contain search_ids, search_artist, search_album
+    # As always to allow task mapping
+
     search_ids = kwargs.pop("search_ids", [])
     search_artist = kwargs.pop("search_artist", None)
     search_album = kwargs.pop("search_album", None)
@@ -235,7 +238,7 @@ def enqueue_import_candidate(
         asis-candidate).
     """
 
-    # May contain candidate_id
+    # May contain candidate_id and duplicate_action
     candidate_id: CandidateChoice | dict[str, CandidateChoice] | None = kwargs.pop(
         "candidate_id", None
     )
@@ -419,9 +422,7 @@ async def run_preview(
 async def run_preview_add_candidates(
     hash: str,
     path: str,
-    search_ids: list[str] = [],
-    search_artist: str | None = None,
-    search_album: str | None = None,
+    search: Search | dict[str, Search] | None = None,
 ):
     """Adds a candidate to an session which is already in the status tagged.
 
