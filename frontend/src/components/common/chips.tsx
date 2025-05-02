@@ -151,8 +151,9 @@ export function FolderStatusChip({ folder, ...props }: { folder: Folder } & Chip
     return (
         <Tooltip title={folderStatus.exc?.message || undefined}>
             <Link
-                to={"/inbox/session/$id"}
-                params={{ id: folderStatus.hash }}
+                to={"/inbox/folder/$path/$hash"}
+                params={{ path: folder.full_path, hash: folder.hash }}
+                mask={{ to: "/inbox/folder/$path", params: { path: folder.full_path } }}
                 preload="intent"
                 style={{ gridColumn: "chip" }}
             >

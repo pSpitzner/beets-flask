@@ -33,6 +33,7 @@ import {
     EnqueueKind,
     Search,
     SerializedCandidateState,
+    SerializedSessionState,
     SerializedTaskState,
 } from "@/pythonTypes";
 
@@ -75,15 +76,16 @@ function candidateMatchText({ candidate }: { candidate: SerializedCandidateState
 }
 
 export function ImportCandidateButton({
-    candidate,
-    duplicateAction = null,
-    folderHash,
-    folderPath,
+    session,
+    selectCandidates,
+    duplicateActions,
 }: {
-    candidate: SerializedCandidateState;
-    duplicateAction: "skip" | "keep" | "remove" | "merge" | null;
-    folderHash: string;
-    folderPath: string;
+    session: SerializedSessionState;
+    selectedCandidateIds: Map<
+        SerializedTaskState["id"],
+        SerializedCandidateState["id"]
+    >;
+    duplicateActions: Map<SerializedTaskState["id"], DuplicateAction>;
 }) {
     const { socket } = useStatusSocket();
     const theme = useTheme();

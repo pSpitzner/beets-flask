@@ -21,10 +21,11 @@ import { Route as LibraryBrowseImport } from './routes/library/browse'
 import { Route as DebugJobsImport } from './routes/_debug/jobs'
 import { Route as DebugErrorImport } from './routes/_debug/error'
 import { Route as LibraryBrowseArtistImport } from './routes/library/browse.$artist'
-import { Route as InboxSessionIdImport } from './routes/inbox/session.$id'
+import { Route as InboxFolderPathImport } from './routes/inbox/folder.$path'
 import { Route as DebugDesignLoadingImport } from './routes/_debug/design/loading'
 import { Route as DebugDesignIconsImport } from './routes/_debug/design/icons'
 import { Route as LibraryBrowseArtistAlbumIdImport } from './routes/library/browse.$artist.$albumId'
+import { Route as InboxFolderPathHashImport } from './routes/inbox/folder_.$path.$hash'
 import { Route as LibraryBrowseArtistAlbumIdItemIdImport } from './routes/library/browse.$artist.$albumId.$itemId'
 
 // Create/Update Routes
@@ -89,9 +90,9 @@ const LibraryBrowseArtistRoute = LibraryBrowseArtistImport.update({
   getParentRoute: () => LibraryBrowseRoute,
 } as any)
 
-const InboxSessionIdRoute = InboxSessionIdImport.update({
-  id: '/inbox/session/$id',
-  path: '/inbox/session/$id',
+const InboxFolderPathRoute = InboxFolderPathImport.update({
+  id: '/inbox/folder/$path',
+  path: '/inbox/folder/$path',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -114,6 +115,12 @@ const LibraryBrowseArtistAlbumIdRoute = LibraryBrowseArtistAlbumIdImport.update(
     getParentRoute: () => LibraryBrowseArtistRoute,
   } as any,
 )
+
+const InboxFolderPathHashRoute = InboxFolderPathHashImport.update({
+  id: '/inbox/folder_/$path/$hash',
+  path: '/inbox/folder/$path/$hash',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const LibraryBrowseArtistAlbumIdItemIdRoute =
   LibraryBrowseArtistAlbumIdItemIdImport.update({
@@ -203,11 +210,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DebugDesignLoadingImport
       parentRoute: typeof rootRoute
     }
-    '/inbox/session/$id': {
-      id: '/inbox/session/$id'
-      path: '/inbox/session/$id'
-      fullPath: '/inbox/session/$id'
-      preLoaderRoute: typeof InboxSessionIdImport
+    '/inbox/folder/$path': {
+      id: '/inbox/folder/$path'
+      path: '/inbox/folder/$path'
+      fullPath: '/inbox/folder/$path'
+      preLoaderRoute: typeof InboxFolderPathImport
       parentRoute: typeof rootRoute
     }
     '/library/browse/$artist': {
@@ -216,6 +223,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/library/browse/$artist'
       preLoaderRoute: typeof LibraryBrowseArtistImport
       parentRoute: typeof LibraryBrowseImport
+    }
+    '/inbox/folder_/$path/$hash': {
+      id: '/inbox/folder_/$path/$hash'
+      path: '/inbox/folder/$path/$hash'
+      fullPath: '/inbox/folder/$path/$hash'
+      preLoaderRoute: typeof InboxFolderPathHashImport
+      parentRoute: typeof rootRoute
     }
     '/library/browse/$artist/$albumId': {
       id: '/library/browse/$artist/$albumId'
@@ -286,8 +300,9 @@ export interface FileRoutesByFullPath {
   '/terminal': typeof TerminalIndexRoute
   '/design/icons': typeof DebugDesignIconsRoute
   '/design/loading': typeof DebugDesignLoadingRoute
-  '/inbox/session/$id': typeof InboxSessionIdRoute
+  '/inbox/folder/$path': typeof InboxFolderPathRoute
   '/library/browse/$artist': typeof LibraryBrowseArtistRouteWithChildren
+  '/inbox/folder/$path/$hash': typeof InboxFolderPathHashRoute
   '/library/browse/$artist/$albumId': typeof LibraryBrowseArtistAlbumIdRouteWithChildren
   '/library/browse/$artist/$albumId/$itemId': typeof LibraryBrowseArtistAlbumIdItemIdRoute
 }
@@ -304,8 +319,9 @@ export interface FileRoutesByTo {
   '/terminal': typeof TerminalIndexRoute
   '/design/icons': typeof DebugDesignIconsRoute
   '/design/loading': typeof DebugDesignLoadingRoute
-  '/inbox/session/$id': typeof InboxSessionIdRoute
+  '/inbox/folder/$path': typeof InboxFolderPathRoute
   '/library/browse/$artist': typeof LibraryBrowseArtistRouteWithChildren
+  '/inbox/folder/$path/$hash': typeof InboxFolderPathHashRoute
   '/library/browse/$artist/$albumId': typeof LibraryBrowseArtistAlbumIdRouteWithChildren
   '/library/browse/$artist/$albumId/$itemId': typeof LibraryBrowseArtistAlbumIdItemIdRoute
 }
@@ -323,8 +339,9 @@ export interface FileRoutesById {
   '/terminal/': typeof TerminalIndexRoute
   '/_debug/design/icons': typeof DebugDesignIconsRoute
   '/_debug/design/loading': typeof DebugDesignLoadingRoute
-  '/inbox/session/$id': typeof InboxSessionIdRoute
+  '/inbox/folder/$path': typeof InboxFolderPathRoute
   '/library/browse/$artist': typeof LibraryBrowseArtistRouteWithChildren
+  '/inbox/folder_/$path/$hash': typeof InboxFolderPathHashRoute
   '/library/browse/$artist/$albumId': typeof LibraryBrowseArtistAlbumIdRouteWithChildren
   '/library/browse/$artist/$albumId/$itemId': typeof LibraryBrowseArtistAlbumIdItemIdRoute
 }
@@ -343,8 +360,9 @@ export interface FileRouteTypes {
     | '/terminal'
     | '/design/icons'
     | '/design/loading'
-    | '/inbox/session/$id'
+    | '/inbox/folder/$path'
     | '/library/browse/$artist'
+    | '/inbox/folder/$path/$hash'
     | '/library/browse/$artist/$albumId'
     | '/library/browse/$artist/$albumId/$itemId'
   fileRoutesByTo: FileRoutesByTo
@@ -360,8 +378,9 @@ export interface FileRouteTypes {
     | '/terminal'
     | '/design/icons'
     | '/design/loading'
-    | '/inbox/session/$id'
+    | '/inbox/folder/$path'
     | '/library/browse/$artist'
+    | '/inbox/folder/$path/$hash'
     | '/library/browse/$artist/$albumId'
     | '/library/browse/$artist/$albumId/$itemId'
   id:
@@ -377,8 +396,9 @@ export interface FileRouteTypes {
     | '/terminal/'
     | '/_debug/design/icons'
     | '/_debug/design/loading'
-    | '/inbox/session/$id'
+    | '/inbox/folder/$path'
     | '/library/browse/$artist'
+    | '/inbox/folder_/$path/$hash'
     | '/library/browse/$artist/$albumId'
     | '/library/browse/$artist/$albumId/$itemId'
   fileRoutesById: FileRoutesById
@@ -396,7 +416,8 @@ export interface RootRouteChildren {
   TerminalIndexRoute: typeof TerminalIndexRoute
   DebugDesignIconsRoute: typeof DebugDesignIconsRoute
   DebugDesignLoadingRoute: typeof DebugDesignLoadingRoute
-  InboxSessionIdRoute: typeof InboxSessionIdRoute
+  InboxFolderPathRoute: typeof InboxFolderPathRoute
+  InboxFolderPathHashRoute: typeof InboxFolderPathHashRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -411,7 +432,8 @@ const rootRouteChildren: RootRouteChildren = {
   TerminalIndexRoute: TerminalIndexRoute,
   DebugDesignIconsRoute: DebugDesignIconsRoute,
   DebugDesignLoadingRoute: DebugDesignLoadingRoute,
-  InboxSessionIdRoute: InboxSessionIdRoute,
+  InboxFolderPathRoute: InboxFolderPathRoute,
+  InboxFolderPathHashRoute: InboxFolderPathHashRoute,
 }
 
 export const routeTree = rootRoute
@@ -435,7 +457,8 @@ export const routeTree = rootRoute
         "/terminal/",
         "/_debug/design/icons",
         "/_debug/design/loading",
-        "/inbox/session/$id"
+        "/inbox/folder/$path",
+        "/inbox/folder_/$path/$hash"
       ]
     },
     "/_debug/error": {
@@ -474,8 +497,8 @@ export const routeTree = rootRoute
     "/_debug/design/loading": {
       "filePath": "_debug/design/loading.tsx"
     },
-    "/inbox/session/$id": {
-      "filePath": "inbox/session.$id.tsx"
+    "/inbox/folder/$path": {
+      "filePath": "inbox/folder.$path.tsx"
     },
     "/library/browse/$artist": {
       "filePath": "library/browse.$artist.tsx",
@@ -483,6 +506,9 @@ export const routeTree = rootRoute
       "children": [
         "/library/browse/$artist/$albumId"
       ]
+    },
+    "/inbox/folder_/$path/$hash": {
+      "filePath": "inbox/folder_.$path.$hash.tsx"
     },
     "/library/browse/$artist/$albumId": {
       "filePath": "library/browse.$artist.$albumId.tsx",

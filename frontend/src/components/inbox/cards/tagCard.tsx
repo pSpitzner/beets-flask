@@ -1,11 +1,5 @@
-import {
-    ArrowDownIcon,
-    ArrowLeftIcon,
-    ArrowRightIcon,
-    ImportIcon,
-    TagIcon,
-} from "lucide-react";
-import React, { Suspense, useEffect, useMemo, useState, useTransition } from "react";
+import { ArrowDownIcon, ArrowLeftIcon, ArrowRightIcon, TagIcon } from "lucide-react";
+import React, { useEffect, useMemo, useState, useTransition } from "react";
 import {
     Box,
     Button,
@@ -17,16 +11,18 @@ import {
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 
-import { sessionQueryOptions } from "@/api/session";
-import { LoadingWithFeedback } from "@/components/common/loading";
+import { sessionQueryOptions, useImportMutation } from "@/api/session";
 import {
     DuplicateAction,
     DuplicateActions,
     ImportCandidateLabel,
 } from "@/components/import/candidates/actions";
-import { CandidateSelector } from "@/components/import/candidates/candidateSelector";
 import {
-    Folder,
+    CandidateSelector,
+    SelectedCandidate,
+} from "@/components/import/candidates/candidateSelector";
+import {
+    Progress,
     SerializedCandidateState,
     SerializedSessionState,
     SerializedTaskState,
@@ -52,11 +48,9 @@ export function TagCard({
         })
     );
 
-    if (!session) {
+    if (!session || session.status.progress < Progress.PREVIEW_COMPLETED) {
         return null;
     }
-
-    // TODO: 2. SelectedCandidate: Session found, candidate chosen by user and imported
 
     return (
         <Card
@@ -65,10 +59,13 @@ export function TagCard({
                 gap: 2,
                 flexDirection: "column",
                 padding: 2,
-                bgcolor: "background.paper",
             }}
         >
-            <UserSelection session={session} />
+            {session.status.progress < Progress.IMPORT_COMPLETED ? (
+                <UserSelection session={session} />
+            ) : (
+                <ChosenCandidatesOverview session={session} />
+            )}
         </Card>
     );
 }
@@ -111,12 +108,16 @@ function UserSelection({ session }: { session: SerializedSessionState }) {
             return m;
         }
     );
+
     const selectedCandidate = useMemo(() => {
         const candidate = currentTask.candidates.find(
             (cand) => cand.id === selectCandidates.get(currentTask.id)
         );
         return candidate;
     }, [currentTask, selectCandidates]);
+
+    // FIXME: Prop drillig sucks here especially, maybe a context would be better
+    const mutation = useImportMutation(session, selectCandidates, duplicateActions);
 
     return (
         <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 2 }}>
@@ -136,11 +137,11 @@ function UserSelection({ session }: { session: SerializedSessionState }) {
                 }}
             />
             <SelectionFooter
+                session={session}
                 isPending={isPending}
                 selectedCandidate={selectedCandidate}
                 selectedDuplicateAction={duplicateActions.get(currentTask.id) ?? null}
                 currentTaskIdx={currentTaskIdx}
-                totalTasks={session.tasks.length}
                 onDuplicateActionChange={(action, taskIdx) => {
                     const task = session.tasks[taskIdx];
                     setDuplicateActions((prev) => {
@@ -154,6 +155,7 @@ function UserSelection({ session }: { session: SerializedSessionState }) {
                     });
                 }}
                 onTaskChange={(newIdx) => handleTaskChange(newIdx)}
+                importMutation={mutation}
             />
         </Box>
     );
@@ -263,21 +265,23 @@ function CandidateSelectionArea({
 
 /** Footer with action buttons and status */
 function SelectionFooter({
+    session,
     isPending,
     selectedCandidate,
     selectedDuplicateAction,
     currentTaskIdx,
-    totalTasks,
     onDuplicateActionChange,
     onTaskChange,
+    importMutation,
 }: {
+    session: SerializedSessionState;
     isPending: boolean;
     currentTaskIdx: number;
     selectedCandidate: SerializedCandidateState | undefined;
     selectedDuplicateAction: DuplicateAction | null;
-    totalTasks: number;
     onDuplicateActionChange: (action: DuplicateAction | null, taskIdx: number) => void;
     onTaskChange: (newIdx: number) => void;
+    importMutation: ReturnType<typeof useImportMutation>;
 }) {
     // Check if their are duplicates
     const hasDuplicates =
@@ -286,6 +290,11 @@ function SelectionFooter({
     let errorMsg: string | undefined;
     if (hasDuplicates && !selectedDuplicateAction) {
         errorMsg = `Please choose an action on how to resolve the duplicates from the library.`;
+    }
+
+    const importError = importMutation.error;
+    if (importError) {
+        errorMsg = importError.message;
     }
 
     return (
@@ -306,14 +315,15 @@ function SelectionFooter({
                 <StatusBar errorMsg={errorMsg} selectedCandidate={selectedCandidate} />
             </SizeFixedWithLoading>
             <ActionButtons
+                session={session}
                 isPending={isPending}
                 currentTaskIdx={currentTaskIdx}
-                totalTasks={totalTasks}
                 selectedCandidate={selectedCandidate}
                 selectedDuplicateAction={selectedDuplicateAction}
                 onDuplicateActionChange={onDuplicateActionChange}
                 onTaskChange={onTaskChange}
-                nextDisabled={!!errorMsg}
+                nextDisabled={hasDuplicates && !selectedDuplicateAction}
+                importMutation={importMutation}
             />
         </Box>
     );
@@ -354,25 +364,27 @@ function StatusBar({
 function ActionButtons({
     isPending,
     currentTaskIdx,
-    totalTasks,
+    session,
     selectedCandidate,
     selectedDuplicateAction,
     onDuplicateActionChange,
     onTaskChange,
+    importMutation,
     nextDisabled,
 }: {
     isPending: boolean;
     currentTaskIdx: number;
-    totalTasks: number;
+    session: SerializedSessionState;
     selectedCandidate: SerializedCandidateState | undefined;
     selectedDuplicateAction: DuplicateAction | null;
     onDuplicateActionChange: (action: DuplicateAction | null, taskIdx: number) => void;
     onTaskChange: (newIdx: number) => void;
     nextDisabled?: boolean;
+    importMutation: ReturnType<typeof useImportMutation>;
 }) {
     const theme = useTheme();
 
-    const isLastTask = currentTaskIdx === totalTasks - 1;
+    const isLastTask = currentTaskIdx === session.tasks.length - 1;
     const isFirstTask = currentTaskIdx === 0;
 
     return (
@@ -422,16 +434,79 @@ function ActionButtons({
                 </Button>
             ) : (
                 <Button
-                    loading={isPending}
+                    loading={isPending || importMutation.isPending}
                     variant="contained"
                     color="secondary"
                     endIcon={<ArrowDownIcon size={theme.iconSize.sm} />}
                     disabled={nextDisabled}
-                    // TODO: Rebind import action
+                    onClick={async () => {
+                        await importMutation.mutateAsync();
+                    }}
                 >
                     Import
                 </Button>
             )}
         </Box>
+    );
+}
+
+/** Shown if a candidate was already chosen
+ * as the session is imported.
+ *
+ */
+function ChosenCandidatesOverview({ session }: { session: SerializedSessionState }) {
+    return (
+        <>
+            <CardHeader
+                icon={<TagIcon />}
+                title={`Selected candidate${session.tasks.length > 1 ? "s" : ""}`}
+                subtitle={`Foo bar`}
+            >
+                <Box sx={{ ml: "auto", alignSelf: "flex-start" }}>
+                    <Typography variant="caption" component="div" textAlign="right">
+                        {session.tasks.length} task{session.tasks.length > 1 ? "s" : ""}
+                    </Typography>
+                    <Typography variant="caption" component="div" textAlign="right">
+                        {session.tasks.reduce(
+                            (acc, task) => acc + task.items.length,
+                            0
+                        )}{" "}
+                        items
+                    </Typography>
+                </Box>
+            </CardHeader>
+            <Divider />
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 1,
+                }}
+            >
+                <Typography>
+                    The following overview of the imported candidates needs a bit of
+                    work :) TODO
+                </Typography>
+                <Box
+                    sx={{
+                        " > *": {
+                            marginTop: 1,
+                        },
+                    }}
+                >
+                    {session.tasks.map((task) => {
+                        return (
+                            <>
+                                <SelectedCandidate
+                                    task={task}
+                                    folderHash={session.folder_hash}
+                                    folderPath={session.folder_path}
+                                />
+                            </>
+                        );
+                    })}
+                </Box>
+            </Box>
+        </>
     );
 }

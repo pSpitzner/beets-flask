@@ -1,5 +1,7 @@
-import { Query, UseMutationOptions } from "@tanstack/react-query";
+import { Query, useMutation, UseMutationOptions } from "@tanstack/react-query";
 
+import { useStatusSocket } from "@/components/common/websocket/status";
+import { DuplicateAction } from "@/components/import/candidates/actions";
 import { FolderSelectionContext } from "@/components/inbox/folderSelectionContext";
 import {
     EnqueueKind,
@@ -8,6 +10,7 @@ import {
     ImportChoice,
     JobStatusUpdate,
     Search,
+    SerializedCandidateState,
     SerializedException,
     SerializedSessionState,
     SerializedTaskState,
@@ -114,6 +117,7 @@ type TaskIdMap<T> = {
     [key: SerializedTaskState["id"]]: T;
 };
 
+type DuplicateAction = "skip" | "keep" | "remove" | "merge";
 interface EnqueuePreviewAddCandidate {
     kind: EnqueueKind.PREVIEW_ADD_CANDIDATES;
     search: Search | TaskIdMap<Search>;
@@ -126,7 +130,7 @@ interface EnqueuePreview {
 interface EnqueueImportCandidate {
     kind: EnqueueKind.IMPORT_CANDIDATE;
     candidate_id?: string | ImportChoice | TaskIdMap<string | ImportChoice>;
-    duplicate_action?: "skip" | "keep" | "remove" | "merge" | null;
+    duplicate_action?: DuplicateAction | TaskIdMap<DuplicateAction>;
 }
 
 type EnqueueParams =
@@ -249,6 +253,66 @@ export const enqueueMutationOptions: UseMutationOptions<
         ];
         await Promise.all(ps);
     },
+};
+
+export const useImportMutation = (
+    session: SerializedSessionState,
+    selectedCandidateIds: Map<
+        SerializedTaskState["id"],
+        SerializedCandidateState["id"]
+    >,
+    duplicateActions: Map<SerializedTaskState["id"], DuplicateAction>
+) => {
+    const { socket } = useStatusSocket();
+    const { ...props } = useMutation(enqueueMutationOptions);
+
+    return {
+        ...props,
+        mutate: () => {
+            const taskIdMap: TaskIdMap<string | ImportChoice> = {};
+            const taskIdMapDuplicateActions: TaskIdMap<DuplicateAction> = {};
+
+            for (const [taskId, candidateId] of selectedCandidateIds) {
+                taskIdMap[taskId] = candidateId;
+            }
+            for (const [taskId, duplicateAction] of duplicateActions) {
+                taskIdMapDuplicateActions[taskId] = duplicateAction;
+            }
+
+            return props.mutate({
+                socket,
+                kind: EnqueueKind.IMPORT_CANDIDATE,
+                selected: {
+                    hashes: [session.folder_hash],
+                    paths: [session.folder_path],
+                },
+                candidate_id: taskIdMap,
+                duplicate_action: taskIdMapDuplicateActions,
+            });
+        },
+        mutateAsync: async () => {
+            const taskIdMap: TaskIdMap<string | ImportChoice> = {};
+            const taskIdMapDuplicateActions: TaskIdMap<DuplicateAction> = {};
+
+            for (const [taskId, candidateId] of selectedCandidateIds) {
+                taskIdMap[taskId] = candidateId;
+            }
+            for (const [taskId, duplicateAction] of duplicateActions) {
+                taskIdMapDuplicateActions[taskId] = duplicateAction;
+            }
+
+            return await props.mutateAsync({
+                socket,
+                kind: EnqueueKind.IMPORT_CANDIDATE,
+                selected: {
+                    hashes: [session.folder_hash],
+                    paths: [session.folder_path],
+                },
+                candidate_id: taskIdMap,
+                duplicate_action: taskIdMapDuplicateActions,
+            });
+        },
+    };
 };
 
 /** Add/Search a candidate
