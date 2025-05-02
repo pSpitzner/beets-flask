@@ -116,13 +116,30 @@ class SessionState(BaseState):
 
         return min([s.progress for s in self.task_states])
 
-    def get_task_state_for_task(self, task: importer.ImportTask) -> TaskState | None:
+    def get_task_state_for_task(
+        self,
+        task: importer.ImportTask,
+    ) -> TaskState | None:
+        """Get the task state for a given task.
+        Returns None if not found.
+        """
         state: TaskState | None = None
         for s in self.task_states:
-            # TODO: are tasks really comparable?
-            if s.task == task:  # by ref
+            if s.task == task:
                 state = s
                 break
+        return state
+
+    def get_task_state_for_task_raise(
+        self,
+        task: importer.ImportTask,
+    ) -> TaskState:
+        """Get the task state for a given task.
+        Raises ValueError if not found.
+        """
+        state = self.get_task_state_for_task(task)
+        if state is None:
+            raise ValueError(f"Task {task} not found in session.")
         return state
 
     def get_task_state_by_id(self, id: str) -> TaskState | None:

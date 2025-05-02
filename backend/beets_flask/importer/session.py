@@ -165,8 +165,7 @@ class BaseSession(importer.ImportSession, ABC):
         but should eventually do this per selection (task).
         """
 
-        task_state = self.state.get_task_state_for_task(task)
-        assert task_state is not None, "Task state not found for task."
+        task_state = self.state.get_task_state_for_task_raise(task)
 
         task_state.set_progress(progress)
 
@@ -216,9 +215,7 @@ class BaseSession(importer.ImportSession, ABC):
 
     def identify_duplicates(self, task: importer.ImportTask):
         """For all candidates, check if they have duplicates in the library."""
-        task_state = self.state.get_task_state_for_task(task)
-        if task_state is None:
-            raise ValueError("No state found for thiis task.")
+        task_state = self.state.get_task_state_for_task_raise(task)
 
         for idx, cs in enumerate(task_state.candidate_states):
             # This is a mutable operation i.e. cs is modfied here!
@@ -238,9 +235,7 @@ class BaseSession(importer.ImportSession, ABC):
         task.lookup_candidates()
 
         # Update our state
-        task_state = self.state.get_task_state_for_task(task)
-        if not task_state:
-            raise ValueError(f"No task state found for {task=}")
+        task_state = self.state.get_task_state_for_task_raise(task)
 
         # FIXME: type hint should be fine once beets updates
         task_state.add_candidates(task.candidates)  # type: ignore
@@ -398,9 +393,8 @@ class AddCandidatesSession(PreviewSession):
         """Amend the found candidate to the already existing candidates (if any)."""
         # see ref in lookup_candidates in beets/importer.py
 
-        task_state = self.state.get_task_state_for_task(task)
-        if task_state is None:
-            raise ValueError("No task state found for task.")
+        task_state = self.state.get_task_state_for_task_raise(task)
+
         try:
             search = self.search[task_state.id]
         except KeyError:
@@ -622,9 +616,7 @@ class ImportSession(BaseSession):
         self.logger.setLevel(logging.DEBUG)
         self.logger.debug(f"choose_match {task}")
 
-        task_state = self.state.get_task_state_for_task(task)
-        if task_state is None:
-            raise ValueError("No task state found for task.")
+        task_state = self.state.get_task_state_for_task_raise(task)
 
         # Pick the candidate to import
         candidate_id = self.candidate_id_mapping[task_state.id]
@@ -669,9 +661,7 @@ class ImportSession(BaseSession):
             log.debug(f"No duplicates found for")
             return
 
-        task_state = self.state.get_task_state_for_task(task)
-        if task_state is None:
-            raise ValueError("No task state found for task.")
+        task_state = self.state.get_task_state_for_task_raise(task)
         task_duplicate_action = self.duplicate_action[task_state.id]
         match task_duplicate_action:
             case "skip":
@@ -1000,12 +990,10 @@ class InteractiveImportSession(ImportSession):
         Decide what to do when a new album or item seems
         similar to one that's already in the library.
         """
-        sel_state = self.state.get_task_state_for_task(task)
-        if sel_state is None:
-            raise ValueError("No selection state found for task.")
+        task_state = self.state.get_task_state_for_task_raise(task)
 
-        sel = sel_state.duplicate_action
-        log.debug(f"Resolving duplicates for {sel_state.id=} with action '{sel}'")
+        sel = task_state.duplicate_action
+        log.debug(f"Resolving duplicates for {task_state.id=} with action '{sel}'")
 
         if sel == "skip":
             # Skip new.
