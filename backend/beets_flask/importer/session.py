@@ -740,8 +740,8 @@ class BootlegImportSession(ImportSession):
 
 
 class AutoImportSession(ImportSession):
-    """
-    Generate a preview and import if the best match is good enough.
+    """Generate a preview and import if the best match is good enough.
+
     Preview generation is skipped if the provided session state already has a preview.
 
     Wether the import is triggered depends on the specified `import_threshold`, or
@@ -1083,11 +1083,23 @@ class UndoSession(BaseSession):
                 # mapping maps objects to objects.
                 item.path = t_state.task.old_paths[idx]
 
-        try:
-            self.delete_from_beets()
-        except Exception as e:
-            self.state.exc = to_serialized_exception(e)
-            raise e
+        # Delete files
+        excs = []
+        for t_state in self.state.task_states:
+            try:
+                delete_from_beets(t_state.id, self.delete_files, self.lib)
+            except Exception as e:
+                excs.append(e)
+
+        if len(excs) > 0:
+            for exc in excs:
+                log.exception(exc)
+
+            # FIXME: Multi/array exceptions need handling
+            self.state.exc = to_serialized_exception(excs[0])
+            raise UserError(
+                "Could not delete all items. Some items might be left in the library."
+            )
 
         # Update our state and progress
         for t_state in self.state.task_states:
@@ -1095,22 +1107,32 @@ class UndoSession(BaseSession):
 
         return self.state
 
-    def delete_from_beets(
-        self,
-    ):
-        """Low-level, delete the items from the beets library."""
-
-        # We set a gui_import_id in the beets database this is equal to the session id
-        # see _apply_choice in stages.py
-        items = self.lib.items(f"gui_import_id:{self.state.id}")
-
-        if len(items) == 0:
-            raise ValueError("No items found that match this import session id.")
-
-        with self.lib.transaction():
-            for item in items:
-                item.remove(self.delete_files)
-
     @property
     def stages(self):
         return StageOrder()
+
+
+## Edge cases
+# 1. Session doesn't exist anymore -> delete
+# 2. Session exists but multiple tasks -> undo (session)
+# 3. Session exists but file do not anymore in import folder -> undo, warnings
+
+# Flow:
+# - remove from beets db
+# - revert our session (if possible)
+
+
+def delete_from_beets(task_id: str, delete_files: bool, lib: BeetsLibrary):
+    """Low-level, delete the items from the beets library."""
+
+    # We set a gui_import_id in the beets database this is equal to the session id
+    # see _apply_choice in stages.py
+
+    items = lib.items(f"gui_import_id:{task_id}")
+
+    if len(items) == 0:
+        raise ValueError("No items found that match this import session id.")
+
+    with lib.transaction():
+        for item in items:
+            item.remove(delete_files)

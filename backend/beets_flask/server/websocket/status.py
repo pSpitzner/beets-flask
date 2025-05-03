@@ -7,13 +7,11 @@ a preview is finished.
 from __future__ import annotations
 
 import dataclasses
-import json
 from dataclasses import dataclass
 from functools import wraps
 from typing import Awaitable, Callable, Concatenate, Literal, ParamSpec, TypeVar
 
 import socketio
-
 from beets_flask.database import db_session_factory
 from beets_flask.database.models.states import FolderInDb
 from beets_flask.importer.progress import FolderStatus
@@ -24,6 +22,7 @@ from beets_flask.server.exceptions import (
     SerializedException,
     to_serialized_exception,
 )
+from quart import json
 
 from . import sio
 from .errors import sio_catch_exception
@@ -104,7 +103,7 @@ async def send_status_update(status: FolderStatusUpdate | JobStatusUpdate):
     # if we close the client immediately after connecting
     await client.call(
         status.event,
-        dataclasses.asdict(status),
+        status,
         namespace=namespace,
         timeout=5,
     )

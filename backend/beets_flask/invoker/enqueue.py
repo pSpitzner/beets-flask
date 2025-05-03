@@ -4,9 +4,12 @@ import asyncio
 from enum import Enum
 from typing import TYPE_CHECKING, Awaitable, Callable, ParamSpec, TypeVar
 
+from beets.ui import _open_library
+from rq.job import Job
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from beets_flask.config import get_config
 from beets_flask.database import db_session_factory
 from beets_flask.database.models.states import (
     CandidateStateInDb,
@@ -25,6 +28,7 @@ from beets_flask.importer.session import (
     PreviewSession,
     Search,
     UndoSession,
+    delete_from_beets,
 )
 from beets_flask.importer.states import Progress
 from beets_flask.importer.types import DuplicateAction
@@ -341,6 +345,22 @@ def enqueue_import_undo(hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs
     return job
 
 
+def enqueue_delete_items(task_ids: list[str]) -> Job:
+    """Enqueue to delete items from the beets library.
+
+    A bit of a special case as this does not use the normal
+    hash and path based enqueueing.
+    """
+    job = _enqueue(
+        import_queue,
+        delete_items,
+        task_ids,
+        True,
+        at_front=True,  # type: ignore Allow to run job first
+    )
+    return job
+
+
 # -------------------- Functions that run in redis workers ------------------- #
 # TODO: We might want to move these to their own file, for a bit better separation of
 # concerns.
@@ -585,3 +605,9 @@ def _get_live_state_by_folder(
     db_session.expunge_all()
 
     return s_state_live
+
+
+def delete_items(task_ids: list[str], delete_files: bool = True):
+    lib = _open_library(get_config())
+    for task_id in task_ids:
+        delete_from_beets(task_id, delete_files=delete_files, lib=lib)

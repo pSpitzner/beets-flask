@@ -198,7 +198,6 @@ async def album_by_bf_id(bf_id: str):
         if not album_id:
             raise NotFoundException(
                 f"Album with beets_flask_id:'{bf_id}' not found in beets db.",
-                status_code=200,
             )
 
     item = g.lib.get_album(album_id)
