@@ -243,7 +243,7 @@ function HashWarning({
     );
 }
 
-const Code = styled("code")(({ theme }) => ({
+export const Code = styled("code")(({ theme }) => ({
     paddingInline: theme.spacing(0.5),
     paddingBlock: theme.spacing(0.1),
     fontFamily: "monospace",

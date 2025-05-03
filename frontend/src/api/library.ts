@@ -188,4 +188,5 @@ export const albumImportedOptions = <Expand extends boolean, Minimal extends boo
         const response = await fetch(url);
         return (await response.json()) as Album<typeof expand, typeof minimal>;
     },
+    retry: 1,
 });

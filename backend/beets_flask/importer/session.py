@@ -671,6 +671,7 @@ class ImportSession(BaseSession):
 
         task_state = self.state.get_task_state_for_task_raise(task)
         task_duplicate_action = self.duplicate_action[task_state.id]
+        task_state.duplicate_action = task_duplicate_action
         match task_duplicate_action:
             case "skip":
                 task.set_choice(importer.action.SKIP)

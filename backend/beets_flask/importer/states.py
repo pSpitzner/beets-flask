@@ -21,6 +21,7 @@ from beets_flask.importer.progress import (
     ProgressState,
     SerializedProgressState,
 )
+from beets_flask.importer.types import DuplicateAction
 from beets_flask.logger import log
 from beets_flask.server.exceptions import SerializedException
 from beets_flask.utility import capture_stdout_stderr
@@ -122,6 +123,7 @@ class SessionState(BaseState):
         task: importer.ImportTask,
     ) -> TaskState | None:
         """Get the task state for a given task.
+
         Returns None if not found.
         """
         state: TaskState | None = None
@@ -136,6 +138,7 @@ class SessionState(BaseState):
         task: importer.ImportTask,
     ) -> TaskState:
         """Get the task state for a given task.
+
         Raises ValueError if not found.
         """
         state = self.get_task_state_for_task(task)
@@ -206,7 +209,7 @@ class TaskState(BaseState):
     # User choices and user input in interactive Session
     # None if no choice has been made yet
     # (or the frontend has not marked the default selection)
-    duplicate_action: Literal["skip", "keep", "remove", "merge"] | None = None
+    duplicate_action: DuplicateAction | None = None
 
     def __init__(
         self,

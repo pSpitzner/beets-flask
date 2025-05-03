@@ -1,14 +1,33 @@
 import { ImportIcon } from "lucide-react";
-import { Box, Button, Card, Divider, Typography } from "@mui/material";
+import {
+    Alert,
+    AlertProps,
+    AlertTitle,
+    Box,
+    Button,
+    Card,
+    Divider,
+    Skeleton,
+    Typography,
+} from "@mui/material";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 
+import { APIError } from "@/api/common";
 import { albumImportedOptions } from "@/api/library";
 import { sessionQueryOptions } from "@/api/session";
+import { BackButton } from "@/components/common/inputs/back";
 import { JSONPretty } from "@/components/common/json";
+import { humanizeBytes } from "@/components/common/units/bytes";
 import { relativeTime } from "@/components/common/units/time";
-import { Progress, SerializedTaskState } from "@/pythonTypes";
+import {
+    AlbumResponseMinimalExpanded,
+    Progress,
+    SerializedCandidateState,
+    SerializedTaskState,
+} from "@/pythonTypes";
 
 import { CardHeader } from "./common";
+import { Code } from "./folderCard";
 
 export function ImportedCard({
     folderHash,
@@ -44,14 +63,20 @@ export function ImportedCard({
                 subtitle={"Imported " + relativeTime(session.updated_at)}
             />
             <Divider />
-            <Typography>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                 {session.tasks.map((task) => (
-                    <ImportedInfo key={task.id} task={task} />
+                    <ImportedTaskInfo key={task.id} task={task} />
                 ))}
-            </Typography>
-            <Box>
-                <Button variant="outlined" color="secondary">
-                    Undo
+            </Box>
+            <Box display="flex" gap={2}>
+                <BackButton variant="outlined" color="secondary" size="medium" />
+                <Button
+                    variant="outlined"
+                    color="secondary"
+                    sx={{ ml: "auto" }}
+                    disabled
+                >
+                    Undo Import
                 </Button>
             </Box>
         </Card>
@@ -60,18 +85,87 @@ export function ImportedCard({
 
 // Shows some information on the imported album
 // using the beets library
-function ImportedInfo({ task }: { task: SerializedTaskState }) {
-    const { data: album } = useQuery(albumImportedOptions(task.id, true, true));
+function ImportedTaskInfo({ task }: { task: SerializedTaskState }) {
+    const {
+        data: album,
+        error,
+        isPending,
+    } = useQuery(albumImportedOptions(task.id, true, true));
 
-    if (!album) {
-        return null;
+    const chosenCandidate = task.candidates.find(
+        (c) => c.id === task.chosen_candidate_id
+    );
+
+    if (error && error instanceof APIError && error.statusCode === 404) {
+        return (
+            <Box>
+                <NotFoundWarning chosenCandidate={chosenCandidate} />
+            </Box>
+        );
+    } else if (error) {
+        throw error;
     }
 
     return (
         <Box>
-            <Typography variant="body2" fontFamily="monospace">
-                <pre>{JSON.stringify(album, null, 2)}</pre>
-            </Typography>
+            {isPending && (
+                <Skeleton
+                    variant="rectangular"
+                    width="100%"
+                    height={100}
+                    sx={{
+                        borderRadius: 1,
+                    }}
+                />
+            )}
+            {task.duplicate_action}
+            {album && <AlbumInfo album={album} />}
         </Box>
+    );
+}
+
+function AlbumInfo({ album }: { album: AlbumResponseMinimalExpanded }) {
+    return (
+        <Box>
+            <Box component="ul" sx={{ m: 0 }}>
+                <li>Path: {album.path}</li>
+                <li>
+                    size:{" "}
+                    {humanizeBytes(
+                        album.items.reduce((acc, item) => acc + item.size, 0)
+                    )}
+                </li>
+                <li>Beets id: {album.id}</li>
+            </Box>
+        </Box>
+    );
+}
+
+function NotFoundWarning({
+    chosenCandidate,
+    ...props
+}: {
+    chosenCandidate?: SerializedCandidateState;
+} & AlertProps) {
+    return (
+        <Alert
+            severity="warning"
+            sx={{
+                ".MuiAlert-message": { width: "100%" },
+            }}
+            {...props}
+        >
+            <AlertTitle>Album not found in beets library</AlertTitle>
+            <Box>
+                Seems like the imported album{" "}
+                <Code>
+                    {chosenCandidate?.info.artist || "?"} -{" "}
+                    {chosenCandidate?.info.album || "?"}
+                </Code>{" "}
+                is not found in your beets library. This may indicate that the album was
+                not imported correctly or that it was removed from your library after
+                importing!
+            </Box>
+        </Alert>
     );
 }
