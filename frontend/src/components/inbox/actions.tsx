@@ -125,13 +125,7 @@ export function FolderActionsSpeedDial() {
 
                 <Spacer />
 
-                <SpeedDialMutationAction
-                    icon={<ClipboardIcon />}
-                    tooltip="Copy path"
-                    mutationOptions={enqueueMutationOptions}
-                    mutateArgs={{}}
-                />
-
+                <CopyPathAction />
                 <DeleteFoldersAction />
 
                 <SpeedDialMutationAction
@@ -367,6 +361,31 @@ function DeleteFoldersAction({ ...props }: SpeedDialActionProps) {
                     folderHashes: selected.hashes,
                 });
                 deselectAll();
+            }}
+            {...props}
+        />
+    );
+}
+
+function CopyPathAction({ ...props }: SpeedDialActionProps) {
+    const { selected, deselectAll } = useFolderSelectionContext();
+    const text = useRef("");
+
+    useEffect(() => {
+        const selectedPaths = selected.paths.map(_escapePathForBash);
+        if (selectedPaths.length > 1) {
+            text.current = selectedPaths.join("\\\n");
+        } else {
+            text.current = selectedPaths.join(" ");
+        }
+    }, [selected, text]);
+
+    return (
+        <SpeedDialAction
+            icon={<ClipboardIcon />}
+            tooltip="Copy path"
+            onClick={() => {
+                navigator.clipboard.writeText(text.current).catch(console.error);
             }}
             {...props}
         />
