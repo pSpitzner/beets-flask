@@ -22,7 +22,7 @@ from beets_flask.importer.types import (
     DuplicateAction,
 )
 from beets_flask.logger import log
-from beets_flask.server.exceptions import to_serialized_exception
+from beets_flask.server.exceptions import DuplicateException, to_serialized_exception
 from beets_flask.utility import capture_stdout_stderr
 
 from .communicator import WebsocketCommunicator
@@ -560,7 +560,7 @@ class ImportSession(BaseSession):
         ):
             # this branching has to be done here, as it skips the expensive lookup and
             # user query. this is also consistent with the way beets does it.
-        
+
             stages.append(import_asis(self))
         else:
         """
@@ -682,12 +682,12 @@ class ImportSession(BaseSession):
                 task.should_merge_duplicates = True
             case "ask":
                 # task.set_choice(importer.action.SKIP)
-                raise UserError(
-                    "Duplicate action 'ask', but no user choice was provided."
+                raise DuplicateException(
+                    "You have set the duplicate action to 'ask' in your beets config."
                 )
             case _:
-                raise UserError(
-                    f"Unknown duplicate resolution action: {self.duplicate_action}"
+                raise DuplicateException(
+                    f"Unknown duplicate action: {self.duplicate_action}"
                 )
 
 

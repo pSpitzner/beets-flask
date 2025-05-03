@@ -61,6 +61,26 @@ class IntegrityException(ApiException):
     status_code: int = 409
 
 
+class UserException(Exception):
+    """Base class for errors caused by user input or config."""
+
+    status_code: int = 422
+
+    def __init__(self, *args, status_code: int | None = None):
+        super().__init__(*args)
+        if status_code is not None:
+            self.status_code = status_code
+
+
+class DuplicateException(UserException):
+    """Duplicate error.
+
+    Raised when we have trouble resolving duplicates in the beets library. Users should check their config and api usage.
+    """
+
+    status_code: int = 422
+
+
 def to_serialized_exception(
     exception: Exception,
 ) -> SerializedException:

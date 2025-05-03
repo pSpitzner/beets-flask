@@ -1,6 +1,9 @@
 import { ArrowDownIcon, ArrowLeftIcon, ArrowRightIcon, TagIcon } from "lucide-react";
 import React, { useEffect, useMemo, useState, useTransition } from "react";
 import {
+    Alert,
+    AlertProps,
+    AlertTitle,
     Box,
     Button,
     Card,
@@ -13,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { APIError } from "@/api/common";
 import { sessionQueryOptions, useImportMutation } from "@/api/session";
+import { PenaltyTypeIcon } from "@/components/common/icons";
 import {
     DuplicateAction,
     DuplicateActions,
@@ -25,6 +29,7 @@ import {
 import {
     Progress,
     SerializedCandidateState,
+    SerializedException,
     SerializedSessionState,
     SerializedTaskState,
 } from "@/pythonTypes";
@@ -53,7 +58,7 @@ export function TagCard({
         return null;
     }
 
-    if (session.exc != null) {
+    if (session.exc != null && session.exc.type !== "DuplicateException") {
         throw new APIError(session.exc);
     }
 
@@ -128,6 +133,9 @@ function UserSelection({ session }: { session: SerializedSessionState }) {
         <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 2 }}>
             <SelectionHeader session={session} currentTaskIdx={currentTaskIdx} />
             <Divider />
+            {session.exc?.type === "DuplicateException" && (
+                <DuplicateWarning exc={session.exc} />
+            )}
             <CandidateSelectionArea
                 key={currentTask.id}
                 isPending={isPending}
@@ -503,5 +511,30 @@ function ChosenCandidatesOverview({ session }: { session: SerializedSessionState
                 </Box>
             </Box>
         </>
+    );
+}
+
+function DuplicateWarning({
+    exc,
+    ...props
+}: {
+    exc: SerializedException;
+} & AlertProps) {
+    return (
+        <Alert
+            severity="warning"
+            icon={<PenaltyTypeIcon type="duplicate" />}
+            sx={{
+                ".MuiAlert-message": { width: "100%" },
+            }}
+            {...props}
+        >
+            <AlertTitle>Duplicate Warning</AlertTitle>
+            <Box>
+                {exc.message}
+                <br />
+                Pick another candidate, or choose what to do with duplicates!
+            </Box>
+        </Alert>
     );
 }
