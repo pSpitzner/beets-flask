@@ -1,11 +1,12 @@
 import { ImportIcon } from "lucide-react";
 import { Box, Button, Card, Divider, Typography } from "@mui/material";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 
+import { albumImportedOptions } from "@/api/library";
 import { sessionQueryOptions } from "@/api/session";
 import { JSONPretty } from "@/components/common/json";
 import { relativeTime } from "@/components/common/units/time";
-import { Progress } from "@/pythonTypes";
+import { Progress, SerializedTaskState } from "@/pythonTypes";
 
 import { CardHeader } from "./common";
 
@@ -44,7 +45,9 @@ export function ImportedCard({
             />
             <Divider />
             <Typography>
-                <JSONPretty data={session} />
+                {session.tasks.map((task) => (
+                    <ImportedInfo key={task.id} task={task} />
+                ))}
             </Typography>
             <Box>
                 <Button variant="outlined" color="secondary">
@@ -52,5 +55,23 @@ export function ImportedCard({
                 </Button>
             </Box>
         </Card>
+    );
+}
+
+// Shows some information on the imported album
+// using the beets library
+function ImportedInfo({ task }: { task: SerializedTaskState }) {
+    const { data: album } = useQuery(albumImportedOptions(task.id, true, true));
+
+    if (!album) {
+        return null;
+    }
+
+    return (
+        <Box>
+            <Typography variant="body2" fontFamily="monospace">
+                <pre>{JSON.stringify(album, null, 2)}</pre>
+            </Typography>
+        </Box>
     );
 }

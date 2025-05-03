@@ -171,3 +171,21 @@ export const searchQueryOptions = <T extends "item" | "album">(
                 : Album<true, false>)[];
         },
     });
+
+// An album imported by us
+export const albumImportedOptions = <Expand extends boolean, Minimal extends boolean>(
+    task_id: string,
+    expand: Expand = true as Expand,
+    minimal: Minimal = true as Minimal
+) => ({
+    queryKey: ["album", task_id, expand, minimal],
+    queryFn: async (): Promise<Album<typeof expand, typeof minimal>> => {
+        const url = _url_parse_minimal_expand(
+            `/library/album/bf_id/${task_id}`,
+            minimal,
+            expand
+        );
+        const response = await fetch(url);
+        return (await response.json()) as Album<typeof expand, typeof minimal>;
+    },
+});

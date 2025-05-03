@@ -183,6 +183,29 @@ async def album_query(query: str):
     return g.lib.albums(query)
 
 
+# Artists are handled slightly differently, as they are not a beets model but can be
+# derived from the items.
+@resource_bp.route("/artist/<path:artist_name>/albums", methods=["GET"])
+async def albums_by_artist(artist_name: str):
+    """Get all items for a specific artist."""
+    log.debug(f"Album query for artist '{artist_name}'")
+
+    with g.lib.transaction() as tx:
+        rows = tx.query(
+            f"SELECT id FROM albums WHERE albumartist COLLATE NOCASE = '{artist_name}'"
+        )
+
+    expanded = expanded_response()
+    minimal = minimal_response()
+
+    return jsonify(
+        [
+            _rep(g.lib.get_album(row[0]), expand=expanded, minimal=minimal)
+            for row in rows
+        ]
+    )
+
+
 @resource_bp.route("/album/bf_id/<string:bf_id>", methods=["GET"])
 @resource(Album, patchable=False)
 async def album_by_bf_id(bf_id: str):
@@ -190,21 +213,19 @@ async def album_by_bf_id(bf_id: str):
 
     Only works if album was imported with beets flask.
     """
-    with g.lib.transaction() as tx:
-        album_id = tx.query(
-            "SELECT entity_id FROM album_attributes WHERE key = 'gui_import_id' AND value = ?",
-            (bf_id,),
+    albums = g.lib.albums(f"gui_import_id:{bf_id}")
+    if len(albums) == 0:
+        raise NotFoundException(
+            f"Album with gui_import_id:'{bf_id}' not found in beets db."
         )
-        if not album_id:
-            raise NotFoundException(
-                f"Album with beets_flask_id:'{bf_id}' not found in beets db.",
-            )
 
-    item = g.lib.get_album(album_id)
-    if not item:
-        raise NotFoundException(f"Album with beets_id:'{id}' not found in beets db.")
-
-    return item
+    if len(albums) > 1:
+        log.warning(
+            f"Multiple albums with gui_import_id:'{bf_id}' found in beets db. "
+            f"Returning first one."
+        )
+    album = albums[0]
+    return album
 
 
 @resource_bp.route("/artist/", methods=["GET"])

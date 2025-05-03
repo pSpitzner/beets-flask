@@ -185,7 +185,7 @@ export const enqueueMutationOptions: UseMutationOptions<
         // Wait for the job to finish
         return await promiseResult;
     },
-    // Optimistic update for status
+    // Optimistic update for status, show pending before backend response
     onMutate: async ({ selected }) => {
         const queryKey = statusQueryOptions.queryKey;
         await queryClient.cancelQueries({ queryKey });
