@@ -21,6 +21,7 @@ from beets_flask.importer.progress import (
     ProgressState,
     SerializedProgressState,
 )
+from beets_flask.logger import log
 from beets_flask.server.exceptions import SerializedException
 from beets_flask.utility import capture_stdout_stderr
 
@@ -211,6 +212,7 @@ class TaskState(BaseState):
         self,
         task: importer.ImportTask,
     ) -> None:
+        super().__init__()
         # we might run into inconsistencies here, if candidates of the task
         # change. but I do not know when or why they would.
         self.task = task
@@ -383,7 +385,7 @@ class CandidateState(BaseState):
     def __init__(
         self, match: Union[BeetsAlbumMatch, BeetsTrackMatch], task_state: TaskState
     ) -> None:
-        self.id = str(uuid())
+        super().__init__()
         self.match = match
         self.duplicate_ids = []  # checked and set by session
         self.task_state = task_state

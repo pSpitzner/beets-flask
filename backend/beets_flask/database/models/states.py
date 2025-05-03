@@ -43,6 +43,7 @@ from beets_flask.importer.states import (
     TaskState,
 )
 from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackMatch
+from beets_flask.logger import log
 from beets_flask.server.exceptions import SerializedException
 
 
@@ -233,7 +234,7 @@ class SessionStateInDb(Base):
         session = cls(
             folder=FolderInDb(state.folder_path, state.folder_hash),
             id=state.id,
-            tasks=[TaskStateInDb.from_live_state(task) for task in state.task_states],
+            tasks=[TaskStateInDb.from_live_state(ts) for ts in state.task_states],
             progress=state.progress.progress,
             exc=state.exc,
         )
@@ -454,9 +455,6 @@ class TaskStateInDb(Base):
 
     def to_dict(self) -> SerializedTaskState:
         return self.to_live_state().serialize()
-
-
-from beets_flask.logger import log
 
 
 class CandidateStateInDb(Base):
