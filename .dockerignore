@@ -11,6 +11,7 @@
 !backend/pyproject.toml
 !backend/main.py
 !backend/launch_redis_workers.py
+!backend/generate_types.py
 
 !configs/
 

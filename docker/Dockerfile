@@ -31,20 +31,35 @@ RUN --mount=type=cache,target=/var/cache/apk \
     redis  \
     bash \
     tmux \
-    shadow \ 
+    shadow \
     git \
-    ffmpeg 
+    ffmpeg
 
-# Install our package (backend)
-COPY ./backend /repo/backend
-COPY ./README.md /repo/README.md
-WORKDIR /repo/backend
+
+# Install backend dependencies
+
 # Prevent __pycache__ directories
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --no-cache-dir .
+# avoid creating a venv with uv, use system python
+ENV UV_PROJECT_ENVIRONMENT="/usr/local/"
 
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --no-cache-dir uv
+
+
+WORKDIR /repo/backend
+COPY ./backend/pyproject.toml /repo/backend/
+COPY ./README.md /repo/
+
+RUN uv sync --no-install-project
+
+# Install our package (backend)
+COPY ./backend/beets_flask /repo/backend/
+COPY ./backend/generate_types.py /repo/backend/
+COPY ./backend/launch_redis_workers.py /repo/backend/
+
+RUN uv sync
 
 # ------------------------------------------------------------------------------------ #
 #                                      Development                                     #
