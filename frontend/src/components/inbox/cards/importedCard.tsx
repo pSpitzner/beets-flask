@@ -1,8 +1,9 @@
 import { ImportIcon } from "lucide-react";
-import { Card, Typography } from "@mui/material";
+import { Box, Button, Card, Divider, Typography } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 
 import { sessionQueryOptions } from "@/api/session";
+import { JSONPretty } from "@/components/common/json";
 import { relativeTime } from "@/components/common/units/time";
 import { Progress } from "@/pythonTypes";
 
@@ -41,10 +42,15 @@ export function ImportedCard({
                 // FIXME: Timezones seem broken, at least for me it is 2 hours off
                 subtitle={"Imported " + relativeTime(session.updated_at)}
             />
+            <Divider />
             <Typography>
-                TODO: Show beet ids of all tasks and a reference to our library. Also
-                allow to undo an import here.
+                <JSONPretty data={session} />
             </Typography>
+            <Box>
+                <Button variant="outlined" color="secondary">
+                    Undo
+                </Button>
+            </Box>
         </Card>
     );
 }

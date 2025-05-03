@@ -97,11 +97,12 @@ export function SelectedCandidate({
     task,
     folderHash,
     folderPath,
+    ...props
 }: {
     task: SerializedTaskState;
     folderHash: string;
     folderPath: string;
-}) {
+} & BoxProps) {
     // Chosen candidate
     const candidate = task.candidates.find(
         (cand) => cand.id === task.chosen_candidate_id
@@ -113,48 +114,53 @@ export function SelectedCandidate({
     }
 
     return (
-        <Box
-            sx={(theme) => ({
-                display: "flex",
-                gap: 1,
-
-                [theme.breakpoints.down("tablet")]: {
-                    alignItems: "flex-start",
-                    paddingLeft: 1,
-                    flexDirection: "column-reverse",
-                },
-            })}
-        >
-            <Box
-                sx={{
-                    display: "block",
-                    width: "100%",
-                }}
-            >
-                <OverviewChanges
-                    candidate={candidate}
-                    metadata={task.current_metadata}
-                />
+        <Box {...props}>
+            <Box sx={{ fontWeight: "bold" }}>
+                {candidate.info.artist} - {candidate.info.album}
             </Box>
             <Box
                 sx={(theme) => ({
                     display: "flex",
-                    width: "80px",
-                    height: "80px",
-                    alignSelf: "center",
+                    gap: 1,
 
                     [theme.breakpoints.down("tablet")]: {
-                        width: "100%",
-                        height: "auto",
-                        alignSelf: "inherit",
-                        maxHeight: "200px",
+                        alignItems: "flex-start",
+                        paddingLeft: 1,
+                        flexDirection: "column-reverse",
                     },
                 })}
             >
-                <ExternalCoverArt
-                    data_url={candidate.info.data_url}
-                    sx={{ width: "80px", height: "80px" }}
-                />
+                <Box
+                    sx={{
+                        display: "block",
+                        width: "100%",
+                    }}
+                >
+                    <OverviewChanges
+                        candidate={candidate}
+                        metadata={task.current_metadata}
+                    />
+                </Box>
+                <Box
+                    sx={(theme) => ({
+                        display: "flex",
+                        width: "80px",
+                        height: "80px",
+                        alignSelf: "center",
+
+                        [theme.breakpoints.down("tablet")]: {
+                            width: "100%",
+                            height: "auto",
+                            alignSelf: "inherit",
+                            maxHeight: "200px",
+                        },
+                    })}
+                >
+                    <ExternalCoverArt
+                        data_url={candidate.info.data_url}
+                        sx={{ width: "80px", height: "80px" }}
+                    />
+                </Box>
             </Box>
         </Box>
     );

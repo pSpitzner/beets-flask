@@ -11,6 +11,7 @@ import {
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 
+import { APIError } from "@/api/common";
 import { sessionQueryOptions, useImportMutation } from "@/api/session";
 import {
     DuplicateAction,
@@ -50,6 +51,10 @@ export function TagCard({
 
     if (!session || session.status.progress < Progress.PREVIEW_COMPLETED) {
         return null;
+    }
+
+    if (session.exc != null) {
+        throw new APIError(session.exc);
     }
 
     return (
@@ -455,23 +460,23 @@ function ActionButtons({
  *
  */
 function ChosenCandidatesOverview({ session }: { session: SerializedSessionState }) {
+    const nItems = session.tasks.reduce((acc, task) => acc + task.items.length, 0);
+
     return (
         <>
             <CardHeader
                 icon={<TagIcon />}
                 title={`Selected candidate${session.tasks.length > 1 ? "s" : ""}`}
-                subtitle={`Foo bar`}
+                subtitle={`The following candidates were selected for import and imported into your library.`}
             >
                 <Box sx={{ ml: "auto", alignSelf: "flex-start" }}>
+                    {session.tasks.length > 1 && (
+                        <Typography variant="caption" component="div" textAlign="right">
+                            {session.tasks.length} tasks
+                        </Typography>
+                    )}
                     <Typography variant="caption" component="div" textAlign="right">
-                        {session.tasks.length} task{session.tasks.length > 1 ? "s" : ""}
-                    </Typography>
-                    <Typography variant="caption" component="div" textAlign="right">
-                        {session.tasks.reduce(
-                            (acc, task) => acc + task.items.length,
-                            0
-                        )}{" "}
-                        items
+                        {nItems} item{nItems > 1 ? "s" : ""}
                     </Typography>
                 </Box>
             </CardHeader>
@@ -483,17 +488,7 @@ function ChosenCandidatesOverview({ session }: { session: SerializedSessionState
                     gap: 1,
                 }}
             >
-                <Typography>
-                    The following overview of the imported candidates needs a bit of
-                    work :) TODO
-                </Typography>
-                <Box
-                    sx={{
-                        " > *": {
-                            marginTop: 1,
-                        },
-                    }}
-                >
+                <Box>
                     {session.tasks.map((task) => {
                         return (
                             <>
