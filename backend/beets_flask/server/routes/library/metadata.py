@@ -7,10 +7,9 @@ import os
 from typing import TYPE_CHECKING
 
 from beets import util as beets_util
+from beets_flask.server.exceptions import IntegrityException, NotFoundException
 from quart import Blueprint, g
 from tinytag import TinyTag
-
-from beets_flask.server.exceptions import IntegrityException, NotFoundException
 
 if TYPE_CHECKING:
     # For type hinting the global g object
@@ -25,7 +24,6 @@ __all__ = ["metadata_bp"]
 
 @metadata_bp.route("/item/<int:item_id>/metadata", methods=["GET"])
 async def item_metadata(item_id: int):
-
     # Item from beets library
     # FIXME: The following should be made into a common function
     # it is also used in artwork.py

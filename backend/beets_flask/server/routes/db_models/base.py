@@ -1,13 +1,12 @@
 from datetime import datetime
 from typing import Any, Generic, Sequence, TypeVar
 
-from quart import Blueprint, request
-from sqlalchemy import select
-
 from beets_flask.database import db_session_factory
 from beets_flask.database.models.base import Base
 from beets_flask.server.routes.exception import InvalidUsageException
 from beets_flask.server.utility import pop_query_param
+from quart import Blueprint, request
+from sqlalchemy import select
 
 __all__ = ["ModelAPIBlueprint"]
 
@@ -25,7 +24,6 @@ class ModelAPIBlueprint(Generic[T]):
     model: type[T]
 
     def __init__(self, model: type[T], url_prefix: str | None = None):
-
         # Use the model name as the default URL prefix
         if url_prefix is None:
             url_prefix = model.__name__.lower()

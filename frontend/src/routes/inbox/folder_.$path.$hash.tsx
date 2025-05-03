@@ -1,3 +1,4 @@
+import { Box } from "@mui/material";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -8,6 +9,7 @@ import { PageWrapper } from "@/components/common/page";
 import { FolderCard } from "@/components/inbox/cards/folderCard";
 import { ImportedCard } from "@/components/inbox/cards/importedCard";
 import { TagCard } from "@/components/inbox/cards/tagCard";
+import { GenericErrorCard } from "@/errors";
 
 export const Route = createFileRoute("/inbox/folder_/$path/$hash")({
     component: RouteComponent,
@@ -39,6 +41,36 @@ export const Route = createFileRoute("/inbox/folder_/$path/$hash")({
                 feedback="Looking for your session"
                 color="secondary"
             />
+        </PageWrapper>
+    ),
+    errorComponent: ({ error }) => (
+        <PageWrapper
+            sx={{
+                height: "100%",
+            }}
+        >
+            <Box
+                sx={{
+                    display: "flex",
+                    marginTop: "5rem",
+                    height: "100%",
+                    justifyContent: "center",
+                    alignItems: "center",
+                }}
+            >
+                <GenericErrorCard
+                    title="Unexpected Error"
+                    subtitle="Oh no! Seems like we dropped a beat!"
+                    exc={{
+                        type: error.name,
+                        message: error.message,
+                        description: error.message,
+                        trace: error.stack,
+                    }}
+                    showSocials={true}
+                    color="secondary"
+                />
+            </Box>
         </PageWrapper>
     ),
 });

@@ -6,11 +6,11 @@ This allows us to keep track of the import state and communicate it to the front
 from __future__ import annotations
 
 import asyncio
-from inspect import isgenerator, isgeneratorfunction
 import itertools
 from datetime import datetime
 from enum import Enum
 from functools import total_ordering, wraps
+from inspect import isgenerator, isgeneratorfunction
 from re import I
 from typing import (
     TYPE_CHECKING,
@@ -603,12 +603,13 @@ def _apply_choice(session: ImportSession, task: ImportTask):
     items: list[BeetsItem] = task.imported_items()
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    task_state = session.state.get_task_state_for_task_raise(task)
     with session.lib.transaction():
         for item in items:
-            item.set_parse("gui_import_id", session.state.id)
+            item.set_parse("gui_import_id", task_state.id)
             item.set_parse("gui_import_date", timestamp)
             item.store()
-        task.album.set_parse("gui_import_id", session.state.id)
+        task.album.set_parse("gui_import_id", task_state.id)
         task.album.set_parse("gui_import_date", timestamp)
         task.album.store()
 

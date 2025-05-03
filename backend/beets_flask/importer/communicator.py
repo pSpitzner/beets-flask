@@ -146,9 +146,9 @@ class ImportCommunicator(ABC):
                 # Validate the request
                 selection_ids = req["selection_ids"]
                 are_completed = req["are_completed"]
-                assert len(selection_ids) == len(
-                    are_completed
-                ), "Selections and completion status must have the same length"
+                assert len(selection_ids) == len(are_completed), (
+                    "Selections and completion status must have the same length"
+                )
 
                 # Update the state
                 for id, completed in zip(selection_ids, are_completed):
@@ -165,9 +165,9 @@ class ImportCommunicator(ABC):
                 artist = req["artist"]
                 album = req["album"]
 
-                assert (
-                    search_id is not None or artist is not None
-                ), "Either Search ID or Artist + Album need to be given"
+                assert search_id is not None or artist is not None, (
+                    "Either Search ID or Artist + Album need to be given"
+                )
                 sel_state = self.state.get_task_state_by_id(selection_id)
                 if sel_state is None:
                     raise ValueError("No selection state found for task.")

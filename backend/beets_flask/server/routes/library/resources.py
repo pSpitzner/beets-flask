@@ -14,6 +14,7 @@ from typing import (
     Any,
     Awaitable,
     Callable,
+    ParamSpec,
     Sequence,
     TypedDict,
     TypeVar,
@@ -23,12 +24,11 @@ from typing import (
 from beets import util as beets_util
 from beets.dbcore import Results
 from beets.library import Album, Item
-from quart import Blueprint, Response, abort, g, jsonify, request
-from typing_extensions import NotRequired
-
 from beets_flask.config import get_config
 from beets_flask.logger import log
 from beets_flask.server.exceptions import NotFoundException
+from quart import Blueprint, Response, abort, g, jsonify, request
+from typing_extensions import NotRequired
 
 if TYPE_CHECKING:
     # For type hinting the global g object
@@ -70,7 +70,6 @@ def resource_query(
     def make_response(
         query_func: Callable[[str], Awaitable[Results[T]]],
     ) -> Callable[[str], Awaitable[Response]]:
-
         @wraps(query_func)
         async def wrapper(query: str) -> Response:
             # we set the route to use a path converter before us,
@@ -112,18 +111,20 @@ def resource_query(
     return make_response
 
 
+P = ParamSpec("P")
+
+
 def resource(
     type: type[T], patchable: bool = False
-) -> Callable[..., Callable[[int], Awaitable[Response]]]:
+) -> Callable[..., Callable[P, Awaitable[Response]]]:
     """Decorate a function to handle RESTful HTTP requests for resources."""
 
     def make_response(
-        get_func: Callable[[int], Awaitable[T]],
-    ) -> Callable[[int], Awaitable[Response]]:
-
+        get_func: Callable[P, Awaitable[T]],
+    ) -> Callable[P, Awaitable[Response]]:
         @wraps(get_func)
-        async def wrapper(id: int) -> Response:
-            entity = await get_func(id)
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> Response:
+            entity = await get_func(*args, **kwargs)
 
             method = request.method
 
@@ -182,27 +183,29 @@ async def album_query(query: str):
     return g.lib.albums(query)
 
 
-# Artists are handled slightly differently, as they are not a beets model but can be
-# derived from the items.
-@resource_bp.route("/artist/<path:artist_name>/albums", methods=["GET"])
-async def albums_by_artist(artist_name: str):
-    """Get all items for a specific artist."""
-    log.debug(f"Album query for artist '{artist_name}'")
+@resource_bp.route("/album/bf_id/<string:bf_id>", methods=["GET"])
+@resource(Album, patchable=False)
+async def album_by_bf_id(bf_id: str):
+    """Get album by beets flask import id.
 
+    Only works if album was imported with beets flask.
+    """
     with g.lib.transaction() as tx:
-        rows = tx.query(
-            f"SELECT id FROM albums WHERE albumartist COLLATE NOCASE = '{artist_name}'"
+        album_id = tx.query(
+            "SELECT entity_id FROM album_attributes WHERE key = 'gui_import_id' AND value = ?",
+            (bf_id,),
         )
+        if not album_id:
+            raise NotFoundException(
+                f"Album with beets_flask_id:'{bf_id}' not found in beets db.",
+                status_code=200,
+            )
 
-    expanded = expanded_response()
-    minimal = minimal_response()
+    item = g.lib.get_album(album_id)
+    if not item:
+        raise NotFoundException(f"Album with beets_id:'{id}' not found in beets db.")
 
-    return jsonify(
-        [
-            _rep(g.lib.get_album(row[0]), expand=expanded, minimal=minimal)
-            for row in rows
-        ]
-    )
+    return item
 
 
 @resource_bp.route("/artist/", methods=["GET"])
@@ -322,7 +325,6 @@ source_prefixes = ["mb", "spotify", "tidal", "discogs"]
 
 
 def _repr_Item(item: Item | None, minimal=False) -> ItemResponse | ItemResponseMinimal:
-
     if not item:
         raise NotFoundException("Item not found")
 
@@ -405,7 +407,6 @@ def _repr_Item(item: Item | None, minimal=False) -> ItemResponse | ItemResponseM
         out["sources"] = sources
 
     for key in keys:
-
         if key == "name":
             out[key] = item.title
         else:
@@ -530,7 +531,6 @@ def _rep_Album(
             keys = [k for k in keys if k not in f_keys]
 
     for key in keys:
-
         if key == "name":
             out[key] = album.album
         else:
