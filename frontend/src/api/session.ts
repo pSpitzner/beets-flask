@@ -127,6 +127,8 @@ interface EnqueuePreviewAddCandidate {
 
 interface EnqueuePreview {
     kind: EnqueueKind.PREVIEW;
+    group_albums?: boolean;
+    autotag?: boolean;
 }
 
 interface EnqueueImportCandidate {

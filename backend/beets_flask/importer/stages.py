@@ -421,6 +421,7 @@ def user_query(
 
     # As albums: group items by albums and create task for each album
     if task.choice_flag is action.ALBUMS:
+        log.warning("This should never run via beets-flask!")
         return _extend_pipeline(
             [task],
             group_albums(session),
@@ -489,21 +490,6 @@ def match_threshold(
         return task
 
     session.match_threshold(task)
-
-
-@mutator_stage
-@set_progress(Progress.LOOKING_UP_CANDIDATES)
-def import_asis(session, task):
-    """Select the `action.ASIS` choice for all tasks.
-
-    This stage replaces the initial_lookup and user_query stages
-    when the importer is run without autotagging.
-    """
-    if task.skip:
-        return
-
-    task.set_choice(action.ASIS)
-    _apply_choice(session, task)
 
 
 # --------------------------------- Consumer --------------------------------- #
@@ -639,5 +625,4 @@ __all__ = [
     "plugin_stage",
     "manipulate_files",
     "mark_tasks_completed",
-    "import_asis",
 ]

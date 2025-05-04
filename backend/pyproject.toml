@@ -83,7 +83,7 @@ include = ["pyproject.toml", "beets_flask/**/*.py"]
 exclude = ["beets_flask/**/dirhash.py"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["D"]
+"**/tests/**/*" = ["D"]
 
 
 [tool.ruff.lint]

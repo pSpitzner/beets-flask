@@ -4,7 +4,6 @@ from typing import List
 
 import pytest
 from beets import autotag, importer
-
 from beets_flask.importer.states import (
     CandidateState,
     Progress,
@@ -34,7 +33,6 @@ def get_album_match(tracks: List[BeetsTrackInfo], items, **info):
 
 @pytest.fixture
 def import_task(beets_lib):
-
     item = beets_lib_item(title="title", path="path")
     task = importer.ImportTask(paths=[b"a path"], toppath=b"top path", items=[item])
 
@@ -76,7 +74,7 @@ class TestTaskState:
         assert task_state.items == [self.task.items[0]]
         assert task_state.progress == Progress.NOT_STARTED
 
-        assert len(task_state.candidate_states) == len(self.task.candidates) + 1
+        assert len(task_state.candidate_states) == len(self.task.candidates)
 
     def test_best_candidate(self, import_task):
         task_state = self.task_state
@@ -103,7 +101,6 @@ class TestTaskState:
 
 
 class TestCandidateState:
-
     task: importer.ImportTask
     task_state: TaskState
     candidates: list[CandidateState]
@@ -113,7 +110,7 @@ class TestCandidateState:
         task_state = TaskState(import_task)
         candidate_states = task_state.candidate_states
 
-        assert len(candidate_states) == 2  # One from import_task and one asis_candidate
+        assert len(candidate_states) == 1  # One from import_task
         self.candidates = candidate_states
         self.task = import_task
         self.task_state = task_state
@@ -139,7 +136,8 @@ class TestCandidateState:
 
     def test_asis_candidate(self):
         # Test asis candidate (last in list)
-        asis_candidate = self.candidates[-1]
+        asis_candidate = self.task_state.asis_candidate
+        assert self.task_state.asis_candidate_id == asis_candidate.id
         assert asis_candidate.id.startswith("asis")
         assert asis_candidate.type == "album"
 
@@ -172,7 +170,6 @@ class TestCandidateState:
 
 
 class TestSessionState:
-
     session_state: SessionState
 
     @pytest.fixture(autouse=True)
@@ -220,9 +217,21 @@ class TestSessionState:
         serialized = session_state.serialize()
         assert isinstance(serialized, dict)
         assert serialized["id"] == session_state.id
-        assert serialized["tasks"] == [t.serialize() for t in session_state.task_states]
+
+        tasks_loaded = serialized["tasks"]
+        tasks_current = [t.serialize() for t in session_state.task_states]
+        assert len(tasks_loaded) == len(tasks_current)
+
+        # the asis candidate sets the date freshly every time.
+        for t_l, t_c in zip(tasks_loaded, tasks_current):
+            t_c["asis_candidate"].pop("created_at")
+            t_c["asis_candidate"].pop("updated_at")
+            t_l["asis_candidate"].pop("created_at")
+            t_l["asis_candidate"].pop("updated_at")
+        assert tasks_loaded == tasks_current
+
         assert serialized["status"]["message"] is None
-        assert serialized["status"]["progress"] == Progress.NOT_STARTED.name
+        assert serialized["status"]["progress"] == Progress.NOT_STARTED
         assert serialized["status"]["plugin_name"] == None
 
         # Can be serialized with json.dumps and Encoder

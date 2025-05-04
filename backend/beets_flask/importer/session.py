@@ -35,7 +35,6 @@ from .stages import (
     StageOrder,
     group_albums,
     identify_duplicates,
-    import_asis,
     lookup_candidates,
     manipulate_files,
     mark_tasks_completed,
@@ -290,24 +289,53 @@ class BaseSession(importer.ImportSession, ABC):
 class PreviewSession(BaseSession):
     """Preview what would be imported. Only fetches candidates."""
 
+    group_albums: bool | None
+    autotag: bool | None
+
     def __init__(
-        self, state: SessionState, config_overlay: dict | None = None, **kwargs
+        self,
+        state: SessionState,
+        config_overlay: dict | None = None,
+        group_albums: bool | None = None,
+        autotag: bool | None = None,
+        **kwargs,
     ):
+        """
+        Create new PreviewSession.
+
+        Parameters
+        ----------
+        group_albums : bool | None
+            Whether to create multple tasks, one for each album found in the metadata
+            of the files. Set to true if you have multiple albums in a single folder.
+            If None: get value from beets config.
+        autotag : bool | None
+            Whether to look up metadata online. If None: get value from beets config.
+        """
+
         super().__init__(state, config_overlay, **kwargs)
+        self.group_albums = group_albums
+        self.autotag = autotag
 
     @property
     def stages(self) -> StageOrder:
         stages = StageOrder()
-        if self.get_config_value("import.group_albums") and not self.get_config_value(
-            "import.singletons"
+
+        if self.get_config_value("import.singletons"):
+            # beets tweaks the album grouping settings via overlay for singletons.
+            raise NotImplementedError("Singletons not implemented yet.")
+
+        if self.group_albums or (
+            self.group_albums is None and self.get_config_value("import.group_albums")
         ):
             stages.append(group_albums(self))
 
-        stages.append(lookup_candidates(self))
-        stages.append(identify_duplicates(self))
+        if self.autotag or (
+            self.autotag is None and self.get_config_value("import.autotag")
+        ):
+            stages.append(lookup_candidates(self))
 
-        # this is carbon copy of mark_completed
-        # -> can we get a general "set progress" stage?
+        stages.append(identify_duplicates(self))
         stages.append(mark_tasks_preview_completed(self))
 
         return stages
@@ -441,6 +469,7 @@ class ImportChoice(Enum):
     BEST = 2
 
 
+# Either a string (the candidate id) or a special case: asis candidate, or the best one
 CandidateChoice = str | ImportChoice
 
 
@@ -448,11 +477,9 @@ class ImportSession(BaseSession):
     """
     Import session that assumes we already have a match-id.
 
-    Should run from an already finished Preview Session, but this
-    is not (yet) enforced.
+    Needs to run from an already finished Preview Session.
     """
 
-    match_url: str | None
     candidate_id_mapping: Mapping[str, CandidateChoice | None]
     duplicate_action: Mapping[str, DuplicateAction]
 
@@ -460,7 +487,6 @@ class ImportSession(BaseSession):
         self,
         state: SessionState,
         config_overlay: dict | None = None,
-        match_url: str | None = None,
         candidate_id: CandidateChoice | dict[str, CandidateChoice] = ImportChoice.BEST,
         duplicate_action: DuplicateAction | None | dict[str, DuplicateAction] = None,
     ):
@@ -468,10 +494,6 @@ class ImportSession(BaseSession):
 
         Parameters
         ----------
-        match_url : optional str
-            The URL of the match to import, if any. Normally this should be inferred from
-            the state.
-
         candidate_id : optional
             Either id of candidate(s) or the import choice. This is used to determine which
             candidate to import. If a dict is given, the keys are the task ids and the
@@ -490,11 +512,6 @@ class ImportSession(BaseSession):
             raise ValueError("search_ids set in config_overlay. This is not supported.")
 
         super().__init__(state, config_overlay)
-
-        if match_url is not None and state.progress > Progress.NOT_STARTED:
-            raise ValueError("Cannot set match_url for pre-populated state.")
-
-        self.match_url = match_url
 
         task_states = self.state.task_states
         # Create a mapping for which candidate to import for each task.
@@ -516,6 +533,7 @@ class ImportSession(BaseSession):
             raise ValueError(
                 "Duplicate_action must be a dict with task ids as keys if multiple tasks are given"
             )
+
         default_action: DuplicateAction = self.get_config_value(
             "import.duplicate_action", str
         )
@@ -552,25 +570,7 @@ class ImportSession(BaseSession):
     @property
     def stages(self):
         stages = StageOrder()
-        if self.get_config_value("import.group_albums") and not self.get_config_value(
-            "import.singletons"
-        ):
-            stages.append(group_albums(self))
-        """
-        # FIXME: Does not really work with multi task sessions.
-        if (
-            self.candidate_id_mapping is not None
-            and self.candidate_id_mapping.startswith("asis")
-        ):
-            # this branching has to be done here, as it skips the expensive lookup and
-            # user query. this is also consistent with the way beets does it.
 
-            stages.append(import_asis(self))
-        else:
-        """
-        stages.append(lookup_candidates(self))
-        stages.append(identify_duplicates(self))
-        stages.append(mark_tasks_preview_completed(self))
         # FIXME: user_query calls task.choose_match, which calls session.choose_match.
         # Better abstraction needed upstream.
         stages.append(user_query(self))
@@ -616,14 +616,6 @@ class ImportSession(BaseSession):
 
     # --------------------------- Stage Definitions -------------------------- #
 
-    def lookup_candidates(self, task: importer.ImportTask):
-        """Lookup candidates for the task."""
-
-        if self.match_url is not None:
-            task.search_ids = [self.match_url]
-
-        super().lookup_candidates(task)
-
     def choose_match(self, task: importer.ImportTask):
         self.logger.setLevel(logging.DEBUG)
         self.logger.debug(f"choose_match {task}")
@@ -632,10 +624,11 @@ class ImportSession(BaseSession):
 
         # Pick the candidate to import
         candidate_id = self.candidate_id_mapping[task_state.id]
-        if candidate_id is None:  # none indicates no candidate give, should error
+        if candidate_id is None:  # indicates no candidate given, should error
             raise ValueError(
                 f"Candidate id is None for task {task_state.id}. Please provide a candidate id!"
             )
+
         if isinstance(candidate_id, str):
             candidate_state = task_state.get_candidate_state_by_id(candidate_id)
             if candidate_state is None:
@@ -644,6 +637,8 @@ class ImportSession(BaseSession):
             candidate_state = task_state.best_candidate_state
             if candidate_state is None:
                 raise ValueError(f"No candidate found.")
+        elif candidate_id == ImportChoice.ASIS:
+            candidate_state = task_state.asis_candidate
         else:
             raise NotImplementedError("ImportChoice.ASIS not implemented yet.")
 
@@ -659,6 +654,11 @@ class ImportSession(BaseSession):
             raise UserError(
                 f"Plugins returned actions, which is not supported for {self.__class__.__name__}"
             )
+
+        # ASIS
+        if candidate_state.id == task_state.asis_candidate.id:
+            log.debug(f"Importing {task} as-is")
+            return importer.action.ASIS
 
         return candidate_state.match
 

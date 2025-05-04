@@ -3,7 +3,6 @@ from pathlib import Path
 
 import pytest
 from beets import autotag, importer
-
 from beets_flask.database.models.states import SessionStateInDb
 from beets_flask.importer.session import SessionState
 from beets_flask.importer.stages import Progress
@@ -46,8 +45,8 @@ class TestSessionStateInDb:
         # Tasks generated
         assert len(state_in_db.tasks) == 1
 
-        # Candidates generated (one match see above and one asis)
-        assert len(state_in_db.tasks[0].candidates) == 2
+        # Candidates generated
+        assert len(state_in_db.tasks[0].candidates) == 1
 
     def test_merge_session(self, db_session_factory):
         # Insert state in db

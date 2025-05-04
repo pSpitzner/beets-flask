@@ -11,6 +11,7 @@ import {
     CopyIcon,
     Disc3Icon,
     FileIcon,
+    FileMusicIcon,
     FlagIcon,
     FolderIcon,
     FolderOpen,
@@ -131,7 +132,7 @@ export function SourceTypeIcon({ type, ...props }: { type: string } & LucideProp
         case "musicbrainz":
             return <BrainIcon {...props} />;
         case "asis":
-            return <HardDriveIcon {...props} />;
+            return <FileMusicIcon {...props} />;
         default:
             console.warn(`Unknown source type: ${type}`);
             return <BadgeAlertIcon {...props} />;

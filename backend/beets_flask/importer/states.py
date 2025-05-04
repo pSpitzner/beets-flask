@@ -220,7 +220,6 @@ class TaskState(BaseState):
         # change. but I do not know when or why they would.
         self.task = task
         self.candidate_states = [CandidateState(c, self) for c in self.task.candidates]
-        self.candidate_states.append(CandidateState.asis_candidate(self))
 
     @property
     def candidates(
@@ -228,6 +227,16 @@ class TaskState(BaseState):
     ) -> Sequence[BeetsAlbumMatch | BeetsTrackMatch]:
         """Task candidates, i.e. possible matches to choose from."""
         return self.task.candidates
+
+    @property
+    def asis_candidate_id(self) -> str:
+        """Id of the asis candidate."""
+        return "asis-" + str(self.id)
+
+    @property
+    def asis_candidate(self) -> CandidateState:
+        """Get the asis candidate state."""
+        return CandidateState.asis_candidate(self)
 
     def add_candidates(
         self,
@@ -249,7 +258,7 @@ class TaskState(BaseState):
 
     def get_candidate_state_by_id(self, id: str) -> CandidateState | None:
         """Get candidate state by id."""
-        for c in self.candidate_states:
+        for c in self.candidate_states + [self.asis_candidate]:
             if c.id == id:
                 return c
         return None
@@ -300,18 +309,9 @@ class TaskState(BaseState):
 
     @property
     def best_candidate_state(self) -> CandidateState | None:
-        """Returns the best candidate of this task.
-
-        ```
-        c = task_state.best_candidate
-        if c is not None:
-            print(c.cur_artist, c.cur_album)
-        ```
-        """
+        """Returns the best candidate of this task (never asis)."""
         best = None
         for candidate in self.candidate_states:
-            if candidate.is_asis:
-                continue
             if best is None or candidate.distance < best.distance.distance:
                 best = candidate
         return best
@@ -342,7 +342,10 @@ class TaskState(BaseState):
             **super().serialize(),
             items=self.items_minimal,
             candidates=[c.serialize() for c in self.candidate_states],
+            asis_candidate=self.asis_candidate.serialize(),
             current_metadata=self.current_metadata,
+            # TODO: maybe we can merge current_metadata (which is cur_artist/album in
+            # old beets) into the asis_candidate
             chosen_candidate_id=self.chosen_candidate_state_id,
             duplicate_action=self.duplicate_action,
             completed=self.completed,
@@ -426,6 +429,7 @@ class CandidateState(BaseState):
         This is pretty much duct-tape.
         """
         items: list[BeetsItem] = task_state.task.items
+        # FIXME: we do this lookup twice, once here and once in current_metadata
         info, _ = autotag.current_metadata(items)
         info["data_source"] = "asis"
         info["data_url"] = f"file://{task_state.toppath}"
@@ -453,10 +457,7 @@ class CandidateState(BaseState):
             mapping={i: tracks[idx] for idx, i in enumerate(items)},
         )
         candidate = cls(match=match, task_state=task_state)
-        # the session checks the candidate id for this particular value.
-        # this saves us from defining an extra attribute
-        # (and passing back and forth to the frontend)
-        candidate.id = "asis-" + str(uuid())
+        candidate.id = task_state.asis_candidate_id
         return candidate
 
     # --------------------- Helper to lift / unnset from match to -------------------- #
@@ -691,6 +692,7 @@ class SerializedTaskState(SerializedBaseState):
 
     # Fetched data
     candidates: List[SerializedCandidateState]
+    asis_candidate: SerializedCandidateState
 
     duplicate_action: str | None
     chosen_candidate_id: str | None

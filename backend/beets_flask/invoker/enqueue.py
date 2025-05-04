@@ -181,9 +181,12 @@ async def enqueue(
 
 
 def enqueue_preview(hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs) -> Job:
+    group_albums: bool | None = kwargs.pop("group_albums", None)
+    autotag: bool | None = kwargs.pop("autotag", None)
+
     if len(kwargs.keys()) > 0:
         raise InvalidUsageException("EnqueueKind.PREVIEW does not accept any kwargs.")
-    job = _enqueue(preview_queue, run_preview, hash, path)
+    job = _enqueue(preview_queue, run_preview, hash, path, group_albums, autotag)
     _set_job_meta(job, hash, path, EnqueueKind.PREVIEW, extra_meta)
     return job
 
@@ -371,6 +374,8 @@ def enqueue_delete_items(task_ids: list[str]) -> Job:
 async def run_preview(
     hash: str,
     path: str,
+    group_albums: bool | None,
+    autotag: bool | None,
 ):
     """Fetch candidates for a folder using beets.
 
@@ -388,6 +393,12 @@ async def run_preview(
         The hash of the folder for which to run the preview.
     path : str
         The path of the folder for which to run the preview.
+    group_albums : bool | None
+        Whether to create multple tasks, one for each album found in the metadata
+        of the files. Set to true if you have multiple albums in a single folder.
+        If None: get value from beets config.
+    autotag : bool | None
+        Whether to look up metadata online. If None: get value from beets config.
     """
 
     log.info(f"Preview task on {hash=} {path=}")
@@ -404,7 +415,9 @@ async def run_preview(
         # an existing state would skip the candidate lookup.
         # otherwise, the retag action would not work, as preview starting from
         s_state_live = SessionState(f_on_disk)
-        p_session = PreviewSession(s_state_live)
+        p_session = PreviewSession(
+            s_state_live, group_albums=group_albums, autotag=autotag
+        )
 
         try:
             await p_session.run_async()

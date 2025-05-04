@@ -6,15 +6,11 @@ has a well defined path to follow.
 """
 
 from abc import ABC
-from lib2to3.fixes.fix_idioms import TYPE
 from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
-from sqlalchemy import delete, func, select
-from sqlalchemy.orm import Session
-
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
 from beets_flask.disk import Folder
 from beets_flask.importer.progress import FolderStatus
@@ -25,14 +21,15 @@ from beets_flask.invoker.enqueue import (
     run_preview,
     run_preview_add_candidates,
 )
+from beets_flask.server.websocket.status import FolderStatusUpdate, JobStatusUpdate
+from sqlalchemy import delete, func, select
+from sqlalchemy.orm import Session
 from tests.mixins.database import IsolatedBeetsLibraryMixin, IsolatedDBMixin
 from tests.unit.test_importer.conftest import (
     VALID_PATHS,
     album_path_absolute,
     use_mock_tag_album,
 )
-
-from beets_flask.server.websocket.status import JobStatusUpdate, FolderStatusUpdate
 
 
 class InvokerStatusMockMixin(ABC):
@@ -106,6 +103,8 @@ class TestImportBest(
         await run_preview(
             "obsolete_hash_preview",
             str(path),
+            group_albums=None,
+            autotag=None,
         )
 
         # Check that status was emitted correctly, we emit once before and once after run
@@ -187,6 +186,8 @@ class TestImportBest(
         exc = await run_preview(
             f.hash,
             str(path),
+            group_albums=None,
+            autotag=None,
         )
         assert exc is None, "Should not return an error"
 
@@ -308,6 +309,8 @@ class TestImportBest(
         await run_preview(
             "obsolete_hash_preview",
             str(path / "Chant [SINGLE]"),
+            group_albums=None,
+            autotag=None,
         )
 
         exc = await run_import_candidate(
@@ -478,6 +481,8 @@ class TestChooseCandidatesSingleTask(
         exc = await run_preview(
             "obsolete_hash_preview",
             str(path_single_task),
+            group_albums=None,
+            autotag=None,
         )
         assert exc is None, "Should not return an error"
 
@@ -537,6 +542,8 @@ class TestMultipleTasks(
         exc = await run_preview(
             "obsolete_hash_preview",
             str(path_multiple_tasks),
+            group_albums=None,
+            autotag=None,
         )
         assert exc is None, "Should not return an error"
 

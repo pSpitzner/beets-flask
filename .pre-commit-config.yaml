@@ -5,7 +5,7 @@ repos:
       hooks:
           # Run the linter.
           - id: ruff
-            args: [--fix, --config=./backend/pyproject.toml]
+            args: [--fix, --config=backend/pyproject.toml]
           # Run the formatter.
           - id: ruff-format
-            args: [--config=./backend/pyproject.toml]
+            args: [--config=backend/pyproject.toml]
