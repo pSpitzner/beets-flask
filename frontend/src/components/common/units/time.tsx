@@ -53,3 +53,67 @@ export const trackLengthRep = (length?: number | null) => {
     const seconds = Math.floor(length % 60);
     return `(${hours ? `${hours}h ` : ""}${minutes}:${seconds.toString().padStart(2, "0")})`;
 };
+
+/**
+ * Formats a Date object using Python-style format strings
+ * @param date - The Date object to format
+ * @param formatStr - Python-style format string (e.g. "%Y-%m-%d %H:%M:%S")
+ * @returns Formatted date string
+ */
+export const formatDate = (date: Date, formatStr: string) => {
+    const pad = (num: number) => num.toString().padStart(2, "0");
+
+    const replacements: Record<string, string> = {
+        "%Y": date.getFullYear().toString(), // Year (4 digits)
+        "%y": date.getFullYear().toString().slice(-2), // Year (2 digits)
+        "%m": pad(date.getMonth() + 1), // Month (01-12)
+        "%d": pad(date.getDate()), // Day (01-31)
+        "%H": pad(date.getHours()), // Hour (00-23)
+        "%M": pad(date.getMinutes()), // Minute (00-59)
+        "%S": pad(date.getSeconds()), // Second (00-59)
+        "%A": [
+            "Sunday",
+            "Monday",
+            "Tuesday",
+            "Wednesday", // Full weekday name
+            "Thursday",
+            "Friday",
+            "Saturday",
+        ][date.getDay()],
+        "%a": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][date.getDay()], // Short weekday
+        "%B": [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May", // Full month name
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+        ][date.getMonth()],
+        "%b": [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun", // Short month name
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+        ][date.getMonth()],
+        "%p": date.getHours() < 12 ? "AM" : "PM", // AM/PM
+    };
+
+    return formatStr.replace(
+        /%[YymdHMSAaBb]/g,
+        (match) => replacements[match] || match
+    );
+};

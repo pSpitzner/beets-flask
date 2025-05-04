@@ -41,6 +41,7 @@ import { SourceTypeIcon } from "../common/icons";
 import { ClipboardCopyButton } from "../common/inputs/copy";
 import { useStatusSocket } from "../common/websocket/status";
 import { useTerminalContext } from "../frontpage/terminal";
+import { formatDate } from "../common/units/time";
 
 /* --------------------------------- Actions -------------------------------- */
 // Actions a user can take on a single or multiple folders implemented as speed dial
@@ -334,12 +335,14 @@ function TerminalImportAction({ ...props }: SpeedDialActionProps) {
             onClick={() => {
                 clearInput();
                 let text = "";
+                const importId = "cli-" + Math.random().toString(36).slice(2, 16);
+                const importDate = formatDate(new Date(), "%Y%m%d_%H%M%S");
                 const selectedPaths = selected.paths.map(_escapePathForBash);
-                if (selectedPaths.length > 1) {
-                    text = "\\\n  " + selectedPaths.join(" \\\n  ");
-                } else {
-                    text = selectedPaths.join(" ");
-                }
+
+                text = "\\\n  " + selectedPaths.join(" \\\n  ");
+                text += ` \\\n  --set gui_import_id='${importId}'`;
+                text += ` \\\n  --set gui_import_date='${importDate}'`;
+
                 inputText(`beet import -t ${text}`);
                 navigate({
                     to: "/terminal",
