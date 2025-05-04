@@ -553,6 +553,21 @@ def manipulate_files(
 
     # Progress, cleanup, and event.
     task.finalize(session)
+
+    # Cleanup of duplicates. After successful import, we do not want the candidates
+    # to have duplicate-info anymore. The reason is that if we undo the import,
+    # there wont be any duplicates in the library. Also, we dont want to show
+    # the duplicate-badge for things that were imported.
+    # TODO: outlook: add new badges for what has been done with duplicates?
+    task_state = session.state.get_task_state_for_task_raise(task)
+    chosen_candidate = task_state.chosen_candidate_state
+    if chosen_candidate:
+        chosen_candidate.duplicate_ids = []
+        # We remove duplicate info from all candidates.
+        # Although this causes the frontend to possibly not show the duplicate
+        # actions, that is fine: Upon re-import, we raise a duplicate action error,
+        # which is shown to the user, and then the duplicate actions will appear.
+
     return task
 
 

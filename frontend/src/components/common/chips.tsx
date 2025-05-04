@@ -144,6 +144,12 @@ export function FolderStatusChip({ folder, ...props }: { folder: Folder } & Chip
         case FolderStatus.PREVIEWED:
             status_name = "Tagged";
             break;
+        case FolderStatus.DELETING:
+            status_name = "Undoing";
+            break;
+        case FolderStatus.DELETED:
+            status_name = "Undone";
+            break;
         default:
             status_name = FolderStatus[folderStatus.status];
     }

@@ -18,6 +18,7 @@ import {
     GitPullRequestClosedIcon,
     HardDriveIcon,
     HashIcon,
+    HistoryIcon,
     HourglassIcon,
     LayoutListIcon,
     ListChecksIcon,
@@ -174,6 +175,9 @@ export function FolderStatusIcon({
             return <TagsIcon {...props} />;
         case FolderStatus.IMPORTED:
             return <CircleCheckBigIcon {...props} />;
+        case FolderStatus.DELETING:
+        case FolderStatus.DELETED:
+            return <HistoryIcon {...props} />;
         default:
             return <CircleHelpIcon {...props} />;
     }

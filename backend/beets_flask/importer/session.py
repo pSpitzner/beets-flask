@@ -22,7 +22,11 @@ from beets_flask.importer.types import (
     DuplicateAction,
 )
 from beets_flask.logger import log
-from beets_flask.server.exceptions import DuplicateException, to_serialized_exception
+from beets_flask.server.exceptions import (
+    DuplicateException,
+    IntegrityException,
+    to_serialized_exception,
+)
 from beets_flask.utility import capture_stdout_stderr
 
 from .communicator import WebsocketCommunicator
@@ -1085,12 +1089,16 @@ class UndoSession(BaseSession):
                 item.path = t_state.task.old_paths[idx]
 
         # Delete files
-        excs = []
+        excs: list[Exception] = []
+        pths: list[Path] = []
         for t_state in self.state.task_states:
             try:
                 delete_from_beets(t_state.id, self.delete_files, self.lib)
             except Exception as e:
+                items = self.lib.items(f"gui_import_id:{t_state.id}")
+
                 excs.append(e)
+                pths.extend([Path(item.path.decode("utf-8")) for item in items])
 
         if len(excs) > 0:
             for exc in excs:
@@ -1098,8 +1106,9 @@ class UndoSession(BaseSession):
 
             # FIXME: Multi/array exceptions need handling
             self.state.exc = to_serialized_exception(excs[0])
-            raise UserError(
-                "Could not delete all items. Some items might be left in the library."
+            raise IntegrityException(
+                "Could not delete all items. Some items might be left in the library. "
+                + f"Problematic files were: {pths}"
             )
 
         # Update our state and progress

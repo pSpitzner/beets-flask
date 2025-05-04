@@ -74,11 +74,15 @@ function RouteComponent() {
                     Pending
                     <FolderStatusIcon status={FolderStatus.PENDING} size={20} />
                     Running
-                    <FolderStatusIcon status={FolderStatus.RUNNING} size={20} />
+                    <FolderStatusIcon status={FolderStatus.IMPORTING} size={20} />
                     Tagged
-                    <FolderStatusIcon status={FolderStatus.TAGGED} size={20} />
+                    <FolderStatusIcon status={FolderStatus.PREVIEWING} size={20} />
                     Imported
                     <FolderStatusIcon status={FolderStatus.IMPORTED} size={20} />
+                    Undone
+                    <FolderStatusIcon status={FolderStatus.DELETED} size={20} />
+                    Undoing
+                    <FolderStatusIcon status={FolderStatus.DELETING} size={20} />
                 </Box>
             </Box>
 

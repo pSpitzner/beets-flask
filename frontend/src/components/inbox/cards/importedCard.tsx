@@ -10,17 +10,18 @@ import {
     Skeleton,
     Typography,
 } from "@mui/material";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 
 import { APIError } from "@/api/common";
 import { albumImportedOptions } from "@/api/library";
-import { sessionQueryOptions } from "@/api/session";
+import { enqueueMutationOptions, sessionQueryOptions } from "@/api/session";
 import { BackButton } from "@/components/common/inputs/back";
 import { JSONPretty } from "@/components/common/json";
 import { humanizeBytes } from "@/components/common/units/bytes";
 import { relativeTime } from "@/components/common/units/time";
 import {
     AlbumResponseMinimalExpanded,
+    EnqueueKind,
     Progress,
     SerializedCandidateState,
     SerializedTaskState,
@@ -28,6 +29,7 @@ import {
 
 import { CardHeader } from "./common";
 import { Code } from "./folderCard";
+import { useStatusSocket } from "@/components/common/websocket/status";
 
 export function ImportedCard({
     folderHash,
@@ -42,6 +44,9 @@ export function ImportedCard({
             folderHash,
         })
     );
+
+    const { socket } = useStatusSocket();
+    const { mutate, isPending } = useMutation(enqueueMutationOptions);
 
     if (!session || session.status.progress < Progress.IMPORT_COMPLETED) {
         return null;
@@ -73,8 +78,19 @@ export function ImportedCard({
                 <Button
                     variant="outlined"
                     color="secondary"
+                    loading={isPending}
                     sx={{ ml: "auto" }}
-                    disabled
+                    onClick={() => {
+                        mutate({
+                            socket,
+                            selected: {
+                                hashes: [folderHash],
+                                paths: [folderPath],
+                            },
+                            kind: EnqueueKind.IMPORT_UNDO,
+                            delete_files: true,
+                        });
+                    }}
                 >
                     Undo Import
                 </Button>

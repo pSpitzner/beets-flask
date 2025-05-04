@@ -5,7 +5,6 @@ from enum import Enum
 from typing import TYPE_CHECKING, Awaitable, Callable, ParamSpec, TypeVar
 
 from beets.ui import _open_library
-from rq.job import Job
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 

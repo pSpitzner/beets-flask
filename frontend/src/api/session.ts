@@ -113,6 +113,8 @@ export async function invalidateSession(
 /* -------------------------------- Mutations ------------------------------- */
 
 // see related invoker/enqueue.py functions for more details
+// this does not automatically come from py2ts, but we want certain
+// parameters that are allowed depending on the kind
 type TaskIdMap<T> = {
     [key: SerializedTaskState["id"]]: T;
 };
@@ -133,10 +135,21 @@ interface EnqueueImportCandidate {
     duplicate_action?: DuplicateAction | TaskIdMap<DuplicateAction>;
 }
 
+interface EnqueueImportBootleg {
+    kind: EnqueueKind.IMPORT_BOOTLEG;
+}
+
+interface EnqueueImportUndo {
+    kind: EnqueueKind.IMPORT_UNDO;
+    delete_files?: boolean;
+}
+
 type EnqueueParams =
     | EnqueuePreviewAddCandidate
     | EnqueuePreview
-    | EnqueueImportCandidate;
+    | EnqueueImportCandidate
+    | EnqueueImportBootleg
+    | EnqueueImportUndo;
 
 /** Enqueue a new task
  * i.e. tag a folder of import a folder

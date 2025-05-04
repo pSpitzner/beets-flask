@@ -1,4 +1,5 @@
 import {
+    ClipboardCheckIcon,
     ClipboardIcon,
     EllipsisVerticalIcon,
     HistoryIcon,
@@ -8,7 +9,7 @@ import {
     TerminalIcon,
     Trash2Icon,
 } from "lucide-react";
-import { forwardRef, Ref, useEffect, useRef, useState } from "react";
+import { forwardRef, Ref, useEffect, useMemo, useRef, useState } from "react";
 import {
     Box,
     BoxProps,
@@ -97,7 +98,7 @@ export function FolderActionsSpeedDial() {
                     tooltip="Retag"
                     mutationOptions={enqueueMutationOptions}
                     mutateArgs={{
-                        socket: socket,
+                        socket,
                         selected,
                         kind: EnqueueKind.PREVIEW,
                     }}
@@ -111,14 +112,18 @@ export function FolderActionsSpeedDial() {
                     // imports best candidate that is already present, independent of threshold
                     // or retag & import, ignoring any configured thresholds
                     mutationOptions={enqueueMutationOptions}
-                    mutateArgs={{ selected, kind: EnqueueKind.IMPORT_CANDIDATE }}
+                    mutateArgs={{
+                        socket,
+                        selected,
+                        kind: EnqueueKind.IMPORT_CANDIDATE,
+                    }}
                 />
 
                 <SpeedDialMutationAction
                     icon={<SourceTypeIcon type="asis" />}
-                    tooltip="Import (asis)"
+                    tooltip="Import (bootleg)"
                     mutationOptions={enqueueMutationOptions}
-                    mutateArgs={{ selected, kind: EnqueueKind.IMPORT_BOOTLEG }}
+                    mutateArgs={{ socket, selected, kind: EnqueueKind.IMPORT_BOOTLEG }}
                 />
 
                 <TerminalImportAction />
@@ -127,14 +132,17 @@ export function FolderActionsSpeedDial() {
 
                 <CopyPathAction />
                 <DeleteFoldersAction />
-
                 <SpeedDialMutationAction
                     icon={<HistoryIcon />}
                     tooltip="Undo Import"
                     mutationOptions={enqueueMutationOptions}
-                    mutateArgs={{}}
+                    mutateArgs={{
+                        socket,
+                        selected,
+                        kind: EnqueueKind.IMPORT_UNDO,
+                        delete_files: true,
+                    }}
                 />
-
                 <RefreshAllFoldersButton />
             </SpeedDial>
         </Zoom>
@@ -317,17 +325,7 @@ function SpeedDialAction({
 function TerminalImportAction({ ...props }: SpeedDialActionProps) {
     const { inputText, clearInput } = useTerminalContext();
     const { selected } = useFolderSelectionContext();
-    const text = useRef("");
     const navigate = useNavigate();
-
-    useEffect(() => {
-        const selectedPaths = selected.paths.map(_escapePathForBash);
-        if (selectedPaths.length > 1) {
-            text.current = "\\\n  " + selectedPaths.join(" \\\n  ");
-        } else {
-            text.current = selectedPaths.join(" ");
-        }
-    }, [selected, text]);
 
     return (
         <SpeedDialAction
@@ -335,7 +333,14 @@ function TerminalImportAction({ ...props }: SpeedDialActionProps) {
             tooltip="Import (cli)"
             onClick={() => {
                 clearInput();
-                inputText(`beet import -t ${text.current}`);
+                let text = "";
+                const selectedPaths = selected.paths.map(_escapePathForBash);
+                if (selectedPaths.length > 1) {
+                    text = "\\\n  " + selectedPaths.join(" \\\n  ");
+                } else {
+                    text = selectedPaths.join(" ");
+                }
+                inputText(`beet import -t ${text}`);
                 navigate({
                     to: "/terminal",
                 }).catch(console.error);
@@ -368,24 +373,30 @@ function DeleteFoldersAction({ ...props }: SpeedDialActionProps) {
 }
 
 function CopyPathAction({ ...props }: SpeedDialActionProps) {
-    const { selected, deselectAll } = useFolderSelectionContext();
-    const text = useRef("");
-
-    useEffect(() => {
-        const selectedPaths = selected.paths.map(_escapePathForBash);
-        if (selectedPaths.length > 1) {
-            text.current = selectedPaths.join("\\\n");
-        } else {
-            text.current = selectedPaths.join(" ");
-        }
-    }, [selected, text]);
+    const { selected } = useFolderSelectionContext();
+    const [copied, setCopied] = useState(false);
 
     return (
         <SpeedDialAction
-            icon={<ClipboardIcon />}
+            icon={!copied ? <ClipboardIcon /> : <ClipboardCheckIcon />}
             tooltip="Copy path"
             onClick={() => {
-                navigator.clipboard.writeText(text.current).catch(console.error);
+                const config_escape_path = false; // TODO: get from config
+                let text = "";
+                let selectedPaths: string[];
+                if (config_escape_path) {
+                    selectedPaths = selected.paths.map(_escapePathForBash);
+                } else {
+                    selectedPaths = selected.paths;
+                }
+                if (selectedPaths.length > 1) {
+                    text = selectedPaths.join("\\n");
+                } else {
+                    text = selectedPaths.join(" ");
+                }
+                navigator.clipboard.writeText(text).catch(console.error);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 5000);
             }}
             {...props}
         />

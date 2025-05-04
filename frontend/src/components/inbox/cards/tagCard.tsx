@@ -1,4 +1,10 @@
-import { ArrowDownIcon, ArrowLeftIcon, ArrowRightIcon, TagIcon } from "lucide-react";
+import {
+    ArrowDownIcon,
+    ArrowLeftIcon,
+    ArrowRightIcon,
+    HistoryIcon,
+    TagIcon,
+} from "lucide-react";
 import React, { useEffect, useMemo, useState, useTransition } from "react";
 import {
     Alert,
@@ -135,6 +141,9 @@ function UserSelection({ session }: { session: SerializedSessionState }) {
             <Divider />
             {session.exc?.type === "DuplicateException" && (
                 <DuplicateWarning exc={session.exc} />
+            )}
+            {session.status.progress == Progress.DELETION_COMPLETED && (
+                <UndoneWarning />
             )}
             <CandidateSelectionArea
                 key={currentTask.id}
@@ -534,6 +543,25 @@ function DuplicateWarning({
                 {exc.message}
                 <br />
                 Pick another candidate, or choose what to do with duplicates!
+            </Box>
+        </Alert>
+    );
+}
+
+function UndoneWarning({ ...props }: AlertProps) {
+    return (
+        <Alert
+            severity="info"
+            icon={<HistoryIcon />}
+            sx={{
+                ".MuiAlert-message": { width: "100%" },
+            }}
+            {...props}
+        >
+            <AlertTitle>Session was undone</AlertTitle>
+            <Box>
+                You had previously imported this session, but undid the import. All
+                imported files have been removed from your library.
             </Box>
         </Alert>
     );

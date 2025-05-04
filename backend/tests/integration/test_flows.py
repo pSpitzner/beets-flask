@@ -319,9 +319,7 @@ class TestImportBest(
 
         # FIXME: We might want to raise our own exception here
         assert exc is not None
-        assert (
-            exc["message"] == "Duplicate action 'ask', but no user choice was provided."
-        )
+        assert exc["type"] == "DuplicateException"
 
     async def test_undo(self, db_session: Session, path: Path):
         """Test the undo of the import process.
@@ -428,6 +426,19 @@ class TestImportBest(
         assert self.statuses[0].status == FolderStatus.IMPORTING
         assert self.statuses[1].status == FolderStatus.IMPORTED
 
+        # After import we should not have a duplicate id anymore
+        session_state = db_session.execute(stmt).scalar()
+        assert session_state is not None
+        live_state = session_state.to_live_state()
+        assert live_state is not None
+
+        for task in live_state.task_states:
+            chosen_candidate = task.chosen_candidate_state
+            assert chosen_candidate is not None
+            assert len(chosen_candidate.duplicate_ids) == 0, (
+                "Should not have duplicates after import"
+            )
+
     async def test_undo_with_missing_beets_items(self, db_session: Session, path: Path):
         f = Folder.from_path(path)
         items = self.beets_lib.items()
@@ -443,7 +454,7 @@ class TestImportBest(
         )
 
         assert exc is not None
-        assert exc["message"] == "No items found that match this import session id."
+        assert exc["type"] == "IntegrityException"
 
 
 class TestChooseCandidatesSingleTask(
