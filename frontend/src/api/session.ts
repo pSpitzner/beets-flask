@@ -232,6 +232,7 @@ export const enqueueMutationOptions: UseMutationOptions<
     // Fetch new session on success
     onSuccess: async (_data, { selected }) => {
         const predicate = (query: Query) => {
+            if (query.queryKey[0] == "artists") return true;
             if (query.queryKey[0] !== "session") return false;
             if (!query.queryKey[1]) return false;
             // Lets just invalidate all session with this path or hash

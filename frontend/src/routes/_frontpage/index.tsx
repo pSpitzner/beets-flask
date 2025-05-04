@@ -1,5 +1,6 @@
 import { BookOpenIcon, BugIcon, GithubIcon } from "lucide-react";
 import { Box, Link, Typography, useTheme } from "@mui/material";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { inboxStatsQueryOptions } from "@/api/inbox";
@@ -29,7 +30,8 @@ export const Route = createFileRoute("/_frontpage/")({
  * underneath. This may also be used to render a modal.
  */
 function Index() {
-    const [libraryStats, inboxStats] = Route.useLoaderData();
+    const { data: inboxStats } = useSuspenseQuery(inboxStatsQueryOptions());
+    const { data: libraryStats } = useSuspenseQuery(libraryStatsQueryOptions());
 
     return (
         <PageWrapper

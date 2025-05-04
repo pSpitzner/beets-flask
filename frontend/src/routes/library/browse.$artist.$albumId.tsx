@@ -2,6 +2,7 @@ import { AudioLinesIcon } from "lucide-react";
 import { useMemo } from "react";
 import z from "zod";
 import { Typography, useMediaQuery } from "@mui/material";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, Outlet, useParams } from "@tanstack/react-router";
 
 import { albumQueryOptions } from "@/api/library";
@@ -42,8 +43,10 @@ function ItemsRoute() {
  * current item is shown as a breadcrumb instead.
  */
 function Items() {
-    const album = Route.useLoaderData();
     const params = useParams({ strict: false });
+    const { data: album } = useSuspenseQuery(
+        albumQueryOptions(params.albumId!, true, true)
+    );
     const isMobile = useMediaQuery((theme) => theme.breakpoints.down("laptop"));
 
     const data = useMemo(() => {

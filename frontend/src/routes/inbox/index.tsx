@@ -228,7 +228,7 @@ function InboxRouteHeader({ ...props }: BoxProps) {
 function InfoDescription() {
     const theme = useTheme();
     const [open, setOpen] = useState(false);
-    const data = Route.useLoaderData();
+    const { data } = useSuspenseQuery(inboxQueryOptions());
 
     const handleClose = () => {
         setOpen(false);

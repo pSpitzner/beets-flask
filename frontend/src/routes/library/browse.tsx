@@ -2,6 +2,7 @@ import { UserRoundIcon } from "lucide-react";
 import { ReactNode, useMemo, useState } from "react";
 import { styled, Typography, useMediaQuery, useTheme } from "@mui/material";
 import Box from "@mui/material/Box";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, Outlet, useParams } from "@tanstack/react-router";
 
 import { artistsQueryOptions } from "@/api/library";
@@ -34,7 +35,7 @@ function ArtistRoute() {
  * current artist is shown as a breadcrumb instead.
  */
 function Artists() {
-    const artists = Route.useLoaderData();
+    const { data: artists } = useSuspenseQuery(artistsQueryOptions());
     const params = useParams({ strict: false });
     const isMobile = useMediaQuery(useTheme().breakpoints.down("laptop"));
 

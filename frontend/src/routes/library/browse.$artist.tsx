@@ -1,6 +1,7 @@
 import { Disc3Icon } from "lucide-react";
 import { useMemo } from "react";
 import { Typography, useMediaQuery } from "@mui/material";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import {
     createFileRoute,
     Link,
@@ -44,8 +45,10 @@ function AlbumsRoute() {
  * current album is shown as a breadcrumb instead.
  */
 function Albums() {
-    const albums = Route.useLoaderData();
     const params = useParams({ strict: false });
+    const { data: albums } = useSuspenseQuery(
+        albumsByArtistQueryOptions(params.artist!, false, true)
+    );
     const isMobile = useMediaQuery((theme) => theme.breakpoints.down("laptop"));
 
     // Allow to deselect the album

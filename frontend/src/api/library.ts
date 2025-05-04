@@ -60,6 +60,7 @@ export const artistsQueryOptions = () => ({
         const response = await fetch(`/library/artist/`);
         return (await response.json()) as { name: string }[];
     },
+    refetchOnWindowFocus: "always" as const,
 });
 
 interface AlbumResponseFull extends AlbumResponse {

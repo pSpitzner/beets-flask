@@ -1,5 +1,6 @@
 import z from "zod";
 import Box from "@mui/material/Box";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { itemQueryOptions } from "@/api/library";
@@ -11,7 +12,6 @@ export const Route = createFileRoute(`/library/browse/$artist/$albumId/$itemId`)
     parseParams: (params) => ({
         itemId: z.number().int().parse(parseInt(params.itemId)),
     }),
-    // PS 24-07-26: I kept the loader, although the new TrackView does query on its own. because it uses the same querykeys, i suppose pre-loading should still work.
     loader: async (opts) =>
         await opts.context.queryClient.ensureQueryData(
             itemQueryOptions(opts.params.itemId, false)
@@ -21,7 +21,8 @@ export const Route = createFileRoute(`/library/browse/$artist/$albumId/$itemId`)
 
 /** Shows a singular item */
 function ItemPage() {
-    const data = Route.useLoaderData();
+    const params = Route.useParams();
+    const { data } = useSuspenseQuery(itemQueryOptions(params.itemId, false));
 
     return (
         <Content>
