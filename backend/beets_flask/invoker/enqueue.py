@@ -277,6 +277,19 @@ def enqueue_import_candidate(
                     f"Candidate with id {candidate_id} does not exist in the database."
                 )
 
+    # For convenience: if the user calls this but no preview was generated before,
+    # use the auto-import instead (which also fetches previews).
+    try:
+        with db_session_factory() as db_session:
+            _get_live_state_by_folder(hash, path, db_session)
+            # raises if no state found
+    except:
+        log.info(
+            f"No previous session state fround for {hash=} {path=} "
+            + "switching to auto-import"
+        )
+        return enqueue_import_auto(hash, path, extra_meta)
+
     job = _enqueue(
         import_queue,
         run_import_candidate,
@@ -302,17 +315,30 @@ def enqueue_import_auto(hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs
     See AutoImportSession for more details.
     """
 
-    kwargs["auto_import"] = True
+    group_albums: bool | None = kwargs.pop("group_albums", None)
+    autotag: bool | None = kwargs.pop("autotag", None)
+    import_threshold: float | None = kwargs.pop("import_threshold", None)
+    duplicate_action: str | None = kwargs.pop("duplicate_action", None)
+
+    if len(kwargs.keys()) > 0:
+        raise InvalidUsageException(
+            "EnqueueKind.IMPORT_AUTO only accepts the following kwargs: "
+            + "group_albums, autotag, import_threshold, duplicate_action."
+        )
 
     # We only assign the on_success callback (likely coming
     # via a kwarg) to the second job!
-    job1 = preview_queue.enqueue(run_preview, hash, path, **kwargs)
+    job1 = preview_queue.enqueue(
+        run_preview, hash, path, group_albums=group_albums, autotag=autotag, **kwargs
+    )
     _set_job_meta(job1, hash, path, EnqueueKind._AUTO_PREVIEW, extra_meta)
     job2 = _enqueue(
         import_queue,
         run_import_auto,
         hash,
         path,
+        import_threshold=import_threshold,
+        duplicate_action=duplicate_action,
         **kwargs,
         depends_on=job1,  # type: ignore a bit of an hack to get depends_on working
     )
@@ -518,13 +544,21 @@ async def run_import_candidate(
 # redis import queue
 @exception_as_return_value
 @emit_folder_status(before=FolderStatus.IMPORTING, after=FolderStatus.IMPORTED)
-async def run_import_auto(hash: str, path: str):
-    # TODO: add duplicate action
+async def run_import_auto(
+    hash: str,
+    path: str,
+    import_threshold: float | None,
+    duplicate_action: DuplicateAction | None,
+):
     log.info(f"Auto Import task on {hash=} {path=}")
 
     with db_session_factory() as db_session:
         s_state_live = _get_live_state_by_folder(hash, path, db_session)
-        i_session = AutoImportSession(s_state_live)
+        i_session = AutoImportSession(
+            s_state_live,
+            import_threshold=import_threshold,
+            duplicate_action=duplicate_action,
+        )
 
         try:
             i_session.run_sync()

@@ -61,6 +61,16 @@ class IntegrityException(ApiException):
     status_code: int = 409
 
 
+class NotImportedException(ApiException):
+    """Not imported error.
+
+    So for only used for the auto import session, when the best
+    match is worse than the threshold.
+    """
+
+    status_code: int = 409
+
+
 class UserException(Exception):
     """Base class for errors caused by user input or config."""
 

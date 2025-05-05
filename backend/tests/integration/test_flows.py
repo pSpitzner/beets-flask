@@ -16,6 +16,7 @@ from beets_flask.disk import Folder
 from beets_flask.importer.progress import FolderStatus
 from beets_flask.invoker.enqueue import (
     Progress,
+    run_import_auto,
     run_import_candidate,
     run_import_undo,
     run_preview,
@@ -458,6 +459,64 @@ class TestImportBest(
 
         assert exc is not None
         assert exc["type"] == "IntegrityException"
+
+
+class TestImportAuto(
+    InvokerStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
+):
+    """Test that the preview + threshold-dependent import works.
+
+    The flow is as follows:
+    - Generate Preview
+    - Check treshold
+    - Import best candidate, but only when better than specified distance
+    """
+
+    @pytest.fixture()
+    def path(self) -> Path:
+        path = album_path_absolute(VALID_PATHS[0])
+        use_mock_tag_album(str(path))
+        return path
+
+    async def test_import_auto_accept(self, db_session: Session, path: Path):
+        """
+        Check that the import either fails or goes through, depending on the threshold.
+        """
+        stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
+        assert db_session.execute(stmt).scalar() is None, (
+            "Database should be empty before the test"
+        )
+
+        self.statuses = []
+
+        await run_preview(
+            "obsolete_hash_preview",
+            str(path),
+            group_albums=None,
+            autotag=None,
+        )
+
+        await run_import_auto(
+            "obsolete_hash_import_auto",
+            str(path),
+            import_threshold=0.0,
+            duplicate_action="remove",
+        )
+
+        assert len(self.statuses) == 4
+        assert self.statuses[2].status == FolderStatus.IMPORTING
+        assert self.statuses[3].status == FolderStatus.FAILED
+
+        await run_import_auto(
+            "obsolete_hash_import_auto",
+            str(path),
+            import_threshold=1.0,
+            duplicate_action="remove",
+        )
+
+        assert len(self.statuses) == 6
+        assert self.statuses[4].status == FolderStatus.IMPORTING
+        assert self.statuses[5].status == FolderStatus.IMPORTED
 
 
 class TestChooseCandidatesSingleTask(

@@ -25,6 +25,7 @@ from beets_flask.logger import log
 from beets_flask.server.exceptions import (
     DuplicateException,
     IntegrityException,
+    NotImportedException,
     to_serialized_exception,
 )
 from beets_flask.utility import capture_stdout_stderr
@@ -755,6 +756,9 @@ class AutoImportSession(ImportSession):
     perfect match is at 0. The same convention is used for thresholds.
 
     The default threshold is 0.04, so that a "96% match or better" will be imported.
+
+    Raises a `NotImportedException` if the match quality is worse than the threshold,
+    stopping the pipeline.
     """
 
     import_threshold: float
@@ -783,7 +787,9 @@ class AutoImportSession(ImportSession):
         super().__init__(state, config_overlay, **kwargs)
 
         if import_threshold is None:
-            self.get_config_value("match.strong_rec_thresh", float)
+            self.import_threshold = self.get_config_value(
+                "match.strong_rec_thresh", float
+            )
         else:
             self.import_threshold = import_threshold
 
@@ -793,13 +799,15 @@ class AutoImportSession(ImportSession):
         stages.insert(after="user_query", stage=match_threshold(self))
         return stages
 
-    def match_threshold(self, task: importer.ImportTask) -> bool:
+    def match_threshold(self, task: importer.ImportTask):
         """Check if the match quality is good enough to import.
 
         Returns true if the match quality is better than threshlold.
 
-        Note: that the return is just FYI. What stops the pipeline is that
-        we set task.choice to importer.action.SKIP.
+        Note: What stops the pipeline is that we set task.choice to importer.action.SKIP,
+        or raise an exception.
+
+        Currently raising, as we do not have a dedicated progress for "not imported".
         """
         try:
             task_state = self.state.get_task_state_for_task(task)
@@ -807,12 +815,20 @@ class AutoImportSession(ImportSession):
         except (AttributeError, TypeError):
             distance = 2.0
 
-        if distance <= self.import_threshold:
-            # beets upstream ways to handle this.
+        if distance > self.import_threshold:
+            log.debug(
+                f"Best candidate was worse than threshold {distance=} {self.import_threshold=}"
+            )
+            d = (1 - distance) * 100
+            t = (1 - self.import_threshold) * 100
+            raise NotImportedException(f"Match below threshold ({d:.0f}% < {t:.0f}%)")
+            # TODO: decide if we are fine raising here or want to build a custom progress
+            # beets would handle this via the task action:
             task.set_choice(importer.action.SKIP)
-            return False
-
-        return True
+        else:
+            log.info(
+                f"Best candidate was better than threshold, importing to library. {distance=} {self.import_threshold=}"
+            )
 
 
 @deprecated

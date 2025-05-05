@@ -165,11 +165,22 @@ export function FolderStatusIcon({
         case FolderStatus.PENDING:
             return <GrowingRipple size={props.size} color={props.color} />;
         case FolderStatus.PREVIEWING:
+            return (
+                <CircularProgress
+                    size={props.size}
+                    sx={{
+                        color: props.color || "inherit",
+                    }}
+                />
+            );
         case FolderStatus.IMPORTING:
             return (
                 <CircularProgress
                     size={props.size}
-                    sx={{ color: props.color || "inherit" }}
+                    sx={{
+                        color: props.color || "inherit",
+                    }}
+                    disableShrink
                 />
             );
         case FolderStatus.PREVIEWED:

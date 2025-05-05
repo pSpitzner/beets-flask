@@ -173,7 +173,8 @@ class StageOrder(dict):
         keys.insert(idx, name)
         values.insert(idx, stage)
 
-        self = StageOrder(zip(keys, values))
+        self.clear()
+        self.update(zip(keys, values))
 
 
 # --------------------------------- Decorator -------------------------------- #
