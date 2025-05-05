@@ -112,6 +112,7 @@ export interface SerializedTaskState {
 	items: Array<ItemInfo>;
 	current_metadata: Metadata;
 	candidates: Array<SerializedCandidateState>;
+	asis_candidate: SerializedCandidateState;
 	duplicate_action: null | string;
 	chosen_candidate_id: null | string;
 	completed: boolean;

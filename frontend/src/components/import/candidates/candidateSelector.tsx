@@ -93,6 +93,38 @@ export function CandidateSelector({
     );
 }
 
+type ClickHandler = (event: React.MouseEvent) => void;
+
+function useSingleAndDoubleClick({
+    onClick,
+    onDoubleClick,
+    delay = 250,
+}: {
+    onClick: ClickHandler;
+    onDoubleClick: ClickHandler;
+    delay?: number;
+}): ClickHandler {
+    const clickTimeout = useRef<number | null>(null);
+
+    const handler = useCallback(
+        (event: React.MouseEvent) => {
+            if (clickTimeout.current) {
+                clearTimeout(clickTimeout.current);
+                clickTimeout.current = null;
+                onDoubleClick(event);
+            } else {
+                clickTimeout.current = setTimeout(() => {
+                    onClick(event);
+                    clickTimeout.current = null;
+                }, delay);
+            }
+        },
+        [onClick, onDoubleClick, delay]
+    );
+
+    return handler;
+}
+
 export function SelectedCandidate({
     task,
     folderHash,
@@ -323,13 +355,7 @@ const CandidateDetailsRow = styled(Box)(({ theme }) => ({
     flexDirection: "column",
 }));
 
-function TopBar({
-    task,
-    folderHash,
-}: {
-    task: SerializedTaskState;
-    folderHash: string;
-}) {
+function TopBar({ task }: { task: SerializedTaskState }) {
     const theme = useTheme();
     const { expandedCandidates, collapseAll, expandAll } = useCandidateSelection();
 
@@ -471,6 +497,19 @@ function CandidateInfo({
     const theme = useTheme();
 
     const expanded = isExpanded(candidate.id);
+    const candidateSelected = selected === candidate.id;
+
+    const handleClicks = useSingleAndDoubleClick({
+        onClick: (e: React.MouseEvent) => {
+            e.stopPropagation();
+            setSelected(candidate.id);
+        },
+        onDoubleClick: (e: React.MouseEvent) => {
+            e.stopPropagation();
+            toggleExpanded(candidate.id);
+        },
+        delay: 200,
+    });
 
     useEffect(() => {
         // Set css data-expanded attribute to the ref element
@@ -484,11 +523,19 @@ function CandidateInfo({
         }
     }, [expanded, selected]);
 
-    const candidateSelected = selected === candidate.id;
-
     return useMemo(() => {
         return (
-            <CandidateInfoRow ref={ref}>
+            <CandidateInfoRow
+                ref={ref}
+                onClick={handleClicks}
+                sx={{
+                    cursor: "pointer",
+                    userSelect: "none",
+                    "&:hover": {
+                        backgroundColor: "action.hover",
+                    },
+                }}
+            >
                 <Box gridColumn="selector" display="flex" {...slotProps.selector}>
                     <Radio
                         checked={candidateSelected}
@@ -499,6 +546,7 @@ function CandidateInfo({
                         size="small"
                         sx={{
                             padding: 0,
+                            pointerEvents: "none",
                         }}
                         color="secondary"
                     />
@@ -523,7 +571,10 @@ function CandidateInfo({
                 </Box>
                 <Box gridColumn="toggle" display="flex">
                     <IconButton
-                        onClick={() => toggleExpanded(candidate.id)}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            toggleExpanded(candidate.id);
+                        }}
                         sx={{
                             padding: 0,
                             "& svg": {
