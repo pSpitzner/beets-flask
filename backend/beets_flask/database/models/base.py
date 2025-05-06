@@ -84,5 +84,15 @@ class Base(DeclarativeBase):
             raise ValueError(f"{cls.__name__} not found.")
         return item
 
+    @classmethod
+    def exist_all_ids(cls, ids: list[str], session: Session) -> bool:
+        """Check if an item exists for every given id."""
+        _ids = set(ids)
+        stmt = select(func.count()).select_from(cls).where(cls.id.in_(_ids))
+        count = session.execute(stmt).scalar()
+        if count is None or count != len(_ids):
+            return False
+        return True
+
     def to_dict(self) -> Mapping:
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}

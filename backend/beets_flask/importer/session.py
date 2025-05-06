@@ -1,10 +1,36 @@
+"""
+Session classes for the import pipeline.
+
+Sessions often take particular arguments, such as a duplicate action. In the simplest and most common case,
+each session has one task (i.e. one album) to deal with. Sometimes, however, one session may have multiple tasks,
+such as when one folder contains files from two albums.
+
+To account for this, we use the TaskMapping type.
+They contain an action to take for each task (mapping a task_id as string to the action), and the default value
+must be None (which means that the session uses the default action for that task, loaded from user config).
+
+When no mapping is given, the default action is used for all tasks.
+
+```
+TaskIdMappingArg = defaultdict[str, T | None] | None
+```
+
+If you want to pass a value to all tasks, you can omit looking up the task ids and
+instead use "*" as the key, which will apply the action to all tasks of the session.
+
+```
+action_for_all : TaskIdMappingArg[DuplicateAction] = {"*": "remove"}
+```
+"""
+
 import asyncio
 import logging
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from copy import deepcopy
+from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, List, Mapping, TypedDict, TypeGuard
+from typing import Any, Callable, List, Literal, TypedDict, TypeGuard, TypeVar, cast
 
 import nest_asyncio
 from beets import autotag, importer, plugins
@@ -49,6 +75,96 @@ from .stages import (
 from .states import ProgressState, SessionState
 
 nest_asyncio.apply()
+
+# ---------------------------------------------------------------------------- #
+#                               Types and helpers                              #
+# ---------------------------------------------------------------------------- #
+
+T = TypeVar("T")
+
+TaskIdMapping = defaultdict[str, T]
+TaskIdMappingArg = dict[str, T | None] | None
+
+
+def parse_task_id_mapping(mapping: TaskIdMappingArg[T], default: T) -> TaskIdMapping[T]:
+    """
+    Convert the flexible arguments to stricter TaskIdMapping that sessions use internally.
+
+    Parameters
+    ----------
+    mapping : TaskIdMappingArg
+        For each task_id (key) which action to take (value).
+        If None, the default action is used for all tasks.
+        If "*" is used as key, this action is used for all tasks, and only one key-value
+        pair is allowed.
+    default : T
+        Default value to use for all tasks that are not in the mapping, or "*".
+
+
+    Note
+    ----
+    TaskIdMappings are defaultdicts, which keeps the lower level logic simpler.
+    TaskIdMappingsArgs are just dicts, which are serializable trhough api and redis
+    thread bounds.
+    """
+
+    m: TaskIdMapping[T] = defaultdict(lambda: default)
+    if mapping is not None:
+        if "*" in mapping.keys():
+            if len(mapping) > 1:
+                raise ValueError(
+                    "If you use '*' as key, you cannot use any other keys in the mapping."
+                )
+            else:
+                return defaultdict(lambda: mapping["*"] or default)
+
+        for k, v in mapping.items():
+            if v is None:
+                continue
+            m[k] = v
+
+    return m
+
+
+class CandidateChoiceFallback(Enum):
+    """
+    Type for the candidate choice.
+
+    Candidate Choices are either a string (the candidate id) or a special case
+    (asis candidate, or the best one).
+    """
+
+    ASIS = 1
+    BEST = 2
+
+
+CandidateChoice = str | CandidateChoiceFallback
+
+
+class Search(TypedDict):
+    """Search for a candidate.
+
+    This is used to search for a candidate in the preview session.
+    """
+
+    search_ids: list[str]
+    search_artist: str | None
+    search_album: str | None
+
+
+def _is_search(d: Any) -> TypeGuard[Search]:
+    """Check if the given dict is a Search object."""
+    return (
+        d is not None
+        and isinstance(d, dict)
+        and "search_ids" in d
+        and isinstance(d["search_ids"], list)
+    )
+
+
+# ---------------------------------------------------------------------------- #
+#                                   Sessions                                   #
+# ---------------------------------------------------------------------------- #
 
 
 class BaseSession(importer.ImportSession, ABC):
@@ -342,39 +458,6 @@ class PreviewSession(BaseSession):
         return stages
 
 
-class Search(TypedDict):
-    """Search for a candidate.
-
-    This is used to search for a candidate in the preview session.
-    """
-
-    search_ids: list[str]
-    search_artist: str | None
-    search_album: str | None
-
-
-def is_search(d: Any) -> TypeGuard[Search]:
-    """Check if the given dict is a Search object."""
-    return (
-        d is not None
-        and isinstance(d, dict)
-        and "search_ids" in d
-        and isinstance(d["search_ids"], list)
-    )
-
-
-def is_search_mapping(
-    d: Search | Mapping[str, Search],
-) -> TypeGuard[Mapping[str, Search]]:
-    """Check if the given dict is a Mapping object."""
-    return (
-        d is not None
-        and isinstance(d, dict)
-        and all(isinstance(k, str) for k in d.keys())
-        and all(is_search(v) for v in d.values())
-    )
-
-
 class AddCandidatesSession(PreviewSession):
     """
     Preview session that adds a candidate to the ones already fetched.
@@ -383,13 +466,13 @@ class AddCandidatesSession(PreviewSession):
     candidates.
     """
 
-    search: Mapping[str, Search]
+    search: TaskIdMapping[Search | Literal["skip"]]
 
     def __init__(
         self,
         state: SessionState,
         config_overlay: dict | None = None,
-        search: Search | Mapping[str, Search] | None = None,
+        search: TaskIdMappingArg[Search | Literal["skip"]] = None,
         **kwargs,
     ):
         super().__init__(state, config_overlay, **kwargs)
@@ -397,45 +480,27 @@ class AddCandidatesSession(PreviewSession):
         if state.progress != Progress.PREVIEW_COMPLETED:
             raise ValueError("Cannot run AddCandidatesSession on non-preview state.")
 
-        # Validate given search
-        if search is None:
-            self.search = {}
-        elif is_search(search):
-            if len(self.state.task_states) > 1:
-                raise ValueError(
-                    "search must be a Mapping[str, Search] if multiple tasks are given"
-                )
-            self.search = defaultdict(lambda: search)
-        elif is_search_mapping(search):
-            self.search = search
-        else:
-            raise ValueError("search must be a Search or Mapping[str, Search]")
+        # None means skip search for this task
+        self.search = parse_task_id_mapping(search, "skip")
 
         # Reset task progress only for tasks that have search values
         # other tasks are skipped
         for task in self.state.task_states:
             if task.progress >= Progress.PREVIEW_COMPLETED:
-                try:
-                    self.search[task.id]
-                except KeyError:
-                    # this task does not have a search value
-                    continue
-                task.set_progress(Progress.LOOKING_UP_CANDIDATES - 1)
+                s = self.search[task.id]
+                if s != "skip":
+                    task.set_progress(Progress.LOOKING_UP_CANDIDATES - 1)
 
     def lookup_candidates(self, task: importer.ImportTask):
         """Amend the found candidate to the already existing candidates (if any)."""
         # see ref in lookup_candidates in beets/importer.py
 
         task_state = self.state.get_task_state_for_task_raise(task)
+        search = self.search[task_state.id]
 
-        try:
-            search = self.search[task_state.id]
-        except KeyError:
-            search = Search(
-                search_ids=[],
-                search_artist=None,
-                search_album=None,
-            )
+        if search == "skip":
+            log.debug(f"Skipping search for {task_state.id=}")
+            return
 
         if (
             search["search_artist"] is not None
@@ -460,20 +525,6 @@ class AddCandidatesSession(PreviewSession):
         task.rec = max(prop.recommendation, task.rec or autotag.Recommendation.none)
 
 
-from enum import Enum
-
-
-class ImportChoice(Enum):
-    """Enum for the import choice."""
-
-    ASIS = 1
-    BEST = 2
-
-
-# Either a string (the candidate id) or a special case: asis candidate, or the best one
-CandidateChoice = str | ImportChoice
-
-
 class ImportSession(BaseSession):
     """
     Import session that assumes we already have a match-id.
@@ -481,28 +532,28 @@ class ImportSession(BaseSession):
     Needs to run from an already finished Preview Session.
     """
 
-    candidate_id_mapping: Mapping[str, CandidateChoice | None]
-    duplicate_action: Mapping[str, DuplicateAction]
+    candidate_ids: TaskIdMapping[CandidateChoice]
+    duplicate_actions: TaskIdMapping[DuplicateAction]
 
     def __init__(
         self,
         state: SessionState,
         config_overlay: dict | None = None,
-        candidate_id: CandidateChoice | dict[str, CandidateChoice] = ImportChoice.BEST,
-        duplicate_action: DuplicateAction | None | dict[str, DuplicateAction] = None,
+        candidate_ids: TaskIdMappingArg[CandidateChoice] = None,
+        duplicate_actions: TaskIdMappingArg[DuplicateAction] = None,
     ):
         """Create new ImportSession.
 
         Parameters
         ----------
-        candidate_id : optional
+        candidate_ids : optional
             Either id of candidate(s) or the import choice. This is used to determine which
             candidate to import. If a dict is given, the keys are the task ids and the
             values are the candidate ids. You can also use the import choice enum
             `ImportChoice.ASIS` or `ImportChoice.BEST` to indicate that you want to
             import the candidate as-is or the best candidate.
             FIXME: at the moment asis is broken
-        duplicate_action : str
+        duplicate_actions : str
             The action to take if duplicates are found. One of "skip", "keep",
             "remove", "merge", "ask". If None, the default is read from
             the user config and applied to all tasks.
@@ -514,37 +565,20 @@ class ImportSession(BaseSession):
 
         super().__init__(state, config_overlay)
 
-        task_states = self.state.task_states
-        # Create a mapping for which candidate to import for each task.
-        # uses a default dict to allow for a single candidate id
-        if len(task_states) > 1 and isinstance(candidate_id, str):
-            raise ValueError(
-                "Candidate_id must be a dict with task ids as keys if multiple tasks are given"
-            )
-        if isinstance(candidate_id, dict):
-            self.candidate_id_mapping = defaultdict(lambda: None)
-            self.candidate_id_mapping.update(candidate_id)
-        else:
-            self.candidate_id_mapping = defaultdict(lambda: candidate_id)
-
         # Create a mapping for the duplicate action
-        # each task might have a different action, if none is given
-        # the default action is used from the config
-        if len(task_states) > 1 and isinstance(duplicate_action, str):
-            raise ValueError(
-                "Duplicate_action must be a dict with task ids as keys if multiple tasks are given"
-            )
-
+        # each task might have a different action.
+        # if none is given the default action is used from the config
         default_action: DuplicateAction = self.get_config_value(
             "import.duplicate_action", str
         )
-        if duplicate_action is None:
-            duplicate_action = default_action
-        if isinstance(duplicate_action, dict):
-            self.duplicate_action = defaultdict(lambda: default_action)
-            self.duplicate_action.update(duplicate_action)
-        else:
-            self.duplicate_action = defaultdict(lambda: duplicate_action)
+        self.duplicate_actions = parse_task_id_mapping(
+            duplicate_actions, default_action
+        )
+
+        # For candidates, None means to take best
+        self.candidate_ids = parse_task_id_mapping(
+            candidate_ids, CandidateChoiceFallback.BEST
+        )
 
     async def run_async(self) -> SessionState:
         # only allow import sessions to run on preview states (not other import states)
@@ -624,21 +658,17 @@ class ImportSession(BaseSession):
         task_state = self.state.get_task_state_for_task_raise(task)
 
         # Pick the candidate to import
-        candidate_id = self.candidate_id_mapping[task_state.id]
-        if candidate_id is None:  # indicates no candidate given, should error
-            raise ValueError(
-                f"Candidate id is None for task {task_state.id}. Please provide a candidate id!"
-            )
+        candidate_id = self.candidate_ids[task_state.id]
 
         if isinstance(candidate_id, str):
             candidate_state = task_state.get_candidate_state_by_id(candidate_id)
             if candidate_state is None:
                 raise ValueError(f"Candidate with id {candidate_id} not found.")
-        elif candidate_id == ImportChoice.BEST:
+        elif candidate_id == CandidateChoiceFallback.BEST:
             candidate_state = task_state.best_candidate_state
             if candidate_state is None:
                 raise ValueError(f"No candidate found.")
-        elif candidate_id == ImportChoice.ASIS:
+        elif candidate_id == CandidateChoiceFallback.ASIS:
             candidate_state = task_state.asis_candidate
         else:
             raise NotImplementedError("ImportChoice.ASIS not implemented yet.")
@@ -667,7 +697,7 @@ class ImportSession(BaseSession):
         self, task: importer.ImportTask, found_duplicates: list[BeetsAlbum]
     ):
         log.debug(
-            f"Resolving duplicates for {task} with action {self.duplicate_action}"
+            f"Resolving duplicates for {task} with action {self.duplicate_actions}"
         )
 
         if len(found_duplicates) == 0:
@@ -675,7 +705,7 @@ class ImportSession(BaseSession):
             return
 
         task_state = self.state.get_task_state_for_task_raise(task)
-        task_duplicate_action = self.duplicate_action[task_state.id]
+        task_duplicate_action = self.duplicate_actions[task_state.id]
         task_state.duplicate_action = task_duplicate_action
         match task_duplicate_action:
             case "skip":
@@ -693,7 +723,7 @@ class ImportSession(BaseSession):
                 )
             case _:
                 raise DuplicateException(
-                    f"Unknown duplicate action: {self.duplicate_action}"
+                    f"Unknown duplicate action: {self.duplicate_actions}"
                 )
 
 
@@ -822,7 +852,6 @@ class AutoImportSession(ImportSession):
             d = (1 - distance) * 100
             t = (1 - self.import_threshold) * 100
             raise NotImportedException(f"Match below threshold ({d:.0f}% < {t:.0f}%)")
-            # TODO: decide if we are fine raising here or want to build a custom progress
             # beets would handle this via the task action:
             task.set_choice(importer.action.SKIP)
         else:

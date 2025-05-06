@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from enum import Enum
-from typing import TYPE_CHECKING, Awaitable, Callable, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Awaitable, Callable, Literal, ParamSpec, TypeVar
 
 from beets.ui import _open_library
 from sqlalchemy import func, select
@@ -22,10 +22,11 @@ from beets_flask.importer.session import (
     AutoImportSession,
     BootlegImportSession,
     CandidateChoice,
-    ImportChoice,
+    CandidateChoiceFallback,
     ImportSession,
     PreviewSession,
     Search,
+    TaskIdMappingArg,
     UndoSession,
     delete_from_beets,
 )
@@ -197,11 +198,16 @@ def enqueue_preview_add_candidates(
     # May contain search_ids, search_artist, search_album
     # As always to allow task mapping
 
-    search = kwargs.pop("search", None)
+    search: TaskIdMappingArg[Search | Literal["skip"]] = kwargs.pop("search", None)
     if len(kwargs.keys()) > 0:
         raise InvalidUsageException(
             "EnqueueKind.PREVIEW_ADD_CANDIDATES only accepts the following kwargs: "
             + "search"
+        )
+
+    if search is None:
+        raise InvalidUsageException(
+            "EnqueueKind.PREVIEW_ADD_CANDIDATES requires a search kwarg."
         )
 
     # kwargs are mixed between our own function and redis enqueue -.-
@@ -226,60 +232,40 @@ def enqueue_import_candidate(
 
     Kwargs
     ------
-    candidate_id : str | None
+    candidate_id : CandidateChoice | dict[str, CandidateChoice] | None
         A valid candidate id for a candidate that has been fetched in a preview
-        session. If none is given, the best candidate is used.
+        session.
+        None stands for best, is resolved in the session.
+        additionally, if a dict is provided, it maps from task_id to candidate, and dupicate action, respectively.
+    duplicate_actions
+        See candidate_id.
     TODO: Also allowed: "asis" (no exact match needed, there is only one
         asis-candidate).
     """
 
-    # May contain candidate_id and duplicate_action
-    candidate_id: CandidateChoice | dict[str, CandidateChoice] | None = kwargs.pop(
-        "candidate_id", None
-    )
-    duplicate_action: DuplicateAction | dict[str, DuplicateAction] | None = kwargs.pop(
-        "duplicate_action", None
+    candidate_ids: TaskIdMappingArg[CandidateChoice] = kwargs.pop("candidate_ids", None)
+    duplicate_actions: TaskIdMappingArg[DuplicateAction] = kwargs.pop(
+        "duplicate_actions", None
     )
 
     if len(kwargs.keys()) > 0:
         raise InvalidUsageException(
             "EnqueueKind.IMPORT only accepts the following kwargs: "
-            + "candidate_id, duplicate_action."
+            + "candidate_ids, duplicate_actions."
         )
 
-    # Validate if candidate_id exists
-    if candidate_id is not None:
-        candidate_ids = []
-        if isinstance(candidate_id, dict):
-            candidate_ids = candidate_id.values()
-        elif isinstance(candidate_id, str):
-            candidate_ids = [candidate_id]
-        else:
-            raise InvalidUsageException(
-                "candidate_id must be a string or a dict of strings or none."
-            )
-
-        if len(candidate_ids) == 0:
-            raise InvalidUsageException(
-                "candidate_id must be a string or a dict of strings or none."
-            )
-
-        # Check if candidate_id exists in the database
-        with db_session_factory() as db_session:
-            stmt = (
-                select(func.count())
-                .select_from(CandidateStateInDb)
-                .where(CandidateStateInDb.id.in_(candidate_ids))
-            )
-            nCandidates = db_session.execute(stmt).scalar()
-            if nCandidates is None or nCandidates != len(candidate_ids):
-                raise InvalidUsageException(
-                    f"Candidate with id {candidate_id} does not exist in the database."
-                )
+    # TODO: Validation: lookup candidates exits
 
     # For convenience: if the user calls this but no preview was generated before,
     # use the auto-import instead (which also fetches previews).
     try:
+        # TODO: along with validation:
+        # we need a special flag as task_id that stands for "do this for all tasks"
+        # used along with candidate_ids length == 1.
+        # then, only run the fallback auto-import for the args coming from gui import button
+
+        # If the user did not specify a candidate_id, we assume they want the best
+        # candidate.
         with db_session_factory() as db_session:
             _get_live_state_by_folder(hash, path, db_session)
             # raises if no state found
@@ -295,8 +281,8 @@ def enqueue_import_candidate(
         run_import_candidate,
         hash,
         path,
-        candidate_id=candidate_id,
-        duplicate_action=duplicate_action,
+        candidate_ids=candidate_ids,
+        duplicate_actions=duplicate_actions,
     )
     _set_job_meta(job, hash, path, EnqueueKind.IMPORT_CANDIDATE, extra_meta)
     return job
@@ -318,12 +304,12 @@ def enqueue_import_auto(hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs
     group_albums: bool | None = kwargs.pop("group_albums", None)
     autotag: bool | None = kwargs.pop("autotag", None)
     import_threshold: float | None = kwargs.pop("import_threshold", None)
-    duplicate_action: str | None = kwargs.pop("duplicate_action", None)
+    duplicate_actions: str | None = kwargs.pop("duplicate_actions", None)
 
     if len(kwargs.keys()) > 0:
         raise InvalidUsageException(
             "EnqueueKind.IMPORT_AUTO only accepts the following kwargs: "
-            + "group_albums, autotag, import_threshold, duplicate_action."
+            + "group_albums, autotag, import_threshold, duplicate_actions."
         )
 
     # We only assign the on_success callback (likely coming
@@ -338,9 +324,9 @@ def enqueue_import_auto(hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs
         hash,
         path,
         import_threshold=import_threshold,
-        duplicate_action=duplicate_action,
+        duplicate_actions=duplicate_actions,
         **kwargs,
-        depends_on=job1,  # type: ignore a bit of an hack to get depends_on working
+        depends_on=job1,  # type: ignore a bit of an hack to get dependency working in rq
     )
     _set_job_meta(job2, hash, path, EnqueueKind._AUTO_IMPORT, extra_meta)
 
@@ -463,15 +449,24 @@ async def run_preview(
     log.info(f"Preview done. {hash=} {path=}")
 
 
+from collections import defaultdict
+
+
 # redis preview queue
 @exception_as_return_value
 @emit_folder_status(before=FolderStatus.PREVIEWING, after=FolderStatus.PREVIEWED)
 async def run_preview_add_candidates(
-    hash: str, path: str, search: Search | dict[str, Search]
+    hash: str, path: str, search: TaskIdMappingArg[Search | Literal["skip"]]
 ):
     """Adds a candidate to an session which is already in the status tagged.
 
     This only works if all session tasks are tagged. I.e. preview completed.
+
+    Parameters
+    ----------
+    search : dict[str, Search]
+        A dictionary of task ids to search dicts. No value or none skips the search
+        for this task.
     """
     log.info(f"Add preview candidates task on {hash=}")
 
@@ -503,10 +498,8 @@ async def run_preview_add_candidates(
 async def run_import_candidate(
     hash: str,
     path: str,
-    candidate_id: CandidateChoice
-    | dict[str, CandidateChoice]
-    | None = ImportChoice.BEST,
-    duplicate_action: DuplicateAction | dict[str, DuplicateAction] | None = None,
+    candidate_ids: TaskIdMappingArg[CandidateChoice],
+    duplicate_actions: TaskIdMappingArg[DuplicateAction],
 ):
     """Imports a candidate that has been fetched in a preview session.
 
@@ -519,16 +512,13 @@ async def run_import_candidate(
     """
     log.info(f"Import task on {hash=} {path=}")
 
-    if candidate_id is None:
-        candidate_id = ImportChoice.BEST
-
     with db_session_factory() as db_session:
         s_state_live = _get_live_state_by_folder(hash, path, db_session)
 
         i_session = ImportSession(
             s_state_live,
-            candidate_id=candidate_id,
-            duplicate_action=duplicate_action,
+            candidate_ids=candidate_ids,
+            duplicate_actions=duplicate_actions,
         )
 
         try:
@@ -548,7 +538,7 @@ async def run_import_auto(
     hash: str,
     path: str,
     import_threshold: float | None,
-    duplicate_action: DuplicateAction | None,
+    duplicate_actions: TaskIdMappingArg[DuplicateAction],
 ):
     log.info(f"Auto Import task on {hash=} {path=}")
 
@@ -557,7 +547,7 @@ async def run_import_auto(
         i_session = AutoImportSession(
             s_state_live,
             import_threshold=import_threshold,
-            duplicate_action=duplicate_action,
+            duplicate_actions=duplicate_actions,
         )
 
         try:

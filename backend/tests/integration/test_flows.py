@@ -14,6 +14,7 @@ import pytest
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
 from beets_flask.disk import Folder
 from beets_flask.importer.progress import FolderStatus
+from beets_flask.importer.session import CandidateChoice, Search, TaskIdMappingArg
 from beets_flask.invoker.enqueue import (
     Progress,
     run_import_auto,
@@ -153,11 +154,13 @@ class TestImportBest(
             "obsolete_hash_preview",
             str(path),
             search={
-                "search_ids": [
-                    id_99_red_balloons,
-                ],  # Nena 99 Red Balloons
-                "search_artist": None,
-                "search_album": None,
+                "*": {
+                    "search_ids": [
+                        id_99_red_balloons,
+                    ],  # Nena 99 Red Balloons
+                    "search_artist": None,
+                    "search_album": None,
+                }
             },
         )
 
@@ -224,7 +227,8 @@ class TestImportBest(
         exc = await run_import_candidate(
             "obsolete_hash_import",
             str(path),
-            candidate_id=None,  # None uses best match
+            candidate_ids=None,  # None uses best match
+            duplicate_actions=None,  # None uses config
         )
         assert exc is None, "Should not return an error"
         # raise NotImplementedError("Implement me")
@@ -283,8 +287,8 @@ class TestImportBest(
         exc = await run_import_candidate(
             "obsolete_hash_import",
             str(path),
-            candidate_id=None,  # None uses best match
-            duplicate_action="ask",
+            candidate_ids=None,  # None uses best match
+            duplicate_actions={"*": "ask"},
         )
 
         assert exc is not None
@@ -317,8 +321,8 @@ class TestImportBest(
         exc = await run_import_candidate(
             "obsolete_hash_import",
             str(path / "Chant [SINGLE]"),
-            candidate_id=None,  # None uses best match
-            duplicate_action="ask",  # ask raises on duplicate
+            candidate_ids=None,  # None uses best match
+            duplicate_actions={"*": "ask"},  # ask raises on duplicate
         )
 
         # FIXME: We might want to raise our own exception here
@@ -374,7 +378,8 @@ class TestImportBest(
         exc = await run_import_candidate(
             "obsolete_hash_import",
             str(path),
-            candidate_id=None,  # None uses best match
+            candidate_ids=None,  # None uses best match
+            duplicate_actions=None,  # None uses config
         )
         assert exc is None
 
@@ -420,8 +425,8 @@ class TestImportBest(
         exc = await run_import_candidate(
             "obsolete_hash_import",
             p,
-            candidate_id=None,  # None uses best match
-            duplicate_action=duplicate_action,
+            candidate_ids=None,  # None uses best match
+            duplicate_actions={"*": duplicate_action},
         )
 
         # Shouldn't return an error
@@ -500,7 +505,7 @@ class TestImportAuto(
             "obsolete_hash_import_auto",
             str(path),
             import_threshold=0.0,
-            duplicate_action="remove",
+            duplicate_actions={"*": "remove"},
         )
 
         assert len(self.statuses) == 4
@@ -511,7 +516,7 @@ class TestImportAuto(
             "obsolete_hash_import_auto",
             str(path),
             import_threshold=1.0,
-            duplicate_action="remove",
+            duplicate_actions={"*": "remove"},
         )
 
         assert len(self.statuses) == 6
@@ -558,7 +563,8 @@ class TestChooseCandidatesSingleTask(
         exc = await run_import_candidate(
             "obsolete_hash_import",
             str(path_single_task),
-            candidate_id=choosen_candidate.id,
+            candidate_ids={"*": choosen_candidate.id},
+            duplicate_actions=None,  # None uses config
         )
         assert exc is None, "Should not return an error"
 
@@ -614,7 +620,7 @@ class TestMultipleTasks(
 
         # For each task, choose a different candidate
 
-        candidates = {}
+        candidates: TaskIdMappingArg[CandidateChoice] = {}
         for task in s_state_indb.tasks:
             print(task.paths)
             print([c.metadata for c in task.candidates])
@@ -629,7 +635,8 @@ class TestMultipleTasks(
         exc = await run_import_candidate(
             "obsolete_hash_import",
             str(path_multiple_tasks),
-            candidate_id=candidates,
+            candidate_ids=candidates,
+            duplicate_actions=None,  # None uses config
         )
         assert exc is None, "Should not return an error"
 
@@ -685,8 +692,8 @@ class TestMultipleTasks(
         exc = await run_import_candidate(
             "obsolete_hash_import",
             str(path_multiple_tasks),
-            candidate_id=candidates,
-            duplicate_action=duplicate_actions,
+            candidate_ids=candidates,
+            duplicate_actions=duplicate_actions,
         )
         assert exc is None, "Should not return an error"
 

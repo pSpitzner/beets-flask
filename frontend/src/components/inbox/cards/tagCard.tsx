@@ -22,7 +22,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { APIError } from "@/api/common";
 import { sessionQueryOptions, useImportMutation } from "@/api/session";
-import { PenaltyTypeIcon } from "@/components/common/icons";
+import { PenaltyTypeIcon, SourceTypeIcon } from "@/components/common/icons";
 import {
     DuplicateAction,
     DuplicateActions,
@@ -64,7 +64,10 @@ export function TagCard({
         return null;
     }
 
-    if (session.exc != null && session.exc.type !== "DuplicateException") {
+    if (
+        session.exc != null &&
+        !["DuplicateException", "NotImportedException"].includes(session.exc.type)
+    ) {
         throw new APIError(session.exc);
     }
 
@@ -139,12 +142,20 @@ function UserSelection({ session }: { session: SerializedSessionState }) {
         <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 2 }}>
             <SelectionHeader session={session} currentTaskIdx={currentTaskIdx} />
             <Divider />
+            {/* warnings */}
             {session.exc?.type === "DuplicateException" && (
                 <DuplicateWarning exc={session.exc} />
+            )}
+            {session.exc?.type === "NotImportedException" && (
+                <AutoImportFailedWarning
+                    exc={session.exc}
+                    source_type={selectedCandidate?.info.data_source || "unknown"}
+                />
             )}
             {session.status.progress == Progress.DELETION_COMPLETED && (
                 <UndoneWarning />
             )}
+            {/*  */}
             <CandidateSelectionArea
                 key={currentTask.id}
                 isPending={isPending}
@@ -562,6 +573,33 @@ function UndoneWarning({ ...props }: AlertProps) {
             <Box>
                 You had previously imported this session, but undid the import. All
                 imported files have been removed from your library.
+            </Box>
+        </Alert>
+    );
+}
+
+function AutoImportFailedWarning({
+    exc,
+    source_type,
+    ...props
+}: {
+    source_type: string;
+    exc: SerializedException;
+} & AlertProps) {
+    return (
+        <Alert
+            severity="warning"
+            icon={<SourceTypeIcon type={source_type} />}
+            sx={{
+                ".MuiAlert-message": { width: "100%" },
+            }}
+            {...props}
+        >
+            <AlertTitle>Auto import failed</AlertTitle>
+            <Box>
+                {exc.message}
+                <br />
+                Maybe try searching for a better candidate?
             </Box>
         </Alert>
     );

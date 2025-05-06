@@ -311,11 +311,6 @@ export interface AlbumResponse {
 	sources: Array<AlbumSource>;
 }
 
-export enum ImportChoice {
-	ASIS = 1,
-	BEST = 2,
-}
-
 export enum EnqueueKind {
 	PREVIEW = 'preview',
 	PREVIEW_ADD_CANDIDATES = 'preview_add_candidates',
@@ -325,5 +320,10 @@ export enum EnqueueKind {
 	IMPORT_BOOTLEG = 'import_bootleg',
 	_AUTO_IMPORT = '_auto_import',
 	_AUTO_PREVIEW = '_auto_preview',
+}
+
+export enum CandidateChoiceFallback {
+	ASIS = 1,
+	BEST = 2,
 }
 

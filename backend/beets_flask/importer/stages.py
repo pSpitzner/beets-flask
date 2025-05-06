@@ -474,9 +474,12 @@ def plugin_stage(
     if task.skip:
         return
 
+    log.debug(f"Running plugin stage {func.__name__}")
     func(session, task)
+    log.debug(f"Finished plugin stage {func.__name__}")
 
     task.reload()
+    log.debug(f"Reload plugin stage done {func.__name__}")
 
 
 @mutator_stage

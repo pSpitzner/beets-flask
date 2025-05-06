@@ -7,7 +7,7 @@ import {
     EnqueueKind,
     FolderStatus,
     FolderStatusUpdate,
-    ImportChoice,
+    CandidateChoiceFallback,
     JobStatusUpdate,
     Search,
     SerializedCandidateState,
@@ -119,10 +119,9 @@ type TaskIdMap<T> = {
     [key: SerializedTaskState["id"]]: T;
 };
 
-type DuplicateAction = "skip" | "keep" | "remove" | "merge";
 interface EnqueuePreviewAddCandidate {
     kind: EnqueueKind.PREVIEW_ADD_CANDIDATES;
-    search: Search | TaskIdMap<Search>;
+    search: TaskIdMap<Search>;
 }
 
 interface EnqueuePreview {
@@ -133,8 +132,8 @@ interface EnqueuePreview {
 
 interface EnqueueImportCandidate {
     kind: EnqueueKind.IMPORT_CANDIDATE;
-    candidate_id?: string | ImportChoice | TaskIdMap<string | ImportChoice>;
-    duplicate_action?: DuplicateAction | TaskIdMap<DuplicateAction>;
+    candidate_ids?: TaskIdMap<string | ImportChoice>;
+    duplicate_actions?: TaskIdMap<DuplicateAction>;
 }
 
 interface EnqueueImportBootleg {
@@ -302,8 +301,8 @@ export const useImportMutation = (
                     hashes: [session.folder_hash],
                     paths: [session.folder_path],
                 },
-                candidate_id: taskIdMap,
-                duplicate_action: taskIdMapDuplicateActions,
+                candidate_ids: taskIdMap,
+                duplicate_actions: taskIdMapDuplicateActions,
             });
         },
         mutateAsync: async () => {
@@ -324,8 +323,8 @@ export const useImportMutation = (
                     hashes: [session.folder_hash],
                     paths: [session.folder_path],
                 },
-                candidate_id: taskIdMap,
-                duplicate_action: taskIdMapDuplicateActions,
+                candidate_ids: taskIdMap,
+                duplicate_actions: taskIdMapDuplicateActions,
             });
         },
     };
