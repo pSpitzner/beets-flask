@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, scoped_session, sessionmaker
 from beets_flask.config import get_flask_config
 from beets_flask.logger import log
 
-from .models import Base, Tag, TagGroup
+from .models import Base
 
 engine: Engine | None = None
 session_factory: scoped_session[Session]
@@ -36,7 +36,6 @@ def setup_database(app: Quart) -> None:
         _reset_database()
 
     _create_tables(engine)
-    _seed_tables()
 
     # Gracefully shutdown the database session
     @app.teardown_appcontext
@@ -118,17 +117,6 @@ def with_db_session(func):
 
 def _create_tables(engine) -> None:
     Base.metadata.create_all(bind=engine)
-
-
-@deprecated("Tag and TagGroup models are not used anymore.")
-def _seed_tables() -> None:
-    with db_session_factory() as session:
-        # By default all tags are in the "Unsorted" group
-        default_TagGroup = TagGroup.get_by(TagGroup.id == "Unsorted", session=session)
-        if default_TagGroup is None:
-            default_TagGroup = TagGroup(id="Unsorted")
-            session.add(default_TagGroup)
-            session.commit()
 
 
 def _reset_database():

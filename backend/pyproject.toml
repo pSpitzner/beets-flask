@@ -32,7 +32,6 @@ dependencies = [
     # beets plugin dependencies
     "pylast>=5.2.0",
     "py2ts @ git+https://github.com/semohr/py2ts.git@v0.1.9",
-    # dirhash
     #"scantree>=0.0.4",
     "natsort",
     "tinytag",

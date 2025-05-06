@@ -69,7 +69,7 @@ async def ws_client(fixture_ws_server):
     client = socketio.AsyncClient(reconnection=False)
     await client.connect(
         BASE_URL,
-        namespaces=["/import", "/test"],
+        namespaces=["/test"],
         transports=["websocket"],
     )
     try:

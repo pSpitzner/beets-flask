@@ -21,7 +21,6 @@ from beets.importer import ImportTask, action, library
 from sqlalchemy import (
     ForeignKey,
     UniqueConstraint,
-    func,
     select,
 )
 from sqlalchemy.orm import (
@@ -207,8 +206,6 @@ class SessionStateInDb(Base):
 
     # FIXME: This should be a getter for the which queries the tasks
     progress: Mapped[Progress]
-
-    tag = relationship("Tag", uselist=False, back_populates="session_state_in_db")
 
     # If an session run fails we want to store the exception
     exc: Mapped[bytes | None]
