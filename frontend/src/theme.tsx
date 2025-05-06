@@ -80,14 +80,16 @@ const darkTheme = createTheme({
 
     palette: {
         mode: "dark",
-        primary: {
-            main: "#7FFFD4",
-            muted: "#89a99e",
-        },
         secondary: {
+            main: "#20F5F1",
+            muted: "#348F8D",
+            contrastText: "#000000",
+        },
+        primary: {
             // Complementary pink for secondary as compared to primary
-            main: "#ff7faa",
-            muted: "#cca3b0",
+            main: "#ED41C3",
+            muted: "#A43F8C",
+            contrastText: "#000000",
         },
         text: {
             primary: "#ffffff",
