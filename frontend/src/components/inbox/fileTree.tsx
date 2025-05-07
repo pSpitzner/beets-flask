@@ -17,7 +17,7 @@ import {
     FolderStatusChip,
     HashMismatchChip,
 } from "@/components/common/chips";
-import useMobileSafeContextMenu from "@/components/common/hooks/useMobileSafeContextMenu";
+import { useMobileSafeContextMenu } from "@/components/common/hooks/useMobileSafeContextMenu";
 import { FileTypeIcon, FolderTypeIcon } from "@/components/common/icons";
 import { File, Folder } from "@/pythonTypes";
 

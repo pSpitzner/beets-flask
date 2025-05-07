@@ -24,7 +24,7 @@ import { useRef } from "react";
  *   </div>
  * );
  */
-const useMobileSafeContextMenu = (
+export const useMobileSafeContextMenu = (
     onContextMenu: (event: React.PointerEvent) => void,
     duration = 500
 ) => {
@@ -57,5 +57,3 @@ const useMobileSafeContextMenu = (
         },
     };
 };
-
-export default useMobileSafeContextMenu;
