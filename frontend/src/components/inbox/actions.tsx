@@ -2,18 +2,23 @@ import {
     ClipboardCheckIcon,
     ClipboardIcon,
     EllipsisVerticalIcon,
+    EyeIcon,
+    EyeOffIcon,
+    GroupIcon,
     HistoryIcon,
     ImportIcon,
     RefreshCwIcon,
     TagIcon,
     TerminalIcon,
     Trash2Icon,
+    UngroupIcon,
 } from "lucide-react";
 import { forwardRef, Ref, useEffect, useMemo, useRef, useState } from "react";
 import {
     Box,
     BoxProps,
     Button,
+    Checkbox,
     CircularProgress,
     IconButton,
     Menu,
@@ -24,6 +29,7 @@ import {
     SpeedDialIcon,
     SpeedDialProps,
     Tooltip,
+    Typography,
     useMediaQuery,
     useTheme,
     Zoom,
@@ -31,6 +37,7 @@ import {
 import { useMutation, UseMutationOptions } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
+import { useConfig } from "@/api/config";
 import { deleteFoldersMutationOptions } from "@/api/inbox";
 import { enqueueMutationOptions } from "@/api/session";
 import { EnqueueKind, File, Folder, JobStatusUpdate } from "@/pythonTypes";
@@ -39,9 +46,9 @@ import { useFolderSelectionContext } from "./folderSelectionContext";
 
 import { SourceTypeIcon } from "../common/icons";
 import { ClipboardCopyButton } from "../common/inputs/copy";
+import { formatDate } from "../common/units/time";
 import { useStatusSocket } from "../common/websocket/status";
 import { useTerminalContext } from "../frontpage/terminal";
-import { formatDate } from "../common/units/time";
 
 /* --------------------------------- Actions -------------------------------- */
 // Actions a user can take on a single or multiple folders implemented as speed dial
@@ -94,6 +101,7 @@ export function FolderActionsSpeedDial() {
                         : undefined
                 }
             >
+                <Spacer />
                 <SpeedDialMutationAction
                     icon={<TagIcon />}
                     tooltip="Retag"
@@ -102,6 +110,19 @@ export function FolderActionsSpeedDial() {
                         socket,
                         selected,
                         kind: EnqueueKind.PREVIEW,
+                    }}
+                />
+                <RetagAction />
+                <SpeedDialMutationAction
+                    icon={<ImportIcon />}
+                    tooltip="Import"
+                    // imports best candidate that is already present, independent of threshold
+                    // or retag & import, ignoring any configured thresholds
+                    mutationOptions={enqueueMutationOptions}
+                    mutateArgs={{
+                        socket,
+                        selected,
+                        kind: EnqueueKind.IMPORT_CANDIDATE,
                     }}
                 />
 
@@ -403,6 +424,110 @@ function CopyPathAction({ ...props }: SpeedDialActionProps) {
             }}
             {...props}
         />
+    );
+}
+
+function RetagAction({ ...props }: SpeedDialActionProps) {
+    const theme = useTheme();
+    const { socket } = useStatusSocket();
+    const { selected } = useFolderSelectionContext();
+
+    // TODO: load defaults from config
+    const [setting, setSetting] = useState({
+        group_albums: false,
+        skip_lookup: false,
+    });
+
+    return (
+        <>
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    border: "none !important",
+                    outline: "none",
+                    marginRight: 2,
+                }}
+            >
+                <SpeedDialMutationAction
+                    icon={<TagIcon />}
+                    tooltip="Retag"
+                    mutationOptions={enqueueMutationOptions}
+                    mutateArgs={{
+                        socket,
+                        selected,
+                        kind: EnqueueKind.PREVIEW,
+                        group_albums: setting.group_albums,
+                        autotag: !setting.skip_lookup,
+                    }}
+                    sx={{
+                        marginRight: 0,
+                        border: "1px solid rgba(255, 255, 255, 0.12)",
+                    }}
+                    {...props}
+                />
+                <Box
+                    sx={{
+                        display: "flex",
+                        border: "1px solid rgba(255, 255, 255, 0.12)",
+                        marginLeft: "-0.5rem",
+                        paddingLeft: "0.5rem",
+                        borderTopRightRadius: "15px",
+                        borderBottomRightRadius: "15px",
+                        paddingRight: "0.25rem",
+                    }}
+                >
+                    <Tooltip title="Group albums">
+                        <Checkbox
+                            size="small"
+                            icon={<GroupIcon size={theme.iconSize.lg} />}
+                            checkedIcon={<UngroupIcon size={theme.iconSize.lg} />}
+                            sx={{
+                                margin: "0px",
+                                borderRadius: "0px",
+                                width: "30px",
+                                height: "30px",
+                                minHeight: "30px",
+                                minWidth: "30px",
+                                padding: 0.5,
+                            }}
+                            checked={!setting.group_albums}
+                            onChange={(e) => {
+                                setSetting((prev) => ({
+                                    ...prev,
+                                    group_albums: !e.target.checked,
+                                }));
+                            }}
+                        />
+                    </Tooltip>
+                    <Tooltip title="Skip lookup">
+                        <Checkbox
+                            size="small"
+                            icon={<EyeOffIcon size={theme.iconSize.lg} />}
+                            checkedIcon={<EyeIcon size={theme.iconSize.lg} />}
+                            disableRipple
+                            sx={{
+                                margin: "0px",
+                                borderRadius: "0px",
+                                width: "30px",
+                                height: "30px",
+                                minHeight: "30px",
+                                minWidth: "30px",
+                                padding: 0.5,
+                            }}
+                            checked={!setting.skip_lookup}
+                            onChange={(e) => {
+                                setSetting((prev) => ({
+                                    ...prev,
+                                    skip_lookup: !e.target.checked,
+                                }));
+                            }}
+                        />
+                    </Tooltip>
+                </Box>
+            </Box>
+        </>
     );
 }
 
