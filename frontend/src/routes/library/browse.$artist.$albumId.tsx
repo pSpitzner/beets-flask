@@ -1,6 +1,5 @@
 import { AudioLinesIcon } from "lucide-react";
 import { useMemo } from "react";
-import z from "zod";
 import { Typography, useMediaQuery } from "@mui/material";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, Outlet, useParams } from "@tanstack/react-router";
@@ -13,7 +12,7 @@ import styles from "./library.module.scss";
 
 export const Route = createFileRoute(`/library/browse/$artist/$albumId`)({
     parseParams: (params) => ({
-        albumId: z.number().int().parse(parseInt(params.albumId)),
+        albumId: parseInt(params.albumId),
     }),
     loader: async (opts) =>
         await opts.context.queryClient.ensureQueryData(
@@ -45,7 +44,7 @@ function ItemsRoute() {
 function Items() {
     const params = useParams({ strict: false });
     const { data: album } = useSuspenseQuery(
-        albumQueryOptions(params.albumId!, true, true)
+        albumQueryOptions(params.albumId, true, true)
     );
     const isMobile = useMediaQuery((theme) => theme.breakpoints.down("laptop"));
 

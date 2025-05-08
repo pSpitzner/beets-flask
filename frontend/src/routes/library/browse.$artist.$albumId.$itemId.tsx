@@ -1,4 +1,3 @@
-import z from "zod";
 import Box from "@mui/material/Box";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -10,7 +9,7 @@ import { Content } from "./browse";
 
 export const Route = createFileRoute(`/library/browse/$artist/$albumId/$itemId`)({
     parseParams: (params) => ({
-        itemId: z.number().int().parse(parseInt(params.itemId)),
+        itemId: parseInt(params.itemId),
     }),
     loader: async (opts) =>
         await opts.context.queryClient.ensureQueryData(
