@@ -119,15 +119,14 @@ function RouteComponent() {
                                         }}
                                     >
                                         <Divider
-                                            sx={(theme) => ({
+                                            sx={{
                                                 position: "absolute",
                                                 top: "50%",
                                                 zIndex: -1,
                                                 left: 0,
                                                 borderColor: "primary.main",
-
                                                 width: `100%`,
-                                            })}
+                                            }}
                                         />
                                         <AutoTagIcon autotag={"preview"} />
 
