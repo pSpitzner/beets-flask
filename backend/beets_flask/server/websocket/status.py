@@ -6,7 +6,6 @@ a preview is finished.
 
 from __future__ import annotations
 
-import dataclasses
 from dataclasses import dataclass
 from functools import wraps
 from typing import Awaitable, Callable, Concatenate, Literal, ParamSpec, TypeVar

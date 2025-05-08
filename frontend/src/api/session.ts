@@ -17,8 +17,7 @@ import {
 } from "@/pythonTypes";
 
 import { APIError, queryClient } from "./common";
-
-import { Socket } from "socket.io-client";
+import { StatusSocket } from "./websocket";
 
 export const sessionQueryOptions = ({
     folderHash,
@@ -162,7 +161,7 @@ export const enqueueMutationOptions: UseMutationOptions<
     JobStatusUpdate[],
     Error,
     {
-        socket: Socket | null;
+        socket: StatusSocket | null;
         selected: FolderSelectionContext["selected"];
     } & EnqueueParams
 > = {
@@ -343,7 +342,7 @@ export const addCandidateMutationOptions: UseMutationOptions<
     JobStatusUpdate[],
     APIError,
     {
-        socket: Socket | null;
+        socket: StatusSocket | null;
         task_id: string;
     } & Omit<EnqueuePreviewAddCandidate, "kind">
 > = {
@@ -428,7 +427,7 @@ async function waitForJobUpdate({
     jobRef,
     timeout = 30_000,
 }: {
-    socket: Socket | null;
+    socket: StatusSocket | null;
     jobRef: string | string[];
     timeout?: number;
 }) {

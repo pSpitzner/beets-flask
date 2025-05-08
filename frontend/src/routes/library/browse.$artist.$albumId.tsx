@@ -44,7 +44,7 @@ function ItemsRoute() {
 function Items() {
     const params = useParams({ strict: false });
     const { data: album } = useSuspenseQuery(
-        albumQueryOptions(params.albumId, true, true)
+        albumQueryOptions(params.albumId!, true, true)
     );
     const isMobile = useMediaQuery((theme) => theme.breakpoints.down("laptop"));
 

@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 
-import { io, ManagerOptions, Socket, SocketOptions } from "socket.io-client";
+import { StatusSocket } from "@/api/websocket";
+
+import { io, ManagerOptions, SocketOptions } from "socket.io-client";
+
+type SocketMapping = {
+    status: StatusSocket;
+};
 
 /**
  * Custom hook to manage a WebSocket connection for a specific namespace.
@@ -19,13 +25,13 @@ import { io, ManagerOptions, Socket, SocketOptions } from "socket.io-client";
  * const { socket, isConnected } = useSocket("myNamespace");
  * ```
  */
-export default function useSocket(
-    namespace: string,
+export default function useSocket<N extends keyof SocketMapping>(
+    namespace: N,
     options?: Partial<ManagerOptions & SocketOptions>
 ) {
     const url: string = `/${namespace}`;
 
-    const [socket, setSocket] = useState<Socket | null>(null);
+    const [socket, setSocket] = useState<SocketMapping[N] | null>(null);
     const [isConnected, setIsConnected] = useState(false);
 
     // Create socket inline to allow multiple instances
