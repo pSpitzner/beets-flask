@@ -8,8 +8,7 @@
         "build": "vite build",
         "lint": "eslint . --max-warnings 0",
         "check-types": "tsc --noEmit",
-        "preview": "vite preview",
-        "build:dev": "vite build --mode development --watch"
+        "analyze": "pnpx vite-bundle-visualizer --open"
     },
     "dependencies": {
         "@curvenote/ansi-to-react": "^7.0.0",

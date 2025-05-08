@@ -46,7 +46,7 @@ docker compose -f ./docker/docker-compose.dev-local.yaml up --build
 ```
 
 ## Install pre-commit hooks
-We automatically check for code style and formatting issues using pre-commit hooks. To install the hooks, run the following command:
+We automatically check for code style and formatting issues using pre-commit hooks. To install the hooks, run the following command (optional):
 
 ```bash
 pip install pre-commit
@@ -70,7 +70,9 @@ Run [eslint](https://eslint.org/) manually or use the pre-commit hooks to check 
 ```bash
 cd frontend
 # Run eslint manually
-pnpm eslint .
+pnpm lint
+# Check the types
+pnpm check-types
 ```
 
 ## Submitting a Pull Request
