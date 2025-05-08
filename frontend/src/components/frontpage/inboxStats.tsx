@@ -1,7 +1,5 @@
 import { Inbox } from "lucide-react";
-import Box from "@mui/material/Box";
-import Divider from "@mui/material/Divider";
-import Grid from "@mui/material/Grid2";
+import { Box, Divider, Grid } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 
 import { inboxStatsQueryOptions } from "@/api/inbox";
@@ -51,7 +49,7 @@ function InboxCardView({ stats }: { stats: InboxStats }) {
     return (
         <Card>
             <CardContent>
-                <CardAvatar Icon={Inbox} title={stats.inboxName}>
+                <CardAvatar Icon={Inbox} title={stats.name}>
                     <Box
                         component="code"
                         sx={{
@@ -60,7 +58,7 @@ function InboxCardView({ stats }: { stats: InboxStats }) {
                             marginBottom: "0.875em",
                         }}
                     >
-                        {stats.inboxPath}
+                        {stats.path}
                     </Box>
                 </CardAvatar>
 

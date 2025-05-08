@@ -19,9 +19,9 @@ import {
     Tooltip,
     Typography,
     useMediaQuery,
+    useTheme,
 } from "@mui/material";
 import Box, { BoxProps } from "@mui/material/Box";
-import useTheme from "@mui/material/styles/useTheme";
 
 import { useDiff } from "@/components/common/hooks/useDiff";
 import { PenaltyTypeIcon } from "@/components/common/icons";

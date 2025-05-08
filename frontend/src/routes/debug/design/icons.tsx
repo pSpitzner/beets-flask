@@ -1,4 +1,5 @@
-import { Box, Chip, Typography, useTheme } from "@mui/material";
+import { ChevronDownIcon } from "lucide-react";
+import { Box, Typography, useTheme } from "@mui/material";
 import { createFileRoute } from "@tanstack/react-router";
 
 import {
@@ -14,9 +15,8 @@ import {
 } from "@/components/common/icons";
 import { PageWrapper } from "@/components/common/page";
 import { FolderStatus } from "@/pythonTypes";
-import { ChevronDown, ChevronDownIcon } from "lucide-react";
 
-export const Route = createFileRoute("/_debug/design/icons")({
+export const Route = createFileRoute("/debug/design/icons")({
     component: RouteComponent,
 });
 

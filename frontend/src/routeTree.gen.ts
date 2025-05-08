@@ -15,15 +15,16 @@ import { Route as TerminalIndexImport } from './routes/terminal/index'
 import { Route as SessiondraftIndexImport } from './routes/sessiondraft/index'
 import { Route as InboxIndexImport } from './routes/inbox/index'
 import { Route as ImportIndexImport } from './routes/import/index'
+import { Route as DebugIndexImport } from './routes/debug/index'
 import { Route as FrontpageIndexImport } from './routes/_frontpage/index'
 import { Route as LibrarySearchImport } from './routes/library/search'
 import { Route as LibraryBrowseImport } from './routes/library/browse'
-import { Route as DebugJobsImport } from './routes/_debug/jobs'
-import { Route as DebugErrorImport } from './routes/_debug/error'
+import { Route as DebugJobsImport } from './routes/debug/jobs'
+import { Route as DebugErrorImport } from './routes/debug/error'
 import { Route as LibraryBrowseArtistImport } from './routes/library/browse.$artist'
 import { Route as InboxFolderPathImport } from './routes/inbox/folder.$path'
-import { Route as DebugDesignLoadingImport } from './routes/_debug/design/loading'
-import { Route as DebugDesignIconsImport } from './routes/_debug/design/icons'
+import { Route as DebugDesignLoadingImport } from './routes/debug/design/loading'
+import { Route as DebugDesignIconsImport } from './routes/debug/design/icons'
 import { Route as LibraryBrowseArtistAlbumIdImport } from './routes/library/browse.$artist.$albumId'
 import { Route as InboxFolderPathHashImport } from './routes/inbox/folder_.$path.$hash'
 import { Route as LibraryBrowseArtistAlbumIdItemIdImport } from './routes/library/browse.$artist.$albumId.$itemId'
@@ -54,6 +55,12 @@ const ImportIndexRoute = ImportIndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const DebugIndexRoute = DebugIndexImport.update({
+  id: '/debug/',
+  path: '/debug/',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const FrontpageIndexRoute = FrontpageIndexImport.update({
   id: '/_frontpage/',
   path: '/',
@@ -73,14 +80,14 @@ const LibraryBrowseRoute = LibraryBrowseImport.update({
 } as any)
 
 const DebugJobsRoute = DebugJobsImport.update({
-  id: '/_debug/jobs',
-  path: '/jobs',
+  id: '/debug/jobs',
+  path: '/debug/jobs',
   getParentRoute: () => rootRoute,
 } as any)
 
 const DebugErrorRoute = DebugErrorImport.update({
-  id: '/_debug/error',
-  path: '/error',
+  id: '/debug/error',
+  path: '/debug/error',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -97,14 +104,14 @@ const InboxFolderPathRoute = InboxFolderPathImport.update({
 } as any)
 
 const DebugDesignLoadingRoute = DebugDesignLoadingImport.update({
-  id: '/_debug/design/loading',
-  path: '/design/loading',
+  id: '/debug/design/loading',
+  path: '/debug/design/loading',
   getParentRoute: () => rootRoute,
 } as any)
 
 const DebugDesignIconsRoute = DebugDesignIconsImport.update({
-  id: '/_debug/design/icons',
-  path: '/design/icons',
+  id: '/debug/design/icons',
+  path: '/debug/design/icons',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -133,17 +140,17 @@ const LibraryBrowseArtistAlbumIdItemIdRoute =
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_debug/error': {
-      id: '/_debug/error'
-      path: '/error'
-      fullPath: '/error'
+    '/debug/error': {
+      id: '/debug/error'
+      path: '/debug/error'
+      fullPath: '/debug/error'
       preLoaderRoute: typeof DebugErrorImport
       parentRoute: typeof rootRoute
     }
-    '/_debug/jobs': {
-      id: '/_debug/jobs'
-      path: '/jobs'
-      fullPath: '/jobs'
+    '/debug/jobs': {
+      id: '/debug/jobs'
+      path: '/debug/jobs'
+      fullPath: '/debug/jobs'
       preLoaderRoute: typeof DebugJobsImport
       parentRoute: typeof rootRoute
     }
@@ -166,6 +173,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof FrontpageIndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/debug/': {
+      id: '/debug/'
+      path: '/debug'
+      fullPath: '/debug'
+      preLoaderRoute: typeof DebugIndexImport
       parentRoute: typeof rootRoute
     }
     '/import/': {
@@ -196,17 +210,17 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TerminalIndexImport
       parentRoute: typeof rootRoute
     }
-    '/_debug/design/icons': {
-      id: '/_debug/design/icons'
-      path: '/design/icons'
-      fullPath: '/design/icons'
+    '/debug/design/icons': {
+      id: '/debug/design/icons'
+      path: '/debug/design/icons'
+      fullPath: '/debug/design/icons'
       preLoaderRoute: typeof DebugDesignIconsImport
       parentRoute: typeof rootRoute
     }
-    '/_debug/design/loading': {
-      id: '/_debug/design/loading'
-      path: '/design/loading'
-      fullPath: '/design/loading'
+    '/debug/design/loading': {
+      id: '/debug/design/loading'
+      path: '/debug/design/loading'
+      fullPath: '/debug/design/loading'
       preLoaderRoute: typeof DebugDesignLoadingImport
       parentRoute: typeof rootRoute
     }
@@ -289,17 +303,18 @@ const LibraryBrowseRouteWithChildren = LibraryBrowseRoute._addFileChildren(
 )
 
 export interface FileRoutesByFullPath {
-  '/error': typeof DebugErrorRoute
-  '/jobs': typeof DebugJobsRoute
+  '/debug/error': typeof DebugErrorRoute
+  '/debug/jobs': typeof DebugJobsRoute
   '/library/browse': typeof LibraryBrowseRouteWithChildren
   '/library/search': typeof LibrarySearchRoute
   '/': typeof FrontpageIndexRoute
+  '/debug': typeof DebugIndexRoute
   '/import': typeof ImportIndexRoute
   '/inbox': typeof InboxIndexRoute
   '/sessiondraft': typeof SessiondraftIndexRoute
   '/terminal': typeof TerminalIndexRoute
-  '/design/icons': typeof DebugDesignIconsRoute
-  '/design/loading': typeof DebugDesignLoadingRoute
+  '/debug/design/icons': typeof DebugDesignIconsRoute
+  '/debug/design/loading': typeof DebugDesignLoadingRoute
   '/inbox/folder/$path': typeof InboxFolderPathRoute
   '/library/browse/$artist': typeof LibraryBrowseArtistRouteWithChildren
   '/inbox/folder/$path/$hash': typeof InboxFolderPathHashRoute
@@ -308,17 +323,18 @@ export interface FileRoutesByFullPath {
 }
 
 export interface FileRoutesByTo {
-  '/error': typeof DebugErrorRoute
-  '/jobs': typeof DebugJobsRoute
+  '/debug/error': typeof DebugErrorRoute
+  '/debug/jobs': typeof DebugJobsRoute
   '/library/browse': typeof LibraryBrowseRouteWithChildren
   '/library/search': typeof LibrarySearchRoute
   '/': typeof FrontpageIndexRoute
+  '/debug': typeof DebugIndexRoute
   '/import': typeof ImportIndexRoute
   '/inbox': typeof InboxIndexRoute
   '/sessiondraft': typeof SessiondraftIndexRoute
   '/terminal': typeof TerminalIndexRoute
-  '/design/icons': typeof DebugDesignIconsRoute
-  '/design/loading': typeof DebugDesignLoadingRoute
+  '/debug/design/icons': typeof DebugDesignIconsRoute
+  '/debug/design/loading': typeof DebugDesignLoadingRoute
   '/inbox/folder/$path': typeof InboxFolderPathRoute
   '/library/browse/$artist': typeof LibraryBrowseArtistRouteWithChildren
   '/inbox/folder/$path/$hash': typeof InboxFolderPathHashRoute
@@ -328,17 +344,18 @@ export interface FileRoutesByTo {
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
-  '/_debug/error': typeof DebugErrorRoute
-  '/_debug/jobs': typeof DebugJobsRoute
+  '/debug/error': typeof DebugErrorRoute
+  '/debug/jobs': typeof DebugJobsRoute
   '/library/browse': typeof LibraryBrowseRouteWithChildren
   '/library/search': typeof LibrarySearchRoute
   '/_frontpage/': typeof FrontpageIndexRoute
+  '/debug/': typeof DebugIndexRoute
   '/import/': typeof ImportIndexRoute
   '/inbox/': typeof InboxIndexRoute
   '/sessiondraft/': typeof SessiondraftIndexRoute
   '/terminal/': typeof TerminalIndexRoute
-  '/_debug/design/icons': typeof DebugDesignIconsRoute
-  '/_debug/design/loading': typeof DebugDesignLoadingRoute
+  '/debug/design/icons': typeof DebugDesignIconsRoute
+  '/debug/design/loading': typeof DebugDesignLoadingRoute
   '/inbox/folder/$path': typeof InboxFolderPathRoute
   '/library/browse/$artist': typeof LibraryBrowseArtistRouteWithChildren
   '/inbox/folder_/$path/$hash': typeof InboxFolderPathHashRoute
@@ -349,17 +366,18 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/error'
-    | '/jobs'
+    | '/debug/error'
+    | '/debug/jobs'
     | '/library/browse'
     | '/library/search'
     | '/'
+    | '/debug'
     | '/import'
     | '/inbox'
     | '/sessiondraft'
     | '/terminal'
-    | '/design/icons'
-    | '/design/loading'
+    | '/debug/design/icons'
+    | '/debug/design/loading'
     | '/inbox/folder/$path'
     | '/library/browse/$artist'
     | '/inbox/folder/$path/$hash'
@@ -367,17 +385,18 @@ export interface FileRouteTypes {
     | '/library/browse/$artist/$albumId/$itemId'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/error'
-    | '/jobs'
+    | '/debug/error'
+    | '/debug/jobs'
     | '/library/browse'
     | '/library/search'
     | '/'
+    | '/debug'
     | '/import'
     | '/inbox'
     | '/sessiondraft'
     | '/terminal'
-    | '/design/icons'
-    | '/design/loading'
+    | '/debug/design/icons'
+    | '/debug/design/loading'
     | '/inbox/folder/$path'
     | '/library/browse/$artist'
     | '/inbox/folder/$path/$hash'
@@ -385,17 +404,18 @@ export interface FileRouteTypes {
     | '/library/browse/$artist/$albumId/$itemId'
   id:
     | '__root__'
-    | '/_debug/error'
-    | '/_debug/jobs'
+    | '/debug/error'
+    | '/debug/jobs'
     | '/library/browse'
     | '/library/search'
     | '/_frontpage/'
+    | '/debug/'
     | '/import/'
     | '/inbox/'
     | '/sessiondraft/'
     | '/terminal/'
-    | '/_debug/design/icons'
-    | '/_debug/design/loading'
+    | '/debug/design/icons'
+    | '/debug/design/loading'
     | '/inbox/folder/$path'
     | '/library/browse/$artist'
     | '/inbox/folder_/$path/$hash'
@@ -410,6 +430,7 @@ export interface RootRouteChildren {
   LibraryBrowseRoute: typeof LibraryBrowseRouteWithChildren
   LibrarySearchRoute: typeof LibrarySearchRoute
   FrontpageIndexRoute: typeof FrontpageIndexRoute
+  DebugIndexRoute: typeof DebugIndexRoute
   ImportIndexRoute: typeof ImportIndexRoute
   InboxIndexRoute: typeof InboxIndexRoute
   SessiondraftIndexRoute: typeof SessiondraftIndexRoute
@@ -426,6 +447,7 @@ const rootRouteChildren: RootRouteChildren = {
   LibraryBrowseRoute: LibraryBrowseRouteWithChildren,
   LibrarySearchRoute: LibrarySearchRoute,
   FrontpageIndexRoute: FrontpageIndexRoute,
+  DebugIndexRoute: DebugIndexRoute,
   ImportIndexRoute: ImportIndexRoute,
   InboxIndexRoute: InboxIndexRoute,
   SessiondraftIndexRoute: SessiondraftIndexRoute,
@@ -446,26 +468,27 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
-        "/_debug/error",
-        "/_debug/jobs",
+        "/debug/error",
+        "/debug/jobs",
         "/library/browse",
         "/library/search",
         "/_frontpage/",
+        "/debug/",
         "/import/",
         "/inbox/",
         "/sessiondraft/",
         "/terminal/",
-        "/_debug/design/icons",
-        "/_debug/design/loading",
+        "/debug/design/icons",
+        "/debug/design/loading",
         "/inbox/folder/$path",
         "/inbox/folder_/$path/$hash"
       ]
     },
-    "/_debug/error": {
-      "filePath": "_debug/error.tsx"
+    "/debug/error": {
+      "filePath": "debug/error.tsx"
     },
-    "/_debug/jobs": {
-      "filePath": "_debug/jobs.tsx"
+    "/debug/jobs": {
+      "filePath": "debug/jobs.tsx"
     },
     "/library/browse": {
       "filePath": "library/browse.tsx",
@@ -479,6 +502,9 @@ export const routeTree = rootRoute
     "/_frontpage/": {
       "filePath": "_frontpage/index.tsx"
     },
+    "/debug/": {
+      "filePath": "debug/index.tsx"
+    },
     "/import/": {
       "filePath": "import/index.tsx"
     },
@@ -491,11 +517,11 @@ export const routeTree = rootRoute
     "/terminal/": {
       "filePath": "terminal/index.tsx"
     },
-    "/_debug/design/icons": {
-      "filePath": "_debug/design/icons.tsx"
+    "/debug/design/icons": {
+      "filePath": "debug/design/icons.tsx"
     },
-    "/_debug/design/loading": {
-      "filePath": "_debug/design/loading.tsx"
+    "/debug/design/loading": {
+      "filePath": "debug/design/loading.tsx"
     },
     "/inbox/folder/$path": {
       "filePath": "inbox/folder.$path.tsx"

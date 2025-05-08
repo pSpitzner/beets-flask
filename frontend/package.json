@@ -7,6 +7,7 @@
         "dev": "vite --host --cors",
         "build": "vite build",
         "lint": "eslint . --max-warnings 0",
+        "check-types": "tsc --noEmit",
         "preview": "vite preview",
         "build:dev": "vite build --mode development --watch"
     },
@@ -14,7 +15,7 @@
         "@curvenote/ansi-to-react": "^7.0.0",
         "@emotion/react": "^11.14.0",
         "@emotion/styled": "^11.14.0",
-        "@mui/material": "^6.4.11",
+        "@mui/material": "^7.1.0",
         "@stylistic/eslint-plugin": "^2.13.0",
         "@tanstack/react-query": "^5.75.1",
         "@tanstack/react-query-devtools": "^5.75.1",

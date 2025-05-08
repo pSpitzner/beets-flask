@@ -7,10 +7,8 @@
 
 import { FolderClockIcon } from "lucide-react";
 import { useMemo } from "react";
-import { Tooltip } from "@mui/material";
+import { styled, Tooltip, useTheme } from "@mui/material";
 import Chip, { ChipProps } from "@mui/material/Chip";
-import styled from "@mui/material/styles/styled";
-import useTheme from "@mui/material/styles/useTheme";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 

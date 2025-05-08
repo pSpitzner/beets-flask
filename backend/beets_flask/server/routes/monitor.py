@@ -1,10 +1,9 @@
+from beets_flask.redis import queues, redis_conn
 from quart import Blueprint
 from rq.job import Job
 from rq.registry import clean_registries
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
-
-from beets_flask.redis import queues, redis_conn
 
 monitor_bp = Blueprint("monitor", __name__, url_prefix="/monitor")
 
@@ -74,17 +73,23 @@ async def get_job_status():
 
     """
     # https://python-rq.org/docs/job_registries/
-    ret_dict = {}
+    ret = []
     for q in queues:
         jobs = Job.fetch_many(
             q.started_job_registry.get_job_ids(), connection=redis_conn
         )
-        ret_dict[q.name] = {
-            "name": q.name,
-            "jobs": [j.get_meta(False) if j is not None else None for j in jobs],
-        }
+        for j in jobs:
+            if j is None:
+                continue
+            ret.append(
+                {
+                    "q_name": q.name,
+                    "job_id": j.id,
+                    "meta": j.get_meta(False),
+                }
+            )
 
-    return {"jobs": ret_dict}
+    return ret
 
 
 @monitor_bp.route("/debugResetDb", methods=["GET"])

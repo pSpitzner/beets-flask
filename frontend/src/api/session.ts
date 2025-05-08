@@ -4,10 +4,10 @@ import { useStatusSocket } from "@/components/common/websocket/status";
 import { DuplicateAction } from "@/components/import/candidates/actions";
 import { FolderSelectionContext } from "@/components/inbox/folderSelectionContext";
 import {
+    CandidateChoiceFallback,
     EnqueueKind,
     FolderStatus,
     FolderStatusUpdate,
-    CandidateChoiceFallback,
     JobStatusUpdate,
     Search,
     SerializedCandidateState,
@@ -132,7 +132,7 @@ interface EnqueuePreview {
 
 interface EnqueueImportCandidate {
     kind: EnqueueKind.IMPORT_CANDIDATE;
-    candidate_ids?: TaskIdMap<string | ImportChoice>;
+    candidate_ids?: TaskIdMap<string | CandidateChoiceFallback>;
     duplicate_actions?: TaskIdMap<DuplicateAction>;
 }
 
@@ -284,7 +284,7 @@ export const useImportMutation = (
     return {
         ...props,
         mutate: () => {
-            const taskIdMap: TaskIdMap<string | ImportChoice> = {};
+            const taskIdMap: TaskIdMap<string | CandidateChoiceFallback> = {};
             const taskIdMapDuplicateActions: TaskIdMap<DuplicateAction> = {};
 
             for (const [taskId, candidateId] of selectedCandidateIds) {
@@ -306,7 +306,7 @@ export const useImportMutation = (
             });
         },
         mutateAsync: async () => {
-            const taskIdMap: TaskIdMap<string | ImportChoice> = {};
+            const taskIdMap: TaskIdMap<string | CandidateChoiceFallback> = {};
             const taskIdMapDuplicateActions: TaskIdMap<DuplicateAction> = {};
 
             for (const [taskId, candidateId] of selectedCandidateIds) {

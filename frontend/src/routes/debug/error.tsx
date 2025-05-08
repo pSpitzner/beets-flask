@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { PageWrapper } from "@/components/common/page";
 
-export const Route = createFileRoute("/_debug/error")({
+export const Route = createFileRoute("/debug/error")({
     component: RouteComponent,
 });
 

@@ -124,17 +124,19 @@ export function GrowingRipple({
     );
 }
 
+import { Palette } from "@mui/material/styles";
+
 export function LoadingWithFeedback({
     feedback,
     color,
 }: {
     feedback: string;
-    color: PaletteColor | string;
+    color: PaletteColor | keyof Palette;
 }) {
     const theme = useTheme();
 
     if (typeof color === "string") {
-        color = theme.palette[color as keyof typeof theme.palette] as PaletteColor;
+        color = theme.palette[color] as PaletteColor;
     }
 
     return (
