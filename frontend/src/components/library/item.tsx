@@ -671,7 +671,7 @@ function AdvancedTab({ item }: { item: ItemT<false> }) {
                     <Search value={filter} setValue={setFilter} size="small" />
                 </Box>
             </Box>
-            <Table>
+            <Table size="small">
                 <TableHead>
                     <TableRow>
                         <TableCell>Property</TableCell>

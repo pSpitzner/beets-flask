@@ -4,12 +4,11 @@ from typing import TYPE_CHECKING, cast
 from urllib.parse import unquote_plus
 
 from beets import util as beets_util
+from beets_flask.logger import log
+from beets_flask.server.exceptions import IntegrityException, NotFoundException
 from mediafile import Image, MediaFile  # comes with the beets install
 from PIL import Image as PILImage
 from quart import Blueprint, g, make_response, redirect, send_file, url_for
-
-from beets_flask.logger import log
-from beets_flask.server.exceptions import IntegrityException, NotFoundException
 
 if TYPE_CHECKING:
     # For type hinting the global g object
@@ -44,7 +43,7 @@ async def item_art(item_id: int):
         raise NotFoundException(f"Item has no cover art: '{item_id}'.")
 
     # TODO: Support multiple images
-    im: Image = cast(Image, mediafile.images[0])  # typehints suck (beets typical)
+    im: Image = cast(Image, mediafile.images[0])
     return await send_image(BytesIO(im.data))
 
 
@@ -90,7 +89,7 @@ async def file_art(filepath: str):
     if not mediafile.images or len(mediafile.images) < 1:
         raise NotFoundException(f"File has no cover art: '{filepath}'.")
 
-    im: Image = cast(Image, mediafile.images[0])  # typehints suck (beets typical)
+    im: Image = cast(Image, mediafile.images[0])
     return await send_image(BytesIO(im.data))
 
 

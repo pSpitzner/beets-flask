@@ -1,10 +1,7 @@
 import shutil
+from io import BytesIO
 from pathlib import Path
-from typing import TypedDict
-
-from cachetools import Cache
-from quart import Blueprint, jsonify, request
-from sqlalchemy import select
+from typing import TypedDict, cast
 
 from beets_flask.database import db_session_factory
 from beets_flask.database.models.states import FolderInDb
@@ -13,9 +10,15 @@ from beets_flask.inbox import (
     get_inbox_folders,
     get_inbox_for_path,
 )
-from beets_flask.server.exceptions import InvalidUsageException
-from beets_flask.server.utility import pop_folder_params
+from beets_flask.server.exceptions import InvalidUsageException, NotFoundException
+from beets_flask.server.routes.library.artwork import send_image
+from beets_flask.server.utility import pop_folder_params, pop_query_param
 from beets_flask.utility import AUDIO_EXTENSIONS
+from cachetools import Cache
+from mediafile import Image, MediaFile  # comes with the beets install
+from quart import Blueprint, jsonify, request
+from sqlalchemy import select
+from tinytag import TinyTag
 
 inbox_bp = Blueprint("inbox", __name__, url_prefix="/inbox")
 
@@ -172,6 +175,70 @@ async def delete():
             "hashes": [f.hash for f in folders],
         }
     )
+
+
+@inbox_bp.route("/metadata", methods=["POST"])
+async def get_multiple_filemeta():
+    params = await request.get_json()
+
+    def ensure_list_of_path(obj):
+        if not isinstance(obj, list):
+            return [Path(obj)]
+        return [Path(o) for o in obj]
+
+    file_paths = pop_query_param(params, "file_paths", ensure_list_of_path, default=[])
+
+    if len(file_paths) == 0:
+        raise InvalidUsageException("No file paths provided", status_code=400)
+
+    tags = []
+
+    for p in file_paths:
+        if not p.is_file():
+            raise InvalidUsageException(f"Invalid file path: {p}", status_code=400)
+
+        tag = _get_filemeta(p)
+        tags.append(tag)
+
+    return jsonify(tags)
+
+
+def _get_filemeta(path: str | Path):
+    """Get the file metadata for a given audio file."""
+
+    tag = TinyTag.get(path).as_dict()
+    for k, v in tag.items():
+        if isinstance(v, list):
+            tag[k] = v[0]
+    return tag
+
+
+# TODO: consolidate with the file artwork route from artwork.py
+@inbox_bp.route("/metadata_art/<path:query>", methods=["GET"])
+async def file_art(query: str):
+    """Get the cover art for a given audio file.
+
+    Parameters
+    ----------
+    query : str
+        The path to the file to get the cover art for.
+    """
+    path = Path("/" + query)
+    if not path.is_file():
+        raise NotFoundException(f"File not found: '{path}'.")
+
+    return await send_image(_file_art(path))
+
+
+def _file_art(path: Path):
+    """Get the cover art for a given audio file."""
+
+    mediafile = MediaFile(path)
+    if not mediafile.images or len(mediafile.images) < 1:
+        raise NotFoundException(f"File has no cover art: '{path}'.")
+
+    im: Image = cast(Image, mediafile.images[0])
+    return BytesIO(im.data)
 
 
 # ------------------------------------------------------------------------------------ #

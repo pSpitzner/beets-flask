@@ -23,6 +23,11 @@ import {
     Skeleton,
     styled,
     SxProps,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableRow,
     Theme,
     Typography,
     useTheme,
@@ -47,6 +52,9 @@ import { GenericDetailsItem, GenericDetailsItemWithDiff, TrackDiff } from "./dif
 import { MatchChip } from "../../common/chips";
 import { PenaltyTypeIcon, SourceTypeIcon } from "../../common/icons";
 import { PenaltyIconRow } from "../icons";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { fileMetaQueryOptions } from "@/api/inbox";
+import { JSONPretty } from "@/components/common/json";
 
 /**
  * Renders a selection interface for import candidates, allowing users to choose
@@ -71,12 +79,24 @@ export function CandidateSelector({
     return (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
             <CandidateSelectionContextProvider
-                candidates={task.candidates}
+                candidates={[...task.candidates, task.asis_candidate]}
                 selected={selected}
                 setSelected={onChange}
             >
                 <TopBar task={task} />
                 <GridWrapper>
+                    <Fragment key={task.asis_candidate.id}>
+                        <CandidateInfo
+                            key={task.asis_candidate.id}
+                            candidate={task.asis_candidate}
+                        />
+                        <AsisCandidateDetails
+                            candidate={task.asis_candidate}
+                            items={task.items}
+                            metadata={task.current_metadata}
+                        />
+                    </Fragment>
+
                     {task.candidates.map((candidate) => (
                         <Fragment key={candidate.id}>
                             <CandidateInfo key={candidate.id} candidate={candidate} />
@@ -674,6 +694,141 @@ function CandidateDetails({
         );
     }, []);
 }
+
+function AsisCandidateDetails({
+    candidate,
+    items,
+    metadata,
+}: {
+    candidate: SerializedCandidateState;
+    items: SerializedTaskState["items"];
+    metadata: SerializedTaskState["current_metadata"];
+}) {
+    const ref = useRef<HTMLDivElement>(null);
+    const { isExpanded, selected } = useCandidateSelection();
+
+    const expanded = isExpanded(candidate.id);
+    const { data } = useSuspenseQuery(
+        fileMetaQueryOptions(items.map((item) => item.path))
+    );
+    const metaFields = Object.entries(data[0]);
+
+    console.log("Asis metadata", data);
+
+    // I created an empty file, and these keys we
+    // we still got -> make badges?:
+
+    // filename	/music/inbox/Annix/Antidote/empty.flac
+    // filesize	30929699
+    // duration	224.77544217687074
+    // channels	2
+    // bitrate	1100.821289032531
+    // bitdepth	16
+    // samplerate	44100
+
+    // then make badges for some common sense keys:
+    // here grabbed from id3 as written by beets.
+    // likely, we will have less. check with something from
+    // beatport or so!
+
+    // ARTIST (merge / combine / prio/ info from below fields)
+    // artist	Annix
+    // composer	Annix
+    // album artist	Annix
+    // album_artist	Annix
+    // albumartist	Annix
+    // albumartist_credit	Annix
+    // albumartistsort	Annix
+    // artist_credit	Annix
+    // artistsort	Annix
+
+    // ALBUM
+    // album	Antidote
+
+    // TITLE
+    // title	Antidote
+
+    // LABEL
+    // label	DnB Allstars Records
+    // publisher	DnB Allstars Records
+
+    // GENRE
+    // genre	Drum And Bass, Electronic
+
+    // catalog_number	DNBA015
+    // isrc	GB8KE2159647
+
+    // DATE
+    // year	2021-02-19
+    // originaldate	2021-02-19
+    // _year	2021
+
+    // DISC STATS
+    // compilation	0
+    // disc	1
+    // disc_total	1
+    // _disc	1
+    // discc	1
+    // track	1
+    // track_total	1
+    // _track	1
+    // trackc	1
+    // media	Digital Media
+
+    // TLDR
+    // copyright	℗ 2021 Copyright Control
+    // releasestatus	Official
+    // releasetype	s
+    // bpm	0
+    // releasecountry	XW
+    // language	eng
+    // musicbrainz_albumstatus	Official
+    // musicbrainz_albumtype	s
+    // musicbrainz_albumartistid	b7c65173-4a6c-4add-b468-7e16c0833038
+    // musicbrainz_albumid	a25664c1-6db7-43db-9e32-1f1f249dbecc
+    // musicbrainz_artistid	b7c65173-4a6c-4add-b468-7e16c0833038
+    // musicbrainz_releasegroupid	b3db3a9c-9ca8-4437-b469-0a5208ce49f9
+    // musicbrainz_releasetrackid	8c850a41-d891-4050-9111-ef0201eb8cba
+    // musicbrainz_trackid	6cc80949-2152-4b94-ba8d-7de353f172ef
+    // script	Latn
+
+    useEffect(() => {
+        // Set css data-expanded attribute to the ref element
+        // using ref for performance reasons
+        if (ref.current) {
+            ref.current.setAttribute("data-expanded", String(expanded));
+            ref.current.setAttribute(
+                "data-selected",
+                String(selected === candidate.id)
+            );
+        }
+    }, [expanded, selected]);
+
+    return useMemo(() => {
+        return (
+            <CandidateDetailsRow ref={ref}>
+                {/* <JSONPretty data={data[0]} /> */}
+                <Table size="small">
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>Property</TableCell>
+                            <TableCell>Value</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {metaFields.map(([key, value]) => (
+                            <TableRow key={key}>
+                                <TableCell>{key}</TableCell>
+                                <TableCell>{String(value)}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CandidateDetailsRow>
+        );
+    }, []);
+}
+
 /** Overview of changes to metadata if track
  * is applied.
  *

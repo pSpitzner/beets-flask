@@ -129,7 +129,7 @@ function UserSelection({ session }: { session: SerializedSessionState }) {
     );
 
     const selectedCandidate = useMemo(() => {
-        const candidate = currentTask.candidates.find(
+        const candidate = [...currentTask.candidates, currentTask.asis_candidate].find(
             (cand) => cand.id === selectCandidates.get(currentTask.id)
         );
         return candidate;
