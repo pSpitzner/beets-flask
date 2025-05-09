@@ -213,7 +213,7 @@ export function InboxStatsCard({ inboxStats }: { inboxStats: InboxStats }) {
  * Additional children can be passed to the placed
  * on the right side of the icon.
  */
-function CardHeader({
+export function CardHeader({
     icon,
     children,
     color = "primary.main",
@@ -238,7 +238,7 @@ function CardHeader({
             <Divider
                 sx={{
                     position: "absolute",
-                    top: "calc(50% + 1px)",
+                    top: "calc(50% - 1px)",
                     width: "100%",
                     backgroundColor: color,
                     borderBottomWidth: 2,

@@ -364,7 +364,7 @@ function TopBar({ task }: { task: SerializedTaskState }) {
             sx={{
                 display: "flex",
                 gap: 1,
-                alignItems: "flex-end",
+                alignItems: "center",
                 justifyContent: "flex-end",
             }}
         >

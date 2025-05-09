@@ -3,17 +3,19 @@ import {
     FolderClockIcon,
     HistoryIcon,
     ImportIcon,
+    InboxIcon,
     InfoIcon,
     TagIcon,
     TerminalIcon,
     Trash2Icon,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
     Box,
     BoxProps,
+    Card,
+    CardContent,
     DialogContent,
-    Divider,
     IconButton,
     Tooltip,
     Typography,
@@ -34,6 +36,7 @@ import {
     SourceTypeIcon,
 } from "@/components/common/icons";
 import { PageWrapper } from "@/components/common/page";
+import { CardHeader } from "@/components/frontend2/statsCard";
 import { FolderActionsSpeedDial } from "@/components/inbox/actions";
 import {
     FolderComponent,
@@ -41,6 +44,7 @@ import {
     SelectedStats,
 } from "@/components/inbox/fileTree";
 import { FolderSelectionProvider } from "@/components/inbox/folderSelectionContext";
+import { Folder } from "@/pythonTypes";
 
 /* ---------------------------------- Route --------------------------------- */
 
@@ -52,8 +56,7 @@ export const Route = createFileRoute("/inbox/")({
 });
 
 function RouteComponent() {
-    const config = useConfig();
-    const { data } = useSuspenseQuery(inboxQueryOptions());
+    const { data: inboxes } = useSuspenseQuery(inboxQueryOptions());
 
     return (
         <>
@@ -72,106 +75,38 @@ function RouteComponent() {
                     },
                 })}
             >
-                <InboxRouteHeader />
+                <PageHeader inboxes={inboxes} />
                 <FolderSelectionProvider>
                     <Box
-                        sx={(theme) => ({
+                        sx={{
+                            width: "100%",
                             display: "flex",
+                            gap: 2,
                             flexDirection: "column",
-                            alignItems: "flex-end",
-                            width: "100%",
-                            position: "relative",
-                            [theme.breakpoints.up("laptop")]: {
-                                height: "auto",
-                            },
-                        })}
+                        }}
                     >
-                        {data.map((folder, i) => {
-                            const fc = Object.entries(config.gui.inbox.folders).find(
-                                ([_k, v]) => v.path === folder.full_path
-                            );
-
-                            const folder_config = fc ? fc[1] : { name: "Inbox" };
-
-                            return (
-                                <Box
-                                    key={i}
-                                    sx={{
-                                        width: "100%",
-                                        backgroundColor: "background.paper",
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        paddingBlock: 1.5,
-                                        paddingInline: 1.5,
-                                        borderRadius: 1,
-                                        gap: 1,
-                                    }}
-                                >
-                                    <Box
-                                        sx={{
-                                            position: "relative",
-                                            width: "100%",
-                                            zIndex: 0,
-                                            display: "flex",
-                                            justifyContent: "flex-end",
-                                            alignItems: "center",
-                                            gap: 2,
-                                        }}
-                                    >
-                                        <Divider
-                                            sx={{
-                                                position: "absolute",
-                                                top: "50%",
-                                                zIndex: -1,
-                                                left: 0,
-                                                borderColor: "primary.main",
-                                                width: `100%`,
-                                            }}
-                                        />
-                                        <AutoTagIcon autotag={"preview"} />
-
-                                        <Typography
-                                            variant="caption"
-                                            component="code"
-                                            fontFamily="monospace"
-                                            sx={{
-                                                padding: 0.5,
-                                                paddingInline: 1,
-                                                borderRadius: 1,
-                                                color: "black",
-                                                marginRight: 2,
-                                                backgroundColor: "primary.main",
-                                            }}
-                                        >
-                                            {folder_config.name}: {folder.full_path}
-                                        </Typography>
-                                    </Box>
-                                    <GridWrapper>
-                                        <FolderComponent folder={folder} unSelectable />
-                                    </GridWrapper>
-                                    <SelectedStats />
-                                </Box>
-                            );
-                        })}
-                    </Box>
-                    <Box
-                        sx={(theme) => ({
-                            maxWidth: theme.breakpoints.values["desktop"],
-                            width: "100%",
-                            display: "flex",
-                            position: "absolute",
-                            bottom: theme.spacing(2),
-                            right: theme.spacing(2),
-                            justifyContent: "flex-end",
-                            [theme.breakpoints.up("laptop")]: {
-                                justifyContent: "flex-start",
-                                position: "relative",
-                                bottom: "inherit",
-                                right: "inherit",
-                            },
-                        })}
-                    >
-                        <FolderActionsSpeedDial />
+                        {inboxes.map((folder) => (
+                            <InboxCard key={folder.full_path} folder={folder} />
+                        ))}
+                        <Box
+                            sx={(theme) => ({
+                                maxWidth: theme.breakpoints.values["desktop"],
+                                width: "100%",
+                                display: "flex",
+                                position: "absolute",
+                                bottom: theme.spacing(2),
+                                right: theme.spacing(2),
+                                justifyContent: "flex-end",
+                                [theme.breakpoints.up("laptop")]: {
+                                    justifyContent: "flex-start",
+                                    position: "relative",
+                                    bottom: "inherit",
+                                    right: "inherit",
+                                },
+                            })}
+                        >
+                            <FolderActionsSpeedDial />
+                        </Box>
                     </Box>
                 </FolderSelectionProvider>
             </PageWrapper>
@@ -183,28 +118,32 @@ function RouteComponent() {
  * a title and some
  * additional information.
  */
-function InboxRouteHeader({ ...props }: BoxProps) {
+function PageHeader({ inboxes, ...props }: { inboxes: Folder[] } & BoxProps) {
     return (
         <Box
             sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                width: "100%",
+                display: "grid",
                 alignItems: "center",
-                paddingInline: 1,
+                justifyContent: "center",
+                marginBottom: 2,
+                width: "100%",
+                gridTemplateColumns: "1fr",
+                gridTemplateRows: "1fr",
+                paddingInline: 2,
             }}
             {...props}
         >
             <Typography
                 variant="h4"
-                component="h1"
+                component="div"
                 fontWeight="bold"
                 sx={{
-                    alignSelf: "center",
-                    mr: "auto",
+                    gridColumn: "1",
+                    gridRow: "1",
+                    textAlign: "center",
                 }}
             >
-                Inbox
+                Your inbox{inboxes.length > 1 ? "es" : ""}
             </Typography>
             <Box
                 sx={{
@@ -212,14 +151,105 @@ function InboxRouteHeader({ ...props }: BoxProps) {
                     display: "flex",
                     gap: 1,
                     zIndex: 1,
-                    p: 0.25,
                     borderRadius: 1,
-                    color: "primary.muted",
+                    color: "secondary.muted",
+                    gridColumn: "1",
+                    gridRow: "1",
+                    justifySelf: "flex-end",
                 }}
             >
                 <InfoDescription />
             </Box>
         </Box>
+    );
+}
+
+function InboxCard({ folder }: { folder: Folder }) {
+    const config = useConfig();
+
+    // configuration for this inbox folder
+    const folderConfig = useMemo<(typeof config)["gui"]["inbox"]["folders"][0]>(() => {
+        const fc = Object.entries(config.gui.inbox.folders).find(
+            ([_k, v]) => v.path === folder.full_path
+        );
+
+        return fc
+            ? fc[1]
+            : {
+                  name: "Inbox",
+                  autotag: false,
+                  path: folder.full_path,
+                  last_tagged: "unkown",
+              };
+    }, [config, folder.full_path]);
+
+    return (
+        <Card sx={{ width: "100%", padding: 2 }}>
+            <CardHeader
+                key={folder.full_path}
+                icon={<InboxIcon size={36} />}
+                color="secondary.main"
+            >
+                <Box
+                    sx={{
+                        height: "56px",
+                        position: "relative",
+                        mr: "auto",
+                        backgroundColor: "secondary.main",
+                        color: "secondary.contrastText",
+                        display: "flex",
+                        justifyContent: "center",
+                        paddingRight: 1,
+                        borderTopRightRadius: 3,
+                        borderBottomRightRadius: 3,
+                        flexDirection: "column",
+                        alignItems: "flex-start",
+                        ":after": {
+                            position: "absolute",
+                            content: "''",
+                            display: "block",
+                            width: "5px",
+                            left: "-5px",
+                            top: 0,
+                            height: "100%",
+                            backgroundColor: "secondary.main",
+                        },
+                    }}
+                >
+                    <Typography variant="h6" sx={{ fontWeight: "bold", m: 0, p: 0 }}>
+                        {folderConfig.name}
+                    </Typography>
+                    <Typography
+                        variant="caption"
+                        component="code"
+                        fontFamily="monospace"
+                        sx={{
+                            borderRadius: 1,
+                            color: "black",
+                        }}
+                    >
+                        {folder.full_path}
+                    </Typography>
+                </Box>
+                <AutoTagIcon
+                    autotag={folderConfig.autotag}
+                    sx={{ marginLeft: "auto", marginTop: "auto", marginBottom: "auto" }}
+                />
+            </CardHeader>
+            <CardContent
+                sx={{
+                    paddingInline: 1,
+                    paddingTop: 2,
+                    m: 0,
+                    paddingBottom: "0 !important",
+                }}
+            >
+                <GridWrapper>
+                    <FolderComponent folder={folder} unSelectable />
+                </GridWrapper>
+                <SelectedStats />
+            </CardContent>
+        </Card>
     );
 }
 
@@ -502,9 +532,11 @@ function InfoDescription() {
 
 function AutoTagIcon({
     autotag,
+    sx,
+    ...props
 }: {
     autotag: MinimalConfig["gui"]["inbox"]["folders"][string]["autotag"];
-}) {
+} & BoxProps) {
     // TODO: We might want some icons for this indicator
     let title: string;
     let indicator: string;
@@ -525,23 +557,27 @@ function AutoTagIcon({
     return (
         <Tooltip title={title}>
             <Box
-                sx={{
-                    px: 1,
-                    height: "100%",
-                    borderRadius: "50%",
-                    aspectRatio: "1/1",
-                    backgroundColor: "background.paper",
-                    border: "1px solid",
-                    borderColor: "primary.main",
-                    color: "primary.main",
-                    width: "1.25rem",
-                    display: "flex",
-                    fontSize: "0.75rem",
-                    textAlign: "center",
-                    fontWeight: "bold",
-                    justifyContent: "center",
-                    alignItems: "center",
-                }}
+                sx={[
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                    ...(Array.isArray(sx) ? sx : [sx]),
+                    {
+                        px: 1,
+                        height: "100%",
+                        borderRadius: "50%",
+                        aspectRatio: "1/1",
+                        backgroundColor: "secondary.main",
+                        color: "secondary.contrastText",
+                        width: "1.25rem",
+                        display: "flex",
+                        fontSize: "0.75rem",
+                        textAlign: "center",
+                        fontWeight: "bold",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        zIndex: 1,
+                    },
+                ]}
+                {...props}
             >
                 {indicator}
             </Box>
