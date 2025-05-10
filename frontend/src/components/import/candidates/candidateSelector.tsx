@@ -17,10 +17,14 @@ import {
 } from "react";
 import {
     ButtonGroup,
+    Chip,
+    ChipProps,
     Divider,
+    Grid,
     IconButton,
     Radio,
     Skeleton,
+    Stack,
     styled,
     SxProps,
     Table,
@@ -29,6 +33,7 @@ import {
     TableHead,
     TableRow,
     Theme,
+    Tooltip,
     Typography,
     useTheme,
 } from "@mui/material";
@@ -695,6 +700,8 @@ function CandidateDetails({
     }, []);
 }
 
+interface FileMeta extends Record<string, string | number | boolean> {}
+
 function AsisCandidateDetails({
     candidate,
     items,
@@ -711,7 +718,7 @@ function AsisCandidateDetails({
     const { data } = useSuspenseQuery(
         fileMetaQueryOptions(items.map((item) => item.path))
     );
-    const metaFields = Object.entries(data[0]);
+    const meta = data[0] as FileMeta;
 
     console.log("Asis metadata", data);
 
@@ -807,26 +814,122 @@ function AsisCandidateDetails({
     return useMemo(() => {
         return (
             <CandidateDetailsRow ref={ref}>
-                {/* <JSONPretty data={data[0]} /> */}
-                <Table size="small">
-                    <TableHead>
-                        <TableRow>
-                            <TableCell>Property</TableCell>
-                            <TableCell>Value</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {metaFields.map(([key, value]) => (
-                            <TableRow key={key}>
-                                <TableCell>{key}</TableCell>
-                                <TableCell>{String(value)}</TableCell>
+                <Stack
+                    direction="row"
+                    sx={{
+                        justifyContent: "flex-start",
+                        alignItems: "flex-start",
+                    }}
+                >
+                    <MetaArtist meta={meta} />
+                    <MetaAlbum meta={meta} />
+                    <MetaLabel meta={meta} />
+                    <MetaGenre meta={meta} />
+                    <MetaYear meta={meta} />
+                </Stack>
+
+                <Box>
+                    {/* <JSONPretty data={data[0]} /> */}
+                    <Table size="small">
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Property</TableCell>
+                                <TableCell>Value</TableCell>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHead>
+                        <TableBody>
+                            {Object.entries(meta).map(([key, value]) => (
+                                <TableRow key={key}>
+                                    <TableCell>{key}</TableCell>
+                                    <TableCell>{String(value)}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </Box>
             </CandidateDetailsRow>
         );
     }, []);
+}
+
+function MetaArtist({ meta }: { meta: FileMeta }) {
+    const theme = useTheme();
+    const keys = [
+        "artist",
+        "composer",
+        "album_artist",
+        "albumartist",
+        "albumartistsort",
+        "artist_credit",
+        "artistsort",
+    ];
+    const icon = <PenaltyTypeIcon type="artist" size={theme.iconSize.xs} />;
+    return <MetaBadge meta={meta} keys={keys} icon={icon} />;
+}
+function MetaAlbum({ meta }: { meta: FileMeta }) {
+    const theme = useTheme();
+    const keys = ["album"];
+    const icon = <PenaltyTypeIcon type="album" size={theme.iconSize.xs} />;
+    return <MetaBadge meta={meta} keys={keys} icon={icon} />;
+}
+function MetaLabel({ meta }: { meta: FileMeta }) {
+    const theme = useTheme();
+    const keys = ["label", "publisher"];
+    const icon = <PenaltyTypeIcon type="label" size={theme.iconSize.xs} />;
+    return <MetaBadge meta={meta} keys={keys} icon={icon} />;
+}
+function MetaGenre({ meta }: { meta: FileMeta }) {
+    const theme = useTheme();
+    const keys = ["genre"];
+    const icon = <PenaltyTypeIcon type="genre" size={theme.iconSize.xs} />;
+    return <MetaBadge meta={meta} keys={keys} icon={icon} />;
+}
+function MetaYear({ meta }: { meta: FileMeta }) {
+    const theme = useTheme();
+    const keys = ["_year", "year", "originaldate"];
+    const icon = <PenaltyTypeIcon type="year" size={theme.iconSize.xs} />;
+    return <MetaBadge meta={meta} keys={keys} icon={icon} />;
+}
+
+function MetaBadge({
+    meta,
+    keys,
+    icon,
+    ...props
+}: {
+    meta: FileMeta;
+    keys: string[];
+    icon: JSX.Element;
+} & ChipProps) {
+    const filtered = Object.fromEntries(
+        Object.entries(meta)
+            .filter(([k, v]) => keys.includes(k) && v !== undefined)
+            .sort(([a], [b]) => keys.indexOf(a) - keys.indexOf(b))
+    );
+
+    const label = Object.values(filtered)[0];
+    if (!label) return null;
+
+    return (
+        <Tooltip
+            title={
+                <Grid container spacing={0.5}>
+                    {Object.entries(filtered).map(([k, v]) => (
+                        <>
+                            <Grid size={5} sx={{ textAlign: "right" }}>
+                                {k}:
+                            </Grid>
+                            <Grid size={5} sx={{ textAlign: "left" }}>
+                                {v}
+                            </Grid>
+                        </>
+                    ))}
+                </Grid>
+            }
+        >
+            <Chip size="small" icon={icon} label={label} {...props} />
+        </Tooltip>
+    );
 }
 
 /** Overview of changes to metadata if track
