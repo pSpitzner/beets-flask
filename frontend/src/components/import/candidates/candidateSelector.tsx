@@ -38,8 +38,10 @@ import {
     useTheme,
 } from "@mui/material";
 import Box, { BoxProps } from "@mui/material/Box";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
+import { FileMetadata, fileMetaQueryOptions } from "@/api/inbox";
 import {
     AlbumInfo,
     SerializedCandidateState,
@@ -57,9 +59,6 @@ import { GenericDetailsItem, GenericDetailsItemWithDiff, TrackDiff } from "./dif
 import { MatchChip } from "../../common/chips";
 import { PenaltyTypeIcon, SourceTypeIcon } from "../../common/icons";
 import { PenaltyIconRow } from "../icons";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { fileMetaQueryOptions } from "@/api/inbox";
-import { JSONPretty } from "@/components/common/json";
 
 /**
  * Renders a selection interface for import candidates, allowing users to choose
@@ -84,7 +83,7 @@ export function CandidateSelector({
     return (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
             <CandidateSelectionContextProvider
-                candidates={[...task.candidates, task.asis_candidate]}
+                candidates={[task.asis_candidate, ...task.candidates]}
                 selected={selected}
                 setSelected={onChange}
             >
@@ -700,8 +699,6 @@ function CandidateDetails({
     }, []);
 }
 
-interface FileMeta extends Record<string, string | number | boolean> {}
-
 function AsisCandidateDetails({
     candidate,
     items,
@@ -716,9 +713,11 @@ function AsisCandidateDetails({
 
     const expanded = isExpanded(candidate.id);
     const { data } = useSuspenseQuery(
-        fileMetaQueryOptions(items.map((item) => item.path))
+        fileMetaQueryOptions(
+            items.map((item) => item.path).filter((i) => i != undefined)
+        )
     );
-    const meta = data[0] as FileMeta;
+    const meta = data[0];
 
     console.log("Asis metadata", data);
 
@@ -852,7 +851,7 @@ function AsisCandidateDetails({
     }, []);
 }
 
-function MetaArtist({ meta }: { meta: FileMeta }) {
+function MetaArtist({ meta }: { meta: FileMetadata }) {
     const theme = useTheme();
     const keys = [
         "artist",
@@ -866,25 +865,25 @@ function MetaArtist({ meta }: { meta: FileMeta }) {
     const icon = <PenaltyTypeIcon type="artist" size={theme.iconSize.xs} />;
     return <MetaBadge meta={meta} keys={keys} icon={icon} />;
 }
-function MetaAlbum({ meta }: { meta: FileMeta }) {
+function MetaAlbum({ meta }: { meta: FileMetadata }) {
     const theme = useTheme();
     const keys = ["album"];
     const icon = <PenaltyTypeIcon type="album" size={theme.iconSize.xs} />;
     return <MetaBadge meta={meta} keys={keys} icon={icon} />;
 }
-function MetaLabel({ meta }: { meta: FileMeta }) {
+function MetaLabel({ meta }: { meta: FileMetadata }) {
     const theme = useTheme();
     const keys = ["label", "publisher"];
     const icon = <PenaltyTypeIcon type="label" size={theme.iconSize.xs} />;
     return <MetaBadge meta={meta} keys={keys} icon={icon} />;
 }
-function MetaGenre({ meta }: { meta: FileMeta }) {
+function MetaGenre({ meta }: { meta: FileMetadata }) {
     const theme = useTheme();
     const keys = ["genre"];
     const icon = <PenaltyTypeIcon type="genre" size={theme.iconSize.xs} />;
     return <MetaBadge meta={meta} keys={keys} icon={icon} />;
 }
-function MetaYear({ meta }: { meta: FileMeta }) {
+function MetaYear({ meta }: { meta: FileMetadata }) {
     const theme = useTheme();
     const keys = ["_year", "year", "originaldate"];
     const icon = <PenaltyTypeIcon type="year" size={theme.iconSize.xs} />;
@@ -897,7 +896,7 @@ function MetaBadge({
     icon,
     ...props
 }: {
-    meta: FileMeta;
+    meta: FileMetadata;
     keys: string[];
     icon: JSX.Element;
 } & ChipProps) {

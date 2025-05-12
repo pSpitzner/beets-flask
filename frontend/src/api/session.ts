@@ -262,8 +262,8 @@ export const enqueueMutationOptions: UseMutationOptions<
                         predicate,
                     })
                 ),
-            new Promise((resolve) => setTimeout(resolve, 500)),
             // For loading spinner
+            new Promise((resolve) => setTimeout(resolve, 500)),
         ];
         await Promise.all(ps);
     },

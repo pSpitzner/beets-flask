@@ -4,7 +4,7 @@
  * /api_v1/inbox
  */
 
-import { UseMutationOptions } from "@tanstack/react-query";
+import { Query, UseMutationOptions, UseQueryOptions } from "@tanstack/react-query";
 
 import type { File, Folder, InboxStats } from "@/pythonTypes";
 
@@ -74,7 +74,12 @@ export const inboxStatsQueryOptions = () => ({
 });
 
 // fetch metadata for files, directly from id3
-export const fileMetaQueryOptions = (paths: (string | null)[]) => ({
+// TODO: this should ne be a inbox endpoint (also needs to be moved in the backend)
+export type FileMetadata = {
+    [key: string]: string | number | boolean | string[];
+};
+
+export const fileMetaQueryOptions = (paths: string[]) => ({
     queryKey: ["filemeta", paths],
     queryFn: async () => {
         const response = await fetch(`/inbox/metadata`, {
@@ -86,7 +91,7 @@ export const fileMetaQueryOptions = (paths: (string | null)[]) => ({
                 file_paths: paths,
             }),
         });
-        return await response.json();
+        return (await response.json()) as Array<FileMetadata>;
     },
 });
 
