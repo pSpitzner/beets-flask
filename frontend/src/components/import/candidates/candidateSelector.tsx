@@ -376,6 +376,13 @@ const CandidateDetailsRow = styled(Box)(({ theme }) => ({
 
     '&[data-selected="true"]': {
         backgroundColor: theme.palette.action.selected,
+        thead: {
+            backgroundColor: theme.palette.action.selected,
+        },
+    },
+
+    thead: {
+        backgroundColor: theme.palette.background.paper,
     },
 
     flexDirection: "column",
@@ -710,8 +717,6 @@ function AsisCandidateDetails({
     items: SerializedTaskState["items"];
     metadata: SerializedTaskState["current_metadata"];
 }) {
-    // TODO: add filter functions
-    const [filter, setFilter] = useState<string>("");
     const ref = useRef<HTMLDivElement>(null);
     const { isExpanded, selected } = useCandidateSelection();
 
@@ -721,9 +726,18 @@ function AsisCandidateDetails({
             items.map((item) => item.path).filter((i) => i != undefined)
         )
     );
+
+    // TODO: multiple files?
     const meta = data[0];
 
-    console.log("Asis metadata", data);
+    // Filtering logic
+    const [filter, setFilter] = useState<string>("");
+    const filteredMeta = useMemo(() => {
+        return Object.entries(meta).filter(
+            ([key, value]) => key.includes(filter) || String(value).includes(filter)
+        );
+    }, [meta, filter]);
+    const nExcluded = Object.entries(meta).length - filteredMeta.length;
 
     // I created an empty file, and these keys we
     // we still got -> make badges?:
@@ -844,7 +858,7 @@ function AsisCandidateDetails({
                     sx={{
                         //display: "grid",
                         width: "100%",
-                        borderCollapse: "collapse",
+                        borderCollapse: "separate",
                         maxHeight: "400px",
                         height: "100%",
                         //tableLayout: "fixed",
@@ -853,16 +867,19 @@ function AsisCandidateDetails({
                             maxHeight: "200px",
                             maxWidth: "100%",
                         },
+                        position: "relative",
                         //thicker border bottom for head
                         thead: {
-                            borderBottomWidth: 2,
-                            borderBottomStyle: "solid",
-                            borderBottomColor: "#515151",
                             fontWeight: "bold",
                             fontSize: "0.95rem",
                             verticalAlign: "bottom",
-                            th: {
-                                border: "unset",
+                            top: 0,
+                            position: "sticky",
+                            th: { border: "unset" },
+                            "> *:last-child > th": {
+                                borderBottomWidth: 2,
+                                borderBottomStyle: "solid",
+                                borderBottomColor: "#515151",
                             },
                         },
                     }}
@@ -887,6 +904,7 @@ function AsisCandidateDetails({
                                         height: "100%",
                                         width: "100%",
                                     }}
+                                    color="secondary"
                                 />
                             </TableCell>
                         </TableRow>
@@ -914,12 +932,13 @@ function AsisCandidateDetails({
                                             paddingBlock: 0.5,
                                         },
                                     }}
+                                    color="secondary"
                                 />
                             </TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {Object.entries(meta).map(([key, value]) => (
+                        {filteredMeta.map(([key, value]) => (
                             <TableRow key={key}>
                                 <TableCell
                                     sx={{
@@ -943,6 +962,22 @@ function AsisCandidateDetails({
                                 </TableCell>
                             </TableRow>
                         ))}
+                        {nExcluded > 0 && (
+                            <TableRow>
+                                <TableCell colSpan={3}>
+                                    <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        sx={{
+                                            textAlign: "center",
+                                            fontStyle: "italic",
+                                        }}
+                                    >
+                                        {nExcluded} more properties excluded via filter
+                                    </Typography>
+                                </TableCell>
+                            </TableRow>
+                        )}
                     </TableBody>
                 </Table>
             </Box>
