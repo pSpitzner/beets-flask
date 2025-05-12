@@ -42,6 +42,8 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
 import { FileMetadata, fileMetaQueryOptions } from "@/api/inbox";
+import { Search } from "@/components/common/inputs/search";
+import { isLikelyBlob } from "@/components/common/units/bytes";
 import {
     AlbumInfo,
     SerializedCandidateState,
@@ -708,6 +710,8 @@ function AsisCandidateDetails({
     items: SerializedTaskState["items"];
     metadata: SerializedTaskState["current_metadata"];
 }) {
+    // TODO: add filter functions
+    const [filter, setFilter] = useState<string>("");
     const ref = useRef<HTMLDivElement>(null);
     const { isExpanded, selected } = useCandidateSelection();
 
@@ -810,45 +814,140 @@ function AsisCandidateDetails({
         }
     }, [expanded, selected]);
 
-    return useMemo(() => {
-        return (
-            <CandidateDetailsRow ref={ref}>
-                <Stack
-                    direction="row"
+    return (
+        <CandidateDetailsRow ref={ref}>
+            <Stack
+                direction="row"
+                sx={{
+                    justifyContent: "flex-start",
+                    alignItems: "flex-start",
+                }}
+            >
+                <MetaArtist meta={meta} />
+                <MetaAlbum meta={meta} />
+                <MetaLabel meta={meta} />
+                <MetaGenre meta={meta} />
+                <MetaYear meta={meta} />
+            </Stack>
+
+            <Box
+                sx={{
+                    overflow: "auto",
+                    width: "100%",
+                    maxHeight: "400px",
+                    height: "100%",
+                }}
+            >
+                {/* <JSONPretty data={data[0]} /> */}
+                <Table
+                    size="small"
                     sx={{
-                        justifyContent: "flex-start",
-                        alignItems: "flex-start",
+                        //display: "grid",
+                        width: "100%",
+                        borderCollapse: "collapse",
+                        maxHeight: "400px",
+                        height: "100%",
+                        //tableLayout: "fixed",
+                        td: {
+                            //overflowWrap: "break-word",
+                            maxHeight: "200px",
+                            maxWidth: "100%",
+                        },
+                        //thicker border bottom for head
+                        thead: {
+                            borderBottomWidth: 2,
+                            borderBottomStyle: "solid",
+                            borderBottomColor: "#515151",
+                            fontWeight: "bold",
+                            fontSize: "0.95rem",
+                            verticalAlign: "bottom",
+                            th: {
+                                border: "unset",
+                            },
+                        },
                     }}
                 >
-                    <MetaArtist meta={meta} />
-                    <MetaAlbum meta={meta} />
-                    <MetaLabel meta={meta} />
-                    <MetaGenre meta={meta} />
-                    <MetaYear meta={meta} />
-                </Stack>
-
-                <Box>
-                    {/* <JSONPretty data={data[0]} /> */}
-                    <Table size="small">
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Property</TableCell>
-                                <TableCell>Value</TableCell>
+                    <TableHead>
+                        <TableRow
+                            sx={(theme) => ({
+                                display: "none",
+                                [theme.breakpoints.down("tablet")]: {
+                                    display: "table-row",
+                                },
+                            })}
+                        >
+                            <TableCell colSpan={3}>
+                                <Search
+                                    size="small"
+                                    value={filter}
+                                    setValue={setFilter}
+                                    sx={{
+                                        marginTop: 1,
+                                        p: 0,
+                                        height: "100%",
+                                        width: "100%",
+                                    }}
+                                />
+                            </TableCell>
+                        </TableRow>
+                        <TableRow>
+                            <TableCell sx={{ width: "auto" }}>Property</TableCell>
+                            <TableCell sx={{ width: "50%" }}>Value</TableCell>
+                            <TableCell
+                                sx={(theme) => ({
+                                    width: "50%",
+                                    textAlign: "right",
+                                    [theme.breakpoints.down("tablet")]: {
+                                        display: "none",
+                                    },
+                                })}
+                            >
+                                <Search
+                                    size="small"
+                                    value={filter}
+                                    setValue={setFilter}
+                                    sx={{
+                                        p: 0,
+                                        height: "100%",
+                                        maxWidth: "300px",
+                                        input: {
+                                            paddingBlock: 0.5,
+                                        },
+                                    }}
+                                />
+                            </TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {Object.entries(meta).map(([key, value]) => (
+                            <TableRow key={key}>
+                                <TableCell
+                                    sx={{
+                                        width: "max-content",
+                                        verticalAlign: "top",
+                                    }}
+                                >
+                                    {key}
+                                </TableCell>
+                                <TableCell colSpan={2}>
+                                    <Box
+                                        sx={{
+                                            overflow: "auto",
+                                            maxHeight: "200px",
+                                            overflowWrap: "anywhere",
+                                            maxWidth: "100%",
+                                        }}
+                                    >
+                                        {String(value)}
+                                    </Box>
+                                </TableCell>
                             </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {Object.entries(meta).map(([key, value]) => (
-                                <TableRow key={key}>
-                                    <TableCell>{key}</TableCell>
-                                    <TableCell>{String(value)}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </Box>
-            </CandidateDetailsRow>
-        );
-    }, []);
+                        ))}
+                    </TableBody>
+                </Table>
+            </Box>
+        </CandidateDetailsRow>
+    );
 }
 
 function MetaArtist({ meta }: { meta: FileMetadata }) {

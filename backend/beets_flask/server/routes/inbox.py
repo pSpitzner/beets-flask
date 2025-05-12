@@ -208,6 +208,7 @@ def _get_filemeta(path: str | Path):
 
     tag = TinyTag.get(path).as_dict()
     for k, v in tag.items():
+        # TODO: we cant just omit if there are multiple values...
         if isinstance(v, list):
             tag[k] = v[0]
     return tag

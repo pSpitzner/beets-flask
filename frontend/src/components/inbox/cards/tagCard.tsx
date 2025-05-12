@@ -118,10 +118,8 @@ function UserSelection({ session }: { session: SerializedSessionState }) {
             const m = new Map<string, string>();
             session.tasks.forEach((task) => {
                 const candidates = task.candidates;
-                if (candidates.length === 1) {
+                if (candidates.length >= 1) {
                     m.set(task.id, candidates[0].id);
-                } else {
-                    m.set(task.id, candidates[1].id);
                 }
             });
             return m;
@@ -129,7 +127,7 @@ function UserSelection({ session }: { session: SerializedSessionState }) {
     );
 
     const selectedCandidate = useMemo(() => {
-        const candidate = [...currentTask.candidates, currentTask.asis_candidate].find(
+        const candidate = [currentTask.asis_candidate, ...currentTask.candidates].find(
             (cand) => cand.id === selectCandidates.get(currentTask.id)
         );
         return candidate;
