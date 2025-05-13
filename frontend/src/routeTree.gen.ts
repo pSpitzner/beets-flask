@@ -14,7 +14,6 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as TerminalIndexImport } from './routes/terminal/index'
 import { Route as SessiondraftIndexImport } from './routes/sessiondraft/index'
 import { Route as InboxIndexImport } from './routes/inbox/index'
-import { Route as ImportIndexImport } from './routes/import/index'
 import { Route as DebugIndexImport } from './routes/debug/index'
 import { Route as FrontpageIndexImport } from './routes/_frontpage/index'
 import { Route as LibrarySearchImport } from './routes/library/search'
@@ -46,12 +45,6 @@ const SessiondraftIndexRoute = SessiondraftIndexImport.update({
 const InboxIndexRoute = InboxIndexImport.update({
   id: '/inbox/',
   path: '/inbox/',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const ImportIndexRoute = ImportIndexImport.update({
-  id: '/import/',
-  path: '/import/',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -182,13 +175,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DebugIndexImport
       parentRoute: typeof rootRoute
     }
-    '/import/': {
-      id: '/import/'
-      path: '/import'
-      fullPath: '/import'
-      preLoaderRoute: typeof ImportIndexImport
-      parentRoute: typeof rootRoute
-    }
     '/inbox/': {
       id: '/inbox/'
       path: '/inbox'
@@ -309,7 +295,6 @@ export interface FileRoutesByFullPath {
   '/library/search': typeof LibrarySearchRoute
   '/': typeof FrontpageIndexRoute
   '/debug': typeof DebugIndexRoute
-  '/import': typeof ImportIndexRoute
   '/inbox': typeof InboxIndexRoute
   '/sessiondraft': typeof SessiondraftIndexRoute
   '/terminal': typeof TerminalIndexRoute
@@ -329,7 +314,6 @@ export interface FileRoutesByTo {
   '/library/search': typeof LibrarySearchRoute
   '/': typeof FrontpageIndexRoute
   '/debug': typeof DebugIndexRoute
-  '/import': typeof ImportIndexRoute
   '/inbox': typeof InboxIndexRoute
   '/sessiondraft': typeof SessiondraftIndexRoute
   '/terminal': typeof TerminalIndexRoute
@@ -350,7 +334,6 @@ export interface FileRoutesById {
   '/library/search': typeof LibrarySearchRoute
   '/_frontpage/': typeof FrontpageIndexRoute
   '/debug/': typeof DebugIndexRoute
-  '/import/': typeof ImportIndexRoute
   '/inbox/': typeof InboxIndexRoute
   '/sessiondraft/': typeof SessiondraftIndexRoute
   '/terminal/': typeof TerminalIndexRoute
@@ -372,7 +355,6 @@ export interface FileRouteTypes {
     | '/library/search'
     | '/'
     | '/debug'
-    | '/import'
     | '/inbox'
     | '/sessiondraft'
     | '/terminal'
@@ -391,7 +373,6 @@ export interface FileRouteTypes {
     | '/library/search'
     | '/'
     | '/debug'
-    | '/import'
     | '/inbox'
     | '/sessiondraft'
     | '/terminal'
@@ -410,7 +391,6 @@ export interface FileRouteTypes {
     | '/library/search'
     | '/_frontpage/'
     | '/debug/'
-    | '/import/'
     | '/inbox/'
     | '/sessiondraft/'
     | '/terminal/'
@@ -431,7 +411,6 @@ export interface RootRouteChildren {
   LibrarySearchRoute: typeof LibrarySearchRoute
   FrontpageIndexRoute: typeof FrontpageIndexRoute
   DebugIndexRoute: typeof DebugIndexRoute
-  ImportIndexRoute: typeof ImportIndexRoute
   InboxIndexRoute: typeof InboxIndexRoute
   SessiondraftIndexRoute: typeof SessiondraftIndexRoute
   TerminalIndexRoute: typeof TerminalIndexRoute
@@ -448,7 +427,6 @@ const rootRouteChildren: RootRouteChildren = {
   LibrarySearchRoute: LibrarySearchRoute,
   FrontpageIndexRoute: FrontpageIndexRoute,
   DebugIndexRoute: DebugIndexRoute,
-  ImportIndexRoute: ImportIndexRoute,
   InboxIndexRoute: InboxIndexRoute,
   SessiondraftIndexRoute: SessiondraftIndexRoute,
   TerminalIndexRoute: TerminalIndexRoute,
@@ -474,7 +452,6 @@ export const routeTree = rootRoute
         "/library/search",
         "/_frontpage/",
         "/debug/",
-        "/import/",
         "/inbox/",
         "/sessiondraft/",
         "/terminal/",
@@ -504,9 +481,6 @@ export const routeTree = rootRoute
     },
     "/debug/": {
       "filePath": "debug/index.tsx"
-    },
-    "/import/": {
-      "filePath": "import/index.tsx"
     },
     "/inbox/": {
       "filePath": "inbox/index.tsx"

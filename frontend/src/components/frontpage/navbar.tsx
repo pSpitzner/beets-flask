@@ -83,7 +83,6 @@ function NavTabs() {
         { label: "Home", icon: <Home />, to: "/" as const },
         { label: "Inbox", icon: <Inbox />, to: "/inbox" as const },
         { label: "Session", icon: <Inbox />, to: "/sessiondraft" as const },
-        { label: "Import", icon: <HardDriveDownload />, to: "/import" as const },
         { label: "Library", icon: <Library />, to: "/library/browse" as const },
         { label: "Search", icon: <Search />, to: "/library/search" as const },
         {
