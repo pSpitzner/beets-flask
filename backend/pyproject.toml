@@ -105,6 +105,8 @@ fixable = ["ALL"]
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
+[tool.ruff.lint.isort]
+known-first-party = ["beets_flask"]
 
 [tool.pytest.ini_options]
 # addopts = ["--import-mode=importlib", "--cov=beets_flask"]

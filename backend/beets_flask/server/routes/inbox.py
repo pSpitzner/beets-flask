@@ -1,11 +1,19 @@
 import shutil
+from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from typing import TypedDict, cast
 
+from cachetools import Cache
+from mediafile import Image, MediaFile  # comes with the beets install
+from quart import Blueprint, jsonify, request
+from sqlalchemy import func, select
+from tinytag import TinyTag
+
 from beets_flask.database import db_session_factory
-from beets_flask.database.models.states import FolderInDb
+from beets_flask.database.models.states import FolderInDb, SessionStateInDb
 from beets_flask.disk import Folder, dir_files, dir_size, log, path_to_folder
+from beets_flask.importer.progress import Progress
 from beets_flask.inbox import (
     get_inbox_folders,
     get_inbox_for_path,
@@ -14,11 +22,6 @@ from beets_flask.server.exceptions import InvalidUsageException, NotFoundExcepti
 from beets_flask.server.routes.library.artwork import send_image
 from beets_flask.server.utility import pop_folder_params, pop_query_param
 from beets_flask.utility import AUDIO_EXTENSIONS
-from cachetools import Cache
-from mediafile import Image, MediaFile  # comes with the beets install
-from quart import Blueprint, jsonify, request
-from sqlalchemy import select
-from tinytag import TinyTag
 
 inbox_bp = Blueprint("inbox", __name__, url_prefix="/inbox")
 
@@ -260,6 +263,8 @@ class InboxStats(TypedDict):
     size: int
     nFiles: int
 
+    last_created: datetime | None
+
 
 @inbox_bp.route("/stats", methods=["GET"])
 async def stats_for_all():
@@ -284,18 +289,49 @@ def compute_stats(folder: str):
     """
     inbox = get_inbox_for_path(folder)
     if inbox is None:
-        return {"error": "Inbox not found", "status": 404}
+        raise NotFoundException(f"Inbox folder `{folder} not found.")
 
     p = Path(folder)
     log.error(f"Computing stats for {folder}, {p}")
+
+    # Compute session stats
+    with db_session_factory() as session:
+        stmt = (
+            select(func.count())
+            .select_from(SessionStateInDb)
+            .join(FolderInDb)
+            .where(FolderInDb.full_path.like(f"{folder}%"))
+            .where(SessionStateInDb.progress >= Progress.PREVIEW_COMPLETED)
+        )
+        n_tagged = session.execute(stmt).scalar_one()
+
+        stmt = (
+            select(func.count())
+            .select_from(SessionStateInDb)
+            .join(FolderInDb)
+            .where(FolderInDb.full_path.like(f"{folder}%"))
+            .where(SessionStateInDb.progress == Progress.IMPORT_COMPLETED)
+        )
+        n_imported = session.execute(stmt).scalar_one()
+
+        # last created session
+        stmt = (
+            select(SessionStateInDb.created_at)
+            .join(FolderInDb)
+            .where(FolderInDb.full_path.like(f"{folder}%"))
+            .order_by(SessionStateInDb.created_at.desc())
+            .limit(1)
+        )
+        last_created = session.execute(stmt).scalars().first()
 
     ret_map: InboxStats = {
         "name": inbox["name"],
         "path": inbox["path"],
         "nFiles": dir_files(p),
         "size": dir_size(p),
-        "tagged_via_gui": -1,  # TODO
-        "imported_via_gui": -1,
+        "tagged_via_gui": n_tagged,
+        "imported_via_gui": n_imported,
+        "last_created": last_created,
     }
 
     return ret_map

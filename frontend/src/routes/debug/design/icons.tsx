@@ -73,10 +73,12 @@ function RouteComponent() {
                     <FolderStatusIcon status={FolderStatus.NOT_STARTED} size={20} />
                     Pending
                     <FolderStatusIcon status={FolderStatus.PENDING} size={20} />
-                    Running
+                    Importing
                     <FolderStatusIcon status={FolderStatus.IMPORTING} size={20} />
-                    Tagged
+                    Previewing
                     <FolderStatusIcon status={FolderStatus.PREVIEWING} size={20} />
+                    Previewed
+                    <FolderStatusIcon status={FolderStatus.PREVIEWED} size={20} />
                     Imported
                     <FolderStatusIcon status={FolderStatus.IMPORTED} size={20} />
                     Undone

@@ -69,6 +69,9 @@ export const inboxStatsQueryOptions = () => ({
     queryFn: async () => {
         const response = await fetch(`/inbox/stats`);
         const dat = (await response.json()) as InboxStats[];
+        dat.forEach((d) => {
+            d.last_created = d.last_created ? new Date(d.last_created) : null;
+        });
         return dat;
     },
 });

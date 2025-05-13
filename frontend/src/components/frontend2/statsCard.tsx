@@ -19,9 +19,9 @@ import {
 import { Link } from "@tanstack/react-router";
 
 import { LibraryStats } from "@/api/library";
-import { InboxStats } from "@/pythonTypes";
+import { FolderStatus, InboxStats } from "@/pythonTypes";
 
-import { PenaltyTypeIcon } from "../common/icons";
+import { FolderStatusIcon, PenaltyTypeIcon } from "../common/icons";
 import { humanizeBytes } from "../common/units/bytes";
 import { humanizeDuration, relativeTime } from "../common/units/time";
 
@@ -137,7 +137,7 @@ export function InboxStatsCard({ inboxStats }: { inboxStats: InboxStats }) {
                         letterSpacing: "1px",
                     }}
                 >
-                    todo
+                    last action: {relativeTime(inboxStats.last_created)}
                 </Typography>
             </CardHeader>
             <CardContent
@@ -170,8 +170,13 @@ export function InboxStatsCard({ inboxStats }: { inboxStats: InboxStats }) {
                     />
                     <StatItem
                         title="Tagged"
-                        icon={<PenaltyTypeIcon type="tracks" />}
+                        icon={<FolderStatusIcon status={FolderStatus.PREVIEWED} />}
                         value={inboxStats.tagged_via_gui}
+                    />
+                    <StatItem
+                        title="Imported"
+                        icon={<FolderStatusIcon status={FolderStatus.IMPORTED} />}
+                        value={inboxStats.imported_via_gui}
                     />
                 </Box>
                 <Box
