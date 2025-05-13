@@ -20,6 +20,7 @@ import {
     Button,
     Checkbox,
     CircularProgress,
+    Fab,
     IconButton,
     Menu,
     MenuItem,
@@ -28,6 +29,7 @@ import {
     SpeedDialActionProps,
     SpeedDialIcon,
     SpeedDialProps,
+    styled,
     Tooltip,
     Typography,
     useMediaQuery,
@@ -102,16 +104,6 @@ export function FolderActionsSpeedDial() {
                 }
             >
                 <Spacer />
-                <SpeedDialMutationAction
-                    icon={<TagIcon />}
-                    tooltip="Retag"
-                    mutationOptions={enqueueMutationOptions}
-                    mutateArgs={{
-                        socket,
-                        selected,
-                        kind: EnqueueKind.PREVIEW,
-                    }}
-                />
                 <RetagAction />
                 <SpeedDialMutationAction
                     icon={<ImportIcon />}
@@ -165,7 +157,6 @@ export function FolderActionsSpeedDial() {
                         delete_files: true,
                     }}
                 />
-                <RefreshAllFoldersButton />
             </SpeedDial>
         </Zoom>
     );
@@ -324,6 +315,11 @@ function SpeedDialAction({
                     // show tooltips always on mobile devices
                     open: isMobile ?? undefined,
                     title: tooltip,
+                    children: (
+                        <Typography sx={{ backgroundColor: "red" }}>
+                            {tooltip}
+                        </Typography>
+                    ),
                 },
                 staticTooltipLabel: {
                     sx: (theme) => ({
@@ -452,7 +448,7 @@ function RetagAction({ ...props }: SpeedDialActionProps) {
             >
                 <SpeedDialMutationAction
                     icon={<TagIcon />}
-                    tooltip="Retag"
+                    tooltip={"Retag"}
                     mutationOptions={enqueueMutationOptions}
                     mutateArgs={{
                         socket,
@@ -463,12 +459,14 @@ function RetagAction({ ...props }: SpeedDialActionProps) {
                     }}
                     sx={{
                         marginRight: 0,
-                        border: "1px solid rgba(255, 255, 255, 0.12)",
+                        [theme.breakpoints.up("tablet")]: {
+                            border: "1px solid rgba(255, 255, 255, 0.12)",
+                        },
                     }}
                     {...props}
                 />
                 <Box
-                    sx={{
+                    sx={(theme) => ({
                         display: "flex",
                         border: "1px solid rgba(255, 255, 255, 0.12)",
                         marginLeft: "-0.5rem",
@@ -476,7 +474,10 @@ function RetagAction({ ...props }: SpeedDialActionProps) {
                         borderTopRightRadius: "15px",
                         borderBottomRightRadius: "15px",
                         paddingRight: "0.25rem",
-                    }}
+                        [theme.breakpoints.down("tablet")]: {
+                            display: "none",
+                        },
+                    })}
                 >
                     <Tooltip title="Group albums">
                         <Checkbox

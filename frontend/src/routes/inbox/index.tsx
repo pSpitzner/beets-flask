@@ -37,7 +37,10 @@ import {
 } from "@/components/common/icons";
 import { PageWrapper } from "@/components/common/page";
 import { CardHeader } from "@/components/frontend2/statsCard";
-import { FolderActionsSpeedDial } from "@/components/inbox/actions";
+import {
+    FolderActionsSpeedDial,
+    RefreshAllFoldersButton,
+} from "@/components/inbox/actions";
 import {
     FolderComponent,
     GridWrapper,
@@ -160,6 +163,21 @@ function PageHeader({ inboxes, ...props }: { inboxes: Folder[] } & BoxProps) {
             >
                 <InfoDescription />
             </Box>
+            <Box
+                sx={{
+                    alignSelf: "center",
+                    display: "flex",
+                    gap: 1,
+                    zIndex: 1,
+                    borderRadius: 1,
+                    color: "secondary.muted",
+                    gridColumn: "1",
+                    gridRow: "1",
+                    justifySelf: "flex-start",
+                }}
+            >
+                <RefreshAllFoldersButton />
+            </Box>
         </Box>
     );
 }
@@ -187,7 +205,7 @@ function InboxCard({ folder }: { folder: Folder }) {
         <Card sx={{ width: "100%", padding: 2 }}>
             <CardHeader
                 key={folder.full_path}
-                icon={<InboxIcon size={36} />}
+                icon={<InboxIcon size={30} />}
                 color="secondary.main"
             >
                 <Box
@@ -216,7 +234,7 @@ function InboxCard({ folder }: { folder: Folder }) {
                         },
                     }}
                 >
-                    <Typography variant="h6" sx={{ fontWeight: "bold", m: 0, p: 0 }}>
+                    <Typography variant="body1" sx={{ fontWeight: "bold", m: 0, p: 0 }}>
                         {folderConfig.name}
                     </Typography>
                     <Typography

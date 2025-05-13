@@ -213,10 +213,12 @@ function FolderTreeRow({
     return (
         <LevelIndentWrapper
             level={level}
-            sx={{
+            sx={(theme) => ({
                 gridColumn: "tree",
-                color: `hsl(210deg, 8.75%, ${whiteness}%)`,
-            }}
+                [theme.breakpoints.down("laptop")]: {
+                    color: `hsl(210deg, 8.75%, ${whiteness}%)`,
+                },
+            })}
         >
             {/* Collapse/Expand button */}
             <IconButton
@@ -342,22 +344,25 @@ function LevelIndentWrapper({
 
     return (
         <Box
-            sx={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
-                paddingBlock: "1px",
-                position: "relative",
-                flexShrink: 0,
-                gap: "0.4rem",
-                paddingLeft: level * ICON_SIZE + "px",
+            sx={[
+                {
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingBlock: "1px",
+                    position: "relative",
+                    flexShrink: 0,
+                    gap: "0.4rem",
+                    paddingLeft: level * ICON_SIZE + "px",
 
-                // Mobile styling
-                [theme.breakpoints.down("laptop")]: {
-                    paddingLeft: `calc(${level} * ${theme.spacing(0.5)})`,
+                    // Mobile styling
+                    [theme.breakpoints.down("laptop")]: {
+                        paddingLeft: `calc(${level} * ${theme.spacing(0.5)})`,
+                    },
                 },
-                ...sx,
-            }}
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                ...(Array.isArray(sx) ? sx : [sx]),
+            ]}
         >
             {Array.from({ length: Math.floor(level) }, (_, i) => (
                 <Box
@@ -441,6 +446,8 @@ export function SelectedStats() {
                 alignItems: "flex-start",
                 justifyContent: "flex-start",
                 width: "100%",
+                paddingBlock: 1,
+                paddingLeft: 1,
             }}
         >
             <Typography fontSize={12} variant="body2">
