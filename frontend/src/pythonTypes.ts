@@ -224,6 +224,8 @@ export interface AlbumResponseMinimalExpanded {
 	albumartist: string;
 	year: number;
 	items: Array<ItemResponseMinimal>;
+	gui_import_id?: string;
+	gui_import_date?: string;
 }
 
 export interface AlbumResponseMinimal {
@@ -282,6 +284,8 @@ export interface AlbumResponseExpanded {
 	label: string;
 	sources: Array<AlbumSource>;
 	items: Array<ItemResponse>;
+	gui_import_id?: string;
+	gui_import_date?: string;
 }
 
 export interface AlbumSource {

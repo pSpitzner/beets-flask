@@ -474,6 +474,9 @@ class AlbumResponseMinimal(TypedDict):
 class AlbumResponseMinimalExpanded(AlbumResponseMinimal):
     items: list[ItemResponseMinimal]
 
+    gui_import_id: NotRequired[str]
+    gui_import_date: NotRequired[str]
+
 
 class AlbumResponse(AlbumResponseMinimal):
     """Type definition for the full album response.
@@ -495,6 +498,9 @@ class AlbumResponse(AlbumResponseMinimal):
 
 class AlbumResponseExpanded(AlbumResponse):
     items: list[ItemResponse]
+
+    gui_import_id: NotRequired[str]
+    gui_import_date: NotRequired[str]
 
 
 class AlbumSource(TypedDict):

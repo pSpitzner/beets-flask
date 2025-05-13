@@ -56,11 +56,20 @@ const router = createRouter({
     // Error handling
     defaultErrorComponent: ({ error }) => (
         <PageWrapper
-            sx={{
+            sx={(theme) => ({
                 height: "100%",
-            }}
+                display: "flex",
+                [theme.breakpoints.up("tablet")]: {
+                    p: 1,
+                },
+            })}
         >
-            <Box sx={{ my: "auto", width: "100%" }}>
+            <Box
+                sx={{
+                    my: "auto",
+                    width: "100%",
+                }}
+            >
                 <ErrorCard error={error} />
             </Box>
         </PageWrapper>
