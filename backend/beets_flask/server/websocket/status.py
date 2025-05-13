@@ -11,6 +11,8 @@ from functools import wraps
 from typing import Awaitable, Callable, Concatenate, Literal, ParamSpec, TypeVar
 
 import socketio
+from quart import json
+
 from beets_flask.database import db_session_factory
 from beets_flask.database.models.states import FolderInDb
 from beets_flask.importer.progress import FolderStatus
@@ -21,7 +23,6 @@ from beets_flask.server.exceptions import (
     SerializedException,
     to_serialized_exception,
 )
-from quart import json
 
 from . import sio
 from .errors import sio_catch_exception

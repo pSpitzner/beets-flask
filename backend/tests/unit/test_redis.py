@@ -12,7 +12,6 @@ def f():
 
 
 class TestRedisMock:
-
     def test_enqueue_global_import(self):
         """Tests that enqueue works as expected in the
         test setup.

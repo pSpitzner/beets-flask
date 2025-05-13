@@ -1,9 +1,10 @@
-from beets_flask.redis import queues, redis_conn
 from quart import Blueprint
 from rq.job import Job
 from rq.registry import clean_registries
 from rq.worker import Worker
 from rq.worker_registration import clean_worker_registry
+
+from beets_flask.redis import queues, redis_conn
 
 monitor_bp = Blueprint("monitor", __name__, url_prefix="/monitor")
 

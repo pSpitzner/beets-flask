@@ -5,7 +5,6 @@ the default location of the user.
 
 import pytest
 from quart.typing import TestClientProtocol as Client
-
 from tests.conftest import beets_lib_album, beets_lib_item
 
 

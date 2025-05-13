@@ -54,7 +54,6 @@ from beets_flask.disk import is_album_folder
 
 
 class TestIsAlbumFolder:
-
     @pytest.mark.parametrize(
         "type",
         [Path, str, lambda x: str(x).encode("utf-8")],
@@ -82,7 +81,6 @@ class TestIsAlbumFolder:
 
 
 def test_all_album_folders_no_subdirs(base):
-
     from beets_flask.disk import all_album_folders
 
     all_albums = [
@@ -102,7 +100,6 @@ def test_all_album_folders_no_subdirs(base):
 
 
 def test_all_album_folders_with_subdirs(base):
-
     from beets_flask.disk import all_album_folders
 
     all_albums_with_subdirs = [
@@ -125,7 +122,6 @@ def test_all_album_folders_with_subdirs(base):
 
 
 def test_is_within_multi_dir(base):
-
     from beets_flask.disk import is_within_multi_dir
 
     assert is_within_multi_dir(base + "/artist/album_multi/1/CD1/")
@@ -178,7 +174,6 @@ testdata = [
 def test_album_folders_from_track(
     base, input: list[str], use_parent_for_multidisc: bool, expected: list[str]
 ):
-
     from beets_flask.disk import album_folders_from_track_paths
 
     # Try legacy using string paths

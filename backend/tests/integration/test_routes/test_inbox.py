@@ -8,7 +8,6 @@ from beets_flask.disk import Folder
 
 
 class TestDeleteEndpoint:
-
     tmp_path: Path
 
     @pytest.fixture(autouse=True)

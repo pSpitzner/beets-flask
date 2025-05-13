@@ -6,11 +6,11 @@ from beets.library import Library
 from quart.typing import TestClientProtocol as Client
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from tests.conftest import beets_lib_item
+from tests.unit.test_importer.test_states import get_album_match
 
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
 from beets_flask.importer.states import SessionState
-from tests.conftest import beets_lib_item
-from tests.unit.test_importer.test_states import get_album_match
 
 
 @pytest.fixture

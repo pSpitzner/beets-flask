@@ -1,12 +1,13 @@
 from datetime import datetime
 from typing import Any, Generic, Sequence, TypeVar
 
+from quart import Blueprint, request
+from sqlalchemy import select
+
 from beets_flask.database import db_session_factory
 from beets_flask.database.models.base import Base
 from beets_flask.server.routes.exception import InvalidUsageException
 from beets_flask.server.utility import pop_query_param
-from quart import Blueprint, request
-from sqlalchemy import select
 
 __all__ = ["ModelAPIBlueprint"]
 

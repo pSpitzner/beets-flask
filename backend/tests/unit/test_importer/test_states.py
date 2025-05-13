@@ -4,6 +4,8 @@ from typing import List
 
 import pytest
 from beets import autotag, importer
+from tests.conftest import beets_lib_item
+
 from beets_flask.importer.states import (
     CandidateState,
     Progress,
@@ -12,7 +14,6 @@ from beets_flask.importer.states import (
 )
 from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackInfo
 from beets_flask.server.app import Encoder
-from tests.conftest import beets_lib_item
 
 log = logging.getLogger(__name__)
 
