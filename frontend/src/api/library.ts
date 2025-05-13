@@ -68,8 +68,8 @@ interface AlbumResponseFull extends AlbumResponse {
 }
 
 export type Album<
-    Minimal extends boolean,
     Expand extends boolean,
+    Minimal extends boolean,
 > = Minimal extends true
     ? Expand extends true
         ? AlbumResponseMinimalExpanded

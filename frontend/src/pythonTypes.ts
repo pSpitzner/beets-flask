@@ -26,15 +26,7 @@ export interface SerializedProgressState {
 	plugin_name: null | string;
 }
 
-export interface TrackInfo {
-	type: "album" | "item" | "track";
-	artist: null | string;
-	album: null | string;
-	data_url: null | string;
-	data_source: null | string;
-	year: null | number;
-	genre: null | string;
-	media: null | string;
+export interface TrackInfo extends MusicInfo {
 	title: null | string;
 	length: null | number;
 	isrc: null | string;
@@ -43,15 +35,7 @@ export interface TrackInfo {
 	medium: null | number;
 }
 
-export interface AlbumInfo {
-	type: "album" | "item" | "track";
-	artist: null | string;
-	album: null | string;
-	data_url: null | string;
-	data_source: null | string;
-	year: null | number;
-	genre: null | string;
-	media: null | string;
+export interface AlbumInfo extends MusicInfo {
 	mediums: null | number;
 	country: null | string;
 	label: null | string;
@@ -87,7 +71,7 @@ export interface Metadata {
 	albumdisambig: null | string;
 }
 
-export interface ItemInfo {
+export interface MusicInfo {
 	type: "album" | "item" | "track";
 	artist: null | string;
 	album: null | string;
@@ -96,6 +80,9 @@ export interface ItemInfo {
 	year: null | number;
 	genre: null | string;
 	media: null | string;
+}
+
+export interface ItemInfo extends MusicInfo {
 	title: null | string;
 	length: null | number;
 	isrc: null | string;
@@ -291,6 +278,9 @@ export interface AlbumResponseExpanded {
 	path: string;
 	albumartist: string;
 	year: number;
+	genre: string;
+	label: string;
+	sources: Array<AlbumSource>;
 	items: Array<ItemResponse>;
 }
 

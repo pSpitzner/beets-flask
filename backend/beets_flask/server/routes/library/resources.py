@@ -493,7 +493,7 @@ class AlbumResponse(AlbumResponseMinimal):
     sources: list[AlbumSource]
 
 
-class AlbumResponseExpanded(AlbumResponseMinimal):
+class AlbumResponseExpanded(AlbumResponse):
     items: list[ItemResponse]
 
 
