@@ -5,6 +5,11 @@ main {
     flex-direction: column;
 }
 
+body {
+    /* Slide in transition shows overflow if this is not hidden on body*/
+    overflow: hidden;
+}
+
 a {
     text-decoration: none;
     color: inherit;

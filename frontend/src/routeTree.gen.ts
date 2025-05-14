@@ -20,6 +20,7 @@ import { Route as LibrarySearchImport } from './routes/library/search'
 import { Route as LibraryBrowseImport } from './routes/library/browse'
 import { Route as DebugJobsImport } from './routes/debug/jobs'
 import { Route as DebugErrorImport } from './routes/debug/error'
+import { Route as DebugAudioImport } from './routes/debug/audio'
 import { Route as LibraryBrowseArtistImport } from './routes/library/browse.$artist'
 import { Route as InboxTaskTaskIdImport } from './routes/inbox/task.$taskId'
 import { Route as InboxFolderPathImport } from './routes/inbox/folder.$path'
@@ -85,6 +86,12 @@ const DebugErrorRoute = DebugErrorImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const DebugAudioRoute = DebugAudioImport.update({
+  id: '/debug/audio',
+  path: '/debug/audio',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const LibraryBrowseArtistRoute = LibraryBrowseArtistImport.update({
   id: '/$artist',
   path: '/$artist',
@@ -140,6 +147,13 @@ const LibraryBrowseArtistAlbumIdItemIdRoute =
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/debug/audio': {
+      id: '/debug/audio'
+      path: '/debug/audio'
+      fullPath: '/debug/audio'
+      preLoaderRoute: typeof DebugAudioImport
+      parentRoute: typeof rootRoute
+    }
     '/debug/error': {
       id: '/debug/error'
       path: '/debug/error'
@@ -303,6 +317,7 @@ const LibraryBrowseRouteWithChildren = LibraryBrowseRoute._addFileChildren(
 )
 
 export interface FileRoutesByFullPath {
+  '/debug/audio': typeof DebugAudioRoute
   '/debug/error': typeof DebugErrorRoute
   '/debug/jobs': typeof DebugJobsRoute
   '/library/browse': typeof LibraryBrowseRouteWithChildren
@@ -323,6 +338,7 @@ export interface FileRoutesByFullPath {
 }
 
 export interface FileRoutesByTo {
+  '/debug/audio': typeof DebugAudioRoute
   '/debug/error': typeof DebugErrorRoute
   '/debug/jobs': typeof DebugJobsRoute
   '/library/browse': typeof LibraryBrowseRouteWithChildren
@@ -344,6 +360,7 @@ export interface FileRoutesByTo {
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
+  '/debug/audio': typeof DebugAudioRoute
   '/debug/error': typeof DebugErrorRoute
   '/debug/jobs': typeof DebugJobsRoute
   '/library/browse': typeof LibraryBrowseRouteWithChildren
@@ -366,6 +383,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/debug/audio'
     | '/debug/error'
     | '/debug/jobs'
     | '/library/browse'
@@ -385,6 +403,7 @@ export interface FileRouteTypes {
     | '/library/browse/$artist/$albumId/$itemId'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/debug/audio'
     | '/debug/error'
     | '/debug/jobs'
     | '/library/browse'
@@ -404,6 +423,7 @@ export interface FileRouteTypes {
     | '/library/browse/$artist/$albumId/$itemId'
   id:
     | '__root__'
+    | '/debug/audio'
     | '/debug/error'
     | '/debug/jobs'
     | '/library/browse'
@@ -425,6 +445,7 @@ export interface FileRouteTypes {
 }
 
 export interface RootRouteChildren {
+  DebugAudioRoute: typeof DebugAudioRoute
   DebugErrorRoute: typeof DebugErrorRoute
   DebugJobsRoute: typeof DebugJobsRoute
   LibraryBrowseRoute: typeof LibraryBrowseRouteWithChildren
@@ -442,6 +463,7 @@ export interface RootRouteChildren {
 }
 
 const rootRouteChildren: RootRouteChildren = {
+  DebugAudioRoute: DebugAudioRoute,
   DebugErrorRoute: DebugErrorRoute,
   DebugJobsRoute: DebugJobsRoute,
   LibraryBrowseRoute: LibraryBrowseRouteWithChildren,
@@ -468,6 +490,7 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
+        "/debug/audio",
         "/debug/error",
         "/debug/jobs",
         "/library/browse",
@@ -483,6 +506,9 @@ export const routeTree = rootRoute
         "/inbox/task/$taskId",
         "/inbox/folder_/$path/$hash"
       ]
+    },
+    "/debug/audio": {
+      "filePath": "debug/audio.tsx"
     },
     "/debug/error": {
       "filePath": "debug/error.tsx"
