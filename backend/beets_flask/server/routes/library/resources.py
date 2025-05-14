@@ -478,6 +478,9 @@ class AlbumResponseMinimalExpanded(AlbumResponseMinimal):
     gui_import_id: NotRequired[str]
     gui_import_date: NotRequired[str]
 
+    # Not sure if these are always set
+    albumtype: NotRequired[str]
+
 
 class AlbumResponse(AlbumResponseMinimal):
     """Type definition for the full album response.
@@ -502,6 +505,9 @@ class AlbumResponseExpanded(AlbumResponse):
 
     gui_import_id: NotRequired[str]
     gui_import_date: NotRequired[str]
+
+    # Not sure if these are always set
+    albumtype: NotRequired[str]
 
 
 class AlbumSource(TypedDict):
