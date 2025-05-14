@@ -51,6 +51,7 @@ export const artQueryOptions = ({ type, id }: { type?: string; id?: number }) =>
             const objectUrl = URL.createObjectURL(blob);
             return objectUrl;
         },
+        retry: 1,
     });
 
 // Artist names

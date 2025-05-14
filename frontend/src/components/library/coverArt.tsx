@@ -26,23 +26,22 @@ export default function CoverArt({
 }: CoverArtProps & Partial<BoxProps>) {
     const {
         data: art,
-        isFetching: isFetching,
+        isPending,
         isError,
         error,
-    } = useQuery({
-        ...artQueryOptions({ type, id: beetsId }),
-        retry: false,
-    });
+    } = useQuery(artQueryOptions({ type, id: beetsId }));
 
     const coverSx = {
         height: 100,
         width: 100,
         marginRight: "0.1rem",
         marginLeft: "0.1rem",
+        aspectRatio: "1 / 1",
+        overflow: "hidden",
         ...sx,
     } as SxProps;
 
-    if (isFetching) {
+    if (isPending) {
         return <CoverArtPlaceholder sx={coverSx} animation="wave" {...props} />;
     }
 
