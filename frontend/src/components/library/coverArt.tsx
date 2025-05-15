@@ -7,23 +7,17 @@ import { useQuery } from "@tanstack/react-query";
 import { APIError } from "@/api/common";
 import { artQueryOptions } from "@/api/library";
 
-interface CoverArtProps {
+export interface CoverArtProps extends BoxProps {
     type: "item" | "album";
-    beetsId: number;
+    beetsId?: number;
     sx?: SxProps;
-    showPlaceholder?: boolean;
 }
 
 /** Cover art
  *
  * Shows the cover art for an item or album.
  */
-export default function CoverArt({
-    type,
-    beetsId,
-    sx,
-    ...props
-}: CoverArtProps & Partial<BoxProps>) {
+export default function CoverArt({ type, beetsId, sx, ...props }: CoverArtProps) {
     const {
         data: art,
         isPending,
@@ -55,6 +49,8 @@ export default function CoverArt({
 
     if (art) {
         return <CoverArtContent sx={coverSx} src={art} {...props} />;
+    } else {
+        return <CoverArtPlaceholder sx={coverSx} animation={false} {...props} />;
     }
 }
 
