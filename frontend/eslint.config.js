@@ -126,5 +126,11 @@ export default ts.config(
                 },
             ],
         }
+    },
+    {
+        files: ["**/*context.ts*"],
+        rules: {
+            "react-refresh/only-export-components": "off",
+        },
     }
 );
