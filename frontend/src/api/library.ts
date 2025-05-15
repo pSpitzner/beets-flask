@@ -1,4 +1,5 @@
-import { queryOptions } from "@tanstack/react-query";
+import { useRef, useState } from "react";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 
 import {
     AlbumResponse,
@@ -9,6 +10,8 @@ import {
     ItemResponseMinimal,
     LibraryStats as _LibraryStats,
 } from "@/pythonTypes";
+
+import { queryClient } from "./common";
 
 export type LibraryStats = Omit<_LibraryStats, "lastItemAdded" | "lastItemModified"> & {
     lastItemAdded?: Date;
@@ -192,3 +195,93 @@ export const albumImportedOptions = <Expand extends boolean, Minimal extends boo
     },
     retry: 1,
 });
+
+// Audio for a library item, needs a bit more of logic
+// to handle loading and errors
+// Resolves to success once the audio is ready to play
+// this does not mean tho, that the audio is completely loaded
+// but that the audio can be partially played
+
+function fetchAudio(url: string, signal: AbortSignal) {
+    const audio = new Audio();
+    audio.src = url;
+    audio.preload = "auto";
+
+    return new Promise<HTMLAudioElement>((resolve, reject) => {
+        const onCanPlay = () => {
+            cleanup();
+            resolve(audio);
+        };
+        const onError = () => {
+            cleanup();
+            reject(new Error(audio.error!.message));
+        };
+        const onAbort = () => {
+            cleanup();
+            // stop downloading
+            audio.pause();
+            reject(new Error("Audio load aborted"));
+        };
+
+        function cleanup() {
+            audio.removeEventListener("canplay", onCanPlay);
+            audio.removeEventListener("error", onError);
+        }
+
+        audio.addEventListener("canplay", onCanPlay, { once: true });
+        audio.addEventListener("error", onError, { once: true });
+        signal.addEventListener("abort", onAbort, { once: true });
+
+        // Begin loading
+        audio.load();
+    });
+}
+
+export function useItemAudio(id?: number) {
+    const q = useQuery({
+        queryKey: ["item", "audio", id],
+        queryFn: async ({ signal }) => {
+            if (!id) {
+                return null;
+            }
+            return fetchAudio(`/api_v1/library/item/${id}/audio`, signal);
+        },
+        retry: false,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        refetchOnMount: false,
+        refetchOnWindowFocus: false,
+        refetchInterval: false,
+        refetchIntervalInBackground: false,
+    });
+
+    return {
+        ...q,
+    };
+}
+
+export function prefetchItemAudio(id: number) {
+    return queryClient.prefetchQuery({
+        queryKey: ["item", "audio", id],
+        queryFn: async ({ signal }) => {
+            return fetchAudio(`/api_v1/library/item/${id}/audio`, signal);
+        },
+        staleTime: 5 * 60 * 1000, // 5 minutes
+    });
+}
+
+export function waveformQueryOptions(id?: number) {
+    return queryOptions({
+        queryKey: ["item", "audio", "waveform", id],
+        queryFn: async () => {
+            if (!id) {
+                return null;
+            }
+            const response = await fetch(`/library/item/${id}/audio/peaks`);
+            //application/octet-stream numpy array float32
+            const blob = await response.blob();
+            const arrayBuffer = await blob.arrayBuffer();
+            const data = new Float32Array(arrayBuffer);
+            return data;
+        },
+    });
+}

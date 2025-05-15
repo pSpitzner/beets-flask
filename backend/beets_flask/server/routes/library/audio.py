@@ -10,8 +10,9 @@ from asyncio.subprocess import PIPE, Process
 from typing import TYPE_CHECKING, AsyncIterator
 
 import aiofiles
+import numpy as np
 from beets import util as beets_util
-from quart import Blueprint, Response, g
+from quart import Blueprint, Response, g, jsonify
 
 from beets_flask.logger import log
 from beets_flask.server.exceptions import IntegrityException, NotFoundException
@@ -46,6 +47,31 @@ async def item_audio(item_id: int):
     return Response(
         it,
         mimetype="audio/mpeg",
+    )
+
+
+@audio_bp.route("/item/<int:item_id>/audio/peaks", methods=["GET"])
+async def item_audio_peaks(item_id: int):
+    """Get the raw item data.
+
+    For streaming the audio file directly to the clien.
+    """
+    item = g.lib.get_item(item_id)
+    if not item:
+        raise NotFoundException(
+            f"Item with beets_id:'{item_id}' not found in beets db."
+        )
+
+    item_path = beets_util.syspath(item.path)
+    if not os.path.exists(item_path):
+        raise IntegrityException(
+            f"Item file '{item_path}' does not exist for item beets_id:'{item_id}'."
+        )
+
+    peaks = await audio_peaks(item_path)
+    return Response(
+        peaks.tobytes(),
+        mimetype="application/octet-stream",
     )
 
 
@@ -103,6 +129,28 @@ class FFmpegStreamer:
                 f"Streamed {file_path} in {(end - start) / 1_000_000_000:.2f} s to mp3"
             )
 
+    async def stream(self) -> AsyncIterator[bytes]:
+        """Stream audio data from the FFmpeg process."""
+        if (
+            self.process is None
+            or self.process.stdin is None
+            or self.process.stdout is None
+        ):
+            raise RuntimeError("FFmpeg process not started. Call start() first.")
+
+        start = time.process_time_ns()
+        try:
+            while not self.process.stdout.at_eof():
+                chunk = await self.process.stdout.read(self.chunk_size)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            await self.process.wait()
+
+            end = time.process_time_ns()
+            log.info(f"Streamed  in {(end - start) / 1_000_000_000:.2f} s")
+
     async def _drain_stderr(self):
         """Continuously read and print FFmpeg stderr."""
         assert self.process and self.process.stderr
@@ -122,7 +170,7 @@ class FFmpegStreamer:
         self.process.stdin.close()
 
     async def _file_chunker(
-        self, path: str, size: int = 1024 * 1024
+        self, path: str, size: int = 64 * 1024
     ) -> AsyncIterator[bytes]:
         async with aiofiles.open(path, "rb") as f:
             while True:
@@ -161,3 +209,36 @@ async def transcode_to_mp3(file_path: str) -> AsyncIterator[bytes]:
     # fmt: on
 
     return ffmpeg_streamer.stream_file(file_path)
+
+
+# TODO: cache
+async def audio_peaks(path: str):
+    ffmpeg_streamer = FFmpegStreamer()
+
+    # fmt: off
+    await ffmpeg_streamer.start(*[
+        "-hide_banner",
+        "-loglevel", "error",
+        '-i', str(path),
+        '-ac', "1",
+        '-filter:a', 'aresample=8000',
+        '-map','0:a',
+        '-c:a',
+        'pcm_s16le',
+        '-f', 'data',       # Signed 16-bit little-endian PCM
+        '-'
+    ])
+    # fmt: on
+
+    # FIXME: There is a better way to do this i.e. bytes concatenation directly
+    raw_samples = [chunk async for chunk in ffmpeg_streamer.stream()]
+    samples = np.frombuffer(
+        b"".join(raw_samples), dtype=np.int16
+    )  # Convert to numpy array
+
+    samples = samples / 32768.0
+
+    window_size = 2056
+    starts = np.arange(0, samples.shape[0], window_size)
+    maxs = np.maximum.reduceat(samples, starts, dtype=np.float32)
+    return maxs

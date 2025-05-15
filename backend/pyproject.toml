@@ -38,6 +38,7 @@ dependencies = [
     "pydub",
     "aiohttp",
     "aiofiles",
+    "numpy",
 ]
 
 [project.optional-dependencies]
