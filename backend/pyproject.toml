@@ -37,6 +37,7 @@ dependencies = [
     "tinytag",
     "pydub",
     "aiohttp",
+    "aiofiles",
 ]
 
 [project.optional-dependencies]

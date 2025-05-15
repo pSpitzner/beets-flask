@@ -42,7 +42,7 @@ export const artQueryOptions = ({ type, id }: { type?: string; id?: number }) =>
         queryKey: ["art", type, id],
         queryFn: async () => {
             if (id === undefined || id === null) {
-                return undefined;
+                return null;
             }
             console.log("artQueryOptions", type, id);
             const url = `/library/${type}/${id}/art`;
