@@ -43,17 +43,6 @@ export const humanizeDuration = (duration: number) => {
     return parts.join(" ");
 };
 
-export const trackLengthRep = (length?: number | null) => {
-    if (length === undefined || length === null) {
-        return "(?:??)";
-    }
-    // length is in seconds, but with floating precision
-    const hours = Math.floor(length / 3600);
-    const minutes = Math.floor((length % 3600) / 60);
-    const seconds = Math.floor(length % 60);
-    return `(${hours ? `${hours}h ` : ""}${minutes}:${seconds.toString().padStart(2, "0")})`;
-};
-
 /**
  * Formats a Date object using Python-style format strings
  * @param date - The Date object to format
@@ -116,4 +105,33 @@ export const formatDate = (date: Date, formatStr: string) => {
         /%[YymdHMSAaBb]/g,
         (match) => replacements[match] || match
     );
+};
+
+export function trackLength(length: number): {
+    hours: number;
+    minutes: number;
+    seconds: number;
+} {
+    const hours = Math.floor(length / 3600);
+    const minutes = Math.floor((length % 3600) / 60);
+    const seconds = Math.floor(length % 60);
+
+    return { hours, minutes, seconds };
+}
+
+/** Track length representation
+ *
+ * - (?:??) (if length is unknown)
+ * - (00:00)
+ * - (00h:00:00) (if hours > 0)
+ *
+ * brackets - if false it will return a string without brackets
+ */
+export const trackLengthRep = (length?: number | null, brackets = true) => {
+    if (length === undefined || length === null) {
+        return brackets ? "(?:??)" : "?:??";
+    }
+    const { hours, minutes, seconds } = trackLength(length);
+    const s = `${hours ? `${hours}h ` : ""}${minutes}:${seconds.toString().padStart(2, "0")}`;
+    return brackets ? `(${s})` : s;
 };

@@ -29,6 +29,7 @@ import CoverArt from "./coverArt";
 import { SourceTypeIcon } from "../common/icons";
 import { ClipboardCopyButton } from "../common/inputs/copy";
 import { Search } from "../common/inputs/search";
+import { trackLengthRep } from "../common/units/time";
 
 export function ItemById({ itemId }: { itemId: number }) {
     const { data: item } = useSuspenseQuery(
@@ -176,7 +177,7 @@ function SongInfo({ item, ...props }: { item: ItemT<false> } & BoxProps) {
                             }}
                         >
                             <Typography variant="body2" color="text.secondary">
-                                {formatTime(item.length)}
+                                {trackLengthRep(item.length, false)}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
                                 Track {item.track} of {item.tracktotal}
@@ -712,10 +713,3 @@ const ItemGrid = styled(Box)(({ theme }) => ({
         justifyContent: "center",
     },
 }));
-
-function formatTime(n: number | undefined): string {
-    if (n === undefined) return "unk";
-    const minutes = Math.floor(n / 60);
-    const seconds = n % 60;
-    return `${minutes}:${seconds.toFixed().padStart(2, "0")}`;
-}
