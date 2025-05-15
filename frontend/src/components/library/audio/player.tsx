@@ -20,6 +20,8 @@ import {
     useTheme,
 } from "@mui/material";
 
+import { humanizeDuration, trackLength } from "@/components/common/units/time";
+
 import { useAudioContext } from "./context";
 
 import CoverArt, { CoverArtProps } from "../coverArt";
@@ -99,9 +101,7 @@ export function DesktopPlayer() {
                         }}
                     >
                         <ClockIcon size={theme.iconSize.sm} />
-                        <Typography variant="body2" lineHeight={1}>
-                            00:00
-                        </Typography>
+                        <CurrentDuration variant="body2" lineHeight={1} />
                     </Box>
 
                     <Box
@@ -445,4 +445,25 @@ function CurrentArtist(props: TypographyProps) {
 function CurrentTitle(props: TypographyProps) {
     const { currentItem } = useAudioContext();
     return <Typography {...props}>{currentItem?.name || "Unknown"}</Typography>;
+}
+
+function CurrentDuration(props: TypographyProps) {
+    const { currentItem } = useAudioContext();
+
+    // TODO: current time
+    const currentTime = 0;
+    const duration = currentItem?.length || 0;
+
+    /**
+     * 
+    if (!currentItem?.length) {
+        return "no";
+    }
+    */
+
+    return (
+        <Typography {...props}>
+            {trackLength(currentTime)} / {trackLength(duration)}
+        </Typography>
+    );
 }
