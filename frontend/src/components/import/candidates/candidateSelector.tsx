@@ -3,6 +3,8 @@ import {
     ChevronsDownUpIcon,
     ChevronsUpDownIcon,
     ExternalLinkIcon,
+    EyeIcon,
+    EyeOffIcon,
 } from "lucide-react";
 import {
     createContext,
@@ -17,14 +19,10 @@ import {
 } from "react";
 import {
     ButtonGroup,
-    Chip,
-    ChipProps,
     Divider,
-    Grid,
     IconButton,
     Radio,
     Skeleton,
-    Stack,
     styled,
     SxProps,
     Table,
@@ -33,7 +31,6 @@ import {
     TableHead,
     TableRow,
     Theme,
-    Tooltip,
     Typography,
     useTheme,
 } from "@mui/material";
@@ -41,9 +38,8 @@ import Box, { BoxProps } from "@mui/material/Box";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
-import { FileMetadata, fileMetaQueryOptions } from "@/api/inbox";
+import { fileMetaQueryOptions } from "@/api/inbox";
 import { Search } from "@/components/common/inputs/search";
-import { isLikelyBlob } from "@/components/common/units/bytes";
 import {
     AlbumInfo,
     SerializedCandidateState,
@@ -57,6 +53,7 @@ import {
     ImportCandidateLabel,
 } from "./actions";
 import { GenericDetailsItem, GenericDetailsItemWithDiff, TrackDiff } from "./diff";
+import { MetaBadge } from "./metaBadge";
 
 import { MatchChip } from "../../common/chips";
 import { PenaltyTypeIcon, SourceTypeIcon } from "../../common/icons";
@@ -719,6 +716,8 @@ function AsisCandidateDetails({
 }) {
     const ref = useRef<HTMLDivElement>(null);
     const { isExpanded, selected } = useCandidateSelection();
+    const [advanced, setAdvanced] = useState(false);
+    const theme = useTheme();
 
     const expanded = isExpanded(candidate.id);
     const { data } = useSuspenseQuery(
@@ -739,83 +738,6 @@ function AsisCandidateDetails({
     }, [meta, filter]);
     const nExcluded = Object.entries(meta).length - filteredMeta.length;
 
-    // I created an empty file, and these keys we
-    // we still got -> make badges?:
-
-    // filename	/music/inbox/Annix/Antidote/empty.flac
-    // filesize	30929699
-    // duration	224.77544217687074
-    // channels	2
-    // bitrate	1100.821289032531
-    // bitdepth	16
-    // samplerate	44100
-
-    // then make badges for some common sense keys:
-    // here grabbed from id3 as written by beets.
-    // likely, we will have less. check with something from
-    // beatport or so!
-
-    // ARTIST (merge / combine / prio/ info from below fields)
-    // artist	Annix
-    // composer	Annix
-    // album artist	Annix
-    // album_artist	Annix
-    // albumartist	Annix
-    // albumartist_credit	Annix
-    // albumartistsort	Annix
-    // artist_credit	Annix
-    // artistsort	Annix
-
-    // ALBUM
-    // album	Antidote
-
-    // TITLE
-    // title	Antidote
-
-    // LABEL
-    // label	DnB Allstars Records
-    // publisher	DnB Allstars Records
-
-    // GENRE
-    // genre	Drum And Bass, Electronic
-
-    // catalog_number	DNBA015
-    // isrc	GB8KE2159647
-
-    // DATE
-    // year	2021-02-19
-    // originaldate	2021-02-19
-    // _year	2021
-
-    // DISC STATS
-    // compilation	0
-    // disc	1
-    // disc_total	1
-    // _disc	1
-    // discc	1
-    // track	1
-    // track_total	1
-    // _track	1
-    // trackc	1
-    // media	Digital Media
-
-    // TLDR
-    // copyright	℗ 2021 Copyright Control
-    // releasestatus	Official
-    // releasetype	s
-    // bpm	0
-    // releasecountry	XW
-    // language	eng
-    // musicbrainz_albumstatus	Official
-    // musicbrainz_albumtype	s
-    // musicbrainz_albumartistid	b7c65173-4a6c-4add-b468-7e16c0833038
-    // musicbrainz_albumid	a25664c1-6db7-43db-9e32-1f1f249dbecc
-    // musicbrainz_artistid	b7c65173-4a6c-4add-b468-7e16c0833038
-    // musicbrainz_releasegroupid	b3db3a9c-9ca8-4437-b469-0a5208ce49f9
-    // musicbrainz_releasetrackid	8c850a41-d891-4050-9111-ef0201eb8cba
-    // musicbrainz_trackid	6cc80949-2152-4b94-ba8d-7de353f172ef
-    // script	Latn
-
     useEffect(() => {
         // Set css data-expanded attribute to the ref element
         // using ref for performance reasons
@@ -830,238 +752,198 @@ function AsisCandidateDetails({
 
     return (
         <CandidateDetailsRow ref={ref}>
-            <Stack
-                direction="row"
-                sx={{
-                    justifyContent: "flex-start",
-                    alignItems: "flex-start",
-                }}
-            >
-                <MetaArtist meta={meta} />
-                <MetaAlbum meta={meta} />
-                <MetaLabel meta={meta} />
-                <MetaGenre meta={meta} />
-                <MetaYear meta={meta} />
-            </Stack>
-
             <Box
                 sx={{
-                    overflow: "auto",
-                    width: "100%",
-                    maxHeight: "400px",
-                    height: "100%",
+                    display: "flex",
+                    flexWrap: "wrap",
+                    justifyContent: "flex-start",
+                    alignItems: "flex-start",
+                    columnGap: 0.5,
+                    rowGap: 1,
                 }}
             >
-                {/* <JSONPretty data={data[0]} /> */}
-                <Table
-                    size="small"
+                <Box
                     sx={{
-                        //display: "grid",
-                        width: "100%",
-                        borderCollapse: "separate",
-                        maxHeight: "400px",
-                        height: "100%",
-                        //tableLayout: "fixed",
-                        td: {
-                            //overflowWrap: "break-word",
-                            maxHeight: "200px",
-                            maxWidth: "100%",
-                        },
-                        position: "relative",
-                        //thicker border bottom for head
-                        thead: {
-                            fontWeight: "bold",
-                            fontSize: "0.95rem",
-                            verticalAlign: "bottom",
-                            top: 0,
-                            position: "sticky",
-                            th: { border: "unset" },
-                            "> *:last-child > th": {
-                                borderBottomWidth: 2,
-                                borderBottomStyle: "solid",
-                                borderBottomColor: "#515151",
-                            },
-                        },
+                        display: "inline-flex",
+                        flexBasis: "100%",
+                        gap: theme.spacing(1),
                     }}
                 >
-                    <TableHead>
-                        <TableRow
-                            sx={(theme) => ({
-                                display: "none",
-                                [theme.breakpoints.down("tablet")]: {
-                                    display: "table-row",
+                    <MetaBadge meta={meta} type={"filepath"} />
+
+                    <IconButton
+                        sx={{ p: 0, color: "inherit" }}
+                        onClick={() => {
+                            setAdvanced(!advanced);
+                        }}
+                        size="small"
+                    >
+                        {!advanced ? (
+                            <EyeIcon size={theme.iconSize.sm} />
+                        ) : (
+                            <EyeOffIcon size={theme.iconSize.sm} />
+                        )}
+                    </IconButton>
+                </Box>
+
+                {advanced ? null : (
+                    <>
+                        <MetaBadge meta={meta} type={"artist"} />
+                        <MetaBadge meta={meta} type={"album"} />
+                        <MetaBadge meta={meta} type={"track"} />
+                        <MetaBadge meta={meta} type={"label"} />
+                        <MetaBadge meta={meta} type={"genre"} />
+                        <MetaBadge meta={meta} type={"year"} />
+                        <MetaBadge meta={meta} type={"duration"} />
+                        <MetaBadge meta={meta} type={"filesize"} />
+                        <MetaBadge meta={meta} type={"bitrate"} />
+                        <MetaBadge meta={meta} type={"bpm"} />
+                        <MetaBadge meta={meta} type={"identifiers"} />
+                        <MetaBadge meta={meta} type={"compilation"} />
+                    </>
+                )}
+            </Box>
+            {advanced ? (
+                <Box
+                    sx={{
+                        overflow: "auto",
+                        width: "100%",
+                        maxHeight: "400px",
+                        height: "100%",
+                    }}
+                >
+                    {/* <JSONPretty data={data[0]} /> */}
+                    <Table
+                        size="small"
+                        sx={{
+                            //display: "grid",
+                            width: "100%",
+                            borderCollapse: "separate",
+                            maxHeight: "400px",
+                            height: "100%",
+                            //tableLayout: "fixed",
+                            td: {
+                                //overflowWrap: "break-word",
+                                maxHeight: "200px",
+                                maxWidth: "100%",
+                            },
+                            position: "relative",
+                            //thicker border bottom for head
+                            thead: {
+                                fontWeight: "bold",
+                                fontSize: "0.95rem",
+                                verticalAlign: "bottom",
+                                top: 0,
+                                position: "sticky",
+                                th: { border: "unset" },
+                                "> *:last-child > th": {
+                                    borderBottomWidth: 2,
+                                    borderBottomStyle: "solid",
+                                    borderBottomColor: "#515151",
                                 },
-                            })}
-                        >
-                            <TableCell colSpan={3}>
-                                <Search
-                                    size="small"
-                                    value={filter}
-                                    setValue={setFilter}
-                                    sx={{
-                                        marginTop: 1,
-                                        p: 0,
-                                        height: "100%",
-                                        width: "100%",
-                                    }}
-                                    color="secondary"
-                                />
-                            </TableCell>
-                        </TableRow>
-                        <TableRow>
-                            <TableCell sx={{ width: "auto" }}>Property</TableCell>
-                            <TableCell sx={{ width: "50%" }}>Value</TableCell>
-                            <TableCell
+                            },
+                        }}
+                    >
+                        <TableHead>
+                            <TableRow
                                 sx={(theme) => ({
-                                    width: "50%",
-                                    textAlign: "right",
+                                    display: "none",
                                     [theme.breakpoints.down("tablet")]: {
-                                        display: "none",
+                                        display: "table-row",
                                     },
                                 })}
                             >
-                                <Search
-                                    size="small"
-                                    value={filter}
-                                    setValue={setFilter}
-                                    sx={{
-                                        p: 0,
-                                        height: "100%",
-                                        maxWidth: "300px",
-                                        input: {
-                                            paddingBlock: 0.5,
-                                        },
-                                    }}
-                                    color="secondary"
-                                />
-                            </TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {filteredMeta.map(([key, value]) => (
-                            <TableRow key={key}>
-                                <TableCell
-                                    sx={{
-                                        width: "max-content",
-                                        verticalAlign: "top",
-                                    }}
-                                >
-                                    {key}
-                                </TableCell>
-                                <TableCell colSpan={2}>
-                                    <Box
-                                        sx={{
-                                            overflow: "auto",
-                                            maxHeight: "200px",
-                                            overflowWrap: "anywhere",
-                                            maxWidth: "100%",
-                                        }}
-                                    >
-                                        {String(value)}
-                                    </Box>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                        {nExcluded > 0 && (
-                            <TableRow>
                                 <TableCell colSpan={3}>
-                                    <Typography
-                                        variant="caption"
-                                        color="text.secondary"
+                                    <Search
+                                        size="small"
+                                        value={filter}
+                                        setValue={setFilter}
                                         sx={{
-                                            textAlign: "center",
-                                            fontStyle: "italic",
+                                            marginTop: 1,
+                                            p: 0,
+                                            height: "100%",
+                                            width: "100%",
                                         }}
-                                    >
-                                        {nExcluded} more properties excluded via filter
-                                    </Typography>
+                                        color="secondary"
+                                    />
                                 </TableCell>
                             </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </Box>
+                            <TableRow>
+                                <TableCell sx={{ width: "auto" }}>Property</TableCell>
+                                <TableCell sx={{ width: "50%" }}>Value</TableCell>
+                                <TableCell
+                                    sx={(theme) => ({
+                                        width: "50%",
+                                        textAlign: "right",
+                                        [theme.breakpoints.down("tablet")]: {
+                                            display: "none",
+                                        },
+                                    })}
+                                >
+                                    <Search
+                                        size="small"
+                                        value={filter}
+                                        setValue={setFilter}
+                                        sx={{
+                                            p: 0,
+                                            height: "100%",
+                                            maxWidth: "300px",
+                                            input: {
+                                                paddingBlock: 0.5,
+                                            },
+                                        }}
+                                        color="secondary"
+                                    />
+                                </TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {filteredMeta.map(([key, value]) => (
+                                <TableRow key={key}>
+                                    <TableCell
+                                        sx={{
+                                            width: "max-content",
+                                            verticalAlign: "top",
+                                        }}
+                                    >
+                                        {key}
+                                    </TableCell>
+                                    <TableCell colSpan={2}>
+                                        <Box
+                                            sx={{
+                                                overflow: "auto",
+                                                maxHeight: "200px",
+                                                overflowWrap: "anywhere",
+                                                maxWidth: "100%",
+                                            }}
+                                        >
+                                            {String(value)}
+                                        </Box>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                            {nExcluded > 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={3}>
+                                        <Typography
+                                            variant="caption"
+                                            color="text.secondary"
+                                            sx={{
+                                                textAlign: "center",
+                                                fontStyle: "italic",
+                                            }}
+                                        >
+                                            {nExcluded} more properties excluded via
+                                            filter
+                                        </Typography>
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </Box>
+            ) : null}
         </CandidateDetailsRow>
-    );
-}
-
-function MetaArtist({ meta }: { meta: FileMetadata }) {
-    const theme = useTheme();
-    const keys = [
-        "artist",
-        "composer",
-        "album_artist",
-        "albumartist",
-        "albumartistsort",
-        "artist_credit",
-        "artistsort",
-    ];
-    const icon = <PenaltyTypeIcon type="artist" size={theme.iconSize.xs} />;
-    return <MetaBadge meta={meta} keys={keys} icon={icon} />;
-}
-function MetaAlbum({ meta }: { meta: FileMetadata }) {
-    const theme = useTheme();
-    const keys = ["album"];
-    const icon = <PenaltyTypeIcon type="album" size={theme.iconSize.xs} />;
-    return <MetaBadge meta={meta} keys={keys} icon={icon} />;
-}
-function MetaLabel({ meta }: { meta: FileMetadata }) {
-    const theme = useTheme();
-    const keys = ["label", "publisher"];
-    const icon = <PenaltyTypeIcon type="label" size={theme.iconSize.xs} />;
-    return <MetaBadge meta={meta} keys={keys} icon={icon} />;
-}
-function MetaGenre({ meta }: { meta: FileMetadata }) {
-    const theme = useTheme();
-    const keys = ["genre"];
-    const icon = <PenaltyTypeIcon type="genre" size={theme.iconSize.xs} />;
-    return <MetaBadge meta={meta} keys={keys} icon={icon} />;
-}
-function MetaYear({ meta }: { meta: FileMetadata }) {
-    const theme = useTheme();
-    const keys = ["_year", "year", "originaldate"];
-    const icon = <PenaltyTypeIcon type="year" size={theme.iconSize.xs} />;
-    return <MetaBadge meta={meta} keys={keys} icon={icon} />;
-}
-
-function MetaBadge({
-    meta,
-    keys,
-    icon,
-    ...props
-}: {
-    meta: FileMetadata;
-    keys: string[];
-    icon: JSX.Element;
-} & ChipProps) {
-    const filtered = Object.fromEntries(
-        Object.entries(meta)
-            .filter(([k, v]) => keys.includes(k) && v !== undefined)
-            .sort(([a], [b]) => keys.indexOf(a) - keys.indexOf(b))
-    );
-
-    const label = Object.values(filtered)[0];
-    if (!label) return null;
-
-    return (
-        <Tooltip
-            title={
-                <Grid container spacing={0.5}>
-                    {Object.entries(filtered).map(([k, v]) => (
-                        <>
-                            <Grid size={5} sx={{ textAlign: "right" }}>
-                                {k}:
-                            </Grid>
-                            <Grid size={5} sx={{ textAlign: "left" }}>
-                                {v}
-                            </Grid>
-                        </>
-                    ))}
-                </Grid>
-            }
-        >
-            <Chip size="small" icon={icon} label={label} {...props} />
-        </Tooltip>
     );
 }
 
