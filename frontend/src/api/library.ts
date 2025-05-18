@@ -62,6 +62,11 @@ export const artQueryOptions = ({
             return objectUrl;
         },
         retry: 1,
+        gcTime: 1000 * 60 * 60 * 24, // 1 day
+        staleTime: 1000 * 60 * 60 * 24, // 1 day
+        refetchOnMount: false,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false, // Prevent refetch on network reconnect
     });
 
 // Artist names
@@ -203,7 +208,13 @@ export const albumImportedOptions = <Expand extends boolean, Minimal extends boo
     retry: 1,
 });
 
-const AUDIO_STALE_TIME = 5 * 60 * 1000; // 5 minutes
+const commonQOptions = {
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 10, // 10 minutes
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+};
 
 /* ---------------------------- Waveforms / Peaks --------------------------- */
 // We precompute the waveform for each audio file on the server
@@ -223,10 +234,10 @@ export function waveformQueryOptions(id?: number) {
             if (!id) {
                 return null;
             }
-            return fetchWaveform(`/library/item/${id}/audio/peaks`, signal);
+            return await fetchWaveform(`/library/item/${id}/audio/peaks`, signal);
         },
         retry: false,
-        staleTime: AUDIO_STALE_TIME,
+        ...commonQOptions,
     });
 }
 
@@ -234,9 +245,9 @@ export function prefetchWaveform(id: number) {
     return queryClient.prefetchQuery({
         queryKey: ["item", "audio", "waveform", id],
         queryFn: async ({ signal }) => {
-            return fetchWaveform(`/library/item/${id}/audio/peaks`, signal);
+            return await fetchWaveform(`/library/item/${id}/audio/peaks`, signal);
         },
-        staleTime: AUDIO_STALE_TIME,
+        ...commonQOptions,
     });
 }
 
@@ -244,40 +255,53 @@ export function prefetchWaveform(id: number) {
 // We add progress to the cache to allow inflight merging
 // or prefetched and new queries
 
-async function fetchAudio(
-    id: number,
-    signal: AbortSignal
-): Promise<Blob | MediaSource> {
+async function fetchAudio(id: number, signal: AbortSignal): Promise<HTMLAudioElement> {
     const mimeCodecs = "audio/webm; codecs=opus";
+    const audio = new Audio();
 
     if (!MediaSource.isTypeSupported(mimeCodecs)) {
         console.warn("Audio streaming not supported, using fallback");
         const res = await fetch(`/library/item/${id}/audio`, { signal });
-        return await res.blob();
+        audio.src = URL.createObjectURL(await res.blob());
+        return audio;
     }
 
     const mediaSource = new MediaSource();
-    mediaSource.addEventListener("sourceopen", sourceOpen);
+    let resolveSourceBuffer: (buffer: SourceBuffer) => void;
 
-    /** Warning: This is an absolute mess, I spend quite some time
-     * here and tried to remove all race conditions
-     * and add buffering to the audio stream.
-     * Proceed with caution :)
-     *
-     * ref: https://developer.mozilla.org/en-US/docs/Web/API/MediaSource
-     */
-    async function sourceOpen(this: MediaSource) {
-        const sourceBuffer = this.addSourceBuffer(mimeCodecs);
-        sourceBuffer.mode = "sequence"; // we need to use sequence mode
+    // Create a promise to resolve when SourceBuffer is ready
+    const sourceBufferReady = new Promise<SourceBuffer>((resolve) => {
+        resolveSourceBuffer = resolve;
+    });
 
-        // Fetch data stream
-        const response = await fetch(`/library/item/${id}/audio`, {
-            signal,
-        });
-        if (!response.body) throw new Error(`Fetch error: ${response.status} no body!`);
+    // Start fetch outside sourceopen
+    const response = await fetch(`/library/item/${id}/audio`, { signal });
+    if (!response.body) throw new Error(`Fetch error: ${response.status} no body!`);
+
+    // Set up sourceopen handler (queues data until ready)
+    mediaSource.addEventListener(
+        "sourceopen",
+        () => {
+            const sourceBuffer = mediaSource.addSourceBuffer(mimeCodecs);
+            sourceBuffer.mode = "sequence";
+            resolveSourceBuffer(sourceBuffer);
+        },
+        { once: true }
+    );
+
+    (async () => {
+        /** Warning: This is an absolute mess, I spend quite some time
+         * here and tried to remove all race conditions
+         * and add buffering to the audio stream.
+         * Proceed with caution :)
+         *
+         * ref: https://developer.mozilla.org/en-US/docs/Web/API/MediaSource
+         */
+        audio.src = URL.createObjectURL(mediaSource);
+        const sourceBuffer = await sourceBufferReady; // wait for sourceBuffer to be ready
         const contentLengthHeader = response.headers.get("Content-Length");
         const total = contentLengthHeader ? parseInt(contentLengthHeader, 10) : null;
-        const reader = response.body.getReader();
+        const reader = response.body!.getReader();
 
         // Process the stream
         let isAppending = false;
@@ -321,9 +345,7 @@ async function fetchAudio(
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) {
-                    console.log("done");
                     endStream();
-
                     break;
                 }
 
@@ -339,9 +361,19 @@ async function fetchAudio(
         }
 
         await appendToBuffer();
-    }
+    })().catch(console.error);
 
-    return mediaSource;
+    /** No idea why but we need a short delay here to kick
+     * into the micro task queue, only needed in chromium
+     * based browsers. Maybe browser bug
+     */
+    await new Promise((resolve) => {
+        setTimeout(() => {
+            resolve(true);
+        }, 100);
+    });
+
+    return audio;
 }
 
 export function itemAudioDataQueryOptions(id?: number) {
@@ -353,7 +385,7 @@ export function itemAudioDataQueryOptions(id?: number) {
             }
             return await fetchAudio(id, signal);
         },
-        staleTime: AUDIO_STALE_TIME,
+        ...commonQOptions,
     });
 }
 
@@ -363,6 +395,6 @@ export function prefetchItemAudioData(id: number) {
         queryFn: async ({ signal }) => {
             return await fetchAudio(id, signal);
         },
-        staleTime: AUDIO_STALE_TIME,
+        ...commonQOptions,
     });
 }

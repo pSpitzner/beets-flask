@@ -17,12 +17,12 @@ const colorBuffering = "#00000050";
  * - allows drag seeking
  * - shows buffering region
  */
-export function Waveform() {
+export function Waveform({ height }: { height?: number }) {
     const theme = useTheme();
     const containerRef = useRef<HTMLDivElement>(null);
     const wavesurferRef = useRef<WaveSurfer | null>(null);
     const loadingRegion = useRef<Region | null>(null);
-    const { audioRef, currentItem, buffered } = useAudioContext();
+    const { currentAudio, currentItem, buffered } = useAudioContext();
 
     // Load precomputed waveform
     const { data: peaks, isPending } = useQuery(waveformQueryOptions(currentItem?.id));
@@ -34,7 +34,6 @@ export function Waveform() {
         const loaded =
             buffered && buffered.length > 0 ? buffered.end(buffered.length - 1) : 0;
         const complete = loaded >= dur;
-
         if (complete) {
             loadingRegion.current.setOptions({
                 start: dur,
@@ -66,15 +65,17 @@ export function Waveform() {
             cursorWidth: 2,
             duration: currentItem?.length,
             peaks: peaks ? [peaks] : undefined,
-            height: 48,
+            height: height,
             dragToSeek: true,
-            media: audioRef.current || undefined,
+            media: currentAudio || undefined,
             plugins: [regions],
         });
         wavesurferRef.current = wavesurfer;
 
+        const buffered = currentAudio?.buffered;
+
         loadingRegion.current = regions.addRegion({
-            start: 0,
+            start: buffered && buffered.length > 0 ? buffered.end(0) : 0,
             end: currentItem?.length,
             color: colorBuffering,
             drag: false,
@@ -83,15 +84,16 @@ export function Waveform() {
 
         return () => {
             wavesurfer.destroy();
+            loadingRegion.current = null;
         };
-    }, [audioRef, currentItem?.length, peaks, theme]);
+    }, [currentAudio, currentItem, peaks, theme, height]);
 
     if (isPending || !peaks) {
         return (
             <Box
                 sx={{
                     width: "100%",
-                    height: "100%",
+                    height: height ? `${height}px` : "100%",
                     display: "flex",
                     alignItems: "center",
                 }}
@@ -106,7 +108,7 @@ export function Waveform() {
             ref={containerRef}
             sx={{
                 width: "100%",
-                height: "100%",
+                height: height ? `${height}px` : "100%",
 
                 // styling the loading region
                 "*::part(region)": {
@@ -162,7 +164,7 @@ export function ProgressBar({ sx, ...props }: BoxProps) {
                         width: "var(--progress-width)",
                         height: "100%",
                         backgroundColor: theme.palette.primary.main,
-                        transition: "transform 0.3s ease-in-out",
+                        transition: "transform 0.1s linear",
                         borderTopLeftRadius: "4px",
                         borderBottomLeftRadius: "4px",
                     },
@@ -177,7 +179,7 @@ export function ProgressBar({ sx, ...props }: BoxProps) {
                         backgroundColor: theme.palette.primary.main,
                         opacity: 0.6,
                         filter: "blur(5px)",
-                        transition: "width 0.3s ease-in-out",
+                        transition: "width 0.1s linear",
                     },
                     position: "relative",
                 }),

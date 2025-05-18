@@ -12,11 +12,13 @@ import {
     VolumeOffIcon,
     XIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
     Box,
     BoxProps,
+    ButtonProps,
+    Divider,
     IconButton,
     Paper,
     Slide,
@@ -26,7 +28,9 @@ import {
     useMediaQuery,
     useTheme,
 } from "@mui/material";
+import Popper from "@mui/material/Popper";
 
+import { useDebounce } from "@/components/common/hooks/useDebounce";
 import { trackLengthRep } from "@/components/common/units/time";
 
 import { useAudioContext } from "./context";
@@ -34,14 +38,31 @@ import { ProgressBar, Waveform } from "./waveform";
 
 import CoverArt, { CoverArtProps } from "../coverArt";
 
+export function Player() {
+    const { items } = useAudioContext();
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down("tablet"));
+
+    const nItems = useMemo(() => items.length, [items]);
+
+    if (nItems === 0) {
+        return null;
+    }
+
+    if (isMobile) {
+        return <MobilePlayer />;
+    }
+    return <DesktopPlayer />;
+}
+
 /** Desktop audio player
  *
  * fixed to the bottom of the screen
  * shows all the controls
  * and the current waveform.
  */
-export function DesktopPlayer() {
+function DesktopPlayer() {
     const theme = useTheme();
+    const { clearItems } = useAudioContext();
 
     return (
         <Box
@@ -56,8 +77,6 @@ export function DesktopPlayer() {
                 gap: 1,
                 position: "relative",
                 backgroundColor: "background.paper",
-                borderBottomLeftRadius: 0,
-                borderBottomRightRadius: 0,
             }}
         >
             {/* Cover art*/}
@@ -141,9 +160,7 @@ export function DesktopPlayer() {
                             flexWrap: "nowrap",
                         }}
                     >
-                        <Typography variant="body2" lineHeight={1} noWrap>
-                            Track 1 of 10
-                        </Typography>
+                        <TrackNum variant="body2" lineHeight={1} noWrap />
                     </Box>
                 </Box>
 
@@ -158,7 +175,7 @@ export function DesktopPlayer() {
                         height: "48px", // size of large iconbutton
                     }}
                 >
-                    <Waveform />
+                    <Waveform height={48} />
                 </Box>
 
                 {/* actions*/}
@@ -188,7 +205,13 @@ export function DesktopPlayer() {
                         marginRight: -0.5,
                     }}
                 >
-                    <IconButton size="small">
+                    <IconButton
+                        size="small"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            clearItems();
+                        }}
+                    >
                         <XIcon size={theme.iconSize.sm} />
                     </IconButton>
                 </Box>
@@ -206,9 +229,10 @@ export function DesktopPlayer() {
  * Fullscreen shows extra controls
  * and the current waveform.
  */
-export function MobilePlayer() {
+function MobilePlayer() {
     const theme = useTheme();
     const [fullscreen, setFullScreen] = useState(false);
+    const { clearItems } = useAudioContext();
 
     return (
         <>
@@ -271,6 +295,7 @@ export function MobilePlayer() {
                     <IconButton
                         onClick={(e) => {
                             e.stopPropagation();
+                            clearItems();
                         }}
                     >
                         <SquareIcon size={22} fill="white" />
@@ -294,7 +319,7 @@ export function MobilePlayer() {
  *
  * Heavily inspired by spotify :)
  */
-export function FullScreenPlayer({
+function FullScreenPlayer({
     onClose,
     ref,
 }: {
@@ -312,28 +337,103 @@ export function FullScreenPlayer({
             }}
         >
             {/*Top bar*/}
-            <Box sx={{ width: "100%", border: "1px solid blue" }}>
+            <Box sx={{ width: "100%" }}>
                 <IconButton size="large" onClick={onClose}>
                     <ChevronDownIcon size={theme.iconSize.xl} />
                 </IconButton>
-                More actions here?
             </Box>
+            <Divider />
             {/*Art/current track*/}
             <Box
                 sx={{
                     width: "100%",
-                    border: "1px solid red",
                     flex: "1 1 auto",
                     display: "flex",
+                    flexDirection: "column",
                     justifyContent: "center",
                     alignItems: "flex-end",
+                    padding: 2,
+                    borderRadius: 2,
                 }}
             >
-                Art
+                <Cover
+                    sx={{
+                        maxWidth: "100%",
+                        maxHeight: "100%",
+                        height: "auto",
+                        width: "100%",
+                        objectFit: "contain",
+                    }}
+                />
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        width: "100%",
+                    }}
+                >
+                    <CurrentTitle variant="h2" fontWeight="bold" />
+                    <CurrentArtist variant="body1" color="text.secondary" />
+                </Box>
             </Box>
             {/*Player controls*/}
-            <Box sx={{ width: "100%", border: "1px solid green", minHeight: "15%" }}>
-                Player with waveforms and controls
+            <Divider />
+
+            <Box
+                sx={{
+                    width: "100%",
+                    minHeight: "20%",
+                    padding: 2,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: 2,
+                }}
+            >
+                <Box
+                    sx={{
+                        padding: 2,
+                        width: "100%",
+                    }}
+                >
+                    <Waveform height={80} />
+                </Box>
+                <Box
+                    sx={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr",
+                        gridTemplateRows: "1fr",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: "100%",
+                    }}
+                >
+                    <Box
+                        sx={{
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            width: "100%",
+                            gap: 3,
+                            gridColumn: "1",
+                            gridRow: "1",
+                        }}
+                    >
+                        <PrevButton />
+                        <PlayPauseButton size="large" />
+                        <NextButton />
+                    </Box>
+                    <VolumeControls
+                        sx={{
+                            ml: "auto",
+                            gridColumn: "1",
+                            gridRow: "1",
+                        }}
+                    />
+                </Box>
             </Box>
         </FullScreenOntop>
     );
@@ -342,7 +442,7 @@ export function FullScreenPlayer({
 /** Component that mounts to the top of the
  * dom tree and is shown ontop of everything else.
  */
-export function FullScreenOntop({ sx, ...props }: BoxProps) {
+function FullScreenOntop({ sx, ...props }: BoxProps) {
     return createPortal(
         <Box
             sx={[
@@ -367,7 +467,7 @@ export function FullScreenOntop({ sx, ...props }: BoxProps) {
 /* ---------------------------------- utils --------------------------------- */
 
 // Toggle play/pause
-function PlayPauseButton() {
+function PlayPauseButton(props: ButtonProps) {
     const theme = useTheme();
     const { playing, togglePlaying, canPlay } = useAudioContext();
 
@@ -382,6 +482,7 @@ function PlayPauseButton() {
             }}
             size="medium"
             loading={!canPlay}
+            {...props}
         >
             {playing ? (
                 <PauseIcon size={theme.iconSize.xl} />
@@ -392,52 +493,57 @@ function PlayPauseButton() {
     );
 }
 
-function PrevNextButtons(props: BoxProps) {
+function PrevButton(props: ButtonProps) {
     const theme = useTheme();
-    const { hasNext, hasPrev, nextItem, prevItem } = useAudioContext();
+    const { hasPrev, prevItem } = useAudioContext();
 
     return (
-        <Box {...props}>
-            <IconButton
-                disabled={!hasPrev}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    prevItem();
-                }}
-                sx={{
-                    backgroundColor: "primary.muted",
-                }}
-            >
-                <SkipBackIcon size={theme.iconSize.md} />
-            </IconButton>
-            <IconButton
-                disabled={!hasNext}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    nextItem();
-                }}
-            >
-                <SkipForwardIcon size={theme.iconSize.md} />
-            </IconButton>
-        </Box>
+        <IconButton
+            disabled={!hasPrev}
+            onClick={(e) => {
+                e.stopPropagation();
+                prevItem();
+            }}
+            {...props}
+        >
+            <SkipBackIcon size={theme.iconSize.md} />
+        </IconButton>
     );
 }
 
-import Popper from "@mui/material/Popper";
+function NextButton(props: ButtonProps) {
+    const theme = useTheme();
+    const { hasNext, nextItem } = useAudioContext();
 
-import { useDebounce } from "@/components/common/hooks/useDebounce";
+    return (
+        <IconButton
+            disabled={!hasNext}
+            onClick={(e) => {
+                e.stopPropagation();
+                nextItem();
+            }}
+            {...props}
+        >
+            <SkipForwardIcon size={theme.iconSize.md} />
+        </IconButton>
+    );
+}
+
+function PrevNextButtons(props: BoxProps) {
+    return (
+        <Box {...props}>
+            <PrevButton />
+            <NextButton />
+        </Box>
+    );
+}
 
 /** Volume controls
  */
 function VolumeControls(props: BoxProps) {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const theme = useTheme();
-    const {
-        audioRef: currentAudio,
-        volume,
-        setVolume,
-        toggleMuted,
-    } = useAudioContext();
+    const { currentAudio, volume, setVolume, toggleMuted } = useAudioContext();
     const open = useDebounce(Boolean(anchorEl), 250);
 
     // Ios devices cant control volume, thanks apple...
@@ -533,6 +639,22 @@ function CurrentDuration(props: TypographyProps) {
         <Typography {...props}>
             {trackLengthRep(currentTime, false)} /{" "}
             {trackLengthRep(currentItem?.length || 0, false)}
+        </Typography>
+    );
+}
+
+function TrackNum(props: TypographyProps) {
+    const { currentItem, items } = useAudioContext();
+
+    const currentIdx = items.findIndex((item) => item.id === currentItem?.id);
+
+    if (!currentItem || currentIdx === -1) {
+        return <Box></Box>;
+    }
+
+    return (
+        <Typography {...props}>
+            Track {currentIdx + 1} of {items.length}
         </Typography>
     );
 }

@@ -19,9 +19,6 @@ import { useNavigableList } from "@/components/common/hooks/useNavigableList";
 import { ItemResponse } from "@/pythonTypes";
 
 interface AudioContextI {
-    // The current item being played (beets item)
-    currentItem: ItemResponse | null;
-
     // Play state
     canPlay: boolean;
     playing: boolean;
@@ -30,15 +27,17 @@ interface AudioContextI {
     currentTime: number;
 
     // Queue
+    currentItem: ItemResponse | null;
+    items: ItemResponse[];
     hasNext: boolean;
     hasPrev: boolean;
     nextItem: () => ItemResponse | null;
     prevItem: () => ItemResponse | null;
-    clearQueue: () => void;
+    clearItems: () => void;
     addToQueue: (item: ItemResponse) => void;
 
     // Audio data + waveforms
-    audioRef: React.RefObject<HTMLAudioElement>;
+    currentAudio: HTMLAudioElement | null;
     buffered: TimeRanges | null;
 
     // Volume
@@ -58,17 +57,18 @@ export const useAudioContext = () => {
 };
 
 export function AudioContextProvider({ children }: { children: React.ReactNode }) {
-    const audioRef = useRef<HTMLAudioElement>(null);
     const {
+        items,
         navigate,
         currentItem,
         hasNext,
         hasPrev,
-        clear: clearQueue,
+        clear: clearItems,
         add,
     } = useNavigableList<ItemResponse>([]);
 
     const {
+        currentAudio,
         buffered,
         currentTime,
         playing,
@@ -77,7 +77,7 @@ export function AudioContextProvider({ children }: { children: React.ReactNode }
         toggleMuted,
         volume,
         canPlay,
-    } = useAudioData(currentItem, audioRef);
+    } = useAudioData(currentItem);
 
     function addToQueue(item: ItemResponse) {
         // Prefetch the audio data for the item
@@ -92,14 +92,14 @@ export function AudioContextProvider({ children }: { children: React.ReactNode }
     }
 
     const nextItem = () => {
-        if (audioRef.current) {
-            audioRef.current.currentTime = 0;
+        if (currentAudio) {
+            currentAudio.currentTime = 0;
         }
         return navigate(1);
     };
     const prevItem = () => {
-        if (audioRef.current) {
-            audioRef.current.currentTime = 0;
+        if (currentAudio) {
+            currentAudio.currentTime = 0;
         }
         return navigate(-1);
     };
@@ -112,8 +112,8 @@ export function AudioContextProvider({ children }: { children: React.ReactNode }
                 playing,
                 setPlaying,
                 togglePlaying: () => {
-                    if (!audioRef.current) return;
-                    if (audioRef.current.paused) {
+                    if (!currentAudio) return;
+                    if (currentAudio.paused) {
                         setPlaying(true);
                     } else {
                         setPlaying(false);
@@ -121,16 +121,17 @@ export function AudioContextProvider({ children }: { children: React.ReactNode }
                 },
                 currentTime,
                 // queue related
+                items,
                 currentItem,
                 hasNext,
                 hasPrev,
                 nextItem: nextItem,
                 prevItem: prevItem,
-                clearQueue,
+                clearItems,
                 addToQueue,
                 // audio data
                 buffered,
-                audioRef,
+                currentAudio: currentAudio || null,
                 // volume
                 volume,
                 setVolume,
@@ -138,7 +139,6 @@ export function AudioContextProvider({ children }: { children: React.ReactNode }
             }}
         >
             {children}
-            <audio ref={audioRef} style={{ display: "none" }} />
         </AudioContext.Provider>
     );
 }
@@ -149,10 +149,7 @@ export function AudioContextProvider({ children }: { children: React.ReactNode }
  *
  * Very specified for our id usecase.
  */
-function useAudioData(
-    item: ItemResponse | null,
-    ref: React.RefObject<HTMLAudioElement>
-) {
+function useAudioData(item: ItemResponse | null) {
     const [canPlay, setCanPlay] = useState(false);
     const [playing, _setPlaying] = useState(false);
     const [buffered, setBuffered] = useState<TimeRanges | null>(null); // In seconds < total duration
@@ -161,89 +158,99 @@ function useAudioData(
     const beforeMuted = useRef<number | null>(null); // needed to store pre-muted volume
     const [currentTime, setCurrentTime] = useState(0);
 
-    const { data: audioData } = useQuery(itemAudioDataQueryOptions(item?.id));
-
-    // Set the audio element to the ref
+    const { data: currentAudio } = useQuery(itemAudioDataQueryOptions(item?.id));
     useEffect(() => {
-        if (!ref.current || !audioData) return;
-        const audio = ref.current;
-        const blobUrl = URL.createObjectURL(audioData);
-        audio.src = blobUrl;
+        if (!currentAudio) return;
 
         // Forward audio events to react
-        const handlePlay = () => _setPlaying(true);
-        const handlePause = () => _setPlaying(false);
-        const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-        const updateVolume = () => setVolume(audio.volume);
-        const updateCanPlay = () => setCanPlay(audio.readyState >= 2);
-        const handleSeek = () => setCurrentTime(audio.currentTime);
-        const handleProgress = () => setBuffered(audio.buffered);
+        const updatePlaying = () => _setPlaying(!currentAudio.paused);
+        const updateCurrentTime = () => setCurrentTime(currentAudio.currentTime);
+        const updateVolume = () => setVolume(currentAudio.volume);
+        const updateCanPlay = () => setCanPlay(currentAudio.readyState >= 2);
+        const updateBuffered = () => setBuffered(currentAudio.buffered);
 
-        audio.addEventListener("play", handlePlay);
-        audio.addEventListener("pause", handlePause);
-        audio.addEventListener("timeupdate", handleTimeUpdate);
-        audio.addEventListener("seeking", handleSeek);
-        audio.addEventListener("progress", handleProgress);
-        audio.addEventListener("volumechange", updateVolume);
-        audio.addEventListener("canplay", updateCanPlay);
+        currentAudio.addEventListener("play", updatePlaying);
+        currentAudio.addEventListener("pause", updatePlaying);
+        currentAudio.addEventListener("timeupdate", updateCurrentTime);
+        currentAudio.addEventListener("seeking", updateCurrentTime);
+        currentAudio.addEventListener("progress", updateBuffered);
+        currentAudio.addEventListener("volumechange", updateVolume);
+        currentAudio.addEventListener("canplay", updateCanPlay);
 
-        audio.load();
+        // Force load only new audio sources
+        if (currentAudio.readyState < 2) {
+            currentAudio.load();
+        }
+
+        // reapply the current play state i.e. playing
+        // this continues the playback if the audio was playing
+        // before the component was unmounted
+        _setPlaying((prev) => {
+            if (prev) {
+                currentAudio.play().catch(console.error);
+            } else {
+                currentAudio.pause();
+            }
+            return prev;
+        });
+
+        updateCurrentTime();
         updateVolume();
+        updateCanPlay();
+        updateBuffered();
 
         return () => {
-            audio.removeEventListener("play", handlePlay);
-            audio.removeEventListener("pause", handlePause);
-            audio.removeEventListener("timeupdate", handleTimeUpdate);
-            audio.removeEventListener("seeking", handleSeek);
-            audio.removeEventListener("progress", handleProgress);
-            audio.removeEventListener("volumechange", updateVolume);
-            audio.removeEventListener("canplay", updateCanPlay);
+            currentAudio.removeEventListener("play", updatePlaying);
+            currentAudio.removeEventListener("pause", updatePlaying);
+            currentAudio.removeEventListener("timeupdate", updateCurrentTime);
+            currentAudio.removeEventListener("seeking", updateCurrentTime);
+            currentAudio.removeEventListener("progress", updateBuffered);
+            currentAudio.removeEventListener("volumechange", updateVolume);
+            currentAudio.removeEventListener("canplay", updateCanPlay);
 
-            URL.revokeObjectURL(blobUrl);
-            audio.pause(); // Pause track if it was playing
+            currentAudio.pause();
         };
-    }, [audioData, ref]);
+    }, [currentAudio]);
 
     const seek = useCallback(
         (time: number) => {
-            if (!ref.current || !item) return;
-            ref.current.currentTime = time;
+            if (!currentAudio || !item) return;
+            currentAudio.currentTime = time;
         },
-        [item, ref]
+        [item, currentAudio]
     );
 
     // Sync play state, allows to use the setPlaying function
     // to control the audio playback
     const setPlaying = useCallback(
         (playing: boolean) => {
-            if (!ref.current) return;
-            console.log(ref.current);
+            if (!currentAudio) return;
             if (playing) {
-                ref.current.play().catch(console.error);
+                currentAudio.play().catch(console.error);
             } else {
-                ref.current.pause();
+                currentAudio.pause();
             }
             _setPlaying(playing);
         },
-        [ref]
+        [currentAudio]
     );
 
     // Sync volume to audio element
     useEffect(() => {
-        if (!ref.current) return;
-        ref.current.volume = volume;
-    }, [volume, ref]);
+        if (!currentAudio) return;
+        currentAudio.volume = volume;
+    }, [volume, currentAudio]);
 
     // Forward time updates to media session
     useEffect(() => {
-        if (!ref.current || !item) return;
+        if (!currentAudio || !item) return;
         if (!("mediaSession" in navigator)) return;
         navigator.mediaSession.setPositionState({
-            duration: item.length || ref.current.duration,
-            playbackRate: ref.current.playbackRate,
+            duration: item.length || currentAudio.duration,
+            playbackRate: currentAudio.playbackRate,
             position: currentTime,
         });
-    }, [currentTime, ref, item]);
+    }, [currentTime, currentAudio, item]);
 
     // MediaSession handles
     useMediaSession({
@@ -254,26 +261,27 @@ function useAudioData(
         onPlay: () => setPlaying(true),
         onPause: () => setPlaying(false),
         onSeekBackward: (evt) => {
-            if (!ref.current) return;
+            if (!currentAudio) return;
             // Time to skip in seconds
             const skipTime = evt.seekOffset || 10;
             seek(currentTime - skipTime);
         },
         onSeekForward: (evt) => {
-            if (!ref.current) return;
+            if (!currentAudio) return;
             const skipTime = evt.seekOffset || 10;
             seek(currentTime + skipTime);
         },
         onSeekTo: (evt) => {
-            if (!ref.current) return;
-            if (evt.fastSeek && "fastSeek" in ref.current) {
-                ref.current.fastSeek(evt.seekTime!);
+            if (!currentAudio) return;
+            if (evt.fastSeek && "fastSeek" in currentAudio) {
+                currentAudio.fastSeek(evt.seekTime!);
             }
             seek(evt.seekTime!);
         },
     });
 
     return {
+        currentAudio,
         playing,
         setPlaying,
         volume,
@@ -281,19 +289,19 @@ function useAudioData(
         buffered,
         canPlay: canPlay,
         setVolume: (value: number) => {
-            if (!ref.current) return;
+            if (!currentAudio) return;
             const v = Math.max(0, Math.min(1, value));
-            ref.current.volume = v;
+            currentAudio.volume = v;
         },
         toggleMuted: () => {
-            if (!ref.current) return;
-            if (!ref.current.muted) {
-                beforeMuted.current = ref.current.volume;
-                ref.current.muted = true;
-                ref.current.volume = 0;
+            if (!currentAudio) return;
+            if (!currentAudio.muted) {
+                beforeMuted.current = currentAudio.volume;
+                currentAudio.muted = true;
+                currentAudio.volume = 0;
             } else {
-                ref.current.muted = false;
-                ref.current.volume = beforeMuted.current || 1;
+                currentAudio.muted = false;
+                currentAudio.volume = beforeMuted.current || 1;
                 beforeMuted.current = null;
             }
         },

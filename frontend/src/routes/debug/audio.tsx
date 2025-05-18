@@ -8,7 +8,7 @@ import {
     AudioContextProvider,
     useAudioContext,
 } from "@/components/library/audio/context";
-import { DesktopPlayer, MobilePlayer } from "@/components/library/audio/player";
+import { Player } from "@/components/library/audio/player";
 
 export const Route = createFileRoute("/debug/audio")({
     component: RouteComponent,
@@ -24,26 +24,22 @@ function RouteComponent() {
                     justifyContent: "flex-end",
                     alignItems: "center",
                     flexDirection: "column",
+                    position: "relative",
                 }}
             >
+                <AddButton />
                 <Box
                     sx={(theme) => ({
-                        maxWidth: theme.breakpoints.values.tablet,
+                        bottom: 0,
                         width: "100%",
-                        display: "flex",
-                        justifyContent: "flex-end",
-                        aspectRatio: "9/16",
-                        alignItems: "center",
-                        border: "1px solid",
-                        flexDirection: "column",
-                        p: 1,
-                        mb: "auto",
+                        padding: 1,
+                        [theme.breakpoints.down("tablet")]: {
+                            padding: 0.5,
+                        },
                     })}
                 >
-                    <AddButton />
-                    <MobilePlayer />
+                    <Player />
                 </Box>
-                <DesktopPlayer />
             </PageWrapper>
         </AudioContextProvider>
     );
@@ -51,19 +47,33 @@ function RouteComponent() {
 
 function AddButton() {
     const { addToQueue } = useAudioContext();
-    const { data: item } = useQuery(itemQueryOptions(4101, false));
+    const { data: item1 } = useQuery(itemQueryOptions(4101, false));
+    const { data: item2 } = useQuery(itemQueryOptions(4166, false));
 
     return (
-        <button
-            onClick={() => {
-                if (!item) {
-                    console.error("Item is undefined");
-                    return;
-                }
-                addToQueue(item);
-            }}
-        >
-            Add
-        </button>
+        <>
+            <button
+                onClick={() => {
+                    if (!item1) {
+                        console.error("Item is undefined");
+                        return;
+                    }
+                    addToQueue(item1);
+                }}
+            >
+                Add {item1?.name}
+            </button>
+            <button
+                onClick={() => {
+                    if (!item2) {
+                        console.error("Item is undefined");
+                        return;
+                    }
+                    addToQueue(item2);
+                }}
+            >
+                Add {item2?.name}
+            </button>
+        </>
     );
 }
