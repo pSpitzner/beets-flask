@@ -38,28 +38,69 @@ export const libraryStatsQueryOptions = () => {
     });
 };
 
+export type ArtSize = "small" | "medium" | "large" | "original";
+
 // Art for a library item or album
-export const artUrl = (type: "item" | "album", id: number) =>
-    `/library/${type}/${id}/art`;
+export const artUrl = (
+    type: "item" | "album",
+    id: number,
+    size?: ArtSize,
+    idx?: number
+) => {
+    const params = new URLSearchParams();
+    if (size) params.set("size", size);
+    if (idx !== undefined) params.set("idx", idx.toString());
+
+    const base = `/library/${type}/${id}/art`;
+    return params.toString() ? `${base}?${params}` : base;
+};
+
 export const artQueryOptions = ({
     type,
     id,
+    size,
+    index,
 }: {
     type?: "item" | "album";
     id?: number;
+    size?: ArtSize;
+    index?: number;
 }) =>
     queryOptions({
-        queryKey: ["art", type, id],
+        queryKey: ["art", type, id, size, index],
         queryFn: async () => {
-            if (id === undefined || id === null) {
+            if (id == null || !type) {
                 return null;
             }
             console.log("artQueryOptions", type, id);
-            const url = artUrl(type!, id);
+            const url = artUrl(type, id, size, index);
             const response = await fetch(url);
             const blob = await response.blob();
             const objectUrl = URL.createObjectURL(blob);
             return objectUrl;
+        },
+        retry: 1,
+        gcTime: 1000 * 60 * 60 * 24, // 1 day
+        staleTime: 1000 * 60 * 60 * 24, // 1 day
+        refetchOnMount: false,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false, // Prevent refetch on network reconnect
+    });
+
+export const numArtQueryOptions = (itemId?: number) =>
+    queryOptions({
+        queryKey: ["art", "num", itemId],
+        queryFn: async () => {
+            if (itemId == null) {
+                return null;
+            }
+            const response = await fetch(`/library/item/${itemId}/nArtworks`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
+            return (await response.json()) as { count: number };
         },
         retry: 1,
         gcTime: 1000 * 60 * 60 * 24, // 1 day

@@ -257,7 +257,27 @@ function useAudioData(item: ItemResponse | null) {
         title: item?.name,
         artist: item?.artist,
         album: item?.album,
-        artwork: item ? artUrl("item", item.id) : undefined,
+        artwork: item
+            ? [
+                  {
+                      src: "/api_v1" + artUrl("item", item.id, "small"),
+                      sizes: "256x256",
+                      type: "image/png",
+                  },
+
+                  {
+                      src: "/api_v1" + artUrl("item", item.id, "medium"),
+                      sizes: "512x512",
+                      type: "image/png",
+                  },
+                  {
+                      src: "/api_v1" + artUrl("item", item.id, "large"),
+                      sizes: "1024x1024",
+                      type: "image/png",
+                  },
+              ]
+            : undefined,
+
         onPlay: () => setPlaying(true),
         onPause: () => setPlaying(false),
         onSeekBackward: (evt) => {

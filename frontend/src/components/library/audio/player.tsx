@@ -17,6 +17,7 @@ import { createPortal } from "react-dom";
 import {
     Box,
     BoxProps,
+    Button,
     ButtonProps,
     Divider,
     IconButton,
@@ -29,7 +30,9 @@ import {
     useTheme,
 } from "@mui/material";
 import Popper from "@mui/material/Popper";
+import { useQuery } from "@tanstack/react-query";
 
+import { numArtQueryOptions } from "@/api/library";
 import { useDebounce } from "@/components/common/hooks/useDebounce";
 import { trackLengthRep } from "@/components/common/units/time";
 
@@ -354,17 +357,19 @@ function FullScreenPlayer({
                     alignItems: "flex-end",
                     padding: 2,
                     borderRadius: 2,
+                    gap: 2,
                 }}
             >
-                <Cover
+                <MultiCover
                     sx={{
                         maxWidth: "100%",
-                        maxHeight: "100%",
                         height: "auto",
                         width: "100%",
                         objectFit: "contain",
                     }}
+                    size="large"
                 />
+
                 <Box
                     sx={{
                         display: "flex",
@@ -614,6 +619,66 @@ function VolumeControls(props: BoxProps) {
                 {between(volume, 0, 1 / 3) && <VolumeIcon size={theme.iconSize.md} />}
                 {volume === 0 && <VolumeOffIcon size={theme.iconSize.md} />}
             </IconButton>
+        </Box>
+    );
+}
+
+function MultiCover({ size, ...props }: { size: "medium" | "large" } & BoxProps) {
+    const { currentItem } = useAudioContext();
+    const [currentIdx, setCurrentIdx] = useState(0);
+
+    const { data: numArtworks } = useQuery(numArtQueryOptions(currentItem?.id));
+
+    return (
+        <Box position="relative" {...props}>
+            {numArtworks && numArtworks.count > 1 && (
+                <Button
+                    variant="text"
+                    sx={{
+                        position: "absolute",
+                        top: 0,
+                        right: 0,
+                        m: 0,
+                        p: 1,
+                        minWidth: 0,
+                    }}
+                    onClick={() => {
+                        setCurrentIdx((prev) => (prev + 1) % numArtworks.count);
+                    }}
+                >
+                    {
+                        //Dot for each artwork
+                        Array.from({ length: numArtworks.count }).map((_, idx) => (
+                            <Box
+                                key={idx}
+                                sx={{
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: "50%",
+                                    backgroundColor:
+                                        currentIdx === idx
+                                            ? "primary.main"
+                                            : "text.secondary",
+                                    marginLeft: 0.5,
+                                }}
+                            />
+                        ))
+                    }
+                </Button>
+            )}
+            <CoverArt
+                type="item"
+                beetsId={currentItem?.id}
+                size={size}
+                index={currentIdx}
+                sx={{
+                    maxWidth: "100%",
+                    maxHeight: "100%",
+                    height: "auto",
+                    width: "100%",
+                    objectFit: "contain",
+                }}
+            />
         </Box>
     );
 }

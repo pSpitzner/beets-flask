@@ -5,25 +5,34 @@ import { SxProps } from "@mui/material/styles";
 import { useQuery } from "@tanstack/react-query";
 
 import { APIError } from "@/api/common";
-import { artQueryOptions } from "@/api/library";
+import { artQueryOptions, ArtSize } from "@/api/library";
 
 export interface CoverArtProps extends BoxProps {
     type: "item" | "album";
     beetsId?: number;
     sx?: SxProps;
+    size?: ArtSize;
+    index?: number;
 }
 
 /** Cover art
  *
  * Shows the cover art for an item or album.
  */
-export default function CoverArt({ type, beetsId, sx, ...props }: CoverArtProps) {
+export default function CoverArt({
+    type,
+    beetsId,
+    size,
+    sx,
+    index,
+    ...props
+}: CoverArtProps) {
     const {
         data: art,
         isPending,
         isError,
         error,
-    } = useQuery(artQueryOptions({ type, id: beetsId }));
+    } = useQuery(artQueryOptions({ type, id: beetsId, size, index: index }));
 
     const coverSx = {
         height: 100,
