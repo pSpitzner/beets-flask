@@ -340,7 +340,7 @@ function FullScreenPlayer({
             }}
         >
             {/*Top bar*/}
-            <Box sx={{ width: "100%" }}>
+            <Box sx={{ width: "100%", flex: "0 1 auto" }}>
                 <IconButton size="large" onClick={onClose}>
                     <ChevronDownIcon size={theme.iconSize.xl} />
                 </IconButton>
@@ -350,7 +350,6 @@ function FullScreenPlayer({
             <Box
                 sx={{
                     width: "100%",
-                    flex: "1 1 auto",
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "center",
@@ -358,14 +357,19 @@ function FullScreenPlayer({
                     padding: 2,
                     borderRadius: 2,
                     gap: 2,
+                    flex: "1 1 auto",
+                    overflow: "hidden",
                 }}
             >
                 <MultiCover
                     sx={{
-                        maxWidth: "100%",
-                        height: "auto",
+                        overflow: "hidden",
+                        flex: "0 1 auto",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "flex-end",
                         width: "100%",
-                        objectFit: "contain",
+                        maxHeight: "50vh",
                     }}
                     size="large"
                 />
@@ -377,6 +381,7 @@ function FullScreenPlayer({
                         justifyContent: "center",
                         alignItems: "center",
                         width: "100%",
+                        flex: "0 1 auto",
                     }}
                 >
                     <CurrentTitle variant="h2" fontWeight="bold" />
@@ -389,13 +394,14 @@ function FullScreenPlayer({
             <Box
                 sx={{
                     width: "100%",
-                    minHeight: "20%",
                     padding: 2,
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "center",
                     alignItems: "center",
                     gap: 2,
+                    flex: "1 0 auto",
+                    overflow: "hidden",
                 }}
             >
                 <Box
@@ -414,6 +420,7 @@ function FullScreenPlayer({
                         alignItems: "center",
                         justifyContent: "center",
                         width: "100%",
+                        paddingBottom: 1,
                     }}
                 >
                     <Box
@@ -674,9 +681,10 @@ function MultiCover({ size, ...props }: { size: "medium" | "large" } & BoxProps)
                 sx={{
                     maxWidth: "100%",
                     maxHeight: "100%",
-                    height: "auto",
-                    width: "100%",
+                    width: "auto",
+                    height: "100%",
                     objectFit: "contain",
+                    m: 0,
                 }}
             />
         </Box>
