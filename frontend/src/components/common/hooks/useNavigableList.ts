@@ -41,6 +41,10 @@ export function useNavigableList<T>(initialState: T[] | (() => T[]) = []) {
         (newItems: T | T[]) => {
             newItems = Array.isArray(newItems) ? newItems : [newItems];
             setItems((prev) => [...prev, ...newItems]);
+
+            if (currentIndex === null) {
+                setCurrentIndex(0);
+            }
         },
         [items.length]
     );

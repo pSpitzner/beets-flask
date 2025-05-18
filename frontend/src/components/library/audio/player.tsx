@@ -6,6 +6,10 @@ import {
     SkipBackIcon,
     SkipForwardIcon,
     SquareIcon,
+    Volume1Icon,
+    Volume2Icon,
+    VolumeIcon,
+    VolumeOffIcon,
     XIcon,
 } from "lucide-react";
 import { useState } from "react";
@@ -14,15 +18,19 @@ import {
     Box,
     BoxProps,
     IconButton,
+    Paper,
     Slide,
+    Slider,
     Typography,
     TypographyProps,
+    useMediaQuery,
     useTheme,
 } from "@mui/material";
 
-import { humanizeDuration, trackLength } from "@/components/common/units/time";
+import { trackLengthRep } from "@/components/common/units/time";
 
 import { useAudioContext } from "./context";
+import { ProgressBar, Waveform } from "./waveform";
 
 import CoverArt, { CoverArtProps } from "../coverArt";
 
@@ -41,7 +49,7 @@ export function DesktopPlayer() {
                 width: "100%",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
+                justifyContent: "flex-start",
                 height: 100,
                 padding: 1,
                 borderRadius: 2,
@@ -77,60 +85,63 @@ export function DesktopPlayer() {
                 <Box
                     sx={{
                         gridColumn: "1 / 2",
-                        // Stacked grid layout
-                        // for alligning the elements
+                        display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
                         gap: 1,
-                        gridTemplateColumns: "1fr",
-                        gridTemplateRows: "1fr",
-                        display: "grid",
                         width: "100%",
+                        minWidth: 0, // prevent overflow
+                        overflow: "hidden",
+                        ">*": {
+                            alignItems: "flex-end",
+                        },
                     }}
                 >
                     <Box
                         sx={{
                             display: "flex",
-                            alignItems: "center",
                             gap: 0.5,
                             justifyContent: "center",
                             color: "text.secondary",
-                            gridColumn: "1",
-                            gridRow: "1",
                             justifySelf: "flex-start",
+                            flexWrap: "nowrap",
+                            width: "min-content",
                         }}
                     >
                         <ClockIcon size={theme.iconSize.sm} />
-                        <CurrentDuration variant="body2" lineHeight={1} />
+                        <CurrentDuration variant="body2" lineHeight={1} noWrap />
                     </Box>
 
                     <Box
-                        display="flex"
-                        alignItems="flex-end"
                         gap={1}
                         sx={{
-                            gridColumn: "1",
-                            gridRow: "1",
-                            justifySelf: "center",
+                            display: "flex",
+                            textOverflow: "ellipsis",
+                            overflow: "hidden",
                         }}
                     >
-                        <CurrentTitle variant="body1" />
-                        <CurrentArtist variant="body2" color="text.secondary" />
+                        <CurrentTitle variant="body1" lineHeight={1} noWrap />
+                        <CurrentArtist
+                            variant="body2"
+                            color="text.secondary"
+                            lineHeight={1}
+                            noWrap
+                        />
                     </Box>
 
                     <Box
                         sx={{
                             display: "flex",
-                            alignItems: "center",
                             gap: 0.5,
                             justifyContent: "center",
                             color: "text.secondary",
                             gridColumn: "1",
                             gridRow: "1",
                             justifySelf: "flex-end",
+                            flexWrap: "nowrap",
                         }}
                     >
-                        <Typography variant="body2" lineHeight={1}>
+                        <Typography variant="body2" lineHeight={1} noWrap>
                             Track 1 of 10
                         </Typography>
                     </Box>
@@ -139,16 +150,15 @@ export function DesktopPlayer() {
                 {/* Progress bar*/}
                 <Box
                     sx={{
-                        border: "1px solid",
-                        borderColor: "primary.muted",
-                        height: "100%",
                         gridColumn: "1 / 2",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
+                        marginBlock: 1,
+                        height: "48px", // size of large iconbutton
                     }}
                 >
-                    Waveform
+                    <Waveform />
                 </Box>
 
                 {/* actions*/}
@@ -158,13 +168,12 @@ export function DesktopPlayer() {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
+                        gap: 1,
+                        paddingLeft: 1,
                     }}
                 >
-                    <PrevNextButtons
-                        sx={{
-                            paddingInline: 0.5,
-                        }}
-                    />
+                    <VolumeControls />
+                    <PrevNextButtons />
                     <PlayPauseButton />
                 </Box>
 
@@ -198,8 +207,8 @@ export function DesktopPlayer() {
  * and the current waveform.
  */
 export function MobilePlayer() {
-    const [fullscreen, setFullScreen] = useState(false);
     const theme = useTheme();
+    const [fullscreen, setFullScreen] = useState(false);
 
     return (
         <>
@@ -235,44 +244,26 @@ export function MobilePlayer() {
                 />
 
                 {/* Track info*/}
-                <Box sx={{ display: "flex", flexDirection: "column" }}>
-                    <CurrentTitle variant="body1" />
-                    <CurrentArtist variant="caption" color="text.secondary" />
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        overflow: "hidden",
+                        flex: 1,
+                    }}
+                >
+                    <CurrentTitle variant="body1" noWrap />
+                    <CurrentArtist variant="caption" color="text.secondary" noWrap />
                 </Box>
 
                 {/* Progress bar*/}
-                <Box
-                    sx={(theme) => ({
+                <ProgressBar
+                    sx={{
                         position: "absolute",
                         bottom: 0,
                         left: theme.spacing(1),
-                        width: `calc(100% - ${theme.spacing(2)})`,
-                        height: 2,
-                        backgroundColor: theme.palette.primary.muted,
-                        ":after": {
-                            content: '""',
-                            position: "absolute",
-                            left: 0,
-                            top: 0,
-                            width: "50%", // Adjust this to set the progress
-                            height: "100%",
-                            backgroundColor: theme.palette.primary.main,
-                            transition: "transform 0.3s ease-in-out",
-                        },
-                        ":before": {
-                            // glow
-                            content: '""',
-                            position: "absolute",
-                            left: "-2px",
-                            bottom: 0,
-                            width: "calc(50% + 4px)", // Adjust this to set the progress
-                            height: "4px",
-                            backgroundColor: theme.palette.primary.main,
-                            opacity: 0.6,
-                            filter: "blur(5px)",
-                            transition: "transform 0.3s ease-in-out",
-                        },
-                    })}
+                        height: "3px",
+                    }}
                 />
 
                 {/* actions*/}
@@ -378,20 +369,21 @@ export function FullScreenOntop({ sx, ...props }: BoxProps) {
 // Toggle play/pause
 function PlayPauseButton() {
     const theme = useTheme();
-    const { isPlaying, togglePlay } = useAudioContext();
+    const { playing, togglePlaying, canPlay } = useAudioContext();
 
     return (
         <IconButton
             onClick={(e) => {
                 e.stopPropagation();
-                togglePlay();
+                togglePlaying();
             }}
             sx={{
                 backgroundColor: "primary.muted",
             }}
-            size="large"
+            size="medium"
+            loading={!canPlay}
         >
-            {isPlaying ? (
+            {playing ? (
                 <PauseIcon size={theme.iconSize.xl} />
             ) : (
                 <PlayIcon size={theme.iconSize.xl} />
@@ -431,10 +423,98 @@ function PrevNextButtons(props: BoxProps) {
     );
 }
 
+import Popper from "@mui/material/Popper";
+
+import { useDebounce } from "@/components/common/hooks/useDebounce";
+
+/** Volume controls
+ */
+function VolumeControls(props: BoxProps) {
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const theme = useTheme();
+    const {
+        audioRef: currentAudio,
+        volume,
+        setVolume,
+        toggleMuted,
+    } = useAudioContext();
+    const open = useDebounce(Boolean(anchorEl), 250);
+
+    // Ios devices cant control volume, thanks apple...
+    const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isMobile = useMediaQuery(theme.breakpoints.down("tablet"));
+
+    return (
+        <Box {...props}>
+            <Popper
+                open={open}
+                anchorEl={anchorEl}
+                placement={"top"}
+                modifiers={[
+                    {
+                        name: "offset",
+                        options: {
+                            offset: [0, theme.spacing(0.5).slice(0, -2)],
+                        },
+                    },
+                ]}
+            >
+                <Paper sx={{ height: 100, paddingInline: 0.5, paddingBlock: 2 }}>
+                    <Slider
+                        orientation="vertical"
+                        value={volume * 100}
+                        onChange={(e, newValue) => {
+                            setVolume(newValue / 100);
+                        }}
+                        min={0}
+                        max={100}
+                        size="small"
+                        valueLabelDisplay="auto"
+                        valueLabelFormat={(value) => `${Math.round(value)}%`}
+                        sx={{
+                            ".MuiSlider-valueLabel": {
+                                backgroundColor: "background.paper",
+                                color: "text.primary",
+                            },
+                        }}
+                    />
+                </Paper>
+            </Popper>
+
+            <IconButton
+                onDoubleClick={() => {
+                    toggleMuted();
+                }}
+                onContextMenu={(e) => {
+                    e.preventDefault();
+                    toggleMuted();
+                }}
+                onClick={(e) => {
+                    if (isIos || isMobile) {
+                        e.stopPropagation();
+                        toggleMuted();
+                        return;
+                    }
+                    // on desktop show the volume slider
+                    setAnchorEl((prev) => (prev ? null : e.currentTarget));
+                }}
+                disabled={!currentAudio}
+            >
+                {/* Icon depends on current volume */}
+                {between(volume, 2 / 3, 1) && <Volume2Icon size={theme.iconSize.md} />}
+                {between(volume, 1 / 3, 2 / 3) && (
+                    <Volume1Icon size={theme.iconSize.md} />
+                )}
+                {between(volume, 0, 1 / 3) && <VolumeIcon size={theme.iconSize.md} />}
+                {volume === 0 && <VolumeOffIcon size={theme.iconSize.md} />}
+            </IconButton>
+        </Box>
+    );
+}
+
 function Cover(props: Omit<CoverArtProps, "type">) {
     const { currentItem } = useAudioContext();
-
-    return <CoverArt type="item" id={currentItem?.id.toFixed()} {...props} />;
+    return <CoverArt type="item" beetsId={currentItem?.id} {...props} />;
 }
 
 function CurrentArtist(props: TypographyProps) {
@@ -448,22 +528,15 @@ function CurrentTitle(props: TypographyProps) {
 }
 
 function CurrentDuration(props: TypographyProps) {
-    const { currentItem } = useAudioContext();
-
-    // TODO: current time
-    const currentTime = 0;
-    const duration = currentItem?.length || 0;
-
-    /**
-     * 
-    if (!currentItem?.length) {
-        return "no";
-    }
-    */
-
+    const { currentItem, currentTime } = useAudioContext();
     return (
         <Typography {...props}>
-            {trackLength(currentTime)} / {trackLength(duration)}
+            {trackLengthRep(currentTime, false)} /{" "}
+            {trackLengthRep(currentItem?.length || 0, false)}
         </Typography>
     );
+}
+
+function between(x: number, min: number, max: number) {
+    return x > min && x <= max;
 }
