@@ -5,14 +5,17 @@ Allows to stream an item's file as mp3.
 
 import asyncio
 import os
+import sys
 import time
 from asyncio.subprocess import PIPE, Process
-from typing import TYPE_CHECKING, AsyncIterator
+from typing import TYPE_CHECKING, AsyncIterator, Hashable, TypeVar
 
 import aiofiles
 import numpy as np
 from beets import util as beets_util
-from quart import Blueprint, Response, g, jsonify
+from cachetools import TTLCache
+from cachetools.keys import hashkey
+from quart import Blueprint, Response, g
 
 from beets_flask.logger import log
 from beets_flask.server.exceptions import IntegrityException, NotFoundException
@@ -22,6 +25,10 @@ audio_bp = Blueprint("audio", __name__)
 if TYPE_CHECKING:
     # For type hinting the global g object
     from . import g
+
+
+transcodeCache = TTLCache(maxsize=128, ttl=60 * 60)  # 1 hour cache
+peaksCache = TTLCache(maxsize=128, ttl=60 * 60)  # 1 hour cache
 
 
 @audio_bp.route("/item/<int:item_id>/audio", methods=["GET"])
@@ -42,11 +49,10 @@ async def item_audio(item_id: int):
             f"Item file '{item_path}' does not exist for item beets_id:'{item_id}'."
         )
 
-    it = await transcode_to_mp3(item_path)
-
+    it = await transcode_to_webm(item_path)
     return Response(
-        it,
-        mimetype="audio/mpeg",
+        cached_async_iterator(item_path, it, transcodeCache),
+        mimetype="audio/webm",
     )
 
 
@@ -54,7 +60,7 @@ async def item_audio(item_id: int):
 async def item_audio_peaks(item_id: int):
     """Get the raw item data.
 
-    For streaming the audio file directly to the clien.
+    For streaming the audio file directly to the client.
     """
     item = g.lib.get_item(item_id)
     if not item:
@@ -68,7 +74,7 @@ async def item_audio_peaks(item_id: int):
             f"Item file '{item_path}' does not exist for item beets_id:'{item_id}'."
         )
 
-    peaks = await audio_peaks(item_path)
+    peaks = await audio_peaks_cached(item_path)
     return Response(
         peaks.tobytes(),
         mimetype="application/octet-stream",
@@ -125,9 +131,7 @@ class FFmpegStreamer:
             await self.process.wait()
 
             end = time.process_time_ns()
-            log.info(
-                f"Streamed {file_path} in {(end - start) / 1_000_000_000:.2f} s to mp3"
-            )
+            log.debug(f"Transcoded {file_path} in {(end - start) / 1_000_000_000:.2f}s")
 
     async def stream(self) -> AsyncIterator[bytes]:
         """Stream audio data from the FFmpeg process."""
@@ -180,7 +184,30 @@ class FFmpegStreamer:
                 yield data
 
 
-async def transcode_to_mp3(file_path: str) -> AsyncIterator[bytes]:
+T = TypeVar("T")
+
+
+async def cached_async_iterator(
+    key: Hashable, iterator: AsyncIterator[T], cache: TTLCache
+) -> AsyncIterator[T]:
+    """Cache the results of an async iterator."""
+
+    cached = []
+    if key in cache:
+        log.debug(f"Using cached data for {key}")
+        cached = cache[key]
+    else:
+        log.debug(f"Caching data for {key}")
+        async for item in iterator:
+            cached.append(item)
+
+        cache[key] = cached
+
+    for item in cached:
+        yield item
+
+
+async def transcode_to_webm(file_path: str) -> AsyncIterator[bytes]:
     """Transcode a file to mp3 using FFmpeg and stream it."""
     ffmpeg_streamer = FFmpegStreamer()
     i_fmt = file_path.split(".")[-1]
@@ -194,16 +221,15 @@ async def transcode_to_mp3(file_path: str) -> AsyncIterator[bytes]:
         "-fflags", "nobuffer",
         "-flush_packets", "0",
         "-probesize", "32",
-        "-analyzeduration", "0",
         "-f", i_fmt,                        # input format
         "-i", "-",                           # read from stdin
         "-vn", "-sn", "-dn",                # DROP video streams
         "-preset", "ultrafast",             # Faster MP3 encoding
         "-map_metadata", "-1",              # Skip all metadata
         "-map", "0:a",                      # Map all audio streams
-        "-codec:a", "libmp3lame",
-        "-b:a", "192k",
-        "-f", "mp3",                        # Force MP3 format for stdout
+        "-codec:a", "libopus",
+        "-b:a", "128k",
+        "-f", "webm",                        # Force MP3 format for stdout
         "-",                                # Output to stdout
     ])
     # fmt: on
@@ -211,7 +237,21 @@ async def transcode_to_mp3(file_path: str) -> AsyncIterator[bytes]:
     return ffmpeg_streamer.stream_file(file_path)
 
 
-# TODO: cache
+peaksCache = TTLCache(maxsize=128, ttl=60 * 60)  # 1 hour cache
+
+
+async def audio_peaks_cached(item_path: str) -> np.ndarray:
+    """Helper function with LRU caching."""
+    cache_key = hashkey(item_path)
+    if cache_key in peaksCache:
+        log.debug(f"Using cached peaks for {item_path}")
+        return peaksCache[cache_key]
+
+    result = await audio_peaks(item_path)
+    peaksCache[cache_key] = result
+    return result
+
+
 async def audio_peaks(path: str):
     ffmpeg_streamer = FFmpegStreamer()
 
@@ -230,15 +270,26 @@ async def audio_peaks(path: str):
     ])
     # fmt: on
 
-    # FIXME: There is a better way to do this i.e. bytes concatenation directly
-    raw_samples = [chunk async for chunk in ffmpeg_streamer.stream()]
-    samples = np.frombuffer(
-        b"".join(raw_samples), dtype=np.int16
-    )  # Convert to numpy array
-
-    samples = samples / 32768.0
-
+    # Convert to numpy array
+    raw_samples = b"".join([chunk async for chunk in ffmpeg_streamer.stream()])
+    # Normalize to -1.0 to 1.0 range
+    samples = np.frombuffer(raw_samples, dtype=np.int16).astype(np.float32) / 32768.0
+    # Downsample
     window_size = 2056
     starts = np.arange(0, samples.shape[0], window_size)
     maxs = np.maximum.reduceat(samples, starts, dtype=np.float32)
     return maxs
+
+
+async def chunked_bytes_iterator(
+    data: bytes, chunk_size: int = 8192
+) -> AsyncIterator[bytes]:
+    """
+    Async iterator that yields chunks of bytes data.
+
+    Args:
+        data: The bytes object to be chunked
+        chunk_size: Size of each chunk in bytes (default: 8KB)
+    """
+    for i in range(0, len(data), chunk_size):
+        yield data[i : i + chunk_size]

@@ -1,5 +1,4 @@
-import { useRef, useState } from "react";
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import { queryOptions } from "@tanstack/react-query";
 
 import {
     AlbumResponse,
@@ -40,7 +39,15 @@ export const libraryStatsQueryOptions = () => {
 };
 
 // Art for a library item or album
-export const artQueryOptions = ({ type, id }: { type?: string; id?: number }) =>
+export const artUrl = (type: "item" | "album", id: number) =>
+    `/library/${type}/${id}/art`;
+export const artQueryOptions = ({
+    type,
+    id,
+}: {
+    type?: "item" | "album";
+    id?: number;
+}) =>
     queryOptions({
         queryKey: ["art", type, id],
         queryFn: async () => {
@@ -48,7 +55,7 @@ export const artQueryOptions = ({ type, id }: { type?: string; id?: number }) =>
                 return null;
             }
             console.log("artQueryOptions", type, id);
-            const url = `/library/${type}/${id}/art`;
+            const url = artUrl(type!, id);
             const response = await fetch(url);
             const blob = await response.blob();
             const objectUrl = URL.createObjectURL(blob);
@@ -196,92 +203,166 @@ export const albumImportedOptions = <Expand extends boolean, Minimal extends boo
     retry: 1,
 });
 
-// Audio for a library item, needs a bit more of logic
-// to handle loading and errors
-// Resolves to success once the audio is ready to play
-// this does not mean tho, that the audio is completely loaded
-// but that the audio can be partially played
+const AUDIO_STALE_TIME = 5 * 60 * 1000; // 5 minutes
 
-function fetchAudio(url: string, signal: AbortSignal) {
-    const audio = new Audio();
-    audio.src = url;
-    audio.preload = "auto";
+/* ---------------------------- Waveforms / Peaks --------------------------- */
+// We precompute the waveform for each audio file on the server
+// allows to show the waveform without loading the entire audio file first
 
-    return new Promise<HTMLAudioElement>((resolve, reject) => {
-        const onCanPlay = () => {
-            cleanup();
-            resolve(audio);
-        };
-        const onError = () => {
-            cleanup();
-            reject(new Error(audio.error!.message));
-        };
-        const onAbort = () => {
-            cleanup();
-            // stop downloading
-            audio.pause();
-            reject(new Error("Audio load aborted"));
-        };
-
-        function cleanup() {
-            audio.removeEventListener("canplay", onCanPlay);
-            audio.removeEventListener("error", onError);
-        }
-
-        audio.addEventListener("canplay", onCanPlay, { once: true });
-        audio.addEventListener("error", onError, { once: true });
-        signal.addEventListener("abort", onAbort, { once: true });
-
-        // Begin loading
-        audio.load();
-    });
+async function fetchWaveform(url: string, signal: AbortSignal) {
+    const response = await fetch(url, { signal });
+    const blob = await response.blob();
+    const arrayBuffer = await blob.arrayBuffer();
+    const data = new Float32Array(arrayBuffer);
+    return data;
 }
-
-export function useItemAudio(id?: number) {
-    const q = useQuery({
-        queryKey: ["item", "audio", id],
-        queryFn: async ({ signal }) => {
-            if (!id) {
-                return null;
-            }
-            return fetchAudio(`/api_v1/library/item/${id}/audio`, signal);
-        },
-        retry: false,
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        refetchOnMount: false,
-        refetchOnWindowFocus: false,
-        refetchInterval: false,
-        refetchIntervalInBackground: false,
-    });
-
-    return {
-        ...q,
-    };
-}
-
-export function prefetchItemAudio(id: number) {
-    return queryClient.prefetchQuery({
-        queryKey: ["item", "audio", id],
-        queryFn: async ({ signal }) => {
-            return fetchAudio(`/api_v1/library/item/${id}/audio`, signal);
-        },
-        staleTime: 5 * 60 * 1000, // 5 minutes
-    });
-}
-
 export function waveformQueryOptions(id?: number) {
     return queryOptions({
         queryKey: ["item", "audio", "waveform", id],
-        queryFn: async () => {
+        queryFn: async ({ signal }) => {
             if (!id) {
                 return null;
             }
-            const response = await fetch(`/library/item/${id}/audio/peaks`);
-            //application/octet-stream numpy array float32
-            const blob = await response.blob();
-            const arrayBuffer = await blob.arrayBuffer();
-            const data = new Float32Array(arrayBuffer);
-            return data;
+            return fetchWaveform(`/library/item/${id}/audio/peaks`, signal);
         },
+        retry: false,
+        staleTime: AUDIO_STALE_TIME,
+    });
+}
+
+export function prefetchWaveform(id: number) {
+    return queryClient.prefetchQuery({
+        queryKey: ["item", "audio", "waveform", id],
+        queryFn: async ({ signal }) => {
+            return fetchWaveform(`/library/item/${id}/audio/peaks`, signal);
+        },
+        staleTime: AUDIO_STALE_TIME,
+    });
+}
+
+/* ------------------------------- Audio files ------------------------------ */
+// We add progress to the cache to allow inflight merging
+// or prefetched and new queries
+
+async function fetchAudio(
+    id: number,
+    signal: AbortSignal
+): Promise<Blob | MediaSource> {
+    const mimeCodecs = "audio/webm; codecs=opus";
+
+    if (!MediaSource.isTypeSupported(mimeCodecs)) {
+        console.warn("Audio streaming not supported, using fallback");
+        const res = await fetch(`/library/item/${id}/audio`, { signal });
+        return await res.blob();
+    }
+
+    const mediaSource = new MediaSource();
+    mediaSource.addEventListener("sourceopen", sourceOpen);
+
+    /** Warning: This is an absolute mess, I spend quite some time
+     * here and tried to remove all race conditions
+     * and add buffering to the audio stream.
+     * Proceed with caution :)
+     *
+     * ref: https://developer.mozilla.org/en-US/docs/Web/API/MediaSource
+     */
+    async function sourceOpen(this: MediaSource) {
+        const sourceBuffer = this.addSourceBuffer(mimeCodecs);
+        sourceBuffer.mode = "sequence"; // we need to use sequence mode
+
+        // Fetch data stream
+        const response = await fetch(`/library/item/${id}/audio`, {
+            signal,
+        });
+        if (!response.body) throw new Error(`Fetch error: ${response.status} no body!`);
+        const contentLengthHeader = response.headers.get("Content-Length");
+        const total = contentLengthHeader ? parseInt(contentLengthHeader, 10) : null;
+        const reader = response.body.getReader();
+
+        // Process the stream
+        let isAppending = false;
+        let isEndOfStream = false;
+        const appendQueue: ArrayBuffer[] = [];
+
+        function processAppendQueue() {
+            if (!isAppending && appendQueue.length > 0) {
+                isAppending = true;
+                const chunk = appendQueue.shift();
+                if (chunk) {
+                    sourceBuffer.appendBuffer(chunk);
+                }
+            }
+        }
+
+        function endStream() {
+            if (isAppending) {
+                isEndOfStream = true;
+            } else {
+                mediaSource.endOfStream();
+            }
+        }
+
+        sourceBuffer.addEventListener("updateend", () => {
+            isAppending = false;
+            if (isEndOfStream && appendQueue.length === 0) {
+                mediaSource.endOfStream();
+            }
+            processAppendQueue();
+        });
+
+        function appendChunk(chunk: ArrayBuffer) {
+            appendQueue.push(chunk);
+            processAppendQueue();
+        }
+
+        async function appendToBuffer() {
+            // Read the data
+            let loaded = 0;
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) {
+                    console.log("done");
+                    endStream();
+
+                    break;
+                }
+
+                loaded += value.length;
+                // NOTE: In theory we can add a
+                // onProgress event here
+                // but it is not clear if the total
+                // length is known
+                console.debug("loaded", loaded, total);
+
+                appendChunk(value.buffer);
+            }
+        }
+
+        await appendToBuffer();
+    }
+
+    return mediaSource;
+}
+
+export function itemAudioDataQueryOptions(id?: number) {
+    return queryOptions({
+        queryKey: ["item", "audio", id],
+        queryFn: async ({ signal }) => {
+            if (!id) {
+                return null;
+            }
+            return await fetchAudio(id, signal);
+        },
+        staleTime: AUDIO_STALE_TIME,
+    });
+}
+
+export function prefetchItemAudioData(id: number) {
+    return queryClient.prefetchQuery({
+        queryKey: ["item", "audio", id],
+        queryFn: async ({ signal }) => {
+            return await fetchAudio(id, signal);
+        },
+        staleTime: AUDIO_STALE_TIME,
     });
 }
