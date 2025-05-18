@@ -2,10 +2,14 @@ import {
     ActivityIcon,
     AudioWaveformIcon,
     BarcodeIcon,
+    CircleEllipsisIcon,
     ClockIcon,
+    EllipsisIcon,
     FileIcon,
+    FileMusicIcon,
     GuitarIcon,
     LayersIcon,
+    ListIcon,
     MusicIcon,
     PackageIcon,
 } from "lucide-react";
@@ -95,6 +99,7 @@ type MetaBadgeType =
     | "artist"
     | "album"
     | "track"
+    | "title"
     | "label"
     | "genre"
     | "year"
@@ -103,10 +108,41 @@ type MetaBadgeType =
     | "bitrate"
     | "bpm"
     | "compilation"
-    | "identifiers";
+    | "identifiers"
+    | "remaining";
 
 export function MetaBadge({ meta, type }: { meta: FileMetadata; type: MetaBadgeType }) {
     const theme = useTheme();
+    const knownKeys = [
+        "filename",
+        "artist",
+        "composer",
+        "album_artist",
+        "albumartist",
+        "albumartistsort",
+        "artist_credit",
+        "artistsort",
+        "album",
+        "track", // (track number)
+        "title",
+        "label",
+        "publisher",
+        "genre",
+        "genres",
+        "year",
+        "originaldate",
+        "_year",
+        "duration",
+        "filesize",
+        "bitrate",
+        "bpm",
+        "compilation",
+        "catalog_number",
+        "catalognum",
+        "isrc",
+    ];
+    const unknownKeys = Object.keys(meta).filter((k) => !knownKeys.includes(k));
+    console.log(unknownKeys);
 
     switch (type) {
         case "filepath":
@@ -114,8 +150,8 @@ export function MetaBadge({ meta, type }: { meta: FileMetadata; type: MetaBadgeT
                 <GenericMetaBadge
                     meta={meta}
                     keys={["filename"]}
-                    icon={<FileIcon size={theme.iconSize.xs} />}
-                    variant="outlined"
+                    icon={<FileMusicIcon size={theme.iconSize.xs} />}
+                    // variant="outlined"
                 />
             );
         case "artist":
@@ -133,7 +169,7 @@ export function MetaBadge({ meta, type }: { meta: FileMetadata; type: MetaBadgeT
                     ]}
                     icon={<PenaltyTypeIcon type="artist" size={theme.iconSize.xs} />}
                     // sx={{ fontWeight: "400" }}
-                    variant="outlined"
+                    // variant="outlined"
                 />
             );
         case "album":
@@ -142,10 +178,19 @@ export function MetaBadge({ meta, type }: { meta: FileMetadata; type: MetaBadgeT
                     meta={meta}
                     keys={["album"]}
                     icon={<PenaltyTypeIcon type="album" size={theme.iconSize.xs} />}
-                    variant="outlined"
+                    // variant="outlined"
                 />
             );
         case "track":
+            return (
+                <GenericMetaBadge
+                    meta={meta}
+                    keys={["track"]}
+                    variant="outlined"
+                    sx={{ paddingLeft: 0 }}
+                />
+            );
+        case "title":
             return (
                 <GenericMetaBadge
                     meta={meta}
@@ -224,7 +269,7 @@ export function MetaBadge({ meta, type }: { meta: FileMetadata; type: MetaBadgeT
                 </Tooltip>
             );
         case "compilation":
-            if (!meta["compilation"]) return null;
+            if (!meta["compilation"] || meta["compilation"] == 0) return null;
             return (
                 <Tooltip title={"compilation"}>
                     <StyledChip
@@ -251,6 +296,17 @@ export function MetaBadge({ meta, type }: { meta: FileMetadata; type: MetaBadgeT
                     icon={<BarcodeIcon size={theme.iconSize.xs} />}
                 />
             );
+        case "remaining":
+            // everything that is not covered above
+            return (
+                <GenericMetaBadge
+                    meta={meta}
+                    keys={unknownKeys}
+                    label={"more"}
+                    icon={<ListIcon size={theme.iconSize.xs} />}
+                />
+            );
+
         default:
             return null;
     }
@@ -260,11 +316,13 @@ export function GenericMetaBadge({
     meta,
     keys,
     icon,
+    label,
     ...props
 }: {
     meta: FileMetadata;
     keys: string[];
-    icon: JSX.Element;
+    icon?: JSX.Element;
+    label?: string;
 } & ChipProps) {
     const filtered = Object.fromEntries(
         Object.entries(meta)
@@ -273,8 +331,8 @@ export function GenericMetaBadge({
     );
 
     const key = Object.keys(filtered)[0];
-    const label = Object.values(filtered)[0];
-    if (!label) return null;
+    const autoLabel = Object.values(filtered)[0];
+    if (!key) return null;
 
     let tooltip = <Box>{key}</Box>;
     if (Object.values(filtered).length > 1) {
@@ -292,7 +350,12 @@ export function GenericMetaBadge({
 
     return (
         <Tooltip title={tooltip}>
-            <StyledChip size="small" icon={icon} label={label} {...props} />
+            <StyledChip
+                size="small"
+                icon={icon}
+                label={label || autoLabel}
+                {...props}
+            />
         </Tooltip>
     );
 }

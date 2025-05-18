@@ -214,6 +214,10 @@ def _get_filemeta(path: str | Path):
         # TODO: we cant just omit if there are multiple values...
         if isinstance(v, list):
             tag[k] = v[0]
+
+    if "filename" in tag:
+        tag["filename"] = str(tag["filename"]).split("/")[-1]
+
     return tag
 
 

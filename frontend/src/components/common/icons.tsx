@@ -78,7 +78,7 @@ export function FileTypeIcon({
         case "flac":
         case "wav":
         case "ogg":
-            return <MusicIcon {...props} />;
+            return <FileMusicIcon {...props} />;
         default:
             return <FileIcon {...props} />;
     }
