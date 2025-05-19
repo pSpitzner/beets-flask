@@ -15,6 +15,7 @@ import {
     prefetchItemAudioData,
     prefetchWaveform,
 } from "@/api/library";
+import { useLocalStorage } from "@/components/common/hooks/useLocalStorage";
 import { useMediaSession } from "@/components/common/hooks/useMediaSession";
 import { useNavigableList } from "@/components/common/hooks/useNavigableList";
 import { ItemResponse } from "@/pythonTypes";
@@ -170,7 +171,7 @@ function useAudioData(item: ItemResponse | null) {
     const [playing, _setPlaying] = useState(false);
     const [buffered, setBuffered] = useState<TimeRanges | null>(null); // In seconds < total duration
 
-    const [volume, setVolume] = useState(1);
+    const [volume, setVolume] = useLocalStorage<number>("volume", 1);
     const beforeMuted = useRef<number | null>(null); // needed to store pre-muted volume
     const [currentTime, setCurrentTime] = useState(0);
 
@@ -199,7 +200,6 @@ function useAudioData(item: ItemResponse | null) {
         }
         console.log("Loading audio", currentAudio);
         updateCurrentTime();
-        updateVolume();
         updateCanPlay();
         updateBuffered();
 
@@ -243,6 +243,16 @@ function useAudioData(item: ItemResponse | null) {
         if (!currentAudio) return;
         currentAudio.volume = volume;
     }, [volume, currentAudio]);
+
+    // Sync play state to audio element
+    useEffect(() => {
+        if (!currentAudio) return;
+        if (playing) {
+            currentAudio.play().catch(console.error);
+        } else {
+            currentAudio.pause();
+        }
+    }, [playing, currentAudio]);
 
     // MediaSession handles
     useMediaSessionHandlers(currentAudio || null, item, setPlaying, seek, currentTime);
@@ -333,13 +343,19 @@ function useMediaSessionHandlers(
 
     // Forward time updates to media session
     useEffect(() => {
-        if (!currentAudio || !item) return;
         if (!("mediaSession" in navigator)) return;
-        navigator.mediaSession.setPositionState({
-            duration: item.length || currentAudio.duration,
-            playbackRate: currentAudio.playbackRate,
-            position: currentTime,
-        });
+        if (!currentAudio || !item) return;
+        // Might sometimes error if there is an audio desync
+        // we prevent propagating the error here
+        try {
+            navigator.mediaSession.setPositionState({
+                duration: item.length || currentAudio.duration,
+                playbackRate: currentAudio.playbackRate,
+                position: currentTime,
+            });
+        } catch (error) {
+            console.warn("Error setting position state", error);
+        }
     }, [currentTime, currentAudio, item]);
 
     useMediaSession({
