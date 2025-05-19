@@ -3,6 +3,7 @@ import {
     useCallback,
     useContext,
     useEffect,
+    useMemo,
     useRef,
     useState,
 } from "react";
@@ -34,7 +35,11 @@ interface AudioContextI {
     nextItem: () => ItemResponse | null;
     prevItem: () => ItemResponse | null;
     clearItems: () => void;
-    addToQueue: (item: ItemResponse) => void;
+    addToQueue: (
+        item: ItemResponse,
+        setAsCurrent?: boolean,
+        autoplay?: boolean
+    ) => void;
 
     // Audio data + waveforms
     currentAudio: HTMLAudioElement | null;
@@ -57,6 +62,8 @@ export const useAudioContext = () => {
 };
 
 export function AudioContextProvider({ children }: { children: React.ReactNode }) {
+    const [autoplay, setAutoplay] = useState(false);
+
     const {
         items,
         navigate,
@@ -79,7 +86,7 @@ export function AudioContextProvider({ children }: { children: React.ReactNode }
         canPlay,
     } = useAudioData(currentItem);
 
-    function addToQueue(item: ItemResponse) {
+    function addToQueue(item: ItemResponse, setAsCurrent = false, autoplay = false) {
         // Prefetch the audio data for the item
         // FIXME: this can be quite some data if there are many items
         // maybe a smarter way to do this?
@@ -88,8 +95,17 @@ export function AudioContextProvider({ children }: { children: React.ReactNode }
             prefetchItemAudioData(item.id).catch(console.error);
             prefetchWaveform(item.id).catch(console.error);
         }
-        add(item);
+        add(item, setAsCurrent);
+        if (autoplay) setAutoplay(true);
     }
+
+    useEffect(() => {
+        if (currentAudio && autoplay) {
+            // Prefetch the audio data for the item
+            setAutoplay(false);
+            setPlaying(true);
+        }
+    }, [currentAudio, autoplay, setPlaying]);
 
     const nextItem = () => {
         if (currentAudio) {
@@ -163,7 +179,7 @@ function useAudioData(item: ItemResponse | null) {
         if (!currentAudio) return;
 
         // Forward audio events to react
-        const updatePlaying = () => _setPlaying(!currentAudio.paused);
+        const updatePlaying = () => _setPlaying(currentAudio.paused ? false : true);
         const updateCurrentTime = () => setCurrentTime(currentAudio.currentTime);
         const updateVolume = () => setVolume(currentAudio.volume);
         const updateCanPlay = () => setCanPlay(currentAudio.readyState >= 2);
@@ -181,19 +197,7 @@ function useAudioData(item: ItemResponse | null) {
         if (currentAudio.readyState < 2) {
             currentAudio.load();
         }
-
-        // reapply the current play state i.e. playing
-        // this continues the playback if the audio was playing
-        // before the component was unmounted
-        _setPlaying((prev) => {
-            if (prev) {
-                currentAudio.play().catch(console.error);
-            } else {
-                currentAudio.pause();
-            }
-            return prev;
-        });
-
+        console.log("Loading audio", currentAudio);
         updateCurrentTime();
         updateVolume();
         updateCanPlay();
@@ -230,7 +234,6 @@ function useAudioData(item: ItemResponse | null) {
             } else {
                 currentAudio.pause();
             }
-            _setPlaying(playing);
         },
         [currentAudio]
     );
@@ -241,64 +244,8 @@ function useAudioData(item: ItemResponse | null) {
         currentAudio.volume = volume;
     }, [volume, currentAudio]);
 
-    // Forward time updates to media session
-    useEffect(() => {
-        if (!currentAudio || !item) return;
-        if (!("mediaSession" in navigator)) return;
-        navigator.mediaSession.setPositionState({
-            duration: item.length || currentAudio.duration,
-            playbackRate: currentAudio.playbackRate,
-            position: currentTime,
-        });
-    }, [currentTime, currentAudio, item]);
-
     // MediaSession handles
-    useMediaSession({
-        title: item?.name,
-        artist: item?.artist,
-        album: item?.album,
-        artwork: item
-            ? [
-                  {
-                      src: "/api_v1" + artUrl("item", item.id, "small"),
-                      sizes: "256x256",
-                      type: "image/png",
-                  },
-
-                  {
-                      src: "/api_v1" + artUrl("item", item.id, "medium"),
-                      sizes: "512x512",
-                      type: "image/png",
-                  },
-                  {
-                      src: "/api_v1" + artUrl("item", item.id, "large"),
-                      sizes: "1024x1024",
-                      type: "image/png",
-                  },
-              ]
-            : undefined,
-
-        onPlay: () => setPlaying(true),
-        onPause: () => setPlaying(false),
-        onSeekBackward: (evt) => {
-            if (!currentAudio) return;
-            // Time to skip in seconds
-            const skipTime = evt.seekOffset || 10;
-            seek(currentTime - skipTime);
-        },
-        onSeekForward: (evt) => {
-            if (!currentAudio) return;
-            const skipTime = evt.seekOffset || 10;
-            seek(currentTime + skipTime);
-        },
-        onSeekTo: (evt) => {
-            if (!currentAudio) return;
-            if (evt.fastSeek && "fastSeek" in currentAudio) {
-                currentAudio.fastSeek(evt.seekTime!);
-            }
-            seek(evt.seekTime!);
-        },
-    });
+    useMediaSessionHandlers(currentAudio || null, item, setPlaying, seek, currentTime);
 
     return {
         currentAudio,
@@ -306,6 +253,7 @@ function useAudioData(item: ItemResponse | null) {
         setPlaying,
         volume,
         currentTime,
+        seek,
         buffered,
         canPlay: canPlay,
         setVolume: (value: number) => {
@@ -326,4 +274,80 @@ function useAudioData(item: ItemResponse | null) {
             }
         },
     };
+}
+
+/** Hook to manage media data */
+function useMediaSessionHandlers(
+    currentAudio: HTMLAudioElement | null,
+    item: ItemResponse | null,
+    setPlaying: (playing: boolean) => void,
+    seek: (time: number) => void,
+    currentTime: number
+) {
+    const artwork = useMemo(() => {
+        if (!item) return undefined;
+        return [
+            {
+                src: "/api_v1" + artUrl("item", item.id, "small"),
+                sizes: "256x256",
+                type: "image/png",
+            },
+            {
+                src: "/api_v1" + artUrl("item", item.id, "medium"),
+                sizes: "512x512",
+                type: "image/png",
+            },
+            {
+                src: "/api_v1" + artUrl("item", item.id, "large"),
+                sizes: "1024x1024",
+                type: "image/png",
+            },
+        ];
+    }, [item]);
+
+    const onSeekBackward = useCallback(
+        (evt: MediaSessionActionDetails) => {
+            const skipTime = evt.seekOffset || 10;
+            seek(currentTime - skipTime);
+        },
+        [currentTime, seek]
+    );
+
+    const onSeekForward = useCallback(
+        (evt: MediaSessionActionDetails) => {
+            const skipTime = evt.seekOffset || 10;
+            seek(currentTime + skipTime);
+        },
+        [currentTime, seek]
+    );
+
+    const onSeekTo = useCallback(
+        (evt: MediaSessionActionDetails) => {
+            seek(evt.seekTime!);
+        },
+        [seek]
+    );
+
+    // Forward time updates to media session
+    useEffect(() => {
+        if (!currentAudio || !item) return;
+        if (!("mediaSession" in navigator)) return;
+        navigator.mediaSession.setPositionState({
+            duration: item.length || currentAudio.duration,
+            playbackRate: currentAudio.playbackRate,
+            position: currentTime,
+        });
+    }, [currentTime, currentAudio, item]);
+
+    useMediaSession({
+        title: item?.name,
+        artist: item?.artist,
+        album: item?.album,
+        artwork,
+        onPlay: useCallback(() => setPlaying(true), [setPlaying]),
+        onPause: useCallback(() => setPlaying(false), [setPlaying]),
+        onSeekBackward,
+        onSeekForward,
+        onSeekTo,
+    });
 }

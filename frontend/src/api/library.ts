@@ -395,7 +395,7 @@ async function fetchAudio(id: number, signal: AbortSignal): Promise<HTMLAudioEle
                 // onProgress event here
                 // but it is not clear if the total
                 // length is known
-                console.debug("loaded", loaded, total);
+                // log.debug(`Loaded ${loaded} bytes`);
 
                 appendChunk(value.buffer);
             }
@@ -411,7 +411,7 @@ async function fetchAudio(id: number, signal: AbortSignal): Promise<HTMLAudioEle
     await new Promise((resolve) => {
         setTimeout(() => {
             resolve(true);
-        }, 100);
+        }, 200);
     });
 
     return audio;
@@ -438,4 +438,13 @@ export function prefetchItemAudioData(id: number) {
         },
         ...commonQOptions,
     });
+}
+
+function addAllEvent(target: EventTarget, listener: EventListener) {
+    for (const key in target) {
+        if (/^on/.test(key)) {
+            const eventType = key.substr(2);
+            target.addEventListener(eventType, listener);
+        }
+    }
 }

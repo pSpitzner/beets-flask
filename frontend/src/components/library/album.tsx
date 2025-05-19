@@ -1,9 +1,10 @@
 import { DotIcon } from "lucide-react";
-import { useMemo } from "react";
+import { Fragment, useMemo } from "react";
 import { Box, BoxProps, Typography, useMediaQuery, useTheme } from "@mui/material";
 
 import { AlbumResponseExpanded, ItemResponse } from "@/pythonTypes";
 
+import { PlayOrAddItemToQueueButton } from "./audio/utils";
 import CoverArt from "./coverArt";
 
 import { capitalizeFirstLetter } from "../common/strings";
@@ -174,16 +175,7 @@ export function AlbumHeader({
 }
 
 export function Tracklist({ items, ...props }: { items: ItemResponse[] } & BoxProps) {
-    // Adde 5x to itmes
-    const items1 = useMemo(() => {
-        const it: ItemResponse[] = [];
-        for (let i = 0; i < 4; i++) {
-            it.push(...items);
-        }
-        return it;
-    }, [items]);
-
-    if (items1.length === 0) {
+    if (items.length === 0) {
         return (
             <Box sx={{ flex: "1 1 auto", height: "100%" }}>
                 <Typography variant="body2" color="text.secondary">
@@ -196,34 +188,38 @@ export function Tracklist({ items, ...props }: { items: ItemResponse[] } & BoxPr
     return (
         <Box {...props}>
             <Typography variant="overline">
-                {items1.length == 0 ? "No tracks" : items1.length} track
-                {items1.length > 1 ? "s" : ""}
+                {items.length == 0 ? "No tracks" : items.length} track
+                {items.length > 1 ? "s" : ""}
             </Typography>
             <Box
                 sx={{
                     height: "100%",
-                    display: "flex",
+                    display: "grid",
                     gap: 1.5,
                     flexDirection: "column",
                     overflow: "auto",
+                    gridTemplateColumns: "1fr auto",
+                    alignItems: "center",
                 }}
             >
-                {items1.map((item) => (
-                    <Box
-                        key={item.id}
-                        sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "flex-start",
-                            justifyContent: "center",
-                            fontWeight: "bold",
-                        }}
-                    >
-                        <Typography variant="body1">{item.name}</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            {item.artist}
-                        </Typography>
-                    </Box>
+                {items.map((item) => (
+                    <Fragment key={item.id}>
+                        <Box
+                            sx={{
+                                flexDirection: "column",
+                                alignItems: "flex-start",
+                                justifyContent: "center",
+                                fontWeight: "bold",
+                                display: "subgrid",
+                            }}
+                        >
+                            <Typography variant="body1">{item.name}</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                {item.artist}
+                            </Typography>
+                        </Box>
+                        <PlayOrAddItemToQueueButton item={item} />
+                    </Fragment>
                 ))}
             </Box>
         </Box>

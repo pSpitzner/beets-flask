@@ -63,18 +63,12 @@ function RouteComponent() {
                         background: `linear-gradient(to bottom, transparent 0%, ${theme.palette.background.paper} 100%)`,
                         position: "relative",
                         zIndex: 1,
-                        [theme.breakpoints.up("tablet")]: {
-                            background: "unset",
-                        },
                     })}
                 />
 
                 <Navigation
                     sx={(theme) => ({
                         background: theme.palette.background.paper,
-                        [theme.breakpoints.up("tablet")]: {
-                            background: "unset",
-                        },
 
                         borderBottom: `1px solid ${theme.palette.divider}`,
                         position: "sticky",
@@ -86,10 +80,8 @@ function RouteComponent() {
                         flex: "1 1 auto",
                         paddingInline: 2,
                         paddingBlock: 1,
-                        background: theme.palette.background.paper,
-                        [theme.breakpoints.up("tablet")]: {
-                            background: "unset",
-                        },
+                        //background: theme.palette.background.paper,
+                        background: `linear-gradient(to bottom, ${theme.palette.background.paper} 0%, transparent 100%)`,
                     })}
                 >
                     <Outlet />

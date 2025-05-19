@@ -38,12 +38,16 @@ export function useNavigableList<T>(initialState: T[] | (() => T[]) = []) {
      * Adds a new item to the list
      */
     const add = useCallback(
-        (newItems: T | T[]) => {
+        (newItems: T | T[], setAsCurrent = false) => {
             newItems = Array.isArray(newItems) ? newItems : [newItems];
             setItems((prev) => [...prev, ...newItems]);
 
             if (currentIndex === null) {
                 setCurrentIndex(0);
+            }
+            if (setAsCurrent) {
+                const newIndex = items.length;
+                setCurrentIndex(newIndex);
             }
         },
         [items.length]

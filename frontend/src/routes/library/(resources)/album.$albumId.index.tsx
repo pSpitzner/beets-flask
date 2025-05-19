@@ -23,9 +23,6 @@ function RouteComponent() {
             items={album.items}
             sx={(theme) => ({
                 flex: "1 1 auto",
-                [theme.breakpoints.down("tablet")]: {
-                    background: theme.palette.background.paper,
-                },
             })}
         />
     );

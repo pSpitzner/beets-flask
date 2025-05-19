@@ -28,8 +28,8 @@ import { Route as DebugDesignLoadingImport } from './routes/debug/design/loading
 import { Route as DebugDesignIconsImport } from './routes/debug/design/icons'
 import { Route as LibraryBrowseArtistAlbumIdImport } from './routes/library/browse.$artist.$albumId'
 import { Route as InboxFolderPathHashImport } from './routes/inbox/folder_.$path.$hash'
-import { Route as LibraryresourcesAlbumAlbumIdRouteImport } from './routes/library/(resources)/album.$albumId/route'
-import { Route as LibraryresourcesAlbumAlbumIdIndexImport } from './routes/library/(resources)/album.$albumId/index'
+import { Route as LibraryresourcesAlbumAlbumIdRouteImport } from './routes/library/(resources)/album.$albumId.route'
+import { Route as LibraryresourcesAlbumAlbumIdIndexImport } from './routes/library/(resources)/album.$albumId.index'
 import { Route as LibraryBrowseArtistAlbumIdItemIdImport } from './routes/library/browse.$artist.$albumId.$itemId'
 import { Route as LibraryresourcesAlbumAlbumIdIdentifierImport } from './routes/library/(resources)/album.$albumId/identifier'
 
@@ -643,7 +643,7 @@ export const routeTree = rootRoute
       ]
     },
     "/library/(resources)/album/$albumId": {
-      "filePath": "library/(resources)/album.$albumId/route.tsx",
+      "filePath": "library/(resources)/album.$albumId.route.tsx",
       "children": [
         "/library/(resources)/album/$albumId/identifier",
         "/library/(resources)/album/$albumId/"
@@ -668,7 +668,7 @@ export const routeTree = rootRoute
       "parent": "/library/browse/$artist/$albumId"
     },
     "/library/(resources)/album/$albumId/": {
-      "filePath": "library/(resources)/album.$albumId/index.tsx",
+      "filePath": "library/(resources)/album.$albumId.index.tsx",
       "parent": "/library/(resources)/album/$albumId"
     }
   }

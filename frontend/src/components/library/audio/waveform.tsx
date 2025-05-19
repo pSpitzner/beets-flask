@@ -27,6 +27,85 @@ export function Waveform({ height }: { height?: number }) {
     // Load precomputed waveform
     const { data: peaks, isPending } = useQuery(waveformQueryOptions(currentItem?.id));
 
+    // Initialize wavesurfer we use one global instance
+    useEffect(() => {
+        if (!containerRef.current || !peaks) return;
+        const regions = RegionsPlugin.create();
+        const wavesurfer = WaveSurfer.create({
+            container: containerRef.current,
+            waveColor: theme.palette.primary.muted,
+            progressColor: theme.palette.primary.main,
+            cursorColor: theme.palette.primary.main,
+            cursorWidth: 2,
+            height: height,
+            duration: currentItem?.length,
+            peaks: peaks ? [peaks] : undefined,
+            dragToSeek: true,
+            plugins: [regions],
+            backend: "MediaElement",
+        });
+        wavesurferRef.current = wavesurfer;
+        loadingRegion.current = regions.addRegion({
+            start: 0,
+            end: currentItem?.length,
+            color: colorBuffering,
+            drag: false,
+            resize: false,
+        });
+
+        return () => {
+            wavesurfer.destroy();
+            wavesurferRef.current = null;
+            loadingRegion.current = null;
+        };
+    }, [currentItem, peaks, currentAudio]);
+
+    // Register events for the wavesurfer instance
+    useEffect(() => {
+        if (!wavesurferRef.current || !currentAudio) return;
+        const wavesurfer = wavesurferRef.current;
+
+        let dragging = false;
+
+        const onClick = (percentage: number) => {
+            const time = wavesurfer.getDuration() * percentage;
+            currentAudio.currentTime = time;
+        };
+        const onDragStart = (percentage: number) => {
+            dragging = true;
+            const time = wavesurfer.getDuration() * percentage;
+            wavesurfer.setTime(time);
+        };
+        const onDragEnd = (percentage: number) => {
+            const time = wavesurfer.getDuration() * percentage;
+            currentAudio.currentTime = time;
+            dragging = false;
+        };
+
+        wavesurfer.on("ready", () => {
+            updateWaveSurferTime();
+        });
+        wavesurfer.on("click", onClick);
+        wavesurfer.on("dragstart", onDragStart);
+        wavesurfer.on("dragend", onDragEnd);
+
+        const updateWaveSurferTime = () => {
+            if (dragging) return;
+            const currentTime = currentAudio.currentTime;
+            wavesurfer.setTime(currentTime);
+        };
+
+        currentAudio.addEventListener("timeupdate", updateWaveSurferTime);
+
+        return () => {
+            wavesurfer.un("click", onClick);
+            wavesurfer.un("dragstart", onDragStart);
+            wavesurfer.un("dragend", onDragEnd);
+
+            currentAudio.removeEventListener("timeupdate", updateWaveSurferTime);
+        };
+    }, [currentAudio]);
+
     // Audio buffering region
     useEffect(() => {
         if (!loadingRegion.current || !wavesurferRef.current) return;
@@ -52,41 +131,6 @@ export function Waveform({ height }: { height?: number }) {
             });
         }
     }, [buffered, currentItem?.length]);
-
-    // Initialize wavesurfer
-    useEffect(() => {
-        if (!containerRef.current || !peaks) return;
-        const regions = RegionsPlugin.create();
-        const wavesurfer = WaveSurfer.create({
-            container: containerRef.current,
-            waveColor: theme.palette.primary.muted,
-            progressColor: theme.palette.primary.main,
-            cursorColor: theme.palette.primary.main,
-            cursorWidth: 2,
-            duration: currentItem?.length,
-            peaks: peaks ? [peaks] : undefined,
-            height: height,
-            dragToSeek: true,
-            media: currentAudio || undefined,
-            plugins: [regions],
-        });
-        wavesurferRef.current = wavesurfer;
-
-        const buffered = currentAudio?.buffered;
-
-        loadingRegion.current = regions.addRegion({
-            start: buffered && buffered.length > 0 ? buffered.end(0) : 0,
-            end: currentItem?.length,
-            color: colorBuffering,
-            drag: false,
-            resize: false,
-        });
-
-        return () => {
-            wavesurfer.destroy();
-            loadingRegion.current = null;
-        };
-    }, [currentAudio, currentItem, peaks, theme, height]);
 
     if (isPending || !peaks) {
         return (
@@ -200,4 +244,13 @@ export function ProgressBar({ sx, ...props }: BoxProps) {
             />
         </Box>
     );
+}
+
+function addAllEvent(target: EventTarget, listener: EventListener) {
+    for (const key in target) {
+        if (/^on/.test(key)) {
+            const eventType = key.substr(2);
+            target.addEventListener(eventType, listener);
+        }
+    }
 }

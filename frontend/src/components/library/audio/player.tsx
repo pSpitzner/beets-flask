@@ -82,6 +82,9 @@ function DesktopPlayer() {
                 gap: 1,
                 position: "relative",
                 backgroundColor: "background.paper",
+                // a bit of shadow to better distinguish the player
+                // if the background is the same color
+                boxShadow: `0 0 4px ${theme.palette.background.default}`,
             }}
         >
             {/* Cover art*/}
@@ -256,6 +259,9 @@ function MobilePlayer() {
                     position: "relative",
 
                     backgroundColor: "background.paper",
+                    // a bit of shadow to better distinguish the player
+                    // if the background is the same color
+                    boxShadow: `0 0 3px ${theme.palette.background.default}`,
                 }}
                 onClick={() => {
                     setFullScreen((prev) => !prev);

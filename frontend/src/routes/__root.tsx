@@ -4,6 +4,7 @@ import { QueryClient } from "@tanstack/react-query";
 import { HeadContent } from "@tanstack/react-router";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 
+import { PageWrapper } from "@/components/common/page";
 import NavBar from "@/components/frontpage/navbar";
 import { TerminalContextProvider } from "@/components/frontpage/terminal";
 import {
@@ -122,17 +123,20 @@ function LazyAudioPlayer() {
     }, [nItems]);
 
     return (
-        <Box
-            ref={ref}
-            sx={{
-                position: "absolute",
-                bottom: 0,
-                width: "100%",
-                padding: 1,
-                zIndex: 1,
-            }}
-        >
-            <Suspense fallback={<Box />}>{nItems > 0 && <AudioPlayer />}</Suspense>
-        </Box>
+        <Suspense fallback={<Box />}>
+            <Box
+                ref={ref}
+                sx={{
+                    position: "absolute",
+                    bottom: 0,
+                    width: "100%",
+                    zIndex: 1,
+                }}
+            >
+                <PageWrapper sx={{ padding: 1 }}>
+                    <AudioPlayer />
+                </PageWrapper>
+            </Box>
+        </Suspense>
     );
 }
