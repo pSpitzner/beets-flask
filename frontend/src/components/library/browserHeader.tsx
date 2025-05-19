@@ -7,7 +7,7 @@ import { Link, useParams } from "@tanstack/react-router";
 
 import { albumQueryOptions, itemQueryOptions } from "@/api/library";
 
-import CoverArt from "./coverArt";
+import { CoverArt } from "./coverArt";
 
 export function BrowserHeader({ ...props }: React.HTMLAttributes<HTMLDivElement>) {
     const params: RouteParams = useParams({ strict: false });

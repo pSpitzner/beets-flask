@@ -1,11 +1,12 @@
 import { DotIcon } from "lucide-react";
 import { Fragment, useMemo } from "react";
 import { Box, BoxProps, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Link } from "@tanstack/react-router";
 
 import { AlbumResponseExpanded, ItemResponse } from "@/pythonTypes";
 
 import { PlayOrAddItemToQueueButton } from "./audio/utils";
-import CoverArt from "./coverArt";
+import { CoverArt } from "./coverArt";
 
 import { capitalizeFirstLetter } from "../common/strings";
 import { humanizeDuration } from "../common/units/time";
@@ -204,20 +205,22 @@ export function Tracklist({ items, ...props }: { items: ItemResponse[] } & BoxPr
             >
                 {items.map((item) => (
                     <Fragment key={item.id}>
-                        <Box
-                            sx={{
+                        <Link
+                            style={{
                                 flexDirection: "column",
                                 alignItems: "flex-start",
                                 justifyContent: "center",
                                 fontWeight: "bold",
                                 display: "subgrid",
                             }}
+                            to={`/library/item/$itemId`}
+                            params={{ itemId: item.id }}
                         >
                             <Typography variant="body1">{item.name}</Typography>
                             <Typography variant="body2" color="text.secondary">
                                 {item.artist}
                             </Typography>
-                        </Box>
+                        </Link>
                         <PlayOrAddItemToQueueButton item={item} />
                     </Fragment>
                 ))}

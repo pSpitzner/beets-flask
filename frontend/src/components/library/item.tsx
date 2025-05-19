@@ -24,7 +24,7 @@ import { albumQueryOptions, Item as ItemT, itemQueryOptions } from "@/api/librar
 import { ItemSource as ItemSourceT } from "@/pythonTypes";
 
 import { AudioPlayerItem } from "./audio";
-import CoverArt from "./coverArt";
+import { CoverArt } from "./coverArt";
 
 import { SourceTypeIcon } from "../common/icons";
 import { ClipboardCopyButton } from "../common/inputs/copy";

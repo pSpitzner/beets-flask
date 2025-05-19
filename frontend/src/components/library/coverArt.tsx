@@ -1,11 +1,13 @@
 import { FileWarning } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@mui/material";
 import Box, { BoxProps } from "@mui/material/Box";
 import Skeleton from "@mui/material/Skeleton";
 import { SxProps } from "@mui/material/styles";
 import { useQuery } from "@tanstack/react-query";
 
 import { APIError } from "@/api/common";
-import { artQueryOptions, ArtSize } from "@/api/library";
+import { artQueryOptions, ArtSize, numArtQueryOptions } from "@/api/library";
 
 export interface CoverArtProps extends BoxProps {
     type: "item" | "album";
@@ -19,14 +21,7 @@ export interface CoverArtProps extends BoxProps {
  *
  * Shows the cover art for an item or album.
  */
-export default function CoverArt({
-    type,
-    beetsId,
-    size,
-    sx,
-    index,
-    ...props
-}: CoverArtProps) {
+export function CoverArt({ type, beetsId, size, sx, index, ...props }: CoverArtProps) {
     const {
         data: art,
         isPending,
@@ -116,6 +111,75 @@ function CoverArtError({ error, ...props }: { error: APIError } & Partial<BoxPro
                     <b>{error.name}</b> - {error.message}
                 </Box>
             </Box>
+        </Box>
+    );
+}
+
+/** A bit more complex version of the normal cover.
+ *
+ * Specific for items and allows to show all artworks of
+ * a given item.
+ */
+export function MultiCoverArt({
+    beetsId,
+    size,
+    ...props
+}: Omit<CoverArtProps, "type"> & BoxProps) {
+    const [currentIdx, setCurrentIdx] = useState(0);
+
+    const { data: numArtworks } = useQuery(numArtQueryOptions(beetsId));
+
+    return (
+        <Box position="relative" {...props}>
+            {numArtworks && numArtworks.count > 1 && (
+                <Button
+                    variant="text"
+                    sx={{
+                        position: "absolute",
+                        top: 0,
+                        right: 0,
+                        m: 0,
+                        p: 1,
+                        minWidth: 0,
+                    }}
+                    onClick={() => {
+                        setCurrentIdx((prev) => (prev + 1) % numArtworks.count);
+                    }}
+                >
+                    {
+                        //Dot for each artwork
+                        Array.from({ length: numArtworks.count }).map((_, idx) => (
+                            <Box
+                                key={idx}
+                                sx={{
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: "50%",
+                                    backgroundColor:
+                                        currentIdx === idx
+                                            ? "primary.main"
+                                            : "text.secondary",
+                                    marginLeft: 0.5,
+                                }}
+                            />
+                        ))
+                    }
+                </Button>
+            )}
+            <CoverArt
+                type="item"
+                beetsId={beetsId}
+                size={size}
+                index={currentIdx}
+                sx={{
+                    maxWidth: "100%",
+                    maxHeight: "100%",
+                    width: "auto",
+                    height: "100%",
+                    objectFit: "contain",
+                    m: 0,
+                }}
+            />
         </Box>
     );
 }

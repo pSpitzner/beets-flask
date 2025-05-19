@@ -41,12 +41,12 @@ function RouteComponent() {
 
     return (
         <PageWrapper
-            sx={(theme) => ({
+            sx={{
                 display: "flex",
                 flexDirection: "column",
                 minHeight: "100%",
                 position: "relative",
-            })}
+            }}
         >
             <Box
                 sx={{
@@ -122,6 +122,13 @@ function Navigation({ sx, ...props }: BoxProps) {
             >
                 <ImportIcon size={theme.iconSize.lg} />
                 <Typography variant="body1">Identifier</Typography>
+            </Tab>
+            <Tab
+                to="/library/album/$albumId/beetsdata"
+                params={params}
+                activeOptions={{ exact: true }}
+            >
+                <Typography variant="body1">Details</Typography>
             </Tab>
         </Box>
     );

@@ -22,7 +22,7 @@ export function Waveform({ height }: { height?: number }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const wavesurferRef = useRef<WaveSurfer | null>(null);
     const loadingRegion = useRef<Region | null>(null);
-    const { currentAudio, currentItem, buffered } = useAudioContext();
+    const { currentAudio, currentItem, buffered, currentTime } = useAudioContext();
 
     // Load precomputed waveform
     const { data: peaks, isPending } = useQuery(waveformQueryOptions(currentItem?.id));
@@ -60,51 +60,48 @@ export function Waveform({ height }: { height?: number }) {
         };
     }, [currentItem, peaks, currentAudio]);
 
+    const dragging = useRef(false);
+
     // Register events for the wavesurfer instance
     useEffect(() => {
         if (!wavesurferRef.current || !currentAudio) return;
         const wavesurfer = wavesurferRef.current;
-
-        let dragging = false;
 
         const onClick = (percentage: number) => {
             const time = wavesurfer.getDuration() * percentage;
             currentAudio.currentTime = time;
         };
         const onDragStart = (percentage: number) => {
-            dragging = true;
+            dragging.current = true;
             const time = wavesurfer.getDuration() * percentage;
             wavesurfer.setTime(time);
         };
         const onDragEnd = (percentage: number) => {
             const time = wavesurfer.getDuration() * percentage;
             currentAudio.currentTime = time;
-            dragging = false;
+            dragging.current = false;
         };
 
         wavesurfer.on("ready", () => {
-            updateWaveSurferTime();
+            wavesurfer.setTime(currentAudio.currentTime);
         });
         wavesurfer.on("click", onClick);
         wavesurfer.on("dragstart", onDragStart);
         wavesurfer.on("dragend", onDragEnd);
 
-        const updateWaveSurferTime = () => {
-            if (dragging) return;
-            const currentTime = currentAudio.currentTime;
-            wavesurfer.setTime(currentTime);
-        };
-
-        currentAudio.addEventListener("timeupdate", updateWaveSurferTime);
-
         return () => {
             wavesurfer.un("click", onClick);
             wavesurfer.un("dragstart", onDragStart);
             wavesurfer.un("dragend", onDragEnd);
-
-            currentAudio.removeEventListener("timeupdate", updateWaveSurferTime);
         };
     }, [currentAudio]);
+
+    // Update current time of audio
+    useEffect(() => {
+        if (!wavesurferRef.current || !currentAudio || dragging.current) return;
+        const wavesurfer = wavesurferRef.current;
+        wavesurfer.setTime(currentTime);
+    }, [currentTime]);
 
     // Audio buffering region
     useEffect(() => {

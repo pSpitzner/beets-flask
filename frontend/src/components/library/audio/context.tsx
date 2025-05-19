@@ -260,6 +260,9 @@ function useAudioData(item: ItemResponse | null) {
             if (!currentAudio) return;
             const v = Math.max(0, Math.min(1, value));
             currentAudio.volume = v;
+            if (currentAudio.muted && v > 0) {
+                currentAudio.muted = false;
+            }
         },
         toggleMuted: () => {
             if (!currentAudio) return;

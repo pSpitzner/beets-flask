@@ -200,8 +200,10 @@ async def cached_async_iterator(
         log.debug(f"Caching data for {key}")
         async for item in iterator:
             cached.append(item)
+            yield item
 
         cache[key] = cached
+        return
 
     for item in cached:
         yield item
