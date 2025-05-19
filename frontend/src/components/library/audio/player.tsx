@@ -57,6 +57,8 @@ export function Player() {
     return <DesktopPlayer />;
 }
 
+export default Player;
+
 /** Desktop audio player
  *
  * fixed to the bottom of the screen
