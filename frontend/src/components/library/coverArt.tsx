@@ -12,7 +12,6 @@ import { artQueryOptions, ArtSize, numArtQueryOptions } from "@/api/library";
 export interface CoverArtProps extends BoxProps {
     type: "item" | "album";
     beetsId?: number;
-    sx?: SxProps;
     size?: ArtSize;
     index?: number;
 }
@@ -29,15 +28,16 @@ export function CoverArt({ type, beetsId, size, sx, index, ...props }: CoverArtP
         error,
     } = useQuery(artQueryOptions({ type, id: beetsId, size, index: index }));
 
-    const coverSx = {
-        height: 100,
-        width: 100,
-        marginRight: "0.1rem",
-        marginLeft: "0.1rem",
-        aspectRatio: "1 / 1",
-        overflow: "hidden",
-        ...sx,
-    } as SxProps;
+    const coverSx = [
+        {
+            height: 100,
+            width: 100,
+            aspectRatio: "1 / 1",
+            overflow: "hidden",
+        },
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        ...(Array.isArray(sx) ? sx : [sx]),
+    ] as SxProps;
 
     if (isPending) {
         return <CoverArtPlaceholder sx={coverSx} animation="wave" {...props} />;
@@ -54,7 +54,17 @@ export function CoverArt({ type, beetsId, size, sx, index, ...props }: CoverArtP
     if (art) {
         return <CoverArtContent sx={coverSx} src={art} {...props} />;
     } else {
-        return <CoverArtPlaceholder sx={coverSx} animation={false} {...props} />;
+        return (
+            <CoverArtPlaceholder
+                sx={[
+                    coverSx,
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                    ...(Array.isArray(sx) ? sx : [sx]),
+                ]}
+                animation={false}
+                {...props}
+            />
+        );
     }
 }
 
@@ -123,8 +133,9 @@ function CoverArtError({ error, ...props }: { error: APIError } & Partial<BoxPro
 export function MultiCoverArt({
     beetsId,
     size,
+    coverArtSx,
     ...props
-}: Omit<CoverArtProps, "type"> & BoxProps) {
+}: Omit<CoverArtProps, "type"> & BoxProps & { coverArtSx: BoxProps["sx"] }) {
     const [currentIdx, setCurrentIdx] = useState(0);
 
     const { data: numArtworks } = useQuery(numArtQueryOptions(beetsId));
@@ -171,14 +182,20 @@ export function MultiCoverArt({
                 beetsId={beetsId}
                 size={size}
                 index={currentIdx}
-                sx={{
-                    maxWidth: "100%",
-                    maxHeight: "100%",
-                    width: "auto",
-                    height: "100%",
-                    objectFit: "contain",
-                    m: 0,
-                }}
+                sx={[
+                    {
+                        maxWidth: "100%",
+                        maxHeight: "100%",
+                        width: "auto",
+                        height: "100%",
+                        aspectRatio: "1 / 1",
+                        m: 0,
+                        borderRadius: 2,
+                        objectFit: "contain",
+                    },
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                    ...(Array.isArray(coverArtSx) ? coverArtSx : [coverArtSx]),
+                ]}
             />
         </Box>
     );

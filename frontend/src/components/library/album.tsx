@@ -1,5 +1,5 @@
 import { DotIcon } from "lucide-react";
-import { Fragment, useMemo } from "react";
+import { Fragment, ReactNode } from "react";
 import { Box, BoxProps, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { Link } from "@tanstack/react-router";
 
@@ -11,7 +11,6 @@ import { CoverArt } from "./coverArt";
 import { capitalizeFirstLetter } from "../common/strings";
 import { humanizeDuration } from "../common/units/time";
 
-/**  */
 export function AlbumHeader({
     album,
     sx,
@@ -94,7 +93,7 @@ export function AlbumHeader({
                     }}
                 >
                     {!isMobile && (
-                        <>
+                        <DotSeparatedList>
                             <Typography
                                 variant="body1"
                                 fontWeight="bold"
@@ -102,11 +101,6 @@ export function AlbumHeader({
                             >
                                 {album.albumartist}
                             </Typography>
-                            <DotIcon
-                                size={theme.iconSize.xl}
-                                color={theme.palette.text.secondary}
-                                style={{ marginLeft: "-4px", marginRight: "-4px" }}
-                            />
                             <Typography
                                 variant="body1"
                                 color="text.secondary"
@@ -114,37 +108,6 @@ export function AlbumHeader({
                             >
                                 {album.year}
                             </Typography>
-                        </>
-                    )}
-                    {isMobile && album.albumtype && (
-                        <>
-                            <Typography variant="body2" color="text.secondary">
-                                {album.albumtype &&
-                                    capitalizeFirstLetter(album.albumtype)}
-                            </Typography>
-                            <DotIcon
-                                size={theme.iconSize.lg}
-                                color={theme.palette.text.secondary}
-                                style={{ marginLeft: "-3px", marginRight: "-3px" }}
-                            />
-                        </>
-                    )}
-                    {isMobile && (
-                        <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            component="span"
-                        >
-                            {album.year}
-                        </Typography>
-                    )}
-                    {!isMobile && (
-                        <>
-                            <DotIcon
-                                size={theme.iconSize.xl}
-                                color={theme.palette.text.secondary}
-                                style={{ marginLeft: "-4px", marginRight: "-4px" }}
-                            />
                             <Typography
                                 variant="body1"
                                 color="text.secondary"
@@ -153,11 +116,6 @@ export function AlbumHeader({
                                 {album.items.length} track
                                 {album.items.length > 1 ? "s" : ""}
                             </Typography>
-                            <DotIcon
-                                size={theme.iconSize.xl}
-                                color={theme.palette.text.secondary}
-                                style={{ marginLeft: "-4px", marginRight: "-4px" }}
-                            />
                             <Typography
                                 variant="body1"
                                 color="text.secondary"
@@ -167,7 +125,39 @@ export function AlbumHeader({
                                     album.items.reduce((a, b) => a + b.length, 0)
                                 )}
                             </Typography>
-                        </>
+                        </DotSeparatedList>
+                    )}
+                    {isMobile && (
+                        <DotSeparatedList>
+                            <Typography variant="body2" color="text.secondary">
+                                {album.albumtype &&
+                                    capitalizeFirstLetter(album.albumtype)}
+                            </Typography>
+                            <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                component="span"
+                            >
+                                {album.year}
+                            </Typography>
+                            <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                component="span"
+                            >
+                                {album.items.length} track
+                                {album.items.length > 1 ? "s" : ""}
+                            </Typography>
+                            <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                component="span"
+                            >
+                                {humanizeDuration(
+                                    album.items.reduce((a, b) => a + b.length, 0)
+                                )}
+                            </Typography>
+                        </DotSeparatedList>
                     )}
                 </Box>
             </Box>
@@ -225,6 +215,34 @@ export function Tracklist({ items, ...props }: { items: ItemResponse[] } & BoxPr
                     </Fragment>
                 ))}
             </Box>
+        </Box>
+    );
+}
+
+export function DotSeparatedList({ children }: { children: ReactNode[] }) {
+    const theme = useTheme();
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down("tablet"));
+
+    // Dot size
+    const mobileMargin = isMobile ? "-3px" : "-4px";
+    const mobileSize = isMobile ? theme.iconSize.lg : theme.iconSize.xl;
+
+    return (
+        <Box sx={{ display: "flex", alignItems: "flex-end", flexWrap: "wrap" }}>
+            {children.map((child, index) => (
+                <Fragment key={index}>
+                    {child}
+                    {index < children.length - 1 &&
+                        children.length > 1 &&
+                        child !== null && (
+                            <DotIcon
+                                size={mobileSize}
+                                color={theme.palette.text.secondary}
+                                style={{ marginInline: mobileMargin }}
+                            />
+                        )}
+                </Fragment>
+            ))}
         </Box>
     );
 }

@@ -3,7 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { itemQueryOptions } from "@/api/library";
-import { Item } from "@/components/library/item";
+import { Item } from "@/components/library/itemold";
 
 import { Content } from "./browse";
 

@@ -65,7 +65,6 @@ function RouteComponent() {
                         zIndex: 1,
                     })}
                 />
-
                 <Navigation
                     sx={(theme) => ({
                         background: theme.palette.background.paper,

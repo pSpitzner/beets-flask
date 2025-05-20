@@ -459,7 +459,7 @@ function FullScreenPlayer({
 /** Component that mounts to the top of the
  * dom tree and is shown ontop of everything else.
  */
-function FullScreenOntop({ sx, ...props }: BoxProps) {
+export function FullScreenOntop({ sx, ...props }: BoxProps) {
     return createPortal(
         <Box
             sx={[
