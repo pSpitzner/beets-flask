@@ -40,6 +40,7 @@ import { Link } from "@tanstack/react-router";
 
 import { fileMetaQueryOptions } from "@/api/inbox";
 import { Search } from "@/components/common/inputs/search";
+import { PropertyValueTable } from "@/components/common/propertyValueTable";
 import {
     AlbumInfo,
     SerializedCandidateState,
@@ -729,15 +730,6 @@ function AsisCandidateDetails({
     // TODO: multiple files?
     const meta = data[0];
 
-    // Filtering logic
-    const [filter, setFilter] = useState<string>("");
-    const filteredMeta = useMemo(() => {
-        return Object.entries(meta).filter(
-            ([key, value]) => key.includes(filter) || String(value).includes(filter)
-        );
-    }, [meta, filter]);
-    const nExcluded = Object.entries(meta).length - filteredMeta.length;
-
     useEffect(() => {
         // Set css data-expanded attribute to the ref element
         // using ref for performance reasons
@@ -813,134 +805,7 @@ function AsisCandidateDetails({
                     }}
                 >
                     {/* <JSONPretty data={data[0]} /> */}
-                    <Table
-                        size="small"
-                        sx={{
-                            //display: "grid",
-                            width: "100%",
-                            borderCollapse: "separate",
-                            maxHeight: "400px",
-                            height: "100%",
-                            //tableLayout: "fixed",
-                            td: {
-                                //overflowWrap: "break-word",
-                                maxHeight: "200px",
-                                maxWidth: "100%",
-                            },
-                            position: "relative",
-                            //thicker border bottom for head
-                            thead: {
-                                fontWeight: "bold",
-                                fontSize: "0.95rem",
-                                verticalAlign: "bottom",
-                                top: 0,
-                                position: "sticky",
-                                th: { border: "unset" },
-                                "> *:last-child > th": {
-                                    borderBottomWidth: 2,
-                                    borderBottomStyle: "solid",
-                                    borderBottomColor: "#515151",
-                                },
-                            },
-                        }}
-                    >
-                        <TableHead>
-                            <TableRow
-                                sx={(theme) => ({
-                                    display: "none",
-                                    [theme.breakpoints.down("tablet")]: {
-                                        display: "table-row",
-                                    },
-                                })}
-                            >
-                                <TableCell colSpan={3}>
-                                    <Search
-                                        size="small"
-                                        value={filter}
-                                        setValue={setFilter}
-                                        sx={{
-                                            marginTop: 1,
-                                            p: 0,
-                                            height: "100%",
-                                            width: "100%",
-                                        }}
-                                        color="secondary"
-                                    />
-                                </TableCell>
-                            </TableRow>
-                            <TableRow>
-                                <TableCell sx={{ width: "auto" }}>Property</TableCell>
-                                <TableCell sx={{ width: "50%" }}>Value</TableCell>
-                                <TableCell
-                                    sx={(theme) => ({
-                                        width: "50%",
-                                        textAlign: "right",
-                                        [theme.breakpoints.down("tablet")]: {
-                                            display: "none",
-                                        },
-                                    })}
-                                >
-                                    <Search
-                                        size="small"
-                                        value={filter}
-                                        setValue={setFilter}
-                                        sx={{
-                                            p: 0,
-                                            height: "100%",
-                                            maxWidth: "300px",
-                                            input: {
-                                                paddingBlock: 0.5,
-                                            },
-                                        }}
-                                        color="secondary"
-                                    />
-                                </TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {filteredMeta.map(([key, value]) => (
-                                <TableRow key={key}>
-                                    <TableCell
-                                        sx={{
-                                            width: "max-content",
-                                            verticalAlign: "top",
-                                        }}
-                                    >
-                                        {key}
-                                    </TableCell>
-                                    <TableCell colSpan={2}>
-                                        <Box
-                                            sx={{
-                                                overflow: "auto",
-                                                maxHeight: "200px",
-                                                overflowWrap: "anywhere",
-                                                maxWidth: "100%",
-                                            }}
-                                        >
-                                            {String(value)}
-                                        </Box>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {nExcluded > 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={3}>
-                                        <Typography
-                                            variant="caption"
-                                            color="text.secondary"
-                                            sx={{
-                                                textAlign: "center",
-                                                fontStyle: "italic",
-                                            }}
-                                        >
-                                            {nExcluded} more properties excluded via
-                                            filter
-                                        </Typography>
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                    <PropertyValueTable data={meta} />
                 </Box>
             ) : null}
         </CandidateDetailsRow>
