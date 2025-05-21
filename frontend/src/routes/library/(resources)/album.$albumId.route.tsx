@@ -1,9 +1,12 @@
-import { AudioLinesIcon, ImportIcon } from "lucide-react";
-import { Box, BoxProps, Link, styled, Typography, useTheme } from "@mui/material";
+import { AudioLinesIcon } from "lucide-react";
+import { Box, useTheme } from "@mui/material";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, createLink, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 import { albumQueryOptions, artQueryOptions } from "@/api/library";
+import { BackIconButton } from "@/components/common/inputs/back";
+import { Loading } from "@/components/common/loading";
+import { NavigationTabs } from "@/components/common/navigation";
 import { PageWrapper } from "@/components/common/page";
 import { AlbumHeader } from "@/components/library/album";
 
@@ -30,8 +33,32 @@ export const Route = createFileRoute("/library/(resources)/album/$albumId")({
         );
         await Promise.all([p1, p2]);
     },
+    pendingComponent: PendingComponent,
     component: RouteComponent,
 });
+
+function PendingComponent() {
+    const theme = useTheme();
+
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",
+                margin: "auto",
+                maxWidth: "120px",
+                justifyContent: "center",
+                alignItems: "center",
+            }}
+        >
+            <Loading noteColor={theme.palette.primary.main} />
+            <Box component="span" style={{ marginTop: "1rem" }}>
+                Loading...
+            </Box>
+        </Box>
+    );
+}
 
 function RouteComponent() {
     const params = Route.useParams();
@@ -41,23 +68,42 @@ function RouteComponent() {
 
     return (
         <PageWrapper
-            sx={{
+            sx={(theme) => ({
                 display: "flex",
                 flexDirection: "column",
                 minHeight: "100%",
                 height: "100%",
                 position: "relative",
                 overflow: "hidden",
-            }}
+                [theme.breakpoints.up("laptop")]: {
+                    padding: 2,
+                },
+            })}
         >
-            <Box
+            <BackIconButton
                 sx={{
+                    // TODO: styling for mobile
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    zIndex: 2,
+                    margin: 0.5,
+                }}
+                size="small"
+                color="primary"
+            />
+            <Box
+                sx={(theme) => ({
                     display: "flex",
                     flexDirection: "column",
                     height: "100%",
                     flex: "1 1 auto",
                     overflow: "hidden",
-                }}
+                    [theme.breakpoints.up("laptop")]: {
+                        backgroundColor: "background.paper",
+                        borderRadius: 2,
+                    },
+                })}
             >
                 <AlbumHeader
                     album={album}
@@ -68,14 +114,25 @@ function RouteComponent() {
                         zIndex: 1,
                     })}
                 />
-                <Navigation
-                    sx={(theme) => ({
-                        background: theme.palette.background.paper,
-
-                        borderBottom: `1px solid ${theme.palette.divider}`,
-                        position: "sticky",
-                        top: 0,
-                    })}
+                <NavigationTabs
+                    items={[
+                        {
+                            to: `/library/album/$albumId`,
+                            params,
+                            label: "Tracks",
+                            icon: <AudioLinesIcon />,
+                        },
+                        {
+                            to: `/library/album/$albumId/identifier`,
+                            params,
+                            label: "Identifiers",
+                        },
+                        {
+                            to: `/library/album/$albumId/beetsdata`,
+                            params,
+                            label: "Details",
+                        },
+                    ]}
                 />
                 <Box
                     sx={(theme) => ({
@@ -84,6 +141,7 @@ function RouteComponent() {
                         paddingBlock: 1,
                         height: "100%",
                         minHeight: 0,
+                        overflow: "auto",
                         //background: theme.palette.background.paper,
                         background: `linear-gradient(to bottom, ${theme.palette.background.paper} 0%, transparent 100%)`,
                     })}
@@ -94,77 +152,3 @@ function RouteComponent() {
         </PageWrapper>
     );
 }
-
-function Navigation({ sx, ...props }: BoxProps) {
-    const theme = useTheme();
-    const params = Route.useParams();
-
-    return (
-        <Box
-            sx={[
-                {
-                    display: "flex",
-                    justifyContent: "space-around",
-                },
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                ...(Array.isArray(sx) ? sx : [sx]),
-            ]}
-            {...props}
-        >
-            <Tab
-                to="/library/album/$albumId"
-                params={params}
-                activeOptions={{ exact: true }}
-            >
-                <AudioLinesIcon size={theme.iconSize.lg} />
-                <Typography variant="body1">Tracks</Typography>
-            </Tab>
-            <Tab
-                to="/library/album/$albumId/identifier"
-                params={params}
-                activeOptions={{ exact: true }}
-            >
-                <ImportIcon size={theme.iconSize.lg} />
-                <Typography variant="body1">Identifier</Typography>
-            </Tab>
-            <Tab
-                to="/library/album/$albumId/beetsdata"
-                params={params}
-                activeOptions={{ exact: true }}
-            >
-                <Typography variant="body1">Details</Typography>
-            </Tab>
-        </Box>
-    );
-}
-
-const Tab = createLink(
-    styled(Link)(({ theme }) => ({
-        display: "flex",
-        alignItems: "center",
-        gap: theme.spacing(1),
-        textDecoration: "none",
-        color: theme.palette.text.secondary,
-        width: "100%",
-        padding: theme.spacing(1),
-        justifyContent: "center",
-        boxSizing: "border-box",
-        borderBottom: `1px solid transparent`,
-        position: "relative",
-
-        "&[data-status='active']": {
-            borderBottom: `1px solid ${theme.palette.text.primary}`,
-            color: theme.palette.text.primary,
-
-            ":after": {
-                content: '""',
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                height: "100%",
-                width: "100%",
-                background: `radial-gradient(ellipse farthest-side at bottom, #ffffff15 0%, transparent 100%)`,
-            },
-        },
-    }))
-);

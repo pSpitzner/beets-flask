@@ -40,7 +40,7 @@ export function AlbumHeader({
             <CoverArt
                 type="album"
                 beetsId={album.id}
-                sx={{
+                sx={(theme) => ({
                     maxWidth: "200px",
                     height: "100%",
                     width: "100%",
@@ -50,7 +50,7 @@ export function AlbumHeader({
                     justifySelf: "center",
                     boxShadow: 3,
                     overflow: "hidden",
-                }}
+                })}
             />
             <Box
                 sx={(theme) => ({
@@ -176,15 +176,25 @@ export function Tracklist({ items, ...props }: { items: ItemResponse[] } & BoxPr
                 sx={{
                     height: "100%",
                     display: "grid",
-                    gap: 1.5,
                     flexDirection: "column",
                     overflow: "auto",
                     gridTemplateColumns: "1fr auto",
                     alignItems: "center",
                 }}
             >
-                {items.map((item) => (
-                    <Fragment key={item.id}>
+                {items.map((item, i) => (
+                    <Box
+                        key={i}
+                        sx={(theme) => ({
+                            display: "grid",
+                            padding: 1,
+                            gridColumn: "span 2",
+                            gridTemplateColumns: "1fr auto",
+                            ":hover": {
+                                background: `linear-gradient(to left, transparent 0%, ${theme.palette.primary.muted} 100%)`,
+                            },
+                        })}
+                    >
                         <Link
                             style={{
                                 flexDirection: "column",
@@ -202,7 +212,7 @@ export function Tracklist({ items, ...props }: { items: ItemResponse[] } & BoxPr
                             </Typography>
                         </Link>
                         <PlayOrAddItemToQueueButton item={item} />
-                    </Fragment>
+                    </Box>
                 ))}
             </Box>
         </Box>

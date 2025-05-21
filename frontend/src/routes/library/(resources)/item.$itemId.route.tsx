@@ -4,6 +4,8 @@ import { createFileRoute, createLink, Outlet } from "@tanstack/react-router";
 
 import { queryClient } from "@/api/common";
 import { itemQueryOptions } from "@/api/library";
+import { BackIconButton } from "@/components/common/inputs/back";
+import { NavigationTabs } from "@/components/common/navigation";
 import { PageWrapper } from "@/components/common/page";
 import { ItemHeader } from "@/components/library/item";
 
@@ -27,23 +29,42 @@ function RouteComponent() {
 
     return (
         <PageWrapper
-            sx={{
+            sx={(theme) => ({
                 display: "flex",
                 flexDirection: "column",
                 minHeight: "100%",
                 height: "100%",
                 position: "relative",
                 overflow: "hidden",
-            }}
+                [theme.breakpoints.up("laptop")]: {
+                    padding: 2,
+                },
+            })}
         >
-            <Box
+            <BackIconButton
                 sx={{
+                    // TODO: styling for mobile
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    zIndex: 2,
+                    margin: 0.5,
+                }}
+                size="small"
+                color="primary"
+            />
+            <Box
+                sx={(theme) => ({
                     display: "flex",
                     flexDirection: "column",
                     height: "100%",
                     flex: "1 1 auto",
                     overflow: "hidden",
-                }}
+                    [theme.breakpoints.up("laptop")]: {
+                        backgroundColor: "background.paper",
+                        borderRadius: 2,
+                    },
+                })}
             >
                 <ItemHeader
                     item={item}
@@ -54,14 +75,24 @@ function RouteComponent() {
                         zIndex: 1,
                     })}
                 />
-                <Navigation
-                    sx={(theme) => ({
-                        background: theme.palette.background.paper,
-
-                        borderBottom: `1px solid ${theme.palette.divider}`,
-                        position: "sticky",
-                        top: 0,
-                    })}
+                <NavigationTabs
+                    items={[
+                        {
+                            to: "/library/item/$itemId",
+                            label: "Overview",
+                            params,
+                        },
+                        {
+                            to: "/library/item/$itemId/identifier",
+                            label: "Identifiers",
+                            params,
+                        },
+                        {
+                            to: "/library/item/$itemId/beetsdata",
+                            label: "Details",
+                            params,
+                        },
+                    ]}
                 />
                 <Box
                     sx={(theme) => ({
@@ -80,76 +111,3 @@ function RouteComponent() {
         </PageWrapper>
     );
 }
-
-function Navigation({ sx, ...props }: BoxProps) {
-    const theme = useTheme();
-    const params = Route.useParams();
-
-    return (
-        <Box
-            sx={[
-                {
-                    display: "flex",
-                    justifyContent: "space-around",
-                },
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                ...(Array.isArray(sx) ? sx : [sx]),
-            ]}
-            {...props}
-        >
-            <Tab
-                to="/library/item/$itemId"
-                params={params}
-                activeOptions={{ exact: true }}
-            >
-                <Typography variant="body1">Track</Typography>
-            </Tab>
-            <Tab
-                to="/library/item/$itemId/identifier"
-                params={params}
-                activeOptions={{ exact: true }}
-            >
-                <Typography variant="body1">Identifier</Typography>
-            </Tab>
-            <Tab
-                to="/library/item/$itemId/beetsdata"
-                params={params}
-                activeOptions={{ exact: true }}
-            >
-                <Typography variant="body1">Details</Typography>
-            </Tab>
-        </Box>
-    );
-}
-
-// TODO: Use mui tabs for better styling
-const Tab = createLink(
-    styled(Link)(({ theme }) => ({
-        display: "flex",
-        alignItems: "center",
-        gap: theme.spacing(1),
-        textDecoration: "none",
-        color: theme.palette.text.secondary,
-        width: "100%",
-        padding: theme.spacing(1),
-        justifyContent: "center",
-        boxSizing: "border-box",
-        borderBottom: `1px solid transparent`,
-        position: "relative",
-
-        "&[data-status='active']": {
-            borderBottom: `1px solid ${theme.palette.text.primary}`,
-            color: theme.palette.text.primary,
-
-            ":after": {
-                content: '""',
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                height: "100%",
-                width: "100%",
-                background: `radial-gradient(ellipse farthest-side at bottom, #ffffff15 0%, transparent 100%)`,
-            },
-        },
-    }))
-);

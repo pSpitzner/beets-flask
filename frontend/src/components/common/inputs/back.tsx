@@ -4,6 +4,8 @@
  */
 
 import { ArrowLeftIcon, LucideProps } from "lucide-react";
+import { useMemo } from "react";
+import { Fab, Zoom } from "@mui/material";
 import Button from "@mui/material/Button";
 import { useTheme } from "@mui/material/styles";
 import { useRouter } from "@tanstack/react-router";
@@ -34,5 +36,42 @@ export function BackButton({
         >
             {label}
         </Button>
+    );
+}
+
+export function BackIconButton({
+    icon_props,
+    ...props
+}: {
+    icon_props?: LucideProps;
+} & React.ComponentProps<typeof Fab>) {
+    const theme = useTheme();
+    const router = useRouter();
+
+    const canGoBack = useMemo(() => router.history.canGoBack(), [router.history]);
+
+    return (
+        <Zoom
+            in={canGoBack}
+            timeout={100}
+            style={{
+                transitionDelay: `100ms`,
+            }}
+            unmountOnExit
+        >
+            <Fab
+                onClick={async () => {
+                    if (router.history.canGoBack()) {
+                        router.history.back();
+                    } else {
+                        await router.navigate({ to: "/" });
+                    }
+                }}
+                aria-label="Go Back"
+                {...props}
+            >
+                <ArrowLeftIcon size={theme.iconSize.md} {...icon_props} />
+            </Fab>
+        </Zoom>
     );
 }

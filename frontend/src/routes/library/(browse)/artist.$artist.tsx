@@ -3,7 +3,9 @@ import { useMemo, useState } from "react";
 import AutoSizer from "react-virtualized-auto-sizer";
 import { FixedSizeList } from "react-window";
 import {
+    alpha,
     Box,
+    BoxProps,
     Divider,
     ToggleButton,
     ToggleButtonGroup,
@@ -41,37 +43,72 @@ function RouteComponent() {
     return (
         <PageWrapper
             sx={(theme) => ({
-                height: "100%",
                 display: "flex",
                 flexDirection: "column",
-                gap: 2,
-                [theme.breakpoints.down("laptop")]: {
-                    paddingInline: 1,
+                minHeight: "100%",
+                height: "100%",
+                [theme.breakpoints.up("laptop")]: {
+                    padding: 2,
                 },
             })}
         >
-            {/* Header */}
-            <ArtistHeader nAlbums={albums.length} />
-            <Divider />
-            <AlbumsViewer albums={albums} />
+            <Box
+                sx={(theme) => ({
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    [theme.breakpoints.up("laptop")]: {
+                        backgroundColor: "background.paper",
+                        borderRadius: 2,
+                    },
+                })}
+            >
+                {/* Header */}
+                <ArtistHeader
+                    nAlbums={albums.length}
+                    sx={(theme) => ({
+                        [theme.breakpoints.down("laptop")]: {
+                            background: `linear-gradient(to bottom, transparent 0%, ${theme.palette.background.paper} 100%)`,
+                        },
+                    })}
+                />
+                <Divider sx={{ backgroundColor: "primary.muted" }} />
+                <AlbumsViewer
+                    albums={albums}
+                    sx={(theme) => ({
+                        display: "flex",
+                        flexDirection: "column",
+                        height: "100%",
+                        overflow: "hidden",
+                        [theme.breakpoints.down("laptop")]: {
+                            background: `linear-gradient(to bottom, ${theme.palette.background.paper} 0%, transparent 100%)`,
+                        },
+                    })}
+                />
+            </Box>
         </PageWrapper>
     );
 }
 
-function ArtistHeader({ nAlbums }: { nAlbums: number }) {
+function ArtistHeader({ nAlbums, sx, ...props }: { nAlbums: number } & BoxProps) {
     const params = Route.useParams();
     const theme = useTheme();
 
     return (
         <Box
-            sx={{
-                display: "flex",
-                gap: 2,
-                alignItems: "center",
-                padding: 2,
-            }}
+            sx={[
+                {
+                    display: "flex",
+                    gap: 2,
+                    alignItems: "center",
+                    padding: 2,
+                },
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                ...(Array.isArray(sx) ? sx : [sx]),
+            ]}
+            {...props}
         >
-            <User2Icon size={theme.iconSize.xl + 10} color="gray" />
+            <User2Icon size={40} color={theme.palette.primary.main} />
             <Box>
                 <Typography variant="h5" fontWeight="bold" lineHeight={1.2}>
                     {params.artist}
@@ -84,7 +121,10 @@ function ArtistHeader({ nAlbums }: { nAlbums: number }) {
     );
 }
 
-function AlbumsViewer({ albums }: { albums: AlbumResponseMinimal[] }) {
+function AlbumsViewer({
+    albums,
+    ...props
+}: { albums: AlbumResponseMinimal[] } & BoxProps) {
     const [filter, setFilter] = useState("");
     const theme = useTheme();
     const [selected, setSelected] = useState<"albums" | "items">("albums");
@@ -102,8 +142,16 @@ function AlbumsViewer({ albums }: { albums: AlbumResponseMinimal[] }) {
     const nRemovedByFilter = albums.length - filteredAlbums.length;
 
     return (
-        <>
-            <Box sx={{ marginBottom: -2 }}>
+        <Box {...props}>
+            <Box
+                sx={{
+                    width: "100%",
+                    marginBottom: -1,
+                    padding: 2,
+                    height: "min-content",
+                    overflow: "hidden",
+                }}
+            >
                 <Box
                     sx={{
                         display: "flex",
@@ -122,7 +170,12 @@ function AlbumsViewer({ albums }: { albums: AlbumResponseMinimal[] }) {
                             maxWidth: 300,
                         }}
                     />
-                    <Box sx={{ display: "flex", gap: 2 }}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            gap: 2,
+                        }}
+                    >
                         <ToggleButtonGroup
                             value={selected}
                             onChange={(
@@ -131,10 +184,11 @@ function AlbumsViewer({ albums }: { albums: AlbumResponseMinimal[] }) {
                             ) => {
                                 if (v) setSelected(v);
                             }}
+                            color="primary"
                             exclusive
                             aria-label="Filter type"
                         >
-                            <ToggleButton value="items">
+                            <ToggleButton value="items" disabled>
                                 <AudioLinesIcon size={theme.iconSize.lg} />
                             </ToggleButton>
                             <ToggleButton value="albums">
@@ -151,6 +205,7 @@ function AlbumsViewer({ albums }: { albums: AlbumResponseMinimal[] }) {
                                     setView(v);
                                 }
                             }}
+                            color="primary"
                             exclusive
                             aria-label="View type"
                         >
@@ -176,14 +231,15 @@ function AlbumsViewer({ albums }: { albums: AlbumResponseMinimal[] }) {
             <Box
                 sx={{
                     overflow: "hidden",
-                    height: "100%",
+                    flex: "1 1 auto",
                     paddingInline: 2,
+                    minHeight: 0,
                 }}
             >
                 {view === "grid" && <AlbumsGrid albums={filteredAlbums} />}
                 {view === "list" && <AlbumsList albums={filteredAlbums} />}
             </Box>
-        </>
+        </Box>
     );
 }
 
@@ -212,8 +268,6 @@ function AlbumsGrid({ albums }: { albums: AlbumResponseMinimal[] }): JSX.Element
                                 <Box
                                     sx={{
                                         display: "flex",
-                                        justifyContent: "center",
-                                        alignItems: "flex-end",
 
                                         ...style,
                                     }}
@@ -225,14 +279,14 @@ function AlbumsGrid({ albums }: { albums: AlbumResponseMinimal[] }): JSX.Element
                                             params={{ albumId: album.id }}
                                         >
                                             <Box
-                                                sx={{
+                                                sx={(theme) => ({
                                                     display: "flex",
                                                     alignItems: "center",
-                                                    padding: 0.5,
+                                                    padding: 1,
                                                     width: "200px",
                                                     height: "200px",
                                                     position: "relative",
-                                                }}
+                                                })}
                                             >
                                                 {/* Album cover */}
                                                 <CoverArt
@@ -247,28 +301,60 @@ function AlbumsGrid({ albums }: { albums: AlbumResponseMinimal[] }): JSX.Element
                                                     }}
                                                 />
 
-                                                {/* Banner for album title */}
+                                                {/* Banner for album title and hover effect*/}
                                                 <Box
-                                                    sx={{
+                                                    sx={(theme) => ({
                                                         position: "absolute",
-                                                        bottom: 0,
-                                                        left: 0,
+                                                        bottom: theme.spacing(1),
+                                                        left: theme.spacing(1),
                                                         right: 0,
-                                                        backgroundColor:
-                                                            "rgba(0, 0, 0, 0.5)",
-                                                        padding: 1,
-                                                        width: "100%",
-                                                        backgroundFilter: "blur(10px)",
+                                                        height: `calc(100% - ${theme.spacing(2)})`,
+                                                        width: `calc(100% - ${theme.spacing(2)})`,
                                                         display: "flex",
                                                         justifyContent: "center",
-                                                        alignItems: "center",
+                                                        alignItems: "flex-end",
                                                         overflow: "hidden",
-                                                        textOverflow: "ellipsis",
-                                                    }}
+                                                        backdropFilter: "blur(0px)",
+                                                        ":hover": {
+                                                            backdropFilter: "blur(2px)",
+                                                            transition: "all 0.3s",
+
+                                                            ">*": {
+                                                                transition: "all 0.3s",
+                                                                background:
+                                                                    theme.palette
+                                                                        .primary.muted,
+                                                            },
+                                                            ">*>*": {
+                                                                transition: "all 0.3s",
+                                                                fontWeight: "bold",
+                                                                color: theme.palette
+                                                                    .primary
+                                                                    .contrastText,
+                                                            },
+                                                        },
+                                                    })}
                                                 >
-                                                    <Typography variant="body1">
-                                                        {album.name}
-                                                    </Typography>
+                                                    <Box
+                                                        sx={(theme) => ({
+                                                            width: "100%",
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            justifyContent: "center",
+                                                            backdropFilter: "blur(3px)",
+                                                            background: alpha(
+                                                                theme.palette.primary
+                                                                    .muted!,
+                                                                0.3
+                                                            ),
+                                                            overflow: "hidden",
+                                                            textOverflow: "ellipsis",
+                                                        })}
+                                                    >
+                                                        <Typography variant="body1">
+                                                            {album.name}
+                                                        </Typography>
+                                                    </Box>
                                                 </Box>
                                             </Box>
                                         </Link>
@@ -284,8 +370,10 @@ function AlbumsGrid({ albums }: { albums: AlbumResponseMinimal[] }): JSX.Element
 }
 
 function AlbumsList({ albums }: { albums: AlbumResponseMinimal[] }): JSX.Element {
+    const theme = useTheme();
+
     return (
-        <AutoSizer defaultHeight={50}>
+        <AutoSizer>
             {({ height, width }) => {
                 return (
                     <FixedSizeList
@@ -297,20 +385,36 @@ function AlbumsList({ albums }: { albums: AlbumResponseMinimal[] }): JSX.Element
                         {({ index }) => {
                             const album = albums[index];
                             return (
-                                <Box
-                                    sx={{
-                                        height: "35px",
-                                    }}
+                                <Link
+                                    to={`/library/album/$albumId`}
+                                    key={album.id}
+                                    params={{ albumId: album.id }}
                                 >
-                                    <Link
-                                        to={`/library/album/$albumId`}
-                                        params={{ albumId: album.id }}
+                                    <Box
+                                        sx={(theme) => ({
+                                            height: "35px",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            padding: 1,
+                                            gap: 2,
+                                            ":hover": {
+                                                background: `linear-gradient(to left, transparent 0%, ${theme.palette.primary.muted} 100%)`,
+                                                color: "primary.contrastText",
+                                            },
+                                        })}
                                     >
                                         <Typography variant="body1">
                                             {album.name}
                                         </Typography>
-                                    </Link>
-                                </Box>
+                                        <Disc3Icon
+                                            color={theme.palette.background.paper}
+                                            style={{
+                                                marginRight: "2rem",
+                                            }}
+                                        />
+                                    </Box>
+                                </Link>
                             );
                         }}
                     </FixedSizeList>
