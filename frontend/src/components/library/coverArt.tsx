@@ -54,17 +54,7 @@ export function CoverArt({ type, beetsId, size, sx, index, ...props }: CoverArtP
     if (art) {
         return <CoverArtContent sx={coverSx} src={art} {...props} />;
     } else {
-        return (
-            <CoverArtPlaceholder
-                sx={[
-                    coverSx,
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                    ...(Array.isArray(sx) ? sx : [sx]),
-                ]}
-                animation={false}
-                {...props}
-            />
-        );
+        return <CoverArtPlaceholder sx={coverSx} animation={false} {...props} />;
     }
 }
 
@@ -79,8 +69,8 @@ function CoverArtPlaceholder({
             <Skeleton
                 variant="rectangular"
                 animation={animation}
-                width={(props.sx as { width: number | undefined }).width ?? 100}
-                height={(props.sx as { height: number | undefined }).height ?? 100}
+                height="100%"
+                width="100%"
             />
         </Box>
     );

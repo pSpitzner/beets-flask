@@ -79,12 +79,13 @@ export const artQueryOptions = ({
             const objectUrl = URL.createObjectURL(blob);
             return objectUrl;
         },
-        retry: 1,
+        retry: false,
         gcTime: 1000 * 60 * 60 * 24, // 1 day
         staleTime: 1000 * 60 * 60 * 24, // 1 day
         refetchOnMount: false,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false, // Prevent refetch on network reconnect
+        retryOnMount: false,
     });
 
 export const numArtQueryOptions = (itemId?: number) =>

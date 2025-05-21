@@ -7,6 +7,7 @@ import { AlbumResponseExpanded, ItemResponse } from "@/pythonTypes";
 
 import { PlayOrAddItemToQueueButton } from "./audio/utils";
 import { CoverArt } from "./coverArt";
+import { ArtistLink } from "./links";
 
 import { capitalizeFirstLetter } from "../common/strings";
 import { humanizeDuration } from "../common/units/time";
@@ -18,7 +19,6 @@ export function AlbumHeader({
 }: {
     album: AlbumResponseExpanded;
 } & BoxProps) {
-    const theme = useTheme();
     const isMobile = useMediaQuery((theme) => theme.breakpoints.down("tablet"));
 
     return (
@@ -80,11 +80,7 @@ export function AlbumHeader({
                     >
                         {album.name}
                     </Typography>
-                    {isMobile && (
-                        <Typography variant="body1" fontWeight="bold" mt={0}>
-                            {album.albumartist}
-                        </Typography>
-                    )}
+                    {isMobile && <ArtistLink artist={album.albumartist} />}
                 </Box>
                 <Box
                     sx={{
@@ -94,13 +90,7 @@ export function AlbumHeader({
                 >
                     {!isMobile && (
                         <DotSeparatedList>
-                            <Typography
-                                variant="body1"
-                                fontWeight="bold"
-                                component="span"
-                            >
-                                {album.albumartist}
-                            </Typography>
+                            <ArtistLink artist={album.albumartist} />
                             <Typography
                                 variant="body1"
                                 color="text.secondary"

@@ -5,6 +5,7 @@ import { ItemResponse } from "@/pythonTypes";
 
 import { DotSeparatedList } from "./album";
 import { MultiCoverArt } from "./coverArt";
+import { AlbumLink, ArtistLink } from "./links";
 
 import { Link } from "../common/link";
 import { humanizeBytes } from "../common/units/bytes";
@@ -100,7 +101,6 @@ export function ItemHeader({
                         >
                             <Link
                                 to="/library/album/$albumId"
-                                underline="none"
                                 color="text.primary"
                                 params={{ albumId: item.album_id }}
                                 sx={{
@@ -148,42 +148,8 @@ export function ItemHeader({
                 >
                     {!isMobile && (
                         <DotSeparatedList>
-                            <Link
-                                to="/library/album/$albumId"
-                                underline="none"
-                                color="text.primary"
-                                params={{ albumId: item.album_id }}
-                                sx={{
-                                    gap: 0.5,
-                                    textDecoration: "none",
-                                    color: "text.primary",
-                                    display: "flex",
-                                    alignItems: "center",
-                                }}
-                            >
-                                <UserRoundIcon size={theme.iconSize.sm} color="gray" />
-                                <Typography variant="body1" fontWeight="bold">
-                                    {item.artist}
-                                </Typography>
-                            </Link>
-                            <Link
-                                to="/library/album/$albumId"
-                                underline="none"
-                                color="text.primary"
-                                params={{ albumId: item.album_id }}
-                                sx={{
-                                    gap: 0.5,
-                                    textDecoration: "none",
-                                    color: "text.primary",
-                                    display: "flex",
-                                    alignItems: "center",
-                                }}
-                            >
-                                <Disc3Icon size={theme.iconSize.sm} color="gray" />
-                                <Typography variant="body1" fontWeight="bold">
-                                    {item.album}
-                                </Typography>
-                            </Link>
+                            <ArtistLink artist={item.artist} />
+                            <AlbumLink title={item.album} albumId={item.album_id} />
                             <Typography
                                 variant="body1"
                                 color="text.secondary"
