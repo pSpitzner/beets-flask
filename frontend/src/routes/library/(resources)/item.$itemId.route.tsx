@@ -102,10 +102,10 @@ function Navigation({ sx, ...props }: BoxProps) {
                 params={params}
                 activeOptions={{ exact: true }}
             >
-                <Typography variant="body1">Tracks</Typography>
+                <Typography variant="body1">Track</Typography>
             </Tab>
             <Tab
-                to="/library/item/$itemId"
+                to="/library/item/$itemId/identifier"
                 params={params}
                 activeOptions={{ exact: true }}
             >
@@ -122,6 +122,7 @@ function Navigation({ sx, ...props }: BoxProps) {
     );
 }
 
+// TODO: Use mui tabs for better styling
 const Tab = createLink(
     styled(Link)(({ theme }) => ({
         display: "flex",

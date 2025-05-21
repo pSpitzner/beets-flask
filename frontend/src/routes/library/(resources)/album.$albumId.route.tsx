@@ -45,7 +45,9 @@ function RouteComponent() {
                 display: "flex",
                 flexDirection: "column",
                 minHeight: "100%",
+                height: "100%",
                 position: "relative",
+                overflow: "hidden",
             }}
         >
             <Box
@@ -54,6 +56,7 @@ function RouteComponent() {
                     flexDirection: "column",
                     height: "100%",
                     flex: "1 1 auto",
+                    overflow: "hidden",
                 }}
             >
                 <AlbumHeader
@@ -79,6 +82,8 @@ function RouteComponent() {
                         flex: "1 1 auto",
                         paddingInline: 2,
                         paddingBlock: 1,
+                        height: "100%",
+                        minHeight: 0,
                         //background: theme.palette.background.paper,
                         background: `linear-gradient(to bottom, ${theme.palette.background.paper} 0%, transparent 100%)`,
                     })}

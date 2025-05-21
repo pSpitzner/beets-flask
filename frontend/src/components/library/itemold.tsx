@@ -352,7 +352,7 @@ function Row({ property, value }: { property: string; value: string }) {
  * FIXME: We should make some of these nested boxes a bit more reusable
  * and generic.
  */
-function Identifier({ item }: { item: ItemT<false> }) {
+export function Identifier({ item }: { item: ItemT<false> }) {
     return (
         <Box
             sx={{
