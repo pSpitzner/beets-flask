@@ -37,7 +37,7 @@ class TestArtistsEndpoint:
             - The returned data artist matches the requested artist.
         """
 
-        response = await client.get("/api_v1/library/artist/")
+        response = await client.get("/api_v1/library/artists/")
         data = await response.get_json()
         assert response.status_code == 200, "Response status code is not 200"
         assert len(data) == len(self.artists), "Data length is not 2"
@@ -52,7 +52,7 @@ class TestArtistsEndpoint:
         """
 
         for artist in self.artists:
-            response = await client.get(f"/api_v1/library/artist/{artist}/albums")
+            response = await client.get(f"/api_v1/library/artists/{artist}/albums")
             data = await response.get_json()
             assert response.status_code == 200, "Response status code is not 200"
             # We added one album and one item for each artist

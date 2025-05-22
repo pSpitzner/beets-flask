@@ -17,11 +17,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { albumsByArtistQueryOptions } from "@/api/library";
 import { Search } from "@/components/common/inputs/search";
-import { PageWrapper } from "@/components/common/page";
 import { CoverArt } from "@/components/library/coverArt";
 import { AlbumResponseMinimal } from "@/pythonTypes";
 
-export const Route = createFileRoute("/library/(browse)/artist/$artist")({
+export const Route = createFileRoute("/library/(browse)/artists/$artist")({
     loader: async (opts) =>
         await opts.context.queryClient.ensureQueryData(
             albumsByArtistQueryOptions(
@@ -41,52 +40,30 @@ function RouteComponent() {
     );
 
     return (
-        <PageWrapper
-            sx={(theme) => ({
-                display: "flex",
-                flexDirection: "column",
-                minHeight: "100%",
-                height: "100%",
-                [theme.breakpoints.up("laptop")]: {
-                    padding: 2,
-                },
-            })}
-        >
-            <Box
+        <>
+            {/* Header */}
+            <ArtistHeader
+                nAlbums={albums.length}
                 sx={(theme) => ({
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    [theme.breakpoints.up("laptop")]: {
-                        backgroundColor: "background.paper",
-                        borderRadius: 2,
+                    [theme.breakpoints.down("laptop")]: {
+                        background: `linear-gradient(to bottom, transparent 0%, ${theme.palette.background.paper} 100%)`,
                     },
                 })}
-            >
-                {/* Header */}
-                <ArtistHeader
-                    nAlbums={albums.length}
-                    sx={(theme) => ({
-                        [theme.breakpoints.down("laptop")]: {
-                            background: `linear-gradient(to bottom, transparent 0%, ${theme.palette.background.paper} 100%)`,
-                        },
-                    })}
-                />
-                <Divider sx={{ backgroundColor: "primary.muted" }} />
-                <AlbumsViewer
-                    albums={albums}
-                    sx={(theme) => ({
-                        display: "flex",
-                        flexDirection: "column",
-                        height: "100%",
-                        overflow: "hidden",
-                        [theme.breakpoints.down("laptop")]: {
-                            background: `linear-gradient(to bottom, ${theme.palette.background.paper} 0%, transparent 100%)`,
-                        },
-                    })}
-                />
-            </Box>
-        </PageWrapper>
+            />
+            <Divider sx={{ backgroundColor: "primary.muted" }} />
+            <AlbumsViewer
+                albums={albums}
+                sx={(theme) => ({
+                    display: "flex",
+                    flexDirection: "column",
+                    height: "100%",
+                    overflow: "hidden",
+                    [theme.breakpoints.down("laptop")]: {
+                        background: `linear-gradient(to bottom, ${theme.palette.background.paper} 0%, transparent 100%)`,
+                    },
+                })}
+            />
+        </>
     );
 }
 
@@ -108,7 +85,11 @@ function ArtistHeader({ nAlbums, sx, ...props }: { nAlbums: number } & BoxProps)
             ]}
             {...props}
         >
-            <User2Icon size={40} color={theme.palette.primary.main} />
+            <Link to="/library/artists">
+                <Box sx={{ display: "flex", alignItems: "center", height: "100%" }}>
+                    <User2Icon size={40} color={theme.palette.primary.main} />
+                </Box>
+            </Link>
             <Box>
                 <Typography variant="h5" fontWeight="bold" lineHeight={1.2}>
                     {params.artist}
@@ -279,14 +260,14 @@ function AlbumsGrid({ albums }: { albums: AlbumResponseMinimal[] }): JSX.Element
                                             params={{ albumId: album.id }}
                                         >
                                             <Box
-                                                sx={(theme) => ({
+                                                sx={{
                                                     display: "flex",
                                                     alignItems: "center",
                                                     padding: 1,
                                                     width: "200px",
                                                     height: "200px",
                                                     position: "relative",
-                                                })}
+                                                }}
                                             >
                                                 {/* Album cover */}
                                                 <CoverArt
