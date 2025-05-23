@@ -21,7 +21,6 @@ import {
     ButtonGroup,
     Divider,
     IconButton,
-    Paper,
     Radio,
     Skeleton,
     styled,
@@ -39,8 +38,9 @@ import Box, { BoxProps } from "@mui/material/Box";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
-import { FileMetadata, fileMetaQueryOptions } from "@/api/inbox";
+import { fileMetaQueryOptions } from "@/api/inbox";
 import { Search } from "@/components/common/inputs/search";
+import { PropertyValueTable } from "@/components/common/propertyValueTable";
 import {
     AlbumInfo,
     SerializedCandidateState,
@@ -80,7 +80,6 @@ export function CandidateSelector({
     selected: SerializedCandidateState["id"];
     onChange: (id: SerializedCandidateState["id"]) => void;
 }) {
-    console.log(task.candidates);
     return (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
             <CandidateSelectionContextProvider
@@ -718,14 +717,18 @@ function AsisCandidateDetails({
 }) {
     const ref = useRef<HTMLDivElement>(null);
     const { isExpanded, selected } = useCandidateSelection();
+    const [advanced, setAdvanced] = useState(false);
     const theme = useTheme();
 
     const expanded = isExpanded(candidate.id);
-    const { data: filesMetaData } = useSuspenseQuery(
+    const { data } = useSuspenseQuery(
         fileMetaQueryOptions(
             items.map((item) => item.path).filter((i) => i != undefined)
         )
     );
+
+    // TODO: multiple files?
+    const meta = data[0];
 
     useEffect(() => {
         // Set css data-expanded attribute to the ref element
@@ -744,64 +747,6 @@ function AsisCandidateDetails({
             <Box
                 sx={{
                     display: "flex",
-                    flexDirection: "column",
-                    gap: 1,
-                }}
-            >
-                {filesMetaData.map((meta, idx) => {
-                    return (
-                        <Box
-                            sx={{
-                                padding: theme.spacing(1),
-                                borderRadius: theme.spacing(0.5),
-                                backgroundColor:
-                                    idx % 2 === 0 ? "#00000011" : "#00000044",
-                                // borderBottom: "1px solid #515151",
-                            }}
-                        >
-                            <MetaRow meta={meta} />
-                        </Box>
-                    );
-                })}
-            </Box>
-        </CandidateDetailsRow>
-    );
-}
-
-function MetaRow({ meta }: { meta: FileMetadata }) {
-    const [advanced, setAdvanced] = useState(false);
-    return (
-        <>
-            <MetaBadges meta={meta} advanced={advanced} setAdvanced={setAdvanced} />
-            {advanced ? <MetaDetailedTable meta={meta} /> : null}
-        </>
-    );
-}
-
-function MetaBadges({
-    meta,
-    advanced,
-    setAdvanced,
-}: {
-    meta: FileMetadata;
-    advanced: boolean;
-    setAdvanced: (advanced: boolean) => void;
-}) {
-    const theme = useTheme();
-
-    return (
-        <Box
-            sx={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 1,
-            }}
-        >
-            <Box
-                sx={{
-                    display: "flex",
-                    flexDirection: "row",
-                    gap: 1,
                     flexWrap: "wrap",
                     justifyContent: "flex-start",
                     alignItems: "flex-start",
@@ -809,36 +754,15 @@ function MetaBadges({
                     rowGap: 1,
                 }}
             >
-                <MetaBadge meta={meta} type={"track"} />
-                <MetaBadge meta={meta} type={"title"} />
-                <MetaBadge meta={meta} type={"artist"} />
-                <MetaBadge meta={meta} type={"album"} />
-                <MetaBadge meta={meta} type={"filepath"} />
-            </Box>
-
-            {advanced ? null : (
                 <Box
                     sx={{
-                        display: "flex",
-                        flexDirection: "row",
-                        gap: 1,
-                        flexWrap: "wrap",
-                        justifyContent: "flex-start",
-                        alignItems: "flex-start",
-                        columnGap: 0.5,
-                        rowGap: 1,
+                        display: "inline-flex",
+                        flexBasis: "100%",
+                        gap: theme.spacing(1),
                     }}
                 >
-                    <MetaBadge meta={meta} type={"label"} />
-                    <MetaBadge meta={meta} type={"genre"} />
-                    <MetaBadge meta={meta} type={"year"} />
-                    <MetaBadge meta={meta} type={"duration"} />
-                    <MetaBadge meta={meta} type={"filesize"} />
-                    <MetaBadge meta={meta} type={"bitrate"} />
-                    <MetaBadge meta={meta} type={"bpm"} />
-                    <MetaBadge meta={meta} type={"identifiers"} />
-                    <MetaBadge meta={meta} type={"compilation"} />
-                    <MetaBadge meta={meta} type={"remaining"} />
+                    <MetaBadge meta={meta} type={"filepath"} />
+
                     <IconButton
                         sx={{ p: 0, color: "inherit" }}
                         onClick={() => {
@@ -853,158 +777,38 @@ function MetaBadges({
                         )}
                     </IconButton>
                 </Box>
-            )}
-        </Box>
-    );
-}
 
-function MetaDetailedTable({ meta }: { meta: FileMetadata }) {
-    // Filtering logic
-    const [filter, setFilter] = useState<string>("");
-    const filteredMeta = useMemo(() => {
-        return Object.entries(meta).filter(
-            ([key, value]) => key.includes(filter) || String(value).includes(filter)
-        );
-    }, [meta, filter]);
-    const nExcluded = Object.entries(meta).length - filteredMeta.length;
-
-    return (
-        <Box
-            sx={{
-                overflow: "auto",
-                width: "100%",
-                maxHeight: "400px",
-                height: "100%",
-            }}
-        >
-            <Table
-                size="small"
-                sx={{
-                    //display: "grid",
-                    width: "100%",
-                    borderCollapse: "separate",
-                    maxHeight: "400px",
-                    height: "100%",
-                    //tableLayout: "fixed",
-                    td: {
-                        //overflowWrap: "break-word",
-                        maxHeight: "200px",
-                        maxWidth: "100%",
-                    },
-                    position: "relative",
-                    //thicker border bottom for head
-                    thead: {
-                        fontWeight: "bold",
-                        fontSize: "0.95rem",
-                        verticalAlign: "bottom",
-                        top: 0,
-                        position: "sticky",
-                        th: { border: "unset" },
-                        "> *:last-child > th": {
-                            borderBottomWidth: 2,
-                            borderBottomStyle: "solid",
-                            borderBottomColor: "#515151",
-                        },
-                    },
-                }}
-            >
-                <TableHead>
-                    <TableRow
-                        sx={(theme) => ({
-                            display: "none",
-                            [theme.breakpoints.down("tablet")]: {
-                                display: "table-row",
-                            },
-                        })}
-                    >
-                        <TableCell colSpan={3}>
-                            <Search
-                                size="small"
-                                value={filter}
-                                setValue={setFilter}
-                                sx={{
-                                    marginTop: 1,
-                                    p: 0,
-                                    height: "100%",
-                                    width: "100%",
-                                }}
-                                color="secondary"
-                            />
-                        </TableCell>
-                    </TableRow>
-                    <TableRow>
-                        <TableCell sx={{ width: "auto" }}>Property</TableCell>
-                        <TableCell sx={{ width: "50%" }}>Value</TableCell>
-                        <TableCell
-                            sx={(theme) => ({
-                                width: "50%",
-                                textAlign: "right",
-                                [theme.breakpoints.down("tablet")]: {
-                                    display: "none",
-                                },
-                            })}
-                        >
-                            <Search
-                                size="small"
-                                value={filter}
-                                setValue={setFilter}
-                                sx={{
-                                    p: 0,
-                                    height: "100%",
-                                    maxWidth: "300px",
-                                    input: {
-                                        paddingBlock: 0.5,
-                                    },
-                                }}
-                                color="secondary"
-                            />
-                        </TableCell>
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                    {filteredMeta.map(([key, value]) => (
-                        <TableRow key={key}>
-                            <TableCell
-                                sx={{
-                                    width: "max-content",
-                                    verticalAlign: "top",
-                                }}
-                            >
-                                {key}
-                            </TableCell>
-                            <TableCell colSpan={2}>
-                                <Box
-                                    sx={{
-                                        overflow: "auto",
-                                        maxHeight: "200px",
-                                        overflowWrap: "anywhere",
-                                        maxWidth: "100%",
-                                    }}
-                                >
-                                    {String(value)}
-                                </Box>
-                            </TableCell>
-                        </TableRow>
-                    ))}
-                    {nExcluded > 0 && (
-                        <TableRow>
-                            <TableCell colSpan={3}>
-                                <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                    sx={{
-                                        textAlign: "center",
-                                        fontStyle: "italic",
-                                    }}
-                                >
-                                    {nExcluded} more properties excluded via filter
-                                </Typography>
-                            </TableCell>
-                        </TableRow>
-                    )}
-                </TableBody>
-            </Table>
-        </Box>
+                {advanced ? null : (
+                    <>
+                        <MetaBadge meta={meta} type={"artist"} />
+                        <MetaBadge meta={meta} type={"album"} />
+                        <MetaBadge meta={meta} type={"track"} />
+                        <MetaBadge meta={meta} type={"label"} />
+                        <MetaBadge meta={meta} type={"genre"} />
+                        <MetaBadge meta={meta} type={"year"} />
+                        <MetaBadge meta={meta} type={"duration"} />
+                        <MetaBadge meta={meta} type={"filesize"} />
+                        <MetaBadge meta={meta} type={"bitrate"} />
+                        <MetaBadge meta={meta} type={"bpm"} />
+                        <MetaBadge meta={meta} type={"identifiers"} />
+                        <MetaBadge meta={meta} type={"compilation"} />
+                    </>
+                )}
+            </Box>
+            {advanced ? (
+                <Box
+                    sx={{
+                        overflow: "auto",
+                        width: "100%",
+                        maxHeight: "400px",
+                        height: "100%",
+                    }}
+                >
+                    {/* <JSONPretty data={data[0]} /> */}
+                    <PropertyValueTable data={meta} />
+                </Box>
+            ) : null}
+        </CandidateDetailsRow>
     );
 }
 
