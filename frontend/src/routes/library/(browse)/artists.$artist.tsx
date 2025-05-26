@@ -91,7 +91,7 @@ function ArtistHeader({ nAlbums, sx, ...props }: { nAlbums: number } & BoxProps)
                 </Box>
             </Link>
             <Box>
-                <Typography variant="h5" fontWeight="bold" lineHeight={1.2}>
+                <Typography variant="h5" fontWeight="bold" lineHeight={1}>
                     {params.artist}
                 </Typography>
                 <Typography variant="subtitle1" color="text.secondary">
@@ -355,52 +355,50 @@ function AlbumsList({ albums }: { albums: AlbumResponseMinimal[] }): JSX.Element
 
     return (
         <AutoSizer>
-            {({ height, width }) => {
-                return (
-                    <FixedSizeList
-                        itemSize={35}
-                        height={height}
-                        width={width}
-                        itemCount={albums.length}
-                    >
-                        {({ index }) => {
-                            const album = albums[index];
-                            return (
-                                <Link
-                                    to={`/library/album/$albumId`}
-                                    key={album.id}
-                                    params={{ albumId: album.id }}
+            {({ height, width }) => (
+                <FixedSizeList
+                    itemSize={35}
+                    height={height}
+                    width={width}
+                    itemCount={albums.length}
+                >
+                    {({ index }) => {
+                        const album = albums[index];
+                        return (
+                            <Link
+                                to={`/library/album/$albumId`}
+                                key={album.id}
+                                params={{ albumId: album.id }}
+                            >
+                                <Box
+                                    sx={(theme) => ({
+                                        height: "35px",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        padding: 1,
+                                        gap: 2,
+                                        ":hover": {
+                                            background: `linear-gradient(to left, transparent 0%, ${theme.palette.primary.muted} 100%)`,
+                                            color: "primary.contrastText",
+                                        },
+                                    })}
                                 >
-                                    <Box
-                                        sx={(theme) => ({
-                                            height: "35px",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "space-between",
-                                            padding: 1,
-                                            gap: 2,
-                                            ":hover": {
-                                                background: `linear-gradient(to left, transparent 0%, ${theme.palette.primary.muted} 100%)`,
-                                                color: "primary.contrastText",
-                                            },
-                                        })}
-                                    >
-                                        <Typography variant="body1">
-                                            {album.name}
-                                        </Typography>
-                                        <Disc3Icon
-                                            color={theme.palette.background.paper}
-                                            style={{
-                                                marginRight: "2rem",
-                                            }}
-                                        />
-                                    </Box>
-                                </Link>
-                            );
-                        }}
-                    </FixedSizeList>
-                );
-            }}
+                                    <Typography variant="body1">
+                                        {album.name}
+                                    </Typography>
+                                    <Disc3Icon
+                                        color={theme.palette.background.paper}
+                                        style={{
+                                            marginRight: "2rem",
+                                        }}
+                                    />
+                                </Box>
+                            </Link>
+                        );
+                    }}
+                </FixedSizeList>
+            )}
         </AutoSizer>
     );
 }
