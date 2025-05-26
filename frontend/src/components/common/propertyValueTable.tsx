@@ -206,7 +206,7 @@ export function PropertyValueTable({
                                         fontStyle: "italic",
                                     }}
                                 >
-                                    {nExcluded} more properties excluded via filter
+                                    Excluded {nExcluded} more properties via filter
                                 </Typography>
                             </TableCell>
                         </TableRow>
