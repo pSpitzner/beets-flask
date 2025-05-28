@@ -38,7 +38,7 @@ import Box, { BoxProps } from "@mui/material/Box";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
-import { fileMetaQueryOptions } from "@/api/inbox";
+import { FileMetadata, fileMetaQueryOptions } from "@/api/inbox";
 import { Search } from "@/components/common/inputs/search";
 import { PropertyValueTable } from "@/components/common/propertyValueTable";
 import {
@@ -717,18 +717,14 @@ function AsisCandidateDetails({
 }) {
     const ref = useRef<HTMLDivElement>(null);
     const { isExpanded, selected } = useCandidateSelection();
-    const [advanced, setAdvanced] = useState(false);
     const theme = useTheme();
 
     const expanded = isExpanded(candidate.id);
-    const { data } = useSuspenseQuery(
+    const { data: filesMetaData } = useSuspenseQuery(
         fileMetaQueryOptions(
             items.map((item) => item.path).filter((i) => i != undefined)
         )
     );
-
-    // TODO: multiple files?
-    const meta = data[0];
 
     useEffect(() => {
         // Set css data-expanded attribute to the ref element
@@ -747,6 +743,64 @@ function AsisCandidateDetails({
             <Box
                 sx={{
                     display: "flex",
+                    flexDirection: "column",
+                    gap: 1,
+                }}
+            >
+                {filesMetaData.map((meta, idx) => {
+                    return (
+                        <Box
+                            sx={{
+                                padding: theme.spacing(1),
+                                borderRadius: theme.spacing(0.5),
+                                backgroundColor:
+                                    idx % 2 === 0 ? "#00000011" : "#00000044",
+                                // borderBottom: "1px solid #515151",
+                            }}
+                        >
+                            <MetaRow meta={meta} />
+                        </Box>
+                    );
+                })}
+            </Box>
+        </CandidateDetailsRow>
+    );
+}
+
+function MetaRow({ meta }: { meta: FileMetadata }) {
+    const [advanced, setAdvanced] = useState(false);
+    return (
+        <>
+            <MetaBadges meta={meta} advanced={advanced} setAdvanced={setAdvanced} />
+            {advanced ? <PropertyValueTable data={meta} /> : null}
+        </>
+    );
+}
+
+function MetaBadges({
+    meta,
+    advanced,
+    setAdvanced,
+}: {
+    meta: FileMetadata;
+    advanced: boolean;
+    setAdvanced: (advanced: boolean) => void;
+}) {
+    const theme = useTheme();
+
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 1,
+            }}
+        >
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "row",
+                    gap: 1,
                     flexWrap: "wrap",
                     justifyContent: "flex-start",
                     alignItems: "flex-start",
@@ -754,61 +808,52 @@ function AsisCandidateDetails({
                     rowGap: 1,
                 }}
             >
-                <Box
-                    sx={{
-                        display: "inline-flex",
-                        flexBasis: "100%",
-                        gap: theme.spacing(1),
+                <MetaBadge meta={meta} type={"track"} />
+                <MetaBadge meta={meta} type={"title"} />
+                <MetaBadge meta={meta} type={"artist"} />
+                <MetaBadge meta={meta} type={"album"} />
+                <MetaBadge meta={meta} type={"filepath"} />
+                <IconButton
+                    sx={{ p: 0, color: "inherit" }}
+                    onClick={() => {
+                        setAdvanced(!advanced);
                     }}
+                    size="small"
                 >
-                    <MetaBadge meta={meta} type={"filepath"} />
-
-                    <IconButton
-                        sx={{ p: 0, color: "inherit" }}
-                        onClick={() => {
-                            setAdvanced(!advanced);
-                        }}
-                        size="small"
-                    >
-                        {!advanced ? (
-                            <EyeIcon size={theme.iconSize.sm} />
-                        ) : (
-                            <EyeOffIcon size={theme.iconSize.sm} />
-                        )}
-                    </IconButton>
-                </Box>
-
-                {advanced ? null : (
-                    <>
-                        <MetaBadge meta={meta} type={"artist"} />
-                        <MetaBadge meta={meta} type={"album"} />
-                        <MetaBadge meta={meta} type={"track"} />
-                        <MetaBadge meta={meta} type={"label"} />
-                        <MetaBadge meta={meta} type={"genre"} />
-                        <MetaBadge meta={meta} type={"year"} />
-                        <MetaBadge meta={meta} type={"duration"} />
-                        <MetaBadge meta={meta} type={"filesize"} />
-                        <MetaBadge meta={meta} type={"bitrate"} />
-                        <MetaBadge meta={meta} type={"bpm"} />
-                        <MetaBadge meta={meta} type={"identifiers"} />
-                        <MetaBadge meta={meta} type={"compilation"} />
-                    </>
-                )}
+                    {!advanced ? (
+                        <EyeIcon size={theme.iconSize.sm} />
+                    ) : (
+                        <EyeOffIcon size={theme.iconSize.sm} />
+                    )}
+                </IconButton>
             </Box>
-            {advanced ? (
+
+            {advanced ? null : (
                 <Box
                     sx={{
-                        overflow: "auto",
-                        width: "100%",
-                        maxHeight: "400px",
-                        height: "100%",
+                        display: "flex",
+                        flexDirection: "row",
+                        gap: 1,
+                        flexWrap: "wrap",
+                        justifyContent: "flex-start",
+                        alignItems: "flex-start",
+                        columnGap: 0.5,
+                        rowGap: 1,
                     }}
                 >
-                    {/* <JSONPretty data={data[0]} /> */}
-                    <PropertyValueTable data={meta} />
+                    <MetaBadge meta={meta} type={"label"} />
+                    <MetaBadge meta={meta} type={"genre"} />
+                    <MetaBadge meta={meta} type={"year"} />
+                    <MetaBadge meta={meta} type={"duration"} />
+                    <MetaBadge meta={meta} type={"filesize"} />
+                    <MetaBadge meta={meta} type={"bitrate"} />
+                    <MetaBadge meta={meta} type={"bpm"} />
+                    <MetaBadge meta={meta} type={"identifiers"} />
+                    <MetaBadge meta={meta} type={"compilation"} />
+                    <MetaBadge meta={meta} type={"remaining"} />
                 </Box>
-            ) : null}
-        </CandidateDetailsRow>
+            )}
+        </Box>
     );
 }
 
