@@ -8,17 +8,16 @@ import {
     Card,
     Divider,
     Skeleton,
-    Typography,
 } from "@mui/material";
-import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { APIError } from "@/api/common";
 import { albumImportedOptions } from "@/api/library";
 import { enqueueMutationOptions, sessionQueryOptions } from "@/api/session";
 import { BackButton } from "@/components/common/inputs/back";
-import { JSONPretty } from "@/components/common/json";
 import { humanizeBytes } from "@/components/common/units/bytes";
 import { relativeTime } from "@/components/common/units/time";
+import { useStatusSocket } from "@/components/common/websocket/status";
 import {
     AlbumResponseMinimalExpanded,
     EnqueueKind,
@@ -29,7 +28,6 @@ import {
 
 import { CardHeader } from "./common";
 import { Code } from "./folderCard";
-import { useStatusSocket } from "@/components/common/websocket/status";
 
 export function ImportedCard({
     folderHash,

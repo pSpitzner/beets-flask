@@ -2,10 +2,7 @@ import {
     ActivityIcon,
     AudioWaveformIcon,
     BarcodeIcon,
-    CircleEllipsisIcon,
     ClockIcon,
-    EllipsisIcon,
-    FileIcon,
     FileMusicIcon,
     GuitarIcon,
     LayersIcon,
@@ -95,7 +92,7 @@ import { PenaltyTypeIcon } from "../../common/icons";
 // musicbrainz_trackid	6cc80949-2152-4b94-ba8d-7de353f172ef
 // script	Latn
 
-type MetaBadgeType =
+type MetaChipType =
     | "filepath"
     | "artist"
     | "album"
@@ -113,7 +110,7 @@ type MetaBadgeType =
     | "lyrics"
     | "remaining";
 
-export function MetaBadge({ meta, type }: { meta: FileMetadata; type: MetaBadgeType }) {
+export function MetaChip({ meta, type }: { meta: FileMetadata; type: MetaChipType }) {
     const theme = useTheme();
     const knownKeys = [
         "filename",
@@ -144,13 +141,16 @@ export function MetaBadge({ meta, type }: { meta: FileMetadata; type: MetaBadgeT
         "isrc",
         "lyrics",
     ];
-    const unknownKeys = Object.keys(meta).filter((k) => !knownKeys.includes(k));
-    console.log(unknownKeys);
+    const excludedKeys = ["traktor4"];
+
+    const unknownKeys = Object.keys(meta).filter(
+        (k) => !knownKeys.includes(k) && !excludedKeys.includes(k)
+    );
 
     switch (type) {
         case "filepath":
             return (
-                <GenericMetaBadge
+                <GenericMetaChip
                     meta={meta}
                     keys={["filename"]}
                     icon={<FileMusicIcon size={theme.iconSize.xs} />}
@@ -159,7 +159,7 @@ export function MetaBadge({ meta, type }: { meta: FileMetadata; type: MetaBadgeT
             );
         case "artist":
             return (
-                <GenericMetaBadge
+                <GenericMetaChip
                     meta={meta}
                     keys={[
                         "artist",
@@ -177,7 +177,7 @@ export function MetaBadge({ meta, type }: { meta: FileMetadata; type: MetaBadgeT
             );
         case "album":
             return (
-                <GenericMetaBadge
+                <GenericMetaChip
                     meta={meta}
                     keys={["album"]}
                     icon={<PenaltyTypeIcon type="album" size={theme.iconSize.xs} />}
@@ -186,7 +186,7 @@ export function MetaBadge({ meta, type }: { meta: FileMetadata; type: MetaBadgeT
             );
         case "track":
             return (
-                <GenericMetaBadge
+                <GenericMetaChip
                     meta={meta}
                     keys={["track"]}
                     variant="outlined"
@@ -195,7 +195,7 @@ export function MetaBadge({ meta, type }: { meta: FileMetadata; type: MetaBadgeT
             );
         case "title":
             return (
-                <GenericMetaBadge
+                <GenericMetaChip
                     meta={meta}
                     keys={["title"]}
                     icon={<MusicIcon size={theme.iconSize.xs} />}
@@ -204,7 +204,7 @@ export function MetaBadge({ meta, type }: { meta: FileMetadata; type: MetaBadgeT
             );
         case "label":
             return (
-                <GenericMetaBadge
+                <GenericMetaChip
                     meta={meta}
                     keys={["label", "publisher"]}
                     icon={<PenaltyTypeIcon type="label" size={theme.iconSize.xs} />}
@@ -212,7 +212,7 @@ export function MetaBadge({ meta, type }: { meta: FileMetadata; type: MetaBadgeT
             );
         case "genre":
             return (
-                <GenericMetaBadge
+                <GenericMetaChip
                     meta={meta}
                     keys={["genre", "genres"]}
                     icon={<GuitarIcon size={theme.iconSize.xs} />}
@@ -220,7 +220,7 @@ export function MetaBadge({ meta, type }: { meta: FileMetadata; type: MetaBadgeT
             );
         case "year":
             return (
-                <GenericMetaBadge
+                <GenericMetaChip
                     meta={meta}
                     keys={["year", "originaldate", "_year"]}
                     icon={<PenaltyTypeIcon type="year" size={theme.iconSize.xs} />}
@@ -287,7 +287,7 @@ export function MetaBadge({ meta, type }: { meta: FileMetadata; type: MetaBadgeT
             );
         case "identifiers":
             return (
-                <GenericMetaBadge
+                <GenericMetaChip
                     meta={meta}
                     keys={[
                         "isrc",
@@ -316,7 +316,7 @@ export function MetaBadge({ meta, type }: { meta: FileMetadata; type: MetaBadgeT
         case "remaining":
             // everything that is not covered above
             return (
-                <GenericMetaBadge
+                <GenericMetaChip
                     meta={meta}
                     keys={unknownKeys}
                     label={"more"}
@@ -329,7 +329,7 @@ export function MetaBadge({ meta, type }: { meta: FileMetadata; type: MetaBadgeT
     }
 }
 
-export function GenericMetaBadge({
+function GenericMetaChip({
     meta,
     keys,
     icon,

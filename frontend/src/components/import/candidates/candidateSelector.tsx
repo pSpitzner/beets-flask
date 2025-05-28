@@ -25,13 +25,7 @@ import {
     Skeleton,
     styled,
     SxProps,
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableRow,
     Theme,
-    Typography,
     useTheme,
 } from "@mui/material";
 import Box, { BoxProps } from "@mui/material/Box";
@@ -39,7 +33,6 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
 import { FileMetadata, fileMetaQueryOptions } from "@/api/inbox";
-import { Search } from "@/components/common/inputs/search";
 import { PropertyValueTable } from "@/components/common/propertyValueTable";
 import {
     AlbumInfo,
@@ -47,14 +40,9 @@ import {
     SerializedTaskState,
 } from "@/pythonTypes";
 
-import {
-    CandidateSearch,
-    DuplicateActions,
-    ImportCandidateButton,
-    ImportCandidateLabel,
-} from "./actions";
+import { CandidateSearch } from "./actions";
 import { GenericDetailsItem, GenericDetailsItemWithDiff, TrackDiff } from "./diff";
-import { MetaBadge } from "./metaBadge";
+import { MetaChip } from "./metaChips";
 
 import { MatchChip } from "../../common/chips";
 import { PenaltyTypeIcon, SourceTypeIcon } from "../../common/icons";
@@ -217,6 +205,9 @@ export function SelectedCandidate({
                         sx={{ width: "80px", height: "80px" }}
                     />
                 </Box>
+            </Box>
+            <Box sx={{ pt: 2 }}>
+                <TrackDiff items={task.items} candidate={candidate} />
             </Box>
         </Box>
     );
@@ -422,91 +413,6 @@ function TopBar({ task }: { task: SerializedTaskState }) {
     );
 }
 
-/* ----------------------------- Trigger import ----------------------------- */
-
-// DEPRECATED: this is not used anymore just for reference
-function BottomBar({
-    candidates,
-    folderHash,
-    folderPath,
-}: {
-    candidates: SerializedCandidateState[];
-    folderHash: string;
-    folderPath: string;
-}) {
-    const [duplicateAction, setDuplicateAction] = useState<
-        "skip" | "merge" | "keep" | "remove" | null
-    >(null);
-
-    const { selected } = useCandidateSelection();
-
-    const selectedCandidate = useMemo(() => {
-        return candidates.find((c) => c.id === selected);
-    }, [candidates, selected]);
-
-    if (!selectedCandidate) {
-        // should not happen!
-        return "No candidate selected";
-    }
-    let duplicateError: string | null = null;
-    if (selectedCandidate.duplicate_ids.length > 0 && !duplicateAction) {
-        duplicateError = `Please choose an action on how to resolve the duplicates from the library.`;
-    }
-
-    const isError = duplicateError !== null;
-
-    return (
-        <Box
-            sx={{
-                width: "100%",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "flex-end",
-                gap: 0.5,
-                mt: 2,
-            }}
-        >
-            <Box
-                sx={{
-                    width: "100%",
-                    display: "flex",
-                    gap: 1,
-                    justifyContent: "flex-end",
-                }}
-            >
-                <Typography
-                    variant="caption"
-                    color="error"
-                    display={isError ? "block" : "none"}
-                >
-                    {duplicateError}
-                </Typography>
-                <ImportCandidateLabel
-                    candidate={selectedCandidate}
-                    sx={{ textAlign: "right", display: isError ? "none" : "block" }}
-                />
-            </Box>
-            <Box sx={{ display: "flex", gap: 1 }}>
-                <Box sx={{ display: "flex", gap: 1, marginLeft: "auto" }}>
-                    {selectedCandidate.duplicate_ids.length > 0 && (
-                        <DuplicateActions
-                            selectedCandidate={selectedCandidate}
-                            duplicateAction={duplicateAction}
-                            setDuplicateAction={setDuplicateAction}
-                        />
-                    )}
-                    <ImportCandidateButton
-                        candidate={selectedCandidate}
-                        duplicateAction={duplicateAction}
-                        folderHash={folderHash}
-                        folderPath={folderPath}
-                    />
-                </Box>
-            </Box>
-        </Box>
-    );
-}
-
 /* -------------------------------- Candidate ------------------------------- */
 
 /** Candidate info.
@@ -552,7 +458,7 @@ function CandidateInfo({
                 String(selected === candidate.id)
             );
         }
-    }, [expanded, selected]);
+    }, [candidate.id, expanded, selected]);
 
     return useMemo(() => {
         return (
@@ -618,7 +524,16 @@ function CandidateInfo({
                 </Box>
             </CandidateInfoRow>
         );
-    }, [expanded, candidateSelected]);
+    }, [
+        handleClicks,
+        slotProps.selector,
+        candidateSelected,
+        candidate,
+        theme.iconSize.md,
+        expanded,
+        setSelected,
+        toggleExpanded,
+    ]);
 }
 
 /** Candidate details.
@@ -626,7 +541,7 @@ function CandidateInfo({
  * Shows additional information about the candidate. I.e. cover art, metadata, etc.
  * and also shows the diff of the items.
  */
-function CandidateDetails({
+export function CandidateDetails({
     candidate,
     items,
     metadata,
@@ -650,7 +565,7 @@ function CandidateDetails({
                 String(selected === candidate.id)
             );
         }
-    }, [expanded, selected]);
+    }, [candidate.id, expanded, selected]);
 
     return useMemo(() => {
         return (
@@ -703,13 +618,12 @@ function CandidateDetails({
                 {/* Tracks */}
             </CandidateDetailsRow>
         );
-    }, []);
+    }, [candidate, items, metadata]);
 }
 
 function AsisCandidateDetails({
     candidate,
     items,
-    metadata,
 }: {
     candidate: SerializedCandidateState;
     items: SerializedTaskState["items"];
@@ -736,7 +650,7 @@ function AsisCandidateDetails({
                 String(selected === candidate.id)
             );
         }
-    }, [expanded, selected]);
+    }, [candidate.id, expanded, selected]);
 
     return (
         <CandidateDetailsRow ref={ref}>
@@ -771,13 +685,18 @@ function MetaRow({ meta }: { meta: FileMetadata }) {
     const [advanced, setAdvanced] = useState(false);
     return (
         <>
-            <MetaBadges meta={meta} advanced={advanced} setAdvanced={setAdvanced} />
+            <MetaChips meta={meta} advanced={advanced} setAdvanced={setAdvanced} />
             {advanced ? <PropertyValueTable data={meta} /> : null}
         </>
     );
 }
 
-function MetaBadges({
+/** Meta chips for the candidate.
+ *
+ * Shows the most important metadata of the tracks.
+ * Can be toggled to show more advanced metadata.
+ */
+function MetaChips({
     meta,
     advanced,
     setAdvanced,
@@ -808,11 +727,11 @@ function MetaBadges({
                     rowGap: 1,
                 }}
             >
-                <MetaBadge meta={meta} type={"track"} />
-                <MetaBadge meta={meta} type={"title"} />
-                <MetaBadge meta={meta} type={"artist"} />
-                <MetaBadge meta={meta} type={"album"} />
-                <MetaBadge meta={meta} type={"filepath"} />
+                <MetaChip meta={meta} type={"track"} />
+                <MetaChip meta={meta} type={"title"} />
+                <MetaChip meta={meta} type={"artist"} />
+                <MetaChip meta={meta} type={"album"} />
+                <MetaChip meta={meta} type={"filepath"} />
                 <IconButton
                     sx={{ p: 0, color: "inherit" }}
                     onClick={() => {
@@ -841,17 +760,17 @@ function MetaBadges({
                         rowGap: 1,
                     }}
                 >
-                    <MetaBadge meta={meta} type={"label"} />
-                    <MetaBadge meta={meta} type={"genre"} />
-                    <MetaBadge meta={meta} type={"year"} />
-                    <MetaBadge meta={meta} type={"duration"} />
-                    <MetaBadge meta={meta} type={"filesize"} />
-                    <MetaBadge meta={meta} type={"bitrate"} />
-                    <MetaBadge meta={meta} type={"bpm"} />
-                    <MetaBadge meta={meta} type={"identifiers"} />
-                    <MetaBadge meta={meta} type={"compilation"} />
-                    <MetaBadge meta={meta} type={"lyrics"} />
-                    <MetaBadge meta={meta} type={"remaining"} />
+                    <MetaChip meta={meta} type={"label"} />
+                    <MetaChip meta={meta} type={"genre"} />
+                    <MetaChip meta={meta} type={"year"} />
+                    <MetaChip meta={meta} type={"duration"} />
+                    <MetaChip meta={meta} type={"filesize"} />
+                    <MetaChip meta={meta} type={"bitrate"} />
+                    <MetaChip meta={meta} type={"bpm"} />
+                    <MetaChip meta={meta} type={"identifiers"} />
+                    <MetaChip meta={meta} type={"compilation"} />
+                    <MetaChip meta={meta} type={"lyrics"} />
+                    <MetaChip meta={meta} type={"remaining"} />
                 </Box>
             )}
         </Box>

@@ -1,5 +1,4 @@
 import {
-    ArrowRightIcon,
     CopyMinusIcon,
     CopyPlusIcon,
     MergeIcon,
@@ -26,16 +25,10 @@ import {
 } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
 
-import { addCandidateMutationOptions, enqueueMutationOptions } from "@/api/session";
+import { addCandidateMutationOptions } from "@/api/session";
 import { Dialog } from "@/components/common/dialogs";
 import { useStatusSocket } from "@/components/common/websocket/status";
-import {
-    EnqueueKind,
-    Search,
-    SerializedCandidateState,
-    SerializedSessionState,
-    SerializedTaskState,
-} from "@/pythonTypes";
+import { Search, SerializedCandidateState, SerializedTaskState } from "@/pythonTypes";
 
 /** Text that is show as an indicator
  * how good a match is.
@@ -73,51 +66,6 @@ function candidateMatchText({ candidate }: { candidate: SerializedCandidateState
     }
 
     return text;
-}
-
-export function ImportCandidateButton({
-    session,
-    selectCandidates,
-    duplicateActions,
-}: {
-    session: SerializedSessionState;
-    selectedCandidateIds: Map<
-        SerializedTaskState["id"],
-        SerializedCandidateState["id"]
-    >;
-    duplicateActions: Map<SerializedTaskState["id"], DuplicateAction>;
-}) {
-    const { socket } = useStatusSocket();
-    const theme = useTheme();
-    const { mutateAsync } = useMutation(enqueueMutationOptions);
-
-    const pendingDuplicateAction =
-        candidate.duplicate_ids.length > 0 && !duplicateAction;
-
-    return (
-        <Button
-            variant="contained"
-            color="secondary"
-            endIcon={<ArrowRightIcon size={theme.iconSize.sm} />}
-            onClick={async () => {
-                console.log("Importing candidate", candidate.id);
-
-                await mutateAsync({
-                    socket,
-                    selected: {
-                        paths: [folderPath],
-                        hashes: [folderHash],
-                    },
-                    kind: EnqueueKind.IMPORT_CANDIDATE,
-                    candidate_id: candidate.id,
-                    duplicate_action: duplicateAction,
-                });
-            }}
-            disabled={pendingDuplicateAction}
-        >
-            Import
-        </Button>
-    );
 }
 
 export function ImportCandidateLabel({
