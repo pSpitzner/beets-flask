@@ -197,7 +197,6 @@ function InboxCard({ folder }: { folder: Folder }) {
                   name: "Inbox",
                   autotag: false,
                   path: folder.full_path,
-                  last_tagged: "unkown",
               };
     }, [config, folder.full_path]);
 

@@ -14,14 +14,14 @@ from beets_flask.database import db_session_factory
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
 from beets_flask.disk import Folder, dir_files, dir_size, log, path_to_folder
 from beets_flask.importer.progress import Progress
-from beets_flask.inbox import (
-    get_inbox_folders,
-    get_inbox_for_path,
-)
 from beets_flask.server.exceptions import InvalidUsageException, NotFoundException
 from beets_flask.server.routes.library.artwork import send_image
 from beets_flask.server.utility import pop_folder_params, pop_query_param
 from beets_flask.utility import AUDIO_EXTENSIONS
+from beets_flask.watchdog.inbox import (
+    get_inbox_folders,
+    get_inbox_for_path,
+)
 
 inbox_bp = Blueprint("inbox", __name__, url_prefix="/inbox")
 

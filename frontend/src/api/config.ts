@@ -9,7 +9,6 @@ export interface MinimalConfig {
                 string,
                 {
                     autotag: false | "preview" | "import";
-                    last_tagged: string | null;
                     name: string;
                     path: string;
                 }

@@ -13,24 +13,16 @@ gui:
     library:
         readonly: no
 
-    tags:
-        expand_tags: yes # for tag groups, on page load, show tag details?
-        recent_days: 14 # Number of days to consider for the "recent" tag group
-        order_by: "name" # how to sort tags within the trag groups: "name" (the album folder basename) | "date_created" | "date_modified"
-        show_unchanged_tracks: no # whether to show even unchanged tracks in the preview (interactve import sessions)
-
     terminal:
         start_path: "/music/inbox" # the directory where to start new terminal sessions
 
     inbox:
-        concat_nested_folders: yes # show multiple folders in one line if they only have one child
-        expand_files: no # on page load, show files in (album) folders, or collapse them
-
         folders: # dont forget to volume-map these folders in your docker-compose.yml
             Lorem:
                 name: "Awesome Inbox"
                 path: "/music/inbox"
-                autotag: no # no | "preview" | "import" | "import_as_is" | "auto"
+                autotag: no # no | "preview" | "auto"
+                auto_threshold: 0.8 # threshold for the match, 0.8 is a good default, but you can adjust it
                 # autotag controls what should happen with newly added album folders.
                 # no: do nothing
                 # "preview": fetch data but do not import (recommended)
@@ -41,6 +33,7 @@ gui:
                 #                 same as `beet import --group-albums -A`
                 # "auto": fetch data and import if a good match is found (recommended for established libraries,
                 #         but not for a big initial import when you start with beets for the first time)
+                #
             Ipsum:
                 name: "Dummy inbox"
                 path: "/music/dummy"

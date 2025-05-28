@@ -33,7 +33,7 @@ def setup_and_teardown(tmpdir_factory):
     os.environ["BEETSDIR"] = str(tmp_dir / "beets")
     os.makedirs(name=tmp_dir / "beets", exist_ok=True)
     os.environ["BEETSFLASKDIR"] = str(tmp_dir / "beets-flask")
-    os.makedirs(tmp_dir / "beets-flask", exist_ok=True)
+    os.makedirs(name=tmp_dir / "beets-flask", exist_ok=True)
     os.environ["IB_SERVER_CONFIG"] = "test"
 
     yield
