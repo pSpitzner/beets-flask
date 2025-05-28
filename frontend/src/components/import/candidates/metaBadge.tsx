@@ -10,6 +10,7 @@ import {
     GuitarIcon,
     LayersIcon,
     ListIcon,
+    MicVocalIcon,
     MusicIcon,
     PackageIcon,
 } from "lucide-react";
@@ -109,6 +110,7 @@ type MetaBadgeType =
     | "bpm"
     | "compilation"
     | "identifiers"
+    | "lyrics"
     | "remaining";
 
 export function MetaBadge({ meta, type }: { meta: FileMetadata; type: MetaBadgeType }) {
@@ -140,6 +142,7 @@ export function MetaBadge({ meta, type }: { meta: FileMetadata; type: MetaBadgeT
         "catalog_number",
         "catalognum",
         "isrc",
+        "lyrics",
     ];
     const unknownKeys = Object.keys(meta).filter((k) => !knownKeys.includes(k));
     console.log(unknownKeys);
@@ -295,6 +298,20 @@ export function MetaBadge({ meta, type }: { meta: FileMetadata; type: MetaBadgeT
                     ]}
                     icon={<BarcodeIcon size={theme.iconSize.xs} />}
                 />
+            );
+        case "lyrics":
+            if (!meta["lyrics"] || meta["lyrics"] == 0) return null;
+            return (
+                <Tooltip title={<pre>{meta["lyrics"].toString()}</pre>} sx={{}}>
+                    <StyledChip
+                        size="small"
+                        icon={<MicVocalIcon size={theme.iconSize.xs} />}
+                        sx={{
+                            paddingRight: theme.spacing(0),
+                            paddingLeft: theme.spacing(1),
+                        }}
+                    />
+                </Tooltip>
             );
         case "remaining":
             // everything that is not covered above

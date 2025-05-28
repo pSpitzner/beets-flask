@@ -850,6 +850,7 @@ function MetaBadges({
                     <MetaBadge meta={meta} type={"bpm"} />
                     <MetaBadge meta={meta} type={"identifiers"} />
                     <MetaBadge meta={meta} type={"compilation"} />
+                    <MetaBadge meta={meta} type={"lyrics"} />
                     <MetaBadge meta={meta} type={"remaining"} />
                 </Box>
             )}
