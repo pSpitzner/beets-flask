@@ -692,7 +692,7 @@ function TrackChangesRow({
                 setForceMajorChange(true);
             }
         }
-    }, [changed.title, diff]);
+    }, [changed.title, diff, setForceMajorChange]);
 
     useEffect(() => {
         if (setChangeCounter && hasChanges) {
@@ -704,7 +704,7 @@ function TrackChangesRow({
                 setChangeCounter((prev) => prev - 1);
             }
         };
-    }, [hasChanges]);
+    }, [hasChanges, setChangeCounter]);
 
     // depending on the number of changes we render a slightly different row
     // major change shows changes with arrow i.e. [1] t1 -> [2] t2

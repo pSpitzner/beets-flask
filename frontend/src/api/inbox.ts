@@ -4,7 +4,7 @@
  * /api_v1/inbox
  */
 
-import { Query, UseMutationOptions, UseQueryOptions } from "@tanstack/react-query";
+import { UseMutationOptions } from "@tanstack/react-query";
 
 import type { File, Folder, InboxStats } from "@/pythonTypes";
 

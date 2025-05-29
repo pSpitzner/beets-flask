@@ -66,7 +66,7 @@ export function FolderCard({ folder }: { folder: Folder }) {
         if (session) {
             setPrevError(null);
         }
-    }, [error]);
+    }, [error, session]);
 
     // Comparing hashes is a bit tricky, there are multiple cases:
     // 1. hash given by user in url -> this hash is used to fetch the session

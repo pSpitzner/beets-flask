@@ -1,8 +1,5 @@
 import { XIcon } from "lucide-react";
-import { Ref } from "react";
 import {
-    Box,
-    BoxProps,
     Divider,
     IconButton,
     IconButtonOwnProps,

@@ -389,10 +389,10 @@ export const addCandidateMutationOptions: UseMutationOptions<
             context
         );
     },
-    onMutate: (variables) => {
+    onMutate: (_variables) => {
         return;
     },
-    onError: (error, variables, context) => {
+    onError: (_error, _variables, _context) => {
         return;
     },
     onSettled: async (_data, error, variables, context) => {

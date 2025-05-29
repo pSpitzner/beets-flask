@@ -139,13 +139,9 @@ function useSingleAndDoubleClick({
 
 export function SelectedCandidate({
     task,
-    folderHash,
-    folderPath,
     ...props
 }: {
     task: SerializedTaskState;
-    folderHash: string;
-    folderPath: string;
 } & BoxProps) {
     // Chosen candidate
     const candidate = [...task.candidates, task.asis_candidate].find(

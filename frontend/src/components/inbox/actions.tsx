@@ -13,14 +13,13 @@ import {
     Trash2Icon,
     UngroupIcon,
 } from "lucide-react";
-import { forwardRef, Ref, useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, Ref, useState } from "react";
 import {
     Box,
     BoxProps,
     Button,
     Checkbox,
     CircularProgress,
-    Fab,
     IconButton,
     Menu,
     MenuItem,
@@ -29,7 +28,6 @@ import {
     SpeedDialActionProps,
     SpeedDialIcon,
     SpeedDialProps,
-    styled,
     Tooltip,
     Typography,
     useMediaQuery,
@@ -39,7 +37,6 @@ import {
 import { useMutation, UseMutationOptions } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
-import { useConfig } from "@/api/config";
 import { deleteFoldersMutationOptions } from "@/api/inbox";
 import { enqueueMutationOptions } from "@/api/session";
 import { EnqueueKind, File, Folder, JobStatusUpdate } from "@/pythonTypes";
@@ -253,12 +250,7 @@ function SpeedDialMutationAction<D, E, V>({
     tooltip: string;
 } & MutationActionProps<D, E, V> &
     SpeedDialActionProps) {
-    // In theory we should check for touch instead of a breakpoint but tbh
-    // im too lazy to figure out how to do that properly
-    const isMobile = !useMediaQuery((theme) => theme.breakpoints.up("laptop"));
-
-    const { isSuccess, isPending, mutate, isError, error, reset } =
-        useMutation(mutationOptions);
+    const { isPending, mutate } = useMutation(mutationOptions);
 
     return (
         <SpeedDialAction
@@ -655,8 +647,7 @@ export function RetagButton({
     const theme = useTheme();
     const { socket } = useStatusSocket();
     // TODO: How to show errors?
-    const { mutateAsync, isPending, error, isError } =
-        useMutation(enqueueMutationOptions);
+    const { mutateAsync, isPending } = useMutation(enqueueMutationOptions);
 
     return (
         <Button

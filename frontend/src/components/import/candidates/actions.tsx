@@ -255,7 +255,7 @@ export function CandidateSearch({ task }: { task: SerializedTaskState }) {
                         e.preventDefault();
 
                         try {
-                            const res = await mutateAsync({
+                            await mutateAsync({
                                 socket: socket,
                                 task_id: task.id,
                                 search: {

@@ -1,22 +1,7 @@
-import { Disc3, FolderIcon, Leaf, LucideChevronRight } from "lucide-react";
-import { createContext, useCallback, useContext, useState } from "react";
-import {
-    Box,
-    Breadcrumbs,
-    Checkbox,
-    Chip,
-    IconButton,
-    Paper,
-    SxProps,
-    Theme,
-    Typography,
-} from "@mui/material";
+import { Box, Paper, Typography } from "@mui/material";
 
 import { useConfig } from "@/api/config";
-import { File, Folder } from "@/pythonTypes";
-
-import { FileTypeIcon, SourceTypeIcon } from "../common/icons";
-import { PenaltyIcon } from "../import/icons";
+import { Folder } from "@/pythonTypes";
 
 export function FolderComponent({ folder }: { folder: Folder }) {
     console.log(folder);

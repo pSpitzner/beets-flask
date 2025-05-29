@@ -219,7 +219,7 @@ export function LibraryList({
                 item === selected
             );
         });
-    }, [data, filter]);
+    }, [data, filter, selected]);
 
     return (
         <Box

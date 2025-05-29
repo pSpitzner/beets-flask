@@ -1,11 +1,4 @@
-import {
-    HardDriveDownload,
-    Home,
-    Inbox,
-    Library,
-    Search,
-    Terminal,
-} from "lucide-react";
+import { Home, Inbox, Library, Search, Terminal } from "lucide-react";
 import { MouseEvent, ReactElement, useRef } from "react";
 import { Box, darken, Typography, useTheme } from "@mui/material";
 import { styled } from "@mui/material/styles";
@@ -82,7 +75,7 @@ function NavTabs() {
     const navItems = [
         { label: "Home", icon: <Home />, to: "/" as const },
         { label: "Inbox", icon: <Inbox />, to: "/inbox" as const },
-        { label: "Session", icon: <Inbox />, to: "/sessiondraft" as const },
+        //{ label: "Session", icon: <Inbox />, to: "/sessiondraft" as const },
         { label: "Library", icon: <Library />, to: "/library/browse" as const },
         { label: "Search", icon: <Search />, to: "/library/search" as const },
         {

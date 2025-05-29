@@ -5,7 +5,13 @@
 
 import { PauseIcon, PlayIcon, SkipBackIcon, SkipForwardIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Box, CircularProgress, IconButton, LinearProgress, useTheme } from "@mui/material";
+import {
+    Box,
+    CircularProgress,
+    IconButton,
+    LinearProgress,
+    useTheme,
+} from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 
 import WaveSurfer from "wavesurfer.js";
@@ -31,7 +37,7 @@ export function AudioPlayerItem({
     const wavesurferRef = useRef<WaveSurfer | null>(null);
 
     // Fetch audio data
-    const { data, isPending, isLoading, refetch } = useQuery({
+    const { data, isLoading, refetch } = useQuery({
         enabled: false,
         queryKey: ["audio", "item", itemId],
         queryFn: async () => {
@@ -69,7 +75,7 @@ export function AudioPlayerItem({
                 setReady(false);
             };
         }
-    }, [data, height]);
+    }, [data, height, theme]);
 
     return (
         <Box
@@ -95,7 +101,11 @@ export function AudioPlayerItem({
                     style={{ display: ready ? "block" : "none", width: "100%" }}
                 />
                 {!ready && (
-                    <LinearProgress variant="determinate" sx={{ width: "100%" }} value={0} />
+                    <LinearProgress
+                        variant="determinate"
+                        sx={{ width: "100%" }}
+                        value={0}
+                    />
                 )}
             </Box>
             <Box sx={{ display: "flex", gap: 2 }}>

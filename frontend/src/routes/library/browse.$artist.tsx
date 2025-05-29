@@ -69,7 +69,7 @@ function Albums() {
             className: styles.item,
             "data-selected": params.albumId && params.albumId == album.id,
         }));
-    }, [albums, params, to]);
+    }, [albums, params]);
 
     const selectedData = data.find((item) => item["data-selected"] === true);
 
