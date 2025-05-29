@@ -6,7 +6,7 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { inboxStatsQueryOptions } from "@/api/inbox";
 import { libraryStatsQueryOptions } from "@/api/library";
 import { PageWrapper } from "@/components/common/page";
-import { InboxStatsCard, LibraryStatsCard } from "@/components/frontend2/statsCard";
+import { InboxStatsCard, LibraryStatsCard } from "@/components/frontpage/statsCard";
 
 /* ------------------------------ Route layout ------------------------------ */
 

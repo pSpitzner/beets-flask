@@ -36,7 +36,7 @@ import {
     SourceTypeIcon,
 } from "@/components/common/icons";
 import { PageWrapper } from "@/components/common/page";
-import { CardHeader } from "@/components/frontend2/statsCard";
+import { CardHeader } from "@/components/frontpage/statsCard";
 import {
     FolderActionsSpeedDial,
     RefreshAllFoldersButton,
