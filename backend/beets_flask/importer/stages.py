@@ -570,6 +570,7 @@ def mark_tasks_completed(session: BaseSession, task: ImportTask):
     This is mainly a workaround because our progress decorator cannot set the
     progress after stage has finished.
     """
+
     return task
 
 

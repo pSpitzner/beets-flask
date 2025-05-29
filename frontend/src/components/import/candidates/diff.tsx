@@ -1,5 +1,5 @@
 import { Change } from "diff";
-import { ArrowRightIcon, EyeIcon, EyeOffIcon } from "lucide-react";
+import { ArrowRightIcon } from "lucide-react";
 import React, {
     createContext,
     Dispatch,
@@ -12,7 +12,6 @@ import React, {
     useState,
 } from "react";
 import {
-    IconButton,
     styled,
     SxProps,
     Theme,
@@ -24,7 +23,6 @@ import {
 import Box, { BoxProps } from "@mui/material/Box";
 
 import { useDiff } from "@/components/common/hooks/useDiff";
-import { PenaltyTypeIcon } from "@/components/common/icons";
 import { trackLengthRep } from "@/components/common/units/time";
 import {
     ItemInfo,
@@ -32,40 +30,6 @@ import {
     SerializedTaskState,
     TrackInfo,
 } from "@/pythonTypes";
-
-/* ----------------------------- Candidate Diff ----------------------------- */
-
-// detailed info
-export function CandidateDiff({
-    items,
-    metadata,
-    candidate,
-}: {
-    items: SerializedTaskState["items"];
-    metadata: SerializedTaskState["current_metadata"];
-    candidate: SerializedCandidateState;
-}) {
-    return (
-        <>
-            {/* Artist */}
-            <GenericDiff
-                from={metadata.artist || "Unknown artist"}
-                to={candidate.info.artist || "Unknown artist"}
-                icon={<PenaltyTypeIcon type="artist" />}
-            />
-
-            {/* Album */}
-            <GenericDiff
-                from={metadata.album || "Unknown album"}
-                to={candidate.info.album || "Unknown album"}
-                icon={<PenaltyTypeIcon type="album" />}
-            />
-
-            {/* Tracks */}
-            <TrackDiff items={items} candidate={candidate} />
-        </>
-    );
-}
 
 /* ------------------------------- Track Diff ------------------------------- */
 // Basically a grid layout showing the changes to all tracks
@@ -116,13 +80,17 @@ const TrackDiffContext = createContext<{
     extra_items: ItemInfo[];
     extra_tracks: TrackInfo[];
     pairs: Array<[ItemInfo, TrackInfo]>;
+    candidate: SerializedCandidateState;
+    items: SerializedTaskState["items"];
+    setNChanges: Dispatch<SetStateAction<number>>;
+    nChanges: number;
 } | null>(null);
 
 /** Context provider precomputes
  * some common values for the track diff view
  * which we dont want to recompute.
  */
-function TrackDiffContextProvider({
+export function TrackDiffContextProvider({
     children,
     candidate,
     items,
@@ -131,6 +99,9 @@ function TrackDiffContextProvider({
     candidate: SerializedCandidateState;
     items: SerializedTaskState["items"];
 }) {
+    // Changes is a bit of a hack
+    const [nChanges, setNChanges] = useState(0);
+
     // Create Venn diagram
     // items ∩ tracks = pairs
     // items' ∩ tracks = extra_items
@@ -184,13 +155,23 @@ function TrackDiffContextProvider({
     }, [items, candidate]);
 
     return (
-        <TrackDiffContext.Provider value={{ extra_items, extra_tracks, pairs }}>
+        <TrackDiffContext.Provider
+            value={{
+                extra_items,
+                extra_tracks,
+                pairs,
+                candidate,
+                items,
+                setNChanges,
+                nChanges,
+            }}
+        >
             {children}
         </TrackDiffContext.Provider>
     );
 }
 
-function useTrackDiffContext() {
+export function useTrackDiffContext() {
     const context = useContext(TrackDiffContext);
     if (!context) {
         throw new Error(
@@ -215,23 +196,12 @@ export function TrackDiff({
 }) {
     const theme = useTheme();
 
-    const [showAllTracks, setShowAllTracks] = useState(false);
-
     if (!candidate.penalties.includes("tracks")) {
         return (
             <Box>
-                <Heading
-                    icon={<PenaltyTypeIcon type="tracks" />}
-                    label="No severe track changes"
-                    // tooltip="Shows which items (on disk) are mapped to tracks (from the candidate). Changes are highlighted in red and green."
-                    expanded={showAllTracks}
-                    onExpand={setShowAllTracks}
-                    color={theme.palette.text.primary}
-                />
                 <TrackChangesGrid
                     sx={{
                         color: theme.palette.diffs.light,
-                        display: showAllTracks ? undefined : "none",
                     }}
                 >
                     {candidate.tracks
@@ -297,24 +267,14 @@ function TrackDiffInner() {
     );
 }
 
-function ExtraTracks() {
-    const isDesktop = useMediaQuery((theme) => theme.breakpoints.up("desktop"));
-    const [expanded, setExpanded] = useState(isDesktop);
+export function ExtraTracks() {
     const { extra_tracks } = useTrackDiffContext();
     const theme = useTheme();
     if (extra_tracks.length === 0) {
         return null;
     }
     return (
-        <Box>
-            <Heading
-                icon={<PenaltyTypeIcon type="unmatched_tracks" />}
-                label="Unmatched tracks"
-                tooltip="Tracks that could not matched to any items on disk (usually because they are missing)."
-                color={theme.palette.diffs.changed}
-                expanded={expanded}
-                onExpand={setExpanded}
-            />
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
             <Typography variant="body2" color="diffs.light" pb={0.5}>
                 {extra_tracks.length} tracks of candidate not found on disk
             </Typography>
@@ -323,38 +283,27 @@ function ExtraTracks() {
                     color: theme.palette.diffs.light,
                 }}
             >
-                {expanded &&
-                    extra_tracks.map((track, i) => (
-                        <TrackRow
-                            key={i}
-                            index={track.index || 0}
-                            title={track.title || ""}
-                            time={trackLengthRep(track.length)}
-                        />
-                    ))}
+                {extra_tracks.map((track, i) => (
+                    <TrackRow
+                        key={i}
+                        index={track.index || 0}
+                        title={track.title || ""}
+                        time={trackLengthRep(track.length)}
+                    />
+                ))}
             </TrackChangesGrid>
         </Box>
     );
 }
 
-function ExtraItems() {
-    const isDesktop = useMediaQuery((theme) => theme.breakpoints.up("desktop"));
-    const [expanded, setExpanded] = useState(isDesktop);
+export function ExtraItems() {
     const { extra_items } = useTrackDiffContext();
     const theme = useTheme();
     if (extra_items.length === 0) {
         return null;
     }
     return (
-        <Box>
-            <Heading
-                icon={<PenaltyTypeIcon type="unmatched_items" />}
-                label="Unmatched items"
-                tooltip="Items that could not matched to any tracks, they will be ignore if this candidate is chosen."
-                color={theme.palette.diffs.changed}
-                expanded={expanded}
-                onExpand={setExpanded}
-            />
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
             <Typography variant="body2" color="diffs.light" pb={0.5}>
                 {extra_items.length} items on disk not part of the candidate
             </Typography>
@@ -363,17 +312,181 @@ function ExtraItems() {
                     color: theme.palette.diffs.light,
                 }}
             >
-                {expanded &&
-                    extra_items.map((item, i) => (
-                        <TrackRow
-                            key={i}
-                            index={item.index || 0}
-                            title={item.title || ""}
-                            time={trackLengthRep(item.length)}
-                        />
-                    ))}
+                {extra_items.map((item, i) => (
+                    <TrackRow
+                        key={i}
+                        index={item.index || 0}
+                        title={item.title || ""}
+                        time={trackLengthRep(item.length)}
+                    />
+                ))}
             </TrackChangesGrid>
         </Box>
+    );
+}
+
+/** Shows all track changes as a list/grid
+ *
+ * has to be used inside a TrackDiffContextProvider
+ */
+export function TrackChanges() {
+    const { pairs, nChanges, setNChanges } = useTrackDiffContext();
+
+    // force major change layout for all rows
+    const [titleChange, setTitleChange] = useState(false);
+
+    if (pairs.length === 0) {
+        return null;
+    }
+
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+            }}
+        >
+            <Typography variant="body2" color="diffs.light" pb={0.5}>
+                {nChanges} of {pairs.length} tracks changed
+            </Typography>
+            {/*Changes grid*/}
+            <TrackChangesGrid>
+                {pairs.map(([item, track], i) => (
+                    <TrackChangesRow
+                        key={i}
+                        from={item}
+                        to={track}
+                        forceMajorChange={titleChange}
+                        setForceMajorChange={setTitleChange}
+                        setChangeCounter={setNChanges}
+                    />
+                ))}
+            </TrackChangesGrid>
+        </Box>
+    );
+}
+
+interface GenericDetailsItemProps extends BoxProps {
+    icon: ReactElement;
+    children?: ReactNode;
+    tooltip?: string;
+    label?: ReactNode;
+    sx?: SxProps<Theme>;
+    iconColor?: string;
+    labelColor?: string;
+}
+
+export function GenericDetailsItem({
+    icon,
+    children,
+    tooltip,
+    label,
+    sx,
+    iconColor,
+    labelColor,
+    ...props
+}: GenericDetailsItemProps) {
+    // Show tooltip on hover of label row
+    let ToolTipComp = ({ children }: { children: ReactElement }) => <>{children}</>;
+    if (tooltip) {
+        ToolTipComp = ({ children }: { children: ReactElement }) => (
+            <Tooltip title={tooltip}>{children}</Tooltip>
+        );
+    }
+
+    // label is string or number
+    if ((label && typeof label === "string") || typeof label === "number") {
+        label = (
+            <Box
+                component="span"
+                sx={{
+                    color: labelColor || "inherit",
+                    // TODO: include icon in click, and make this more generic
+                    cursor: "pointer",
+                }}
+            >
+                {label}
+            </Box>
+        );
+    }
+
+    if (!label) {
+        label = <Box component="span">Unknown</Box>;
+    }
+
+    return (
+        <Box
+            sx={[
+                {
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    height: "20px",
+                },
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                ...(Array.isArray(sx) ? sx : [sx]),
+            ]}
+            {...props}
+        >
+            {/*Heading/content row*/}
+            <ToolTipComp>
+                <Box display="flex" gap={1} alignItems="center">
+                    <Box
+                        sx={(theme) => ({
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+
+                            width: theme.iconSize.sm,
+                            height: theme.iconSize.sm,
+                            color: iconColor || "inherit",
+                        })}
+                    >
+                        {icon}
+                    </Box>
+                    {label}
+                </Box>
+            </ToolTipComp>
+            {children}
+        </Box>
+    );
+}
+
+export function GenericDetailsItemWithDiff({
+    from,
+    to,
+    icon,
+    tooltip,
+    children,
+    sx,
+}: {
+    from?: string | null;
+    to?: string | null;
+    icon: ReactElement;
+    tooltip?: string;
+    children?: ReactNode;
+    sx?: SxProps<Theme>;
+}) {
+    const { fromParts, toParts, diff } = useDiffParts(from, to);
+
+    return (
+        <GenericDetailsItem
+            icon={icon}
+            tooltip={tooltip}
+            label={
+                <StyledDiff
+                    fromParts={fromParts}
+                    toParts={toParts}
+                    diff={diff}
+                    threshold={0.8}
+                />
+            }
+            iconColor={undefined}
+            sx={sx}
+        >
+            {children}
+        </GenericDetailsItem>
     );
 }
 
@@ -424,210 +537,6 @@ function TrackRow({
                 {time}
             </Box>
         </Box>
-    );
-}
-
-/** Shows all track changes as a list/grid
- *
- * has to be used inside a TrackDiffContextProvider
- */
-function TrackChanges() {
-    const theme = useTheme();
-    const { pairs } = useTrackDiffContext();
-    const [changeCounter, setChangeCounter] = useState(0);
-    const isDesktop = useMediaQuery((theme) => theme.breakpoints.up("desktop"));
-
-    // Show all tracks or only the ones that have changes
-    const [showUnchanged, setShowUnchanged] = useState(isDesktop);
-    // force major change layout for all rows
-    const [titleChange, setTitleChange] = useState(false);
-
-    if (pairs.length === 0) {
-        return null;
-    }
-
-    return (
-        <Box
-            sx={{
-                "[data-haschanges=false]": {
-                    display: showUnchanged ? undefined : "none",
-                },
-            }}
-        >
-            {/*Header*/}
-            <Heading
-                icon={<PenaltyTypeIcon type="tracks" />}
-                label="Track changes"
-                tooltip="Shows which items (on disk) are mapped to tracks (from the candidate). Changes are highlighted in red and green."
-                expanded={showUnchanged}
-                onExpand={setShowUnchanged}
-                color={theme.palette.diffs.changed}
-            />
-            <Typography variant="body2" color="diffs.light" pb={0.5}>
-                {changeCounter} of {pairs.length} tracks changed
-            </Typography>
-            {/*Changes grid*/}
-            <TrackChangesGrid>
-                {pairs.map(([item, track], i) => (
-                    <TrackChangesRow
-                        key={i}
-                        from={item}
-                        to={track}
-                        forceMajorChange={titleChange}
-                        setForceMajorChange={setTitleChange}
-                        setChangeCounter={setChangeCounter}
-                    />
-                ))}
-            </TrackChangesGrid>
-        </Box>
-    );
-}
-
-export function Heading({
-    expanded,
-    onExpand,
-    color,
-    ...props
-}: {
-    color?: string;
-    expanded?: boolean;
-    onExpand?: (expanded: boolean) => void;
-} & GenericDetailsItemProps) {
-    const theme = useTheme();
-
-    return (
-        <GenericDetailsItem
-            {...props}
-            sx={{
-                color: color || "inherit",
-                display: "flex",
-                justifyContent: "center",
-            }}
-        >
-            {(expanded || onExpand) && (
-                <IconButton
-                    sx={{ p: 0, color: "inherit" }}
-                    onClick={() => {
-                        if (onExpand) {
-                            onExpand(!expanded);
-                        }
-                    }}
-                    size="small"
-                >
-                    {!expanded ? (
-                        <EyeIcon size={theme.iconSize.sm} />
-                    ) : (
-                        <EyeOffIcon size={theme.iconSize.sm} />
-                    )}
-                </IconButton>
-            )}
-        </GenericDetailsItem>
-    );
-}
-
-interface GenericDetailsItemProps {
-    icon: ReactElement;
-    children?: ReactNode;
-    tooltip?: string;
-    label?: ReactNode;
-    sx?: SxProps<Theme>;
-    icon_color?: string;
-}
-
-export function GenericDetailsItem({
-    icon,
-    children,
-    tooltip,
-    label,
-    sx = [],
-    icon_color,
-}: GenericDetailsItemProps) {
-    // Show tooltip on hover of label row
-    let ToolTipComp = ({ children }: { children: ReactElement }) => <>{children}</>;
-    if (tooltip) {
-        ToolTipComp = ({ children }: { children: ReactElement }) => (
-            <Tooltip title={tooltip}>{children}</Tooltip>
-        );
-    }
-
-    // label is string or number
-    if ((label && typeof label === "string") || typeof label === "number") {
-        label = <Box component="span">{label}</Box>;
-    }
-
-    if (!label) {
-        label = <Box component="span">Unknown</Box>;
-    }
-
-    return (
-        <Box
-            sx={[
-                {
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                },
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                ...(Array.isArray(sx) ? sx : [sx]),
-            ]}
-        >
-            {/*Heading/content row*/}
-            <ToolTipComp>
-                <Box display="flex" gap={0.5} alignItems="center">
-                    <Box
-                        sx={(theme) => ({
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-
-                            width: theme.iconSize.sm,
-                            height: theme.iconSize.sm,
-                            color: icon_color || "inherit",
-                        })}
-                    >
-                        {icon}
-                    </Box>
-                    {label}
-                </Box>
-            </ToolTipComp>
-            {children}
-        </Box>
-    );
-}
-
-export function GenericDetailsItemWithDiff({
-    from,
-    to,
-    icon,
-    tooltip,
-    children,
-}: {
-    from?: string | null;
-    to?: string | null;
-    icon: ReactElement;
-    tooltip?: string;
-    children?: ReactNode;
-}) {
-    const { fromParts, toParts, diff, hasAdded, hasRemoved } = useDiffParts(from, to);
-
-    return (
-        <GenericDetailsItem
-            icon={icon}
-            tooltip={tooltip}
-            label={
-                <StyledDiff
-                    fromParts={fromParts}
-                    toParts={toParts}
-                    diff={diff}
-                    threshold={0.8}
-                />
-            }
-            icon_color={
-                hasRemoved || (hasRemoved && hasAdded) ? "diffs.changed" : undefined
-            }
-        >
-            {children}
-        </GenericDetailsItem>
     );
 }
 

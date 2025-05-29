@@ -91,12 +91,16 @@ export function PenaltyTypeIcon({ type, ...props }: { type: string } & LucidePro
         case "album":
             return <Disc3Icon {...props} />;
         case "tracks":
+        case "track":
+        case "track_changes":
             return <AudioLinesIcon {...props} />;
         case "missing_items":
         case "unmatched_tracks":
+        case "extra_tracks":
             return <GitPullRequestArrowIcon {...props} />;
         case "unmatched_items":
         case "missing_tracks":
+        case "extra_items":
             return <GitPullRequestClosedIcon {...props} />;
         case "media":
             return <CassetteTapeIcon {...props} />;

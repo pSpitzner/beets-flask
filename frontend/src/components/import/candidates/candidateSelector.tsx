@@ -1,4 +1,5 @@
 import {
+    AudioLinesIcon,
     ChevronDownIcon,
     ChevronsDownUpIcon,
     ChevronsUpDownIcon,
@@ -19,6 +20,7 @@ import {
 } from "react";
 import {
     ButtonGroup,
+    DialogContent,
     Divider,
     IconButton,
     Radio,
@@ -33,6 +35,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
 import { FileMetadata, fileMetaQueryOptions } from "@/api/inbox";
+import { Dialog } from "@/components/common/dialogs";
 import { PropertyValueTable } from "@/components/common/propertyValueTable";
 import {
     AlbumInfo,
@@ -41,7 +44,16 @@ import {
 } from "@/pythonTypes";
 
 import { CandidateSearch } from "./actions";
-import { GenericDetailsItem, GenericDetailsItemWithDiff, TrackDiff } from "./diff";
+import {
+    ExtraItems,
+    ExtraTracks,
+    GenericDetailsItem,
+    GenericDetailsItemWithDiff,
+    TrackChanges,
+    TrackDiff,
+    TrackDiffContextProvider,
+    useTrackDiffContext,
+} from "./diff";
 import { MetaChip } from "./metaChips";
 
 import { MatchChip } from "../../common/chips";
@@ -155,9 +167,6 @@ export function SelectedCandidate({
 
     return (
         <Box {...props}>
-            <Box sx={{ fontWeight: "bold" }}>
-                {candidate.info.artist} - {candidate.info.album}
-            </Box>
             <Box
                 sx={(theme) => ({
                     display: "flex",
@@ -177,6 +186,7 @@ export function SelectedCandidate({
                     }}
                 >
                     <OverviewChanges
+                        items={task.items}
                         candidate={candidate}
                         metadata={task.current_metadata}
                     />
@@ -586,7 +596,11 @@ export function CandidateDetails({
                             },
                         })}
                     >
-                        <OverviewChanges candidate={candidate} metadata={metadata} />
+                        <OverviewChanges
+                            items={items}
+                            candidate={candidate}
+                            metadata={metadata}
+                        />
                         <Box
                             sx={(theme) => ({
                                 display: "flex",
@@ -604,11 +618,6 @@ export function CandidateDetails({
                             <ExternalCoverArt data_url={candidate.info.data_url} />
                         </Box>
                     </Box>
-
-                    <Divider sx={{ marginY: 1 }} />
-
-                    {/* Track/item Diffs */}
-                    <TrackDiff items={items} candidate={candidate} />
                 </Box>
 
                 {/* Tracks */}
@@ -779,9 +788,11 @@ function MetaChips({
  * Two columns on desktop and one on mobile.
  */
 function OverviewChanges({
+    items,
     candidate,
     metadata,
 }: {
+    items: SerializedTaskState["items"];
     candidate: SerializedCandidateState;
     metadata: SerializedTaskState["current_metadata"];
 }) {
@@ -795,59 +806,126 @@ function OverviewChanges({
                 gridAutoFlow: "dense",
                 width: "100%",
                 flexGrow: 1,
+                columnGap: 2,
 
                 [theme.breakpoints.down("tablet")]: {
-                    gridTemplateColumns: "1fr",
+                    display: "flex",
                     gridAutoFlow: "row",
+                    "*": {
+                        textWrap: "unset",
+                    },
                 },
             })}
         >
-            <SourceDetailItem
-                data_source={candidate.info.data_source!}
-                data_url={candidate.info.data_url}
-            />
+            {/* first column, inmportant */}
             <GenericDetailsItemWithDiff
                 icon={<PenaltyTypeIcon type="artist" />}
                 from={metadata.artist}
                 to={candidate.info.artist}
-                tooltip="The album artist of this candidate."
+                tooltip="Artist"
+                sx={{
+                    gridColumn: "1",
+                    gridRow: "1",
+                }}
             />
             <GenericDetailsItemWithDiff
                 icon={<PenaltyTypeIcon type="album" />}
                 from={metadata.album}
                 to={candidate.info.album}
-                tooltip="The album title of this candidate."
+                tooltip="Album"
+                sx={{
+                    gridColumn: "1",
+                    gridRow: "2",
+                }}
+            />
+            <SourceDetailItem
+                data_source={candidate.info.data_source!}
+                data_url={candidate.info.data_url}
+                sx={{
+                    gridColumn: "1",
+                    gridRow: "3",
+                    textWrap: "nowrap",
+                    textOverflow: "ellipsis",
+                }}
             />
             <GenericDetailsItemWithDiff
                 icon={<PenaltyTypeIcon type="year" />}
                 from={metadata.year?.toString()}
                 to={candidate.info.year?.toString()}
-                tooltip="The year of the album was released."
+                tooltip="Release Year"
+                sx={{
+                    gridColumn: "1",
+                    gridRow: "4",
+                }}
             />
+
+            {/* second column, extra info */}
             <GenericDetailsItemWithDiff
                 icon={<PenaltyTypeIcon type="label" />}
                 from={metadata.label}
                 to={(candidate.info as AlbumInfo).label}
-                tooltip="The label of this candidate."
+                tooltip="Recordlabel"
+                sx={{
+                    gridColumn: "2",
+                    gridRow: "1",
+                }}
             />
             <GenericDetailsItemWithDiff
                 icon={<PenaltyTypeIcon type="media" />}
                 from={metadata.media}
                 to={candidate.info.media}
-                tooltip="The media type of this candidate."
+                tooltip="Media Type"
+                sx={{
+                    gridColumn: "2",
+                    gridRow: "2",
+                }}
             />
             <GenericDetailsItemWithDiff
                 icon={<PenaltyTypeIcon type="catalognum" />}
                 from={metadata.catalognum}
                 to={(candidate.info as AlbumInfo).catalognum}
-                tooltip="The catalog number of this candidate."
+                tooltip="Catalog Number"
+                sx={{
+                    gridColumn: "2",
+                    gridRow: "3",
+                }}
             />
             <GenericDetailsItemWithDiff
                 icon={<PenaltyTypeIcon type="country" />}
                 from={metadata.country}
                 to={(candidate.info as AlbumInfo).country}
                 tooltip="The country in which this candidate was released."
+                sx={{
+                    gridColumn: "2",
+                    gridRow: "4",
+                }}
             />
+
+            {/* track changes */}
+            <TrackDiffContextProvider candidate={candidate} items={items}>
+                <TrackChangesDetailItem
+                    kind="track_changes"
+                    sx={{
+                        gridColumn: "1",
+                        gridRow: "5",
+                    }}
+                />
+
+                <TrackChangesDetailItem
+                    kind="extra_tracks"
+                    sx={{
+                        gridColumn: "2",
+                        gridRow: "5",
+                    }}
+                />
+                <TrackChangesDetailItem
+                    kind="extra_items"
+                    sx={{
+                        gridColumn: "2",
+                        gridRow: "6",
+                    }}
+                />
+            </TrackDiffContextProvider>
         </Box>
     );
 }
@@ -862,53 +940,118 @@ function SourceDetailItem({
     data_source: string;
     data_url?: string | null;
 } & BoxProps) {
-    const theme = useTheme();
     const isAsis = data_source === "asis";
 
-    const tooltip = isAsis
-        ? "Metadata from files"
-        : `Candidate data was fetched from ${data_source}`;
-    const label = isAsis ? "Metadata from files" : data_source;
+    const label = isAsis ? "Metadata from disk" : data_source;
 
     return (
         <GenericDetailsItem
             icon={<SourceTypeIcon type={data_source} />}
             label={
                 <>
-                    <Box component="span">{label}</Box>
-                    {data_url && (
-                        <Box
-                            sx={{
-                                fontSize: theme.typography.body2.fontSize,
-                                color: "gray",
-                                display: "inline-flex",
-                            }}
-                        >
-                            {"("}
-                            {data_source !== "asis"
-                                ? data_url.split("/").pop()
-                                : data_url}
-                            <Link
-                                to={data_url}
-                                target="_blank"
-                                style={{
-                                    alignItems: "center",
-                                    display: "flex",
-                                }}
-                            >
-                                <ExternalLinkIcon
-                                    size={theme.iconSize.xs + 1}
-                                    style={{ marginLeft: theme.spacing(0.5) }}
-                                />
-                                {")"}
-                            </Link>
-                        </Box>
-                    )}
+                    <Link
+                        to={data_url || "#"}
+                        target="_blank"
+                        style={{
+                            alignItems: "center",
+                            display: "flex",
+                        }}
+                    >
+                        {label}
+                    </Link>
                 </>
             }
-            tooltip={tooltip}
+            tooltip={`${data_url || "No URL"}`}
             {...props}
         />
+    );
+}
+
+function TrackChangesDetailItem({
+    kind,
+    ...props
+}: {
+    kind: string;
+} & BoxProps) {
+    const { extra_tracks, extra_items, candidate } = useTrackDiffContext();
+
+    const [open, setOpen] = useState(false);
+
+    const icon = <PenaltyTypeIcon type={kind} />;
+    let text = "Track Changes";
+    let i: string;
+    let color: string | undefined = undefined;
+    let tooltip: string | undefined = undefined;
+    let content: ReactNode | null = null;
+    switch (kind) {
+        case "track_changes":
+            content = <TrackChanges />;
+            if (candidate.penalties.includes("tracks")) {
+                // TODO: get number of changed tracks, but that is currently
+                // deeply nested in the subcomponent...
+                text = "Tracks changed";
+                color = "diffs.changed";
+                tooltip =
+                    "Shows which items (on disk) are mapped to tracks (from the candidate). Changes are highlighted in red and green.";
+            } else {
+                text = "No severe track changes";
+            }
+            break;
+        case "extra_items":
+            content = <ExtraTracks />;
+            if (candidate.penalties.includes("unmatched_tracks")) {
+                i = "item" + (extra_items.length !== 1 ? "s" : "");
+                text = `${extra_items.length} ${i} items on disk not part of the candidate`;
+                color = "diffs.changed";
+                tooltip =
+                    "Items that could not be matched to tracks, they will be ignored if this candidate is chosen.";
+            } else {
+                text = "All items found on disk";
+                content = undefined;
+            }
+            break;
+        case "extra_tracks":
+            content = <ExtraItems />;
+            if (candidate.penalties.includes("missing_tracks")) {
+                i = "track" + (extra_tracks.length !== 1 ? "s" : "");
+                text = `${extra_tracks.length} ${i} missing on disk`;
+                color = "diffs.changed";
+                tooltip =
+                    "Tracks that could not be matched to any items on disk (usually because they are missing).";
+            } else {
+                text = "All tracks found online";
+                content = undefined;
+            }
+            break;
+        default:
+            break;
+    }
+
+    return (
+        <>
+            <GenericDetailsItem
+                icon={icon}
+                label={text}
+                tooltip={tooltip}
+                labelColor={color}
+                onClick={() => {
+                    setOpen(true);
+                }}
+                {...props}
+            />
+            {content ? (
+                <Dialog
+                    open={open}
+                    onClose={() => {
+                        setOpen(false);
+                    }}
+                    title={text}
+                    title_icon={icon}
+                >
+                    <DialogContent>{content}</DialogContent>
+                </Dialog>
+            ) : null}
+        </>
     );
 }
 
