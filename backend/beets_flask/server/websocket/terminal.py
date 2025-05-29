@@ -14,6 +14,8 @@ https://www.man7.org/linux/man-pages/man1/tmux.1.html
 - If we want to prepare commands client side before sending the finished command, cf.:
 https://stackoverflow.com/questions/44447473/how-to-make-xterm-js-accept-input
 
+# TODO: Typing for socket events
+
 """
 
 from __future__ import annotations
@@ -124,7 +126,12 @@ async def emit_output_continuously(sleep_seconds=0.01):
             log.error(f"Error reading from pty: {e}")
             await sio.emit(
                 "ptyOutput",
-                {"output": f"\nError reading from pty: {e}", "x": 0, "y": 0},
+                {
+                    "output": f"\nError reading from pty: {e}",
+                    "x": 0,
+                    "y": 0,
+                    "history": history,
+                },
                 namespace="/terminal",
             )
             break
@@ -161,11 +168,6 @@ async def emit_cursor_position():
         await sio.emit("ptyCursorPosition", {"x": x, "y": y}, namespace="/terminal")
     except Exception as e:
         log.error(f"Error reading cursor position: {e}")
-        await sio.emit(
-            "cursorPosition",
-            {"cursor": f"\nError reading cursor position: {e}"},
-            namespace="/terminal",
-        )
 
 
 def _get_cursor_position():

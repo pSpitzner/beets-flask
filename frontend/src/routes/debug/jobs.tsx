@@ -3,7 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { jobsQueryOptions, queuesQueryOptions } from "@/api/monitor";
-import { JSONPretty } from "@/components/common/json";
+import { JSONPretty } from "@/components/common/debugging/json";
 import { PageWrapper } from "@/components/common/page";
 
 export const Route = createFileRoute("/debug/jobs")({

@@ -515,16 +515,8 @@ function ChosenCandidatesOverview({ session }: { session: SerializedSessionState
                 }}
             >
                 <Box>
-                    {session.tasks.map((task) => {
-                        return (
-                            <>
-                                <SelectedCandidate
-                                    task={task}
-                                    folderHash={session.folder_hash}
-                                    folderPath={session.folder_path}
-                                />
-                            </>
-                        );
+                    {session.tasks.map((task, index) => {
+                        return <SelectedCandidate task={task} key={index} />;
                     })}
                 </Box>
             </Box>

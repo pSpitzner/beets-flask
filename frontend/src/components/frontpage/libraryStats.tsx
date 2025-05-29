@@ -3,7 +3,7 @@ import { Box, Divider } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 
 import { libraryStatsQueryOptions } from "@/api/library";
-import { JSONPretty } from "@/components/common/json";
+import { JSONPretty } from "@/components/common/debugging/json";
 import { relativeTime } from "@/components/common/units/time";
 import {
     Card,

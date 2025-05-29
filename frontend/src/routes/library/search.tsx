@@ -9,12 +9,12 @@ import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { Album, Item } from "@/api/library";
+import { JSONPretty } from "@/components/common/debugging/json";
 import {
     SearchContextProvider,
     SearchType,
     useSearchContext,
 } from "@/components/common/hooks/useSearch";
-import { JSONPretty } from "@/components/common/json";
 import { Loading } from "@/components/common/loading";
 import { PageWrapper } from "@/components/common/page";
 import { ItemById } from "@/components/library/item";

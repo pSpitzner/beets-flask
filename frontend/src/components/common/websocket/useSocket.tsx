@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 
-import { StatusSocket } from "@/api/websocket";
+import { SocketEvents, StatusSocket, TerminalSocket } from "@/api/websocket";
 
-import { io, ManagerOptions, SocketOptions } from "socket.io-client";
+import { io, ManagerOptions, Socket, SocketOptions } from "socket.io-client";
 
 type SocketMapping = {
     status: StatusSocket;
+    terminal: TerminalSocket;
 };
 
 /**
@@ -25,13 +26,16 @@ type SocketMapping = {
  * const { socket, isConnected } = useSocket("myNamespace");
  * ```
  */
-export default function useSocket<N extends keyof SocketMapping>(
+export default function useSocket<N extends keyof SocketEvents>(
     namespace: N,
     options?: Partial<ManagerOptions & SocketOptions>
 ) {
     const url: string = `/${namespace}`;
 
-    const [socket, setSocket] = useState<SocketMapping[N] | null>(null);
+    const [socket, setSocket] = useState<Socket<
+        SocketEvents[N]["ServerToClientEvents"],
+        SocketEvents[N]["ClientToServerEvents"]
+    > | null>(null);
     const [isConnected, setIsConnected] = useState(false);
 
     // Create socket inline to allow multiple instances
@@ -41,7 +45,7 @@ export default function useSocket<N extends keyof SocketMapping>(
             transports: ["websocket"],
             path: "/socket.io",
             ...options,
-        });
+        }) as SocketMapping[N];
         setSocket(socket);
     }, [options, url]);
 
@@ -64,14 +68,12 @@ export default function useSocket<N extends keyof SocketMapping>(
         socket.on("connect", handleConnect);
         socket.on("disconnect", handleDisconnect);
         socket.on("connect_error", handleError);
-        socket.on("error", handleError);
         socket.connect();
 
         return () => {
             socket.off("connect", handleConnect);
             socket.off("disconnect", handleDisconnect);
             socket.off("connect_error", handleError);
-            socket.off("error", handleError);
             socket.disconnect();
         };
     }, [socket, namespace]);
