@@ -91,7 +91,11 @@ async def get_folder_art(url: str):
         return jsonify({"error": f"Path '{path}' does not exist."}), 404
 
     # Get first file in folder
-    files = [f for f in os.listdir(path) if f.endswith(AUDIO_EXTENSIONS)]
+    files = [
+        f
+        for f in os.listdir(path)
+        if f.endswith(tuple(["." + e for e in AUDIO_EXTENSIONS]))
+    ]
     if not files or len(files) < 1:
         return jsonify({"error": "No audio files found in folder."}), 404
 

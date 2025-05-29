@@ -17,7 +17,6 @@ from beets_flask.importer.progress import Progress
 from beets_flask.server.exceptions import InvalidUsageException, NotFoundException
 from beets_flask.server.routes.library.artwork import send_image
 from beets_flask.server.utility import pop_folder_params, pop_query_param
-from beets_flask.utility import AUDIO_EXTENSIONS
 from beets_flask.watchdog.inbox import (
     get_inbox_folders,
     get_inbox_for_path,

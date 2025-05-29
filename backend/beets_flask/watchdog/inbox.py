@@ -9,6 +9,7 @@ from watchdog.observers.polling import PollingObserver
 
 from beets_flask import invoker
 from beets_flask.config import get_config
+from beets_flask.database.models.states import SessionStateInDb
 from beets_flask.disk import (
     Folder,
     album_folders_from_track_paths,
@@ -27,7 +28,7 @@ from beets_flask.watchdog.eventhandler import AIOEventHandler, AIOWatchdog
 _inboxes: List[OrderedDict] = []
 
 
-def register_inboxes(timeout: float = 5, debounce: float = 30) -> AIOWatchdog | None:
+def register_inboxes(timeout: float = 1, debounce: float = 1) -> AIOWatchdog | None:
     """
     Register file system watcher to monitor configured inboxes.
 
@@ -74,15 +75,16 @@ def register_inboxes(timeout: float = 5, debounce: float = 30) -> AIOWatchdog | 
     signal.signal(signal.SIGTERM, lambda s, f: watchdog.stop())
     signal.signal(signal.SIGQUIT, lambda s, f: watchdog.stop())
 
-    # user would expect autotagging inboxes to automatically scan on first launch,
-    # we touch to trigger debounce and give sql time to init.
+    # user would expect autotagging inboxes to automatically scan on first launch
+    async def auto_tag_wait_for_workers(f: Path):
+        # HACK: checking if redis is ready was not trivial enough, so we just wait a bit.
+        await asyncio.sleep(10)
+        await auto_tag(f)
+
     for inbox in auto_inboxes:
         album_folders = all_album_folders(inbox["path"])
         for f in album_folders:
-            try:
-                os.utime(f, None)
-            except Exception as e:
-                log.error(f"Could not touch {f}. Check the permissions! {e}")
+            asyncio.create_task(auto_tag_wait_for_workers(f))
 
     return watchdog
 
@@ -172,8 +174,23 @@ async def auto_tag(path: Path, inbox_kind: str | None = None):
 
     folder = Folder.from_path(path)
 
-    # TODO: check status do not enqueue if already running
-    await enqueue(folder.hash, folder.full_path, kind=enq_kind)
+    # check if we have a session for this folder already.
+    # if so, skip imports but update the previews.
+    state = SessionStateInDb.get_by_hash_and_path(hash=None, path=folder.full_path)
+
+    should_enqueue = False
+    if state is None:
+        should_enqueue = True
+    else:
+        # keeps previews fresh when we have integrity warnings (i.e. content changed)
+        if enq_kind == invoker.EnqueueKind.PREVIEW and folder.hash != state.folder_hash:
+            should_enqueue = True
+
+    if should_enqueue:
+        log.info(f"Watchdog: Enqueuing {folder.full_path} as {enq_kind.value}")
+        await enqueue(folder.hash, folder.full_path, kind=enq_kind)
+    else:
+        log.info(f"Watchdog: skipping enqueue {folder.full_path}")
 
 
 # ------------------------------------------------------------------------------------ #
