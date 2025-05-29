@@ -149,17 +149,22 @@ async def auto_tag(path: Path, inbox_kind: str | None = None):
         If None, the configured autotag kind from the inbox this folder is in will be used.
     """
     inbox = get_inbox_for_path(path)
+    if inbox is None:
+        log.error(f"Path {path} is not in any inbox, skipping autotagging.")
+        return
 
-    if inbox and inbox_kind is None:
+    if inbox_kind is None:
         inbox_kind = inbox.get("autotag", None)
 
     # Infer enqueue kind from inbox kind
     enq_kind: invoker.EnqueueKind
+    enq_kwargs = {}
     match inbox_kind:
         case "preview":
             enq_kind = invoker.EnqueueKind.PREVIEW
         case "auto":
             enq_kind = invoker.EnqueueKind.IMPORT_AUTO
+            enq_kwargs["import_threshold"] = inbox.get("auto_threshold", None)
         case "bootleg":
             enq_kind = invoker.EnqueueKind.IMPORT_BOOTLEG
         case None:
@@ -188,7 +193,7 @@ async def auto_tag(path: Path, inbox_kind: str | None = None):
 
     if should_enqueue:
         log.info(f"Watchdog: Enqueuing {folder.full_path} as {enq_kind.value}")
-        await enqueue(folder.hash, folder.full_path, kind=enq_kind)
+        await enqueue(folder.hash, folder.full_path, kind=enq_kind, **enq_kwargs)
     else:
         log.info(f"Watchdog: skipping enqueue {folder.full_path}")
 
