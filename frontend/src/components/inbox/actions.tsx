@@ -121,19 +121,6 @@ export function FolderActionsSpeedDial() {
                 <Spacer />
 
                 <SpeedDialMutationAction
-                    icon={<ImportIcon />}
-                    tooltip="Import"
-                    // imports best candidate that is already present, independent of threshold
-                    // or retag & import, ignoring any configured thresholds
-                    mutationOptions={enqueueMutationOptions}
-                    mutateArgs={{
-                        socket,
-                        selected,
-                        kind: EnqueueKind.IMPORT_CANDIDATE,
-                    }}
-                />
-
-                <SpeedDialMutationAction
                     icon={<SourceTypeIcon type="asis" />}
                     tooltip="Import (bootleg)"
                     mutationOptions={enqueueMutationOptions}

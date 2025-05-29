@@ -43,7 +43,7 @@ def register_inboxes(timeout: float = 5, debounce: float = 30) -> AIOWatchdog | 
     """
     global _inboxes
     _inboxes = get_config()["gui"]["inbox"]["folders"].flatten().values()  # type: ignore
-    auto_inboxes = [i for i in _inboxes if i["autotag"]]
+    auto_inboxes = [i for i in _inboxes if i.get("autotag", None)]
 
     if os.environ.get("RQ_WORKER_ID", None):
         # only launch the observer on the main process
@@ -147,12 +147,8 @@ async def auto_tag(path: Path, inbox_kind: str | None = None):
     inbox = get_inbox_for_path(path)
 
     if inbox and inbox_kind is None:
-        inbox_kind = inbox["autotag"]
+        inbox_kind = inbox.get("autotag", None)
 
-    if inbox_kind is None:
-        raise ValueError(f"Autotagging kind not found for path: {path}")
-
-    log.error(f"Autotagging {path} with inbox {inbox} (kind={inbox_kind})")
     # Infer enqueue kind from inbox kind
     enq_kind: invoker.EnqueueKind
     match inbox_kind:
@@ -160,6 +156,11 @@ async def auto_tag(path: Path, inbox_kind: str | None = None):
             enq_kind = invoker.EnqueueKind.PREVIEW
         case "auto":
             enq_kind = invoker.EnqueueKind.IMPORT_AUTO
+        case "bootleg":
+            enq_kind = invoker.EnqueueKind.IMPORT_BOOTLEG
+        case None:
+            log.error(f"Autotagging kind not found for path: {path}")
+            return
         case False:
             log.debug(f"Skipping autotagging for {path} (inbox autotag = no).")
             return

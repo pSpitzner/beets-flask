@@ -148,7 +148,7 @@ export function SelectedCandidate({
     folderPath: string;
 } & BoxProps) {
     // Chosen candidate
-    const candidate = task.candidates.find(
+    const candidate = [...task.candidates, task.asis_candidate].find(
         (cand) => cand.id === task.chosen_candidate_id
     );
     if (!candidate) {

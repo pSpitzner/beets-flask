@@ -674,6 +674,9 @@ class ImportSession(BaseSession):
 
         # update task_state to keep track of the choice in the database
         task_state.chosen_candidate_state_id = candidate_state.id
+        log.debug(
+            f"Setting chosen candidate for task {task_state.id} to {candidate_state.id}"
+        )
 
         # Let plugins display info
         results = plugins.send("import_task_before_choice", session=self, task=task)
@@ -767,11 +770,17 @@ class BootlegImportSession(ImportSession):
 
         import_overlay["group_albums"] = True
         import_overlay["autotag"] = False
-        import_overlay["search_ids"] = []
+        import_overlay["search_ids"] = None
 
         config_overlay["import"] = import_overlay
 
         super().__init__(state, config_overlay, **kwargs)
+
+        # overwrite the default action for all tasks
+        self.candidate_ids = parse_task_id_mapping(
+            {"*": CandidateChoiceFallback.ASIS},
+            CandidateChoiceFallback.ASIS,
+        )
 
 
 class AutoImportSession(ImportSession):
