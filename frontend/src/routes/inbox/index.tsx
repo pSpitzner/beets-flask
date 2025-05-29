@@ -200,6 +200,11 @@ function InboxCard({ folder }: { folder: Folder }) {
               };
     }, [config, folder.full_path]);
 
+    const innerFolders = useMemo(() => {
+        // Filter out folders that are not albums or files
+        return folder.children.filter((f) => f.type === "directory");
+    }, [folder.children]);
+
     return (
         <Card sx={{ width: "100%", padding: 2 }}>
             <CardHeader
@@ -262,7 +267,24 @@ function InboxCard({ folder }: { folder: Folder }) {
                 }}
             >
                 <GridWrapper>
-                    <FolderComponent folder={folder} unSelectable />
+                    {/* Only show inner folders */}
+                    {innerFolders.map((innerFolder) => (
+                        <FolderComponent
+                            key={innerFolder.full_path}
+                            folder={innerFolder}
+                        />
+                    ))}
+                    {innerFolders.length === 0 && (
+                        <Box
+                            sx={{
+                                gridColumn: "1 / -1",
+                                textAlign: "center",
+                                color: "secondary.muted",
+                            }}
+                        >
+                            No folders in this inbox.
+                        </Box>
+                    )}
                 </GridWrapper>
                 <SelectedStats />
             </CardContent>

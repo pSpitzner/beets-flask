@@ -28,7 +28,7 @@ from beets_flask.watchdog.eventhandler import AIOEventHandler, AIOWatchdog
 _inboxes: List[OrderedDict] = []
 
 
-def register_inboxes(timeout: float = 1, debounce: float = 1) -> AIOWatchdog | None:
+def register_inboxes(timeout: float = 2.5, debounce: float = 30) -> AIOWatchdog | None:
     """
     Register file system watcher to monitor configured inboxes.
 
@@ -45,7 +45,6 @@ def register_inboxes(timeout: float = 1, debounce: float = 1) -> AIOWatchdog | N
     """
     global _inboxes
     _inboxes = get_config()["gui"]["inbox"]["folders"].flatten().values()  # type: ignore
-    auto_inboxes = [i for i in _inboxes if i.get("autotag", None)]
 
     if os.environ.get("RQ_WORKER_ID", None):
         # only launch the observer on the main process
@@ -53,7 +52,7 @@ def register_inboxes(timeout: float = 1, debounce: float = 1) -> AIOWatchdog | N
         return
 
     # Return early if no inboxes are configured.
-    if len(auto_inboxes) == 0:
+    if len(_inboxes) == 0:
         return
 
     # One observer for all inboxes.
@@ -62,7 +61,7 @@ def register_inboxes(timeout: float = 1, debounce: float = 1) -> AIOWatchdog | N
     # timeout/debounce in seconds
 
     watchdog = AIOWatchdog(
-        paths=[Path(i["path"]) for i in auto_inboxes],
+        paths=[Path(i["path"]) for i in _inboxes],
         handler=handler,
         observer=observer,
     )
@@ -80,6 +79,8 @@ def register_inboxes(timeout: float = 1, debounce: float = 1) -> AIOWatchdog | N
         # HACK: checking if redis is ready was not trivial enough, so we just wait a bit.
         await asyncio.sleep(10)
         await auto_tag(f)
+
+    auto_inboxes = [i for i in _inboxes if i.get("autotag", None)]
 
     for inbox in auto_inboxes:
         album_folders = all_album_folders(inbox["path"])
@@ -167,11 +168,8 @@ async def auto_tag(path: Path, inbox_kind: str | None = None):
             enq_kwargs["import_threshold"] = inbox.get("auto_threshold", None)
         case "bootleg":
             enq_kind = invoker.EnqueueKind.IMPORT_BOOTLEG
-        case None:
-            log.error(f"Autotagging kind not found for path: {path}")
-            return
-        case False:
-            log.debug(f"Skipping autotagging for {path} (inbox autotag = no).")
+        case False | None:
+            log.debug(f"Autotagging disabled for {path}, skipping.")
             return
         case _:
             log.error(f"Unknown autotagging kind {inbox_kind} for {path}")
