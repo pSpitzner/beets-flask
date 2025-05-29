@@ -18,6 +18,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { albumsByArtistQueryOptions } from "@/api/library";
 import { Search } from "@/components/common/inputs/search";
 import { CoverArt } from "@/components/library/coverArt";
+import {
+    FixedGrid,
+    FixedGridChildren,
+    FixedGridChildrenProps,
+    FixedGridProps,
+} from "@/components/library/viewer/DataView";
 import { AlbumResponseMinimal } from "@/pythonTypes";
 
 export const Route = createFileRoute("/library/(browse)/artists/$artist")({
@@ -224,129 +230,91 @@ function AlbumsViewer({
     );
 }
 
+function AlbumsGridRow({ rowData }: FixedGridChildrenProps<AlbumResponseMinimal>) {
+    return rowData.map((album) => (
+        <Link
+            key={album.name}
+            to={`/library/album/$albumId`}
+            params={{ albumId: album.id }}
+        >
+            <Box
+                sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    padding: 1,
+                    width: "200px",
+                    height: "200px",
+                    position: "relative",
+                }}
+            >
+                {/* Album cover */}
+                <CoverArt
+                    type="album"
+                    beetsId={album.id}
+                    sx={{
+                        maxWidth: "100%",
+                        maxHeight: "100%",
+                        width: "200px",
+                        height: "200px",
+                        m: 0,
+                    }}
+                />
+
+                {/* Banner for album title and hover effect*/}
+                <Box
+                    sx={(theme) => ({
+                        position: "absolute",
+                        bottom: theme.spacing(1),
+                        left: theme.spacing(1),
+                        right: 0,
+                        height: `calc(100% - ${theme.spacing(2)})`,
+                        width: `calc(100% - ${theme.spacing(2)})`,
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "flex-end",
+                        overflow: "hidden",
+                        backdropFilter: "blur(0px)",
+                        ":hover": {
+                            backdropFilter: "blur(2px)",
+                            transition: "all 0.3s",
+
+                            ">*": {
+                                transition: "all 0.3s",
+                                background: theme.palette.primary.muted,
+                            },
+                            ">*>*": {
+                                transition: "all 0.3s",
+                                fontWeight: "bold",
+                                color: theme.palette.primary.contrastText,
+                            },
+                        },
+                    })}
+                >
+                    <Box
+                        sx={(theme) => ({
+                            width: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            backdropFilter: "blur(3px)",
+                            background: alpha(theme.palette.primary.muted!, 0.3),
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                        })}
+                    >
+                        <Typography variant="body1">{album.name}</Typography>
+                    </Box>
+                </Box>
+            </Box>
+        </Link>
+    ));
+}
+
 function AlbumsGrid({ albums }: { albums: AlbumResponseMinimal[] }): JSX.Element {
     return (
-        <AutoSizer defaultHeight={50}>
-            {({ height, width }) => {
-                // Split all album covers by row to fit width
-                const nColumns = Math.floor(width / 200);
-                const nRows = Math.ceil(albums.length / nColumns);
-
-                return (
-                    <FixedSizeList
-                        itemSize={200}
-                        height={height}
-                        width={width}
-                        itemCount={nRows}
-                    >
-                        {({ index, style }) => {
-                            const albumsSlice = albums.slice(
-                                index * nColumns,
-                                (index + 1) * nColumns
-                            );
-
-                            return (
-                                <Box
-                                    sx={{
-                                        display: "flex",
-
-                                        ...style,
-                                    }}
-                                >
-                                    {albumsSlice.map((album) => (
-                                        <Link
-                                            key={album.name}
-                                            to={`/library/album/$albumId`}
-                                            params={{ albumId: album.id }}
-                                        >
-                                            <Box
-                                                sx={{
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    padding: 1,
-                                                    width: "200px",
-                                                    height: "200px",
-                                                    position: "relative",
-                                                }}
-                                            >
-                                                {/* Album cover */}
-                                                <CoverArt
-                                                    type="album"
-                                                    beetsId={album.id}
-                                                    sx={{
-                                                        maxWidth: "100%",
-                                                        maxHeight: "100%",
-                                                        width: "200px",
-                                                        height: "200px",
-                                                        m: 0,
-                                                    }}
-                                                />
-
-                                                {/* Banner for album title and hover effect*/}
-                                                <Box
-                                                    sx={(theme) => ({
-                                                        position: "absolute",
-                                                        bottom: theme.spacing(1),
-                                                        left: theme.spacing(1),
-                                                        right: 0,
-                                                        height: `calc(100% - ${theme.spacing(2)})`,
-                                                        width: `calc(100% - ${theme.spacing(2)})`,
-                                                        display: "flex",
-                                                        justifyContent: "center",
-                                                        alignItems: "flex-end",
-                                                        overflow: "hidden",
-                                                        backdropFilter: "blur(0px)",
-                                                        ":hover": {
-                                                            backdropFilter: "blur(2px)",
-                                                            transition: "all 0.3s",
-
-                                                            ">*": {
-                                                                transition: "all 0.3s",
-                                                                background:
-                                                                    theme.palette
-                                                                        .primary.muted,
-                                                            },
-                                                            ">*>*": {
-                                                                transition: "all 0.3s",
-                                                                fontWeight: "bold",
-                                                                color: theme.palette
-                                                                    .primary
-                                                                    .contrastText,
-                                                            },
-                                                        },
-                                                    })}
-                                                >
-                                                    <Box
-                                                        sx={(theme) => ({
-                                                            width: "100%",
-                                                            display: "flex",
-                                                            alignItems: "center",
-                                                            justifyContent: "center",
-                                                            backdropFilter: "blur(3px)",
-                                                            background: alpha(
-                                                                theme.palette.primary
-                                                                    .muted!,
-                                                                0.3
-                                                            ),
-                                                            overflow: "hidden",
-                                                            textOverflow: "ellipsis",
-                                                        })}
-                                                    >
-                                                        <Typography variant="body1">
-                                                            {album.name}
-                                                        </Typography>
-                                                    </Box>
-                                                </Box>
-                                            </Box>
-                                        </Link>
-                                    ))}
-                                </Box>
-                            );
-                        }}
-                    </FixedSizeList>
-                );
-            }}
-        </AutoSizer>
+        <FixedGrid data={albums} itemHeight={200} itemWidth={200}>
+            {AlbumsGridRow}
+        </FixedGrid>
     );
 }
 
