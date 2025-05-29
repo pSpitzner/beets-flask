@@ -163,13 +163,6 @@ export interface InboxStats {
 	last_created: Date | null;
 }
 
-export interface SerializedException {
-	type: string;
-	message: string;
-	description?: null | string;
-	trace?: null | string;
-}
-
 export enum FolderStatus {
 	UNKNOWN = -2,
 	FAILED = -1,
@@ -202,6 +195,18 @@ export interface Folder {
 	full_path: string;
 	hash: string;
 	is_album: boolean;
+}
+
+export interface SerializedException {
+	type: string;
+	message: string;
+	description?: null | string;
+	trace?: null | string;
+}
+
+export interface FileSystemUpdate {
+	exc: SerializedException | null;
+	event: "file_system_update";
 }
 
 export interface ItemResponseMinimal {

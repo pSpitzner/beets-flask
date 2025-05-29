@@ -46,6 +46,12 @@ class FolderStatusUpdate:
     event: Literal["folder_status_update"] = "folder_status_update"
 
 
+@dataclass
+class FileSystemUpdate:
+    exc: SerializedException | None = None
+    event: Literal["file_system_update"] = "file_system_update"
+
+
 namespace = "/status"
 
 
@@ -56,23 +62,31 @@ async def connect(sid, *args):
     log.debug(f"StatusSocket sid {sid} connected")
 
 
+# ---------------------------- Emit to all clients --------------------------- #
+
+
 @sio.on("folder_status_update", namespace=namespace)
 @sio_catch_exception
-async def update(sid, data):
-    """Allows to propagate status updates to all clients."""
-
-    # Emit to all clients
+async def folder_update(sid, data):
+    log.debug(f"folder_status_update: {data}")
     await sio.emit("folder_status_update", data, namespace=namespace)
 
 
 @sio.on("job_status_update", namespace=namespace)
 @sio_catch_exception
 async def job_update(sid, data):
-    """Allows to propagate status updates to all clients."""
-    log.debug(f"Job update: {data}")
-
-    # Emit to all clients
+    log.debug(f"job_status_update: {data}")
     await sio.emit("job_status_update", data, namespace=namespace)
+
+
+@sio.on("file_system_update", namespace=namespace)
+@sio_catch_exception
+async def fs_update(sid, data):
+    log.debug(f"file_system_update: {data}")
+    await sio.emit("file_system_update", data, namespace=namespace)
+
+
+# ------------------------------------- * ------------------------------------ #
 
 
 @sio.on("*", namespace=namespace)
@@ -82,7 +96,9 @@ async def any_event(event, sid, data):
     log.debug(f"StatusSocket sid {sid} unhandled event {event} with data {data}")
 
 
-async def send_status_update(status: FolderStatusUpdate | JobStatusUpdate):
+async def send_status_update(
+    status: FolderStatusUpdate | JobStatusUpdate | FileSystemUpdate,
+):
     """Send a status update to propagate to all clients.
 
     Allows to pass an exception as part of the status update.

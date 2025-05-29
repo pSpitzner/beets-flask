@@ -17,6 +17,7 @@ from beets_flask.disk import (
 )
 from beets_flask.invoker import enqueue
 from beets_flask.logger import log
+from beets_flask.server.websocket.status import FileSystemUpdate, send_status_update
 from beets_flask.watchdog.eventhandler import AIOEventHandler, AIOWatchdog
 
 # ------------------------------------------------------------------------------------ #
@@ -106,7 +107,7 @@ class InboxHandler(AIOEventHandler):
 
         # trigger cache clear and gui update of inbox directories
         path_to_folder.cache.clear()  # type: ignore
-        # FIXME: update_client_view("inbox")
+        status_update = asyncio.create_task(send_status_update(FileSystemUpdate()))
 
         try:
             album_folder = album_folders_from_track_paths([fullpath])[0]
@@ -124,6 +125,7 @@ class InboxHandler(AIOEventHandler):
                 log.error(f"Error cancelling previous task for {album_folder_key}: {e}")
 
         self.debounce[album_folder_key] = task
+        await status_update
 
     async def task_func(self, album_folder: Path):
         await asyncio.sleep(self.debounce_window)

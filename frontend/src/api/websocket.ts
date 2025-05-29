@@ -1,4 +1,4 @@
-import { FolderStatusUpdate, JobStatusUpdate } from "@/pythonTypes";
+import { FileSystemUpdate,FolderStatusUpdate, JobStatusUpdate } from "@/pythonTypes";
 
 import type { Socket } from "socket.io-client";
 
@@ -7,6 +7,7 @@ interface Status_ServerToClientEvents {
     // the events defined here should help with type safety :)
     folder_status_update: (data: FolderStatusUpdate) => void;
     job_status_update: (data: JobStatusUpdate) => void;
+    file_system_update: (data: FileSystemUpdate) => void;
     error: (error: unknown) => void;
 }
 

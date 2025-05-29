@@ -38,7 +38,7 @@ export default function useSocket<N extends keyof SocketMapping>(
     useEffect(() => {
         const socket = io(url, {
             autoConnect: false,
-            //transports: ["websocket"],
+            transports: ["websocket"],
             path: "/socket.io",
             ...options,
         });
