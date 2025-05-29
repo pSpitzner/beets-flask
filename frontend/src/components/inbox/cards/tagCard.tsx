@@ -117,7 +117,10 @@ function UserSelection({ session }: { session: SerializedSessionState }) {
             // starting with asis than sorted by distance/penalty
             const m = new Map<string, string>();
             session.tasks.forEach((task) => {
-                const candidates = task.candidates;
+                const candidates = [
+                    ...currentTask.candidates,
+                    currentTask.asis_candidate,
+                ];
                 if (candidates.length >= 1) {
                     m.set(task.id, candidates[0].id);
                 }

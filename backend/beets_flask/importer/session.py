@@ -336,7 +336,9 @@ class BaseSession(importer.ImportSession, ABC):
         """For all candidates, check if they have duplicates in the library."""
         task_state = self.state.get_task_state_for_task_raise(task)
 
-        for idx, cs in enumerate(task_state.candidate_states):
+        for idx, cs in enumerate(
+            task_state.candidate_states + [task_state.asis_candidate]
+        ):
             # This is a mutable operation i.e. cs is modfied here!
             duplicates = cs.identify_duplicates(self.lib)
 

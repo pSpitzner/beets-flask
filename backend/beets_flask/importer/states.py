@@ -12,6 +12,7 @@ from uuid import uuid4 as uuid
 
 import beets.ui.commands as uicommands
 from beets import autotag, importer, library
+from beets.ui import _open_library
 from deprecated import deprecated
 
 from beets_flask.config import get_config
@@ -458,6 +459,10 @@ class CandidateState(BaseState):
         )
         candidate = cls(match=match, task_state=task_state)
         candidate.id = task_state.asis_candidate_id
+        # As the asis candidate state is not maintained we not to
+        # recheck if it is a duplicate
+        candidate.identify_duplicates()
+
         return candidate
 
     # --------------------- Helper to lift / unnset from match to -------------------- #
@@ -544,13 +549,18 @@ class CandidateState(BaseState):
 
     # ------------------------------------ utility ----------------------------------- #
 
-    def identify_duplicates(self, lib: library.Library) -> List[library.Album]:
+    def identify_duplicates(
+        self, lib: library.Library | None = None
+    ) -> List[library.Album]:
         """Find duplicates.
 
         Copy of beets' `task.find_duplicates` but works on any candidates' match.
 
         # FIXME: Tracks are not checked for duplicates. Tbh noone cares about tracks anyways
         """
+        if lib is None:
+            lib = _open_library(get_config())
+
         info = self.match.info.copy()
         info["albumartist"] = info["artist"]
 
