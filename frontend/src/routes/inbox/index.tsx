@@ -32,15 +32,13 @@ import {
     FileTypeIcon,
     FolderStatusIcon,
     FolderTypeIcon,
+    InboxTypeIcon,
     PenaltyTypeIcon,
     SourceTypeIcon,
 } from "@/components/common/icons";
 import { PageWrapper } from "@/components/common/page";
 import { CardHeader } from "@/components/frontpage/statsCard";
-import {
-    FolderActionsSpeedDial,
-    RefreshAllFoldersButton,
-} from "@/components/inbox/actions";
+import { RefreshAllFoldersButton } from "@/components/inbox/actions";
 import {
     FolderComponent,
     GridWrapper,
@@ -79,39 +77,20 @@ function RouteComponent() {
                 })}
             >
                 <PageHeader inboxes={inboxes} />
-                <FolderSelectionProvider>
-                    <Box
-                        sx={{
-                            width: "100%",
-                            display: "flex",
-                            gap: 2,
-                            flexDirection: "column",
-                        }}
-                    >
-                        {inboxes.map((folder) => (
+                <Box
+                    sx={{
+                        width: "100%",
+                        display: "flex",
+                        gap: 2,
+                        flexDirection: "column",
+                    }}
+                >
+                    {inboxes.map((folder) => (
+                        <FolderSelectionProvider>
                             <InboxCard key={folder.full_path} folder={folder} />
-                        ))}
-                        <Box
-                            sx={(theme) => ({
-                                maxWidth: theme.breakpoints.values["desktop"],
-                                width: "100%",
-                                display: "flex",
-                                position: "absolute",
-                                bottom: theme.spacing(2),
-                                right: theme.spacing(2),
-                                justifyContent: "flex-end",
-                                [theme.breakpoints.up("laptop")]: {
-                                    justifyContent: "flex-start",
-                                    position: "relative",
-                                    bottom: "inherit",
-                                    right: "inherit",
-                                },
-                            })}
-                        >
-                            <FolderActionsSpeedDial />
-                        </Box>
-                    </Box>
-                </FolderSelectionProvider>
+                        </FolderSelectionProvider>
+                    ))}
+                </Box>
             </PageWrapper>
         </>
     );
@@ -205,16 +184,73 @@ function InboxCard({ folder }: { folder: Folder }) {
         return folder.children.filter((f) => f.type === "directory");
     }, [folder.children]);
 
+    const threshold = folderConfig.auto_threshold ?? config.match.strong_rec_thresh;
+
+    let tooltip: string;
+    switch (folderConfig.autotag) {
+        case "auto":
+            tooltip =
+                "Automatic tagging and import enabled. " +
+                (1 - threshold) * 100 +
+                "% threshold.";
+            break;
+        case "preview":
+            tooltip = "Automatic tagging enabled, but no import.";
+            break;
+        case "bootleg":
+            tooltip = "Import as-is, and split albums by meta-data.";
+            break;
+        default:
+            tooltip = "No automatic tagging or import enabled.";
+            break;
+    }
+
     return (
         <Card sx={{ width: "100%", padding: 2 }}>
             <CardHeader
                 key={folder.full_path}
-                icon={<InboxIcon size={20} />}
+                icon={
+                    <Tooltip title={tooltip}>
+                        <InboxTypeIcon
+                            size={24}
+                            type={folderConfig.autotag || undefined}
+                        />
+                    </Tooltip>
+                }
+                dividerPos="70%"
                 color="secondary.main"
             >
-                <Typography variant="body1" sx={{ fontWeight: "bold", m: 0, p: 0 }}>
-                    {folderConfig.name}
-                </Typography>
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "flex-end",
+                        width: "100%",
+                        justifyContent: "space-between",
+                    }}
+                >
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            flexGrow: 1,
+                            m: 0,
+                            p: 0,
+                            fontWeight: "bold",
+                            paddingLeft: 2,
+                        }}
+                    >
+                        {folderConfig.path.replaceAll("/", " / ")}
+                    </Typography>
+                    <Typography
+                        variant="body1"
+                        sx={{
+                            fontWeight: "bold",
+                            m: 0,
+                            p: 0,
+                        }}
+                    >
+                        {folderConfig.name}
+                    </Typography>
+                </Box>
             </CardHeader>
             <CardContent
                 sx={{

@@ -492,9 +492,11 @@ function RouteComponent() {
                     Auto tagging (preview + import)
                     <InboxTypeIcon size={20} type={"auto"} />
                     Preview only
-                    <InboxTypeIcon size={20} type={"auto"} />
+                    <InboxTypeIcon size={20} type={"preview"} />
                     Bootleg
-                    <InboxTypeIcon size={20} type={"auto"} />
+                    <InboxTypeIcon size={20} type={"bootleg"} />
+                    Off (default)
+                    <InboxTypeIcon size={20} type={"off"} />
                 </Box>
             </Box>
         </PageWrapper>

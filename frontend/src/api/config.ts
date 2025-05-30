@@ -8,7 +8,8 @@ export interface MinimalConfig {
             folders: Record<
                 string,
                 {
-                    autotag: false | "preview" | "import";
+                    autotag: false | "preview" | "auto" | "bootleg";
+                    auto_threshold?: number;
                     name: string;
                     path: string;
                 }

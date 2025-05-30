@@ -20,21 +20,26 @@ import {
     HashIcon,
     HistoryIcon,
     HourglassIcon,
+    Icon,
     InboxIcon,
     LayoutListIcon,
     ListChecksIcon,
     LucideProps,
     Mic2Icon,
+    RocketIcon,
+    TagIcon,
     TagsIcon,
     Tally5Icon,
     TriangleAlertIcon,
     UserRoundIcon,
 } from "lucide-react";
+import { sneaker } from "@lucide/lab";
 import { CircularProgress, Tooltip } from "@mui/material";
 
 import { FolderStatus } from "@/pythonTypes";
 
 import { GrowingRipple } from "./loading";
+import { MinimalConfig } from "@/api/config";
 
 /** Icon to show a folder, shows a disc icon if the folder is an album.
  *
@@ -234,7 +239,18 @@ function Spotify(props: LucideProps) {
     );
 }
 
-export function InboxTypeIcon({ type, ...props }: { type: string } & LucideProps) {
+export function InboxTypeIcon({
+    type,
+    ...props
+}: { type?: MinimalConfig["gui"]["inbox"]["folders"][0]["autotag"] } & LucideProps) {
+    switch (type) {
+        case "bootleg":
+            return <Icon iconNode={sneaker} {...props} />;
+        case "preview":
+            return <TagIcon {...props} />;
+        case "auto":
+            return <RocketIcon {...props} />;
+    }
     return <InboxIcon {...props} />;
 }
 

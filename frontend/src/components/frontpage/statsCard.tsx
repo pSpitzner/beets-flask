@@ -228,6 +228,7 @@ export function CardHeader({
     color = "primary.main",
     reverse = false,
     sx,
+    dividerPos = "50%",
     size = "medium",
     ...props
 }: {
@@ -235,6 +236,7 @@ export function CardHeader({
     children: ReactNode;
     color?: string;
     reverse?: boolean;
+    dividerPos?: string;
     size?: "small" | "medium" | "large";
 } & BoxProps) {
     let wh = 40;
@@ -247,7 +249,10 @@ export function CardHeader({
     return (
         <Box
             sx={[
-                { position: "relative", flexGrow: 1 },
+                {
+                    position: "relative",
+                    flexGrow: 1,
+                },
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                 ...(Array.isArray(sx) ? sx : [sx]),
             ]}
@@ -256,7 +261,7 @@ export function CardHeader({
             <Divider
                 sx={{
                     position: "absolute",
-                    top: "calc(50% - 1px)",
+                    top: `calc(${dividerPos} -  1px)`,
                     width: "100%",
                     backgroundColor: color,
                     borderBottomWidth: 2,
