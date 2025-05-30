@@ -209,59 +209,17 @@ function InboxCard({ folder }: { folder: Folder }) {
         <Card sx={{ width: "100%", padding: 2 }}>
             <CardHeader
                 key={folder.full_path}
-                icon={<InboxIcon size={30} />}
+                icon={<InboxIcon size={20} />}
                 color="secondary.main"
             >
-                <Box
-                    sx={{
-                        height: "56px",
-                        position: "relative",
-                        mr: "auto",
-                        backgroundColor: "secondary.main",
-                        color: "secondary.contrastText",
-                        display: "flex",
-                        justifyContent: "center",
-                        paddingRight: 1,
-                        borderTopRightRadius: 3,
-                        borderBottomRightRadius: 3,
-                        flexDirection: "column",
-                        alignItems: "flex-start",
-                        ":after": {
-                            position: "absolute",
-                            content: "''",
-                            display: "block",
-                            width: "5px",
-                            left: "-5px",
-                            top: 0,
-                            height: "100%",
-                            backgroundColor: "secondary.main",
-                        },
-                    }}
-                >
-                    <Typography variant="body1" sx={{ fontWeight: "bold", m: 0, p: 0 }}>
-                        {folderConfig.name}
-                    </Typography>
-                    <Typography
-                        variant="caption"
-                        component="code"
-                        fontFamily="monospace"
-                        sx={{
-                            borderRadius: 1,
-                            color: "black",
-                        }}
-                    >
-                        {folder.full_path}
-                    </Typography>
-                </Box>
-                <AutoTagIcon
-                    autotag={folderConfig.autotag}
-                    sx={{ marginLeft: "auto", marginTop: "auto", marginBottom: "auto" }}
-                />
+                <Typography variant="body1" sx={{ fontWeight: "bold", m: 0, p: 0 }}>
+                    {folderConfig.name}
+                </Typography>
             </CardHeader>
             <CardContent
                 sx={{
                     paddingInline: 1,
-                    paddingTop: 2,
+                    paddingTop: 1,
                     m: 0,
                     paddingBottom: "0 !important",
                 }}

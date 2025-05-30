@@ -9,6 +9,7 @@ import {
     FileTypeIcon,
     FolderStatusIcon,
     FolderTypeIcon,
+    InboxTypeIcon,
     PenaltyTypeIcon,
     SelectAllIcon,
     SourceTypeIcon,
@@ -463,6 +464,37 @@ function RouteComponent() {
                     <CollapseAllIcon size={20} />
                     Expand all
                     <ExpandAllIcon size={20} />
+                </Box>
+            </Box>
+            <Box>
+                <Typography
+                    variant="h2"
+                    gutterBottom
+                    sx={{ fontSize: "1.5rem", fontWeight: "bold" }}
+                >
+                    Inbox Types
+                </Typography>
+                <Typography variant="body1">
+                    Inbox types show the configured type of the inbox. This is user
+                    configurable and shows how the inbox behavior.
+                </Typography>
+                <Box
+                    sx={{
+                        display: "grid",
+                        gridTemplateColumns: "auto auto",
+                        columnGap: 2,
+                        justifyContent: "flex-start",
+                        alignItems: "center",
+                        paddingX: 2,
+                        paddingY: 1,
+                    }}
+                >
+                    Auto tagging (preview + import)
+                    <InboxTypeIcon size={20} type={"auto"} />
+                    Preview only
+                    <InboxTypeIcon size={20} type={"auto"} />
+                    Bootleg
+                    <InboxTypeIcon size={20} type={"auto"} />
                 </Box>
             </Box>
         </PageWrapper>

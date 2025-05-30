@@ -7,7 +7,7 @@
 
 import { FolderClockIcon } from "lucide-react";
 import { useMemo } from "react";
-import { styled, Tooltip, useTheme } from "@mui/material";
+import { Box, darken, styled, Tooltip, useTheme } from "@mui/material";
 import Chip, { ChipProps } from "@mui/material/Chip";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -18,24 +18,50 @@ import { Folder, FolderStatus, Progress } from "@/pythonTypes";
 
 import { FolderStatusIcon, PenaltyTypeIcon, SourceTypeIconWithTooltip } from "./icons";
 
-export const StyledChip = styled(Chip)(({ theme }) => ({
-    paddingLeft: theme.spacing(0.5),
-    display: "flex",
-    justifyContent: "space-between",
-    "& .MuiChip-label": {
-        paddingLeft: theme.spacing(1.0),
-    },
-    [theme.breakpoints.down("tablet")]: {
-        paddingLeft: 0,
-        //Remove border on small screens
-        border: "none",
+export const StyledChip = styled(Chip, {
+    shouldForwardProp: (prop) => prop !== "color",
+})(({ theme, color }) => {
+    let frontColor = theme.palette.grey[400];
+    let backColor = darken(theme.palette.grey[500], 0.7);
+    if (color != "default") {
+        frontColor =
+            color && theme.palette[color]
+                ? theme.palette[color].light
+                : theme.palette.text.primary;
+        backColor =
+            color && theme.palette[color]
+                ? darken(theme.palette[color].main, 0.7)
+                : theme.palette.grey[300];
+    }
 
-        //Remove label on small screens
+    return {
+        paddingLeft: theme.spacing(0.5),
+        display: "flex",
+        justifyContent: "space-between",
+        border: "none",
+        backgroundColor: backColor,
+        borderColor: frontColor,
+        color: frontColor,
+        borderRadius: theme.spacing(1.0),
         "& .MuiChip-label": {
-            display: "none",
+            paddingLeft: theme.spacing(1.0),
         },
-    },
-}));
+        "& .MuiChip-icon": {
+            color: frontColor,
+        },
+        [theme.breakpoints.down("tablet")]: {
+            paddingLeft: 0,
+            //Remove border on small screens
+            border: "none",
+            backgroundColor: "transparent",
+
+            //Remove label on small screens
+            "& .MuiChip-label": {
+                display: "none",
+            },
+        },
+    };
+});
 
 /** Match of a candidate.
  *
@@ -64,14 +90,60 @@ export function MatchChip({
     }
 
     return (
-        <StyledChip
-            icon={<SourceTypeIconWithTooltip type={source} size={theme.iconSize.sm} />}
-            label={label}
-            size="small"
-            variant="outlined"
-            color={color}
-            {...props}
-        />
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+            <StyledChip
+                label={label}
+                size="small"
+                color={color}
+                {...props}
+                sx={{
+                    ...props.sx,
+                    paddingLeft: theme.spacing(0.5),
+                    paddingRight: theme.spacing(0.7),
+                    zIndex: 0,
+                    height: theme.spacing(2.5),
+                    "& .MuiChip-label": {
+                        fontWeight: "500",
+                        fontFamily: "monospace",
+                    },
+                    [theme.breakpoints.down("tablet")]: {
+                        "& .MuiChip-label": {
+                            display: "block !important",
+                        },
+                    },
+                }}
+            />
+            <StyledChip
+                icon={
+                    <SourceTypeIconWithTooltip type={source} size={theme.iconSize.sm} />
+                }
+                label=""
+                size="small"
+                color={"default"}
+                {...props}
+                sx={{
+                    ...props.sx,
+                    marginLeft: theme.spacing(-1.0),
+                    position: "relative",
+                    paddingInline: theme.spacing(0.7),
+                    zIndex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    "& .MuiChip-label": {
+                        display: "none",
+                    },
+                    "& .MuiChip-icon": {
+                        position: "relative",
+                        display: "block",
+                        margin: 0,
+                        padding: "0 !important",
+                    },
+                    [theme.breakpoints.down("tablet")]: {
+                        paddingRight: 0,
+                    },
+                }}
+            />
+        </Box>
     );
 }
 
@@ -107,7 +179,7 @@ export function DuplicateChip({ folder, ...props }: { folder: Folder } & ChipPro
     return (
         <Tooltip title="This album is already in your beets library!">
             <StyledChip
-                icon={<PenaltyTypeIcon type="duplicate" size={theme.iconSize.sm} />}
+                icon={<PenaltyTypeIcon type="duplicate" size={theme.iconSize.sm - 2} />}
                 label="Duplicate"
                 size="small"
                 color="error"

@@ -29,7 +29,7 @@ export function LibraryStatsCard({ libraryStats }: { libraryStats: LibraryStats 
     return (
         <Card sx={{ padding: 2 }}>
             {/* Top bar with accent */}
-            <CardHeader icon={<LibraryIcon size={36} />}>
+            <CardHeader icon={<LibraryIcon size={36} />} size="large">
                 <Typography
                     sx={{
                         fontSize: 14,
@@ -128,7 +128,11 @@ export function LibraryStatsCard({ libraryStats }: { libraryStats: LibraryStats 
 export function InboxStatsCard({ inboxStats }: { inboxStats: InboxStats }) {
     return (
         <Card sx={{ padding: 2 }}>
-            <CardHeader icon={<InboxIcon size={36} />} color="secondary.main">
+            <CardHeader
+                icon={<InboxIcon size={36} />}
+                color="secondary.main"
+                size="large"
+            >
                 <Typography
                     sx={{
                         fontSize: 14,
@@ -224,13 +228,22 @@ export function CardHeader({
     color = "primary.main",
     reverse = false,
     sx,
+    size = "medium",
     ...props
 }: {
     icon: ReactNode;
     children: ReactNode;
     color?: string;
     reverse?: boolean;
+    size?: "small" | "medium" | "large";
 } & BoxProps) {
+    let wh = 40;
+    if (size === "small") {
+        wh = 32;
+    } else if (size === "large") {
+        wh = 52;
+    }
+
     return (
         <Box
             sx={[
@@ -263,8 +276,8 @@ export function CardHeader({
                 <Avatar
                     variant="rounded"
                     sx={{
-                        width: 56,
-                        height: 56,
+                        width: wh,
+                        height: wh,
                         backgroundColor: color,
                         "& > img": {
                             margin: 0,

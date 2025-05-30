@@ -139,7 +139,11 @@ export function FolderComponent({
                     borderRadius: 1,
                     position: "relative",
                     "&:hover, &[data-contextmenu='true']": {
-                        backgroundColor: theme.palette.action.hover + " !important",
+                        background: `linear-gradient(
+                            to right,
+                            ${theme.palette.secondary.muted} 0%,
+                            transparent 100%
+                        ) !important`,
                     },
                     "&[data-selected='true']": {
                         backgroundColor: theme.palette.action.selected + " !important",
@@ -177,6 +181,7 @@ export function FolderComponent({
                     size="medium"
                     checked={isSelected(folder)}
                     style={{ padding: 0 }}
+                    color="secondary"
                     disabled={unSelectable}
                 />
             </GridRow>
@@ -425,9 +430,9 @@ function Chips({ folder }: { folder: Folder }) {
                 },
             })}
         >
+            <BestCandidateChip folder={folder} />
             <HashMismatchChip folder={folder} />
             <DuplicateChip folder={folder} />
-            <BestCandidateChip folder={folder} />
             <FolderStatusChip folder={folder} />
         </Box>
     );

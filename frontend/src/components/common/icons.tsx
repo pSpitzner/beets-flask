@@ -20,6 +20,7 @@ import {
     HashIcon,
     HistoryIcon,
     HourglassIcon,
+    InboxIcon,
     LayoutListIcon,
     ListChecksIcon,
     LucideProps,
@@ -156,7 +157,7 @@ export function SourceTypeIconWithTooltip({
 export function FolderStatusIcon({
     status,
     ...props
-}: { status: FolderStatus } & LucideProps) {
+}: { status: FolderStatus; size: number } & LucideProps) {
     switch (status) {
         case FolderStatus.UNKNOWN:
             return <CircleHelpIcon {...props} />;
@@ -188,7 +189,7 @@ export function FolderStatusIcon({
         case FolderStatus.PREVIEWED:
             return <TagsIcon {...props} />;
         case FolderStatus.IMPORTED:
-            return <CircleCheckBigIcon {...props} />;
+            return <CircleCheckBigIcon {...props} size={props.size - 2} />;
         case FolderStatus.DELETING:
         case FolderStatus.DELETED:
             return <HistoryIcon {...props} />;
@@ -231,6 +232,10 @@ function Spotify(props: LucideProps) {
             </g>
         </svg>
     );
+}
+
+export function InboxTypeIcon({ type, ...props }: { type: string } & LucideProps) {
+    return <InboxIcon {...props} />;
 }
 
 /* ------------------------------- Selections ------------------------------- */

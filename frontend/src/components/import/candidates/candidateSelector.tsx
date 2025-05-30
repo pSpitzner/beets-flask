@@ -442,18 +442,6 @@ function CandidateInfo({
     const expanded = isExpanded(candidate.id);
     const candidateSelected = selected === candidate.id;
 
-    const handleClicks = useSingleAndDoubleClick({
-        onClick: (e: React.MouseEvent) => {
-            e.stopPropagation();
-            setSelected(candidate.id);
-        },
-        onDoubleClick: (e: React.MouseEvent) => {
-            e.stopPropagation();
-            toggleExpanded(candidate.id);
-        },
-        delay: 200,
-    });
-
     useEffect(() => {
         // Set css data-expanded attribute to the ref element
         // using ref for performance reasons
@@ -470,14 +458,17 @@ function CandidateInfo({
         return (
             <CandidateInfoRow
                 ref={ref}
-                onClick={handleClicks}
-                sx={{
+                onClick={(e: React.MouseEvent) => {
+                    e.stopPropagation();
+                    setSelected(candidate.id);
+                }}
+                sx={(theme) => ({
                     cursor: "pointer",
                     userSelect: "none",
                     "&:hover": {
-                        backgroundColor: "action.hover",
+                        background: `linear-gradient(to right, ${theme.palette.secondary.muted} 0%, transparent 100%)`,
                     },
-                }}
+                })}
             >
                 <Box gridColumn="selector" display="flex" {...slotProps.selector}>
                     <Radio
@@ -531,7 +522,6 @@ function CandidateInfo({
             </CandidateInfoRow>
         );
     }, [
-        handleClicks,
         slotProps.selector,
         candidateSelected,
         candidate,
