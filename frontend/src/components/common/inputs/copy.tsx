@@ -16,7 +16,7 @@ export function ClipboardCopyButton({
     onCopied,
     ...props
 }: {
-    text: string;
+    text: string | (() => string);
     label?: string;
     icon_props?: LucideProps;
     onCopied?: () => void;
@@ -27,6 +27,9 @@ export function ClipboardCopyButton({
         <Tooltip title={label ?? "Copy to clipboard"} arrow>
             <IconButton
                 onClick={() => {
+                    if (typeof text === "function") {
+                        text = text();
+                    }
                     navigator.clipboard.writeText(text).catch(console.error);
                     setCopied(true);
                     setTimeout(() => setCopied(false), 5000);

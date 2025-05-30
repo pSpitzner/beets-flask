@@ -1,6 +1,8 @@
 import {
     ClipboardCheckIcon,
     ClipboardIcon,
+    CloudIcon,
+    ComponentIcon,
     EllipsisVerticalIcon,
     EyeIcon,
     EyeOffIcon,
@@ -8,6 +10,7 @@ import {
     HistoryIcon,
     ImportIcon,
     RefreshCwIcon,
+    ScanIcon,
     TagIcon,
     TerminalIcon,
     Trash2Icon,
@@ -18,6 +21,7 @@ import {
     Box,
     BoxProps,
     Button,
+    ButtonGroup,
     Checkbox,
     CircularProgress,
     IconButton,
@@ -28,6 +32,7 @@ import {
     SpeedDialActionProps,
     SpeedDialIcon,
     SpeedDialProps,
+    ToggleButton,
     Tooltip,
     Typography,
     useMediaQuery,
@@ -43,8 +48,9 @@ import { EnqueueKind, File, Folder, JobStatusUpdate } from "@/pythonTypes";
 
 import { useFolderSelectionContext } from "./folderSelectionContext";
 
-import { SourceTypeIcon } from "../common/icons";
+import { InboxTypeIcon, SourceTypeIcon } from "../common/icons";
 import { ClipboardCopyButton } from "../common/inputs/copy";
+import { MutationButton } from "../common/inputs/mutationButton";
 import { formatDate } from "../common/units/time";
 import { useStatusSocket } from "../common/websocket/status";
 import { useTerminalContext } from "../frontpage/terminal";
@@ -143,6 +149,260 @@ export function FolderActionsSpeedDial() {
                 />
             </SpeedDial>
         </Zoom>
+    );
+}
+
+export function FolderActionDesktopBar() {
+    const theme = useTheme();
+    const { socket } = useStatusSocket();
+    const { selected } = useFolderSelectionContext();
+
+    // TODO: load defaults from config
+    const [setting, setSetting] = useState({
+        group_albums: false,
+        do_lookup: true,
+    });
+
+    const [importAsis, setImportAsIs] = useState(false);
+
+    const enabled = selected.paths.length != 0;
+
+    if (!enabled) {
+        return null;
+    }
+
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                padding: 1,
+                gap: 3,
+            }}
+        >
+            {/* Retag */}
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 1,
+                }}
+            >
+                <Tooltip
+                    title={
+                        setting.group_albums
+                            ? "Currently grouping albums from metadata"
+                            : "Not grouping (each folder is one album)"
+                    }
+                >
+                    <Checkbox
+                        disabled={!enabled}
+                        color="secondary"
+                        icon={
+                            <ComponentIcon
+                                size={theme.iconSize.sm}
+                                fill={
+                                    enabled
+                                        ? theme.palette.secondary.main
+                                        : theme.palette.action.disabled
+                                }
+                                stroke={
+                                    enabled
+                                        ? theme.palette.secondary.main
+                                        : theme.palette.action.disabled
+                                }
+                            />
+                        }
+                        checkedIcon={<ComponentIcon size={theme.iconSize.sm} />}
+                        checked={!setting.group_albums}
+                        onChange={(e) => {
+                            setSetting((prev) => ({
+                                ...prev,
+                                group_albums: !e.target.checked,
+                            }));
+                        }}
+                    />
+                </Tooltip>
+
+                <Tooltip
+                    title={
+                        setting.do_lookup
+                            ? "Using offline metadata (skipping online lookup)"
+                            : "Doing online lookup"
+                    }
+                >
+                    <Checkbox
+                        disabled={!enabled}
+                        color="secondary"
+                        size="small"
+                        icon={
+                            <CloudIcon
+                                size={theme.iconSize.sm}
+                                fill={
+                                    enabled
+                                        ? theme.palette.secondary.main
+                                        : theme.palette.action.disabled
+                                }
+                                stroke={
+                                    enabled
+                                        ? theme.palette.secondary.main
+                                        : theme.palette.action.disabled
+                                }
+                            />
+                        }
+                        checkedIcon={<CloudIcon size={theme.iconSize.sm} />}
+                        checked={setting.do_lookup}
+                        onChange={(e) => {
+                            setSetting((prev) => ({
+                                ...prev,
+                                do_lookup: e.target.checked,
+                            }));
+                        }}
+                    />
+                </Tooltip>
+
+                <MutationButton
+                    mutationOptions={enqueueMutationOptions}
+                    mutateArgs={{
+                        socket,
+                        selected,
+                        kind: EnqueueKind.PREVIEW,
+                        group_albums: setting.group_albums,
+                        autotag: setting.do_lookup,
+                    }}
+                    disabled={!enabled}
+                    variant="outlined"
+                    color="secondary"
+                    startIcon={<TagIcon size={theme.iconSize.sm} />}
+                >
+                    Retag
+                </MutationButton>
+            </Box>
+
+            {/* import */}
+            <Box>
+                <Tooltip
+                    title={
+                        importAsis
+                            ? "Using existing file-metadata"
+                            : "Using best online candidate"
+                    }
+                >
+                    <Checkbox
+                        disabled={!enabled}
+                        color="secondary"
+                        icon={
+                            <InboxTypeIcon
+                                type="bootleg"
+                                size={theme.iconSize.sm}
+                                fill={
+                                    enabled
+                                        ? theme.palette.secondary.main
+                                        : theme.palette.action.disabled
+                                }
+                                stroke={
+                                    enabled
+                                        ? theme.palette.secondary.main
+                                        : theme.palette.action.disabled
+                                }
+                            />
+                        }
+                        checkedIcon={
+                            <InboxTypeIcon type="bootleg" size={theme.iconSize.sm} />
+                        }
+                        checked={!importAsis}
+                        onChange={(e) => {
+                            setImportAsIs(!e.target.checked);
+                        }}
+                    />
+                </Tooltip>
+
+                <MutationButton
+                    mutationOptions={enqueueMutationOptions}
+                    mutateArgs={{
+                        socket,
+                        selected,
+                        kind: importAsis
+                            ? EnqueueKind.IMPORT_BOOTLEG
+                            : EnqueueKind.IMPORT_CANDIDATE,
+                    }}
+                    disabled={!enabled}
+                    variant="contained"
+                    color="secondary"
+                    startIcon={<ImportIcon size={theme.iconSize.sm} />}
+                >
+                    Import {importAsis ? "Asis" : "Best"}
+                </MutationButton>
+            </Box>
+
+            {/* extras */}
+            <Box>
+                <DeleteFoldersButton disable={!enabled} />
+                <ClipboardCopyButton
+                    disabled={!enabled}
+                    color="secondary"
+                    text={() => {
+                        const config_escape_path = false; // TODO: get from config
+                        let text = "";
+                        let selectedPaths: string[];
+                        if (config_escape_path) {
+                            selectedPaths = selected.paths.map(_escapePathForBash);
+                        } else {
+                            selectedPaths = selected.paths;
+                        }
+                        if (selectedPaths.length > 1) {
+                            text = selectedPaths.join("\\n");
+                        } else {
+                            text = selectedPaths.join(" ");
+                        }
+                        return text;
+                    }}
+                    icon_props={{ size: theme.iconSize.sm }}
+                />
+                <MutationButton
+                    mutationOptions={enqueueMutationOptions}
+                    mutateArgs={{
+                        socket,
+                        selected,
+                        kind: EnqueueKind.IMPORT_UNDO,
+                        delete_files: true,
+                    }}
+                    disabled={!enabled}
+                    variant="outlined"
+                    color="secondary"
+                    startIcon={<HistoryIcon size={theme.iconSize.sm} />}
+                >
+                    Undo Import
+                </MutationButton>
+            </Box>
+        </Box>
+    );
+}
+
+function DeleteFoldersButton({ disable = false }: { disable?: boolean }) {
+    const theme = useTheme();
+    const { selected, deselectAll } = useFolderSelectionContext();
+
+    // TODO: confirm popup + modifier key (alt? strg/cmd?) to skip confirmation
+
+    return (
+        <MutationButton
+            mutationOptions={deleteFoldersMutationOptions}
+            mutateArgs={{
+                folderPaths: selected.paths,
+                folderHashes: selected.hashes,
+            }}
+            onClick={() => {
+                deselectAll();
+            }}
+            color="secondary"
+            disabled={disable}
+            children={<Trash2Icon size={theme.iconSize.md} />}
+        />
     );
 }
 

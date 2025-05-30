@@ -38,7 +38,11 @@ import {
 } from "@/components/common/icons";
 import { PageWrapper } from "@/components/common/page";
 import { CardHeader } from "@/components/frontpage/statsCard";
-import { RefreshAllFoldersButton } from "@/components/inbox/actions";
+import {
+    FolderActionDesktopBar,
+    FolderActionsSpeedDial,
+    RefreshAllFoldersButton,
+} from "@/components/inbox/actions";
 import {
     FolderComponent,
     GridWrapper,
@@ -282,6 +286,8 @@ function InboxCard({ folder }: { folder: Folder }) {
                 </GridWrapper>
                 <SelectedStats />
             </CardContent>
+            <FolderActionDesktopBar />
+            {/* <FolderActionsSpeedDial /> */}
         </Card>
     );
 }
@@ -560,60 +566,5 @@ function InfoDescription() {
                 </DialogContent>
             </Dialog>
         </>
-    );
-}
-
-function AutoTagIcon({
-    autotag,
-    sx,
-    ...props
-}: {
-    autotag: MinimalConfig["gui"]["inbox"]["folders"][string]["autotag"];
-} & BoxProps) {
-    // TODO: We might want some icons for this indicator
-    let title: string;
-    let indicator: string;
-    if (autotag === false) {
-        title = "Automatic generation of previews and automatic imports disabled.";
-        indicator = "N";
-    } else if (autotag === "preview") {
-        title = "Automatic generation of previews for this inbox is enabled.";
-        indicator = "P";
-    } else if (autotag === "import") {
-        title =
-            "Automatic import of files into your library if `strong_rec_thresh` is met for this inbox.";
-        indicator = "I";
-    } else {
-        return null;
-    }
-
-    return (
-        <Tooltip title={title}>
-            <Box
-                sx={[
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                    ...(Array.isArray(sx) ? sx : [sx]),
-                    {
-                        px: 1,
-                        height: "100%",
-                        borderRadius: "50%",
-                        aspectRatio: "1/1",
-                        backgroundColor: "secondary.main",
-                        color: "secondary.contrastText",
-                        width: "1.25rem",
-                        display: "flex",
-                        fontSize: "0.75rem",
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        zIndex: 1,
-                    },
-                ]}
-                {...props}
-            >
-                {indicator}
-            </Box>
-        </Tooltip>
     );
 }

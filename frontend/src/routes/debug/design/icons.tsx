@@ -496,7 +496,7 @@ function RouteComponent() {
                     Bootleg
                     <InboxTypeIcon size={20} type={"bootleg"} />
                     Off (default)
-                    <InboxTypeIcon size={20} type={"off"} />
+                    <InboxTypeIcon size={20} />
                 </Box>
             </Box>
         </PageWrapper>

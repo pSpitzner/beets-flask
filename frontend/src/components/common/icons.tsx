@@ -36,10 +36,10 @@ import {
 import { sneaker } from "@lucide/lab";
 import { CircularProgress, Tooltip } from "@mui/material";
 
+import { MinimalConfig } from "@/api/config";
 import { FolderStatus } from "@/pythonTypes";
 
 import { GrowingRipple } from "./loading";
-import { MinimalConfig } from "@/api/config";
 
 /** Icon to show a folder, shows a disc icon if the folder is an album.
  *
@@ -162,7 +162,7 @@ export function SourceTypeIconWithTooltip({
 export function FolderStatusIcon({
     status,
     ...props
-}: { status: FolderStatus; size: number } & LucideProps) {
+}: { status: FolderStatus; size?: number } & LucideProps) {
     switch (status) {
         case FolderStatus.UNKNOWN:
             return <CircleHelpIcon {...props} />;
@@ -194,7 +194,12 @@ export function FolderStatusIcon({
         case FolderStatus.PREVIEWED:
             return <TagsIcon {...props} />;
         case FolderStatus.IMPORTED:
-            return <CircleCheckBigIcon {...props} size={props.size - 2} />;
+            return (
+                <CircleCheckBigIcon
+                    {...props}
+                    size={props.size ? props.size - 2 : undefined}
+                />
+            );
         case FolderStatus.DELETING:
         case FolderStatus.DELETED:
             return <HistoryIcon {...props} />;
