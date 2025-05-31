@@ -1,4 +1,4 @@
-import { queryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 
 import {
     AlbumResponse,
@@ -10,7 +10,7 @@ import {
     LibraryStats as _LibraryStats,
 } from "@/pythonTypes";
 
-import { queryClient } from "./common";
+import { APIError, queryClient } from "./common";
 
 export type LibraryStats = Omit<_LibraryStats, "lastItemAdded" | "lastItemModified"> & {
     lastItemAdded?: Date;
@@ -37,79 +37,6 @@ export const libraryStatsQueryOptions = () => {
         },
     });
 };
-
-export type ArtSize = "small" | "medium" | "large" | "original";
-
-// Art for a library item or album
-export const artUrl = (
-    type: "item" | "album",
-    id: number,
-    size?: ArtSize,
-    idx?: number
-) => {
-    const params = new URLSearchParams();
-    if (size) params.set("size", size);
-    if (idx !== undefined) params.set("idx", idx.toString());
-
-    const base = `/library/${type}/${id}/art`;
-    return params.toString() ? `${base}?${params}` : base;
-};
-
-export const artQueryOptions = ({
-    type,
-    id,
-    size,
-    index,
-}: {
-    type?: "item" | "album";
-    id?: number;
-    size?: ArtSize;
-    index?: number;
-}) =>
-    queryOptions({
-        queryKey: ["art", type, id, size, index],
-        queryFn: async () => {
-            if (id == null || !type) {
-                return null;
-            }
-            console.log("artQueryOptions", type, id);
-            const url = artUrl(type, id, size, index);
-            const response = await fetch(url);
-            const blob = await response.blob();
-            const objectUrl = URL.createObjectURL(blob);
-            return objectUrl;
-        },
-        retry: false,
-        gcTime: 1000 * 60 * 60 * 24, // 1 day
-        staleTime: 1000 * 60 * 60 * 24, // 1 day
-        refetchOnMount: false,
-        refetchOnWindowFocus: false,
-        refetchOnReconnect: false, // Prevent refetch on network reconnect
-        retryOnMount: false,
-    });
-
-export const numArtQueryOptions = (itemId?: number) =>
-    queryOptions({
-        queryKey: ["art", "num", itemId],
-        queryFn: async () => {
-            if (itemId == null) {
-                return null;
-            }
-            const response = await fetch(`/library/item/${itemId}/nArtworks`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            });
-            return (await response.json()) as { count: number };
-        },
-        retry: 1,
-        gcTime: 1000 * 60 * 60 * 24, // 1 day
-        staleTime: 1000 * 60 * 60 * 24, // 1 day
-        refetchOnMount: false,
-        refetchOnWindowFocus: false,
-        refetchOnReconnect: false, // Prevent refetch on network reconnect
-    });
 
 // Artist names
 export const artistsQueryOptions = () => ({
@@ -250,17 +177,142 @@ export const albumImportedOptions = <Expand extends boolean, Minimal extends boo
     retry: 1,
 });
 
-const commonQOptions = {
+interface AlbumsPageResponse {
+    albums: AlbumResponseMinimal[];
+    total: number;
+    next: string | null;
+}
+
+// Infinite query for all albums with search
+export const albumsInfiniteQueryOptions = ({
+    query,
+    orderBy,
+    orderDirection = "ASC",
+}: {
+    query: string;
+    orderBy?: "album" | "albumartist" | "year";
+    orderDirection?: "ASC" | "DESC";
+}) => {
+    const params = new URLSearchParams();
+    params.set("n_items", "1"); // Number of items per page
+    if (orderBy) params.set("order_by", orderBy);
+    if (orderDirection) params.set("order_dir", orderDirection);
+    const paramsStr = params.toString();
+
+    let initUrl = `/api_v1/library/albums`;
+    if (query) {
+        initUrl += `/${encodeURIComponent(query)}`;
+    }
+    if (paramsStr) {
+        initUrl += `?${paramsStr}`;
+    }
+
+    return infiniteQueryOptions({
+        queryKey: ["albums", query, orderBy, orderDirection],
+        queryFn: async ({ pageParam }) => {
+            const response = await fetch(pageParam.replace("/api_v1", ""));
+            return (await response.json()) as AlbumsPageResponse;
+        },
+        initialPageParam: initUrl,
+        getNextPageParam: (lastPage) => {
+            return lastPage.next;
+        },
+        select: (data) => {
+            return {
+                albums: data.pages.flatMap((page) => page.albums),
+                total: data.pages.at(-1)?.total ?? 0,
+            };
+        },
+    });
+};
+
+/* --------------------------------- Artwork -------------------------------- */
+
+export type ArtSize = "small" | "medium" | "large" | "original";
+
+// Art for a library item or album
+export const artUrl = (
+    type: "item" | "album",
+    id: number,
+    size?: ArtSize,
+    idx?: number
+) => {
+    const params = new URLSearchParams();
+    if (size) params.set("size", size);
+    if (idx !== undefined) params.set("idx", idx.toString());
+
+    const base = `/library/${type}/${id}/art`;
+    return params.toString() ? `${base}?${params}` : base;
+};
+
+export const artQueryOptions = ({
+    type,
+    id,
+    size,
+    index,
+}: {
+    type?: "item" | "album";
+    id?: number;
+    size?: ArtSize;
+    index?: number;
+}) =>
+    queryOptions({
+        queryKey: ["art", type, id, size, index],
+        queryFn: async () => {
+            if (id == null || !type) {
+                return null;
+            }
+            console.log("artQueryOptions", type, id);
+            const url = artUrl(type, id, size, index);
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            return objectUrl;
+        },
+        retry: false,
+        gcTime: 1000 * 60 * 60 * 24, // 1 day
+        staleTime: 1000 * 60 * 60 * 24, // 1 day
+        refetchOnMount: false,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false, // Prevent refetch on network reconnect
+        retryOnMount: false,
+    });
+
+// Number of artworks for an item -> back, front, etc.
+export const numArtQueryOptions = (itemId?: number) =>
+    queryOptions({
+        queryKey: ["art", "num", itemId],
+        queryFn: async () => {
+            if (itemId == null) {
+                return null;
+            }
+            const response = await fetch(`/library/item/${itemId}/nArtworks`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
+            return (await response.json()) as { count: number };
+        },
+        retry: 1,
+        gcTime: 1000 * 60 * 60 * 24, // 1 day
+        staleTime: 1000 * 60 * 60 * 24, // 1 day
+        refetchOnMount: false,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false, // Prevent refetch on network reconnect
+    });
+
+/* ---------------------------- Waveforms / Peaks --------------------------- */
+// We precompute the waveform for each audio file on the server
+// allows to show the waveform without loading the entire audio file first
+
+const commonAudioQueryOptions = {
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 10, // 10 minutes
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
 };
-
-/* ---------------------------- Waveforms / Peaks --------------------------- */
-// We precompute the waveform for each audio file on the server
-// allows to show the waveform without loading the entire audio file first
 
 async function fetchWaveform(url: string, signal: AbortSignal) {
     const response = await fetch(url, { signal });
@@ -279,7 +331,7 @@ export function waveformQueryOptions(id?: number) {
             return await fetchWaveform(`/library/item/${id}/audio/peaks`, signal);
         },
         retry: false,
-        ...commonQOptions,
+        ...commonAudioQueryOptions,
     });
 }
 
@@ -289,7 +341,7 @@ export function prefetchWaveform(id: number) {
         queryFn: async ({ signal }) => {
             return await fetchWaveform(`/library/item/${id}/audio/peaks`, signal);
         },
-        ...commonQOptions,
+        ...commonAudioQueryOptions,
     });
 }
 
@@ -427,7 +479,7 @@ export function itemAudioDataQueryOptions(id?: number) {
             }
             return await fetchAudio(id, signal);
         },
-        ...commonQOptions,
+        ...commonAudioQueryOptions,
     });
 }
 
@@ -437,7 +489,7 @@ export function prefetchItemAudioData(id: number) {
         queryFn: async ({ signal }) => {
             return await fetchAudio(id, signal);
         },
-        ...commonQOptions,
+        ...commonAudioQueryOptions,
     });
 }
 

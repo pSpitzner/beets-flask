@@ -298,14 +298,9 @@ async def all_albums(query: str = ""):
         cursor.last_id = str(last_album.id)
         next_url = f"{request.path}?cursor={cursor.to_string()}&n_items={n_items}"
 
-    expanded = expanded_response()
-    minimal = minimal_response()
-
     return jsonify(
         {
-            "albums": [
-                _rep(album, expand=expanded, minimal=minimal) for album in albums
-            ],
+            "albums": [_rep(album, expand=False, minimal=True) for album in albums],
             "next": next_url,
             "total": total,
         }
@@ -448,7 +443,7 @@ class PaginatedQuery(Query, Sort):
             return f"{cursor_order} LIMIT {self.n_items}"
         return f"{cursor_order} LIMIT {self.n_items}"
 
-    def match(self, obj: Model) -> bool:
+    def match(self, obj: Model) -> bool:  # type: ignore
         return isinstance(obj, Item) or isinstance(obj, Album)
 
     def total(self, lib: Library) -> int:

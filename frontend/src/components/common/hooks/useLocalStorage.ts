@@ -17,18 +17,7 @@ export const useLocalStorage = <T>(
     initialValue: InitialValue<T>
 ): [T, (value: T) => void, () => void] => {
     // Check if there is a value in `localStorage` for the given `key`
-    const [value, setValue] = useState<T>(() => {
-        try {
-            const storedValue = localStorage.getItem(key);
-            if (storedValue) return JSON.parse(storedValue) as T;
-            // Return the initial value if no value is found in `localStorage`
-            return getInitialValue(initialValue);
-        } catch (error) {
-            console.error("Error retrieving value from `localStorage`:", error);
-            // If parsing fails, return the initial value
-            return getInitialValue(initialValue);
-        }
-    });
+    const [value, setValue] = useState<T>(getStorageValue<T>(key, initialValue));
 
     // Function to set value in `localStorage`,
     // `useCallback` is used to memoize the function to prevent
@@ -83,3 +72,14 @@ export const useLocalStorage = <T>(
 
     return [value, setLocalStorageValue, removeLocalStorageValue]; // Re-run `useEffect` only when any of these values change
 };
+
+export function getStorageValue<T>(key: string, initialValue: InitialValue<T>): T {
+    try {
+        const storedValue = localStorage.getItem(key);
+        if (storedValue) return JSON.parse(storedValue) as T;
+        return getInitialValue(initialValue);
+    } catch (error) {
+        console.error("Error retrieving value from `localStorage`:", error);
+        return getInitialValue(initialValue);
+    }
+}
