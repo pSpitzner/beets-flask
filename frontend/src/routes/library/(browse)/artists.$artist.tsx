@@ -1,7 +1,5 @@
 import { AudioLinesIcon, Disc3Icon, GridIcon, ListIcon, User2Icon } from "lucide-react";
 import { useMemo, useState } from "react";
-import AutoSizer from "react-virtualized-auto-sizer";
-import { FixedSizeList } from "react-window";
 import {
     alpha,
     Box,
@@ -20,9 +18,9 @@ import { Search } from "@/components/common/inputs/search";
 import { CoverArt } from "@/components/library/coverArt";
 import {
     FixedGrid,
-    FixedGridChildren,
     FixedGridChildrenProps,
-    FixedGridProps,
+    FixedList,
+    FixedListChildrenProps,
 } from "@/components/library/viewer/DataView";
 import { AlbumResponseMinimal } from "@/pythonTypes";
 
@@ -318,55 +316,51 @@ function AlbumsGrid({ albums }: { albums: AlbumResponseMinimal[] }): JSX.Element
     );
 }
 
-function AlbumsList({ albums }: { albums: AlbumResponseMinimal[] }): JSX.Element {
+function AlbumsListRow({ data: album }: FixedListChildrenProps<AlbumResponseMinimal>) {
     const theme = useTheme();
 
+    // loading state (if albums is none)
+    if (!album) {
+        return null;
+    }
+
     return (
-        <AutoSizer>
-            {({ height, width }) => (
-                <FixedSizeList
-                    itemSize={35}
-                    height={height}
-                    width={width}
-                    itemCount={albums.length}
-                >
-                    {({ index }) => {
-                        const album = albums[index];
-                        return (
-                            <Link
-                                to={`/library/album/$albumId`}
-                                key={album.id}
-                                params={{ albumId: album.id }}
-                            >
-                                <Box
-                                    sx={(theme) => ({
-                                        height: "35px",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "space-between",
-                                        padding: 1,
-                                        gap: 2,
-                                        ":hover": {
-                                            background: `linear-gradient(to left, transparent 0%, ${theme.palette.primary.muted} 100%)`,
-                                            color: "primary.contrastText",
-                                        },
-                                    })}
-                                >
-                                    <Typography variant="body1">
-                                        {album.name}
-                                    </Typography>
-                                    <Disc3Icon
-                                        color={theme.palette.background.paper}
-                                        style={{
-                                            marginRight: "2rem",
-                                        }}
-                                    />
-                                </Box>
-                            </Link>
-                        );
+        <Link
+            to={`/library/album/$albumId`}
+            key={album.id}
+            params={{ albumId: album.id }}
+        >
+            <Box
+                sx={(theme) => ({
+                    height: "35px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: 1,
+                    gap: 2,
+                    ":hover": {
+                        background: `linear-gradient(to left, transparent 0%, ${theme.palette.primary.muted} 100%)`,
+                        color: "primary.contrastText",
+                    },
+                })}
+            >
+                <Typography variant="body1">{album.name}</Typography>
+                <Disc3Icon
+                    color={theme.palette.background.paper}
+                    style={{
+                        marginRight: "2rem",
                     }}
-                </FixedSizeList>
-            )}
-        </AutoSizer>
+                />
+            </Box>
+        </Link>
+    );
+}
+
+function AlbumsList({ albums }: { albums: AlbumResponseMinimal[] }): JSX.Element {
+    const a1 = [...albums, ...albums, ...albums, ...albums]; // Duplicate to ensure enough items for scrolling
+    return (
+        <FixedList data={a1} itemHeight={35}>
+            {AlbumsListRow}
+        </FixedList>
     );
 }
