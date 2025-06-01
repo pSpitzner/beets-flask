@@ -1,4 +1,4 @@
-import { AudioLinesIcon, Disc3Icon, GridIcon, ListIcon, User2Icon } from "lucide-react";
+import { AudioLinesIcon, Disc3Icon, User2Icon } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
     alpha,
@@ -15,14 +15,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { albumsByArtistQueryOptions } from "@/api/library";
 import { Search } from "@/components/common/inputs/search";
-import { CoverArt } from "@/components/library/coverArt";
 import {
     FixedGrid,
     FixedGridChildrenProps,
     FixedList,
     FixedListChildrenProps,
-} from "@/components/library/viewer/DataView";
-import { ViewToggle } from "@/components/library/viewer/ViewToggle";
+    ViewToggle,
+} from "@/components/common/table";
+import { CoverArt } from "@/components/library/coverArt";
 import { AlbumResponseMinimal } from "@/pythonTypes";
 
 export const Route = createFileRoute("/library/(browse)/artists/$artist")({

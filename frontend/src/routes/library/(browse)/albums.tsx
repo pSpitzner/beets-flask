@@ -1,25 +1,28 @@
 import { Disc3Icon } from "lucide-react";
-import { memo, useEffect, useState } from "react";
-import { Box, Skeleton, Typography, useTheme } from "@mui/material";
+import { memo, useEffect, useState, useTransition } from "react";
+import { Box, BoxProps, Divider, Skeleton, Typography, useTheme } from "@mui/material";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { albumsInfiniteQueryOptions } from "@/api/library";
-import { useDebounce } from "@/components/common/hooks/useDebounce";
 import {
     getStorageValue,
     useLocalStorage,
 } from "@/components/common/hooks/useLocalStorage";
-import { CoverArt } from "@/components/library/coverArt";
+import { Search } from "@/components/common/inputs/search";
+import { PageWrapper } from "@/components/common/page";
 import {
+    CurrentSort,
     FixedGrid,
     FixedGridChildrenProps,
     FixedGridProps,
     FixedList,
     FixedListChildrenProps,
     FixedListProps,
-} from "@/components/library/viewer/DataView";
-import { ViewToggle } from "@/components/library/viewer/ViewToggle";
+    SortToggle,
+    ViewToggle,
+} from "@/components/common/table";
+import { CoverArt } from "@/components/library/coverArt";
 import { AlbumResponseMinimal } from "@/pythonTypes";
 
 const STORAGE_KEY = "library.browse.albums.search";
@@ -41,6 +44,79 @@ export const Route = createFileRoute("/library/(browse)/albums")({
 });
 
 function RouteComponent() {
+    return (
+        <PageWrapper
+            title="Albums"
+            sx={(theme) => ({
+                display: "flex",
+                flexDirection: "column",
+                minHeight: "100%",
+                height: "100%",
+                [theme.breakpoints.up("laptop")]: {
+                    padding: 2,
+                },
+            })}
+        >
+            <Box
+                sx={(theme) => ({
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    overflow: "hidden",
+                    [theme.breakpoints.up("laptop")]: {
+                        backgroundColor: "background.paper",
+                        borderRadius: 2,
+                    },
+                })}
+            >
+                <AlbumsHeader />
+                <Divider sx={{ backgroundColor: "primary.muted" }} />
+                <View
+                    sx={(theme) => ({
+                        display: "flex",
+                        flexDirection: "column",
+                        height: "100%",
+                        overflow: "hidden",
+                        [theme.breakpoints.down("laptop")]: {
+                            background: `linear-gradient(to bottom, ${theme.palette.background.paper} 0%, transparent 100%)`,
+                        },
+                    })}
+                />
+            </Box>
+        </PageWrapper>
+    );
+}
+
+function AlbumsHeader({ sx, ...props }: BoxProps) {
+    const theme = useTheme();
+    return (
+        <Box
+            sx={[
+                {
+                    display: "flex",
+                    gap: 2,
+                    alignItems: "center",
+                    padding: 2,
+                },
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                ...(Array.isArray(sx) ? sx : [sx]),
+            ]}
+            {...props}
+        >
+            <Box sx={{ display: "flex", alignItems: "center", height: "100%" }}>
+                <Disc3Icon size={40} color={theme.palette.primary.main} />
+            </Box>
+            <Box>
+                <Typography variant="h5" fontWeight="bold" lineHeight={1}>
+                    Browse Albums
+                </Typography>
+            </Box>
+        </Box>
+    );
+}
+
+function View({ sx, ...props }: BoxProps) {
+    const [isTransitioning, startTransition] = useTransition();
     const [overscanStopIndex, setOverScanStopIndex] = useState(0);
     const [view, setView] = useState<"list" | "grid">("list");
     const [queryState, setQueryState] = useLocalStorage<{
@@ -49,11 +125,9 @@ function RouteComponent() {
         orderDirection: "ASC" | "DESC";
     }>(STORAGE_KEY, DEFAULT_STORAGE_VALUE);
 
-    const debounceSearch = useDebounce(queryState.query, 500);
-
-    const { data, fetchNextPage, isError, isFetching } = useInfiniteQuery(
+    const { data, fetchNextPage, isError, isPending, isFetching } = useInfiniteQuery(
         albumsInfiniteQueryOptions({
-            query: debounceSearch,
+            query: queryState.query,
             orderBy: queryState.orderBy,
             orderDirection: queryState.orderDirection,
         })
@@ -69,24 +143,77 @@ function RouteComponent() {
 
     return (
         <Box
-            sx={{
-                display: "flex",
-                height: "100%",
-                flexDirection: "column",
-                overflow: "auto",
-            }}
+            sx={[
+                {
+                    display: "flex",
+                    height: "100%",
+                    flexDirection: "column",
+                },
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                ...(Array.isArray(sx) ? sx : [sx]),
+            ]}
+            {...props}
         >
+            {/* Header with some controls */}
             <Box
                 sx={{
                     display: "flex",
-                    flexDirection: "column",
-                    gap: 2,
-                    position: "sticky",
+                    gap: 4,
+                    width: "100%",
+                    padding: 2,
                 }}
             >
-                Search
+                <Search
+                    loading={isPending || isTransitioning}
+                    sx={{
+                        mr: "auto",
+                        minHeight: "unset",
+                        height: "100%",
+                        input: { height: "100%", p: 0 },
+                        ".MuiInputBase-root": {
+                            height: "100%",
+                        },
+                    }}
+                    value={queryState.query}
+                    setValue={(newQuery: string) => {
+                        startTransition(() => {
+                            setQueryState({
+                                ...queryState,
+                                query: newQuery,
+                            });
+                        });
+                    }}
+                />
+                <SortToggle
+                    value={{
+                        value: queryState.orderBy,
+                        direction: queryState.orderDirection,
+                    }}
+                    setValue={(newSort: CurrentSort) => {
+                        setQueryState({
+                            ...queryState,
+                            orderBy: newSort.value as "album" | "albumartist" | "year",
+                            orderDirection: newSort.direction,
+                        });
+                    }}
+                    items={[
+                        {
+                            label: "Title",
+                            value: "album",
+                        },
+                        {
+                            label: "Artist",
+                            value: "albumartist",
+                        },
+                        {
+                            label: "Year",
+                            value: "year",
+                        },
+                    ]}
+                />
                 <ViewToggle view={view} setView={setView} />
             </Box>
+            {/* table */}
             <Box
                 sx={{
                     display: "flex",
@@ -109,6 +236,20 @@ function RouteComponent() {
                             setOverScanStopIndex(overscanStopIndex);
                         }}
                     />
+                )}
+                {data && data.total === 0 && !isPending && !isFetching && (
+                    <Box
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            height: "100%",
+                        }}
+                    >
+                        <Typography variant="body1" color="text.secondary">
+                            No albums found.
+                        </Typography>
+                    </Box>
                 )}
             </Box>
         </Box>
@@ -263,12 +404,36 @@ function AlbumsList({
             itemCount={data?.total || 0}
             itemHeight={LISTROWHEIGHT}
             overscanCount={50}
+            useIsScrolling
             {...props}
         >
             {AlbumListRow}
         </FixedList>
     );
 }
+
+const LoadingRow = memo(({ style }: { style: React.CSSProperties }) => {
+    const theme = useTheme();
+    return (
+        <Box
+            height={LISTROWHEIGHT}
+            sx={{
+                ...style,
+                display: "flex",
+                width: "100%",
+                alignItems: "center",
+                gap: 2,
+                paddingInline: 1,
+            }}
+        >
+            <Box sx={{ display: "flex", flexDirection: "column", width: "100%" }}>
+                <Skeleton variant="text" animation={false} />
+                <Skeleton variant="text" width="60%" animation={false} />
+            </Box>
+            <Disc3Icon color={theme.palette.background.paper} />
+        </Box>
+    );
+});
 
 /** An entry of album name and artist.
  * Click on it to navigate to the album page.
@@ -277,29 +442,12 @@ function AlbumsList({
 function AlbumListRow({
     data: album,
     style,
+    isScrolling,
 }: FixedListChildrenProps<AlbumResponseMinimal>) {
     const theme = useTheme();
     // loading state (if albums is none)
-    if (!album) {
-        return (
-            <Box
-                height={LISTROWHEIGHT}
-                sx={{
-                    ...style,
-                    display: "flex",
-                    width: "100%",
-                    alignItems: "center",
-                    gap: 1,
-                    paddingInline: 1,
-                }}
-            >
-                <Disc3Icon color={theme.palette.background.paper} />
-                <Box sx={{ display: "flex", flexDirection: "column", width: "100%" }}>
-                    <Skeleton variant="text" animation={false} />
-                    <Skeleton variant="text" width="60%" animation={false} />
-                </Box>
-            </Box>
-        );
+    if (!album || isScrolling) {
+        return <LoadingRow style={style} />;
     }
 
     return (
@@ -307,6 +455,7 @@ function AlbumListRow({
             to={`/library/album/$albumId`}
             key={album.id}
             params={{ albumId: album.id }}
+            preloadDelay={2000}
             style={style}
         >
             <Box
@@ -315,27 +464,39 @@ function AlbumListRow({
                     display: "flex",
                     alignItems: "center",
                     paddingInline: 1,
-                    gap: 2,
+                    justifyContent: "space-between",
                     ":hover": {
                         background: `linear-gradient(to left, transparent 0%, ${theme.palette.primary.muted} 100%)`,
                         color: "primary.contrastText",
                     },
                 })}
             >
-                <Disc3Icon color={theme.palette.background.paper} />
+                <CoverArt
+                    type="album"
+                    beetsId={album.id}
+                    size="small"
+                    sx={{
+                        display: "block",
+                        width: "50px",
+                        height: "50px",
+                        padding: 0.5,
+                    }}
+                />
                 <Box
                     sx={{
                         display: "flex",
                         flexDirection: "column",
+                        mr: "auto",
                     }}
                 >
                     <Typography variant="body1">
                         {album.name || "Unknown Title"}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                        {album.albumartist}
+                        {album.albumartist} {album.year ? `(${album.year})` : ""}
                     </Typography>
                 </Box>
+                <Disc3Icon color={theme.palette.background.paper} />
             </Box>
         </Link>
     );

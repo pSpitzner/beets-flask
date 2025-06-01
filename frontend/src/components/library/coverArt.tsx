@@ -20,7 +20,14 @@ export interface CoverArtProps extends BoxProps {
  *
  * Shows the cover art for an item or album.
  */
-export function CoverArt({ type, beetsId, size, sx, index, ...props }: CoverArtProps) {
+export function CoverArt({
+    type,
+    beetsId,
+    size = "medium",
+    sx,
+    index,
+    ...props
+}: CoverArtProps) {
     const {
         data: art,
         isPending,
@@ -45,7 +52,7 @@ export function CoverArt({ type, beetsId, size, sx, index, ...props }: CoverArtP
 
     if (isError) {
         if (error instanceof APIError) {
-            return <CoverArtError sx={coverSx} error={error} {...props} />;
+            return <CoverArtError sx={coverSx} error={error} size={size} {...props} />;
         } else {
             throw error;
         }
@@ -80,7 +87,11 @@ function CoverArtContent({ src, ...props }: { src: string } & Partial<BoxProps>)
     return <Box component="img" src={src} {...props} />;
 }
 
-function CoverArtError({ error, ...props }: { error: APIError } & Partial<BoxProps>) {
+function CoverArtError({
+    error,
+    size,
+    ...props
+}: { error: APIError; size: ArtSize } & Partial<BoxProps>) {
     console.log("CoverArtError", error);
     return (
         <Box {...props}>
@@ -96,20 +107,23 @@ function CoverArtError({ error, ...props }: { error: APIError } & Partial<BoxPro
                     color: "error.main",
                     flexDirection: "column",
                     gap: 1,
+                    p: 0.5,
                 }}
             >
                 <FileWarning size={50} strokeWidth={2} />
-                <Box
-                    sx={{
-                        width: "100%",
-                        alignItems: "center",
-                        fontSize: "0.8rem",
-                        color: "error.main",
-                        p: 1,
-                    }}
-                >
-                    <b>{error.name}</b> - {error.message}
-                </Box>
+                {size === "large" && (
+                    <Box
+                        sx={{
+                            width: "100%",
+                            alignItems: "center",
+                            fontSize: "0.8rem",
+                            color: "error.main",
+                            p: 1,
+                        }}
+                    >
+                        <b>{error.name}</b> - {error.message}
+                    </Box>
+                )}
             </Box>
         </Box>
     );

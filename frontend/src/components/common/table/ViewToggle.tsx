@@ -11,6 +11,9 @@ export interface ViewToggleProps extends ToggleButtonGroupProps {
     setView: (view: "list" | "grid") => void;
 }
 
+/**
+ * A toggle button group to switch between list and grid view.
+ */
 export function ViewToggle({ view, setView, ...props }: ViewToggleProps) {
     const theme = useTheme();
     return (
