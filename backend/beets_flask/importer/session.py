@@ -520,6 +520,9 @@ class AddCandidatesSession(PreviewSession):
             search_artist=search["search_artist"],
         )
 
+        if len(prop.candidates) == 0:
+            raise ValueError(f"Lookup found no candidates.")
+
         task_state.add_candidates(prop.candidates)
 
         # Update quality of best candidate, likely not needed for us, only beets cli.

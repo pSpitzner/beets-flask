@@ -150,7 +150,7 @@ class TestImportBest(
         assert s_state_indb is not None
         assert len(s_state_indb.tasks) == 1
 
-        id_99_red_balloons = "189002e7-3285-4e2e-92a3-7f6c30d407a2"
+        id_99_red_balloons = "30fd0c55-a75d-4881-ade9-ae5a51f1ba86"
         exc = await run_preview_add_candidates(
             "obsolete_hash_preview",
             str(path),
