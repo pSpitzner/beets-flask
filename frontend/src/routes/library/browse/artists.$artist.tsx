@@ -25,7 +25,7 @@ import {
 import { CoverArt } from "@/components/library/coverArt";
 import { AlbumResponseMinimal } from "@/pythonTypes";
 
-export const Route = createFileRoute("/library/(browse)/artists/$artist")({
+export const Route = createFileRoute("/library/browse/artists/$artist")({
     loader: async (opts) =>
         await opts.context.queryClient.ensureQueryData(
             albumsByArtistQueryOptions(
@@ -90,7 +90,7 @@ function ArtistHeader({ nAlbums, sx, ...props }: { nAlbums: number } & BoxProps)
             ]}
             {...props}
         >
-            <Link to="/library/artists">
+            <Link to="/library/browse/artists">
                 <Box sx={{ display: "flex", alignItems: "center", height: "100%" }}>
                     <User2Icon size={40} color={theme.palette.primary.main} />
                 </Box>

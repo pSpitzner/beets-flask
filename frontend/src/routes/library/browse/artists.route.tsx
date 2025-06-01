@@ -4,7 +4,7 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { Loading } from "@/components/common/loading";
 import { PageWrapper } from "@/components/common/page";
 
-export const Route = createFileRoute("/library/(browse)/artists")({
+export const Route = createFileRoute("/library/browse/artists")({
     component: RouteComponent,
     pendingComponent: PendingComponent,
 });

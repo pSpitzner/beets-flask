@@ -42,7 +42,7 @@ export const libraryStatsQueryOptions = () => {
 export const artistsQueryOptions = () => ({
     queryKey: ["artists"],
     queryFn: async () => {
-        const response = await fetch(`/library/artist/`);
+        const response = await fetch(`/library/artists/`);
         return (await response.json()) as { name: string }[];
     },
     refetchOnWindowFocus: "always" as const,

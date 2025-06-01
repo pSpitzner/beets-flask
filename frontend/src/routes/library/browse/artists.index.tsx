@@ -9,7 +9,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { artistsQueryOptions } from "@/api/library";
 import { Search } from "@/components/common/inputs/search";
 
-export const Route = createFileRoute("/library/(browse)/artists/")({
+export const Route = createFileRoute("/library/browse/artists/")({
     loader: async (opts) => {
         await opts.context.queryClient.ensureQueryData(artistsQueryOptions());
     },
@@ -164,7 +164,7 @@ function ArtistsList({ artists }: { artists: Array<{ name: string }> }) {
                         const artist = artists[index];
                         return (
                             <Link
-                                to="/library/artists/$artist"
+                                to="/library/browse/artists/$artist"
                                 params={{ artist: artist.name }}
                                 style={style}
                             >

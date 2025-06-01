@@ -17,25 +17,22 @@ import { Route as InboxIndexImport } from './routes/inbox/index'
 import { Route as DebugIndexImport } from './routes/debug/index'
 import { Route as FrontpageIndexImport } from './routes/_frontpage/index'
 import { Route as LibrarySearchImport } from './routes/library/search'
-import { Route as LibraryBrowseImport } from './routes/library/browse'
 import { Route as DebugJobsImport } from './routes/debug/jobs'
 import { Route as DebugErrorImport } from './routes/debug/error'
 import { Route as DebugAudioImport } from './routes/debug/audio'
-import { Route as LibraryBrowseArtistImport } from './routes/library/browse.$artist'
-import { Route as LibrarybrowseAlbumsImport } from './routes/library/(browse)/albums'
+import { Route as LibraryBrowseIndexImport } from './routes/library/browse/index'
+import { Route as LibraryBrowseAlbumsImport } from './routes/library/browse/albums'
 import { Route as InboxTaskTaskIdImport } from './routes/inbox/task.$taskId'
 import { Route as InboxFolderPathImport } from './routes/inbox/folder.$path'
 import { Route as DebugDesignLoadingImport } from './routes/debug/design/loading'
 import { Route as DebugDesignIconsImport } from './routes/debug/design/icons'
-import { Route as LibrarybrowseArtistsRouteImport } from './routes/library/(browse)/artists.route'
-import { Route as LibrarybrowseArtistsIndexImport } from './routes/library/(browse)/artists.index'
-import { Route as LibraryBrowseArtistAlbumIdImport } from './routes/library/browse.$artist.$albumId'
-import { Route as LibrarybrowseArtistsArtistImport } from './routes/library/(browse)/artists.$artist'
+import { Route as LibraryBrowseArtistsRouteImport } from './routes/library/browse/artists.route'
+import { Route as LibraryBrowseArtistsIndexImport } from './routes/library/browse/artists.index'
+import { Route as LibraryBrowseArtistsArtistImport } from './routes/library/browse/artists.$artist'
 import { Route as InboxFolderPathHashImport } from './routes/inbox/folder_.$path.$hash'
 import { Route as LibraryresourcesItemItemIdRouteImport } from './routes/library/(resources)/item.$itemId.route'
 import { Route as LibraryresourcesAlbumAlbumIdRouteImport } from './routes/library/(resources)/album.$albumId.route'
 import { Route as LibraryresourcesAlbumAlbumIdIndexImport } from './routes/library/(resources)/album.$albumId.index'
-import { Route as LibraryBrowseArtistAlbumIdItemIdImport } from './routes/library/browse.$artist.$albumId.$itemId'
 import { Route as LibraryresourcesItemItemIdIdentifierImport } from './routes/library/(resources)/item.$itemId.identifier'
 import { Route as LibraryresourcesItemItemIdBeetsdataImport } from './routes/library/(resources)/item.$itemId.beetsdata'
 import { Route as LibraryresourcesAlbumAlbumIdIdentifierImport } from './routes/library/(resources)/album.$albumId.identifier'
@@ -79,12 +76,6 @@ const LibrarySearchRoute = LibrarySearchImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const LibraryBrowseRoute = LibraryBrowseImport.update({
-  id: '/library/browse',
-  path: '/library/browse',
-  getParentRoute: () => rootRoute,
-} as any)
-
 const DebugJobsRoute = DebugJobsImport.update({
   id: '/debug/jobs',
   path: '/debug/jobs',
@@ -103,15 +94,15 @@ const DebugAudioRoute = DebugAudioImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const LibraryBrowseArtistRoute = LibraryBrowseArtistImport.update({
-  id: '/$artist',
-  path: '/$artist',
-  getParentRoute: () => LibraryBrowseRoute,
+const LibraryBrowseIndexRoute = LibraryBrowseIndexImport.update({
+  id: '/library/browse/',
+  path: '/library/browse/',
+  getParentRoute: () => rootRoute,
 } as any)
 
-const LibrarybrowseAlbumsRoute = LibrarybrowseAlbumsImport.update({
-  id: '/library/(browse)/albums',
-  path: '/library/albums',
+const LibraryBrowseAlbumsRoute = LibraryBrowseAlbumsImport.update({
+  id: '/library/browse/albums',
+  path: '/library/browse/albums',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -139,31 +130,23 @@ const DebugDesignIconsRoute = DebugDesignIconsImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const LibrarybrowseArtistsRouteRoute = LibrarybrowseArtistsRouteImport.update({
-  id: '/library/(browse)/artists',
-  path: '/library/artists',
+const LibraryBrowseArtistsRouteRoute = LibraryBrowseArtistsRouteImport.update({
+  id: '/library/browse/artists',
+  path: '/library/browse/artists',
   getParentRoute: () => rootRoute,
 } as any)
 
-const LibrarybrowseArtistsIndexRoute = LibrarybrowseArtistsIndexImport.update({
+const LibraryBrowseArtistsIndexRoute = LibraryBrowseArtistsIndexImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => LibrarybrowseArtistsRouteRoute,
+  getParentRoute: () => LibraryBrowseArtistsRouteRoute,
 } as any)
 
-const LibraryBrowseArtistAlbumIdRoute = LibraryBrowseArtistAlbumIdImport.update(
-  {
-    id: '/$albumId',
-    path: '/$albumId',
-    getParentRoute: () => LibraryBrowseArtistRoute,
-  } as any,
-)
-
-const LibrarybrowseArtistsArtistRoute = LibrarybrowseArtistsArtistImport.update(
+const LibraryBrowseArtistsArtistRoute = LibraryBrowseArtistsArtistImport.update(
   {
     id: '/$artist',
     path: '/$artist',
-    getParentRoute: () => LibrarybrowseArtistsRouteRoute,
+    getParentRoute: () => LibraryBrowseArtistsRouteRoute,
   } as any,
 )
 
@@ -192,13 +175,6 @@ const LibraryresourcesAlbumAlbumIdIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => LibraryresourcesAlbumAlbumIdRouteRoute,
-  } as any)
-
-const LibraryBrowseArtistAlbumIdItemIdRoute =
-  LibraryBrowseArtistAlbumIdItemIdImport.update({
-    id: '/$itemId',
-    path: '/$itemId',
-    getParentRoute: () => LibraryBrowseArtistAlbumIdRoute,
   } as any)
 
 const LibraryresourcesItemItemIdIdentifierRoute =
@@ -254,13 +230,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DebugJobsImport
       parentRoute: typeof rootRoute
     }
-    '/library/browse': {
-      id: '/library/browse'
-      path: '/library/browse'
-      fullPath: '/library/browse'
-      preLoaderRoute: typeof LibraryBrowseImport
-      parentRoute: typeof rootRoute
-    }
     '/library/search': {
       id: '/library/search'
       path: '/library/search'
@@ -303,11 +272,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TerminalIndexImport
       parentRoute: typeof rootRoute
     }
-    '/library/(browse)/artists': {
-      id: '/library/(browse)/artists'
-      path: '/library/artists'
-      fullPath: '/library/artists'
-      preLoaderRoute: typeof LibrarybrowseArtistsRouteImport
+    '/library/browse/artists': {
+      id: '/library/browse/artists'
+      path: '/library/browse/artists'
+      fullPath: '/library/browse/artists'
+      preLoaderRoute: typeof LibraryBrowseArtistsRouteImport
       parentRoute: typeof rootRoute
     }
     '/debug/design/icons': {
@@ -338,19 +307,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InboxTaskTaskIdImport
       parentRoute: typeof rootRoute
     }
-    '/library/(browse)/albums': {
-      id: '/library/(browse)/albums'
-      path: '/library/albums'
-      fullPath: '/library/albums'
-      preLoaderRoute: typeof LibrarybrowseAlbumsImport
+    '/library/browse/albums': {
+      id: '/library/browse/albums'
+      path: '/library/browse/albums'
+      fullPath: '/library/browse/albums'
+      preLoaderRoute: typeof LibraryBrowseAlbumsImport
       parentRoute: typeof rootRoute
     }
-    '/library/browse/$artist': {
-      id: '/library/browse/$artist'
-      path: '/$artist'
-      fullPath: '/library/browse/$artist'
-      preLoaderRoute: typeof LibraryBrowseArtistImport
-      parentRoute: typeof LibraryBrowseImport
+    '/library/browse/': {
+      id: '/library/browse/'
+      path: '/library/browse'
+      fullPath: '/library/browse'
+      preLoaderRoute: typeof LibraryBrowseIndexImport
+      parentRoute: typeof rootRoute
     }
     '/library/(resources)/album/$albumId': {
       id: '/library/(resources)/album/$albumId'
@@ -373,26 +342,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InboxFolderPathHashImport
       parentRoute: typeof rootRoute
     }
-    '/library/(browse)/artists/$artist': {
-      id: '/library/(browse)/artists/$artist'
+    '/library/browse/artists/$artist': {
+      id: '/library/browse/artists/$artist'
       path: '/$artist'
-      fullPath: '/library/artists/$artist'
-      preLoaderRoute: typeof LibrarybrowseArtistsArtistImport
-      parentRoute: typeof LibrarybrowseArtistsRouteImport
+      fullPath: '/library/browse/artists/$artist'
+      preLoaderRoute: typeof LibraryBrowseArtistsArtistImport
+      parentRoute: typeof LibraryBrowseArtistsRouteImport
     }
-    '/library/browse/$artist/$albumId': {
-      id: '/library/browse/$artist/$albumId'
-      path: '/$albumId'
-      fullPath: '/library/browse/$artist/$albumId'
-      preLoaderRoute: typeof LibraryBrowseArtistAlbumIdImport
-      parentRoute: typeof LibraryBrowseArtistImport
-    }
-    '/library/(browse)/artists/': {
-      id: '/library/(browse)/artists/'
+    '/library/browse/artists/': {
+      id: '/library/browse/artists/'
       path: '/'
-      fullPath: '/library/artists/'
-      preLoaderRoute: typeof LibrarybrowseArtistsIndexImport
-      parentRoute: typeof LibrarybrowseArtistsRouteImport
+      fullPath: '/library/browse/artists/'
+      preLoaderRoute: typeof LibraryBrowseArtistsIndexImport
+      parentRoute: typeof LibraryBrowseArtistsRouteImport
     }
     '/library/(resources)/album/$albumId/beetsdata': {
       id: '/library/(resources)/album/$albumId/beetsdata'
@@ -422,13 +384,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LibraryresourcesItemItemIdIdentifierImport
       parentRoute: typeof LibraryresourcesItemItemIdRouteImport
     }
-    '/library/browse/$artist/$albumId/$itemId': {
-      id: '/library/browse/$artist/$albumId/$itemId'
-      path: '/$itemId'
-      fullPath: '/library/browse/$artist/$albumId/$itemId'
-      preLoaderRoute: typeof LibraryBrowseArtistAlbumIdItemIdImport
-      parentRoute: typeof LibraryBrowseArtistAlbumIdImport
-    }
     '/library/(resources)/album/$albumId/': {
       id: '/library/(resources)/album/$albumId/'
       path: '/'
@@ -441,58 +396,20 @@ declare module '@tanstack/react-router' {
 
 // Create and export the route tree
 
-interface LibraryBrowseArtistAlbumIdRouteChildren {
-  LibraryBrowseArtistAlbumIdItemIdRoute: typeof LibraryBrowseArtistAlbumIdItemIdRoute
+interface LibraryBrowseArtistsRouteRouteChildren {
+  LibraryBrowseArtistsArtistRoute: typeof LibraryBrowseArtistsArtistRoute
+  LibraryBrowseArtistsIndexRoute: typeof LibraryBrowseArtistsIndexRoute
 }
 
-const LibraryBrowseArtistAlbumIdRouteChildren: LibraryBrowseArtistAlbumIdRouteChildren =
+const LibraryBrowseArtistsRouteRouteChildren: LibraryBrowseArtistsRouteRouteChildren =
   {
-    LibraryBrowseArtistAlbumIdItemIdRoute:
-      LibraryBrowseArtistAlbumIdItemIdRoute,
+    LibraryBrowseArtistsArtistRoute: LibraryBrowseArtistsArtistRoute,
+    LibraryBrowseArtistsIndexRoute: LibraryBrowseArtistsIndexRoute,
   }
 
-const LibraryBrowseArtistAlbumIdRouteWithChildren =
-  LibraryBrowseArtistAlbumIdRoute._addFileChildren(
-    LibraryBrowseArtistAlbumIdRouteChildren,
-  )
-
-interface LibraryBrowseArtistRouteChildren {
-  LibraryBrowseArtistAlbumIdRoute: typeof LibraryBrowseArtistAlbumIdRouteWithChildren
-}
-
-const LibraryBrowseArtistRouteChildren: LibraryBrowseArtistRouteChildren = {
-  LibraryBrowseArtistAlbumIdRoute: LibraryBrowseArtistAlbumIdRouteWithChildren,
-}
-
-const LibraryBrowseArtistRouteWithChildren =
-  LibraryBrowseArtistRoute._addFileChildren(LibraryBrowseArtistRouteChildren)
-
-interface LibraryBrowseRouteChildren {
-  LibraryBrowseArtistRoute: typeof LibraryBrowseArtistRouteWithChildren
-}
-
-const LibraryBrowseRouteChildren: LibraryBrowseRouteChildren = {
-  LibraryBrowseArtistRoute: LibraryBrowseArtistRouteWithChildren,
-}
-
-const LibraryBrowseRouteWithChildren = LibraryBrowseRoute._addFileChildren(
-  LibraryBrowseRouteChildren,
-)
-
-interface LibrarybrowseArtistsRouteRouteChildren {
-  LibrarybrowseArtistsArtistRoute: typeof LibrarybrowseArtistsArtistRoute
-  LibrarybrowseArtistsIndexRoute: typeof LibrarybrowseArtistsIndexRoute
-}
-
-const LibrarybrowseArtistsRouteRouteChildren: LibrarybrowseArtistsRouteRouteChildren =
-  {
-    LibrarybrowseArtistsArtistRoute: LibrarybrowseArtistsArtistRoute,
-    LibrarybrowseArtistsIndexRoute: LibrarybrowseArtistsIndexRoute,
-  }
-
-const LibrarybrowseArtistsRouteRouteWithChildren =
-  LibrarybrowseArtistsRouteRoute._addFileChildren(
-    LibrarybrowseArtistsRouteRouteChildren,
+const LibraryBrowseArtistsRouteRouteWithChildren =
+  LibraryBrowseArtistsRouteRoute._addFileChildren(
+    LibraryBrowseArtistsRouteRouteChildren,
   )
 
 interface LibraryresourcesAlbumAlbumIdRouteRouteChildren {
@@ -538,31 +455,28 @@ export interface FileRoutesByFullPath {
   '/debug/audio': typeof DebugAudioRoute
   '/debug/error': typeof DebugErrorRoute
   '/debug/jobs': typeof DebugJobsRoute
-  '/library/browse': typeof LibraryBrowseRouteWithChildren
   '/library/search': typeof LibrarySearchRoute
   '/': typeof FrontpageIndexRoute
   '/debug': typeof DebugIndexRoute
   '/inbox': typeof InboxIndexRoute
   '/sessiondraft': typeof SessiondraftIndexRoute
   '/terminal': typeof TerminalIndexRoute
-  '/library/artists': typeof LibrarybrowseArtistsRouteRouteWithChildren
+  '/library/browse/artists': typeof LibraryBrowseArtistsRouteRouteWithChildren
   '/debug/design/icons': typeof DebugDesignIconsRoute
   '/debug/design/loading': typeof DebugDesignLoadingRoute
   '/inbox/folder/$path': typeof InboxFolderPathRoute
   '/inbox/task/$taskId': typeof InboxTaskTaskIdRoute
-  '/library/albums': typeof LibrarybrowseAlbumsRoute
-  '/library/browse/$artist': typeof LibraryBrowseArtistRouteWithChildren
+  '/library/browse/albums': typeof LibraryBrowseAlbumsRoute
+  '/library/browse': typeof LibraryBrowseIndexRoute
   '/library/album/$albumId': typeof LibraryresourcesAlbumAlbumIdRouteRouteWithChildren
   '/library/item/$itemId': typeof LibraryresourcesItemItemIdRouteRouteWithChildren
   '/inbox/folder/$path/$hash': typeof InboxFolderPathHashRoute
-  '/library/artists/$artist': typeof LibrarybrowseArtistsArtistRoute
-  '/library/browse/$artist/$albumId': typeof LibraryBrowseArtistAlbumIdRouteWithChildren
-  '/library/artists/': typeof LibrarybrowseArtistsIndexRoute
+  '/library/browse/artists/$artist': typeof LibraryBrowseArtistsArtistRoute
+  '/library/browse/artists/': typeof LibraryBrowseArtistsIndexRoute
   '/library/album/$albumId/beetsdata': typeof LibraryresourcesAlbumAlbumIdBeetsdataRoute
   '/library/album/$albumId/identifier': typeof LibraryresourcesAlbumAlbumIdIdentifierRoute
   '/library/item/$itemId/beetsdata': typeof LibraryresourcesItemItemIdBeetsdataRoute
   '/library/item/$itemId/identifier': typeof LibraryresourcesItemItemIdIdentifierRoute
-  '/library/browse/$artist/$albumId/$itemId': typeof LibraryBrowseArtistAlbumIdItemIdRoute
   '/library/album/$albumId/': typeof LibraryresourcesAlbumAlbumIdIndexRoute
 }
 
@@ -570,7 +484,6 @@ export interface FileRoutesByTo {
   '/debug/audio': typeof DebugAudioRoute
   '/debug/error': typeof DebugErrorRoute
   '/debug/jobs': typeof DebugJobsRoute
-  '/library/browse': typeof LibraryBrowseRouteWithChildren
   '/library/search': typeof LibrarySearchRoute
   '/': typeof FrontpageIndexRoute
   '/debug': typeof DebugIndexRoute
@@ -581,18 +494,16 @@ export interface FileRoutesByTo {
   '/debug/design/loading': typeof DebugDesignLoadingRoute
   '/inbox/folder/$path': typeof InboxFolderPathRoute
   '/inbox/task/$taskId': typeof InboxTaskTaskIdRoute
-  '/library/albums': typeof LibrarybrowseAlbumsRoute
-  '/library/browse/$artist': typeof LibraryBrowseArtistRouteWithChildren
+  '/library/browse/albums': typeof LibraryBrowseAlbumsRoute
+  '/library/browse': typeof LibraryBrowseIndexRoute
   '/library/item/$itemId': typeof LibraryresourcesItemItemIdRouteRouteWithChildren
   '/inbox/folder/$path/$hash': typeof InboxFolderPathHashRoute
-  '/library/artists/$artist': typeof LibrarybrowseArtistsArtistRoute
-  '/library/browse/$artist/$albumId': typeof LibraryBrowseArtistAlbumIdRouteWithChildren
-  '/library/artists': typeof LibrarybrowseArtistsIndexRoute
+  '/library/browse/artists/$artist': typeof LibraryBrowseArtistsArtistRoute
+  '/library/browse/artists': typeof LibraryBrowseArtistsIndexRoute
   '/library/album/$albumId/beetsdata': typeof LibraryresourcesAlbumAlbumIdBeetsdataRoute
   '/library/album/$albumId/identifier': typeof LibraryresourcesAlbumAlbumIdIdentifierRoute
   '/library/item/$itemId/beetsdata': typeof LibraryresourcesItemItemIdBeetsdataRoute
   '/library/item/$itemId/identifier': typeof LibraryresourcesItemItemIdIdentifierRoute
-  '/library/browse/$artist/$albumId/$itemId': typeof LibraryBrowseArtistAlbumIdItemIdRoute
   '/library/album/$albumId': typeof LibraryresourcesAlbumAlbumIdIndexRoute
 }
 
@@ -601,31 +512,28 @@ export interface FileRoutesById {
   '/debug/audio': typeof DebugAudioRoute
   '/debug/error': typeof DebugErrorRoute
   '/debug/jobs': typeof DebugJobsRoute
-  '/library/browse': typeof LibraryBrowseRouteWithChildren
   '/library/search': typeof LibrarySearchRoute
   '/_frontpage/': typeof FrontpageIndexRoute
   '/debug/': typeof DebugIndexRoute
   '/inbox/': typeof InboxIndexRoute
   '/sessiondraft/': typeof SessiondraftIndexRoute
   '/terminal/': typeof TerminalIndexRoute
-  '/library/(browse)/artists': typeof LibrarybrowseArtistsRouteRouteWithChildren
+  '/library/browse/artists': typeof LibraryBrowseArtistsRouteRouteWithChildren
   '/debug/design/icons': typeof DebugDesignIconsRoute
   '/debug/design/loading': typeof DebugDesignLoadingRoute
   '/inbox/folder/$path': typeof InboxFolderPathRoute
   '/inbox/task/$taskId': typeof InboxTaskTaskIdRoute
-  '/library/(browse)/albums': typeof LibrarybrowseAlbumsRoute
-  '/library/browse/$artist': typeof LibraryBrowseArtistRouteWithChildren
+  '/library/browse/albums': typeof LibraryBrowseAlbumsRoute
+  '/library/browse/': typeof LibraryBrowseIndexRoute
   '/library/(resources)/album/$albumId': typeof LibraryresourcesAlbumAlbumIdRouteRouteWithChildren
   '/library/(resources)/item/$itemId': typeof LibraryresourcesItemItemIdRouteRouteWithChildren
   '/inbox/folder_/$path/$hash': typeof InboxFolderPathHashRoute
-  '/library/(browse)/artists/$artist': typeof LibrarybrowseArtistsArtistRoute
-  '/library/browse/$artist/$albumId': typeof LibraryBrowseArtistAlbumIdRouteWithChildren
-  '/library/(browse)/artists/': typeof LibrarybrowseArtistsIndexRoute
+  '/library/browse/artists/$artist': typeof LibraryBrowseArtistsArtistRoute
+  '/library/browse/artists/': typeof LibraryBrowseArtistsIndexRoute
   '/library/(resources)/album/$albumId/beetsdata': typeof LibraryresourcesAlbumAlbumIdBeetsdataRoute
   '/library/(resources)/album/$albumId/identifier': typeof LibraryresourcesAlbumAlbumIdIdentifierRoute
   '/library/(resources)/item/$itemId/beetsdata': typeof LibraryresourcesItemItemIdBeetsdataRoute
   '/library/(resources)/item/$itemId/identifier': typeof LibraryresourcesItemItemIdIdentifierRoute
-  '/library/browse/$artist/$albumId/$itemId': typeof LibraryBrowseArtistAlbumIdItemIdRoute
   '/library/(resources)/album/$albumId/': typeof LibraryresourcesAlbumAlbumIdIndexRoute
 }
 
@@ -635,38 +543,34 @@ export interface FileRouteTypes {
     | '/debug/audio'
     | '/debug/error'
     | '/debug/jobs'
-    | '/library/browse'
     | '/library/search'
     | '/'
     | '/debug'
     | '/inbox'
     | '/sessiondraft'
     | '/terminal'
-    | '/library/artists'
+    | '/library/browse/artists'
     | '/debug/design/icons'
     | '/debug/design/loading'
     | '/inbox/folder/$path'
     | '/inbox/task/$taskId'
-    | '/library/albums'
-    | '/library/browse/$artist'
+    | '/library/browse/albums'
+    | '/library/browse'
     | '/library/album/$albumId'
     | '/library/item/$itemId'
     | '/inbox/folder/$path/$hash'
-    | '/library/artists/$artist'
-    | '/library/browse/$artist/$albumId'
-    | '/library/artists/'
+    | '/library/browse/artists/$artist'
+    | '/library/browse/artists/'
     | '/library/album/$albumId/beetsdata'
     | '/library/album/$albumId/identifier'
     | '/library/item/$itemId/beetsdata'
     | '/library/item/$itemId/identifier'
-    | '/library/browse/$artist/$albumId/$itemId'
     | '/library/album/$albumId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/debug/audio'
     | '/debug/error'
     | '/debug/jobs'
-    | '/library/browse'
     | '/library/search'
     | '/'
     | '/debug'
@@ -677,49 +581,44 @@ export interface FileRouteTypes {
     | '/debug/design/loading'
     | '/inbox/folder/$path'
     | '/inbox/task/$taskId'
-    | '/library/albums'
-    | '/library/browse/$artist'
+    | '/library/browse/albums'
+    | '/library/browse'
     | '/library/item/$itemId'
     | '/inbox/folder/$path/$hash'
-    | '/library/artists/$artist'
-    | '/library/browse/$artist/$albumId'
-    | '/library/artists'
+    | '/library/browse/artists/$artist'
+    | '/library/browse/artists'
     | '/library/album/$albumId/beetsdata'
     | '/library/album/$albumId/identifier'
     | '/library/item/$itemId/beetsdata'
     | '/library/item/$itemId/identifier'
-    | '/library/browse/$artist/$albumId/$itemId'
     | '/library/album/$albumId'
   id:
     | '__root__'
     | '/debug/audio'
     | '/debug/error'
     | '/debug/jobs'
-    | '/library/browse'
     | '/library/search'
     | '/_frontpage/'
     | '/debug/'
     | '/inbox/'
     | '/sessiondraft/'
     | '/terminal/'
-    | '/library/(browse)/artists'
+    | '/library/browse/artists'
     | '/debug/design/icons'
     | '/debug/design/loading'
     | '/inbox/folder/$path'
     | '/inbox/task/$taskId'
-    | '/library/(browse)/albums'
-    | '/library/browse/$artist'
+    | '/library/browse/albums'
+    | '/library/browse/'
     | '/library/(resources)/album/$albumId'
     | '/library/(resources)/item/$itemId'
     | '/inbox/folder_/$path/$hash'
-    | '/library/(browse)/artists/$artist'
-    | '/library/browse/$artist/$albumId'
-    | '/library/(browse)/artists/'
+    | '/library/browse/artists/$artist'
+    | '/library/browse/artists/'
     | '/library/(resources)/album/$albumId/beetsdata'
     | '/library/(resources)/album/$albumId/identifier'
     | '/library/(resources)/item/$itemId/beetsdata'
     | '/library/(resources)/item/$itemId/identifier'
-    | '/library/browse/$artist/$albumId/$itemId'
     | '/library/(resources)/album/$albumId/'
   fileRoutesById: FileRoutesById
 }
@@ -728,19 +627,19 @@ export interface RootRouteChildren {
   DebugAudioRoute: typeof DebugAudioRoute
   DebugErrorRoute: typeof DebugErrorRoute
   DebugJobsRoute: typeof DebugJobsRoute
-  LibraryBrowseRoute: typeof LibraryBrowseRouteWithChildren
   LibrarySearchRoute: typeof LibrarySearchRoute
   FrontpageIndexRoute: typeof FrontpageIndexRoute
   DebugIndexRoute: typeof DebugIndexRoute
   InboxIndexRoute: typeof InboxIndexRoute
   SessiondraftIndexRoute: typeof SessiondraftIndexRoute
   TerminalIndexRoute: typeof TerminalIndexRoute
-  LibrarybrowseArtistsRouteRoute: typeof LibrarybrowseArtistsRouteRouteWithChildren
+  LibraryBrowseArtistsRouteRoute: typeof LibraryBrowseArtistsRouteRouteWithChildren
   DebugDesignIconsRoute: typeof DebugDesignIconsRoute
   DebugDesignLoadingRoute: typeof DebugDesignLoadingRoute
   InboxFolderPathRoute: typeof InboxFolderPathRoute
   InboxTaskTaskIdRoute: typeof InboxTaskTaskIdRoute
-  LibrarybrowseAlbumsRoute: typeof LibrarybrowseAlbumsRoute
+  LibraryBrowseAlbumsRoute: typeof LibraryBrowseAlbumsRoute
+  LibraryBrowseIndexRoute: typeof LibraryBrowseIndexRoute
   LibraryresourcesAlbumAlbumIdRouteRoute: typeof LibraryresourcesAlbumAlbumIdRouteRouteWithChildren
   LibraryresourcesItemItemIdRouteRoute: typeof LibraryresourcesItemItemIdRouteRouteWithChildren
   InboxFolderPathHashRoute: typeof InboxFolderPathHashRoute
@@ -750,19 +649,19 @@ const rootRouteChildren: RootRouteChildren = {
   DebugAudioRoute: DebugAudioRoute,
   DebugErrorRoute: DebugErrorRoute,
   DebugJobsRoute: DebugJobsRoute,
-  LibraryBrowseRoute: LibraryBrowseRouteWithChildren,
   LibrarySearchRoute: LibrarySearchRoute,
   FrontpageIndexRoute: FrontpageIndexRoute,
   DebugIndexRoute: DebugIndexRoute,
   InboxIndexRoute: InboxIndexRoute,
   SessiondraftIndexRoute: SessiondraftIndexRoute,
   TerminalIndexRoute: TerminalIndexRoute,
-  LibrarybrowseArtistsRouteRoute: LibrarybrowseArtistsRouteRouteWithChildren,
+  LibraryBrowseArtistsRouteRoute: LibraryBrowseArtistsRouteRouteWithChildren,
   DebugDesignIconsRoute: DebugDesignIconsRoute,
   DebugDesignLoadingRoute: DebugDesignLoadingRoute,
   InboxFolderPathRoute: InboxFolderPathRoute,
   InboxTaskTaskIdRoute: InboxTaskTaskIdRoute,
-  LibrarybrowseAlbumsRoute: LibrarybrowseAlbumsRoute,
+  LibraryBrowseAlbumsRoute: LibraryBrowseAlbumsRoute,
+  LibraryBrowseIndexRoute: LibraryBrowseIndexRoute,
   LibraryresourcesAlbumAlbumIdRouteRoute:
     LibraryresourcesAlbumAlbumIdRouteRouteWithChildren,
   LibraryresourcesItemItemIdRouteRoute:
@@ -783,19 +682,19 @@ export const routeTree = rootRoute
         "/debug/audio",
         "/debug/error",
         "/debug/jobs",
-        "/library/browse",
         "/library/search",
         "/_frontpage/",
         "/debug/",
         "/inbox/",
         "/sessiondraft/",
         "/terminal/",
-        "/library/(browse)/artists",
+        "/library/browse/artists",
         "/debug/design/icons",
         "/debug/design/loading",
         "/inbox/folder/$path",
         "/inbox/task/$taskId",
-        "/library/(browse)/albums",
+        "/library/browse/albums",
+        "/library/browse/",
         "/library/(resources)/album/$albumId",
         "/library/(resources)/item/$itemId",
         "/inbox/folder_/$path/$hash"
@@ -809,12 +708,6 @@ export const routeTree = rootRoute
     },
     "/debug/jobs": {
       "filePath": "debug/jobs.tsx"
-    },
-    "/library/browse": {
-      "filePath": "library/browse.tsx",
-      "children": [
-        "/library/browse/$artist"
-      ]
     },
     "/library/search": {
       "filePath": "library/search.tsx"
@@ -834,11 +727,11 @@ export const routeTree = rootRoute
     "/terminal/": {
       "filePath": "terminal/index.tsx"
     },
-    "/library/(browse)/artists": {
-      "filePath": "library/(browse)/artists.route.tsx",
+    "/library/browse/artists": {
+      "filePath": "library/browse/artists.route.tsx",
       "children": [
-        "/library/(browse)/artists/$artist",
-        "/library/(browse)/artists/"
+        "/library/browse/artists/$artist",
+        "/library/browse/artists/"
       ]
     },
     "/debug/design/icons": {
@@ -853,15 +746,11 @@ export const routeTree = rootRoute
     "/inbox/task/$taskId": {
       "filePath": "inbox/task.$taskId.tsx"
     },
-    "/library/(browse)/albums": {
-      "filePath": "library/(browse)/albums.tsx"
+    "/library/browse/albums": {
+      "filePath": "library/browse/albums.tsx"
     },
-    "/library/browse/$artist": {
-      "filePath": "library/browse.$artist.tsx",
-      "parent": "/library/browse",
-      "children": [
-        "/library/browse/$artist/$albumId"
-      ]
+    "/library/browse/": {
+      "filePath": "library/browse/index.tsx"
     },
     "/library/(resources)/album/$albumId": {
       "filePath": "library/(resources)/album.$albumId.route.tsx",
@@ -881,20 +770,13 @@ export const routeTree = rootRoute
     "/inbox/folder_/$path/$hash": {
       "filePath": "inbox/folder_.$path.$hash.tsx"
     },
-    "/library/(browse)/artists/$artist": {
-      "filePath": "library/(browse)/artists.$artist.tsx",
-      "parent": "/library/(browse)/artists"
+    "/library/browse/artists/$artist": {
+      "filePath": "library/browse/artists.$artist.tsx",
+      "parent": "/library/browse/artists"
     },
-    "/library/browse/$artist/$albumId": {
-      "filePath": "library/browse.$artist.$albumId.tsx",
-      "parent": "/library/browse/$artist",
-      "children": [
-        "/library/browse/$artist/$albumId/$itemId"
-      ]
-    },
-    "/library/(browse)/artists/": {
-      "filePath": "library/(browse)/artists.index.tsx",
-      "parent": "/library/(browse)/artists"
+    "/library/browse/artists/": {
+      "filePath": "library/browse/artists.index.tsx",
+      "parent": "/library/browse/artists"
     },
     "/library/(resources)/album/$albumId/beetsdata": {
       "filePath": "library/(resources)/album.$albumId.beetsdata.tsx",
@@ -911,10 +793,6 @@ export const routeTree = rootRoute
     "/library/(resources)/item/$itemId/identifier": {
       "filePath": "library/(resources)/item.$itemId.identifier.tsx",
       "parent": "/library/(resources)/item/$itemId"
-    },
-    "/library/browse/$artist/$albumId/$itemId": {
-      "filePath": "library/browse.$artist.$albumId.$itemId.tsx",
-      "parent": "/library/browse/$artist/$albumId"
     },
     "/library/(resources)/album/$albumId/": {
       "filePath": "library/(resources)/album.$albumId.index.tsx",

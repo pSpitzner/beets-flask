@@ -9,6 +9,7 @@ import {
     getStorageValue,
     useLocalStorage,
 } from "@/components/common/hooks/useLocalStorage";
+import { BackIconButton } from "@/components/common/inputs/back";
 import { Search } from "@/components/common/inputs/search";
 import { PageWrapper } from "@/components/common/page";
 import {
@@ -32,7 +33,7 @@ const DEFAULT_STORAGE_VALUE = {
     orderDirection: "ASC" as const,
 };
 
-export const Route = createFileRoute("/library/(browse)/albums")({
+export const Route = createFileRoute("/library/browse/albums")({
     component: RouteComponent,
     loader: async ({ context }) => {
         const val = getStorageValue(STORAGE_KEY, DEFAULT_STORAGE_VALUE);
@@ -52,11 +53,24 @@ function RouteComponent() {
                 flexDirection: "column",
                 minHeight: "100%",
                 height: "100%",
+                position: "relative",
                 [theme.breakpoints.up("laptop")]: {
                     padding: 2,
                 },
             })}
         >
+            <BackIconButton
+                sx={{
+                    // TODO: styling for mobile
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    zIndex: 2,
+                    margin: 0.5,
+                }}
+                size="small"
+                color="primary"
+            />
             <Box
                 sx={(theme) => ({
                     height: "100%",
@@ -385,6 +399,7 @@ function CoverGridRow({
 /* -------------------------------- list view ------------------------------- */
 
 const LISTROWHEIGHT = 50; // height of each row in the list
+const SHOWARTINLIST = false;
 
 function AlbumsList({
     data,
@@ -471,17 +486,19 @@ function AlbumListRow({
                     },
                 })}
             >
-                <CoverArt
-                    type="album"
-                    beetsId={album.id}
-                    size="small"
-                    sx={{
-                        display: "block",
-                        width: "50px",
-                        height: "50px",
-                        padding: 0.5,
-                    }}
-                />
+                {SHOWARTINLIST && (
+                    <CoverArt
+                        type="album"
+                        beetsId={album.id}
+                        size="small"
+                        sx={{
+                            display: "block",
+                            width: "50px",
+                            height: "50px",
+                            padding: 0.5,
+                        }}
+                    />
+                )}
                 <Box
                     sx={{
                         display: "flex",
