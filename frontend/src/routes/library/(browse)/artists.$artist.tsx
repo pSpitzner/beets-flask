@@ -22,6 +22,7 @@ import {
     FixedList,
     FixedListChildrenProps,
 } from "@/components/library/viewer/DataView";
+import { ViewToggle } from "@/components/library/viewer/ViewToggle";
 import { AlbumResponseMinimal } from "@/pythonTypes";
 
 export const Route = createFileRoute("/library/(browse)/artists/$artist")({
@@ -180,27 +181,11 @@ function AlbumsViewer({
                                 <Disc3Icon size={theme.iconSize.lg} />
                             </ToggleButton>
                         </ToggleButtonGroup>
-                        <ToggleButtonGroup
-                            value={view}
-                            onChange={(
-                                _e: React.MouseEvent<HTMLElement>,
-                                v: "list" | "grid" | null
-                            ) => {
-                                if (v) {
-                                    setView(v);
-                                }
-                            }}
-                            color="primary"
-                            exclusive
-                            aria-label="View type"
-                        >
-                            <ToggleButton value="list">
-                                <ListIcon size={theme.iconSize.lg} />
-                            </ToggleButton>
-                            <ToggleButton value="grid">
-                                <GridIcon size={theme.iconSize.lg} />
-                            </ToggleButton>
-                        </ToggleButtonGroup>
+                        <ViewToggle
+                            view={view}
+                            setView={setView}
+                            sx={{ marginLeft: "auto" }}
+                        />
                     </Box>
                 </Box>
                 <Typography

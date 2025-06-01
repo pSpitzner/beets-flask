@@ -1,4 +1,3 @@
-import { D } from "node_modules/@tanstack/react-query-devtools/build/modern/ReactQueryDevtools-Cn7cKi7o";
 import { ComponentType } from "react";
 import AutoSizer from "react-virtualized-auto-sizer";
 import {
@@ -19,6 +18,7 @@ export type FixedGridChildrenProps<D> = Omit<
     rowData: D[];
     startIndex: number;
     endIndex: number;
+    maxNColumns: number; // Optional maximum number of columns in the grid
 };
 
 /**
@@ -95,6 +95,7 @@ export function FixedGrid<D>({
                                     rowData={dataSlice}
                                     startIndex={startIndex}
                                     endIndex={endIndex}
+                                    maxNColumns={nColumns}
                                     {...props}
                                 />
                             );

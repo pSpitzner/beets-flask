@@ -194,7 +194,7 @@ export const albumsInfiniteQueryOptions = ({
     orderDirection?: "ASC" | "DESC";
 }) => {
     const params = new URLSearchParams();
-    params.set("n_items", "1"); // Number of items per page
+    params.set("n_items", "50"); // Number of items per page
     if (orderBy) params.set("order_by", orderBy);
     if (orderDirection) params.set("order_dir", orderDirection);
     const paramsStr = params.toString();
