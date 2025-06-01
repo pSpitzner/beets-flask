@@ -93,10 +93,16 @@ def test_all_album_folders_no_subdirs(base):
         base + "/artist/album_good/1991/Chant [SINGLE]",
         base + "/artist/album_good/Annix",
         base + "/artist/album_good/Annix/Antidote",
+        # should not be found:
+        # "/artist/album_empty"
+        # "/artist/album_junk"
+        # @semohr: what about "/artist/album_good/multi" seems like unintended strucutre?
     ]
 
-    print(all_album_folders(base))
-    assert set(all_album_folders(base)) == {Path(p) for p in all_albums}
+    found_folders = all_album_folders(base)
+    expected_folders = [Path(p) for p in all_albums]
+
+    assert set(found_folders) == set(expected_folders)
 
 
 def test_all_album_folders_with_subdirs(base):

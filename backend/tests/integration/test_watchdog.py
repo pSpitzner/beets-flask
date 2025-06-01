@@ -40,7 +40,7 @@ def mp_en():
     calls = []
 
     with mock.patch(
-        "beets_flask.inbox.auto_tag",
+        "beets_flask.watchdog.inbox.auto_tag",
         lambda *args, **kwargs: calls.append((*args, *kwargs)),
     ):
         yield calls
@@ -51,7 +51,7 @@ async def test_watchdog(preview_autotag, mp_en):
 
     config = get_config()
     print("foo")
-    inbox_path = Path(config["gui"]["inbox"]["folders"]["inbox1"]["path"].get())
+    inbox_path = Path(str(config["gui"]["inbox"]["folders"]["inbox1"]["path"].get()))
     inbox_autotag = config["gui"]["inbox"]["folders"]["inbox1"]["autotag"].get()
 
     assert inbox_path.is_dir(), "Inbox path should be a directory"
