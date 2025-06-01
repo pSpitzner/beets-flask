@@ -3,6 +3,10 @@ import shutil
 from pathlib import Path
 
 import pytest
+from cachetools import Cache
+
+from beets_flask.dirhash_custom import dirhash_c
+from beets_flask.disk import audio_regex
 
 
 def touch(path):
@@ -202,3 +206,38 @@ def test_album_folders_from_track(
     assert len(folders) == len(expected)
     for i, e in enumerate(expected):
         assert folders[i] == Path(base + e)
+
+
+cache_options = [None, Cache(maxsize=2**16)]
+
+
+@pytest.mark.parametrize(
+    "cache",
+    cache_options,
+)
+def test_dirhash(tmpdir_factory: pytest.TempdirFactory, cache: Cache | None):
+    base = Path(tmpdir_factory.mktemp("dirhash_sample"))
+
+    # adding a file directly inside
+    hash_0 = dirhash_c(base, cache)
+    (base / "dummy.txt").touch()
+    assert dirhash_c(base, cache) != hash_0
+
+    # when focusing on audio files, adding a txt should not change hash
+    assert dirhash_c(base, cache, filter_regex=audio_regex) == hash_0
+
+    (base / "dummy.mp3").touch()
+    assert dirhash_c(base, cache, filter_regex=audio_regex) != hash_0
+
+    # deletion back to old hash
+    os.remove(base / "dummy.txt")
+    os.remove(base / "dummy.mp3")
+    assert dirhash_c(base, cache) == hash_0
+
+    # creating subdirectories or moving them should change the hash
+    os.makedirs(base / "subdir")
+    hash_1 = dirhash_c(base, cache)
+    assert hash_1 != hash_0
+
+    os.rename(base / "subdir", base / "subdir2")
+    assert dirhash_c(base, cache) != hash_1
