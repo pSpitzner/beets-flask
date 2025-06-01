@@ -36,7 +36,7 @@ class IsolatedDBMixin(ABC):
         _reset_database()
 
     @pytest.fixture(autouse=True, scope="class")
-    def setup(self, testapp):
+    def setup_database(self, testapp):
         """
         Automatically reset the database before and after ALL tests in this class.
 
@@ -65,7 +65,7 @@ class IsolatedBeetsLibraryMixin(ABC):
     """
 
     @pytest.fixture(autouse=True, scope="class")
-    def beets_lib_setup(
+    def setup_beetslib(
         self,
     ):
         """Automatically reset the beets library before and after ALL tests in this class."""

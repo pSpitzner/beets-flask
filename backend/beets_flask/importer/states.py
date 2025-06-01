@@ -211,7 +211,7 @@ class TaskState(BaseState):
     task: importer.ImportTask
     candidate_states: List[CandidateState]
     chosen_candidate_state_id: str | None = None
-    progress = ProgressState()
+    progress: ProgressState
 
     # the completed state blocks the choose_match function
     # of interactive sessions via our await_completion method
@@ -231,6 +231,7 @@ class TaskState(BaseState):
         # change. but I do not know when or why they would.
         self.task = task
         self.candidate_states = [CandidateState(c, self) for c in self.task.candidates]
+        self.progress = ProgressState()
 
     def __repr__(self) -> str:
         return (

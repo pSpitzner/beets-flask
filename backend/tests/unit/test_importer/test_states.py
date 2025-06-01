@@ -1,10 +1,10 @@
 import logging
+from abc import ABC
 from pathlib import Path
 from typing import List
 
 import pytest
 from beets import autotag, importer
-from tests.conftest import beets_lib_item
 
 from beets_flask.importer.states import (
     CandidateState,
@@ -14,6 +14,8 @@ from beets_flask.importer.states import (
 )
 from beets_flask.importer.types import BeetsAlbumMatch, BeetsTrackInfo
 from beets_flask.server.app import Encoder
+from tests.conftest import beets_lib_item
+from tests.mixins.database import IsolatedBeetsLibraryMixin, IsolatedDBMixin
 
 log = logging.getLogger(__name__)
 
@@ -32,40 +34,31 @@ def get_album_match(tracks: List[BeetsTrackInfo], items, **info):
     return match
 
 
-@pytest.fixture
-def import_task(beets_lib):
-    item = beets_lib_item(title="title", path="path")
-    task = importer.ImportTask(paths=[b"a path"], toppath=b"top path", items=[item])
+class StateTest(IsolatedBeetsLibraryMixin, IsolatedDBMixin, ABC):
+    """Base class for tests that require a beets library."""
 
-    track_info = autotag.TrackInfo(title="match title")
-    album_match = get_album_match(
-        [track_info], [item], album="match album", data_url="url"
-    )
+    @property
+    def import_task(self):
+        item = beets_lib_item(title="title", path="path")
+        task = importer.ImportTask(paths=[b"a path"], toppath=b"top path", items=[item])
 
-    task.candidates = [album_match]
-    return task
+        track_info = autotag.TrackInfo(title="match title")
+        album_match = get_album_match(
+            [track_info], [item], album="match album", data_url="url"
+        )
 
-
-def test_task_fixture(import_task):
-    assert isinstance(import_task, importer.ImportTask)
-
-    # Test if paths is bytes
-    assert isinstance(import_task.paths, list)
-    for path in import_task.paths:
-        assert isinstance(path, bytes)
-
-    assert import_task.paths == [b"a path"]
-    assert import_task.toppath == b"top path"
+        task.candidates = [album_match]
+        return task
 
 
-class TestTaskState:
+class TestTaskState(StateTest):
     task: importer.ImportTask
     task_state: TaskState
 
     @pytest.fixture(autouse=True)
-    def gen_task_state(self, import_task):
-        self.task = import_task
-        self.task_state = TaskState(import_task)
+    def gen_task_state(self):
+        self.task = self.import_task
+        self.task_state = TaskState(self.task)
 
     def test_properties(self):
         task_state = self.task_state
@@ -77,13 +70,13 @@ class TestTaskState:
 
         assert len(task_state.candidate_states) == len(self.task.candidates)
 
-    def test_best_candidate(self, import_task):
+    def test_best_candidate(self):
         task_state = self.task_state
         assert task_state.best_candidate_state is not None
-        assert task_state.best_candidate_state.match is import_task.candidates[0]
+        assert task_state.best_candidate_state.match is self.task.candidates[0]
 
-        import_task.candidates = []
-        task_state = TaskState(import_task)
+        self.task.candidates = []
+        task_state = TaskState(self.task)
         # Should be none if no candidates (asis is not counted!)
         assert task_state.best_candidate_state is None
 
@@ -101,13 +94,14 @@ class TestTaskState:
         json.dumps(serialized, cls=Encoder)
 
 
-class TestCandidateState:
+class TestCandidateState(StateTest):
     task: importer.ImportTask
     task_state: TaskState
     candidates: list[CandidateState]
 
     @pytest.fixture(autouse=True)
-    def gen_candidate_state(self, import_task):
+    def gen_candidate_state(self):
+        import_task = self.import_task
         task_state = TaskState(import_task)
         candidate_states = task_state.candidate_states
 
@@ -148,9 +142,11 @@ class TestCandidateState:
         assert isinstance(diff_preview, str)
         assert "match album" in diff_preview
 
-    def test_identify_duplicates(self, beets_lib):
+    def test_identify_duplicates(
+        self,
+    ):
         candidate = self.candidates[0]
-        duplicates = candidate.identify_duplicates(beets_lib)
+        duplicates = candidate.identify_duplicates(self.beets_lib)
         assert isinstance(duplicates, list)
         assert len(duplicates) == 0
         assert candidate.has_duplicates_in_library is False
@@ -170,23 +166,26 @@ class TestCandidateState:
         json.dumps(serialized, cls=Encoder)
 
 
-class TestSessionState:
+class TestSessionState(StateTest):
+    task: importer.ImportTask
     session_state: SessionState
 
     @pytest.fixture(autouse=True)
-    def gen_session_state(self, import_task, tmpdir_factory: pytest.TempdirFactory):
+    def gen_session_state(self, tmpdir_factory: pytest.TempdirFactory):
         self.session_state = SessionState(
             Path(tmpdir_factory.mktemp("beets_flask_disk"))
         )
-        self.session_state.upsert_task(import_task)
+        self.task = self.import_task
+        self.session_state.upsert_task(self.task)
 
-    def test_multiple_upserts(self, import_task):
+    def test_multiple_upserts(self):
+        import_task = self.task
         session_state = self.session_state
         session_state.upsert_task(import_task)
         session_state.upsert_task(import_task)
         assert len(session_state.task_states) == 1
 
-    def test_progress(self, import_task):
+    def test_progress(self):
         session_state = self.session_state
 
         assert session_state.progress == Progress.NOT_STARTED
@@ -202,7 +201,8 @@ class TestSessionState:
         session_state._task_states = []
         assert session_state.progress == Progress.NOT_STARTED
 
-    def test_get_task(self, import_task):
+    def test_get_task(self):
+        import_task = self.task
         session_state = self.session_state
         task_state = session_state.get_task_state_for_task(import_task)
         assert task_state is not None
