@@ -45,8 +45,15 @@ LOGGING_CONFIG = {
 }
 
 # On testing only log to console
-if not "PYTEST_VERSION" in os.environ:
+if "PYTEST_VERSION" in os.environ:
+    # Configure minimal logging for pytest
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(relativeCreated)-8d [%(levelname)-5s] %(name)s %(filename)-8s:%(lineno)d %(message)s",
+    )
+else:
     logging.config.dictConfig(LOGGING_CONFIG)
+
 log = logging.getLogger("beets-flask")
 
 rq_name = os.getenv("RQ_JOB_ID", None)

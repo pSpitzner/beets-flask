@@ -94,6 +94,16 @@ class SessionState(BaseState):
         self.folder_path = folder.path
         self.folder_hash = folder.hash
 
+    def __repr__(self) -> str:
+        return (
+            f"SessionState:\n"
+            + f" * id={self.id}\n"
+            + f" * folder_path={self.folder_path}\n"
+            + f" * folder_hash={self.folder_hash}\n"
+            + f" * task_states={[ts.id for ts in self.task_states]}\n"
+            + f" * progress={self.progress}"
+        )
+
     @property
     @deprecated("Use the folder attribute instead!")
     def path(self) -> Path:
@@ -221,6 +231,17 @@ class TaskState(BaseState):
         # change. but I do not know when or why they would.
         self.task = task
         self.candidate_states = [CandidateState(c, self) for c in self.task.candidates]
+
+    def __repr__(self) -> str:
+        return (
+            f"TaskState:\n"
+            + f" * id={self.id}\n"
+            + f" * candidate_states={[ts.id for ts in self.candidate_states]}\n"
+            + f" * chosen_candidate_state_id={self.chosen_candidate_state_id}\n"
+            + f" * progress={self.progress}\n"
+            + f" * completed={self.completed}\n"
+            + f" * toppath={self.toppath}\n"
+        )
 
     @property
     def candidates(
@@ -396,6 +417,18 @@ class CandidateState(BaseState):
         self.match = match
         self.duplicate_ids = []  # checked and set by session
         self.task_state = task_state
+
+    def __repr__(self) -> str:
+        return (
+            f"CandidateState:\n"
+            + f" * id={self.id}\n"
+            + f" * match={self.match}\n"
+            + f" * task_state_id={self.task_state.id}\n"
+            + f" * distance={self.distance}\n"
+            + f" * penalties={self.penalties}\n"
+            + f" * {len(self.items)=}\n"
+            + f" * {len(self.tracks)=}\n"
+        )
 
     @property
     def type(self) -> Literal["album", "track"]:
