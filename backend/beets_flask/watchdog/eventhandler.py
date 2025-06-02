@@ -7,7 +7,8 @@ MIT License
 
 import asyncio
 from pathlib import Path
-from typing import cast
+from types import CoroutineType
+from typing import Callable, cast
 
 from watchdog.events import (
     DirCreatedEvent,
@@ -43,12 +44,8 @@ class AIOEventHandler:
 
     def __init__(self, loop=None):
         self._loop = loop or asyncio.get_event_loop()
-        # prefer asyncio.create_task starting from Python 3.7
-        if hasattr(asyncio, "create_task"):
-            self._ensure_future = asyncio.create_task
-        else:
-            self._ensure_future = asyncio.ensure_future
-        self._method_map = {
+        self._ensure_future = asyncio.create_task
+        self._method_map: dict[str, Callable] = {
             EVENT_TYPE_MODIFIED: self.on_modified,
             EVENT_TYPE_MOVED: self.on_moved,
             EVENT_TYPE_CREATED: self.on_created,

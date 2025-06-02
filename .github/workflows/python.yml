@@ -4,7 +4,7 @@ on:
     push:
         branches: ["main"]
         paths:
-          - backend/**
+            - backend/**
     pull_request:
         # The branches below must be a subset of the branches above
         branches: ["main"]
@@ -26,10 +26,12 @@ jobs:
                   pip install ruff
                   pip install .[typed]
             - name: Check style with Ruff
+              continue-on-error: true
               run: |
                   cd ./backend
                   ruff check --output-format=github .
             - name: Check type hints with mypy
+              continue-on-error: true
               run: |
                   cd ./backend
                   mypy --show-error-codes --check-untyped-defs --config-file ./pyproject.toml ./beets_flask

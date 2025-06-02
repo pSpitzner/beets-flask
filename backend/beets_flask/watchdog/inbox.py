@@ -49,11 +49,11 @@ def register_inboxes(timeout: float = 2.5, debounce: float = 30) -> AIOWatchdog 
     if os.environ.get("RQ_WORKER_ID", None):
         # only launch the observer on the main process
         log.exception("WTF, redis what you doing?")
-        return
+        return None
 
     # Return early if no inboxes are configured.
     if len(_inboxes) == 0:
-        return
+        return None
 
     # One observer for all inboxes.
     handler = InboxHandler(debounce_window=debounce)

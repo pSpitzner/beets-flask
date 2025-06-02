@@ -208,10 +208,10 @@ class TaskState(BaseState):
     Has a list of associated CandidateStates, that represent `matches` in beets.
     """
 
+    progress: ProgressState
     task: importer.ImportTask
     candidate_states: List[CandidateState]
     chosen_candidate_state_id: str | None = None
-    progress: ProgressState
 
     # the completed state blocks the choose_match function
     # of interactive sessions via our await_completion method
@@ -355,7 +355,8 @@ class TaskState(BaseState):
         (In a beets context, cur_artist and cur_album)
         """
         likelies, consensus = autotag.current_metadata(self.items)
-        return Metadata(**{k: str(v) for k, v in likelies.items()})
+        # FIXME: Type hint be fixed once we update beets
+        return Metadata(**{k: str(v) for k, v in likelies.items()})  # type: ignore
 
     # ---------------------------------------------------------------------------- #
 

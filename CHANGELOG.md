@@ -24,7 +24,7 @@ database (**not** the beets db!).
 -   Much better test coverage.
 -   Now using [py2ts](https://github.com/semohr/py2ts) to automatically generate frontend (typescript) types from their backend (python) equivalents.
 
-## [0.1.1] - upcoming
+## [0.1.1] - unreleased
 
 ### Added
 

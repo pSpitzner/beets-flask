@@ -103,7 +103,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
             jobs.append(
                 await invoker.enqueue(
                     hash,
-                    path,
+                    str(path),
                     invoker.EnqueueKind.from_str(kind),
                     extra_meta=meta,
                     **params,
@@ -134,8 +134,10 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         with db_session_factory() as db_session:
             # Get path, hash by task_id
             if session_id is not None:
-                stmt = select(SessionStateInDb).where(SessionStateInDb.id == session_id)
-                session_indb = db_session.execute(stmt).scalar_one_or_none()
+                stmt_session = select(SessionStateInDb).where(
+                    SessionStateInDb.id == session_id
+                )
+                session_indb = db_session.execute(stmt_session).scalar_one_or_none()
                 if session_indb is None:
                     raise InvalidUsageException(
                         f"Session with session_id {session_id} not found",
@@ -145,8 +147,8 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
                 folder_hash = session_indb.folder.hash
 
             if task_id is not None:
-                stmt = select(TaskStateInDb).where(TaskStateInDb.id == task_id)
-                task_indb = db_session.execute(stmt).scalar_one_or_none()
+                stmt_task = select(TaskStateInDb).where(TaskStateInDb.id == task_id)
+                task_indb = db_session.execute(stmt_task).scalar_one_or_none()
                 if task_indb is None:
                     raise InvalidUsageException(
                         f"Task with task_id {task_id} not found",
@@ -222,7 +224,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
                 exc = job_exc
 
             stats.append(
-                FolderStatusUpdate(path=path, hash=hash, status=status, exc=exc)
+                FolderStatusUpdate(path=str(path), hash=hash, status=status, exc=exc)
             )
 
         return jsonify(stats)

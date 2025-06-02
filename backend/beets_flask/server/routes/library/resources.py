@@ -420,7 +420,8 @@ def _repr_Item(item: Item | None, minimal=False) -> ItemResponse | ItemResponseM
                     # id
                     for k, v in mb_source.items():
                         if k not in source:
-                            source[k] = v
+                            # Fixme: Typing is a bit cursed here
+                            source[k] = v  # type: ignore
 
                     sources = list(filter(lambda s: s["source"] != "mb", sources))
                     break

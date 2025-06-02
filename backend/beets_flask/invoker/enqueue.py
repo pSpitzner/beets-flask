@@ -2,7 +2,16 @@ from __future__ import annotations
 
 import asyncio
 from enum import Enum
-from typing import TYPE_CHECKING, Awaitable, Callable, Literal, ParamSpec, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Awaitable,
+    Callable,
+    Concatenate,
+    Literal,
+    ParamSpec,
+    TypeVar,
+)
 
 from beets.ui import _open_library
 from sqlalchemy import func, select
@@ -79,7 +88,7 @@ R = TypeVar("R")  # Return
 
 def _enqueue(
     queue: Queue,
-    f: Callable[P, R | Awaitable[R]],
+    f: Callable[P, Any | Awaitable[Any]],
     *args: P.args,
     **kwargs: P.kwargs,
 ) -> Job:
@@ -304,7 +313,9 @@ def enqueue_import_auto(hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs
     group_albums: bool | None = kwargs.pop("group_albums", None)
     autotag: bool | None = kwargs.pop("autotag", None)
     import_threshold: float | None = kwargs.pop("import_threshold", None)
-    duplicate_actions: str | None = kwargs.pop("duplicate_actions", None)
+    duplicate_actions: TaskIdMappingArg[DuplicateAction] = kwargs.pop(
+        "duplicate_actions", None
+    )
 
     if len(kwargs.keys()) > 0:
         raise InvalidUsageException(
@@ -326,7 +337,8 @@ def enqueue_import_auto(hash: str, path: str, extra_meta: ExtraJobMeta, **kwargs
         import_threshold=import_threshold,
         duplicate_actions=duplicate_actions,
         **kwargs,
-        depends_on=job1,  # type: ignore a bit of an hack to get dependency working in rq
+        # rq has no proper typing therefore our kwargs are not type checked properly
+        depends_on=job1,  # type: ignore
     )
     _set_job_meta(job2, hash, path, EnqueueKind._AUTO_IMPORT, extra_meta)
 
@@ -370,7 +382,8 @@ def enqueue_delete_items(task_ids: list[str]) -> Job:
         delete_items,
         task_ids,
         True,
-        at_front=True,  # type: ignore Allow to run job first
+        # rq has no proper typing therefore our kwargs are not type checked properly
+        at_front=True,  # type: ignore
     )
     return job
 
@@ -447,6 +460,7 @@ async def run_preview(
             db_session.commit()
 
     log.info(f"Preview done. {hash=} {path=}")
+    return
 
 
 from collections import defaultdict

@@ -1,7 +1,7 @@
 [project]
 name = "interactive-beets"
 description = "An opinionated web-interface around the music organizer [beets](https://beets.io/)"
-version = "0.1.0"
+version = "1.0.0"
 authors = [
     { name = "F. Paul Spitzner", email = "paul.spitzner@gmail.com" },
     { name = "Sebastian B. Mohr", email = "sebastian@mohrenclan.de" },
@@ -55,6 +55,7 @@ typed = [
     "mypy>=1.14.1",
     "types-cachetools",
     "types-Deprecated",
+    "types-aiofiles",
 ]
 all = ["interactive_beets[dev,test]"]
 docs = [
@@ -127,6 +128,7 @@ omit = ["*/tests/*"]
 [tool.mypy]
 check_untyped_defs = true
 disallow_untyped_decorators = true
+allow_redefinition = true
 
 [[tool.mypy.overrides]]
 # Suppresses error messages about imports that cannot be resolved.

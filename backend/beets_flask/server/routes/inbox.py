@@ -16,7 +16,11 @@ from beets_flask.disk import Folder, dir_files, dir_size, log, path_to_folder
 from beets_flask.importer.progress import Progress
 from beets_flask.server.exceptions import InvalidUsageException, NotFoundException
 from beets_flask.server.routes.library.artwork import send_image
-from beets_flask.server.utility import pop_folder_params, pop_query_param
+from beets_flask.server.utility import (
+    pop_folder_params,
+    pop_paths_param,
+    pop_query_param,
+)
 from beets_flask.watchdog.inbox import (
     get_inbox_folders,
     get_inbox_for_path,
@@ -138,10 +142,8 @@ async def delete():
     params = await request.get_json()
     folder_hashes, folder_paths = pop_folder_params(params, allow_empty=False)
 
-    folder_paths = [Path(folder) for folder in folder_paths]
-
     # Deduplicate based on both path and hash (order-preserving)
-    seen = set()
+    seen: set[tuple[Path, str]] = set()
     folder_paths_and_hashes = []
     for path, hash in zip(folder_paths, folder_hashes):
         if (path, hash) not in seen:
@@ -183,12 +185,7 @@ async def delete():
 async def get_multiple_filemeta():
     params = await request.get_json()
 
-    def ensure_list_of_path(obj):
-        if not isinstance(obj, list):
-            return [Path(obj)]
-        return [Path(o) for o in obj]
-
-    file_paths = pop_query_param(params, "file_paths", ensure_list_of_path, default=[])
+    file_paths = pop_paths_param(params, "file_paths", default=[])
 
     if len(file_paths) == 0:
         raise InvalidUsageException("No file paths provided", status_code=400)

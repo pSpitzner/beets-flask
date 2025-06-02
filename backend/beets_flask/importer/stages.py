@@ -5,27 +5,17 @@ This allows us to keep track of the import state and communicate it to the front
 
 from __future__ import annotations
 
-import asyncio
 import itertools
 from datetime import datetime
-from enum import Enum
-from functools import total_ordering, wraps
-from inspect import isgenerator, isgeneratorfunction
-from re import I
+from functools import wraps
+from inspect import isgenerator
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Coroutine,
     Generator,
-    Generic,
-    Iterable,
     Literal,
     Optional,
-    ParamSpec,
-    Sequence,
-    Sized,
-    Tuple,
     TypeVar,
     TypeVarTuple,
     Union,
@@ -38,7 +28,6 @@ from beets.importer import (
     ImportTask,
     ImportTaskFactory,
     SentinelImportTask,
-    SingletonImportTask,
     _extend_pipeline,
     _freshen_items,
     action,
@@ -56,7 +45,6 @@ if TYPE_CHECKING:
         AutoImportSession,
         BaseSession,
         ImportSession,
-        InteractiveImportSession,
     )
     from beets_flask.importer.types import BeetsItem
 
@@ -215,9 +203,11 @@ def stage(
                 for t in task:
                     task = yield t
             else:
-                t: Task | None | Ret = cast(Task | None | Ret, task)
-                task = yield t  # wait for send to arrive. the first next() always returns None
+                task = yield cast(
+                    Task | None | Ret, task
+                )  # wait for send to arrive. the first next() always returns None
             # yield task, call func which gives new task, yield new task in next()
+            task = cast(Task, task)  # Slightly hacky, but we know task is a Task here
             task = func(*(args + (task,)))
 
     return coro
@@ -367,26 +357,6 @@ def identify_duplicates(
         return
 
     session.identify_duplicates(task)
-
-
-@mutator_stage
-@set_progress(Progress.OFFERING_MATCHES)
-def offer_match(
-    session: InteractiveImportSession,
-    task: ImportTask,
-):
-    """Stage to offer a match to the user.
-
-    This is non-blocking. Essentially we split the `user_query` stage (which calls `choose_match`) into two stages.
-    The first is `offer_match` sending info to the frontend, while the second is
-    `choose_match` that waits until all user choices have been made.
-    """
-    # For historic reasons? Sentinel tasks (this is what beets does in choose_match)
-    if task.skip:
-        log.debug(f"Skipping task: {session=}, {task=}")
-        return task
-
-    session.offer_match(task)
 
 
 @stage
@@ -625,7 +595,6 @@ __all__ = [
     "group_albums",
     "lookup_candidates",
     "identify_duplicates",
-    "offer_match",
     "user_query",
     "plugin_stage",
     "manipulate_files",

@@ -1,4 +1,5 @@
-from typing import Callable, TypeVar
+from pathlib import Path
+from typing import Callable, TypeVar, cast
 
 from beets_flask.invoker.job import ExtraJobMeta
 from beets_flask.logger import log
@@ -6,14 +7,18 @@ from beets_flask.logger import log
 from .exceptions import InvalidUsageException
 
 R = TypeVar("R")
-D = TypeVar("D")
+D = TypeVar(
+    "D",
+    # Fixme: Add once we update to python 3.13
+    # default=None,
+)
 
 
 def pop_query_param(
     params: dict,
     key: str,
     convert_func: Callable[..., R],
-    default: D = None,
+    default: D | None = None,
     error_message: str | None = None,
 ) -> D | R:
     """Safely retrieves and converts a query parameter from the request args.
@@ -37,7 +42,7 @@ def pop_query_param(
     value = params.pop(key, None)
 
     if value is None:
-        return default
+        return cast(D, default)
 
     try:
         value = convert_func(value)
@@ -61,7 +66,7 @@ def pop_extra_meta(params: dict, n_jobs=1) -> list[ExtraJobMeta]:
         The request args.
     """
 
-    job_refs = pop_query_param(
+    job_refs: list[str] = pop_query_param(
         params=params, key="job_frontend_refs", convert_func=list, default=None
     )
 
@@ -81,7 +86,7 @@ def pop_folder_params(
     params: dict,
     allow_mismatch: bool = False,
     allow_empty: bool = True,
-) -> tuple[list[str], list[str]]:
+) -> tuple[list[str], list[Path]]:
     """Get folder hashes and paths from the request parameters.
 
     Parameters
@@ -100,8 +105,12 @@ def pop_folder_params(
         params : Any
 
     """
-    folder_hashes = pop_query_param(params, "folder_hashes", list, default=[])
-    folder_paths = pop_query_param(params, "folder_paths", list, default=[])
+    folder_hashes: list[str] = pop_query_param(
+        params, "folder_hashes", list, default=[]
+    )
+    folder_paths: list[Path] = pop_query_param(
+        params, "folder_paths", lambda x: [Path(p) for p in x], default=[]
+    )
 
     if not allow_mismatch and len(folder_hashes) != len(folder_paths):
         raise InvalidUsageException(
@@ -112,3 +121,20 @@ def pop_folder_params(
         raise InvalidUsageException("folder_hashes and folder_paths cannot be empty")
 
     return folder_hashes, folder_paths
+
+
+def pop_paths_param(params: dict, key: str, default: D | None = None) -> list[Path] | D:
+    """Safely retrieves a path parameter from the request args."""
+
+    def ensure_list_of_path(obj) -> list[Path]:
+        if not isinstance(obj, list):
+            return [Path(obj)]
+        return [Path(o) for o in obj]
+
+    return pop_query_param(
+        params=params,
+        key=key,
+        convert_func=ensure_list_of_path,
+        default=default,
+        error_message=f"Invalid parameter '{key}'",
+    )

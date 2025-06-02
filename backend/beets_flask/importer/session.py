@@ -66,7 +66,6 @@ from .stages import (
     mark_tasks_completed,
     mark_tasks_preview_completed,
     match_threshold,
-    offer_match,
     plugin_stage,
     read_tasks,
     user_query,
