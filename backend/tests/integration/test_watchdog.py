@@ -57,7 +57,7 @@ async def test_watchdog(preview_autotag, mp_en):
     assert inbox_path.is_dir(), "Inbox path should be a directory"
     assert inbox_autotag == "preview", "Inbox autotag should be set to 'preview'"
 
-    watchdog = register_inboxes(0.25, 3)  # timeout=1s, debounce=30s
+    watchdog = register_inboxes(0.1, 0.5)  # timeout=1s, debounce=30s
     assert watchdog is not None, "Watchdog should be initialized"
     assert watchdog._observer.is_alive(), "Watchdog should be running"
 
@@ -69,7 +69,7 @@ async def test_watchdog(preview_autotag, mp_en):
     assert isinstance(h, InboxHandler), (
         "Handler should be an instance of AIOEventHandler"
     )
-    await asyncio.sleep(0.5)  # Allow time for the observer to start task
+    await asyncio.sleep(0.12)  # Allow time for the observer to start task
     task = list(h.debounce.values())[0]
     assert task is not None, "Debounce should have a task after touching file"
     # Check task is running
@@ -77,11 +77,11 @@ async def test_watchdog(preview_autotag, mp_en):
 
     # Touch again and check that task is cancelled
     (inbox_path / "album" / "test.mp3").touch()
-    await asyncio.sleep(0.5)  # Allow debounce time
+    await asyncio.sleep(0.12)  # Allow debounce time
     assert task.cancelled(), "Task should be cancelled by new incoming ones"
 
     # Check that the task is not running anymore
     task_2 = list(h.debounce.values())[0]
-    await asyncio.sleep(4)
+    await asyncio.sleep(1)
     assert task_2.done(), "Task should be done after debounce time"
     assert mp_en[0][0] == (inbox_path / "album").resolve()

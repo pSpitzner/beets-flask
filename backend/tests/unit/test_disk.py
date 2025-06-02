@@ -27,6 +27,11 @@ def base(tmpdir_factory):
     dest = Path(base) / "artist" / "album_good"
     shutil.copytree(source, dest, dirs_exist_ok=True)
 
+    # remove multi folder
+    shutil.rmtree(
+        dest / "multi",
+    )
+
     # empty folder
     os.makedirs(os.path.join(base, "artist/album_empty"))
 
@@ -100,7 +105,6 @@ def test_all_album_folders_no_subdirs(base):
         # should not be found:
         # "/artist/album_empty"
         # "/artist/album_junk"
-        # @semohr: what about "/artist/album_good/multi" seems like unintended strucutre?
     ]
 
     found_folders = all_album_folders(base)
