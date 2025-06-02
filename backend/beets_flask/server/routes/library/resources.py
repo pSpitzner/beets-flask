@@ -26,6 +26,7 @@ from beets import util as beets_util
 from beets.dbcore import Model, Query, Results
 from beets.dbcore.query import Sort, datetime
 from beets.library import Album, Item, Library, parse_query_string
+import numpy as np
 from quart import Blueprint, Response, abort, g, json, jsonify, request
 from typing_extensions import NotRequired
 
@@ -197,7 +198,8 @@ async def albums_by_artist(artist_name: str):
 
     with g.lib.transaction() as tx:
         rows = tx.query(
-            f"SELECT id FROM albums WHERE albumartist COLLATE NOCASE = '{artist_name}'"
+            f"SELECT id FROM albums WHERE albumartist WHERE instr(artist, ?) > 0",
+            (artist_name,),
         )
 
     expanded = expanded_response()
@@ -208,6 +210,27 @@ async def albums_by_artist(artist_name: str):
             _rep(g.lib.get_album(row[0]), expand=expanded, minimal=minimal)
             for row in rows
         ]
+    )
+
+
+# Items by artist are handled slightly differently, as they are not a beets model but can be
+# derived from the items.
+@resource_bp.route("/artist/<path:artist_name>/items", methods=["GET"])
+async def items_by_artist(artist_name: str):
+    """Get all items for a specific artist."""
+    log.debug(f"Item query for artist '{artist_name}'")
+
+    with g.lib.transaction() as tx:
+        rows = tx.query(
+            f"SELECT id FROM items WHERE artist WHERE instr(artist, ?) > 0",
+            (artist_name,),
+        )
+
+    expanded = expanded_response()
+    minimal = minimal_response()
+
+    return jsonify(
+        [_rep(g.lib.get_item(row[0]), expand=expanded, minimal=minimal) for row in rows]
     )
 
 
@@ -231,14 +254,6 @@ async def album_by_bf_id(bf_id: str):
         )
     album = albums[0]
     return album
-
-
-@resource_bp.route("/artists/", methods=["GET"])
-async def all_artists():
-    with g.lib.transaction() as tx:
-        rows = tx.query("SELECT DISTINCT albumartist FROM albums")
-    all_artists = [{"name": row[0]} for row in rows]
-    return jsonify(sorted(all_artists, key=lambda a: a["name"]))
 
 
 @resource_bp.route("/albums", methods=["GET"], defaults={"query": ""})

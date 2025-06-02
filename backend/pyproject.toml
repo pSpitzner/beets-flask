@@ -39,6 +39,7 @@ dependencies = [
     "aiohttp",
     "aiofiles",
     "numpy",
+    "pandas",
 ]
 
 [project.optional-dependencies]
