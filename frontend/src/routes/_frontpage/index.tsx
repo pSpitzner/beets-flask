@@ -1,7 +1,7 @@
 import { BookOpenIcon, BugIcon, GithubIcon } from "lucide-react";
 import { Box, Link, Typography, useTheme } from "@mui/material";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 
 import { inboxStatsQueryOptions } from "@/api/inbox";
 import { libraryStatsQueryOptions } from "@/api/library";
@@ -44,7 +44,6 @@ function Index() {
                 maxWidth: `${theme.breakpoints.values.laptop}px !important`,
             })}
         >
-            <Outlet />
             <Hero />
             <Box
                 sx={{

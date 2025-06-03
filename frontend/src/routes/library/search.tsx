@@ -17,8 +17,8 @@ import {
 } from "@/components/common/hooks/useSearch";
 import { Loading } from "@/components/common/loading";
 import { PageWrapper } from "@/components/common/page";
-import { ItemById } from "@/components/library/item";
 import { AlbumById } from "@/components/library/itemAlbumDetails";
+import { ItemById } from "@/components/library/itemold";
 import List from "@/components/library/list";
 
 import styles from "@/components/library/library.module.scss";

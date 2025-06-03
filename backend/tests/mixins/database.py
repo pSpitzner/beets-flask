@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import os
 from abc import ABC
+from collections import namedtuple
+from functools import cached_property
 from typing import TYPE_CHECKING
+from unittest import mock
 
 import pytest
 
@@ -85,10 +88,14 @@ class IsolatedBeetsLibraryMixin(ABC):
         config["directory"] = os.environ["BEETSDIR"] + "/imported"
         # Reset the beets library to a clean state
         yield
+        print("Resetting beets library to a clean state...")
         # Reset the beets library to a clean state
-        os.remove(os.environ["BEETSDIR"] + "/library.db")
+        try:
+            os.remove(os.environ["BEETSDIR"] + "/library.db")
+        except OSError:
+            pass
 
-    @property
+    @cached_property
     def beets_lib(self) -> BeetsLibrary:
         """Return the beets library instance."""
         import beets.library
@@ -100,4 +107,10 @@ class IsolatedBeetsLibraryMixin(ABC):
             directory=os.environ["BEETSDIR"] + "/imported",
         )
         refresh_config()
-        return lib
+
+        # mock needed for the library to be available in the resources endpoints
+        with mock.patch(
+            "beets_flask.server.routes.library.resources.g",
+            namedtuple("g", ["lib", "config"])(lib, None),
+        ):
+            return lib

@@ -6,7 +6,9 @@ Adapted from the official beets web interface
 from __future__ import annotations
 
 import base64
+import datetime
 import os
+import time
 from dataclasses import dataclass
 from functools import wraps
 from typing import (
@@ -22,14 +24,17 @@ from typing import (
 )
 
 from beets import util as beets_util
-from beets.dbcore import Results
-from beets.library import Album, Item
-from quart import Blueprint, Response, abort, g, jsonify, request
+from beets.dbcore import Model, Query, Results
+from beets.dbcore.query import Sort
+from beets.library import Album, Item, Library, parse_query_string
+from quart import Blueprint, Response, abort, g, json, jsonify, request, url_for
 from typing_extensions import NotRequired
 
 from beets_flask.config import get_config
 from beets_flask.logger import log
 from beets_flask.server.exceptions import NotFoundException
+from beets_flask.server.routes.exception import InvalidUsageException
+from beets_flask.server.utility import pop_query_param
 
 if TYPE_CHECKING:
     # For type hinting the global g object
@@ -193,7 +198,8 @@ async def albums_by_artist(artist_name: str):
 
     with g.lib.transaction() as tx:
         rows = tx.query(
-            f"SELECT id FROM albums WHERE albumartist COLLATE NOCASE = '{artist_name}'"
+            f"SELECT id FROM albums WHERE instr(albumartist, ?) > 0",
+            (artist_name,),
         )
 
     expanded = expanded_response()
@@ -204,6 +210,27 @@ async def albums_by_artist(artist_name: str):
             _rep(g.lib.get_album(row[0]), expand=expanded, minimal=minimal)
             for row in rows
         ]
+    )
+
+
+# Items by artist are handled slightly differently, as they are not a beets model but can be
+# derived from the items.
+@resource_bp.route("/artist/<path:artist_name>/items", methods=["GET"])
+async def items_by_artist(artist_name: str):
+    """Get all items for a specific artist."""
+    log.debug(f"Item query for artist '{artist_name}'")
+
+    with g.lib.transaction() as tx:
+        rows = tx.query(
+            f"SELECT id FROM items WHERE instr(artist, ?) > 0",
+            (artist_name,),
+        )
+
+    expanded = expanded_response()
+    minimal = minimal_response()
+
+    return jsonify(
+        [_rep(g.lib.get_item(row[0]), expand=expanded, minimal=minimal) for row in rows]
     )
 
 
@@ -229,12 +256,70 @@ async def album_by_bf_id(bf_id: str):
     return album
 
 
-@resource_bp.route("/artist/", methods=["GET"])
-async def all_artists():
-    with g.lib.transaction() as tx:
-        rows = tx.query("SELECT DISTINCT albumartist FROM albums")
-    all_artists = [{"name": row[0]} for row in rows]
-    return jsonify(sorted(all_artists, key=lambda a: a["name"]))
+@resource_bp.route("/albums", methods=["GET"], defaults={"query": ""})
+@resource_bp.route("/albums/<path:query>", methods=["GET"])
+async def all_albums(query: str = ""):
+    """Get all albums in the library.
+
+    If a query is provided, it will be used to filter the albums.
+    """
+    log.debug(f"Album query: {query}")
+    params = dict(request.args)
+
+    cursor = pop_query_param(params, "cursor", Cursor.from_string, None)
+
+    if cursor is None:
+        order_by_column = pop_query_param(params, "order_by", str, "added")
+        order_by_direction = pop_query_param(params, "order_dir", str, "DESC")
+        cursor = Cursor(
+            order_by_column=order_by_column,
+            order_by_direction=order_by_direction,
+            last_order_by_value=None,
+            last_id=None,
+        )
+
+    n_items = pop_query_param(
+        params,
+        "n_items",
+        int,
+        50,  # Default number of items per page
+    )
+
+    if len(params) > 0:
+        raise InvalidUsageException(
+            "Unexpected query parameters: , ".join(params.keys())
+        )
+
+    sub_query = parse_query_string(query, Album)
+
+    start = time.perf_counter()
+    paginated_query = PaginatedQuery(
+        cursor=cursor,
+        sub_query=sub_query,
+        n_items=n_items,
+    )
+    albums = list(g.lib.albums(paginated_query, paginated_query))
+
+    # Update cursor
+    next_url: str | None = None
+
+    total = paginated_query.total(g.lib)
+    if len(albums) == n_items and len(albums) > 0:
+        last_album = albums[-1]
+
+        cursor.last_order_by_value = str(
+            getattr(last_album, cursor.order_by_column, None)
+        )
+        cursor.last_id = str(last_album.id)
+        next_url = f"{request.path}?cursor={cursor.to_string()}&n_items={n_items}"
+
+    return jsonify(
+        {
+            "albums": [_rep(album, expand=False, minimal=True) for album in albums],
+            "next": next_url,
+            "total": total,
+        }
+    )
 
 
 # ----------------------------------- Util ----------------------------------- #
@@ -262,6 +347,133 @@ def update_entities(
         entity.try_sync(True, False)
 
     return entities
+
+
+@dataclass
+class Cursor:
+    """Cursor for paginated queries.
+
+    Contains the datetime and id of the last item in the current page.
+    """
+
+    order_by_column: str
+    order_by_direction: str
+
+    last_order_by_value: str | None
+    last_id: str | None
+
+    def to_string(self) -> str:
+        """Convert the cursor to a string representation."""
+        s = (
+            json.dumps(
+                {
+                    "c": self.order_by_column,
+                    "d": self.order_by_direction,
+                    "v": self.last_order_by_value,
+                    "i": self.last_id,
+                }
+            )
+            .encode("utf-8")
+            .hex()
+        )
+        return s
+
+    @staticmethod
+    def from_string(s: str) -> Cursor:
+        """Create a cursor from a string representation."""
+
+        try:
+            d = json.loads(bytes.fromhex(s).decode("utf-8"))
+            # TODO: Validate the structure of d
+            return Cursor(d["c"], d["d"], d.get("v", None), d.get("i", None))
+        except Exception as e:
+            raise ValueError(f"Invalid cursor string: {s}")
+
+    def causes(self) -> tuple[str, Sequence[Any]]:
+        """Return a string representation of the cursor."""
+        if not self.last_order_by_value or not self.last_id:
+            # If no last value or id is set, we cannot use the cursor
+            return "1=1", ()
+
+        if self.order_by_direction not in ["ASC", "DESC"]:
+            raise ValueError(
+                f"Invalid order_by_direction: {self.order_by_direction}. "
+                "Must be 'ASC' or 'DESC'."
+            )
+
+        eq_sign = "<"
+        if self.order_by_direction == "ASC":
+            eq_sign = ">"
+
+        return (
+            f"({self.order_by_column} {eq_sign} ?) OR ({self.order_by_column} = ? AND id {eq_sign} ?)",
+            (
+                self.last_order_by_value,
+                self.last_order_by_value,
+                self.last_id,
+            ),
+        )
+
+    def order_by_clause(self) -> str:
+        """Return the order by clause for the query."""
+
+        return f"{self.order_by_column} {self.order_by_direction}, id {self.order_by_direction}"
+
+
+class PaginatedQuery(Query, Sort):
+    # Number of items to return per page.
+    n_items: int
+
+    # Current position in the query.
+    cursor: Cursor
+
+    _sub_query: tuple[Query, Sort] | None
+
+    def __init__(
+        self, cursor: Cursor, sub_query: tuple[Query, Sort], n_items=50
+    ) -> None:
+        super().__init__()
+        self.n_items = n_items
+        self.cursor = cursor
+        self._sub_query = sub_query
+
+    def clause(self) -> tuple[str | None, Sequence[Any]]:
+        """Return the SQL clause and values for the query."""
+
+        if self._sub_query:
+            # If there is a sub-query, use it to filter the results
+            cs, vs = self._sub_query[0].clause()
+        else:
+            cs = "1=1"  # No sub-query, match all
+            vs = ()
+
+        cc, cv = self.cursor.causes()
+        return f"({cs}) AND ({cc})", list(vs) + list(cv)
+
+    def order_clause(self) -> str:
+        """Order by added date and id descending."""
+        sub_sort = self._sub_query[1] if self._sub_query else None
+        cursor_order = self.cursor.order_by_clause()
+        if sub_sort:
+            return f"{cursor_order} LIMIT {self.n_items}"
+        return f"{cursor_order} LIMIT {self.n_items}"
+
+    def match(self, obj: Model) -> bool:  # type: ignore
+        return isinstance(obj, Item) or isinstance(obj, Album)
+
+    def total(self, lib: Library) -> int:
+        """Return the total number of items in the query."""
+
+        if self._sub_query:
+            # If there is a sub-query, use it to filter the results
+            cs, vs = self._sub_query[0].clause()
+        else:
+            cs = "1=1"  # No sub-query, match all
+            vs = ()
+
+        with g.lib.transaction() as tx:
+            count = tx.query(f"SELECT COUNT(*) FROM albums WHERE {cs}", vs)[0][0]
+        return count
 
 
 # -------------------- Helper for formatting beets models -------------------- #
@@ -470,6 +682,8 @@ class AlbumResponseMinimal(TypedDict):
     albumartist: str
     # Year the album was published
     year: int
+    # Date the album was added to the library
+    added: datetime.datetime
 
 
 class AlbumResponseMinimalExpanded(AlbumResponseMinimal):
@@ -477,6 +691,9 @@ class AlbumResponseMinimalExpanded(AlbumResponseMinimal):
 
     gui_import_id: NotRequired[str]
     gui_import_date: NotRequired[str]
+
+    # Not sure if these are always set
+    albumtype: NotRequired[str]
 
 
 class AlbumResponse(AlbumResponseMinimal):
@@ -503,6 +720,9 @@ class AlbumResponseExpanded(AlbumResponse):
     gui_import_id: NotRequired[str]
     gui_import_date: NotRequired[str]
 
+    # Not sure if these are always set
+    albumtype: NotRequired[str]
+
 
 class AlbumSource(TypedDict):
     source: str
@@ -526,7 +746,7 @@ def _rep_Album(
     out["path"] = beets_util.displayable_path(album.path)
 
     if minimal:
-        keys = ["id", "name", "albumartist", "year"]
+        keys = ["id", "name", "albumartist", "year", "added"]
     else:
         # Use all keys
         keys = album.keys() + ["name"]
@@ -575,6 +795,10 @@ def _rep_Album(
         # Remove empty values
         if __is_empty(out[key]):
             del out[key]
+
+        if key == "added":
+            # Convert to datetime
+            out[key] = datetime.datetime.fromtimestamp(out[key])
 
     if expand:
         out["items"] = [_repr_Item(item, minimal) for item in album.items()]

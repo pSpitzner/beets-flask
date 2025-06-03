@@ -1,25 +1,40 @@
 import { SearchIcon, XIcon } from "lucide-react";
-import { IconButton, InputAdornment, TextField } from "@mui/material";
+import {
+    CircularProgress,
+    IconButton,
+    InputAdornment,
+    TextField,
+    useTheme,
+} from "@mui/material";
 
 /** Relative minimal search box */
 export function Search({
     value,
     setValue,
+    loading = false,
     ...props
 }: {
     value: string;
+    loading?: boolean;
     setValue: (value: string) => void;
 } & React.ComponentProps<typeof TextField>) {
+    const theme = useTheme();
     // Only shown if there is a value
     const endAdornment = (
         <InputAdornment position="end">
-            <IconButton
-                sx={{ padding: 0, color: "grey.500", minWidth: 20 }}
-                disableRipple
-                onClick={() => setValue("")}
-            >
-                {value && value.length > 0 ? <XIcon size={20} /> : null}
-            </IconButton>
+            {loading ? (
+                <CircularProgress size={theme.iconSize.md} />
+            ) : (
+                <IconButton
+                    sx={{ padding: 0, color: "grey.500", minWidth: theme.iconSize.md }}
+                    disableRipple
+                    onClick={() => setValue("")}
+                >
+                    {value && value.length > 0 ? (
+                        <XIcon size={theme.iconSize.md} />
+                    ) : null}
+                </IconButton>
+            )}
         </InputAdornment>
     );
 

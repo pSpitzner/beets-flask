@@ -13,7 +13,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 
 import { Album as AlbumT, albumQueryOptions } from "@/api/library";
 
-import CoverArt from "./coverArt";
+import { CoverArt } from "./coverArt";
 
 export function AlbumById({ albumId }: { albumId: number }) {
     const { data: item } = useSuspenseQuery(
