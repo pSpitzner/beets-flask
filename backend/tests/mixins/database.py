@@ -77,8 +77,12 @@ class IsolatedBeetsLibraryMixin(ABC):
             os.remove(os.environ["BEETSDIR"] + "/library.db")
         except OSError:
             pass
-        lib = beets.library.Library(path=os.environ["BEETSDIR"] + "/library.db")
-        refresh_config()
+        lib = beets.library.Library(
+            path=os.environ["BEETSDIR"] + "/library.db",
+            directory=os.environ["BEETSDIR"] + "/imported",
+        )
+        config = refresh_config()
+        config["directory"] = os.environ["BEETSDIR"] + "/imported"
         # Reset the beets library to a clean state
         yield
         # Reset the beets library to a clean state
@@ -91,6 +95,9 @@ class IsolatedBeetsLibraryMixin(ABC):
 
         from beets_flask.config.beets_config import refresh_config
 
-        lib = beets.library.Library(path=os.environ["BEETSDIR"] + "/library.db")
+        lib = beets.library.Library(
+            path=os.environ["BEETSDIR"] + "/library.db",
+            directory=os.environ["BEETSDIR"] + "/imported",
+        )
         refresh_config()
         return lib

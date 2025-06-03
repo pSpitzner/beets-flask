@@ -36,21 +36,6 @@ def setup_and_teardown(tmpdir_factory):
     os.makedirs(name=tmp_dir / "beets-flask", exist_ok=True)
     os.environ["IB_SERVER_CONFIG"] = "test"
 
-    # Generate a config file
-    from beets_flask.config.beets_config import refresh_config
-
-    refresh_config()
-
-    # Replace the output dir with temp dir
-    with open(os.environ["BEETSFLASKDIR"] + "/config.yaml") as config_file:
-        config_text = config_file.read().replace(
-            "/music/", str(tmp_dir / "beets-flask" / "output") + "/"
-        )
-    with open(os.environ["BEETSFLASKDIR"] + "/config.yaml", "w") as config_file:
-        config_file.write(config_text)
-
-    refresh_config()
-
     yield
 
     # Teardown

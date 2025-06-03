@@ -13,17 +13,11 @@ from unittest import mock
 import pytest
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
-from tests.mixins.database import IsolatedBeetsLibraryMixin, IsolatedDBMixin
-from tests.unit.test_importer.conftest import (
-    VALID_PATHS,
-    album_path_absolute,
-    use_mock_tag_album,
-)
 
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
 from beets_flask.disk import Folder
 from beets_flask.importer.progress import FolderStatus
-from beets_flask.importer.session import CandidateChoice, Search, TaskIdMappingArg
+from beets_flask.importer.session import CandidateChoice, TaskIdMappingArg
 from beets_flask.invoker.enqueue import (
     Progress,
     run_import_auto,
@@ -33,6 +27,12 @@ from beets_flask.invoker.enqueue import (
     run_preview_add_candidates,
 )
 from beets_flask.server.websocket.status import FolderStatusUpdate, JobStatusUpdate
+from tests.mixins.database import IsolatedBeetsLibraryMixin, IsolatedDBMixin
+from tests.unit.test_importer.conftest import (
+    VALID_PATHS,
+    album_path_absolute,
+    use_mock_tag_album,
+)
 
 
 class InvokerStatusMockMixin(ABC):

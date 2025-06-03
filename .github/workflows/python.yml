@@ -11,7 +11,7 @@ on:
 
 jobs:
     ruff:
-        name: Ruff check and linting
+        name: Linting, mypy and testing
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
