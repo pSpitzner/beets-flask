@@ -59,6 +59,50 @@ def base(tmpdir_factory):
     shutil.rmtree(base)
 
 
+@pytest.fixture(scope="session")
+def s_base(tmpdir_factory):
+    """
+    Create a folder structure for testing purposes.
+    No real files, just dummys
+    """
+    from beets_flask.disk import Folder
+
+    base = str(tmpdir_factory.mktemp("beets_flask_structure"))
+
+    # We want to test if is_album_folder works correctly with the different structures.
+
+    # empty folder
+    os.makedirs(os.path.join(base, "artist/album_empty"))
+
+    # nested folders
+    os.makedirs(os.path.join(base, "artist/album_multi/CD1"))
+    os.makedirs(os.path.join(base, "artist/album_multi/CD2"))
+    touch(os.path.join(base, "artist/album_multi/CD1/track_1.mp3"))
+    touch(os.path.join(base, "artist/album_multi/CD2/track_1.mp3"))
+
+    # no music files, just junk.
+    # this depends on the ignored filetypes in the beets config.
+    # but with the default config, hidden files should be ignored:
+    os.makedirs(os.path.join(base, "artist/album_junk"))
+    touch(os.path.join(base, "artist/album_junk/.junk.jpg"))
+
+    # the annoying rogue element (same as nested folders, but with a rogue file)
+    os.makedirs(os.path.join(base, "artist/album_rogue/CD1"))
+    os.makedirs(os.path.join(base, "artist/album_rogue/CD2"))
+    touch(os.path.join(base, "artist/album_rogue/CD1/track_1.mp3"))
+    touch(os.path.join(base, "artist/album_rogue/CD2/track_1.mp3"))
+    touch(os.path.join(base, "artist/album_rogue/should_not_be_here.mp3"))
+
+    # Good
+    os.makedirs(os.path.join(base, "artist/album_good"))
+    touch(os.path.join(base, "artist/album_good/track_1.mp3"))
+    touch(os.path.join(base, "artist/album_good/track_2.mp3"))
+
+    yield base
+
+    shutil.rmtree(base)
+
+
 from beets_flask.disk import is_album_folder
 
 
@@ -67,84 +111,93 @@ class TestIsAlbumFolder:
         "type",
         [Path, str, lambda x: str(x).encode("utf-8")],
     )
-    def test_folder_empty(self, type, base):
-        p = type(base + "/artist/album_empty")
+    def test_folder_empty(self, type, s_base):
+        p = type(s_base + "/artist/album_empty")
         assert not is_album_folder(p)
 
     @pytest.mark.parametrize(
         "type",
         [Path, str, lambda x: str(x).encode("utf-8")],
     )
-    def test_folder_good(self, type, base):
-        p = type(base + "/artist/album_good")
+    def test_folder_good(self, type, s_base):
+        p = type(s_base + "/artist/album_good")
         assert is_album_folder(p)
 
-    def test_folder_junk(self, base):
-        p = base + "/artist/album_junk"
+    def test_folder_junk(self, s_base):
+        p = s_base + "/artist/album_junk"
         assert not is_album_folder(p)
 
-    def test_folder_multi(self, base):
-        assert is_album_folder(base + "/artist/album_multi/1")
-        assert is_album_folder(base + "/artist/album_multi/1/CD1")
-        assert is_album_folder(base + "/artist/album_multi/1/CD2")
+    def test_folder_multi(self, s_base):
+        assert is_album_folder(s_base + "/artist/album_multi")
+        assert is_album_folder(s_base + "/artist/album_multi/CD1")
+        assert is_album_folder(s_base + "/artist/album_multi/CD2")
+
+    def test_folder_rogue(self, s_base):
+        assert is_album_folder(s_base + "/artist/album_rogue")
+        assert is_album_folder(s_base + "/artist/album_rogue/CD1")
+        assert is_album_folder(s_base + "/artist/album_rogue/CD2")
 
 
-def test_all_album_folders_no_subdirs(base):
-    from beets_flask.disk import all_album_folders
+class TestAllAlbumFolders:
+    @pytest.mark.parametrize(
+        "type",
+        [Path, str],
+    )
+    def test_no_subdirs(self, type, s_base):
+        from beets_flask.disk import all_album_folders
 
-    all_albums = [
-        base + "/artist/album_good",
-        base + "/artist/album_multi/1",
-        base + "/artist/album_multi/2",
-        base + "/artist/album_multi/2/CD1",
-        base + "/artist/album_multi/2/CD2",
-        base + "/artist/album_good/1991",
-        base + "/artist/album_good/1991/Chant [SINGLE]",
-        base + "/artist/album_good/Annix",
-        base + "/artist/album_good/Annix/Antidote",
-        # should not be found:
-        # "/artist/album_empty"
-        # "/artist/album_junk"
-    ]
+        all_albums = [
+            type(s_base + "/artist/album_good"),
+            type(s_base + "/artist/album_multi"),
+            # Rogue is detected as an album folder because of rogue file
+            type(s_base + "/artist/album_rogue"),
+            type(s_base + "/artist/album_rogue/CD1"),
+            type(s_base + "/artist/album_rogue/CD2"),
+        ]
 
-    found_folders = all_album_folders(base)
-    expected_folders = [Path(p) for p in all_albums]
+        found_folders = all_album_folders(s_base)
+        expected_folders = [Path(p) for p in all_albums]
 
-    assert set(found_folders) == set(expected_folders)
+        assert set(found_folders) == set(expected_folders)
 
+    @pytest.mark.parametrize(
+        "type",
+        [Path, str],
+    )
+    def test_with_subdirs(self, type, s_base):
+        from beets_flask.disk import all_album_folders
 
-def test_all_album_folders_with_subdirs(base):
-    from beets_flask.disk import all_album_folders
+        all_albums_with_subdirs = [
+            type(s_base + "/artist/album_good"),
+            type(s_base + "/artist/album_multi"),
+            type(s_base + "/artist/album_multi/CD1"),
+            type(s_base + "/artist/album_multi/CD2"),
+            type(s_base + "/artist/album_rogue"),
+            type(s_base + "/artist/album_rogue/CD1"),
+            type(s_base + "/artist/album_rogue/CD2"),
+        ]
 
-    all_albums_with_subdirs = [
-        base + "/artist/album_good",
-        base + "/artist/album_good/1991",
-        base + "/artist/album_good/1991/Chant [SINGLE]",
-        base + "/artist/album_good/Annix",
-        base + "/artist/album_good/Annix/Antidote",
-        base + "/artist/album_multi/1",
-        base + "/artist/album_multi/1/CD1",
-        base + "/artist/album_multi/1/CD2",
-        base + "/artist/album_multi/2",
-        base + "/artist/album_multi/2/CD1",
-        base + "/artist/album_multi/2/CD2",
-    ]
+        found_folders = all_album_folders(s_base, subdirs=True)
+        expected_folders = [Path(p) for p in all_albums_with_subdirs]
 
-    assert set(all_album_folders(base, subdirs=True)) == {
-        Path(p) for p in all_albums_with_subdirs
-    }
+        assert set(found_folders) == set(expected_folders)
 
 
-def test_is_within_multi_dir(base):
-    from beets_flask.disk import is_within_multi_dir
+class TestIsWithinMultiDir:
+    @pytest.mark.parametrize(
+        "type",
+        [Path, str],
+    )
+    def test_is_within_multi_dir(self, type, s_base):
+        from beets_flask.disk import is_within_multi_dir
 
-    assert is_within_multi_dir(base + "/artist/album_multi/1/CD1/")
-    assert is_within_multi_dir(base + "/artist/album_multi/1/CD2/")
-    # should work with and without trailing slashes
-    assert is_within_multi_dir(base + "/artist/album_multi/2/CD1")
-    assert is_within_multi_dir(base + "/artist/album_multi/2/CD2")
-    assert not is_within_multi_dir(base + "/artist/album_multi/")
-    assert not is_within_multi_dir(base + "/artist/album_good/")
+        assert is_within_multi_dir(type(s_base + "/artist/album_multi/CD1"))
+        assert is_within_multi_dir(type(s_base + "/artist/album_multi/CD2"))
+        # should work with and without trailing slashes
+        assert is_within_multi_dir(type(s_base + "/artist/album_rogue/CD1"))
+        assert is_within_multi_dir(type(s_base + "/artist/album_rogue/CD2"))
+        assert not is_within_multi_dir(type(s_base + "/artist/album_multi/"))
+        assert not is_within_multi_dir(type(s_base + "/artist/album_good/"))
 
 
 # input, use_parent_for_multidisc, expected
