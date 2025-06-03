@@ -214,7 +214,7 @@ function useAudioData(item: ItemResponse | null) {
 
             currentAudio.pause();
         };
-    }, [currentAudio]);
+    }, [currentAudio, setVolume]);
 
     const seek = useCallback(
         (time: number) => {

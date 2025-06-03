@@ -1,9 +1,7 @@
 import {
-    AudioLinesIcon,
     ChevronDownIcon,
     ChevronsDownUpIcon,
     ChevronsUpDownIcon,
-    ExternalLinkIcon,
     EyeIcon,
     EyeOffIcon,
 } from "lucide-react";
@@ -21,7 +19,6 @@ import {
 import {
     ButtonGroup,
     DialogContent,
-    Divider,
     IconButton,
     Radio,
     Skeleton,
@@ -115,38 +112,6 @@ export function CandidateSelector({
             </CandidateSelectionContextProvider>
         </Box>
     );
-}
-
-type ClickHandler = (event: React.MouseEvent) => void;
-
-function useSingleAndDoubleClick({
-    onClick,
-    onDoubleClick,
-    delay = 250,
-}: {
-    onClick: ClickHandler;
-    onDoubleClick: ClickHandler;
-    delay?: number;
-}): ClickHandler {
-    const clickTimeout = useRef<number | null>(null);
-
-    const handler = useCallback(
-        (event: React.MouseEvent) => {
-            if (clickTimeout.current) {
-                clearTimeout(clickTimeout.current);
-                clickTimeout.current = null;
-                onDoubleClick(event);
-            } else {
-                clickTimeout.current = setTimeout(() => {
-                    onClick(event);
-                    clickTimeout.current = null;
-                }, delay);
-            }
-        },
-        [onClick, onDoubleClick, delay]
-    );
-
-    return handler;
 }
 
 export function SelectedCandidate({

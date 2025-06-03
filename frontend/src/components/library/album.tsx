@@ -40,7 +40,7 @@ export function AlbumHeader({
             <CoverArt
                 type="album"
                 beetsId={album.id}
-                sx={(theme) => ({
+                sx={{
                     maxWidth: "200px",
                     height: "100%",
                     width: "100%",
@@ -50,7 +50,7 @@ export function AlbumHeader({
                     justifySelf: "center",
                     boxShadow: 3,
                     overflow: "hidden",
-                })}
+                }}
             />
             <Box
                 sx={(theme) => ({

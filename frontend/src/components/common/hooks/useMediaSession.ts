@@ -71,5 +71,5 @@ export function useMediaSession({
             navigator.mediaSession.setActionHandler("seekbackward", null);
             navigator.mediaSession.setActionHandler("seekforward", null);
         };
-    }, [onPlay, onPause, onStop, onSeekBackward, onSeekForward]);
+    }, [onPlay, onPause, onStop, onSeekBackward, onSeekForward, onSeekTo]);
 }

@@ -3,7 +3,6 @@ import {
     FolderClockIcon,
     HistoryIcon,
     ImportIcon,
-    InboxIcon,
     InfoIcon,
     TagIcon,
     TerminalIcon,
@@ -24,7 +23,7 @@ import {
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { MinimalConfig, useConfig } from "@/api/config";
+import { useConfig } from "@/api/config";
 import { inboxQueryOptions } from "@/api/inbox";
 import { MatchChip, StyledChip } from "@/components/common/chips";
 import { Dialog } from "@/components/common/dialogs";
@@ -40,7 +39,6 @@ import { PageWrapper } from "@/components/common/page";
 import { CardHeader } from "@/components/frontpage/statsCard";
 import {
     FolderActionDesktopBar,
-    FolderActionsSpeedDial,
     RefreshAllFoldersButton,
 } from "@/components/inbox/actions";
 import {

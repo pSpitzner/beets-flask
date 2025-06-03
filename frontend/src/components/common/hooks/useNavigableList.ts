@@ -50,7 +50,7 @@ export function useNavigableList<T>(initialState: T[] | (() => T[]) = []) {
                 setCurrentIndex(newIndex);
             }
         },
-        [items.length]
+        [currentIndex, items.length]
     );
 
     /**

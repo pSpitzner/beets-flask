@@ -10,7 +10,7 @@ import {
     LibraryStats as _LibraryStats,
 } from "@/pythonTypes";
 
-import { APIError, queryClient } from "./common";
+import { queryClient } from "./common";
 
 export type LibraryStats = Omit<_LibraryStats, "lastItemAdded" | "lastItemModified"> & {
     lastItemAdded?: Date;
@@ -462,7 +462,7 @@ async function fetchAudio(id: number, signal: AbortSignal): Promise<HTMLAudioEle
         audio.src = URL.createObjectURL(mediaSource);
         const sourceBuffer = await sourceBufferReady; // wait for sourceBuffer to be ready
         const contentLengthHeader = response.headers.get("Content-Length");
-        const total = contentLengthHeader ? parseInt(contentLengthHeader, 10) : null;
+        const _total = contentLengthHeader ? parseInt(contentLengthHeader, 10) : null;
         const reader = response.body!.getReader();
 
         // Process the stream
@@ -503,7 +503,7 @@ async function fetchAudio(id: number, signal: AbortSignal): Promise<HTMLAudioEle
 
         async function appendToBuffer() {
             // Read the data
-            let loaded = 0;
+            let _loaded = 0;
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) {
@@ -511,7 +511,7 @@ async function fetchAudio(id: number, signal: AbortSignal): Promise<HTMLAudioEle
                     break;
                 }
 
-                loaded += value.length;
+                _loaded += value.length;
                 // NOTE: In theory we can add a
                 // onProgress event here
                 // but it is not clear if the total
@@ -559,13 +559,4 @@ export function prefetchItemAudioData(id: number) {
         },
         ...commonAudioQueryOptions,
     });
-}
-
-function addAllEvent(target: EventTarget, listener: EventListener) {
-    for (const key in target) {
-        if (/^on/.test(key)) {
-            const eventType = key.substr(2);
-            target.addEventListener(eventType, listener);
-        }
-    }
 }

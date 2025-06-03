@@ -58,7 +58,7 @@ export function Waveform({ height }: { height?: number }) {
             wavesurferRef.current = null;
             loadingRegion.current = null;
         };
-    }, [currentItem, peaks, currentAudio]);
+    }, [currentItem, peaks, currentAudio, theme, height]);
 
     const dragging = useRef(false);
 
@@ -101,7 +101,7 @@ export function Waveform({ height }: { height?: number }) {
         if (!wavesurferRef.current || !currentAudio || dragging.current) return;
         const wavesurfer = wavesurferRef.current;
         wavesurfer.setTime(currentTime);
-    }, [currentTime]);
+    }, [currentAudio, currentTime]);
 
     // Audio buffering region
     useEffect(() => {
@@ -241,13 +241,4 @@ export function ProgressBar({ sx, ...props }: BoxProps) {
             />
         </Box>
     );
-}
-
-function addAllEvent(target: EventTarget, listener: EventListener) {
-    for (const key in target) {
-        if (/^on/.test(key)) {
-            const eventType = key.substr(2);
-            target.addEventListener(eventType, listener);
-        }
-    }
 }

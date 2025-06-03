@@ -18,13 +18,12 @@ import {
 } from "@mui/material";
 import Box from "@mui/material/Box";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 
-import { albumQueryOptions, Item as ItemT, itemQueryOptions } from "@/api/library";
+import { Item as ItemT, itemQueryOptions } from "@/api/library";
 import { ItemSource as ItemSourceT } from "@/pythonTypes";
 
-import { AudioPlayerItem } from "./audio";
 import { CoverArt } from "./coverArt";
+import { sourceHref, sourceName } from "./sources";
 
 import { SourceTypeIcon } from "../common/icons";
 import { ClipboardCopyButton } from "../common/inputs/copy";
@@ -105,18 +104,6 @@ function ArtSection({ item, ...props }: { item: ItemT<false> } & BoxProps) {
 
 function SongInfo({ item, ...props }: { item: ItemT<false> } & BoxProps) {
     const theme = useTheme();
-    const navigate = useNavigate();
-
-    // Get the album for the item
-    const { data: album } = useSuspenseQuery(
-        albumQueryOptions(
-            item.album_id,
-            true, // expand
-            true // minimal
-        )
-    );
-
-    const currentIdx = album?.items.findIndex((i) => i.id === item.id);
 
     return (
         <Box {...props}>
@@ -184,33 +171,6 @@ function SongInfo({ item, ...props }: { item: ItemT<false> } & BoxProps) {
                             </Typography>
                         </Box>
                     </Stack>
-                    <AudioPlayerItem
-                        itemId={item.id}
-                        navigation={{
-                            onNext: async () => {
-                                await navigate({
-                                    to: "/library/browse/$artist/$albumId/$itemId",
-                                    params: {
-                                        artist: item.albumartist,
-                                        albumId: item.album_id,
-                                        itemId: album.items[currentIdx + 1].id,
-                                    },
-                                });
-                            },
-                            onPrev: async () => {
-                                await navigate({
-                                    to: "/library/browse/$artist/$albumId/$itemId",
-                                    params: {
-                                        artist: item.albumartist,
-                                        albumId: item.album_id,
-                                        itemId: album.items[currentIdx - 1].id,
-                                    },
-                                });
-                            },
-                            prevDisabled: currentIdx === 0,
-                            nextDisabled: currentIdx === album.items.length - 1,
-                        }}
-                    />
                 </Box>
             </Box>
         </Box>
@@ -302,7 +262,7 @@ function BasicInfo({ item }: { item: ItemT<false> }) {
                 </TableRow>
             </TableHead>
             <TableBody>
-                <OptionalRow label="Composer" value={item.composer} />
+                <OptionalRow label="Composer" value={item.composer as string} />
                 <OptionalRow label="Album Artist" value={item.albumartist} />
                 <OptionalRow label="Label" value={item.label} />
                 <OptionalRow label="Catalog #" value={item.catalognum} />
@@ -528,75 +488,6 @@ function ItemSource({ source }: { source: ItemSourceT }) {
                 ))}
         </Box>
     );
-}
-
-//TODO: move to common
-function sourceHref<T extends string | string[]>(
-    source: string,
-    value: T,
-    type: "track" | "artist" | "album" | "albumartist" | string = "track"
-): T | undefined {
-    let base: string | undefined = undefined;
-    switch (source) {
-        case "mb":
-        case "musicbrainz":
-            base = "https://musicbrainz.org";
-            switch (type) {
-                case "track":
-                    base += "/recording";
-                    break;
-                case "artist":
-                case "albumartist":
-                    base += "/artist";
-                    break;
-                case "album":
-                    base += "/release";
-                    break;
-                default:
-                    console.warn(`Unknown type: ${type}`);
-                    return undefined;
-            }
-            break;
-        case "spotify":
-            base = "https://open.spotify.com";
-            switch (type) {
-                case "track":
-                    base += "/track";
-                    break;
-                case "artist":
-                case "albumartist":
-                    base += "/artist";
-                    break;
-                case "album":
-                    base += "/album";
-                    break;
-                default:
-                    console.warn(`Unknown type: ${type}`);
-                    return undefined;
-            }
-            break;
-        default:
-            console.warn(`Unknown source: ${source}`);
-            return undefined;
-    }
-    if (base === undefined) return undefined;
-
-    if (value instanceof Array) {
-        return value.map((v) => `${base}/${v}`) as T;
-    }
-    return `${base}/${value}` as T;
-}
-
-function sourceName(source: ItemSourceT): string {
-    switch (source.source) {
-        case "mb":
-        case "musicbrainz":
-            return "MusicBrainz";
-        case "spotify":
-            return "Spotify";
-        default:
-            return source.source;
-    }
 }
 
 /* ------------------------------ Advanced Tab ------------------------------ */
