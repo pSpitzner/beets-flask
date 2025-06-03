@@ -62,7 +62,7 @@ def get_artists_pandas(table: str, artist: str | None = None) -> pd.DataFrame:
     df = pd.DataFrame(rows, columns=["artist", "added"])
 
     # Split artists by ',' or ';' and explode into separate rows
-    separators = [",", ";"]
+    separators = [",", ";", "&"]
 
     # Split artist strings into lists
     df["artist"] = df["artist"].str.split(rf"[{''.join(separators)}]")
@@ -72,11 +72,16 @@ def get_artists_pandas(table: str, artist: str | None = None) -> pd.DataFrame:
 
     # Strip whitespace
     df["artist"] = df["artist"].str.strip()
+    df["added"] = df["added"] * 1000
 
     # Group by artist and aggregate
     result = (
         df.groupby("artist")
-        .agg(count=("artist", "size"), last_added=("added", "max"))
+        .agg(
+            count=("artist", "size"),
+            last_added=("added", "max"),
+            first_added=("added", "min"),
+        )
         .reset_index()
     )
 
@@ -97,12 +102,24 @@ async def all_artists(artist_name: str | None = None):
     """
     artists_albums = (
         get_artists_pandas("albums", artist_name)
-        .rename(columns={"count": "album_count", "last_added": "last_album_added"})
+        .rename(
+            columns={
+                "count": "album_count",
+                "last_added": "last_album_added",
+                "first_added": "first_album_added",
+            }
+        )
         .set_index("artist")
     )
     artists_items = (
         get_artists_pandas("items", artist_name)
-        .rename(columns={"count": "item_count", "last_added": "last_item_added"})
+        .rename(
+            columns={
+                "count": "item_count",
+                "last_added": "last_item_added",
+                "first_added": "first_item_added",
+            }
+        )
         .set_index("artist")
     )
     # Join the two DataFrames on artist name and count the number of items and albums
@@ -110,5 +127,15 @@ async def all_artists(artist_name: str | None = None):
         artists_items,
         how="outer",
     ).reset_index()
+
+    # Fill n_albums and n_items with 0 if they are NaN
+    artists["album_count"] = artists["album_count"].fillna(0).astype(int)
+    artists["item_count"] = artists["item_count"].fillna(0).astype(int)
+
+    if artist_name is not None:
+        if artists.empty:
+            raise NotFoundException(f"Artist '{artist_name}' not found.")
+        else:
+            return Response(artists.iloc[0].to_json(), mimetype="application/json")
 
     return Response(artists.to_json(orient="records"), mimetype="application/json")

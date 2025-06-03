@@ -1,6 +1,7 @@
 import { Box, useTheme } from "@mui/material";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
+import { BackIconButton } from "@/components/common/inputs/back";
 import { Loading } from "@/components/common/loading";
 import { PageWrapper } from "@/components/common/page";
 
@@ -40,11 +41,24 @@ function RouteComponent() {
                 flexDirection: "column",
                 minHeight: "100%",
                 height: "100%",
+                position: "relative",
                 [theme.breakpoints.up("laptop")]: {
                     padding: 2,
                 },
             })}
         >
+            <BackIconButton
+                sx={{
+                    // TODO: styling for mobile
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    zIndex: 2,
+                    margin: 0.5,
+                }}
+                size="small"
+                color="primary"
+            />
             <Box
                 sx={(theme) => ({
                     height: "100%",

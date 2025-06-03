@@ -13,7 +13,11 @@ import {
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
-import { albumsByArtistQueryOptions } from "@/api/library";
+import {
+    albumsByArtistQueryOptions,
+    artistQueryOptions,
+    itemsByArtistQueryOptions,
+} from "@/api/library";
 import { Search } from "@/components/common/inputs/search";
 import {
     FixedGrid,
@@ -23,17 +27,25 @@ import {
     ViewToggle,
 } from "@/components/common/table";
 import { CoverArt } from "@/components/library/coverArt";
-import { AlbumResponseMinimal } from "@/pythonTypes";
+import { AlbumResponseMinimal, ItemResponseMinimal } from "@/pythonTypes";
 
 export const Route = createFileRoute("/library/browse/artists/$artist")({
-    loader: async (opts) =>
-        await opts.context.queryClient.ensureQueryData(
+    loader: async (opts) => {
+        const p1 = opts.context.queryClient.ensureQueryData(
             albumsByArtistQueryOptions(
                 opts.params.artist,
                 false, //expand
                 true //minimal
             )
-        ),
+        );
+        const p2 = opts.context.queryClient.ensureQueryData(
+            artistQueryOptions(opts.params.artist)
+        );
+        const p3 = opts.context.queryClient.ensureQueryData(
+            itemsByArtistQueryOptions(opts.params.artist, true) //minimal
+        );
+        await Promise.all([p1, p2, p3]);
+    },
     component: RouteComponent,
 });
 
@@ -43,12 +55,14 @@ function RouteComponent() {
     const { data: albums } = useSuspenseQuery(
         albumsByArtistQueryOptions(params.artist, false, true)
     );
+    const { data: items } = useSuspenseQuery(
+        itemsByArtistQueryOptions(params.artist, true)
+    );
 
     return (
         <>
             {/* Header */}
             <ArtistHeader
-                nAlbums={albums.length}
                 sx={(theme) => ({
                     [theme.breakpoints.down("laptop")]: {
                         background: `linear-gradient(to bottom, transparent 0%, ${theme.palette.background.paper} 100%)`,
@@ -56,8 +70,9 @@ function RouteComponent() {
                 })}
             />
             <Divider sx={{ backgroundColor: "primary.muted" }} />
-            <AlbumsViewer
+            <Viewer
                 albums={albums}
+                items={items}
                 sx={(theme) => ({
                     display: "flex",
                     flexDirection: "column",
@@ -72,9 +87,15 @@ function RouteComponent() {
     );
 }
 
-function ArtistHeader({ nAlbums, sx, ...props }: { nAlbums: number } & BoxProps) {
+function ArtistHeader({ sx, ...props }: BoxProps) {
     const params = Route.useParams();
+    // Fetch artist data
+    const { data: artist } = useSuspenseQuery(artistQueryOptions(params.artist));
+
     const theme = useTheme();
+
+    const nAlbums = artist.album_count;
+    const nTracks = artist.item_count;
 
     return (
         <Box
@@ -97,24 +118,38 @@ function ArtistHeader({ nAlbums, sx, ...props }: { nAlbums: number } & BoxProps)
             </Link>
             <Box>
                 <Typography variant="h5" fontWeight="bold" lineHeight={1}>
-                    {params.artist}
+                    {artist.artist}
                 </Typography>
-                <Typography variant="subtitle1" color="text.secondary">
-                    {nAlbums} albums
-                </Typography>
+                <Box sx={{ display: "flex", gap: 2, p: 0.5, color: "text.secondary" }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        <Disc3Icon size={theme.iconSize.md} />
+                        <Typography variant="body2">
+                            {nAlbums} Album{nAlbums !== 1 ? "s" : ""}
+                        </Typography>
+                    </Box>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        <AudioLinesIcon size={theme.iconSize.md} />
+                        <Typography variant="body2">
+                            {nTracks} Track{nTracks !== 1 ? "s" : ""}
+                        </Typography>
+                    </Box>
+                </Box>
             </Box>
         </Box>
     );
 }
 
-function AlbumsViewer({
+function Viewer({
     albums,
+    items,
     ...props
-}: { albums: AlbumResponseMinimal[] } & BoxProps) {
-    const [filter, setFilter] = useState("");
+}: { albums: AlbumResponseMinimal[]; items: ItemResponseMinimal[] } & BoxProps) {
     const theme = useTheme();
-    const [selected, setSelected] = useState<"albums" | "items">("albums");
+    const [selected, setSelected] = useState<"albums" | "items">(() =>
+        albums.length > 0 ? "albums" : "items"
+    );
     const [view, setView] = useState<"list" | "grid">("list");
+    const [filter, setFilter] = useState("");
 
     const filteredAlbums = useMemo(() => {
         if (!filter) {
@@ -125,7 +160,20 @@ function AlbumsViewer({
         });
     }, [albums, filter]);
 
-    const nRemovedByFilter = albums.length - filteredAlbums.length;
+    const filteredItems = useMemo(() => {
+        if (!filter) {
+            return items;
+        }
+        return items.filter((item) => {
+            return item.name.toLowerCase().includes(filter.toLowerCase());
+        });
+    }, [items, filter]);
+
+    const nAlbumsRemovedByFilter = albums.length - filteredAlbums.length;
+    const nItemsRemovedByFilter = items.length - filteredItems.length;
+
+    const nRemovedByFilter =
+        selected === "albums" ? nAlbumsRemovedByFilter : nItemsRemovedByFilter;
 
     return (
         <Box {...props}>
@@ -174,7 +222,7 @@ function AlbumsViewer({
                             exclusive
                             aria-label="Filter type"
                         >
-                            <ToggleButton value="items" disabled>
+                            <ToggleButton value="items">
                                 <AudioLinesIcon size={theme.iconSize.lg} />
                             </ToggleButton>
                             <ToggleButton value="albums">
@@ -206,10 +254,98 @@ function AlbumsViewer({
                     minHeight: 0,
                 }}
             >
-                {view === "grid" && <AlbumsGrid albums={filteredAlbums} />}
-                {view === "list" && <AlbumsList albums={filteredAlbums} />}
+                {selected === "items" && <ItemsViewer items={filteredItems} />}
+                {selected === "albums" && (
+                    <AlbumsViewer albums={filteredAlbums} view={view} />
+                )}
             </Box>
         </Box>
+    );
+}
+
+function AlbumsViewer({
+    albums,
+    view,
+}: {
+    albums: AlbumResponseMinimal[];
+    view: "list" | "grid";
+}): JSX.Element {
+    if (albums.length === 0) {
+        return (
+            <Box
+                sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "100%",
+                }}
+            >
+                <Typography variant="body1" color="text.secondary">
+                    No albums found.
+                </Typography>
+            </Box>
+        );
+    }
+
+    if (view === "grid") {
+        return <AlbumsGrid albums={albums} />;
+    }
+    return <AlbumsList albums={albums} />;
+}
+
+function ItemsViewer({ items }: { items: ItemResponseMinimal[] }): JSX.Element {
+    const theme = useTheme();
+
+    if (items.length === 0) {
+        return (
+            <Box
+                sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "100%",
+                }}
+            >
+                <Typography variant="body1" color="text.secondary">
+                    No items found.
+                </Typography>
+            </Box>
+        );
+    }
+
+    return (
+        <FixedList data={items} itemHeight={35}>
+            {({ data: item }: FixedListChildrenProps<ItemResponseMinimal>) => (
+                <Link
+                    to={`/library/item/$itemId`}
+                    key={item!.id}
+                    params={{ itemId: item!.id }}
+                >
+                    <Box
+                        sx={(theme) => ({
+                            height: "35px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: 1,
+                            gap: 2,
+                            ":hover": {
+                                background: `linear-gradient(to left, transparent 0%, ${theme.palette.primary.muted} 100%)`,
+                                color: "primary.contrastText",
+                            },
+                        })}
+                    >
+                        <Typography variant="body1">{item!.name}</Typography>
+                        <AudioLinesIcon
+                            color={theme.palette.background.paper}
+                            style={{
+                                marginRight: "2rem",
+                            }}
+                        />
+                    </Box>
+                </Link>
+            )}
+        </FixedList>
     );
 }
 
@@ -342,9 +478,8 @@ function AlbumsListRow({ data: album }: FixedListChildrenProps<AlbumResponseMini
 }
 
 function AlbumsList({ albums }: { albums: AlbumResponseMinimal[] }): JSX.Element {
-    const a1 = [...albums, ...albums, ...albums, ...albums]; // Duplicate to ensure enough items for scrolling
     return (
-        <FixedList data={a1} itemHeight={35}>
+        <FixedList data={albums} itemHeight={35}>
             {AlbumsListRow}
         </FixedList>
     );

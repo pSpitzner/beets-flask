@@ -38,16 +38,6 @@ export const libraryStatsQueryOptions = () => {
     });
 };
 
-// Artist names
-export const artistsQueryOptions = () => ({
-    queryKey: ["artists"],
-    queryFn: async () => {
-        const response = await fetch(`/library/artists/`);
-        return (await response.json()) as { name: string }[];
-    },
-    refetchOnWindowFocus: "always" as const,
-});
-
 interface AlbumResponseFull extends AlbumResponse {
     [key: string]: unknown; // enable indexing album[key]
 }
@@ -85,27 +75,6 @@ function _url_parse_minimal_expand(
     }
     return params.length ? `${url}?${params.join("&")}` : url;
 }
-
-// All albums for a specific artist
-export const albumsByArtistQueryOptions = <
-    Expand extends boolean,
-    Minimal extends boolean,
->(
-    name: string,
-    expand: Expand = true as Expand,
-    minimal: Minimal = true as Minimal
-) => ({
-    queryKey: ["artist", name, expand, minimal],
-    queryFn: async (): Promise<Album<typeof expand, typeof minimal>[]> => {
-        const url = _url_parse_minimal_expand(
-            `/library/artist/${name}/albums`,
-            minimal,
-            expand
-        );
-        const response = await fetch(url);
-        return (await response.json()) as Album<typeof expand, typeof minimal>[];
-    },
-});
 
 // An album by its ID
 export const albumQueryOptions = <Expand extends boolean, Minimal extends boolean>(
@@ -225,6 +194,105 @@ export const albumsInfiniteQueryOptions = ({
         },
     });
 };
+
+export const recentAlbumsQueryOptions = {
+    queryKey: ["recentAlbums"],
+    queryFn: async () => {
+        const response = await fetch(
+            `/library/albums?order_by=added&order_dir=DESC&n_items=25`
+        );
+        const page = (await response.json()) as AlbumsPageResponse;
+        return page.albums.map((album) => {
+            album.added = new Date(album.added);
+            return album;
+        });
+    },
+};
+
+/* --------------------------------- Artists -------------------------------- */
+
+export interface Artist {
+    artist: string;
+    album_count: number;
+    item_count: number;
+    last_item_added?: Date;
+    last_album_added?: Date;
+    first_item_added?: Date;
+    first_album_added?: Date;
+}
+
+// List of all artists
+export const artistsQueryOptions = () => ({
+    queryKey: ["artists"],
+    queryFn: async () => {
+        const response = await fetch(`/library/artists/`);
+        const artists = (await response.json()) as Artist[];
+
+        for (let i = 0; i < artists.length; i++) {
+            const artist = artists[i];
+            // Convert timestamps to Date objects
+            if (artist.last_item_added) {
+                artist.last_item_added = new Date(artist.last_item_added);
+            }
+            if (artist.last_album_added) {
+                artist.last_album_added = new Date(artist.last_album_added);
+            }
+            if (artist.first_item_added) {
+                artist.first_item_added = new Date(artist.first_item_added);
+            }
+            if (artist.first_album_added) {
+                artist.first_album_added = new Date(artist.first_album_added);
+            }
+        }
+        return artists;
+        // TODO: fill cache data for single artists queries
+    },
+    refetchOnWindowFocus: "always" as const,
+});
+
+// An artist by its name
+export const artistQueryOptions = (name: string) => ({
+    queryKey: ["artist", name],
+    queryFn: async () => {
+        const response = await fetch(`/library/artists/${name}`);
+        return (await response.json()) as Artist;
+    },
+    refetchOnWindowFocus: "always" as const,
+});
+
+// All albums for a specific artist
+export const albumsByArtistQueryOptions = <
+    Expand extends boolean,
+    Minimal extends boolean,
+>(
+    name: string,
+    expand: Expand = true as Expand,
+    minimal: Minimal = true as Minimal
+) => ({
+    queryKey: ["artist", name, expand, minimal],
+    queryFn: async (): Promise<Album<typeof expand, typeof minimal>[]> => {
+        const url = _url_parse_minimal_expand(
+            `/library/artist/${name}/albums`,
+            minimal,
+            expand
+        );
+        const response = await fetch(url);
+        return (await response.json()) as Album<typeof expand, typeof minimal>[];
+    },
+});
+
+// All items for a specific artist
+export const itemsByArtistQueryOptions = <Minimal extends boolean>(
+    name: string,
+    minimal: Minimal = true as Minimal
+) => ({
+    queryKey: ["artist", name, "items", minimal],
+    queryFn: async (): Promise<Item<typeof minimal>[]> => {
+        const url = _url_parse_minimal_expand(`/library/artist/${name}/items`, minimal);
+        const response = await fetch(url);
+        return (await response.json()) as Item<typeof minimal>[];
+    },
+});
 
 /* --------------------------------- Artwork -------------------------------- */
 

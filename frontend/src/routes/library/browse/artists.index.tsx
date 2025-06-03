@@ -6,7 +6,7 @@ import { Box, BoxProps, Divider, Typography, useTheme } from "@mui/material";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
-import { artistsQueryOptions } from "@/api/library";
+import { Artist, artistsQueryOptions } from "@/api/library";
 import { Search } from "@/components/common/inputs/search";
 
 export const Route = createFileRoute("/library/browse/artists/")({
@@ -46,6 +46,7 @@ function RouteComponent() {
 }
 
 function ArtistsHeader({ nArtists, sx, ...props }: { nArtists: number } & BoxProps) {
+    const theme = useTheme();
     return (
         <Box
             sx={[
@@ -61,11 +62,11 @@ function ArtistsHeader({ nArtists, sx, ...props }: { nArtists: number } & BoxPro
             {...props}
         >
             <Box sx={{ display: "flex", alignItems: "center", height: "100%" }}>
-                <User2Icon size={40} color={"gray"} />
+                <User2Icon size={40} color={theme.palette.primary.main} />
             </Box>
             <Box>
                 <Typography variant="h5" fontWeight="bold" lineHeight={1}>
-                    All Artists
+                    Browse Artists
                 </Typography>
                 <Typography variant="subtitle1" color="text.secondary">
                     {nArtists} unique artists
@@ -78,7 +79,7 @@ function ArtistsHeader({ nArtists, sx, ...props }: { nArtists: number } & BoxPro
 function ArtistsListWrapper({
     artists,
     ...props
-}: { artists: Array<{ name: string }> } & BoxProps) {
+}: { artists: Array<Artist> } & BoxProps) {
     const [filter, setFilter] = useState<string>("");
 
     const filteredData = useMemo(() => {
@@ -87,7 +88,7 @@ function ArtistsListWrapper({
         }
         return artists.filter((item) => {
             //filtered or selected
-            return item.name?.toLowerCase().includes(filter.toLowerCase());
+            return item.artist?.toLowerCase().includes(filter.toLowerCase());
         });
     }, [artists, filter]);
 
@@ -147,9 +148,8 @@ function ArtistsListWrapper({
     );
 }
 
-function ArtistsList({ artists }: { artists: Array<{ name: string }> }) {
+function ArtistsList({ artists }: { artists: Array<Artist> }) {
     const theme = useTheme();
-    console.log("ArtistsList", artists);
 
     return (
         <AutoSizer>
@@ -165,7 +165,7 @@ function ArtistsList({ artists }: { artists: Array<{ name: string }> }) {
                         return (
                             <Link
                                 to="/library/browse/artists/$artist"
-                                params={{ artist: artist.name }}
+                                params={{ artist: artist.artist }}
                                 style={style}
                             >
                                 <Box
@@ -183,7 +183,7 @@ function ArtistsList({ artists }: { artists: Array<{ name: string }> }) {
                                     })}
                                 >
                                     <Typography variant="body1">
-                                        {artist.name || "Unknown Artist"}
+                                        {artist.artist || "Unknown Artist"}
                                     </Typography>
                                     <User2Icon
                                         color={theme.palette.background.paper}

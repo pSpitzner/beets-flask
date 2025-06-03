@@ -6,6 +6,7 @@ Adapted from the official beets web interface
 from __future__ import annotations
 
 import base64
+import datetime
 import os
 import time
 from dataclasses import dataclass
@@ -24,10 +25,9 @@ from typing import (
 
 from beets import util as beets_util
 from beets.dbcore import Model, Query, Results
-from beets.dbcore.query import Sort, datetime
+from beets.dbcore.query import Sort
 from beets.library import Album, Item, Library, parse_query_string
-import numpy as np
-from quart import Blueprint, Response, abort, g, json, jsonify, request
+from quart import Blueprint, Response, abort, g, json, jsonify, request, url_for
 from typing_extensions import NotRequired
 
 from beets_flask.config import get_config
@@ -198,7 +198,7 @@ async def albums_by_artist(artist_name: str):
 
     with g.lib.transaction() as tx:
         rows = tx.query(
-            f"SELECT id FROM albums WHERE albumartist WHERE instr(artist, ?) > 0",
+            f"SELECT id FROM albums WHERE instr(albumartist, ?) > 0",
             (artist_name,),
         )
 
@@ -222,7 +222,7 @@ async def items_by_artist(artist_name: str):
 
     with g.lib.transaction() as tx:
         rows = tx.query(
-            f"SELECT id FROM items WHERE artist WHERE instr(artist, ?) > 0",
+            f"SELECT id FROM items WHERE instr(artist, ?) > 0",
             (artist_name,),
         )
 
@@ -682,6 +682,8 @@ class AlbumResponseMinimal(TypedDict):
     albumartist: str
     # Year the album was published
     year: int
+    # Date the album was added to the library
+    added: datetime.datetime
 
 
 class AlbumResponseMinimalExpanded(AlbumResponseMinimal):
@@ -744,7 +746,7 @@ def _rep_Album(
     out["path"] = beets_util.displayable_path(album.path)
 
     if minimal:
-        keys = ["id", "name", "albumartist", "year"]
+        keys = ["id", "name", "albumartist", "year", "added"]
     else:
         # Use all keys
         keys = album.keys() + ["name"]
@@ -793,6 +795,10 @@ def _rep_Album(
         # Remove empty values
         if __is_empty(out[key]):
             del out[key]
+
+        if key == "added":
+            # Convert to datetime
+            out[key] = datetime.datetime.fromtimestamp(out[key])
 
     if expand:
         out["items"] = [_repr_Item(item, minimal) for item in album.items()]

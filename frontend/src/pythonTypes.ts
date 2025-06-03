@@ -228,6 +228,7 @@ export interface AlbumResponseMinimalExpanded {
 	path: string;
 	albumartist: string;
 	year: number;
+	added: Date;
 	items: Array<ItemResponseMinimal>;
 	gui_import_id?: string;
 	gui_import_date?: string;
@@ -240,6 +241,7 @@ export interface AlbumResponseMinimal {
 	path: string;
 	albumartist: string;
 	year: number;
+	added: Date;
 }
 
 export interface ItemSource {
@@ -286,6 +288,7 @@ export interface AlbumResponseExpanded {
 	path: string;
 	albumartist: string;
 	year: number;
+	added: Date;
 	genre: string;
 	label: string;
 	sources: Array<AlbumSource>;
@@ -308,6 +311,7 @@ export interface AlbumResponse {
 	path: string;
 	albumartist: string;
 	year: number;
+	added: Date;
 	genre: string;
 	label: string;
 	sources: Array<AlbumSource>;
