@@ -139,7 +139,7 @@ export function MultiCoverArt({
     size,
     coverArtSx,
     ...props
-}: Omit<CoverArtProps, "type"> & BoxProps & { coverArtSx: BoxProps["sx"] }) {
+}: Omit<CoverArtProps, "type"> & BoxProps & { coverArtSx?: BoxProps["sx"] }) {
     const [currentIdx, setCurrentIdx] = useState(0);
 
     const { data: numArtworks } = useQuery(numArtQueryOptions(beetsId));

@@ -11,7 +11,7 @@ export function ArtistLink({ artist }: { artist: string }) {
 
     return (
         <Link
-            to="/library/artists/$artist"
+            to="/library/browse/artists/$artist"
             params={{ artist }}
             sx={{
                 gap: 0.5,
