@@ -10,7 +10,7 @@ on:
         branches: ["main"]
 
 jobs:
-    ruff:
+    python:
         name: Linting, mypy and testing
         runs-on: ubuntu-latest
         steps:

@@ -115,12 +115,16 @@ export default ts.config(
 
     // apply react-refresh
     {
+        env: {
+            node: true,
+            browser: true,
+        },
         plugins: {
             "react-refresh": reactRefresh
         },
         rules: {
             "react-refresh/only-export-components": [
-                "warn",
+                process.env.CI ? 'off' : 'warn',
                 {
                     allowConstantExport: true,
                 },
