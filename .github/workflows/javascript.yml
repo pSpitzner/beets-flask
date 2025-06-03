@@ -42,7 +42,7 @@ jobs:
               continue-on-error: true
               run: |
                   cd ./frontend
-                  CI=true pnpm run lint
+                  pnpm run lint
             - name: Run TypeScript type check
               run: |
                   cd ./frontend

@@ -115,9 +115,10 @@ export default ts.config(
 
     // apply react-refresh
     {
-        env: {
-            node: true,
-            browser: true,
+        languageOptions: {
+            globals: {
+                ...globals.node,
+            },
         },
         plugins: {
             "react-refresh": reactRefresh
