@@ -55,7 +55,7 @@ COPY ./README.md /repo/
 RUN uv sync --no-install-project
 
 # Install our package (backend)
-COPY ./backend/beets_flask /repo/backend/
+COPY ./backend/beets_flask/ /repo/backend/beets_flask/
 COPY ./backend/generate_types.py /repo/backend/
 COPY ./backend/launch_redis_workers.py /repo/backend/
 
