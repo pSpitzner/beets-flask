@@ -12,7 +12,7 @@ on:
 
 jobs:
     eslint:
-        name: Linting, type check
+        name: Javascript checks
         runs-on: ubuntu-latest
         permissions:
             contents: read

@@ -11,7 +11,7 @@ on:
 
 jobs:
     python:
-        name: Linting, mypy and testing
+        name: Python checks
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
