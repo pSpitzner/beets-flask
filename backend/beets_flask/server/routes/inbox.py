@@ -292,7 +292,6 @@ def compute_stats(folder: str):
         raise NotFoundException(f"Inbox folder `{folder} not found.")
 
     p = Path(folder)
-    log.error(f"Computing stats for {folder}, {p}")
 
     # Compute session stats
     with db_session_factory() as session:

@@ -1,6 +1,6 @@
 """The glue between the compiled vite frontend and our backend."""
 
-from quart import Blueprint, send_from_directory
+from quart import Blueprint, current_app, send_from_directory
 
 frontend_bp = Blueprint("frontend", __name__)
 
@@ -25,5 +25,5 @@ async def reverse_proxy(path):
     if "logo.png" in path:
         path = path[path.index("logo.png") :]
 
-    r = await send_from_directory("../../frontend/dist/", path)
+    r = await send_from_directory(current_app.config["FRONTEND_DIST_DIR"], path)
     return r

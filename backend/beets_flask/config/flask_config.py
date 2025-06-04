@@ -34,6 +34,10 @@ class ServerConfig:
     # Database URI
     DATABASE_URI = "sqlite:///beets-flask-sqlite.db"
 
+    # Folder where the frontend build resources are stored
+    # FIXME: 2025-06-04 likely we only need this in production.
+    FRONTEND_DIST_DIR = "../../frontend/dist/"
+
     # Not sure if this is even used!
     SECRET_KEY = "secret"
 
@@ -71,10 +75,12 @@ class DevelopmentDocker(ServerConfig):
     DEBUG = True
 
 
+# production
 class DeploymentDocker(DevelopmentDocker):
     DEBUG = False
     TESTING = False
     PROPAGATE_EXCEPTIONS = True
+    FRONTEND_DIST_DIR = "/repo/frontend/dist/"
 
 
 def init_server_config(input_config: str | ServerConfig | None = None) -> ServerConfig:

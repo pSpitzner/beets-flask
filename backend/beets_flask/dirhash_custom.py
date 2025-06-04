@@ -42,7 +42,6 @@ def dirhash_c(
         else:
             # Skip files that do not match the filter
             if filter_regex is not None and not filter_regex.match(entry.name):
-                print(f"skipping {entry}")
                 continue
 
             fs = os.stat(entry.path)

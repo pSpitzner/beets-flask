@@ -1,5 +1,5 @@
 [project]
-name = "interactive-beets"
+name = "beets-flask"
 description = "An opinionated web-interface around the music organizer [beets](https://beets.io/)"
 version = "1.0.0"
 authors = [
@@ -50,7 +50,7 @@ test = [
     "pytest-cov>=5.0.0",
     "fakeredis",
 ]
-dev = ["ruff>=0.6.5", "pre-commit>=3.8.0", "interactive_beets[typed]"]
+dev = ["ruff>=0.6.5", "pre-commit>=3.8.0", "beets_flask[typed]"]
 typed = [
     "types-cachetools",
     "types-requests",
@@ -59,7 +59,7 @@ typed = [
     "types-Deprecated",
     "types-aiofiles",
 ]
-all = ["interactive_beets[dev,test]"]
+all = ["beets_flask[dev,test]"]
 docs = [
     "sphinx>=8.0.2",
     "furo>=2024.8.6",
