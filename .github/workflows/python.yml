@@ -42,3 +42,8 @@ jobs:
                   cd ./backend
                   pip install .[test]
                   coverage run -m pytest -v
+            - name: Check for failures
+              if: steps.ruff.outcome == 'failure' || steps.mypy.outcome == 'failure'
+              run: |
+                  echo "One or more checks failed"
+                  exit 1

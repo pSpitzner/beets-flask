@@ -54,7 +54,7 @@ def parse_size(size_key: str) -> tuple[int, int] | None:
     return preset
 
 
-async def send_image(img_data: BytesIO, size: tuple[int, int] | None):
+async def send_image(img_data: BytesIO, size: tuple[int, int] | None = None):
     # Resize if preset provided
     if size:
         img_data = _resize(img_data, size)
