@@ -45,6 +45,7 @@ $column_gap: 0.5rem;
     position: relative;
     opacity: 0.6;
     display: none;
+    align-self: flex-end;
     @media (min-width: 768px) {
         display: block;
     }

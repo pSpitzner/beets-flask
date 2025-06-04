@@ -1,261 +1,568 @@
-import { ChevronRight } from "lucide-react";
-import React, { useEffect, useState } from "react";
-import { Card, Typography } from "@mui/material";
-import * as Collapsible from "@radix-ui/react-collapsible";
-import { useQuery } from "@tanstack/react-query";
+import {
+    ClipboardIcon,
+    FolderClockIcon,
+    HistoryIcon,
+    ImportIcon,
+    InfoIcon,
+    TagIcon,
+    TerminalIcon,
+    Trash2Icon,
+} from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+    Box,
+    BoxProps,
+    Card,
+    CardContent,
+    DialogContent,
+    IconButton,
+    Tooltip,
+    Typography,
+    useTheme,
+} from "@mui/material";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { FsPath, inboxQueryByPathOptions } from "@/components/common/_query";
-import { ContextMenu, defaultActions, SelectionSummary } from "@/components/common/contextMenu";
-import { MinimalConfig, useConfig } from "@/components/common/hooks/useConfig";
-import { SelectionProvider, useSelection } from "@/components/common/hooks/useSelection";
+import { useConfig } from "@/api/config";
+import { inboxQueryOptions } from "@/api/inbox";
+import { MatchChip, StyledChip } from "@/components/common/chips";
+import { Dialog } from "@/components/common/dialogs";
+import {
+    FileTypeIcon,
+    FolderStatusIcon,
+    FolderTypeIcon,
+    InboxTypeIcon,
+    PenaltyTypeIcon,
+    SourceTypeIcon,
+} from "@/components/common/icons";
 import { PageWrapper } from "@/components/common/page";
-import { TagSimilarityBadgeWithHover } from "@/components/tags/similarityBadge";
-import { TagStatusIcon } from "@/components/tags/statusIcon";
+import { CardHeader } from "@/components/frontpage/statsCard";
+import {
+    FolderActionDesktopBar,
+    RefreshAllFoldersButton,
+} from "@/components/inbox/actions";
+import {
+    FolderComponent,
+    GridWrapper,
+    SelectedStats,
+} from "@/components/inbox/fileTree";
+import { FolderSelectionProvider } from "@/components/inbox/folderSelectionContext";
+import { Folder } from "@/pythonTypes";
 
-import styles from "@/components/inbox/inbox.module.scss";
+/* ---------------------------------- Route --------------------------------- */
 
 export const Route = createFileRoute("/inbox/")({
-    component: Inboxes,
+    component: RouteComponent,
+    loader: async ({ context }) => {
+        return await context.queryClient.ensureQueryData(inboxQueryOptions());
+    },
 });
 
-function Inboxes() {
-    const config = useConfig();
-    const inboxes = config.gui.inbox.folders;
+function RouteComponent() {
+    const { data: inboxes } = useSuspenseQuery(inboxQueryOptions());
 
-    if (Object.keys(inboxes).length == 0) {
-        return <>No inboxes found. Check your config!</>;
-    }
-
-    return (
-        <PageWrapper>
-            {Object.values(inboxes).map((inbox, i) => {
-                return <Inbox key={i} name={inbox.name} path={inbox.path} />;
-            })}
-        </PageWrapper>
-    );
-}
-
-function Inbox({ name, path }: { name: string; path: string }) {
-    const { data, isLoading, isPending, isError, error } = useQuery(inboxQueryByPathOptions(path));
-
-    const heading = (
-        <Typography gutterBottom variant="h6" component="div">
-            {name}
-        </Typography>
-    );
-
-    if (isLoading || isPending) {
-        return (
-            <Card className={styles.inboxView}>
-                {heading}
-                <>Loading ...</>
-            </Card>
-        );
-    }
-
-    if (isError) {
-        return (
-            <Card className={styles.inboxView}>
-                {heading}
-                Error: {error.message}
-            </Card>
-        );
-    }
-
-    return (
-        <SelectionProvider>
-            <Card className={styles.inboxView}>
-                {heading}
-                <FolderTreeView fp={data} />
-            </Card>
-        </SelectionProvider>
-    );
-}
-
-function FolderTreeView({
-    fp,
-    label,
-    level = 0,
-}: {
-    fp: FsPath;
-    label?: string;
-    level?: number;
-}): React.ReactNode {
-    const config = useConfig();
-    const defaultExpandState = fp.is_album && !config.gui.inbox.expand_files ? false : true;
-    const [expanded, setExpanded] = useState<boolean>(defaultExpandState);
-    const numChildren = Object.keys(fp.children).length;
-    const uid = `collapsible-${fp.full_path}`;
-
-    useEffect(() => {
-        const savedState = localStorage.getItem(uid);
-        if (savedState !== null) {
-            setExpanded(JSON.parse(savedState) as boolean);
-        }
-    }, [uid]);
-
-    const handleExpandedChange = (isOpen: boolean) => {
-        setExpanded(isOpen);
-        localStorage.setItem(uid, JSON.stringify(isOpen));
-    };
-
-    if (fp.type === "file") {
-        return <File fp={fp} />;
-    }
-
-    let folder_element = <Folder fp={fp} label={label ?? fp.full_path.replaceAll("/", " / ")} />;
-    if (!fp.is_inbox) {
-        folder_element = (
-            <ContextMenu
-                className={styles.contextMenuHeaderWrapper}
-                identifier={fp.full_path}
-                actions={[<SelectionSummary key={0} />, ...defaultActions]}
-            >
-                {folder_element}
-            </ContextMenu>
-        );
-    }
-
-    return (
-        <div className={styles.folder} data-empty={numChildren < 1}>
-            <Collapsible.Root open={expanded} onOpenChange={handleExpandedChange}>
-                {folder_element}
-                <Collapsible.Content className={styles.content}>
-                    <SubFolders fp={fp} level={level} />
-                </Collapsible.Content>
-            </Collapsible.Root>
-        </div>
-    );
-}
-
-function SubFolders({ fp, level }: { fp: FsPath; level: number }) {
-    const config = useConfig();
     return (
         <>
-            {Object.keys(fp.children).map((name) => {
-                const child = fp.children[name];
-                const [subFp, subName, mergedName] = concatSubFolderNames(fp, name, config);
-                // enable line wrapping
-                return (
-                    <FolderTreeView
-                        key={child.full_path}
-                        fp={subFp.children[subName]}
-                        label={mergedName}
-                        level={level + 1}
-                    />
-                );
-            })}
-        </>
-    );
-}
-
-// actual content, wrapped by the context menu
-function Folder({ fp, label }: { fp: FsPath; label: string }) {
-    const { isSelected, toggleSelection, markSelectable } = useSelection();
-    const handleSelect = () => {
-        if (fp.is_album) {
-            toggleSelection(fp.full_path);
-        }
-    };
-    const numChildren = Object.keys(fp.children).length;
-
-    useEffect(() => {
-        // Register as selectable
-        // this needs a lot more work:
-        // - selectable and right-clickable should not be the same.
-        // - inboxes should not be selected with "select all"
-        // - inboxes should show different context menu items (no tagging, but select items within, or tag all children...)
-        if (fp.is_album && numChildren > 0) {
-            markSelectable(fp.full_path);
-        }
-    }, [fp.full_path, fp.is_album, markSelectable, numChildren]);
-
-    return (
-        <div
-            key={`folder-${fp.full_path}`}
-            className={styles.header}
-            data-selected={isSelected(fp.full_path)}
-            onClick={handleSelect}
-        >
-            {numChildren > 0 ? (
-                <Collapsible.Trigger
-                    asChild
-                    className={styles.trigger}
-                    onClick={(e) => {
-                        e.stopPropagation();
+            <PageWrapper
+                sx={(theme) => ({
+                    display: "flex",
+                    flexDirection: "column",
+                    height: "100%",
+                    alignItems: "center",
+                    paddingTop: theme.spacing(1),
+                    paddingInline: theme.spacing(0.5),
+                    [theme.breakpoints.up("laptop")]: {
+                        height: "auto",
+                        paddingTop: theme.spacing(2),
+                        paddingInline: theme.spacing(1),
+                    },
+                })}
+            >
+                <PageHeader inboxes={inboxes} />
+                <Box
+                    sx={{
+                        width: "100%",
+                        display: "flex",
+                        gap: 2,
+                        flexDirection: "column",
                     }}
                 >
-                    <ChevronRight />
-                </Collapsible.Trigger>
-            ) : (
-                <div>
-                    <ChevronRight />
-                </div>
-            )}
-
-            {fp.is_album && (
-                <div className={styles.albumIcons}>
-                    <TagStatusIcon className={styles.albumIcon} tagPath={fp.full_path} />
-                    <TagSimilarityBadgeWithHover tagPath={fp.full_path} />
-                </div>
-            )}
-
-            <span className={styles.label}>
-                <WrapableAtSlash label={label} />
-            </span>
-        </div>
-    );
-}
-
-function WrapableAtSlash({ label }: { label: string }) {
-    return (
-        <>
-            {label.split(" / ").map((part, i, arr) => (
-                <span key={i}>
-                    {part}
-                    {i < arr.length - 1 && " / "}
-                </span>
-            ))}
+                    {inboxes.map((folder) => (
+                        <FolderSelectionProvider>
+                            <InboxCard key={folder.full_path} folder={folder} />
+                        </FolderSelectionProvider>
+                    ))}
+                </Box>
+            </PageWrapper>
         </>
     );
 }
 
-function File({ fp: fp }: { fp: FsPath }): React.JSX.Element {
-    if (fp.type !== "file") {
-        throw new TypeError("Expected a file, got a directory");
-    }
-    const fileName = fp.full_path.split("/").pop();
+/** A simple route header showing
+ * a title and some
+ * additional information.
+ */
+function PageHeader({ inboxes, ...props }: { inboxes: Folder[] } & BoxProps) {
     return (
-        <div key={`file-${fp.full_path}`} className={styles.file}>
-            <div>{fileName}</div>
-        </div>
+        <Box
+            sx={{
+                display: "grid",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 2,
+                width: "100%",
+                gridTemplateColumns: "1fr",
+                gridTemplateRows: "1fr",
+                paddingInline: 2,
+            }}
+            {...props}
+        >
+            <Typography
+                variant="h4"
+                component="div"
+                fontWeight="bold"
+                sx={{
+                    gridColumn: "1",
+                    gridRow: "1",
+                    textAlign: "center",
+                }}
+            >
+                Your inbox{inboxes.length > 1 ? "es" : ""}
+            </Typography>
+            <Box
+                sx={{
+                    alignSelf: "center",
+                    display: "flex",
+                    gap: 1,
+                    zIndex: 1,
+                    borderRadius: 1,
+                    color: "secondary.muted",
+                    gridColumn: "1",
+                    gridRow: "1",
+                    justifySelf: "flex-end",
+                }}
+            >
+                <InfoDescription />
+            </Box>
+            <Box
+                sx={{
+                    alignSelf: "center",
+                    display: "flex",
+                    gap: 1,
+                    zIndex: 1,
+                    borderRadius: 1,
+                    color: "secondary.muted",
+                    gridColumn: "1",
+                    gridRow: "1",
+                    justifySelf: "flex-start",
+                }}
+            >
+                <RefreshAllFoldersButton />
+            </Box>
+        </Box>
     );
 }
 
-function concatSubFolderNames(
-    parent: FsPath,
-    name: string,
-    config: MinimalConfig,
-    merged = ""
-): [FsPath, string, string] {
-    if (!config.gui.inbox.concat_nested_folders) {
-        return [parent, name, merged + name];
+function InboxCard({ folder }: { folder: Folder }) {
+    const config = useConfig();
+
+    // configuration for this inbox folder
+    const folderConfig = useMemo<(typeof config)["gui"]["inbox"]["folders"][0]>(() => {
+        const fc = Object.entries(config.gui.inbox.folders).find(
+            ([_k, v]) => v.path === folder.full_path
+        );
+
+        return fc
+            ? fc[1]
+            : {
+                  name: "Inbox",
+                  autotag: false,
+                  path: folder.full_path,
+              };
+    }, [config, folder.full_path]);
+
+    const innerFolders = useMemo(() => {
+        // Filter out folders that are not albums or files
+        return folder.children.filter((f) => f.type === "directory");
+    }, [folder.children]);
+
+    const threshold = folderConfig.auto_threshold ?? config.match.strong_rec_thresh;
+
+    let tooltip: string;
+    switch (folderConfig.autotag) {
+        case "auto":
+            tooltip =
+                "Automatic tagging and import enabled. " +
+                (1 - threshold) * 100 +
+                "% threshold.";
+            break;
+        case "preview":
+            tooltip = "Automatic tagging enabled, but no import.";
+            break;
+        case "bootleg":
+            tooltip = "Import as-is, and split albums by meta-data.";
+            break;
+        default:
+            tooltip = "No automatic tagging or import enabled.";
+            break;
     }
 
-    const me = parent.children[name];
-    const numChildren = Object.keys(me.children).length;
+    return (
+        <Card sx={{ width: "100%", padding: 2 }}>
+            <CardHeader
+                key={folder.full_path}
+                icon={
+                    <Tooltip title={tooltip}>
+                        <InboxTypeIcon
+                            size={24}
+                            type={folderConfig.autotag || undefined}
+                        />
+                    </Tooltip>
+                }
+                dividerPos="70%"
+                color="secondary.main"
+            >
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "flex-end",
+                        width: "100%",
+                        justifyContent: "space-between",
+                    }}
+                >
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            flexGrow: 1,
+                            m: 0,
+                            p: 0,
+                            fontWeight: "bold",
+                            paddingLeft: 2,
+                        }}
+                    >
+                        {folderConfig.path.replaceAll("/", " / ")}
+                    </Typography>
+                    <Typography
+                        variant="body1"
+                        sx={{
+                            fontWeight: "bold",
+                            m: 0,
+                            p: 0,
+                        }}
+                    >
+                        {folderConfig.name}
+                    </Typography>
+                </Box>
+            </CardHeader>
+            <CardContent
+                sx={{
+                    paddingInline: 1,
+                    paddingTop: 1,
+                    m: 0,
+                    paddingBottom: "0 !important",
+                }}
+            >
+                <GridWrapper>
+                    {/* Only show inner folders */}
+                    {innerFolders.map((innerFolder) => (
+                        <FolderComponent
+                            key={innerFolder.full_path}
+                            folder={innerFolder}
+                        />
+                    ))}
+                    {innerFolders.length === 0 && (
+                        <Box
+                            sx={{
+                                gridColumn: "1 / -1",
+                                textAlign: "center",
+                                color: "secondary.muted",
+                            }}
+                        >
+                            No folders in this inbox.
+                        </Box>
+                    )}
+                </GridWrapper>
+                <SelectedStats />
+            </CardContent>
+            <FolderActionDesktopBar />
+            {/* <FolderActionsSpeedDial /> */}
+        </Card>
+    );
+}
 
-    let singleChild = null;
-    let singleChildName = null;
-    if (numChildren === 1) {
-        singleChildName = Object.keys(me.children)[0];
-        singleChild = me.children[singleChildName];
-    }
+/** Description of the inbox page, shown as modal on click */
+function InfoDescription() {
+    const theme = useTheme();
+    const [open, setOpen] = useState(false);
+    const { data } = useSuspenseQuery(inboxQueryOptions());
 
-    if (singleChildName && singleChild?.type === "directory") {
-        return concatSubFolderNames(me, singleChildName, config, merged + name + " / ");
-    } else {
-        return [parent, name, merged + name];
-    }
+    const handleClose = () => {
+        setOpen(false);
+    };
+
+    return (
+        <>
+            <IconButton
+                sx={{
+                    m: 0,
+                    p: 0,
+                    color: "inherit",
+                }}
+                size="small"
+                onClick={() => {
+                    setOpen(true);
+                }}
+            >
+                <InfoIcon />
+            </IconButton>
+            <Dialog
+                open={open}
+                onClose={handleClose}
+                title="Information"
+                title_icon={<InfoIcon size={theme.iconSize.lg} />}
+            >
+                <DialogContent
+                    sx={{
+                        code: {
+                            backgroundColor: theme.palette.background.default,
+                            paddingInline: 0.5,
+                            paddingBlock: 0.25,
+                            borderRadius: 1,
+                            fontFamily: "monospace",
+                        },
+                        "> p": {
+                            marginTop: "0 !important",
+                        },
+                    }}
+                >
+                    <Box component="p">
+                        The <b>Inbox</b> is your temporary holding area for new music
+                        files before they're imported into your library. Drop an album
+                        folder into{" "}
+                        <Box component="code" whiteSpace="nowrap">
+                            {data[0].full_path}
+                        </Box>
+                        to begin with the tagging and importing process.
+                    </Box>
+                    <Box component="p">
+                        By default new inbox items are automatically tagged after a
+                        short delay (configurable in the settings yaml). You can also
+                        trigger the tagging manually by using the{" "}
+                        <TagIcon size={theme.iconSize.sm - 2} strokeWidth={3.5} />{" "}
+                        <b
+                            style={{
+                                whiteSpace: "nowrap",
+                                display: "inline-flex",
+                                gap: 0.5,
+                            }}
+                        >
+                            Retag
+                        </b>{" "}
+                        action.
+                    </Box>
+                    {/* Actions */}
+                    <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                        Actions
+                    </Typography>
+                    <Box component="p">
+                        You may trigger an action on one or multiple folders by right
+                        clicking on the folder or long pressing on mobile. You can also
+                        select multiple folders and trigger an action on all of the
+                        selected folders at once using the speed dial at the bottom left
+                        (right on mobile).
+                    </Box>
+                    <Box
+                        sx={{
+                            display: "grid",
+                            columnGap: 1,
+                            gridTemplateColumns: "min-content max-content auto",
+                            "> div": {
+                                display: "grid",
+                                gridTemplateColumns: "subgrid",
+                                gridColumn: "span 3",
+                                alignItems: "center",
+                            },
+                            pl: 1,
+                        }}
+                        component="p"
+                    >
+                        <Box>
+                            <TagIcon size={theme.iconSize.md} />
+                            <Typography>Retag</Typography>
+                            <Typography variant="caption">(description)</Typography>
+                        </Box>
+                        <Box sx={{ mt: 0.75 }}>
+                            <ImportIcon size={theme.iconSize.md} />
+                            <Typography>Import</Typography>
+                            <Typography variant="caption">(description)</Typography>
+                        </Box>
+                        <Box>
+                            <SourceTypeIcon size={theme.iconSize.md} type="asis" />
+                            <Typography>Import (asis)</Typography>
+                            <Typography variant="caption">(description)</Typography>
+                        </Box>
+                        <Box>
+                            <TerminalIcon size={theme.iconSize.md} />
+                            <Typography>Import (via terminal)</Typography>
+                            <Typography variant="caption">(description)</Typography>
+                        </Box>
+                        <Box sx={{ mt: 0.75 }}>
+                            <ClipboardIcon size={theme.iconSize.md} />
+                            <Typography>Copy path</Typography>
+                            <Typography variant="caption">(description)</Typography>
+                        </Box>
+                        <Box>
+                            <Trash2Icon size={theme.iconSize.md} />
+                            <Typography>Delete folder</Typography>
+                            <Typography variant="caption">(description)</Typography>
+                        </Box>
+                        <Box>
+                            <HistoryIcon size={theme.iconSize.md} />
+                            <Typography>Undo import</Typography>
+                            <Typography variant="caption">(description)</Typography>
+                        </Box>
+                    </Box>
+                    {/* Tree view */}
+                    <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                        Tree view
+                    </Typography>
+                    <Box component="p">
+                        The tree view shows the folder structure of your inbox. This is
+                        very similar to a typical file explorer. You max expand and
+                        collapse folders by clicking on the chevron icon.
+                    </Box>
+                    <Box sx={{ pl: 1 }} component="p">
+                        <Box
+                            sx={{
+                                display: "flex",
+                                gap: 1,
+                                alignItems: "center",
+                            }}
+                        >
+                            <FolderTypeIcon
+                                isAlbum={false}
+                                isOpen={false}
+                                size={theme.iconSize.lg}
+                            />
+                            <FolderTypeIcon
+                                isAlbum={false}
+                                isOpen={true}
+                                size={theme.iconSize.lg}
+                            />
+                            <Typography>Folders in your inbox</Typography>
+                        </Box>
+                        <Box
+                            sx={{
+                                display: "flex",
+                                gap: 1,
+                                alignItems: "center",
+                            }}
+                        >
+                            <FolderTypeIcon
+                                isAlbum={true}
+                                isOpen={false}
+                                size={theme.iconSize.lg}
+                            />
+                            <FolderTypeIcon
+                                isAlbum={true}
+                                isOpen={true}
+                                size={theme.iconSize.lg}
+                            />
+                            <Typography>
+                                Music album (identified as such by beets)
+                            </Typography>
+                        </Box>
+                        <Box
+                            sx={{
+                                display: "flex",
+                                gap: 1,
+                                alignItems: "center",
+                            }}
+                        >
+                            <FileTypeIcon type={"mp3"} size={theme.iconSize.lg} />
+                            <FileTypeIcon type={"txt"} size={theme.iconSize.lg} />
+                            <Typography>
+                                Any file (icons varies by file extension)
+                            </Typography>
+                        </Box>
+                    </Box>
+                    {/* Chips */}
+                    <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                        Chips
+                    </Typography>
+                    <Box component="p">
+                        Once a folder is tagged or imported{" "}
+                        <StyledChip
+                            label="chips"
+                            size="small"
+                            sx={{ width: "min-content", display: "inline-flex" }}
+                            variant="outlined"
+                        />{" "}
+                        will be shown in the row of the folder. These chips indicate the
+                        status of the folder and gives additional information about the
+                        best tag candidate.
+                    </Box>
+                    <Box
+                        component="p"
+                        sx={{
+                            display: "grid",
+                            columnGap: 1,
+                            rowGap: 0.5,
+                            gridTemplateColumns: "min-content auto",
+                            alignItems: "center",
+                            pl: 1,
+                        }}
+                    >
+                        <StyledChip
+                            icon={
+                                <PenaltyTypeIcon
+                                    type="duplicate"
+                                    size={theme.iconSize.sm}
+                                />
+                            }
+                            label="Duplicate"
+                            size="small"
+                            color="error"
+                            variant="outlined"
+                        />
+                        <Typography variant="caption">
+                            This album is already in your beets library! Click on the
+                            chip to jump to the item in your library.
+                        </Typography>
+                        <StyledChip
+                            icon={
+                                <FolderStatusIcon status={1} size={theme.iconSize.sm} />
+                            }
+                            label="status"
+                            size="small"
+                            variant="outlined"
+                            color="info"
+                        />
+                        <Typography variant="caption">
+                            The current status of a the most recent action on this
+                            folder. This may indicate the live status if an action is
+                            currently running.
+                        </Typography>
+                        <MatchChip source="mb" distance={0.01} />
+                        <Typography variant="caption">
+                            Shows the quality and metadata source of the best matching
+                            tag candidate. For beets veterans, you may think of this as
+                            the data source and penalty.
+                        </Typography>
+                        <StyledChip
+                            icon={<FolderClockIcon size={theme.iconSize.sm} />}
+                            label="Integrity"
+                            size="small"
+                            variant="outlined"
+                            color="warning"
+                        />
+                        <Typography variant="caption">
+                            The integrity check of the folder failed. This may be due to
+                            changes to a folder after it was tagged or imported.
+                        </Typography>
+                    </Box>
+                </DialogContent>
+            </Dialog>
+        </>
+    );
 }

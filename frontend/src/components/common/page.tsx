@@ -10,22 +10,13 @@ import { Box, styled } from "@mui/material";
  *
  */
 export const PageWrapper = styled(Box)(({ theme }) => ({
-    //previously ContainerWidth class
+    //On mobile devices, the page is full width
     width: "100%",
+    maxWidth: "100%",
+    [theme.breakpoints.up("laptop")]: {
+        minWidth: theme.breakpoints.values.laptop,
+        maxWidth: theme.breakpoints.values.desktop,
+    },
+    // centered
     margin: "0 auto",
-    maxWidth: "540px",
-    paddingBlock: "0.5rem",
-    paddingInline: "0.5rem",
-    [theme.breakpoints.up("sm")]: {
-        maxWidth: "720px",
-    },
-    [theme.breakpoints.up("md")]: {
-        maxWidth: "960px",
-    },
-    [theme.breakpoints.up("lg")]: {
-        maxWidth: "1140px",
-    },
-    [theme.breakpoints.up("xl")]: {
-        maxWidth: "1320px",
-    },
 }));

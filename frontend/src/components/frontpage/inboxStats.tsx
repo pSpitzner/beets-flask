@@ -1,31 +1,10 @@
-import { FolderSearch, FolderSync, Inbox, Recycle, Trash2 } from "lucide-react";
-import Box from "@mui/material/Box";
-import Divider from "@mui/material/Divider";
-import Grid from "@mui/material/Grid2";
-import Tooltip from "@mui/material/Tooltip";
+import { Inbox } from "lucide-react";
+import { Box, Divider, Grid } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 
-import {
-    deleteInboxImportedMutation,
-    deleteInboxMutation,
-    InboxStats,
-    inboxStatsQueryOptions,
-    retagInboxAllMutation,
-    retagInboxNewMutation,
-} from "@/components/common/_query";
-import {
-    Card,
-    CardActions,
-    CardAvatar,
-    CardContent,
-    CardTopInfo,
-} from "@/components/frontpage/card";
-
-import {
-    IconButtonWithMutation,
-    IconButtonWithMutationAndFeedback,
-} from "../common/buttons";
-import { RelativeTime } from "../common/time";
+import { inboxStatsQueryOptions } from "@/api/inbox";
+import { Card, CardAvatar, CardContent } from "@/components/frontpage/card";
+import { InboxStats } from "@/pythonTypes";
 
 export function InboxStatsGridItems() {
     const { data, isLoading, isPending, isError, error } = useQuery(
@@ -52,10 +31,10 @@ export function InboxStatsGridItems() {
             {data.map((stats, i) => (
                 <Grid
                     size={{
-                        xs: 12,
-                        sm: 8,
-                        md: 8,
-                        lg: 6,
+                        mobile: 12,
+                        tablet: 8,
+                        laptop: 8,
+                        desktop: 6,
                     }}
                     key={i}
                 >
@@ -70,14 +49,7 @@ function InboxCardView({ stats }: { stats: InboxStats }) {
     return (
         <Card>
             <CardContent>
-                {stats.lastTagged && (
-                    <CardTopInfo>
-                        <label>
-                            Last tagged: <RelativeTime date={stats.lastTagged} />
-                        </label>
-                    </CardTopInfo>
-                )}
-                <CardAvatar Icon={Inbox} title={stats.inboxName}>
+                <CardAvatar Icon={Inbox} title={stats.name}>
                     <Box
                         component="code"
                         sx={{
@@ -86,7 +58,7 @@ function InboxCardView({ stats }: { stats: InboxStats }) {
                             marginBottom: "0.875em",
                         }}
                     >
-                        {stats.inboxPath}
+                        {stats.path}
                     </Box>
                 </CardAvatar>
 
@@ -95,59 +67,13 @@ function InboxCardView({ stats }: { stats: InboxStats }) {
                 </div>
             </CardContent>
             <Divider className="mt-auto" />
-            <CardActions>
-                <div className="flex flex-row space-x-4">
-                    <IconButtonWithMutationAndFeedback
-                        mutationOption={deleteInboxMutation}
-                        mutateArgs={stats.inboxPath}
-                        color="error"
-                        confirmTitle="Are you sure you want to delete all files?"
-                    >
-                        <Tooltip title="Delete all files in the inbox">
-                            <Trash2 size="1em" />
-                        </Tooltip>
-                    </IconButtonWithMutationAndFeedback>
-                    <IconButtonWithMutation
-                        mutationOption={deleteInboxImportedMutation}
-                        mutateArgs={stats.inboxPath}
-                        color="warning"
-                    >
-                        <Tooltip title="Delete files that have been imported">
-                            <Recycle size="1em" />
-                        </Tooltip>
-                    </IconButtonWithMutation>
-                </div>
-                <div className="flex flex-row space-x-4">
-                    <IconButtonWithMutation
-                        mutationOption={retagInboxAllMutation}
-                        mutateArgs={stats.inboxPath}
-                        color="warning"
-                    >
-                        <Tooltip title="Re-tag all files in the inbox">
-                            <FolderSync size="1em" />
-                        </Tooltip>
-                    </IconButtonWithMutation>
-                    <IconButtonWithMutation
-                        mutationOption={retagInboxNewMutation}
-                        mutateArgs={stats.inboxPath}
-                        color="primary"
-                    >
-                        <Tooltip title="Tag new files in the inbox">
-                            <FolderSearch size="1em" />
-                        </Tooltip>
-                    </IconButtonWithMutation>
-                </div>
-            </CardActions>
         </Card>
     );
 }
 
 function InboxTable({ stats }: { stats: InboxStats }) {
     const size = stats.size ?? 0;
-    const sizeTagged = stats.sizeTagged ?? 0;
-
     const files = stats.nFiles ?? 0;
-    const filesTagged = stats.nTagged ?? 0;
 
     return (
         <table className="table-info text-gray-100 text-sm">
@@ -165,14 +91,10 @@ function InboxTable({ stats }: { stats: InboxStats }) {
             </thead>
             <tbody>
                 <tr>
-                    <td>{files - filesTagged}</td>
-                    <td>{filesTagged}</td>
                     <td>{files}</td>
                     <td>files</td>
                 </tr>
                 <tr>
-                    <td>{_to_mb(size - sizeTagged)}</td>
-                    <td>{_to_mb(sizeTagged)}</td>
                     <td>{_to_mb(size)} </td>
                     <td>mb</td>
                 </tr>

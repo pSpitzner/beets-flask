@@ -28,6 +28,7 @@ print(config["gui"]["tags"].get(default="default_value"))
 import os
 
 from beets import IncludeLazyConfig as BeetsConfig
+from beets.plugins import load_plugins
 from confuse import YamlSource
 
 from beets_flask.logger import log
@@ -149,5 +150,49 @@ class InteractiveBeetsConfig(BeetsConfig, metaclass=Singleton):
 # Monkey patch the beets config
 import beets
 
-config = InteractiveBeetsConfig()
-beets.config = config
+config: InteractiveBeetsConfig | None = None
+
+
+def refresh_config():
+    """Refresh the config object.
+
+    This is useful if you want to reload the config after it has been changed.
+    """
+    global config
+
+    config = InteractiveBeetsConfig()
+
+    # Hack: We have to manually load the plugins as this
+    # is normally done by beets
+    plugin_list = config["plugins"].as_str_seq()
+    load_plugins(plugin_list)
+    log.debug(f"Loading plugins: {plugin_list}")
+
+    beets.config = config
+    return config
+
+
+def get_config(force_refresh=False) -> InteractiveBeetsConfig:
+    """Get the config object.
+
+    This is useful if you want to access the config from another module.
+
+    The result of this function is still the global object that you can mutate!
+
+    Parameters
+    ----------
+    force_refresh : bool
+        Force a refresh of the config object.
+        This is useful if you want to be sure that the config is up to date,
+        should normally only be called if the config was changed in another process.
+    """
+    global config
+
+    if config is None or force_refresh:
+        return refresh_config()
+    return config
+
+
+__all__ = ["refresh_config", "get_config"]
+
+# raise NotImplementedError("This module should not be imported.")

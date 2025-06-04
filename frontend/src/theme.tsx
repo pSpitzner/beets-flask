@@ -5,6 +5,64 @@ import { createTheme, ThemeProvider as MuiThemeProvider } from "@mui/material/st
 // Global styles
 import "./main.css";
 
+type DiffColors = {
+    added: string;
+    removed: string;
+    changed: string;
+    changedLight: string;
+    light: string;
+};
+
+// TS Augmentation to add custom breakpoints (see below)
+declare module "@mui/material/styles" {
+    interface BreakpointOverrides {
+        xs: false; // removes the `xs` breakpoint
+        sm: false;
+        md: false;
+        lg: false;
+        xl: false;
+        mobile: true; // adds the `mobile` breakpoint
+        tablet: true;
+        laptop: true;
+        desktop: true;
+        hpc: true;
+    }
+
+    // Custom colors for to allow colorful beets diffs
+    interface Palette {
+        diffs: DiffColors;
+    }
+    interface PaletteOptions {
+        diffs?: DiffColors;
+    }
+    interface PaletteColor {
+        muted?: string;
+    }
+    interface SimplePaletteColorOptions {
+        muted?: string;
+    }
+
+    // icon sizes
+    interface Theme {
+        iconSize: {
+            xs: number;
+            sm: number;
+            md: number;
+            lg: number;
+            xl: number;
+        };
+    }
+    interface ThemeOptions {
+        iconSize?: {
+            xs: number;
+            sm: number;
+            md: number;
+            lg: number;
+            xl: number;
+        };
+    }
+}
+
 /** Relative basic theme for now
  * using a mint green and a orange
  * as primary and secondary colors.
@@ -12,23 +70,52 @@ import "./main.css";
  * reusable (global) css variables
  */
 const darkTheme = createTheme({
+    iconSize: {
+        xs: 12,
+        sm: 16,
+        md: 18,
+        lg: 20,
+        xl: 24,
+    },
+
     palette: {
         mode: "dark",
-        primary: {
-            main: "#7FFFD4",
-            // muted: "#89a99e",
-        },
-        // tried to add custom colors, but did not work. c.f:
-        // https://stackoverflow.com/questions/50069724/how-to-add-custom-material-ui-palette-colors
+        tonalOffset: 0.4,
         secondary: {
-            main: "#ffffff",
+            main: "#20F5F1",
+            light: "#6FF5F2",
+            muted: "#348F8D",
+            contrastText: "#000000",
+        },
+        primary: {
+            // Complementary pink for secondary as compared to primary
+            main: "#ED41C3",
+            light: "#F5A0D5",
+            muted: "#A43F8C",
+            contrastText: "#000000",
+        },
+        text: {
+            primary: "#ffffff",
+            // overwriting secondary fixes the transparency (bad on icons)
+            secondary: "#ACB3B9",
         },
         action: {
-            hover: "#212529",
+            // hover: "#212529",
+            hover: "#3A3C3E",
+            selected: "#7C848E22",
         },
         background: {
             default: "#000000",
             paper: "#181A1C",
+        },
+        diffs: {
+            // added: "#a4bf8c",
+            added: "#A0D582",
+            // removed: "#c0626b",
+            removed: "#74454B",
+            changed: "#ebcb8c",
+            changedLight: "#403b31",
+            light: "#6c757d",
         },
     },
     components: {
@@ -38,7 +125,6 @@ const darkTheme = createTheme({
                     backgroundColor: "#21252933",
                     borderRadius: "0.3rem",
                     backdropFilter: "blur(10px)",
-                    padding: "0.5rem",
                 },
             },
         },
@@ -48,7 +134,6 @@ const darkTheme = createTheme({
                     backgroundColor: "#21252933",
                     borderRadius: "0.3rem",
                     backdropFilter: "blur(10px)",
-                    padding: "0.0rem",
                     backgroundImage: "none",
                 },
             },
@@ -61,6 +146,20 @@ const darkTheme = createTheme({
                 },
             },
         },
+    },
+
+    breakpoints: {
+        values: {
+            mobile: 0,
+            tablet: 640,
+            laptop: 1024,
+            desktop: 1200,
+            hpc: 1800,
+        },
+    },
+
+    colorSchemes: {
+        dark: true,
     },
 });
 

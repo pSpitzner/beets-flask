@@ -14,10 +14,12 @@ RUN mkdir -p /config/beets-flask
 RUN chown -R beetle:beetle /config
 ENV BEETSDIR="/config/beets"
 ENV BEETSFLASKDIR="/config/beets-flask"
+ENV LOG_FILE_WEB="/repo/log/web.log"
 
 # our default folders they should not be used in production
 RUN mkdir -p /music/inbox
 RUN mkdir -p /music/imported
+RUN mkdir -p /repo/log
 RUN chown -R beetle:beetle /music
 
 # dependencies
@@ -29,18 +31,35 @@ RUN --mount=type=cache,target=/var/cache/apk \
     redis  \
     bash \
     tmux \
-    shadow
+    shadow \
+    git \
+    ffmpeg
 
-# Install our package (backend)
-COPY ./backend /repo/backend
-COPY ./README.md /repo/README.md
-WORKDIR /repo/backend
+
+# Install backend dependencies
+
 # Prevent __pycache__ directories
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --no-cache-dir .
+# avoid creating a venv with uv, use system python
+ENV UV_PROJECT_ENVIRONMENT="/usr/local/"
 
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --no-cache-dir uv
+
+
+WORKDIR /repo/backend
+COPY ./backend/pyproject.toml /repo/backend/
+COPY ./README.md /repo/
+
+RUN uv sync --no-install-project
+
+# Install our package (backend)
+COPY ./backend/beets_flask/ /repo/backend/beets_flask/
+COPY ./backend/generate_types.py /repo/backend/
+COPY ./backend/launch_redis_workers.py /repo/backend/
+
+RUN uv sync
 
 # ------------------------------------------------------------------------------------ #
 #                                      Development                                     #
@@ -76,7 +95,7 @@ USER root
 ENTRYPOINT ["./entrypoint_test.sh"]
 
 # ------------------------------------------------------------------------------------ #
-#                                      Production                                      #
+#                                         Build                                        #
 # ------------------------------------------------------------------------------------ #
 
 FROM deps AS build
@@ -100,6 +119,8 @@ RUN pnpm install
 RUN pnpm run build
 
 # ------------------------------------------------------------------------------------ #
+#                                      Production                                      #
+# ------------------------------------------------------------------------------------ #
 
 FROM deps AS prod
 
@@ -119,6 +140,6 @@ ENTRYPOINT [ \
     "/repo/entrypoint_fix_permissions.sh && \
     /repo/entrypoint_user_scripts.sh && \
     su beetle -c /repo/entrypoint.sh" \
-]
+    ]
 
 

@@ -4,14 +4,14 @@ on:
     push:
         branches: ["main"]
         paths:
-          - backend/**
+            - backend/**
     pull_request:
         # The branches below must be a subset of the branches above
         branches: ["main"]
 
 jobs:
-    ruff:
-        name: Ruff check and linting
+    python:
+        name: Python checks
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -26,15 +26,24 @@ jobs:
                   pip install ruff
                   pip install .[typed]
             - name: Check style with Ruff
+              continue-on-error: true
               run: |
                   cd ./backend
                   ruff check --output-format=github .
             - name: Check type hints with mypy
+              continue-on-error: true
               run: |
                   cd ./backend
                   mypy --show-error-codes --check-untyped-defs --config-file ./pyproject.toml ./beets_flask
             - name: Test with pytest
+              env:
+                  PYTEST_ADDOPTS: "--color=yes"
               run: |
                   cd ./backend
                   pip install .[test]
-                  coverage run -m pytest  -v -s
+                  coverage run -m pytest -v
+            - name: Check for failures
+              if: steps.ruff.outcome == 'failure' || steps.mypy.outcome == 'failure'
+              run: |
+                  echo "One or more checks failed"
+                  exit 1

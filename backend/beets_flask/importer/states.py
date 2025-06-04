@@ -3,110 +3,163 @@
 from __future__ import annotations
 
 import time
+from abc import ABC
 from dataclasses import dataclass
-from typing import List, Literal, Union
+from datetime import datetime
+from pathlib import Path
+from typing import List, Literal, NotRequired, Sequence, TypedDict, Union, cast
 from uuid import uuid4 as uuid
 
 import beets.ui.commands as uicommands
-from beets import autotag, importer
+from beets import autotag, importer, library
+from beets.ui import _open_library
+from deprecated import deprecated
 
+from beets_flask.config import get_config
+from beets_flask.disk import Folder
+from beets_flask.importer.progress import (
+    Progress,
+    ProgressState,
+    SerializedProgressState,
+)
+from beets_flask.importer.types import DuplicateAction
+from beets_flask.logger import log
+from beets_flask.server.exceptions import SerializedException
 from beets_flask.utility import capture_stdout_stderr
 
 from .types import (
     AlbumInfo,
-    AlbumMatch,
+    BeetsAlbumMatch,
+    BeetsItem,
+    BeetsTrackMatch,
     ItemInfo,
-    MusicInfo,
-    SerializedCandidateState,
-    SerializedImportState,
-    SerializedSelectionState,
     TrackInfo,
-    TrackMatch,
 )
 
 
-@dataclass
-class ImportStatus:
-    """Simple dataclass to hold a status message and a status code."""
+class BaseState(ABC):
+    """Base class for all states.
 
-    message: Literal[
-        "initializing",
-        "reading files",
-        "grouping albums",
-        "looking up candidates",
-        "identifying duplicates",
-        "waiting for user selection",
-        "manipulating files",
-        "completed",
-        "aborted",
-        "plugin",
-    ]
+    Some shared functionality, but mostly common attributes.
+    """
 
-    # Plugin specific
-    plugin_stage: str | None = None
-    plugin_name: str | None = None
+    id: str
+    created_at: datetime
+    updated_at: datetime
 
-    @property
-    def value(self):
-        ret: str = self.message
-        if self.plugin_stage is not None:
-            ret += f" ({self.plugin_stage})"
-        if self.plugin_name is not None:
-            ret += f" ({self.plugin_name})"
-        return ret
+    def __init__(self) -> None:
+        self.id = str(uuid())
+        self.created_at = datetime.now()
+        self.updated_at = datetime.now()
 
-    def as_dict(self) -> dict:
+    def serialize(self) -> SerializedBaseState:
+        """Serialize the state to a dictionary."""
         return {
-            "message": self.message,
-            "plugin_stage": self.plugin_stage,
-            "plugin_name": self.plugin_name,
+            "id": self.id,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
         }
 
 
-@dataclass
-class ImportState:
+@dataclass(init=False)
+class SessionState(BaseState):
     """Highest level state of an import session.
 
-    Contains selection states for each task.
+    Contains task (selection) states for each task.
     """
 
-    def __post_init__(self):
-        self.id = str(uuid())
-        self._selection_states: List[SelectionState] = []
-        self.status: ImportStatus = ImportStatus("initializing")
-        # session-level buttons. continue from choose_match when not None
-        self.user_response: Literal["abort"] | Literal["apply"] | None = None
+    id: str
+    _task_states: List[TaskState]
+    folder_path: Path
+    folder_hash: str
+
+    # session-level buttons. continue from choose_match when not None
+    user_response: Literal["abort"] | Literal["apply"] | None = None
+
+    # If a session run fails we store the exc here
+    # should be set to none whenever the session is started
+    exc: SerializedException | None = None
+
+    def __init__(self, folder: Folder | Path) -> None:
+        super().__init__()
+
+        # Alternate constructor is part of the SessionStateInDb class
+        self._task_states = []
+        if isinstance(folder, str):
+            folder = Path(folder)
+        if isinstance(folder, Path):
+            folder = Folder.from_path(folder)
+        # Why not just a folder object as member?
+        # -> We do not always want to compute the children (or save them to db)
+        self.folder_path = folder.path
+        self.folder_hash = folder.hash
+
+    def __repr__(self) -> str:
+        return (
+            f"SessionState:\n"
+            + f" * id={self.id}\n"
+            + f" * folder_path={self.folder_path}\n"
+            + f" * folder_hash={self.folder_hash}\n"
+            + f" * task_states={[ts.id for ts in self.task_states]}\n"
+            + f" * progress={self.progress}"
+        )
 
     @property
-    def selection_states(self):
-        return self._selection_states
+    @deprecated("Use the folder attribute instead!")
+    def path(self) -> Path:
+        return self.folder_path
 
     @property
-    def selection_state_ids(self):
-        return [s.id for s in self.selection_states]
+    def task_states(self):
+        return self._task_states
+
+    @property
+    def task_state_ids(self):
+        return [s.id for s in self.task_states]
 
     @property
     def tasks(self):
-        return [s.task for s in self.selection_states]
+        return [s.task for s in self.task_states]
 
     @property
-    def completed(self):
-        return all([s.completed for s in self.selection_states])
+    def progress(self):
+        """The session progress is the loweset progress of all tasks."""
+        if len(self.task_states) == 0:
+            return ProgressState(Progress.NOT_STARTED)
 
-    def get_selection_state_for_task(
-        self, task: importer.ImportTask
-    ) -> SelectionState | None:
-        state: SelectionState | None = None
-        for s in self.selection_states:
-            # TODO: are tasks really comparable?
+        return min([s.progress for s in self.task_states])
+
+    def get_task_state_for_task(
+        self,
+        task: importer.ImportTask,
+    ) -> TaskState | None:
+        """Get the task state for a given task.
+
+        Returns None if not found.
+        """
+        state: TaskState | None = None
+        for s in self.task_states:
             if s.task == task:
                 state = s
                 break
         return state
 
-    def get_selection_state_by_id(self, id: str) -> SelectionState | None:
-        state: SelectionState | None = None
-        for s in self.selection_states:
+    def get_task_state_for_task_raise(
+        self,
+        task: importer.ImportTask,
+    ) -> TaskState:
+        """Get the task state for a given task.
+
+        Raises ValueError if not found.
+        """
+        state = self.get_task_state_for_task(task)
+        if state is None:
+            raise ValueError(f"Task {task} not found in session.")
+        return state
+
+    def get_task_state_by_id(self, id: str) -> TaskState | None:
+        state: TaskState | None = None
+        for s in self.task_states:
             if s.id == id:
                 state = s
                 break
@@ -115,105 +168,157 @@ class ImportState:
     def upsert_task(
         self,
         task: importer.ImportTask,
-    ) -> SelectionState:
+    ) -> TaskState:
         """Upsert selection state.
 
         If it does not exist yet it is created or updated
         if entry exists.
         """
-        state = self.get_selection_state_for_task(task)
+        state = self.get_task_state_for_task(task)
 
         if state is None:
-            state = SelectionState(task, self)
-            self._selection_states.append(state)
+            state = TaskState(task)
+            self._task_states.append(state)
 
         return state
 
-    def await_completion(self):
-        while not self.completed:
-            time.sleep(0.5)
-        return True
-
-    def serialize(self) -> SerializedImportState:
+    def serialize(self) -> SerializedSessionState:
         """JSON representation to match the frontend types."""
-        return SerializedImportState(
-            id=self.id,
-            selection_states=[s.serialize() for s in self.selection_states],
-            status=self.status.as_dict(),
-            completed=self.completed,
+
+        r = SerializedSessionState(
+            **super().serialize(),
+            folder_path=str(self.folder_path),
+            folder_hash=str(self.folder_hash),
+            tasks=[s.serialize() for s in self.task_states],
+            status=self.progress.serialize(),
         )
 
+        if self.exc is not None:
+            r["exc"] = self.exc
 
-@dataclass
-class SelectionState:
+        return r
+
+
+@dataclass(init=False)
+class TaskState(BaseState):
     """State representation of a beets ImportTask.
 
-    In the frontend, a selection of the available candidates may be needed
+    In the frontend, a selection of the available candidates in the task may be needed
     from the user. Exposes some (typed) attributes of the task (e.g. toppath, paths, items)
     Has a list of associated CandidateStates, that represent `matches` in beets.
     """
 
+    progress: ProgressState
     task: importer.ImportTask
-    import_state: ImportState
+    candidate_states: List[CandidateState]
+    chosen_candidate_state_id: str | None = None
 
-    def __post_init__(self):
-        self.id: str = str(uuid())
+    # the completed state blocks the choose_match function
+    # of interactive sessions via our await_completion method
+    completed: bool = False
+
+    # User choices and user input in interactive Session
+    # None if no choice has been made yet
+    # (or the frontend has not marked the default selection)
+    duplicate_action: DuplicateAction | None = None
+
+    def __init__(
+        self,
+        task: importer.ImportTask,
+    ) -> None:
+        super().__init__()
         # we might run into inconsistencies here, if candidates of the task
         # change. but I do not know when or why they would.
-        self.candidate_states: List[CandidateState] = [
-            CandidateState(c, self) for c in self.task.candidates
-        ]
-        self.candidate_states.append(CandidateState.asis_candidate(self))
-        # identifier of the currently selected candidate. None if user has not chosen yet (or the frontend has not marked the default selection)
-        self.current_candidate_id: str | None = None
-        self.duplicate_action: Literal["skip", "keep", "remove", "merge", None] = None
-        # the completed state blocks the choose_match function
-        # of sessions via our await_completion method
-        self.completed: bool = False
-        # searches
-        self.current_search_id: str | None = None
-        self.current_search_artist: str | None = None
-        self.current_search_album: str | None = None
+        self.task = task
+        self.candidate_states = [CandidateState(c, self) for c in self.task.candidates]
+        self.progress = ProgressState()
+
+    def __repr__(self) -> str:
+        return (
+            f"TaskState:\n"
+            + f" * id={self.id}\n"
+            + f" * candidate_states={[ts.id for ts in self.candidate_states]}\n"
+            + f" * chosen_candidate_state_id={self.chosen_candidate_state_id}\n"
+            + f" * progress={self.progress}\n"
+            + f" * completed={self.completed}\n"
+            + f" * toppath={self.toppath}\n"
+        )
 
     @property
-    def candidates(self) -> Union[List[AlbumMatch], List[TrackMatch]]:
+    def candidates(
+        self,
+    ) -> Sequence[BeetsAlbumMatch | BeetsTrackMatch]:
         """Task candidates, i.e. possible matches to choose from."""
         return self.task.candidates
 
     @property
-    def current_candidate_state(self) -> CandidateState | None:
-        """Returns the CandidateState of the currently selected candidate."""
-        cid = self.current_candidate_id
-        if cid is None:
-            return None
+    def asis_candidate_id(self) -> str:
+        """Id of the asis candidate."""
+        return "asis-" + str(self.id)
 
-        for c in self.candidate_states:
-            if c.id == cid:
-                return c
-        return None
+    @property
+    def asis_candidate(self) -> CandidateState:
+        """Get the asis candidate state."""
+        return CandidateState.asis_candidate(self)
 
     def add_candidates(
-        self, candidates: List[Union[AlbumMatch, TrackMatch]], insert_at: int = 0
+        self,
+        candidates: Sequence[Union[BeetsAlbumMatch, BeetsTrackMatch]],
+        insert_at: int = 0,
     ) -> List[CandidateState]:
-        """Add a new candidates to the selection state."""
+        """Add new candidates to the selection state."""
         if len(self.task.candidates) == 0 or len(self.candidate_states) == 0:
             insert_at = 0
-        self.task.candidates[insert_at:insert_at] = candidates
+
+        # task.candidates is a sequence and thus immutable
+        _ = list(self.task.candidates)
+        _[insert_at:insert_at] = candidates
+        self.task.candidates = _
+
         new_states = [CandidateState(c, self) for c in candidates]
         self.candidate_states[insert_at:insert_at] = new_states
         return new_states
 
-    @property
-    def toppath(self) -> str | None:
-        """Highest-level (common) folder holding music files."""
-        if self.task.toppath is not None:
-            return self.task.toppath.decode("utf-8")
+    def get_candidate_state_by_id(self, id: str) -> CandidateState | None:
+        """Get candidate state by id."""
+        for c in self.candidate_states + [self.asis_candidate]:
+            if c.id == id:
+                return c
         return None
 
     @property
-    def paths(self) -> List[str]:
+    def chosen_candidate_state(self) -> CandidateState | None:
+        if self.chosen_candidate_state_id is None:
+            return None
+        return self.get_candidate_state_by_id(self.chosen_candidate_state_id)
+
+    @property
+    def toppath(self) -> Path | None:
+        """Highest-level (common) folder holding music files."""
+        if self.task.toppath is not None:
+            return Path(self.task.toppath.decode("utf-8"))
+        return None
+
+    @property
+    def paths(self) -> List[Path]:
         """Lowest-level folders holding music files."""
-        return [p.decode("utf-8") for p in self.task.paths]
+        return [Path(p.decode("utf-8")) for p in self.task.paths]
+
+    @property
+    def item_paths_before_import(self) -> list[Path]:
+        """Explicit paths to all media files that would be imported."""
+        if self.toppath is None:
+            return []
+        if self.toppath.is_file():
+            return [self.toppath]
+
+        items: list[bytes] = []
+        for _, i in importer.albums_in_dir(self.toppath):
+            # the generator returns a nested list of the outer diretories
+            # and file paths. thus, extend and then cast
+            items.extend(i)
+
+        return [Path(i.decode("utf-8")) for i in items]
 
     @property
     def items(self) -> List[autotag.Item]:
@@ -221,63 +326,137 @@ class SelectionState:
         return [item for item in self.task.items]
 
     @property
-    def items_minimal(self) -> List[MusicInfo]:
+    def items_minimal(self) -> List[ItemInfo]:
         """Items of the associated task as MinimalItemAndTrackInfo."""
-        return [ItemInfo.from_instance(i) for i in self.task.items]
+        return [ItemInfo.from_beets(i) for i in self.task.items]
 
-    def serialize(self) -> SerializedSelectionState:
+    @property
+    def best_candidate_state(self) -> CandidateState | None:
+        """Returns the best candidate of this task (never asis)."""
+        best = None
+        for candidate in self.candidate_states:
+            if best is None or candidate.distance < best.distance.distance:
+                best = candidate
+        return best
+
+    @property
+    def choice_flag(self) -> importer.action | None:
+        return self.task.choice_flag
+
+    @choice_flag.setter
+    def choice_flag(self, value: importer.action | None):
+        self.task.choice_flag = value
+
+    @property
+    def current_metadata(self) -> Metadata:
+        """Current metadata of the task.
+
+        This is the metadata of the music files on disk.
+        (In a beets context, cur_artist and cur_album)
+        """
+        likelies, consensus = autotag.current_metadata(self.items)
+        # FIXME: Type hint be fixed once we update beets
+        return Metadata(**{k: str(v) for k, v in likelies.items()})  # type: ignore
+
+    # ---------------------------------------------------------------------------- #
+
+    def serialize(self) -> SerializedTaskState:
         """JSON representation to match the frontend types."""
-        # Workaround to show initial selection on frontend
-        # if no candidate has been selected yet
-        current_id = self.current_candidate_id
-        if current_id is None:
-            current_id = self.candidate_states[0].id
-
-        return SerializedSelectionState(
-            id=self.id,
-            candidate_states=[c.serialize() for c in self.candidate_states],
-            current_candidate_id=current_id,
+        return SerializedTaskState(
+            **super().serialize(),
+            items=self.items_minimal,
+            candidates=[c.serialize() for c in self.candidate_states],
+            asis_candidate=self.asis_candidate.serialize(),
+            current_metadata=self.current_metadata,
+            # TODO: maybe we can merge current_metadata (which is cur_artist/album in
+            # old beets) into the asis_candidate
+            chosen_candidate_id=self.chosen_candidate_state_id,
             duplicate_action=self.duplicate_action,
-            items=[i.serialize() for i in self.items_minimal],
             completed=self.completed,
-            toppath=self.toppath,
-            paths=self.paths,
+            toppath=str(self.toppath),
+            paths=[str(p) for p in self.paths],
         )
 
+    def set_progress(self, progress: ProgressState | Progress | str) -> None:
+        """Set the progress of the task.
 
-@dataclass
-class CandidateState:
+        If string is given it is set as the message of the current progress.
+        """
+        if isinstance(progress, ProgressState):
+            self.progress = progress
+        elif isinstance(progress, Progress):
+            self.progress = ProgressState(progress)
+        elif isinstance(progress, str):
+            # just convenience for debugging should not be used in production
+            self.progress.message = progress
+        else:
+            raise ValueError(f"Unknown progress type: {progress}")
+
+
+@dataclass(init=False)
+class CandidateState(BaseState):
     """
     State representation of a single candidate (match) for an import task.
 
+    Can represent an album (self.type == "album") or a track (self.type == "track").
     Keeps a reference to the associated SelectionState, so we can access the beets task.
     Exposes some attributes of the task and match
 
     Note: currently only tested for album matches.
     """
 
-    match: Union[AlbumMatch, TrackMatch]
-    selection_state: SelectionState
+    id: str
+    duplicate_ids: List[str]  # Beets ids of duplicates in the library (album)
+    match: Union[BeetsAlbumMatch, BeetsTrackMatch]
 
-    def __post_init__(self):
-        self.id: str = str(uuid())
-        self.type = "album" if hasattr(self.match, "extra_tracks") else "track"
-        self.duplicate_in_library: bool = False  # checked and set by session
-        self.penalties: List[str] = list(self.match.distance.keys())
+    # Reference upwards
+    task_state: TaskState
 
+    def __init__(
+        self, match: Union[BeetsAlbumMatch, BeetsTrackMatch], task_state: TaskState
+    ) -> None:
+        super().__init__()
+        self.match = match
+        self.duplicate_ids = []  # checked and set by session
+        self.task_state = task_state
+
+    def __repr__(self) -> str:
+        return (
+            f"CandidateState:\n"
+            + f" * id={self.id}\n"
+            + f" * match={self.match}\n"
+            + f" * task_state_id={self.task_state.id}\n"
+            + f" * distance={self.distance}\n"
+            + f" * penalties={self.penalties}\n"
+            + f" * {len(self.items)=}\n"
+            + f" * {len(self.tracks)=}\n"
+        )
+
+    @property
+    def type(self) -> Literal["album", "track"]:
+        if isinstance(self.match, BeetsAlbumMatch):
+            return "album"
+        elif isinstance(self.match, BeetsTrackMatch):
+            return "track"
+        else:
+            raise ValueError("Unknown type")
+
+    @property
+    def diff_preview(self) -> str:
+        """Diff preview of the match to the current meta data."""
         out, err, _ = capture_stdout_stderr(
             uicommands.show_change,
-            self.selection_state.task.cur_artist,
-            self.selection_state.task.cur_album,
+            self.task_state.task.cur_artist,
+            self.task_state.task.cur_album,
             self.match,
         )
-        self.diff_preview = out.lstrip("\n")
+        res = out.lstrip("\n")
         if len(err) > 0:
-            self.diff_preview += f"\n\nError: {err}"
-        self.diff_preview = ""  # dirty but spams console
+            res += f"\n\nError: {err}"
+        return res
 
     @classmethod
-    def asis_candidate(cls, selection_state: SelectionState) -> CandidateState:
+    def asis_candidate(cls, task_state: TaskState) -> CandidateState:
         """
         Alternate constructor for an asis import option.
 
@@ -285,9 +464,11 @@ class CandidateState:
         current meta data in the frontend.
         This is pretty much duct-tape.
         """
-        items = selection_state.task.items
+        items: list[BeetsItem] = task_state.task.items
+        # FIXME: we do this lookup twice, once here and once in current_metadata
         info, _ = autotag.current_metadata(items)
         info["data_source"] = "asis"
+        info["data_url"] = f"file://{task_state.toppath}"
 
         def _generate_kwargs(item):
             kwargs = {}
@@ -300,7 +481,8 @@ class CandidateState:
             return kwargs
 
         tracks = [autotag.TrackInfo(**_generate_kwargs(i)) for i in items]
-        match = AlbumMatch(
+
+        match = BeetsAlbumMatch(
             distance=autotag.Distance(),
             info=autotag.AlbumInfo(
                 tracks=tracks,
@@ -310,100 +492,279 @@ class CandidateState:
             extra_tracks=[],
             mapping={i: tracks[idx] for idx, i in enumerate(items)},
         )
-        candidate = cls(match=match, selection_state=selection_state)
-        # the session checks the candidate id for this particular value.
-        # this saves us from defining an extra attribute
-        # (and passing back and forth to the frontend)
-        candidate.id = "asis"
+        candidate = cls(match=match, task_state=task_state)
+        candidate.id = task_state.asis_candidate_id
+        # As the asis candidate state is not maintained we not to
+        # recheck if it is a duplicate
+        candidate.identify_duplicates()
+
         return candidate
 
+    # --------------------- Helper to lift / unnset from match to -------------------- #
     @property
     def cur_artist(self) -> str:
-        return str(self.selection_state.task.cur_artist)
+        """Current artist, usually the meta data of the music files.
+
+        Named to be consistent with beets.
+        """
+        return str(self.task_state.task.cur_artist)
 
     @property
     def cur_album(self) -> str:
-        return str(self.selection_state.task.cur_album)
+        """Current album, usually the meta data of the music files.
+
+        Named to be consistent with beets.
+        """
+        return str(self.task_state.task.cur_album)
+
+    @property
+    def artist(self) -> str | None:
+        """Artist of the match."""
+        return self.match.info.artist
+
+    @property
+    def album(self) -> str | None:
+        """Album of the match."""
+        return self.match.info.album
 
     @property
     def items(self) -> List[autotag.Item]:
-        return self.selection_state.task.items
+        """In beets, items refers to the music files on disk.
+
+        Tracks correspond to an online match, (or the library?)
+        """
+        return self.task_state.task.items
+
+    @property
+    def tracks(self) -> List[autotag.TrackInfo]:
+        """Tracks of the match (usually tracks in online match)."""
+        if isinstance(self.match, BeetsAlbumMatch):
+            return self.match.info.tracks
+        return [self.match.info]
 
     @property
     def distance(self) -> autotag.Distance:
+        """Distance of the match to the current meta data.
+
+        Metadata may be from the task i.e. album or track.
+        """
         return self.match.distance
+
+    @property
+    def penalties(self) -> List[str]:
+        return list(self.match.distance.keys())
+
+    @property
+    def num_tracks(self) -> int:
+        """Number of tracks in the match (usually tracks in online match)."""
+        if isinstance(self.match, BeetsAlbumMatch):
+            return len(self.match.info.tracks)
+        return 1
+
+    @property
+    def num_items(self) -> int:
+        """Number of items in the task (usually files on disk)."""
+        return len(self.items)
+
+    @property
+    def url(self) -> str | None:
+        """URL of the match."""
+        if isinstance(self.match, BeetsAlbumMatch):
+            try:
+                return self.match.info.data_url
+            except AttributeError:  # not set in the match
+                return None
+
+        return None
+
+    @property
+    def is_asis(self) -> bool:
+        """Returns True if this is an "as is" candidate."""
+        return self.id.startswith("asis-")
+
+    # ------------------------------------ utility ----------------------------------- #
+
+    def identify_duplicates(
+        self, lib: library.Library | None = None
+    ) -> List[library.Album]:
+        """Find duplicates.
+
+        Copy of beets' `task.find_duplicates` but works on any candidates' match.
+
+        # FIXME: Tracks are not checked for duplicates. Tbh noone cares about tracks anyways
+        """
+        if lib is None:
+            lib = _open_library(get_config())
+
+        info = self.match.info.copy()
+        info["albumartist"] = info["artist"]
+
+        if info["artist"] is None:
+            # As-is import with no artist. Skip check.
+            return []
+
+        # Construct a query to find duplicates with this metadata. We
+        # use a temporary Album object to generate any computed fields.
+        tmp_album = library.Album(lib, **info)
+        keys: List[str] = cast(
+            List[str],
+            get_config()["import"]["duplicate_keys"]["album"].as_str_seq() or [],
+        )
+        dup_query = library.Album.all_fields_query(
+            {key: tmp_album.get(key) for key in keys}
+        )
+
+        # Re-Importing: Don't count albums with the same files as duplicates.
+        task_paths = {i.path for i in self.task_state.task.items if i}
+
+        duplicates: List[library.Album] = []
+        for album in lib.albums(dup_query):
+            # Check whether the album paths are all present in the task
+            # i.e. album is being completely re-imported by the task,
+            # in which case it is not a duplicate (will be replaced).
+            album_paths = {i.path for i in album.items()}
+            if not (album_paths <= task_paths):
+                duplicates.append(album)
+
+        # Write duplicates information!
+        self.duplicate_ids = [d.id for d in duplicates]
+
+        return duplicates
+
+    @property
+    def has_duplicates_in_library(self) -> bool:
+        """Returns False, either if no duplicates found, or you have not checked yet.
+
+        Call `identify_duplicates` first to ensure this works.
+        """
+        return len(self.duplicate_ids) > 0
 
     def serialize(self) -> SerializedCandidateState:
         """JSON representation to match the frontend types."""
-        # we lift the match.info from to reduce nesting in the frontend.
-        self.match.info.decode()
+        # we lift the match.info to reduce nesting in the frontend.
+        info: TrackInfo | AlbumInfo
+        tracks: list[TrackInfo]
+        mapping: dict[int, int] = {}
 
-        info = None
-        items = None
-        tracks = None
-        extra_tracks = None
-        extra_items = None
-        mapping = None
+        if isinstance(self.match.info, autotag.TrackInfo):
+            # This hardly ever happens, we might support this more in the future
+            info = TrackInfo.from_beets(self.match.info)
+            tracks = [TrackInfo.from_beets(self.match.info)]
+        elif isinstance(self.match.info, autotag.AlbumInfo):
+            info = AlbumInfo.from_beets(self.match.info)
 
-        if self.type == "track":
-            info = TrackInfo.from_instance(self.match.info).serialize()
-
-        elif self.type == "album":
-            info = AlbumInfo.from_instance(self.match.info).serialize()
-
-            tracks = []
-            for track in self.match.info.tracks or []:
-                track.decode()
-                tracks.append(TrackInfo.from_instance(track).serialize())
-
-            extra_tracks = []
-            for track in self.match.extra_tracks or []:  # type: ignore
-                track.decode()
-                extra_tracks.append(TrackInfo.from_instance(track).serialize())
-
-            items = [ItemInfo.from_instance(i).serialize() for i in self.items]
-
-            extra_items = [
-                ItemInfo.from_instance(i).serialize()
-                for i in self.match.extra_items or []  # type: ignore
-            ]
+            # Map beets types to our types, allows serialization magic
+            tracks = [TrackInfo.from_beets(track) for track in self.match.info.tracks]
 
             # the mapping of a beets albummatch uses objects, but we don not want
             # to send them over redundantly. convert to an index mapping,
             # where first index is in self.items, and second is in self.match.info.tracks
-            mapping = dict()
             for item, track in self.match.mapping.items():  # type: ignore
-                idx = self.items.index(item)
-                tdx = self.match.info.tracks.index(track)  # type: ignore
-                mapping[idx] = tdx
+                idx = tdx = None
+                for idx, _ in enumerate(self.items):
+                    if item.path == self.items[idx].path:
+                        break
+                for tdx, _ in enumerate(self.tracks):
+                    if track.track_id == self.tracks[tdx].track_id:
+                        break
+                if idx is not None and tdx is not None:
+                    mapping[idx] = tdx
         else:
-            raise ValueError(f"Unknown type {self.type}")
+            raise ValueError(f"Unknown type of matchinfo {type(self.match.info)}")
 
         res = SerializedCandidateState(
-            id=self.id,
-            diff_preview=self.diff_preview,
-            cur_artist=self.cur_artist,
-            cur_album=self.cur_album,
+            **super().serialize(),
             penalties=self.penalties,
-            duplicate_in_library=self.duplicate_in_library,
+            duplicate_ids=self.duplicate_ids,
             type=self.type,
             distance=self.distance.distance,
             info=info,
-            items=items,
             tracks=tracks,
-            extra_tracks=extra_tracks,
-            extra_items=extra_items,
             mapping=mapping,
         )
 
         return res
 
 
-# class AsIsCandidateState(CandidateState):
-#     """
-#     Just a thin wrapper so we can preset the "as is" nicely in frontend, inlcuding
-#     a preview of tracks and meta data.
-#     """
+# ---------------------------- Serialization types --------------------------- #
+# Used for getting typehints in the frontend. I.e. we generate the types from
+# these typed dicts! See the generate_types.py script for more information.
 
-#     def __post_init__(self):
-#         super().__post_init__()
+
+class Metadata(TypedDict):
+    """Returned from current_metadata().
+
+    FIXME: I think this should not be defined here!
+    """
+
+    artist: str | None
+    album: str | None
+    albumartist: str | None
+    year: str | None
+    disctotal: str | None
+    mb_albumid: str | None
+    label: str | None
+    barcode: str | None
+    catalognum: str | None
+    country: str | None
+    media: str | None
+    albumdisambig: str | None
+
+
+class SerializedBaseState(TypedDict):
+    """Serialized base state.
+
+    This is used to serialize the base state to a dictionary.
+    """
+
+    id: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class SerializedSessionState(SerializedBaseState):
+    folder_path: str
+    folder_hash: str
+    tasks: List[SerializedTaskState]
+    status: SerializedProgressState
+
+    exc: NotRequired[SerializedException | None]
+
+
+class SerializedTaskState(SerializedBaseState):
+    items: List[ItemInfo]
+    current_metadata: Metadata
+
+    # Fetched data
+    candidates: List[SerializedCandidateState]
+    asis_candidate: SerializedCandidateState
+
+    duplicate_action: str | None
+    chosen_candidate_id: str | None
+    completed: bool
+    toppath: str | None
+    paths: List[str]
+
+
+class SerializedCandidateState(SerializedBaseState):
+    duplicate_ids: List[str]
+    type: str
+
+    penalties: List[str]
+    distance: float
+
+    info: TrackInfo | ItemInfo | AlbumInfo
+
+    # Mapping from items to tracks index based
+    mapping: dict[int, int]
+    tracks: List[TrackInfo]
+
+
+__all__ = [
+    "SessionState",
+    "TaskState",
+    "CandidateState",
+    "SerializedSessionState",
+    "SerializedTaskState",
+    "SerializedCandidateState",
+]

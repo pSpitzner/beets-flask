@@ -5,3 +5,6 @@
     -   AlbumMatch
     -   Pipeline decorators
 -   How to serialize Task objects (to db)?
+
+
+- Import task typing especially for candidates (`beets/importer.py/BaseImportTask` und `ImportTask`)

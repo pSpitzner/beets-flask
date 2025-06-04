@@ -39,6 +39,8 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+.ruff_cache/
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
@@ -74,7 +76,7 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
-# Flask stuff:
+# Quart stuff:
 instance/
 .webassets-cache
 
@@ -173,3 +175,9 @@ cython_debug/
 #.idea/
 node_modules/
 .pnpm-store/
+
+
+.vscode/
+
+# TODO: Pickle for tests contains local paths and has to be ignored until fixed
+lookup*.pickle

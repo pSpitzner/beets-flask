@@ -1,28 +1,64 @@
 import logging
+import logging.config
 import os
 
+LOGGING_CONFIG = {
+    "version": 1,
+    "disable_existing_loggers": True,
+    "formatters": {
+        "standard": {
+            # https://docs.python.org/3/library/logging.html#logrecord-attributes
+            "format": "[%(levelname)s] %(name)s: %(message)s"
+        },
+        "debug": {
+            "format": "%(relativeCreated)-8d [%(levelname)-5s] %(name)s %(filename)-8s:%(lineno)d %(message)s"
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": "INFO",
+            "formatter": "standard",
+            "stream": "ext://sys.stdout",
+        },
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "level": "DEBUG",
+            "formatter": "debug",
+            "filename": os.environ.get("LOG_FILE_WEB", "./beets-flask.log"),
+            "maxBytes": 1048576,  #
+            "backupCount": 3,
+        },
+    },
+    "loggers": {
+        "": {  # root logger
+            "handlers": ["console", "file"],
+            "level": os.getenv("LOG_LEVEL_OTHERS", logging.WARNING),
+            "propagate": False,
+        },
+        "beets-flask": {
+            "handlers": ["console", "file"],
+            "level": os.getenv("LOG_LEVEL_BEETSFLASK", logging.DEBUG),
+            "propagate": False,
+        },
+    },
+}
 
-def setup_logging() -> None:
-    global log_file_for_web
-    global log
-
-    log_file_for_web = os.environ.get("LOG_FILE_WEB", "/repo/log/for_web.log")
-
-    # https://docs.python.org/3/library/logging.html#logrecord-attributes
+# On testing only log to console
+if "PYTEST_VERSION" in os.environ:
+    # Configure minimal logging for pytest
     logging.basicConfig(
-        format="%(relativeCreated)d [%(levelname)-4s] %(name)s - %(message)s %(filename)s:%(lineno)d",
-        level=os.getenv("LOG_LEVEL_OTHERS", logging.WARNING),
+        level=logging.DEBUG,
+        format="%(relativeCreated)-8d [%(levelname)-5s] %(name)s %(filename)-8s:%(lineno)d %(message)s",
     )
-    rq_name = os.getenv("RQ_JOB_ID", None)
-    if rq_name:
-        log = logging.getLogger(f"beets-flask.{rq_name[0:8]}")
-    else:
-        log = logging.getLogger("beets-flask")
-    log.setLevel(os.getenv("LOG_LEVEL_BEETSFLASK", logging.INFO))
+else:
+    logging.config.dictConfig(LOGGING_CONFIG)
 
-    log.info("Logging initialized")
+log = logging.getLogger("beets-flask")
+
+rq_name = os.getenv("RQ_JOB_ID", None)
+if rq_name:
+    log = log.getChild(rq_name[:4])
 
 
-log: logging.Logger
-log_file_for_web = None
-setup_logging()
+log.debug("Logging configured!")

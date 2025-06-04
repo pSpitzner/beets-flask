@@ -11,7 +11,7 @@ import React, {
 import { FitAddon as xTermFitAddon } from "@xterm/addon-fit";
 import { Terminal as xTerminal } from "@xterm/xterm";
 
-import { useSocket } from "@/components/common/hooks/useSocket";
+import useSocket from "@/components/common/websocket/useSocket";
 
 import "node_modules/@xterm/xterm/css/xterm.css";
 import { Socket } from "socket.io-client";
@@ -40,6 +40,25 @@ export function Terminal(props: HtmlHTMLAttributes<HTMLDivElement>) {
     // we have to recreate the terminal on every mount of the component.
     // not sure why we cannot restore.
     useEffect(resetTerm, [resetTerm]);
+
+    // PS 2025-04-13: Wanted to use this to only query the history when scrolling
+    // but its super laggy and the scroll pos makes no sense. might be that we
+    // do not use the xterm js buildin scrolling, and scroll an outside div instead?
+    // useEffect(() => {
+    //     if (!term || !socket) return;
+
+    //     const handleScroll = (scrollPos: number) => {
+    //         console.log("Scroll event", scrollPos);
+    //         if (scrollPos > 0) {
+    //             socket.emit("ptyScroll", { scrollPos });
+    //         }
+    //     };
+
+    //     const scrollHandler = term.onScroll(handleScroll);
+    //     return () => {
+    //         scrollHandler.dispose();
+    //     };
+    // }, [term, socket]);
 
     // resetting term also retriggers this guy.
     // having socket as a dependencies should make sure we retrigger when
@@ -131,6 +150,7 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
                 cursorBlink: true,
                 macOptionIsMeta: true,
                 allowTransparency: true,
+                scrollback: 500,
             });
             t2.write("Connecting...");
             return t2;
@@ -150,23 +170,31 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
     );
 
     const onOutput = useCallback(
-        (data: { output: string[] }) => {
+        (data: { output: string[]; x: number; y: number; history: string[] }) => {
             if (!term) return;
-            // term!.clear(); seems to be preferred from the documentation,
-            // but it leaves the prompt on the first line in place - which we here do not want
-            // ideally we would directly access the buffer.
-            // console.log("ptyOutput", data);
-            term.reset();
-            data.output.forEach((line, index) => {
-                if (index < data.output.length - 1) {
-                    term.writeln(line);
-                } else {
-                    // Workaround: strip all trailing whitespaces except for one
-                    // not a perfect fix (one wrong space remains when backspacing)
-                    const stripped_line = line.replace(/\s+$/, " ");
-                    term.write(stripped_line);
-                }
-            });
+            // neither clear nor reset seem to do the full job.
+            // term.clear();
+            // term.reset();
+            term.write("\x1Bc"); // ANSI escape sequence to clear the screen
+
+            if (data.history.length > 0) {
+                term.write(data.history.join("\r\n") + "\r\n");
+            }
+
+            // Note: tmux does not remove trailing whitespaces when backspacing.
+            // Therefore we also send the tmux cursor position along with the output
+            // to move the frontend cursor using escape sequences
+            // Write current output
+            term.write(data.output.join("\r\n"));
+
+            // if we want history to stay offscreen
+            const remainingRows = Math.max(0, term.rows - data.output.length);
+            if (remainingRows > 0) {
+                term.write("\r\n".repeat(remainingRows));
+            }
+
+            // Position cursor
+            term.write(`\x1b[${data.y + 1};${data.x + 1}H`);
         },
         [term]
     );

@@ -11,12 +11,6 @@ gui:
     library:
         readonly: no
 
-    tags:
-        expand_tags: yes
-        recent_days: 14
-        order_by: "name"
-        show_unchanged_tracks: no
-
     terminal:
         start_path: "/repo"
 

@@ -1,19 +1,21 @@
 from contextlib import contextmanager
 from functools import wraps
 
-from flask import Flask
+from deprecated import deprecated
+from quart import Quart
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
-from ..config.flask_config import config
-from ..logger import log
-from .models import Base, Tag, TagGroup
+from beets_flask.config import get_flask_config
+from beets_flask.logger import log
 
-engine: Engine
+from .models import Base
+
+engine: Engine | None = None
 session_factory: scoped_session[Session]
 
 
-def setup_database(app: Flask) -> None:
+def setup_database(app: Quart) -> None:
     """Set up the database connection and session factory for the FLask application.
 
     This function initializes the global `engine` and `session_factory` variables
@@ -29,8 +31,7 @@ def setup_database(app: Flask) -> None:
         None
     """
     __setup_factory()
-
-    if config["RESET_DB_ON_START"]:
+    if get_flask_config()["RESET_DB_ON_START"]:
         log.warning("Resetting database due to RESET_DB=True in config")
         _reset_database()
 
@@ -46,12 +47,12 @@ def __setup_factory():
     global engine
     global session_factory
 
-    engine = create_engine(config["DATABASE_URI"])
-    session_factory = scoped_session(sessionmaker(bind=engine))
+    engine = create_engine(get_flask_config()["DATABASE_URI"])
+    session_factory = scoped_session(sessionmaker(bind=engine, expire_on_commit=False))
 
 
 @contextmanager
-def db_session(session: Session | None = None):
+def db_session_factory(session: Session | None = None):
     """Databases session as context.
 
     Makes sure sessions are closed at the end.
@@ -107,7 +108,7 @@ def with_db_session(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        with db_session() as session:
+        with db_session_factory() as session:
             kwargs.setdefault("session", session)
             return func(*args, **kwargs)
 
@@ -119,10 +120,8 @@ def _create_tables(engine) -> None:
 
 
 def _reset_database():
-    with db_session() as session:
-        try:
-            session.query(TagGroup).delete()
-            session.query(Tag).delete()
+    # Removes all data from the database but keeps schema
+    for t in reversed(Base.metadata.sorted_tables):
+        with db_session_factory() as session:
+            session.execute(t.delete())
             session.commit()
-        except Exception as e:
-            log.warning(f"Error resetting database: {e}")

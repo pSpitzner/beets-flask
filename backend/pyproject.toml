@@ -1,7 +1,7 @@
 [project]
-name = "interactive-beets"
+name = "beets-flask"
 description = "An opinionated web-interface around the music organizer [beets](https://beets.io/)"
-version = "0.1.0"
+version = "1.0.0"
 authors = [
     { name = "F. Paul Spitzner", email = "paul.spitzner@gmail.com" },
     { name = "Sebastian B. Mohr", email = "sebastian@mohrenclan.de" },
@@ -14,10 +14,9 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
-    "flask>=3.0.3",
-    "flask-cors>=5.0.0",
+    "quart>=0.20.0",
     "confuse>=2.0.1",
-    "beets==2.0.0",
+    "beets==2.2.0",
     "sqlalchemy>=2.0.35",
     "rq>=2.0.0",
     "watchdog>=5.0.3",
@@ -26,19 +25,41 @@ dependencies = [
     "pillow>=10.4.0",
     "cachetools>=5.3.3",
     "libtmux>=0.37.0",
+    "Deprecated>=1.2.18",
+    "nest_asyncio>=1.6.0",
     # Used for hosting the web-interface & api
-    "gunicorn>=22.0.0",
-    "eventlet>=0.32.0",
+    "uvicorn>=0.34.0",
     # beets plugin dependencies
-    "pylast>=5.2.0"
+    "pylast>=5.2.0",
+    "py2ts @ git+https://github.com/semohr/py2ts.git@v0.2.1",
+    #"scantree>=0.0.4",
+    "natsort",
+    "tinytag",
+    "pydub",
+    "aiohttp",
+    "aiofiles",
+    "numpy",
+    "pandas",
 ]
 
 [project.optional-dependencies]
 # Can be install with e.g. `pip install -e .[dev]`
-test = ["pytest>=8.2.2", "pytest-asyncio>=0.23.8", "pytest-cov>=5.0.0"]
-dev = ["ruff>=0.6.5", "pre-commit>=3.8.0", "interactive_beets[typed]"]
-typed = ["types-cachetools", "types-requests", "mypy>=1.14.1", "types-cachetools","types-Flask-Cors"]
-all = ["interactive_beets[dev,test]"]
+test = [
+    "pytest>=8.2.2",
+    "pytest-asyncio>=0.23.8",
+    "pytest-cov>=5.0.0",
+    "fakeredis",
+]
+dev = ["ruff>=0.6.5", "pre-commit>=3.8.0", "beets_flask[typed]"]
+typed = [
+    "types-cachetools",
+    "types-requests",
+    "mypy>=1.14.1",
+    "types-cachetools",
+    "types-Deprecated",
+    "types-aiofiles",
+]
+all = ["beets_flask[dev,test]"]
 docs = [
     "sphinx>=8.0.2",
     "furo>=2024.8.6",
@@ -57,9 +78,16 @@ build-backend = "hatchling.build"
 package = "./beets_flask"
 packages = ["beets_flask"]
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 [tool.ruff]
-exclude = ["*tests*"]
 include = ["pyproject.toml", "beets_flask/**/*.py"]
+exclude = ["beets_flask/**/dirhash.py"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**/*" = ["D"]
+
 
 [tool.ruff.lint]
 select = [
@@ -73,29 +101,45 @@ ignore = [
     # Ignore req. for public facing functions docstrings
     "F401",
     "D10",
+    "D401",
+    "D202",
 ]
 fixable = ["ALL"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
+[tool.ruff.lint.isort]
+known-first-party = ["beets_flask"]
 
 [tool.pytest.ini_options]
-addopts = ["--import-mode=importlib", "--cov=beets_flask"]
+# addopts = ["--import-mode=importlib", "--cov=beets_flask"]
+addopts = ["--import-mode=importlib"]
 filterwarnings = [
     "error",
     "ignore::sqlalchemy.exc.SAWarning",
     "ignore::DeprecationWarning",
 ]
 pythonpath = ["."]
+asyncio_mode = "auto"
+log_format = "%(relativeCreated)-8d [%(levelname)-5s] %(name)s %(filename)-8s:%(lineno)d %(message)s"
 
 [tool.coverage.report]
 omit = ["*/tests/*"]
 
 [tool.mypy]
 check_untyped_defs = true
+disallow_untyped_decorators = true
+allow_redefinition = true
 
 [[tool.mypy.overrides]]
 # Suppresses error messages about imports that cannot be resolved.
-module = ["socketio.*", "beets.*", "confuse.*","mediafile.*"]
+module = [
+    "socketio.*",
+    "beets.*",
+    "confuse.*",
+    "mediafile.*",
+    "nest_asyncio",
+    "dirhash",
+]
 ignore_missing_imports = true

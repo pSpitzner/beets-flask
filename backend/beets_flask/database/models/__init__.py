@@ -1,5 +1,10 @@
 from .base import Base
-from .tag import Tag
-from .tag_group import TagGroup
+from .states import CandidateStateInDb, FolderInDb, SessionStateInDb, TaskStateInDb
 
-__all__ = ["Base", "Tag", "TagGroup"]
+__all__ = [
+    "Base",
+    "FolderInDb",
+    "SessionStateInDb",
+    "TaskStateInDb",
+    "CandidateStateInDb",
+]

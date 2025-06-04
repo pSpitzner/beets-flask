@@ -5,42 +5,60 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## upcoming
+## [1.0.0] - upcoming
+
+This is a breaking change, you will need to update your configs and delete your beets-flask
+database (**not** the beets db!).
+
+### Changed
+
+-   Migrated backend to quart (the async version of flask)
+-   Reworked most of the frontend
+-   Removed interactive imports. We now store states for _any_ preview and import that is generated. Thus, sessions are resumable, and we can go back and forth seemlessly, to e.g. undo an import and pick a better candidate.
+-   Inbox types have changed. For now we only have `preview`, `auto` and `bootleg`.
+-   beets updated to version 2.2.0
+-   Implemented our own async pipeline for beets, that is typed and handles our custom sessions (should become obsolete once upstream PRs are merged).
+-   Improved library view, and track preview / streaming.
+-   Improved candidate preview, including cover art and asis details (current metadata).
+-   Terminal now has a bit of scroll-back and history.
+-   Much better test coverage.
+-   Now using [py2ts](https://github.com/semohr/py2ts) to automatically generate frontend (typescript) types from their backend (python) equivalents.
+
+## [0.1.1] - unreleased
 
 ### Added
 
--  Option to install beets plugins by placing either `requirements.txt` or `startup.sh` in /`config`. cf. [Readthedocs](https://beets-flask.readthedocs.io/en/latest/plugins.html)
--  [Documentation](https://beets-flask.readthedocs.io/en/latest/?badge=latest) on readthedocs.
--  Option to import Asis via right-click, or as inbox type. Good for Bootlegs that do not
-   have online meta data and you curate manually. Currently also applies `--group-albums`.
+-   Option to install beets plugins by placing either `requirements.txt` or `startup.sh` in /`config`. cf. [Readthedocs](https://beets-flask.readthedocs.io/en/latest/plugins.html)
+-   [Documentation](https://beets-flask.readthedocs.io/en/latest/?badge=latest) on readthedocs.
+-   Option to import Asis via right-click, or as inbox type. Good for Bootlegs that do not
+    have online meta data and you curate manually. Currently also applies `--group-albums`.
 
 ### Fixed
 
--  Path escaping for right-click import via cli (#51)
+-   Path escaping for right-click import via cli (#51)
 
 ## [0.1.0] - 24-11-13
 
 ### Fixed
 
--  Renamed `kind` to `type` in search frontend code to be consistent with backend.
-   Using kind for tags (preview, import, auto), and types for search (album, track).
+-   Renamed `kind` to `type` in search frontend code to be consistent with backend.
+    Using kind for tags (preview, import, auto), and types for search (album, track).
 
 ### Changed
 
-
--  Improved readme and onboarding experience
--  Mountpoint to persist config files and databases changed to `/config` (was `/home/beetle/.config/beets/`)
-   We create the `/config/beets` and `/config/beets-flask` folders on startup if they do not exist.
-   Library files are placed there, and you can drop a `config.yaml` either or both of these folders. Settings in `/config/beets-flask/config.yaml` take precedence over `/config/beets/config.yaml`.
-   **You will need to update your docker-compose!**
+-   Improved readme and onboarding experience
+-   Mountpoint to persist config files and databases changed to `/config` (was `/home/beetle/.config/beets/`)
+    We create the `/config/beets` and `/config/beets-flask` folders on startup if they do not exist.
+    Library files are placed there, and you can drop a `config.yaml` either or both of these folders. Settings in `/config/beets-flask/config.yaml` take precedence over `/config/beets/config.yaml`.
+    **You will need to update your docker-compose!**
 
 ### Added
 
--  Logo and favicon
--  Image now on docker hub: `pspitzner/beets-flask:stable`
--  Auto-import: automatically import folders that are added to the inbox if the match is good enough.
-   After a preview, import will start if the match quality is above the configured.
-   Enable via the config.yaml, set the `autotag` field of a configred inbox folders to `"auto"`.
+-   Logo and favicon
+-   Image now on docker hub: `pspitzner/beets-flask:stable`
+-   Auto-import: automatically import folders that are added to the inbox if the match is good enough.
+    After a preview, import will start if the match quality is above the configured.
+    Enable via the config.yaml, set the `autotag` field of a configred inbox folders to `"auto"`.
 
 ## [0.0.4] - 24-10-04
 

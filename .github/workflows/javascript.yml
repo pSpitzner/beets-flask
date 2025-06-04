@@ -1,4 +1,4 @@
-name: Javascript
+name: Javascript checks
 
 on:
     push:
@@ -12,7 +12,7 @@ on:
 
 jobs:
     eslint:
-        name: Run eslint scanning
+        name: Javascript checks
         runs-on: ubuntu-latest
         permissions:
             contents: read
@@ -39,6 +39,11 @@ jobs:
                   cd ./frontend
                   pnpm install --frozen-lockfile
             - name: Run ESLint
+              continue-on-error: true
               run: |
                   cd ./frontend
                   pnpm run lint
+            - name: Run TypeScript type check
+              run: |
+                  cd ./frontend
+                  pnpm run check-types

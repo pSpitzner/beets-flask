@@ -1,12 +1,4 @@
-import {
-    HardDriveDownload,
-    Home,
-    Inbox,
-    Library,
-    Search,
-    Tag,
-    Terminal,
-} from "lucide-react";
+import { Home, Inbox, Library, Search, Terminal } from "lucide-react";
 import { MouseEvent, ReactElement, useRef } from "react";
 import { Box, darken, Typography, useTheme } from "@mui/material";
 import { styled } from "@mui/material/styles";
@@ -70,7 +62,7 @@ function NavItem({ label, ...props }: StyledTabProps) {
     return <StyledTab label={<TabLabel>{label}</TabLabel>} disableRipple {...props} />;
 }
 
-export default function NavTabs() {
+function NavTabs() {
     const theme = useTheme();
     const location = useRouterState({ select: (s) => s.location });
     let basePath = location.pathname.split("/")[1];
@@ -83,8 +75,7 @@ export default function NavTabs() {
     const navItems = [
         { label: "Home", icon: <Home />, to: "/" as const },
         { label: "Inbox", icon: <Inbox />, to: "/inbox" as const },
-        { label: "Tags", icon: <Tag />, to: "/tags" as const },
-        { label: "Import", icon: <HardDriveDownload />, to: "/import" as const },
+        //{ label: "Session", icon: <Inbox />, to: "/sessiondraft" as const },
         { label: "Library", icon: <Library />, to: "/library/browse" as const },
         { label: "Search", icon: <Search />, to: "/library/search" as const },
         {
@@ -129,7 +120,7 @@ export default function NavTabs() {
                     width: "100%",
                     gap: "4px",
                     justifyContent: "center",
-                    [theme.breakpoints.up("sm")]: {
+                    [theme.breakpoints.up("laptop")]: {
                         gap: "30px",
                     },
                 },
@@ -143,23 +134,57 @@ export default function NavTabs() {
                 <NavItem key={item.to} {...item} />
             ))}
             {/* Mouse hover effect */}
-            <Box
-                className="mouse-trail"
-                sx={(theme) => ({
-                    top: "var(--mouse-y)",
-                    left: "var(--mouse-x)",
-                    width: "10px",
-                    height: "10px",
-                    backgroundColor: theme.palette.secondary.main,
-                    filter: "blur(25px)",
-                    pointerEvents: "none",
-                    transition: "opacity 0.3s ease-in-out",
-                    transform: "translate(-50%, -50%)",
-                    position: "absolute",
-                    opacity: 0,
-                    zIndex: -1,
-                })}
-            />
+            <MouseTrail />
         </Tabs>
     );
 }
+
+/** Sticky top navbar */
+export default function NavBar() {
+    return (
+        <Box
+            sx={(theme) => ({
+                position: "fixed",
+                bottom: 0,
+                zIndex: 10,
+                width: "100dvw",
+                height: "48px",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "flex-start",
+                borderBottom: "1px solid",
+                borderColor: "divider",
+                backdropFilter: "blur(25px)",
+                //backgroundColor: "#21252933",
+                [theme.breakpoints.up("laptop")]: {
+                    top: 0,
+                },
+            })}
+        >
+            <NavTabs />
+        </Box>
+    );
+}
+
+// Weird workaround for mui problems in console as it parses props to its children
+const MouseTrail = () => {
+    return (
+        <Box
+            className="mouse-trail"
+            sx={(theme) => ({
+                top: "var(--mouse-y)",
+                left: "var(--mouse-x)",
+                width: "10px",
+                height: "10px",
+                backgroundColor: theme.palette.secondary.main,
+                filter: "blur(25px)",
+                pointerEvents: "none",
+                transition: "opacity 0.3s ease-in-out",
+                transform: "translate(-50%, -50%)",
+                position: "absolute",
+                opacity: 0,
+                zIndex: -1,
+            })}
+        />
+    );
+};

@@ -1,152 +1,44 @@
-@tailwind base;
-
-@tailwind components;
-@tailwind utilities;
-
-/**
-#app {
-    background: radial-gradient(ellipse, black 50%, rgb(51, 0, 15) 100%),
-        url("./assets/background.png");
-    background-blend-mode: difference;
-    background-position: center center;
-    background-size: cover;
-    overflow: hidden;
-}
-*/
-
-/* https://lucide.dev/guide/advanced/global-styling*/
-
-@layer components {
-    .table-info {
-        border-collapse: separate;
-        border-spacing: 18px 4px;
-    }
-}
-
-.lucide {
-    color: currentColor;
-    stroke-width: 2px;
-}
-
-/* applied to all custom hover cards that use radix */
-.HoverContent {
-    border-radius: 0.3rem;
-    padding: 1rem;
-    z-index: 2;
-    pointer-events: none;
-}
-
-.DefaultBlurBg,
-.HoverContent {
-    background-color: #21252933;
-    backdrop-filter: blur(25px);
-}
-
-/* Ansi colors, opiniated, for https: //github.com/nteract/ansi-to-react */
-
-.ansi-dim {
-    opacity: 0.5;
-}
-
-.ansi-black-fg {
-    color: #000000;
-}
-
-.ansi-black-bg {
-    background-color: #000000;
-}
-
-.ansi-red-fg {
-    color: #c0626b;
-}
-
-.ansi-red-bg {
-    background-color: #c0626b;
-}
-
-.ansi-green-fg {
-    color: #a4bf8c;
-}
-
-.ansi-green-bg {
-    background-color: #a4bf8c;
-}
-
-.ansi-yellow-fg {
-    color: #ebcb8c;
-}
-
-.ansi-yellow-bg {
-    background-color: #ebcb8c;
-}
-
-.ansi-blue-fg {
-    color: #7ea2bf;
-}
-
-.ansi-blue-bg {
-    background-color: #7ea2bf;
-}
-
-.ansi-magenta-fg {
-    color: #b48ead;
-}
-
-.ansi-magenta-bg {
-    background-color: #b48ead;
-}
-
-.ansi-cyan-fg {
-    color: #8fbcbb;
-}
-
-.ansi-cyan-bg {
-    background-color: #8fbcbb;
-}
-
-.ansi-white-fg {
-    color: #ffffff;
-}
-
-.ansi-white-bg {
-    background-color: #ffffff;
-}
-
-.ansi-bright-black-fg {
-    color: #818689;
-}
-
-.ansi-bright-red-fg {
-    color: #d0737f;
-}
-
-.ansi-bright-green-fg {
-    color: #b5d0a0;
-}
-
-.ansi-bright-yellow-fg {
-    color: #f0d9a6;
-}
-
-.ansi-bright-blue-fg {
-    color: #8fb8d1;
-}
-
-.ansi-bright-magenta-fg {
-    color: #c79ec4;
-}
-
-.ansi-bright-cyan-fg {
-    color: #a3cdcd;
-}
-
-.ansi-bright-white-fg {
-    color: #ffffff;
-}
-
 main {
     height: 100dvh;
     width: 100dvw;
     display: flex;
     flex-direction: column;
+}
+
+:root {
+    --background: red;
+}
+
+body {
+    /* Slide in transition shows overflow if this is not hidden on body*/
+    overflow: hidden;
+
+    /* Noise texture with very low opacity */
+    background-image:
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.13' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.01'/%3E%3C/svg%3E"),
+        /* Subtle grid pattern */
+            repeating-linear-gradient(
+                90deg,
+                #af569a10,
+                transparent 1px,
+                transparent 20px
+            ),
+        repeating-linear-gradient(0deg, #af569a10, transparent 1px, transparent 20px);
+
+    background-size:
+        200px 200px,
+        20px 20px,
+        20px 20px,
+        100% 100%;
+
+    background-position:
+        0 0,
+        0 0,
+        0 0,
+        0 0;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
 }

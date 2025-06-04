@@ -1,382 +1,991 @@
-import time
-from typing import Callable, List
+"""
+Session classes for the import pipeline.
 
-from beets import autotag, importer, library, plugins
-from beets.util import pipeline as beets_pipeline
+Sessions often take particular arguments, such as a duplicate action. In the simplest and most common case,
+each session has one task (i.e. one album) to deal with. Sometimes, however, one session may have multiple tasks,
+such as when one folder contains files from two albums.
 
-from beets_flask.beets_sessions import BaseSession, set_config_defaults
-from beets_flask.config import config
-from beets_flask.importer.types import AlbumMatch, TrackMatch
+To account for this, we use the TaskMapping type.
+They contain an action to take for each task (mapping a task_id as string to the action), and the default value
+must be None (which means that the session uses the default action for that task, loaded from user config).
+
+When no mapping is given, the default action is used for all tasks.
+
+```
+TaskIdMappingArg = defaultdict[str, T | None] | None
+```
+
+If you want to pass a value to all tasks, you can omit looking up the task ids and
+instead use "*" as the key, which will apply the action to all tasks of the session.
+
+```
+action_for_all : TaskIdMappingArg[DuplicateAction] = {"*": "remove"}
+```
+"""
+
+import asyncio
+import logging
+from abc import ABC, abstractmethod
+from collections import defaultdict
+from copy import deepcopy
+from enum import Enum
+from pathlib import Path
+from typing import Any, Callable, List, Literal, TypedDict, TypeGuard, TypeVar, cast
+
+import nest_asyncio
+from beets import autotag, importer, plugins
+from beets.ui import UserError, _open_library
+from deprecated import deprecated
+
+from beets_flask.config import get_config
+from beets_flask.disk import is_album_folder
+from beets_flask.importer.progress import Progress, ProgressState
+from beets_flask.importer.types import (
+    BeetsAlbum,
+    BeetsAlbumMatch,
+    BeetsLibrary,
+    BeetsTrackMatch,
+    DuplicateAction,
+)
 from beets_flask.logger import log
+from beets_flask.server.exceptions import (
+    DuplicateException,
+    IntegrityException,
+    NotImportedException,
+    to_serialized_exception,
+)
+from beets_flask.utility import capture_stdout_stderr
 
-from .communicator import ImportCommunicator
-from .pipeline import mutator_stage
-from .states import CandidateState, ImportState, ImportStatus
+from .pipeline import AsyncPipeline, Stage
+from .stages import (
+    StageOrder,
+    group_albums,
+    identify_duplicates,
+    lookup_candidates,
+    manipulate_files,
+    mark_tasks_completed,
+    mark_tasks_preview_completed,
+    match_threshold,
+    plugin_stage,
+    read_tasks,
+    user_query,
+)
+from .states import ProgressState, SessionState
+
+nest_asyncio.apply()
+
+# ---------------------------------------------------------------------------- #
+#                               Types and helpers                              #
+# ---------------------------------------------------------------------------- #
+
+T = TypeVar("T")
+
+TaskIdMapping = defaultdict[str, T]
+TaskIdMappingArg = dict[str, T | None] | None
 
 
-class InteractiveImportSession(BaseSession):
-    """Interactive Import Session.
+def parse_task_id_mapping(mapping: TaskIdMappingArg[T], default: T) -> TaskIdMapping[T]:
+    """
+    Convert the flexible arguments to stricter TaskIdMapping that sessions use internally.
 
-    The interactive import session is used to parallel tag a directory and
-    choose the correct match for each album via external input. The current state
-    of the import is communicated to the user via an emitter.
-    Feel free to implement your own emitter by subclassing the `Emitter` abc.
+    Parameters
+    ----------
+    mapping : TaskIdMappingArg
+        For each task_id (key) which action to take (value).
+        If None, the default action is used for all tasks.
+        If "*" is used as key, this action is used for all tasks, and only one key-value
+        pair is allowed.
+    default : T
+        Default value to use for all tasks that are not in the mapping, or "*".
+
+
+    Note
+    ----
+    TaskIdMappings are defaultdicts, which keeps the lower level logic simpler.
+    TaskIdMappingsArgs are just dicts, which are serializable trhough api and redis
+    thread bounds.
     """
 
-    # current session state
-    import_state: ImportState
-    # usually this is a WebsocketCommunicator inheriting from ImportCommunicator
-    communicator: ImportCommunicator
+    m: TaskIdMapping[T] = defaultdict(lambda: default)
+    if mapping is not None:
+        if "*" in mapping.keys():
+            if len(mapping) > 1:
+                raise ValueError(
+                    "If you use '*' as key, you cannot use any other keys in the mapping."
+                )
+            else:
+                return defaultdict(lambda: mapping["*"] or default)
 
-    task: importer.ImportTask | None = None
-    pipeline: beets_pipeline.Pipeline | None = None
-    cleanup: Callable | None = None
+        for k, v in mapping.items():
+            if v is None:
+                continue
+            m[k] = v
+
+    return m
+
+
+class CandidateChoiceFallback(Enum):
+    """
+    Type for the candidate choice.
+
+    Candidate Choices are either a string (the candidate id) or a special case
+    (asis candidate, or the best one).
+    """
+
+    ASIS = 1
+    BEST = 2
+
+
+CandidateChoice = str | CandidateChoiceFallback
+
+
+class Search(TypedDict):
+    """Search for a candidate.
+
+    This is used to search for a candidate in the preview session.
+    """
+
+    search_ids: list[str]
+    search_artist: str | None
+    search_album: str | None
+
+
+def _is_search(d: Any) -> TypeGuard[Search]:
+    """Check if the given dict is a Search object."""
+    return (
+        d is not None
+        and isinstance(d, dict)
+        and "search_ids" in d
+        and isinstance(d["search_ids"], list)
+    )
+
+
+# ---------------------------------------------------------------------------- #
+#                                   Sessions                                   #
+# ---------------------------------------------------------------------------- #
+
+
+class BaseSession(importer.ImportSession, ABC):
+    """Base class for our GUI-based ImportSessions.
+
+    Operates on single Albums / files.
+
+    Parameters
+    ----------
+    path : list[str]
+        list of album folders to import
+    config_overlay : str or dict
+        path to a config file to overlay on top of the default config.
+        Note that if `dict`, the lazyconfig notation e.g. `{import.default_action: skip}`
+        wont work reliably. Better nest the dicts: `{import: {default_action: skip}}`
+
+    Note: It's a design choice to require that you manually create and pass the
+    `SessionState` object. Usually the states go into the database, which needs explizit
+    handling beyond the session.
+    """
+
+    # attributes needed to create a beetsTag instance for our database
+    # are contained in the associated SessionState -> TaskState -> CandidateStates
+    state: SessionState
+
+    pipeline: AsyncPipeline[importer.ImportTask, Any] | None = None
+    config_overlay: dict
+
+    # FIXME: only for typehint until we update beets
+    lib: BeetsLibrary  # type: ignore
 
     def __init__(
         self,
-        import_state: ImportState,
-        communicator: ImportCommunicator,
-        path: str,
-        config_overlay: str | dict | None = None,
-        cleanup: Callable | None = None,
+        state: SessionState,
+        config_overlay: dict | None = None,
     ):
-        """Create a new interactive import session.
+        if not state.path.exists():
+            raise FileNotFoundError(f"Path {state.path} does not exist.")
+        if not state.path.is_dir() and not is_album_folder(state.path):
+            raise ValueError(f"Path {state.path} is not an album folder.")
 
-        Automatically sets the default config values.
+        # FIXME: This is a super bad convention of the original beets.
+        # We do not want to pollute a global config object every time a session runs.
+        # This is fine for the cli tool, where each run creates only one session
+        # but not for our long-running webserver.
+        config = get_config()
+        if isinstance(config_overlay, dict):
+            config.set_args(config_overlay)
 
-        Parameters
-        ----------
-        path : str
-            The path to the directory to import.
-        config_overlay : str | dict | None
-            Path to a config file to overlay on top of the default config.
-            Note that if `dict`, the lazyconfig notation e.g. `{import.default_action: skip}` wont work reliably. Better nest the dicts: `{import: {default_action: skip}}`
-        cleanup : Callable | None
-            Called after the import session is done.
+        self.config_overlay = config_overlay or {}
+        self.state = state
+
+        super().__init__(
+            lib=_open_library(config),
+            paths=[state.path],
+            query=None,
+            loghandler=None,
+        )
+        # Hacky workaround to use our logging, to allow plugins to communicate
+        self.logger.handlers = log.handlers
+        log.debug(f"Created new {self.__class__.__name__} for {state.path}")
+
+    @property
+    def path(self) -> Path:
+        return self.state.path
+
+    @deprecated
+    def run_and_capture_output(self) -> tuple[str, str]:
+        """Run the import session and capture the output.
+
+        Uses the original beets import session run method,
+        with lots of overhead.
+        Sets self.preivew to output and error messages occuring during run.
+
+        Returns
+        -------
+            tuple[str, str]: out, err
         """
-        set_config_defaults()
-        super(InteractiveImportSession, self).__init__(path, config_overlay)
-        self.communicator = communicator
-        self.import_state = import_state
-        self.cleanup = cleanup
+        self.logger.debug(f"{self.paths}")
+        out, err, _ = capture_stdout_stderr(self.run)
+        self.preview = out + "\n\n" + err if err else out
+        return out, err
 
-    def identify_duplicates(self, task: importer.ImportTask):
-        """Identify and flag candidates of a task that are duplicates."""
-        # Update state with new task. In parallel pipeline, user should be able to choose from all tasks simultaneously.
-        # Emit the task to the user
-        self.import_state.upsert_task(task)
-        # self.communicator.emit_state(self.import_state)
+    def get_config_value(self, key: str, type_func: Callable | None = None) -> Any:
+        """Get a config value from the overlay or default.
 
-        sel_state = self.import_state.get_selection_state_for_task(task)
-        if sel_state is None:
-            raise ValueError("No selection state found for task.")
-
-        def _is_duplicate(candidate_state: CandidateState):
-            """Find duplicates.
-
-            Copy of beets' `task.find_duplicate` but works on any candidates' match.
-            """
-            info = candidate_state.match.info.copy()
-            info["albumartist"] = info["artist"]
-
-            if info["artist"] is None:
-                # As-is import with no artist. Skip check.
-                return []
-
-            # Construct a query to find duplicates with this metadata. We
-            # use a temporary Album object to generate any computed fields.
-            tmp_album = library.Album(self.lib, **info)
-            keys: List[str] = (
-                config["import"]["duplicate_keys"]["album"].as_str_seq() or []
-            )  # type: ignore
-            dup_query = library.Album.all_fields_query(
-                {key: tmp_album.get(key) for key in keys}
-            )
-
-            # Don't count albums with the same files as duplicates.
-            task_paths = {i.path for i in task.items if i}
-
-            duplicates = []
-            for album in self.lib.albums(dup_query):
-                # Check whether the album paths are all present in the task
-                # i.e. album is being completely re-imported by the task,
-                # in which case it is not a duplicate (will be replaced).
-                album_paths = {i.path for i in album.items()}
-                if not (album_paths <= task_paths):
-                    duplicates.append(album)
-
-            return duplicates
-
-        for idx, cs in enumerate(sel_state.candidate_states):
-            duplicates = _is_duplicate(cs)
-            if len(duplicates) > 0:
-                cs.duplicate_in_library = True
-
-    def offer_match(self, task: importer.ImportTask):
-        """Triggers selection update using communicator.
-
-        This is non-blocking.
+        Use dots to separate levels.
         """
-        log.debug(f"Offering match for task: {task}")
 
-        # # Update state with new task. In parallel pipeline, user should be able to choose from all tasks simultaneously.
-        # # Emit the task to the user
-        # self.import_state.upsert_task(task)
-        self.communicator.emit_state(self.import_state)
+        path = key.split(".")
 
-        # tell plugins we are starting user_query
-        results = plugins.send("import_task_before_choice", session=self, task=task)
-        actions = [action for action in results if action]
-        # but do not support actions via gui (yet?)
-        if len(actions) > 0:
-            raise ValueError(
-                "Plugins are not allowed to return actions for GUI Sessions"
-            )
+        overlay = self.config_overlay
+        for p in path:
+            overlay = overlay.get(p, {})
 
-    def choose_match(self, task: importer.ImportTask):
-        """
-        Needs to return an AlbumMatch object, ASIS, or SKIP.
+        # overlay takes priority
+        if not isinstance(overlay, dict):
+            return type_func(overlay) if type_func else overlay
 
-        this blocks the stages pipeline, until choose_match invoked by each task has
-        returned one of the above.
-        """
-        log.debug(f"Waiting for user selection for task: {task}")
+        # get settings from user settings, this is not a dict, but confuse config
+        # the confuse config views do not throw key errors, and their .get() is not
+        # the same as dict.get(), but rather resolves the value.
+        default = get_config()
+        for p in path:
+            default = default[p]
+        default = default.get(type_func) if type_func else default.get()
+        return default
 
-        sel_state = self.import_state.get_selection_state_for_task(task)
-        self.communicator.emit_state(sel_state)
+    # -------------------------- State handling helpers -------------------------- #
 
-        if sel_state is None:
-            raise ValueError("No selection state found for task.")
+    def set_task_progress(
+        self, task: importer.ImportTask, progress: ProgressState | Progress | str
+    ):
+        """Set the progress for a task belonging to the session.
 
-        # BLOCKING
-        # We use the communicator to receive user input, which modifies the sel_state
-        while True:
-            if sel_state.completed:
-                break
-            if self.import_state.user_response == "abort":
-                self.set_status(ImportStatus("aborted"))
-                return importer.action.SKIP
-
-            # SEARCHES
-            if (
-                sel_state.current_search_id is not None
-                or sel_state.current_search_artist is not None
-            ):
-                candidates = self.search_candidates(
-                    task,
-                    sel_state.current_search_id,
-                    sel_state.current_search_artist,
-                    sel_state.current_search_album,
-                )
-
-                # Add the new candidates to the selection state
-                sel_state.add_candidates(candidates)
-
-                # Reset search
-                sel_state.current_search_id = None
-                sel_state.current_search_artist = None
-                sel_state.current_search_album = None
-
-                continue
-
-            time.sleep(3)
-
-        if sel_state.current_candidate_id is None:
-            raise ValueError("No candidate selection found. This should not happen!")
-
-        candidate = sel_state.current_candidate_state
-        if candidate is None:
-            raise ValueError("No candidate state found. This should not happen!")
-
-        # the dummmy candidate to signal we want to import `asis` has a hard-coded id:
-        if candidate.id == "asis":
-            return importer.action.ASIS
-
-        match: AlbumMatch = candidate.match  # type: ignore
-        log.debug(f"Returning {match.info.album=} {match.info.album_id=} for {task=}")
-
-        return match
-
-    def search_candidates(
-        self,
-        task: importer.ImportTask,
-        search_id: str | None,
-        search_artist: str | None,
-        search_album: str | None,
-    ) -> List[AlbumMatch | TrackMatch]:
-        """Search for candidates for the current selection."""
-        log.debug("searching more candidates")
-
-        candidates: list[AlbumMatch | TrackMatch] = []
-        if search_artist is not None:
-            # @ps: why is an assert here? This will error, no?
-            assert search_album is not None
-            _, _, proposal = autotag.tag_album(
-                task.items,
-                search_artist=search_artist,
-                search_album=search_album,
-            )
-            candidates = proposal.candidates + candidates
-
-        if search_id is not None:
-            _, _, proposal = autotag.tag_album(
-                task.items,
-                search_ids=search_id.split(),
-            )
-            candidates = proposal.candidates + candidates
-
-        log.debug(f"found {len(candidates)} new candidates")
-
-        return candidates
-
-    def resolve_duplicate(self, task, found_duplicates):
-        """Handle duplicates.
-
-        Decide what to do when a new album or item seems
-        similar to one that's already in the library.
-        """
-        sel_state = self.import_state.get_selection_state_for_task(task)
-        if sel_state is None:
-            raise ValueError("No selection state found for task.")
-
-        sel = sel_state.duplicate_action
-        log.debug(f"Resolving duplicates for {sel_state.id=} with action '{sel}'")
-
-        if sel == "skip":
-            # Skip new.
-            task.set_choice(importer.action.SKIP)
-        elif sel == "keep":
-            # Keep both. Do nothing; leave the choice intact.
-            pass
-        elif sel == "remove":
-            # Remove old.
-            task.should_remove_duplicates = True
-        elif sel == "merge":
-            task.should_merge_duplicates = True
-        else:
-            raise ValueError(f"Unknown duplicate resolution action: {sel}")
-
-    def set_status(self, status: ImportStatus):
-        """Set the status of the import session, and communicate the status changes.
-
+        If string is given it is set as the message of the current progress.
         Note: currently we only implement status on the level of the whole import session,
         but should eventually do this per selection (task).
         """
-        log.debug(f"Setting status to {status.value}")
-        self.import_state.status = status
-        self.communicator.emit_status(status)
 
-    def run(self):
-        """Run the import task.
+        task_state = self.state.get_task_state_for_task_raise(task)
 
-        Basically a customized version of `ImportSession.run`.
+        task_state.set_progress(progress)
+
+    def get_task_progress(self, task: importer.ImportTask) -> ProgressState | None:
+        """Get the progress of the task, via this sessions state."""
+        task_state = self.state.get_task_state_for_task(task)
+        return task_state.progress if task_state else None
+
+    # -------------------------------- Stages -------------------------------- #
+
+    @property
+    @abstractmethod
+    def stages(self) -> StageOrder:
+        """Set the stages for the session.
+
+        In Subclasses, define the order of stages here.
         """
-        self.logger.info(f"import started {time.asctime()}")
+        raise NotImplementedError("Implement in subclass")
+
+    def resolve_duplicate(self, task: importer.ImportTask, found_duplicates):
+        """Overload default resolve duplicate and skip it.
+
+        This basically skips this stage.
+        """
+        self.logger.warning(
+            "Skipping duplicate resolution. "
+            + f"Your session should implement this! -> {self.__class__.__name__}"
+        )
+        task.set_choice(importer.action.SKIP)
+
+    def choose_item(self, task: importer.ImportTask):
+        """Overload default choose item and skip it.
+
+        This session should not reach this stage.
+        """
+        self.logger.debug(f"skipping choose_item {task}")
+        return importer.action.SKIP
+
+    def should_resume(self, path):
+        """Overload default should_resume and skip it.
+
+        Should normally be no problem if the config is set correctly, but just
+        in case.
+        """
+        self.logger.debug(f"skipping should_resume {path}")
+        return False
+
+    def identify_duplicates(self, task: importer.ImportTask):
+        """For all candidates, check if they have duplicates in the library."""
+        task_state = self.state.get_task_state_for_task_raise(task)
+
+        for idx, cs in enumerate(
+            task_state.candidate_states + [task_state.asis_candidate]
+        ):
+            # This is a mutable operation i.e. cs is modfied here!
+            duplicates = cs.identify_duplicates(self.lib)
+
+            if len(duplicates) > 0:
+                log.debug(f"Found duplicates for {cs.id=}: {duplicates}")
+
+    def lookup_candidates(self, task: importer.ImportTask):
+        """Lookup candidates for the task."""
+
+        # Restrict the initial lookup to IDs specified by the user via the -m
+        # option. Currently all the IDs are passed onto the tasks directly.
+        # FIXME: Revisit, we want to avoid using the global config.
+        task.search_ids = self.config["search_ids"].as_str_seq()
+
+        task.lookup_candidates()
+
+        # Update our state
+        task_state = self.state.get_task_state_for_task_raise(task)
+
+        # FIXME: type hint should be fine once beets updates
+        task_state.add_candidates(task.candidates)  # type: ignore
+
+    # ---------------------------------- Run --------------------------------- #
+
+    def run_sync(self) -> SessionState:
+        """Run the import session synchronously."""
+        return asyncio.run(self.run_async())
+
+    async def run_async(self) -> SessionState:
+        """Run the import session asynchronously.
+
+        Does not set tasks to completed at the end.
+        Take care of this in subclasses.
+        """
+        # For now, until we improve the upstream beets config logic,
+        # adhere to importer.ImportSession convention and create a local copy
+        # of the config.
+        config = get_config()
         self.set_config(config["import"])
 
-        # mutator stage does not work for first task, set status manually
-        self.set_status(ImportStatus("reading files"))
-        stages = [
-            importer.read_tasks(self),
-        ]
+        # TODO: check some config values. that are not compatible with our code.
+        self.pipeline = AsyncPipeline(start_tasks=read_tasks(self))
 
-        if self.config["group_albums"] and not self.config["singletons"]:
-            stages += [
-                status_stage(self, ImportStatus("grouping albums")),
-                importer.group_albums(self),
-            ]
+        for s in self.stages.values():
+            self.pipeline.add_stage(s)
 
-        stages += [
-            status_stage(self, ImportStatus("looking up candidates")),
-            importer.lookup_candidates(self),  # type: ignore
-            status_stage(self, ImportStatus("identifying duplicates")),
-            identify_duplicates(self),
-            offer_match(self),
-            status_stage(self, ImportStatus("waiting for user selection")),
-            importer.user_query(self),  # type: ignore
-        ]
+        log.info(f"Running {self.__class__.__name__} on state<{self.state.id=}>.")
+        log.debug(f"Running {len(self.pipeline.stages)} stages.")
 
-        # Plugin stages.
-        for stage_func in plugins.early_import_stages():
-            stages.append(
-                status_stage(
-                    self,
-                    ImportStatus(
-                        message="plugin",
-                        plugin_stage="early import",
-                        plugin_name=stage_func.__name__,
-                    ),
-                )
-            )
-            stages.append(importer.plugin_stage(self, stage_func))  # type: ignore
-        for stage_func in plugins.import_stages():
-            stages.append(
-                status_stage(
-                    self,
-                    ImportStatus(
-                        message="plugin",
-                        plugin_stage="import",
-                        plugin_name=stage_func.__name__,
-                    ),
-                )
-            )
-            stages.append(importer.plugin_stage(self, stage_func))  # type: ignore
-
-        stages += [
-            status_stage(self, ImportStatus("manipulating files")),
-            importer.manipulate_files(self),  # type: ignore
-        ]
-
-        self.pipeline = beets_pipeline.Pipeline(stages)
-
-        log.debug(f"Running pipeline stages: {self.pipeline.stages}")
-
-        # Run the pipeline.
+        # reset exception state
+        self.state.exc = None
         plugins.send("import_begin", session=self)
         try:
-            self.pipeline.run_sequential()
-            # parallel still broken. no attribute queue.mutex, no idea why
-            # self.pipeline.run_parallel()
-        except importer.ImportAbort:
-            self.logger.debug(f"Interactive import session aborted by user")
+            assert self.pipeline is not None
+            await self.pipeline.run_async()
+        except importer.ImportAbortError:
+            log.debug(f"Interactive import session aborted by user")
+        except Exception as e:
+            self.state.exc = to_serialized_exception(e)
+            raise e
 
-        log.debug(f"Pipeline completed")
-
-        self.set_status(ImportStatus("completed"))
-        if self.cleanup:
-            self.cleanup()
-
-
-@mutator_stage
-def identify_duplicates(session: InteractiveImportSession, task: importer.ImportTask):
-    """Stage to identify which candidates would be duplicates if imported."""
-    if task.skip:
-        return task
-    session.identify_duplicates(task)
+        log.info(f"Completed {self.__class__.__name__} on state<{self.state.id=}>.")
+        return self.state
 
 
-@mutator_stage
-def offer_match(session: InteractiveImportSession, task: importer.ImportTask):
-    """Stage to offer a match to the user.
+class PreviewSession(BaseSession):
+    """Preview what would be imported. Only fetches candidates."""
 
-    This is non-blocking. Essentially we split the `user_query` stage (which calls `choose_match`) into two stages.
-    The first is `offer_match` sending info to the frontend, while the second is
-    `choose_match` that waits until all user choices have been made.
+    group_albums: bool | None
+    autotag: bool | None
+
+    def __init__(
+        self,
+        state: SessionState,
+        config_overlay: dict | None = None,
+        group_albums: bool | None = None,
+        autotag: bool | None = None,
+        **kwargs,
+    ):
+        """
+        Create new PreviewSession.
+
+        Parameters
+        ----------
+        group_albums : bool | None
+            Whether to create multple tasks, one for each album found in the metadata
+            of the files. Set to true if you have multiple albums in a single folder.
+            If None: get value from beets config.
+        autotag : bool | None
+            Whether to look up metadata online. If None: get value from beets config.
+        """
+
+        super().__init__(state, config_overlay, **kwargs)
+        self.group_albums = group_albums
+        self.autotag = autotag
+
+    @property
+    def stages(self) -> StageOrder:
+        stages = StageOrder()
+
+        if self.get_config_value("import.singletons"):
+            # beets tweaks the album grouping settings via overlay for singletons.
+            raise NotImplementedError("Singletons not implemented yet.")
+
+        if self.group_albums or (
+            self.group_albums is None and self.get_config_value("import.group_albums")
+        ):
+            stages.append(group_albums(self))
+
+        if self.autotag or (
+            self.autotag is None and self.get_config_value("import.autotag")
+        ):
+            stages.append(lookup_candidates(self))
+
+        stages.append(identify_duplicates(self))
+        stages.append(mark_tasks_preview_completed(self))
+
+        return stages
+
+
+class AddCandidatesSession(PreviewSession):
     """
-    # sentinel tasks (this is what beets does in choose_match)
-    if task.skip:
-        return task
-    session.offer_match(task)
+    Preview session that adds a candidate to the ones already fetched.
+
+    Can only run on a session state of a preview session that already has
+    candidates.
+    """
+
+    search: TaskIdMapping[Search | Literal["skip"]]
+
+    def __init__(
+        self,
+        state: SessionState,
+        config_overlay: dict | None = None,
+        search: TaskIdMappingArg[Search | Literal["skip"]] = None,
+        **kwargs,
+    ):
+        super().__init__(state, config_overlay, **kwargs)
+
+        if state.progress != Progress.PREVIEW_COMPLETED:
+            raise ValueError("Cannot run AddCandidatesSession on non-preview state.")
+
+        # None means skip search for this task
+        self.search = parse_task_id_mapping(search, "skip")
+
+        # Reset task progress only for tasks that have search values
+        # other tasks are skipped
+        for task in self.state.task_states:
+            if task.progress >= Progress.PREVIEW_COMPLETED:
+                s = self.search[task.id]
+                if s != "skip":
+                    task.set_progress(Progress.LOOKING_UP_CANDIDATES - 1)
+
+    def lookup_candidates(self, task: importer.ImportTask):
+        """Amend the found candidate to the already existing candidates (if any)."""
+        # see ref in lookup_candidates in beets/importer.py
+
+        task_state = self.state.get_task_state_for_task_raise(task)
+        search = self.search[task_state.id]
+
+        if search == "skip":
+            log.debug(f"Skipping search for {task_state.id=}")
+            return
+
+        if (
+            search["search_artist"] is not None
+            and search["search_artist"].strip() == ""
+        ):
+            search["search_artist"] = None
+        if search["search_album"] is not None and search["search_album"].strip() == "":
+            search["search_album"] = None
+
+        log.debug(f"Using {search=} for {task_state.id=}, {task_state.paths=}")
+
+        _, _, prop = autotag.tag_album(
+            task.items,
+            search_ids=search["search_ids"],
+            search_album=search["search_album"],
+            search_artist=search["search_artist"],
+        )
+
+        if len(prop.candidates) == 0:
+            raise ValueError(f"Lookup found no candidates.")
+
+        task_state.add_candidates(prop.candidates)
+
+        # Update quality of best candidate, likely not needed for us, only beets cli.
+        task.rec = max(prop.recommendation, task.rec or autotag.Recommendation.none)
 
 
-@mutator_stage
-def status_stage(
-    session: InteractiveImportSession,
-    status: ImportStatus,
-    task: importer.ImportTask,
-):
-    """Stage to call sessions `set_status` method."""
-    # sentinel tasks (this is what beets does in choose_match)
-    if task.skip:
-        return task
-    session.set_status(status)
+class ImportSession(BaseSession):
+    """
+    Import session that assumes we already have a match-id.
+
+    Needs to run from an already finished Preview Session.
+    """
+
+    candidate_ids: TaskIdMapping[CandidateChoice]
+    duplicate_actions: TaskIdMapping[DuplicateAction]
+
+    def __init__(
+        self,
+        state: SessionState,
+        config_overlay: dict | None = None,
+        candidate_ids: TaskIdMappingArg[CandidateChoice] = None,
+        duplicate_actions: TaskIdMappingArg[DuplicateAction] = None,
+    ):
+        """Create new ImportSession.
+
+        Parameters
+        ----------
+        candidate_ids : optional
+            Either id of candidate(s) or the import choice. This is used to determine which
+            candidate to import. If a dict is given, the keys are the task ids and the
+            values are the candidate ids. You can also use the import choice enum
+            `ImportChoice.ASIS` or `ImportChoice.BEST` to indicate that you want to
+            import the candidate as-is or the best candidate.
+            FIXME: at the moment asis is broken
+        duplicate_actions : str
+            The action to take if duplicates are found. One of "skip", "keep",
+            "remove", "merge", "ask". If None, the default is read from
+            the user config and applied to all tasks.
+        """
+
+        config_overlay = {} if config_overlay is None else config_overlay
+        if config_overlay.get("import", {}).get("search_ids") is not None:
+            raise ValueError("search_ids set in config_overlay. This is not supported.")
+
+        super().__init__(state, config_overlay)
+
+        # Create a mapping for the duplicate action
+        # each task might have a different action.
+        # if none is given the default action is used from the config
+        default_action: DuplicateAction = self.get_config_value(
+            "import.duplicate_action", str
+        )
+        self.duplicate_actions = parse_task_id_mapping(
+            duplicate_actions, default_action
+        )
+
+        # For candidates, None means to take best
+        self.candidate_ids = parse_task_id_mapping(
+            candidate_ids, CandidateChoiceFallback.BEST
+        )
+
+    async def run_async(self) -> SessionState:
+        # only allow import sessions to run on preview states (not other import states)
+        if self.state.progress == Progress.IMPORT_COMPLETED:
+            log.error(
+                f"Cannot run {self.__class__.__name__} from states that already "
+                + f"completed an import. (i.e. other imports) [{self.state.progress}]"
+            )
+            e = UserError("Cannot redo imports. Try undo and/or retag!")
+            self.state.exc = to_serialized_exception(e)
+            raise e
+        elif self.state.progress > Progress.PREVIEW_COMPLETED:
+            log.warning(
+                f"Resetting state from {self.state.progress} to PREVIEW_COMPLETED for "
+                + f"import session {self.state.id}."
+            )
+            for task in self.state.task_states:
+                task.set_progress(Progress.PREVIEW_COMPLETED)
+
+        return await super().run_async()
+
+    # ------------------------------ Stages ------------------------------ #
+
+    @property
+    def stages(self):
+        stages = StageOrder()
+
+        # FIXME: user_query calls task.choose_match, which calls session.choose_match.
+        # Better abstraction needed upstream.
+        stages.append(user_query(self))
+
+        # Early import stages
+        plugs: list[plugins.BeetsPlugin] = plugins.find_plugins()
+        for p in plugs:
+            for stage in p.get_early_import_stages():
+                stages.append(
+                    plugin_stage(
+                        self,
+                        stage,
+                        ProgressState(
+                            Progress.EARLY_IMPORTING,
+                            plugin_name=stage.__name__,
+                        ),
+                    ),
+                    name=f"early_plugin_stage_{p.__class__.__name__}_{stage.__name__}",
+                )
+
+        # Import stages
+        for p in plugs:
+            for stage in p.get_import_stages():
+                stages.append(
+                    plugin_stage(
+                        self,
+                        stage,
+                        ProgressState(
+                            Progress.IMPORTING,
+                            plugin_name=stage.__name__,
+                        ),
+                    ),
+                    name=f"plugin_stage_{p.__class__.__name__}_{stage.__name__}",
+                )
+
+        # finally, move files
+        stages.append(manipulate_files(self))
+
+        # If everything went well, set tasks to completed
+        stages.append(mark_tasks_completed(self))
+
+        return stages
+
+    # --------------------------- Stage Definitions -------------------------- #
+
+    def choose_match(self, task: importer.ImportTask):
+        self.logger.setLevel(logging.DEBUG)
+        self.logger.debug(f"choose_match {task}")
+
+        task_state = self.state.get_task_state_for_task_raise(task)
+
+        # Pick the candidate to import
+        candidate_id = self.candidate_ids[task_state.id]
+
+        if isinstance(candidate_id, str):
+            candidate_state = task_state.get_candidate_state_by_id(candidate_id)
+            if candidate_state is None:
+                raise ValueError(f"Candidate with id {candidate_id} not found.")
+        elif candidate_id == CandidateChoiceFallback.BEST:
+            candidate_state = task_state.best_candidate_state
+            if candidate_state is None:
+                raise ValueError(f"No candidate found.")
+        elif candidate_id == CandidateChoiceFallback.ASIS:
+            candidate_state = task_state.asis_candidate
+        else:
+            raise NotImplementedError("ImportChoice.ASIS not implemented yet.")
+
+        # update task_state to keep track of the choice in the database
+        task_state.chosen_candidate_state_id = candidate_state.id
+        log.debug(
+            f"Setting chosen candidate for task {task_state.id} to {candidate_state.id}"
+        )
+
+        # Let plugins display info
+        results = plugins.send("import_task_before_choice", session=self, task=task)
+        actions = [action for action in results if action]
+
+        if len(actions) > 0:
+            # decide if we can just move past this and ignore the plugins
+            raise UserError(
+                f"Plugins returned actions, which is not supported for {self.__class__.__name__}"
+            )
+
+        # ASIS
+        if candidate_state.id == task_state.asis_candidate.id:
+            log.debug(f"Importing {task} as-is")
+            return importer.action.ASIS
+
+        return candidate_state.match
+
+    def resolve_duplicate(
+        self, task: importer.ImportTask, found_duplicates: list[BeetsAlbum]
+    ):
+        log.debug(
+            f"Resolving duplicates for {task} with action {self.duplicate_actions}"
+        )
+
+        if len(found_duplicates) == 0:
+            log.debug(f"No duplicates found for")
+            return
+
+        task_state = self.state.get_task_state_for_task_raise(task)
+        task_duplicate_action = self.duplicate_actions[task_state.id]
+        task_state.duplicate_action = task_duplicate_action
+        match task_duplicate_action:
+            case "skip":
+                task.set_choice(importer.action.SKIP)
+            case "keep":
+                pass
+            case "remove":
+                task.should_remove_duplicates = True
+            case "merge":
+                task.should_merge_duplicates = True
+            case "ask":
+                # task.set_choice(importer.action.SKIP)
+                raise DuplicateException(
+                    "You have set the duplicate action to 'ask' in your beets config."
+                )
+            case _:
+                raise DuplicateException(
+                    f"Unknown duplicate action: {self.duplicate_actions}"
+                )
+
+
+class BootlegImportSession(ImportSession):
+    """
+    Import session to import without modifying metadata.
+
+    No preview session required.
+
+    Essentially `beet import --group-albums -A`, ideal for bootlegs and
+    just getting a folder into your library where you are sure the metadata is correct.
+    """
+
+    def __init__(
+        self,
+        state,
+        config_overlay: dict | None = None,
+        **kwargs,
+    ):
+        """Create new ImportAsIsSession.
+
+        Parameters
+        ----------
+        state: SessionState
+            Preconfigured state of the import session.
+        config_overlay : dict
+            Configuration to overlay on top of the default config.
+            "import.group_albums", "import.autotag" and "import.search_ids" are ignored.
+        **kwargs
+            See `ImportSession`.
+        """
+
+        config_overlay = {} if config_overlay is None else deepcopy(config_overlay)
+        import_overlay = config_overlay.get("import", {})
+
+        if "group_albums" in import_overlay and import_overlay["group_albums"] is False:
+            log.warning("Overwriting 'group_albums' in config_overlay.")
+        if "autotag" in import_overlay and import_overlay["autotag"] is True:
+            log.warning("Overwriting 'autotag' in config_overlay.")
+        if "search_ids" in import_overlay:
+            log.warning("Overwriting 'search_ids' in config_overlay.")
+
+        import_overlay["group_albums"] = True
+        import_overlay["autotag"] = False
+        import_overlay["search_ids"] = None
+
+        config_overlay["import"] = import_overlay
+
+        super().__init__(state, config_overlay, **kwargs)
+
+        # overwrite the default action for all tasks
+        self.candidate_ids = parse_task_id_mapping(
+            {"*": CandidateChoiceFallback.ASIS},
+            CandidateChoiceFallback.ASIS,
+        )
+
+
+class AutoImportSession(ImportSession):
+    """Generate a preview and import if the best match is good enough.
+
+    Preview generation is skipped if the provided session state already has a preview.
+
+    Wether the import is triggered depends on the specified `import_threshold`, or
+    the beets-config setting `match.strong_rec_thresh`.
+    The match quality is calculated via penalties, thus it ranges from 0 to 1, but a
+    perfect match is at 0. The same convention is used for thresholds.
+
+    The default threshold is 0.04, so that a "96% match or better" will be imported.
+
+    Raises a `NotImportedException` if the match quality is worse than the threshold,
+    stopping the pipeline.
+    """
+
+    import_threshold: float
+
+    def __init__(
+        self,
+        state,
+        config_overlay: dict | None = None,
+        import_threshold: float | None = None,
+        **kwargs,
+    ):
+        """Create new AutoImportSession.
+
+        Parameters
+        ----------
+        state: SessionState
+            Preconfigured state of the import session.
+        config_overlay : optional, dict
+            Configuration to overlay on top of the default config.
+        import_threshold: optional, float
+            0 to import only perfect matches, 1 to import everything. Default is 0.04.
+        **kwargs
+            See `ImportSession`.
+        """
+
+        super().__init__(state, config_overlay, **kwargs)
+
+        if import_threshold is None:
+            self.import_threshold = self.get_config_value(
+                "match.strong_rec_thresh", float
+            )
+        else:
+            self.import_threshold = import_threshold
+
+    @property
+    def stages(self):
+        stages = super().stages
+        stages.insert(after="user_query", stage=match_threshold(self))
+        return stages
+
+    def match_threshold(self, task: importer.ImportTask):
+        """Check if the match quality is good enough to import.
+
+        Returns true if the match quality is better than threshlold.
+
+        Note: What stops the pipeline is that we set task.choice to importer.action.SKIP,
+        or raise an exception.
+
+        Currently raising, as we do not have a dedicated progress for "not imported".
+        """
+        try:
+            task_state = self.state.get_task_state_for_task(task)
+            distance = float(task_state.best_candidate_state.distance)  # type: ignore
+        except (AttributeError, TypeError):
+            distance = 2.0
+
+        if distance > self.import_threshold:
+            log.debug(
+                f"Best candidate was worse than threshold {distance=} {self.import_threshold=}"
+            )
+            d = (1 - distance) * 100
+            t = (1 - self.import_threshold) * 100
+            raise NotImportedException(f"Match below threshold ({d:.0f}% < {t:.0f}%)")
+            # beets would handle this via the task action:
+            task.set_choice(importer.action.SKIP)
+        else:
+            log.info(
+                f"Best candidate was better than threshold, importing to library. {distance=} {self.import_threshold=}"
+            )
+
+
+class UndoSession(BaseSession):
+    delete_files: bool
+
+    def __init__(
+        self,
+        state: SessionState,
+        config_overlay: dict | None = None,
+        delete_files: bool = False,
+        **kwargs,
+    ):
+        super().__init__(state, config_overlay, **kwargs)
+        self.delete_files = delete_files
+
+    async def run_async(self) -> SessionState:
+        """Undo an import.
+
+        A bit of a hack to reuse the BaseSession as we do
+        not operate on tasks here but makes things easier in
+        calling this in the invoker.
+
+        Note: this Session should only be run in the (single-thread) import queue,
+        because we want to limit beets-library and file interactions to be serial
+        to avoid conflicts.
+        """
+
+        if self.state.progress != Progress.IMPORT_COMPLETED:
+            log.error(
+                f"Cannot undo import from state {self.state.progress}. "
+                + "Only imports can be undone."
+            )
+            e = UserError(
+                "Cannot undo if never imported! You need to import to undo first."
+            )
+            self.state.exc = to_serialized_exception(e)
+            raise e
+
+        for t_state in self.state.task_states:
+            t_state.set_progress(Progress.DELETING)
+
+        # Revert the movement of items that beets does during manipulate_files()
+        # TODO: support Move operations (currently we only allow copy)
+
+        # HACK: To allow an reimport after an undo, we need to use the old
+        # paths of the items. This is a bit hacky, but We did not find
+        # a better way to do this while maintaining the original beets logic.
+        # -> the old_paths attribute of a beets_task is set during task.manipulate_files()
+        # Unfortunately, here task.imported_items() does not work yet (.match not set)
+
+        for t_state in self.state.task_states:
+            chosen_candidate = t_state.chosen_candidate_state
+            if chosen_candidate is None:
+                raise ValueError("No chosen candidate found for task.")
+            if t_state.task.old_paths is None:
+                raise ValueError("No old paths found for task.")
+            for idx, item in enumerate(chosen_candidate.match.mapping.keys()):  # type: ignore
+                # yes, keys are the items and need to be updated!
+                # mapping maps objects to objects.
+                item.path = t_state.task.old_paths[idx]
+
+        # Delete files
+        excs: list[Exception] = []
+        pths: list[Path] = []
+        for t_state in self.state.task_states:
+            try:
+                delete_from_beets(t_state.id, self.delete_files, self.lib)
+            except Exception as e:
+                items = self.lib.items(f"gui_import_id:{t_state.id}")
+
+                excs.append(e)
+                pths.extend([Path(item.path.decode("utf-8")) for item in items])
+
+        if len(excs) > 0:
+            for exc in excs:
+                log.exception(exc)
+
+            # FIXME: Multi/array exceptions need handling
+            self.state.exc = to_serialized_exception(excs[0])
+            raise IntegrityException(
+                "Could not delete all items. Some items might be left in the library. "
+                + f"Problematic files were: {pths}"
+            )
+
+        # Update our state and progress
+        for t_state in self.state.task_states:
+            t_state.set_progress(Progress.DELETION_COMPLETED)
+
+        return self.state
+
+    @property
+    def stages(self):
+        return StageOrder()
+
+
+## Edge cases
+# 1. Session doesn't exist anymore -> delete
+# 2. Session exists but multiple tasks -> undo (session)
+# 3. Session exists but file do not anymore in import folder -> undo, warnings
+
+# Flow:
+# - remove from beets db
+# - revert our session (if possible)
+
+
+def delete_from_beets(task_id: str, delete_files: bool, lib: BeetsLibrary):
+    """Low-level, delete the items from the beets library."""
+
+    # We set a gui_import_id in the beets database this is equal to the session id
+    # see _apply_choice in stages.py
+
+    items = lib.items(f"gui_import_id:{task_id}")
+
+    if len(items) == 0:
+        raise ValueError("No items found that match this import session id.")
+
+    with lib.transaction():
+        for item in items:
+            item.remove(delete_files)

@@ -1,43 +1,17 @@
 import io
 import re
 import sys
-from functools import wraps
-from math import floor
 
-from flask import current_app
-from rq import Worker
+from deprecated import deprecated
 
 from .logger import log
-
-# ------------------------------------------------------------------------------------ #
-#                                    init flask app                                    #
-# ------------------------------------------------------------------------------------ #
-
-
-def with_app_context(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        with current_app.app_context():
-            return f(*args, **kwargs)
-
-    return wrapper
-
-
-def get_running_jobs():
-    running_jobs = []
-    workers = Worker.all()
-    for worker in workers:
-        job = worker.get_current_job()
-        if job:
-            running_jobs.append(job)
-    return running_jobs
-
 
 # ------------------------------------------------------------------------------------ #
 #                                        Logging                                       #
 # ------------------------------------------------------------------------------------ #
 
 
+@deprecated
 def capture_stdout_stderr(func, *args, **kwargs):
     """
     beets.ui uses a custom `print_` function to display most console output in a nicely formatted way. This is the easiest way to capture that output.
@@ -74,14 +48,17 @@ def capture_stdout_stderr(func, *args, **kwargs):
 # ------------------------------------------------------------------------------------ #
 
 
+@deprecated
 def strip_ansi(text: str):
     return re.sub(r"\x1b[^m]*m", "", text)
 
 
+@deprecated
 def heading(heading: str):
     return f"\n+{'-' * 90}+\n| {heading}\n+{'-' * 90}+\n"
 
 
+@deprecated
 def selector_safe(s: str):
     replacements = {
         " ": "_",
@@ -105,18 +82,18 @@ def selector_safe(s: str):
 # audio formats supported by beets
 # https://github.com/beetbox/beets/discussions/3964
 AUDIO_EXTENSIONS = (
-    ".mp3",
-    ".aac",
-    ".alac",
-    ".ogg",
-    ".opus",
-    ".flac",
-    ".ape",
-    ".wv",
-    ".mpc",
-    ".asf",
-    ".aiff",
-    ".dsf",
+    "mp3",
+    "aac",
+    "alac",
+    "ogg",
+    "opus",
+    "flac",
+    "ape",
+    "wv",
+    "mpc",
+    "asf",
+    "aiff",
+    "dsf",
 )
 
 
