@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => {
     return {
         plugins: [
             tsconfigPaths(),
+            TanStackRouterVite({ autoCodeSplitting: true }),
             // React compiler plugin for production builds
             isProd
                 ? reactProd({
@@ -26,7 +27,6 @@ export default defineConfig(({ mode }) => {
                       },
                   })
                 : reactDev(),
-            TanStackRouterVite({ autoCodeSplitting: true }),
             svgr(),
         ],
         // not minifying helped when debugging in production mode

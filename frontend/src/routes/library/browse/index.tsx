@@ -201,7 +201,7 @@ function AlbumRecentCard(album: AlbumResponseMinimal) {
                 <CoverArt
                     size="small"
                     type="album"
-                    id={album.id.toString()}
+                    beetsId={album.id}
                     sx={{
                         height: "70px",
                         width: "70px",
