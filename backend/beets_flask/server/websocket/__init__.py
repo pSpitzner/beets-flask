@@ -17,6 +17,7 @@ sio: TypedAsyncServer = cast(
         logger=False,
         engineio_logger=False,
         cors_allowed_origins="*",
+        client_manager=socketio.AsyncRedisManager("redis://"),
     ),
 )
 

@@ -36,7 +36,7 @@ class ServerConfig:
 
     # Folder where the frontend build resources are stored
     # FIXME: 2025-06-04 likely we only need this in production.
-    FRONTEND_DIST_DIR = "../../frontend/dist/"
+    FRONTEND_DIST_DIR = "../frontend/dist/"
 
     # Not sure if this is even used!
     SECRET_KEY = "secret"
