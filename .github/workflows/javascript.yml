@@ -47,3 +47,8 @@ jobs:
               run: |
                   cd ./frontend
                   pnpm run check-types
+            - name: Check for failures
+              if: steps.eslint.outcome == 'failure' || steps.check-types.outcome == 'failure'
+              run: |
+                  echo "One or more checks failed"
+                  exit 1
