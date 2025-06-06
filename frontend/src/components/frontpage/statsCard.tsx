@@ -272,7 +272,7 @@ export function CardHeader({
                     paddingLeft: reverse ? 1 : 4,
                     paddingRight: reverse ? 4 : 1,
                     display: "flex",
-                    alignItems: "flex-start",
+                    alignItems: "flex-end",
                     justifyContent: "space-between",
                     zIndex: 1,
                     flexDirection: reverse ? "row-reverse" : "row",
