@@ -43,11 +43,12 @@ export function FolderSelectionProvider({ children }: { children: React.ReactNod
             if (selected.hashes.includes(folder.hash)) {
                 const idx = selected.hashes.indexOf(folder.hash);
 
-                selected.paths.splice(idx, 1);
-                selected.hashes.splice(idx, 1);
+                const newHashes = selected.hashes.filter((_, i) => i !== idx);
+                const newPaths = selected.paths.filter((_, i) => i !== idx);
+
                 return {
-                    hashes: selected.hashes,
-                    paths: selected.paths,
+                    hashes: newHashes,
+                    paths: newPaths,
                 };
             } else {
                 return {
