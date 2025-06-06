@@ -1,11 +1,12 @@
 <!-- start intro -->
 <p align="center">
-    <h1 align="center">Beets Quart</h1>
+    <h1 align="center">Beets Flask</h1>
 </p>
 
 [![version number](https://img.shields.io/github/package-json/v/pspitzner/beets-flask/main?filename=frontend%2Fpackage.json&label=version&color=blue)](https://github.com/pSpitzner/beets-flask/blob/main/CHANGELOG.md)
-[![docker-hub status](https://img.shields.io/github/actions/workflow/status/pSpitzner/beets-flask/docker_hub.yml?label=docker%20build)](https://github.com/pSpitzner/beets-flask/pkgs/container/beets-flask)
+[![Docker Pulls](https://img.shields.io/docker/pulls/pspitzner/beets-flask)](https://hub.docker.com/r/pspitzner/beets-flask/tags)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?label=license)](https://opensource.org/licenses/MIT)
+[![docker-hub build status](https://img.shields.io/github/actions/workflow/status/pSpitzner/beets-flask/docker_hub.yml?label=docker%20build)](https://github.com/pSpitzner/beets-flask/pkgs/container/beets-flask)
 [![Documentation Status](https://readthedocs.org/projects/beets-flask/badge/?version=latest)](https://beets-flask.readthedocs.io/en/latest/?badge=latest)
 
 <p align="center">
@@ -19,16 +20,16 @@
 <!-- start features -->
 
 -   Autogenerate previews before importing
+-   Auto-Import good matches
 -   Import via GUI
--   Web-Terminal
 -   Undo imports
+-   Web-Terminal
 -   Monitor multiple inboxes
 -   Library view and search
 
 <!-- end features -->
 
 https://github.com/user-attachments/assets/dd526b9d-9351-4f7c-9034-1071e4ff66e6
-
 
 ## Motivation
 
@@ -38,7 +39,7 @@ Autotagging music with beets is great. Beets identifies metadata correctly _most
 
 However, if you do want a bit more control, things could be more convenient.
 
-This is the main idea with beets-flask: For all folders in your inbox, we generate a preview of what beets _would do_ and show you those previews. Then it's easy to go through them and import the correct ones, while falling back to terminal for those that were not to your liking.
+This is the main idea with beets-flask: For all folders in your inbox, we generate a preview of what beets _would do_ and show you those previews. Then it's easy to go through them and import the correct ones, or pick other candidates for those that were not to your liking.
 
 <!-- end motivation -->
 
