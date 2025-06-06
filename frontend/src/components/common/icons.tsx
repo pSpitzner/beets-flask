@@ -57,6 +57,7 @@ export function FolderTypeIcon({
                 style={{
                     transform: isOpen ? "rotate(90deg)" : "",
                     transition: "transform 0.15s ease-in-out",
+                    flexShrink: 0,
                 }}
                 {...props}
             />

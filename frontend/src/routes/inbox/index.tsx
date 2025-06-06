@@ -8,22 +8,18 @@ import {
     TerminalIcon,
     Trash2Icon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
     Box,
     BoxProps,
-    Card,
-    CardContent,
     DialogContent,
     IconButton,
-    Tooltip,
     Typography,
     useTheme,
 } from "@mui/material";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { useConfig } from "@/api/config";
 import { inboxQueryOptions } from "@/api/inbox";
 import { MatchChip, StyledChip } from "@/components/common/chips";
 import { Dialog } from "@/components/common/dialogs";
@@ -31,21 +27,12 @@ import {
     FileTypeIcon,
     FolderStatusIcon,
     FolderTypeIcon,
-    InboxTypeIcon,
     PenaltyTypeIcon,
     SourceTypeIcon,
 } from "@/components/common/icons";
 import { PageWrapper } from "@/components/common/page";
-import { CardHeader } from "@/components/frontpage/statsCard";
-import {
-    FolderActionDesktopBar,
-    RefreshAllFoldersButton,
-} from "@/components/inbox/actions";
-import {
-    FolderComponent,
-    GridWrapper,
-    SelectedStats,
-} from "@/components/inbox/fileTree";
+import { RefreshAllFoldersButton } from "@/components/inbox/actions";
+import { InboxCard } from "@/components/inbox/cards/inboxCard";
 import { FolderSelectionProvider } from "@/components/inbox/folderSelectionContext";
 import { Folder } from "@/pythonTypes";
 
@@ -160,133 +147,6 @@ function PageHeader({ inboxes, ...props }: { inboxes: Folder[] } & BoxProps) {
                 <RefreshAllFoldersButton />
             </Box>
         </Box>
-    );
-}
-
-function InboxCard({ folder }: { folder: Folder }) {
-    const config = useConfig();
-
-    // configuration for this inbox folder
-    const folderConfig = useMemo<(typeof config)["gui"]["inbox"]["folders"][0]>(() => {
-        const fc = Object.entries(config.gui.inbox.folders).find(
-            ([_k, v]) => v.path === folder.full_path
-        );
-
-        return fc
-            ? fc[1]
-            : {
-                  name: "Inbox",
-                  autotag: false,
-                  path: folder.full_path,
-              };
-    }, [config, folder.full_path]);
-
-    const innerFolders = useMemo(() => {
-        // Filter out folders that are not albums or files
-        return folder.children.filter((f) => f.type === "directory");
-    }, [folder.children]);
-
-    const threshold = folderConfig.auto_threshold ?? config.match.strong_rec_thresh;
-
-    let tooltip: string;
-    switch (folderConfig.autotag) {
-        case "auto":
-            tooltip =
-                "Automatic tagging and import enabled. " +
-                (1 - threshold) * 100 +
-                "% threshold.";
-            break;
-        case "preview":
-            tooltip = "Automatic tagging enabled, but no import.";
-            break;
-        case "bootleg":
-            tooltip = "Import as-is, and split albums by meta-data.";
-            break;
-        default:
-            tooltip = "No automatic tagging or import enabled.";
-            break;
-    }
-
-    return (
-        <Card sx={{ width: "100%", padding: 2 }}>
-            <CardHeader
-                key={folder.full_path}
-                icon={
-                    <Tooltip title={tooltip}>
-                        <InboxTypeIcon
-                            size={24}
-                            type={folderConfig.autotag || undefined}
-                        />
-                    </Tooltip>
-                }
-                dividerPos="70%"
-                color="secondary.main"
-            >
-                <Box
-                    sx={{
-                        display: "flex",
-                        alignItems: "flex-end",
-                        width: "100%",
-                        justifyContent: "space-between",
-                    }}
-                >
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            flexGrow: 1,
-                            m: 0,
-                            p: 0,
-                            fontWeight: "bold",
-                            paddingLeft: 2,
-                        }}
-                    >
-                        {folderConfig.path.replaceAll("/", " / ")}
-                    </Typography>
-                    <Typography
-                        variant="body1"
-                        sx={{
-                            fontWeight: "bold",
-                            m: 0,
-                            p: 0,
-                        }}
-                    >
-                        {folderConfig.name}
-                    </Typography>
-                </Box>
-            </CardHeader>
-            <CardContent
-                sx={{
-                    paddingInline: 1,
-                    paddingTop: 1,
-                    m: 0,
-                    paddingBottom: "0 !important",
-                }}
-            >
-                <GridWrapper>
-                    {/* Only show inner folders */}
-                    {innerFolders.map((innerFolder) => (
-                        <FolderComponent
-                            key={innerFolder.full_path}
-                            folder={innerFolder}
-                        />
-                    ))}
-                    {innerFolders.length === 0 && (
-                        <Box
-                            sx={{
-                                gridColumn: "1 / -1",
-                                textAlign: "center",
-                                color: "secondary.muted",
-                            }}
-                        >
-                            No folders in this inbox.
-                        </Box>
-                    )}
-                </GridWrapper>
-                <SelectedStats />
-            </CardContent>
-            <FolderActionDesktopBar />
-            {/* <FolderActionsSpeedDial /> */}
-        </Card>
     );
 }
 
