@@ -28,10 +28,9 @@ export const Route = createFileRoute("/library/(resources)/album/$albumId")({
             )
         );
 
-        const p2 = queryClient.ensureQueryData(
-            artQueryOptions({ type: "album", id: params.albumId })
-        );
-        await Promise.all([p1, p2]);
+        // don't wait for cover-art here. we want to show main content fast
+        // and handle errors for artwork with ui placeholder.
+        await Promise.all([p1]);
     },
     pendingComponent: PendingComponent,
     component: RouteComponent,
