@@ -743,7 +743,13 @@ def _rep_Album(
 
     out: dict[str, Any] = dict()
 
-    out["path"] = beets_util.displayable_path(album.path)
+    try:
+        out["path"] = beets_util.displayable_path(album.path)
+    except:
+        # this should rarely happen, it is a workaround for my (maybe corrupt?)
+        # beets library, where some albums have no items, and then the albums.path getter
+        # cannot resolve.
+        out["path"] = None
 
     if minimal:
         keys = ["id", "name", "albumartist", "year", "added"]
