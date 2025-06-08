@@ -28,5 +28,9 @@ services:
             # get permission issues.
             - ../local/config/:/config
 
+            # For debugging purposes, you can also mount the logs directory
+            # for instance if you want to report an issue
+            - ../local/logs/:/logs
+
             # for development. (disable if target is `prod`)
             - ../:/repo/

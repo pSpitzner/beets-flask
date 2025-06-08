@@ -21,6 +21,7 @@ The configuration folders can be set via environment variables. This might be us
 ```
 BEETSDIR="/config/beets"
 BEETSFLASKDIR="/config/beets-flask"
+BEETSFLASKLOG="/logs/beets-flask.log"
 ```
 
 
