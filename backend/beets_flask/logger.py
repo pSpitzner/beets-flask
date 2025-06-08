@@ -38,7 +38,7 @@ LOGGING_CONFIG = {
         },
         "beets-flask": {
             "handlers": ["console", "file"],
-            "level": os.getenv("LOG_LEVEL_BEETSFLASK", logging.DEBUG),
+            "level": os.getenv("LOG_LEVEL_BEETSFLASK", logging.INFO),
             "propagate": False,
         },
     },
