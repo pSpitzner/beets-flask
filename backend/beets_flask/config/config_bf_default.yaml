@@ -6,7 +6,7 @@
 # to get started, see the auto-generated examples in /config/beets-flask/
 
 gui:
-    num_workers_preview: 4
+    num_preview_workers: 4
 
     library:
         readonly: no
