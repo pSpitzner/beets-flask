@@ -11,7 +11,7 @@ LOGGING_CONFIG = {
             "format": "[%(levelname)s] %(name)s: %(message)s"
         },
         "debug": {
-            "format": "%(relativeCreated)-8d [%(levelname)-5s] %(name)s %(filename)-8s:%(lineno)d %(message)s"
+            "format": "[%(levelname)-5s] %(asctime)s %(name)s %(filename)-8s:%(lineno)d %(message)s"
         },
     },
     "handlers": {
@@ -25,8 +25,8 @@ LOGGING_CONFIG = {
             "class": "logging.handlers.RotatingFileHandler",
             "level": "DEBUG",
             "formatter": "debug",
-            "filename": os.environ.get("LOG_FILE_WEB", "./beets-flask.log"),
-            "maxBytes": 1048576,  #
+            "filename": os.environ.get("BEETSFLASKLOG", "./beets-flask.log"),
+            "maxBytes": 1048576,  # 1 MB
             "backupCount": 3,
         },
     },
@@ -38,7 +38,7 @@ LOGGING_CONFIG = {
         },
         "beets-flask": {
             "handlers": ["console", "file"],
-            "level": os.getenv("LOG_LEVEL_BEETSFLASK", logging.DEBUG),
+            "level": os.getenv("LOG_LEVEL_BEETSFLASK", logging.INFO),
             "propagate": False,
         },
     },
@@ -49,7 +49,7 @@ if "PYTEST_VERSION" in os.environ:
     # Configure minimal logging for pytest
     logging.basicConfig(
         level=logging.DEBUG,
-        format="%(relativeCreated)-8d [%(levelname)-5s] %(name)s %(filename)-8s:%(lineno)d %(message)s",
+        format="[%(levelname)-5s] %(asctime)s %(name)s %(filename)-8s:%(lineno)d %(message)s",
     )
 else:
     logging.config.dictConfig(LOGGING_CONFIG)

@@ -11,15 +11,16 @@ ENV HOSTNAME="beets-container"
 # map beets directory and our configs to /config
 RUN mkdir -p /config/beets
 RUN mkdir -p /config/beets-flask
+RUN mkdir -p /logs
 RUN chown -R beetle:beetle /config
+RUN chown -R beetle:beetle /logs
 ENV BEETSDIR="/config/beets"
 ENV BEETSFLASKDIR="/config/beets-flask"
-ENV LOG_FILE_WEB="/repo/log/web.log"
+ENV BEETSFLASKLOG="/logs/beets-flask.log"
 
 # our default folders they should not be used in production
 RUN mkdir -p /music/inbox
 RUN mkdir -p /music/imported
-RUN mkdir -p /repo/log
 RUN chown -R beetle:beetle /music
 
 # dependencies

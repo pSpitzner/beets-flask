@@ -13,3 +13,5 @@ services:
             # for music folders, match paths inside and out of container!
             - /music_path/inbox/:/music_path/inbox/
             - /music_path/clean/:/music_path/clean/
+            # If you want to persist the logs, you can mount a logs directory
+            # - /wherever/logs/:/logs
