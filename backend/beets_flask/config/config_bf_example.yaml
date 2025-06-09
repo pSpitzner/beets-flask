@@ -8,7 +8,7 @@
 # your docker-compose.yml.
 
 gui:
-    num_workers_preview: 4 # how many previews to generate in parallel
+    num_preview_workers: 4 # how many previews to generate in parallel
 
     library:
         readonly: no
