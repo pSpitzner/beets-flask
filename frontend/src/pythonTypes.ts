@@ -225,7 +225,6 @@ export interface ItemResponseMinimal {
 export interface AlbumResponseMinimalExpanded {
 	id: number;
 	name: string;
-	path: string;
 	albumartist: string;
 	year: number;
 	added: Date;
@@ -238,7 +237,6 @@ export interface AlbumResponseMinimalExpanded {
 export interface AlbumResponseMinimal {
 	id: number;
 	name: string;
-	path: string;
 	albumartist: string;
 	year: number;
 	added: Date;
@@ -285,7 +283,6 @@ export interface ItemResponse {
 export interface AlbumResponseExpanded {
 	id: number;
 	name: string;
-	path: string;
 	albumartist: string;
 	year: number;
 	added: Date;
@@ -308,7 +305,6 @@ export interface AlbumSource {
 export interface AlbumResponse {
 	id: number;
 	name: string;
-	path: string;
 	albumartist: string;
 	year: number;
 	added: Date;

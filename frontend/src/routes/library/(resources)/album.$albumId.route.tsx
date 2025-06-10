@@ -3,7 +3,7 @@ import { Box, useTheme } from "@mui/material";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
-import { albumQueryOptions, artQueryOptions } from "@/api/library";
+import { albumQueryOptions } from "@/api/library";
 import { BackIconButton } from "@/components/common/inputs/back";
 import { Loading } from "@/components/common/loading";
 import { NavigationTabs } from "@/components/common/navigation";

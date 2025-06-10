@@ -676,8 +676,6 @@ class AlbumResponseMinimal(TypedDict):
     id: int
     # Name of the album
     name: str
-    # Path to the album
-    path: str
     # Primary artist for the album
     albumartist: str
     # Year the album was published
@@ -742,14 +740,6 @@ def _rep_Album(
     """
 
     out: dict[str, Any] = dict()
-
-    try:
-        out["path"] = beets_util.displayable_path(album.path)
-    except:
-        # this should rarely happen, it is a workaround for my (maybe corrupt?)
-        # beets library, where some albums have no items, and then the albums.path getter
-        # cannot resolve.
-        out["path"] = None
 
     if minimal:
         keys = ["id", "name", "albumartist", "year", "added"]

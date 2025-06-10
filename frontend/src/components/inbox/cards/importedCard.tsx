@@ -142,7 +142,6 @@ function AlbumInfo({ album }: { album: AlbumResponseMinimalExpanded }) {
     return (
         <Box>
             <Box component="ul" sx={{ m: 0 }}>
-                <li>Path: {album.path}</li>
                 <li>
                     size:{" "}
                     {humanizeBytes(
