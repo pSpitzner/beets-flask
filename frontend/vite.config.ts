@@ -32,7 +32,7 @@ export default defineConfig(({ mode }) => {
         // not minifying helped when debugging in production mode
         // we can enable this again when the code base is a bit more mature.
         build: {
-            minify: false,
+            minify: isProd,
         },
         css: {
             preprocessorOptions: {
