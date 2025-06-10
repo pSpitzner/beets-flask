@@ -865,7 +865,6 @@ function OverviewChanges({
                         gridRow: "5",
                     }}
                 />
-
                 <TrackChangesDetailItem
                     kind="extra_tracks"
                     sx={{
@@ -928,54 +927,55 @@ function TrackChangesDetailItem({
 }: {
     kind: string;
 } & BoxProps) {
-    const { extra_tracks, extra_items, candidate } = useTrackDiffContext();
+    const { extra_tracks, extra_items, candidate, nChanges, pairs } =
+        useTrackDiffContext();
 
     const [open, setOpen] = useState(false);
 
     const icon = <PenaltyTypeIcon type={kind} />;
     let text = "Track Changes";
-    let i: string;
+    let dialogTitle: string | null = null;
+    let pl: string;
     let color: string | undefined = undefined;
     let tooltip: string | undefined = undefined;
     let content: ReactNode | null = null;
+
     switch (kind) {
         case "track_changes":
-            content = <TrackChanges />;
             if (candidate.penalties.includes("tracks")) {
                 // TODO: get number of changed tracks, but that is currently
                 // deeply nested in the subcomponent...
                 text = "Tracks changed";
+                dialogTitle = `${nChanges} of ${pairs.length} tracks changed`;
                 color = "diffs.changed";
                 tooltip =
                     "Shows which items (on disk) are mapped to tracks (from the candidate). Changes are highlighted in red and green.";
+                content = <TrackChanges />;
             } else {
                 text = "No severe track changes";
             }
             break;
         case "extra_items":
-            content = <ExtraTracks />;
-            if (candidate.penalties.includes("unmatched_tracks")) {
-                i = "item" + (extra_items.length !== 1 ? "s" : "");
-                text = `${extra_items.length} ${i} items on disk not part of the candidate`;
+            if (candidate.penalties.includes("missing_tracks")) {
+                pl = "track" + (extra_tracks.length !== 1 ? "s" : "");
+                text = `${extra_tracks.length} ${pl} missing on disk`;
                 color = "diffs.changed";
                 tooltip =
-                    "Items that could not be matched to tracks, they will be ignored if this candidate is chosen.";
+                    "Tracks found online that could not be matched to tracks on disk (usually because they are missing).";
+                content = <ExtraTracks />;
             } else {
-                text = "All items found on disk";
-                content = undefined;
+                text = "All tracks online present on disk";
             }
             break;
         case "extra_tracks":
-            content = <ExtraItems />;
-            if (candidate.penalties.includes("missing_tracks")) {
-                i = "track" + (extra_tracks.length !== 1 ? "s" : "");
-                text = `${extra_tracks.length} ${i} missing on disk`;
+            if (candidate.penalties.includes("unmatched_tracks")) {
+                pl = "item" + (extra_items.length !== 1 ? "s" : "");
+                text = `${extra_items.length} ${pl} tracks on disk not part of the candidate`;
                 color = "diffs.changed";
-                tooltip =
-                    "Tracks that could not be matched to any items on disk (usually because they are missing).";
+                tooltip = "Tracks on disk that could not be matched to tracks online.";
+                content = <ExtraItems />;
             } else {
-                text = "All tracks found online";
-                content = undefined;
+                text = "All tracks on disk found online";
             }
             break;
         default:
@@ -1000,7 +1000,7 @@ function TrackChangesDetailItem({
                     onClose={() => {
                         setOpen(false);
                     }}
-                    title={text}
+                    title={dialogTitle || text}
                     title_icon={icon}
                 >
                     <DialogContent>{content}</DialogContent>

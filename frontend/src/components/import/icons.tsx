@@ -8,13 +8,13 @@ import { PenaltyTypeIcon } from "../common/icons";
 
 const penaltyOrder = [
     "artist",
-    "tracks",
     "album",
+    "tracks",
+    "unmatched_tracks",
+    "missing_tracks",
     "year",
     "label",
     "media",
-    "missing_tracks",
-    "unmatched_tracks",
     "mediums",
     "country",
 ];
