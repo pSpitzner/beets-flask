@@ -676,8 +676,6 @@ class AlbumResponseMinimal(TypedDict):
     id: int
     # Name of the album
     name: str
-    # Path to the album
-    path: str
     # Primary artist for the album
     albumartist: str
     # Year the album was published
@@ -742,8 +740,6 @@ def _rep_Album(
     """
 
     out: dict[str, Any] = dict()
-
-    out["path"] = beets_util.displayable_path(album.path)
 
     if minimal:
         keys = ["id", "name", "albumartist", "year", "added"]
