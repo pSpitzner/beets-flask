@@ -186,7 +186,7 @@ function Footer() {
                 variant="caption"
                 sx={{ color: "grey.700", mr: "auto", alignSelf: "flex-end" }}
             >
-                {versionString} - &copy; 2025 P. Spitzner &amp; S. Mohr
+                {versionString} &copy; 2025 P. Spitzner &amp; S. Mohr
             </Typography>
 
             <Link
