@@ -132,6 +132,7 @@ COPY --from=build /repo/frontend/dist /repo/frontend/dist
 COPY docker/entrypoints/entrypoint.sh .
 COPY docker/entrypoints/entrypoint_user_scripts.sh .
 COPY docker/entrypoints/entrypoint_fix_permissions.sh .
+COPY docker/entrypoints/common.sh .
 RUN chown -R beetle:beetle /repo
 
 USER root

@@ -1,8 +1,9 @@
 #!/bin/sh
+source ./docker/entrypoints/common.sh
 
-whoami
-id
-pwd
+log_current_user
+log_version_info
+log "Starting development environment..."
 
 cd /repo/frontend
 
