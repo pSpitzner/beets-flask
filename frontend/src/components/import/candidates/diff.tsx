@@ -16,7 +16,6 @@ import {
     SxProps,
     Theme,
     Tooltip,
-    Typography,
     useMediaQuery,
     useTheme,
 } from "@mui/material";
@@ -275,9 +274,6 @@ export function ExtraTracks() {
     }
     return (
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <Typography variant="body2" color="diffs.light" pb={0.5}>
-                {extra_tracks.length} tracks of candidate not found on disk
-            </Typography>
             <TrackChangesGrid
                 sx={{
                     color: theme.palette.diffs.light,
@@ -304,9 +300,6 @@ export function ExtraItems() {
     }
     return (
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <Typography variant="body2" color="diffs.light" pb={0.5}>
-                {extra_items.length} items on disk not part of the candidate
-            </Typography>
             <TrackChangesGrid
                 sx={{
                     color: theme.palette.diffs.light,
@@ -330,7 +323,7 @@ export function ExtraItems() {
  * has to be used inside a TrackDiffContextProvider
  */
 export function TrackChanges() {
-    const { pairs, nChanges, setNChanges } = useTrackDiffContext();
+    const { pairs, setNChanges } = useTrackDiffContext();
 
     // force major change layout for all rows
     const [titleChange, setTitleChange] = useState(false);
@@ -347,9 +340,6 @@ export function TrackChanges() {
                 alignItems: "center",
             }}
         >
-            <Typography variant="body2" color="diffs.light" pb={0.5}>
-                {nChanges} of {pairs.length} tracks changed
-            </Typography>
             {/*Changes grid*/}
             <TrackChangesGrid>
                 {pairs.map(([item, track], i) => (
