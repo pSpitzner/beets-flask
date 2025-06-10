@@ -31,3 +31,4 @@
 !README.md
 !LICENSE
 !docker/entrypoints/entrypoint*.sh
+!docker/entrypoints/common.sh

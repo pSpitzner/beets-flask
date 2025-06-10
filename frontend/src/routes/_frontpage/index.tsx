@@ -152,6 +152,13 @@ function Hero() {
 
 function Footer() {
     const theme = useTheme();
+
+    let versionString = `v${__FRONTEND_VERSION__}`;
+    if (__MODE__ !== "production") {
+        // Append the mode to the version string if not in production
+        versionString += ` (${__MODE__})`;
+    }
+
     return (
         <Box
             sx={(theme) => ({
@@ -179,7 +186,7 @@ function Footer() {
                 variant="caption"
                 sx={{ color: "grey.700", mr: "auto", alignSelf: "flex-end" }}
             >
-                &copy; 2025 P. Spitzner &amp; S. Mohr
+                {versionString} &copy; 2025 P. Spitzner &amp; S. Mohr
             </Typography>
 
             <Link

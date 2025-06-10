@@ -62,6 +62,10 @@ COPY ./backend/launch_redis_workers.py /repo/backend/
 
 RUN uv sync
 
+# Extract version from pyproject.toml
+RUN mkdir -p /version
+RUN python -c "import tomllib; print(tomllib.load(open('/repo/backend/pyproject.toml', 'rb'))['project']['version'])" > /version/backend.txt
+
 # ------------------------------------------------------------------------------------ #
 #                                      Development                                     #
 # ------------------------------------------------------------------------------------ #
@@ -74,6 +78,19 @@ RUN --mount=type=cache,target=/var/cache/apk \
 
 RUN npm install -g pnpm
 RUN pnpm config set store-dir /repo/frontend/.pnpm-store
+
+# Copy the lock files and install dependencies
+WORKDIR /repo
+COPY ./frontend/package.json /repo/frontend/
+COPY ./frontend/pnpm-lock.yaml /repo/frontend/
+
+WORKDIR /repo/frontend
+RUN pnpm i
+
+# Extract version from package.json
+RUN mkdir -p /version
+RUN python -c "import json; print(json.load(open('/repo/frontend/package.json'))['version'])" \
+    > /version/frontend.txt
 
 ENV IB_SERVER_CONFIG="dev_docker"
 
@@ -113,11 +130,19 @@ WORKDIR /repo
 COPY ./frontend ./frontend/
 RUN chown -R beetle:beetle /repo
 
+# Extract version from package.json
+RUN mkdir -p /version
+RUN python -c "import json; print(json.load(open('/repo/frontend/package.json'))['version'])" \
+    > /version/frontend.txt
+
 USER beetle
 WORKDIR /repo/frontend
 # RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
 RUN pnpm install
 RUN pnpm run build
+
+
+
 
 # ------------------------------------------------------------------------------------ #
 #                                      Production                                      #
@@ -129,9 +154,11 @@ ENV IB_SERVER_CONFIG="prod"
 
 WORKDIR /repo
 COPY --from=build /repo/frontend/dist /repo/frontend/dist
+COPY --from=build /version /version
 COPY docker/entrypoints/entrypoint.sh .
 COPY docker/entrypoints/entrypoint_user_scripts.sh .
 COPY docker/entrypoints/entrypoint_fix_permissions.sh .
+COPY docker/entrypoints/common.sh .
 RUN chown -R beetle:beetle /repo
 
 USER root
