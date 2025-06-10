@@ -65,5 +65,12 @@ export default defineConfig(({ mode }) => {
                 },
             },
         },
+        define: {
+            // Load from package.json
+            __FRONTEND_VERSION__: JSON.stringify(
+                process.env.npm_package_version || "unk"
+            ),
+            __MODE__: JSON.stringify(mode),
+        },
     };
 });
