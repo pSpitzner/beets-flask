@@ -512,6 +512,7 @@ class TestImportAuto(
         assert len(self.statuses) == 4
         assert self.statuses[2].status == FolderStatus.IMPORTING
         assert self.statuses[3].status == FolderStatus.FAILED
+        assert len(self.beets_lib.albums()) == 0
 
         await run_import_auto(
             "obsolete_hash_import_auto",
@@ -523,6 +524,7 @@ class TestImportAuto(
         assert len(self.statuses) == 6
         assert self.statuses[4].status == FolderStatus.IMPORTING
         assert self.statuses[5].status == FolderStatus.IMPORTED
+        assert len(self.beets_lib.albums()) == 1
 
 
 class TestChooseCandidatesSingleTask(
