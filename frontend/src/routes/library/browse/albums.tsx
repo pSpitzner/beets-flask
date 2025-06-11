@@ -1,10 +1,11 @@
 import { Disc3Icon } from "lucide-react";
-import { memo, useEffect, useState, useTransition } from "react";
+import { memo, useEffect, useState } from "react";
 import { Box, BoxProps, Divider, Skeleton, Typography, useTheme } from "@mui/material";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { albumsInfiniteQueryOptions } from "@/api/library";
+import { useDebounce } from "@/components/common/hooks/useDebounce";
 import {
     getStorageValue,
     useLocalStorage,
@@ -130,30 +131,37 @@ function AlbumsHeader({ sx, ...props }: BoxProps) {
 }
 
 function View({ sx, ...props }: BoxProps) {
-    const [isTransitioning, startTransition] = useTransition();
     const [overscanStopIndex, setOverScanStopIndex] = useState(0);
     const [view, setView] = useState<"list" | "grid">("list");
+    const [search, setSearch] = useState("");
     const [queryState, setQueryState] = useLocalStorage<{
-        query: string;
         orderBy: "album" | "albumartist" | "year";
         orderDirection: "ASC" | "DESC";
     }>(STORAGE_KEY, DEFAULT_STORAGE_VALUE);
 
-    const { data, fetchNextPage, isError, isPending, isFetching } = useInfiniteQuery(
-        albumsInfiniteQueryOptions({
-            query: queryState.query,
-            orderBy: queryState.orderBy,
-            orderDirection: queryState.orderDirection,
-        })
-    );
+    const debouncedQuery = useDebounce(search, 500);
+
+    const { data, fetchNextPage, isError, isPending, isFetching, hasNextPage } =
+        useInfiniteQuery(
+            albumsInfiniteQueryOptions({
+                query: debouncedQuery,
+                orderBy: queryState.orderBy,
+                orderDirection: queryState.orderDirection,
+            })
+        );
     const numLoaded = data?.albums.length || 0;
 
     // Fetch new pages on scroll
     useEffect(() => {
-        if (overscanStopIndex >= numLoaded - 10 && !isFetching && !isError) {
+        if (
+            overscanStopIndex >= numLoaded - 10 &&
+            !isFetching &&
+            !isError &&
+            hasNextPage
+        ) {
             void fetchNextPage();
         }
-    }, [overscanStopIndex, numLoaded, fetchNextPage, isFetching, isError]);
+    }, [overscanStopIndex, numLoaded, fetchNextPage, isFetching, isError, hasNextPage]);
 
     return (
         <Box
@@ -178,7 +186,7 @@ function View({ sx, ...props }: BoxProps) {
                 }}
             >
                 <Search
-                    loading={isPending || isTransitioning}
+                    loading={isPending}
                     sx={{
                         mr: "auto",
                         minHeight: "unset",
@@ -188,14 +196,9 @@ function View({ sx, ...props }: BoxProps) {
                             height: "100%",
                         },
                     }}
-                    value={queryState.query}
+                    value={search}
                     setValue={(newQuery: string) => {
-                        startTransition(() => {
-                            setQueryState({
-                                ...queryState,
-                                query: newQuery,
-                            });
-                        });
+                        setSearch(newQuery);
                     }}
                 />
                 <SortToggle
@@ -401,7 +404,7 @@ function CoverGridRow({
 const LISTROWHEIGHT = 50; // height of each row in the list
 const SHOWARTINLIST = false;
 
-function AlbumsList({
+export function AlbumsList({
     data,
     ...props
 }: {
@@ -427,7 +430,7 @@ function AlbumsList({
     );
 }
 
-const LoadingRow = memo(({ style }: { style: React.CSSProperties }) => {
+export const LoadingRow = memo(({ style }: { style: React.CSSProperties }) => {
     const theme = useTheme();
     return (
         <Box
@@ -454,7 +457,7 @@ const LoadingRow = memo(({ style }: { style: React.CSSProperties }) => {
  * Click on it to navigate to the album page.
  * Implements a loading state
  */
-function AlbumListRow({
+export function AlbumListRow({
     data: album,
     style,
     isScrolling,
@@ -470,7 +473,6 @@ function AlbumListRow({
             to={`/library/album/$albumId`}
             key={album.id}
             params={{ albumId: album.id }}
-            preloadDelay={2000}
             style={style}
         >
             <Box
@@ -499,6 +501,7 @@ function AlbumListRow({
                         }}
                     />
                 )}
+
                 <Box
                     sx={{
                         display: "flex",

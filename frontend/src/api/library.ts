@@ -76,22 +76,6 @@ function _url_parse_minimal_expand(
     return params.length ? `${url}?${params.join("&")}` : url;
 }
 
-// An album by its ID
-export const albumQueryOptions = <Expand extends boolean, Minimal extends boolean>(
-    id: number,
-    expand: Expand = true as Expand,
-    minimal: Minimal = true as Minimal
-) => ({
-    queryKey: ["album", id, expand, minimal],
-    queryFn: async (): Promise<Album<typeof expand, typeof minimal>> => {
-        console.log("albumQueryOptions", id, expand, minimal);
-        const url = _url_parse_minimal_expand(`/library/album/${id}`, minimal, expand);
-        const response = await fetch(url);
-        console.log("albumQueryOptions response", response);
-        return (await response.json()) as Album<typeof expand, typeof minimal>;
-    },
-});
-
 // An item by its ID
 export const itemQueryOptions = <Minimal extends boolean>(
     id: number,
@@ -105,27 +89,55 @@ export const itemQueryOptions = <Minimal extends boolean>(
     },
 });
 
-// Search for an item or album
-export const searchQueryOptions = <T extends "item" | "album">(
-    searchFor: string,
-    type: T
-) =>
-    queryOptions({
-        queryKey: ["search", type, searchFor],
-        queryFn: async ({ signal }) => {
-            const expand = false;
-            const minimal = true;
-            const url = _url_parse_minimal_expand(
-                `/library/${type}/query/${encodeURIComponent(searchFor)}`,
-                minimal,
-                expand
-            );
-            const response = await fetch(url, { signal });
-            return (await response.json()) as (T extends "item"
-                ? Item<true>
-                : Album<true, false>)[];
+interface ItemsPageResponse {
+    items: ItemResponseMinimal[];
+    total: number;
+    next: string | null;
+}
+
+export const itemsInfiniteQueryOptions = ({
+    query,
+    orderBy,
+    orderDirection = "ASC",
+}: {
+    query: string;
+    orderBy?: "title";
+    orderDirection?: "ASC" | "DESC";
+}) => {
+    const params = new URLSearchParams();
+    params.set("n_items", "100"); // Number of items per page
+    if (orderBy) params.set("order_by", orderBy);
+    if (orderDirection) params.set("order_dir", orderDirection);
+    const paramsStr = params.toString();
+
+    let initUrl = `/api_v1/library/items`;
+    if (query) {
+        initUrl += `/${encodeURIComponent(query)}`;
+    }
+    if (paramsStr) {
+        initUrl += `?${paramsStr}`;
+    }
+
+    return infiniteQueryOptions({
+        queryKey: ["items", query, orderBy, orderDirection],
+        queryFn: async ({ pageParam }) => {
+            const response = await fetch(pageParam.replace("/api_v1", ""));
+            return (await response.json()) as ItemsPageResponse;
+        },
+        initialPageParam: initUrl,
+        getNextPageParam: (lastPage) => {
+            return lastPage.next;
+        },
+        select: (data) => {
+            return {
+                items: data.pages.flatMap((page) => page.items),
+                total: data.pages.at(-1)?.total ?? 0,
+            };
         },
     });
+};
+
+/* --------------------------------- Albums --------------------------------- */
 
 // An album imported by us
 export const albumImportedOptions = <Expand extends boolean, Minimal extends boolean>(
@@ -144,6 +156,22 @@ export const albumImportedOptions = <Expand extends boolean, Minimal extends boo
         return (await response.json()) as Album<typeof expand, typeof minimal>;
     },
     retry: 1,
+});
+
+// An album by its ID
+export const albumQueryOptions = <Expand extends boolean, Minimal extends boolean>(
+    id: number,
+    expand: Expand = true as Expand,
+    minimal: Minimal = true as Minimal
+) => ({
+    queryKey: ["album", id, expand, minimal],
+    queryFn: async (): Promise<Album<typeof expand, typeof minimal>> => {
+        console.log("albumQueryOptions", id, expand, minimal);
+        const url = _url_parse_minimal_expand(`/library/album/${id}`, minimal, expand);
+        const response = await fetch(url);
+        console.log("albumQueryOptions response", response);
+        return (await response.json()) as Album<typeof expand, typeof minimal>;
+    },
 });
 
 interface AlbumsPageResponse {

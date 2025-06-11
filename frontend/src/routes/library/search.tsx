@@ -1,25 +1,34 @@
-import { ChevronRight, OctagonX, X } from "lucide-react";
-import { Suspense, useEffect, useMemo, useRef } from "react";
-import { IconButton, InputAdornment, Paper, Tooltip } from "@mui/material";
+import { AudioLinesIcon, Disc3Icon, DotIcon, OctagonX, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+    IconButton,
+    InputAdornment,
+    Tooltip,
+    Typography,
+    useTheme,
+} from "@mui/material";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import TextField from "@mui/material/TextField";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
-import { Album, Item } from "@/api/library";
+import { Item } from "@/api/library";
 import { JSONPretty } from "@/components/common/debugging/json";
+import { PageWrapper } from "@/components/common/page";
+import {
+    FixedList,
+    FixedListChildrenProps,
+    FixedListProps,
+} from "@/components/common/table";
 import {
     SearchContextProvider,
-    SearchType,
     useSearchContext,
-} from "@/components/common/hooks/useSearch";
-import { Loading } from "@/components/common/loading";
-import { PageWrapper } from "@/components/common/page";
-import { AlbumById } from "@/components/library/itemAlbumDetails";
-import { ItemById } from "@/components/library/itemold";
-import List from "@/components/library/list";
+} from "@/components/library/search/context";
+import { AlbumResponseMinimal } from "@/pythonTypes";
+
+import { AlbumsList, LoadingRow } from "./browse/albums";
 
 import styles from "@/components/library/library.module.scss";
 
@@ -65,7 +74,6 @@ function SearchPage() {
                     })}
                 >
                     <SearchResults />
-                    <SearchResultDetails />
                 </Box>
             </PageWrapper>
         </SearchContextProvider>
@@ -73,28 +81,15 @@ function SearchPage() {
 }
 
 function SearchBar() {
+    const theme = useTheme();
     const searchFieldRef = useRef<HTMLInputElement>(null);
-    const { query, setQuery, type, setType, setSelectedResult } = useSearchContext();
+    const { query, setQuery, type, setType } = useSearchContext();
 
     useEffect(() => {
         if (searchFieldRef.current) {
             searchFieldRef.current.focus();
         }
     }, [searchFieldRef]);
-
-    function handleTypeChange(
-        _e: React.MouseEvent<HTMLElement>,
-        newType: SearchType | null
-    ) {
-        if (newType !== null && newType !== type) {
-            setType(newType);
-            setSelectedResult(undefined);
-        }
-    }
-
-    function handleInput(e: React.ChangeEvent<HTMLInputElement>) {
-        setQuery(e.target.value);
-    }
 
     return (
         <Box
@@ -114,7 +109,7 @@ function SearchBar() {
                 value={query}
                 variant="outlined"
                 type="search"
-                onInput={handleInput}
+                onChange={(e) => setQuery(e.target.value)}
                 slotProps={{
                     input: {
                         endAdornment: (
@@ -126,14 +121,23 @@ function SearchBar() {
 
             {/* Type selector */}
             <ToggleButtonGroup
-                color="primary"
                 value={type}
+                onChange={(
+                    _e: React.MouseEvent<HTMLElement>,
+                    v: "album" | "item" | null
+                ) => {
+                    if (v) setType(v);
+                }}
+                color="primary"
                 exclusive
-                onChange={handleTypeChange}
-                aria-label="Search Type"
+                aria-label="Filter type"
             >
-                <ToggleButton value="item">Item</ToggleButton>
-                <ToggleButton value="album">Album</ToggleButton>
+                <ToggleButton value="item">
+                    <AudioLinesIcon size={theme.iconSize.xl} />
+                </ToggleButton>
+                <ToggleButton value="album">
+                    <Disc3Icon size={theme.iconSize.xl} />
+                </ToggleButton>
             </ToggleButtonGroup>
         </Box>
     );
@@ -144,7 +148,10 @@ function CancelSearchButton({
 }: {
     searchFieldRef: React.RefObject<HTMLInputElement>;
 }) {
-    const { cancelSearch, resetSearch, isFetching, query } = useSearchContext();
+    const { cancelSearch, resetSearch, queryAlbums, queryItems, query } =
+        useSearchContext();
+
+    const isFetching = queryItems?.isFetching || queryAlbums?.isFetching;
 
     return (
         <InputAdornment position="end">
@@ -177,10 +184,16 @@ function CancelSearchButton({
 }
 
 function SearchResults() {
-    const { isError, error, isFetching, type, sentQuery, results } = useSearchContext();
+    const { queryAlbums, queryItems, type, debouncedQuery } = useSearchContext();
+
+    const isError = type === "item" ? queryItems?.isError : queryAlbums?.isError;
+    const error = type === "item" ? queryItems?.error : queryAlbums?.error;
+    const isFetching =
+        type === "item" ? queryItems?.isFetching : queryAlbums?.isFetching;
+    const results =
+        type === "item" ? queryItems?.data?.items : queryAlbums?.data?.albums;
 
     if (isError) {
-        console.error("Error loading search results", error);
         return (
             <Box className={styles.SearchResultsLoading}>
                 <span>Error loading results:</span>
@@ -189,12 +202,12 @@ function SearchResults() {
         );
     }
 
-    if (isFetching) {
+    if (isFetching && results?.length === 0) {
         return (
             <Box className={styles.SearchResultsLoading}>
                 <CircularProgress />
                 <span>
-                    Searching {type}s with <code>{sentQuery}</code> ...
+                    Searching {type}s with <code>{debouncedQuery}</code> ...
                 </span>
             </Box>
         );
@@ -208,110 +221,168 @@ function SearchResults() {
         return (
             <Box className={styles.SearchResultsLoading}>
                 <span>
-                    No {type}s found with <code>{sentQuery}</code>
+                    No {type}s found with <code>{debouncedQuery}</code>
                 </span>
             </Box>
         );
     }
 
-    if (type === "item") {
-        return <ItemResultsBox results={results as Item<true>[]} />;
-    } else {
-        return <AlbumResultsBox results={results as Album<true, false>[]} />;
-    }
-}
-
-export interface RouteParams {
-    type?: SearchType;
-    id?: number;
-}
-
-function ItemResultsBox({ results }: { results: Item<true>[] }) {
-    const { selectedResult, setSelectedResult } = useSearchContext();
-
-    const data = useMemo(() => {
-        return results.map((item) => ({
-            className: styles.listItem,
-            "data-selected": selectedResult !== undefined && selectedResult === item.id,
-            onClick: () =>
-                setSelectedResult((prev) => (prev === item.id ? undefined : item.id)),
-            label: (
-                <Box>
-                    <span className={styles.ItemResultArtist}>
-                        {item.artist}
-                        <ChevronRight size={14} />
-                    </span>
-                    <span className={styles.ItemResultName}>{item.name}</span>
-                </Box>
-            ),
-        }));
-    }, [results, selectedResult, setSelectedResult]);
-
     return (
-        <Paper sx={{ height: "100%", width: "100%", minHeight: "200px" }}>
-            <List data={data}>{List.Item}</List>
-        </Paper>
+        <Box
+            sx={{
+                overflow: "hidden",
+                flex: "1 1 auto",
+                paddingInline: 2,
+                minHeight: 0,
+            }}
+        >
+            {type === "item" && <ItemsListAutoFetchData />}
+            {type === "album" && <AlbumsListAutoFetchData />}
+        </Box>
     );
 }
 
-function AlbumResultsBox({ results }: { results: Album<true, false>[] }) {
-    const { selectedResult, setSelectedResult } = useSearchContext();
+const LISTROWHEIGHT = 50;
 
-    const data = useMemo(() => {
-        return results.map((album) => ({
-            className: styles.listItem,
-            "data-selected": selectedResult !== undefined && selectedResult == album.id,
-            onClick: () => setSelectedResult(album.id),
-            label: (
-                <Box>
-                    <span className={styles.ItemResultArtist}>
-                        {album.albumartist}
-                        <ChevronRight size={14} />
-                    </span>
-                    <span className={styles.ItemResultName}>{album.name}</span>
-                </Box>
-            ),
-        }));
-    }, [results, selectedResult, setSelectedResult]);
+function ItemsListAutoFetchData({
+    ...props
+}: Omit<
+    FixedListProps<AlbumResponseMinimal>,
+    "data" | "itemCount" | "itemHeight" | "children"
+>) {
+    const [overScanStopIndex, setOverScanStopIndex] = useState(0);
+    const { queryItems } = useSearchContext();
+
+    const data = queryItems?.data || {
+        items: [],
+        total: 0,
+    };
+    const numLoaded = data.items.length;
+    const isFetching = queryItems?.isFetching;
+    const isError = queryItems?.isError;
+    const fetchNextPage = queryItems?.fetchNextPage;
+    const hasNextPage = queryItems?.hasNextPage;
+
+    // Fetch new pages on scroll
+    useEffect(() => {
+        if (
+            overScanStopIndex >= numLoaded - 10 &&
+            !isFetching &&
+            !isError &&
+            hasNextPage
+        ) {
+            void fetchNextPage?.();
+        }
+    }, [overScanStopIndex, numLoaded, fetchNextPage, isFetching, isError, hasNextPage]);
 
     return (
-        <Paper sx={{ width: "100%", height: "100%" }}>
-            <List data={data}>{List.Item}</List>
-        </Paper>
+        <FixedList
+            data={data.items}
+            itemCount={data.total}
+            itemHeight={LISTROWHEIGHT}
+            onItemsRendered={({ overscanStopIndex }) => {
+                setOverScanStopIndex(overscanStopIndex);
+            }}
+            {...props}
+        >
+            {ItemsListRow}
+        </FixedList>
     );
 }
 
-function SearchResultDetails() {
-    const { type, selectedResult } = useSearchContext();
+function AlbumsListAutoFetchData({
+    ...props
+}: Omit<
+    FixedListProps<AlbumResponseMinimal>,
+    "data" | "itemCount" | "itemHeight" | "children"
+>) {
+    const [overScanStopIndex, setOverScanStopIndex] = useState(0);
+    const { queryAlbums } = useSearchContext();
 
-    if (selectedResult === undefined) {
-        return null;
-    }
+    const data = queryAlbums?.data || {
+        albums: [],
+        total: 0,
+    };
+    const numLoaded = data.albums.length;
+    const isFetching = queryAlbums?.isFetching;
+    const isError = queryAlbums?.isError;
+    const fetchNextPage = queryAlbums?.fetchNextPage;
+    const hasNextPage = queryAlbums?.hasNextPage;
+
+    // Fetch new pages on scroll
+    useEffect(() => {
+        if (
+            overScanStopIndex >= numLoaded - 10 &&
+            !isFetching &&
+            !isError &&
+            hasNextPage
+        ) {
+            console.log("Fetching next page of albums");
+            void fetchNextPage?.();
+        }
+    }, [overScanStopIndex, numLoaded, fetchNextPage, isFetching, isError, hasNextPage]);
 
     return (
-        <>
-            <Paper sx={{ width: "100%", height: "100%" }}>
-                <Suspense
-                    fallback={
-                        <Box
-                            sx={{
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                margin: "auto",
-                                maxWidth: "120px",
-                                height: "100%",
-                            }}
-                        >
-                            <Loading noteColor="#7FFFD4" />
-                        </Box>
-                    }
-                >
-                    {type === "item" && <ItemById itemId={selectedResult} />}
-                    {type === "album" && <AlbumById albumId={selectedResult} />}
-                </Suspense>
-            </Paper>
-        </>
+        <AlbumsList
+            data={data}
+            onItemsRendered={({ overscanStopIndex }) => {
+                setOverScanStopIndex(overscanStopIndex);
+            }}
+            {...props}
+        />
+    );
+}
+
+function ItemsListRow({ data: item, style }: FixedListChildrenProps<Item<true>>) {
+    const theme = useTheme();
+    if (!item) {
+        return <LoadingRow style={style} />;
+    }
+    return (
+        <Link
+            to={`/library/item/$itemId`}
+            key={item.id}
+            params={{ itemId: item.id }}
+            preloadDelay={2000}
+            style={style}
+        >
+            <Box
+                height={LISTROWHEIGHT}
+                sx={(theme) => ({
+                    display: "flex",
+                    alignItems: "center",
+                    paddingInline: 1,
+                    justifyContent: "space-between",
+                    ":hover": {
+                        background: `linear-gradient(to left, transparent 0%, ${theme.palette.primary.muted} 100%)`,
+                        color: "primary.contrastText",
+                    },
+                })}
+            >
+                <Box sx={{ display: "flex", flexDirection: "column", mr: "auto" }}>
+                    <Typography variant="body1" fontWeight="bold" color="text.primary">
+                        {item.name || "Unknown Title"}
+                    </Typography>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexDirection: "row",
+                            color: "text.secondary",
+                            alignItems: "center",
+                        }}
+                    >
+                        <Typography variant="body2" className={styles.ItemResultArtist}>
+                            {item.artist || "Unknown Artist"}
+                        </Typography>
+                        <DotIcon style={{ marginLeft: "-4px", marginRight: "-4px" }} />
+                        <Typography variant="body2" className={styles.ItemResultArtist}>
+                            {item.album || "Unknown Album"}
+                        </Typography>
+                    </Box>
+                </Box>
+                <AudioLinesIcon color={theme.palette.background.paper} />
+            </Box>
+        </Link>
     );
 }
 
