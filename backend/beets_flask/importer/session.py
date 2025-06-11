@@ -838,7 +838,7 @@ class AutoImportSession(ImportSession):
     @property
     def stages(self):
         stages = super().stages
-        stages.insert(after="user_query", stage=match_threshold(self))
+        stages.insert(before="user_query", stage=match_threshold(self))
         return stages
 
     def match_threshold(self, task: importer.ImportTask):
