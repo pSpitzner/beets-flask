@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Box, BoxProps, useTheme } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 
@@ -20,7 +20,7 @@ const colorBuffering = "#00000050";
 export function Waveform({ height }: { height?: number }) {
     const theme = useTheme();
     const containerRef = useRef<HTMLDivElement>(null);
-    const wavesurferRef = useRef<WaveSurfer | null>(null);
+    const [wavesurfer, setWavesurfer] = useState<WaveSurfer | null>(null);
     const loadingRegion = useRef<Region | null>(null);
     const { currentAudio, currentItem, buffered, currentTime } = useAudioContext();
 
@@ -44,7 +44,7 @@ export function Waveform({ height }: { height?: number }) {
             plugins: [regions],
             backend: "MediaElement",
         });
-        wavesurferRef.current = wavesurfer;
+        setWavesurfer(wavesurfer);
         loadingRegion.current = regions.addRegion({
             start: 0,
             end: currentItem?.length,
@@ -55,7 +55,7 @@ export function Waveform({ height }: { height?: number }) {
 
         return () => {
             wavesurfer.destroy();
-            wavesurferRef.current = null;
+            setWavesurfer(null);
             loadingRegion.current = null;
         };
     }, [currentItem, peaks, currentAudio, theme, height]);
@@ -64,8 +64,7 @@ export function Waveform({ height }: { height?: number }) {
 
     // Register events for the wavesurfer instance
     useEffect(() => {
-        if (!wavesurferRef.current || !currentAudio) return;
-        const wavesurfer = wavesurferRef.current;
+        if (!wavesurfer || !currentAudio) return;
 
         const onClick = (percentage: number) => {
             const time = wavesurfer.getDuration() * percentage;
@@ -73,6 +72,7 @@ export function Waveform({ height }: { height?: number }) {
         };
         const onDragStart = (percentage: number) => {
             dragging.current = true;
+            console.log("dragging started", percentage, currentAudio);
             const time = wavesurfer.getDuration() * percentage;
             wavesurfer.setTime(time);
         };
@@ -94,19 +94,18 @@ export function Waveform({ height }: { height?: number }) {
             wavesurfer.un("dragstart", onDragStart);
             wavesurfer.un("dragend", onDragEnd);
         };
-    }, [currentAudio]);
+    }, [currentAudio, wavesurfer]);
 
     // Update current time of audio
     useEffect(() => {
-        if (!wavesurferRef.current || !currentAudio || dragging.current) return;
-        const wavesurfer = wavesurferRef.current;
+        if (!wavesurfer || !currentAudio || dragging.current) return;
         wavesurfer.setTime(currentTime);
-    }, [currentAudio, currentTime]);
+    }, [currentAudio, currentTime, wavesurfer]);
 
     // Audio buffering region
     useEffect(() => {
-        if (!loadingRegion.current || !wavesurferRef.current) return;
-        const dur = currentItem?.length || wavesurferRef.current.getDuration();
+        if (!loadingRegion.current || !wavesurfer) return;
+        const dur = currentItem?.length || wavesurfer.getDuration();
         const loaded =
             buffered && buffered.length > 0 ? buffered.end(buffered.length - 1) : 0;
         const complete = loaded >= dur;
@@ -127,7 +126,7 @@ export function Waveform({ height }: { height?: number }) {
                 resize: false,
             });
         }
-    }, [buffered, currentItem?.length]);
+    }, [buffered, currentItem?.length, wavesurfer]);
 
     if (isPending || !peaks) {
         return (
