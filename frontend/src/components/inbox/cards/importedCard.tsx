@@ -71,12 +71,9 @@ export function ImportedCard({
                 <Box sx={{ ml: "auto", alignSelf: "flex-start" }}>
                     {session.tasks.length > 1 && (
                         <Typography variant="caption" component="div" textAlign="right">
-                            {session.tasks.length} tasks
+                            {session.tasks.length} tasks completed
                         </Typography>
                     )}
-                    <Typography variant="caption" component="div" textAlign="right">
-                        foo
-                    </Typography>
                 </Box>
             </CardHeader>
             <Divider />
