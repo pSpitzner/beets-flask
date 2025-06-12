@@ -69,12 +69,12 @@ const DEFAULT_STORAGE_VALUE = {
 };
 
 export function SearchContextProvider({ children }: { children: React.ReactNode }) {
-    const [query, setQuery] = useState<string>("");
+    const [query, setQuery] = useLocalStorage<string>(STORAGE_KEY + ".query", "");
     const [queryState, setQueryState] = useLocalStorage<{
         orderByItems: Parameters<typeof itemsInfiniteQueryOptions>[0]["orderBy"];
         orderByAlbums: Parameters<typeof albumsInfiniteQueryOptions>[0]["orderBy"];
         orderDirection: "ASC" | "DESC";
-    }>(STORAGE_KEY, DEFAULT_STORAGE_VALUE);
+    }>(STORAGE_KEY + ".query_state", DEFAULT_STORAGE_VALUE);
     // Debounce search by 750ms
     let debouncedQuery = useDebounce(query, 750);
 
