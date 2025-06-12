@@ -27,7 +27,7 @@ type OrderBy<T extends "item" | "album"> = T extends "item"
 interface SearchContextType {
     query: string;
     debouncedQuery?: string; // Optional for debounced query, if needed
-    setQuery: Dispatch<SetStateAction<string>>;
+    setQuery: (value: string) => void;
     queryState: {
         orderByItems: OrderBy<"item">;
         orderByAlbums: OrderBy<"album">;
@@ -120,7 +120,7 @@ export function SearchContextProvider({ children }: { children: React.ReactNode 
     const resetSearch = useCallback(() => {
         setQuery("");
         setQueryState(DEFAULT_STORAGE_VALUE);
-    }, [setQueryState]);
+    }, [setQuery, setQueryState]);
 
     return (
         <SearchContext.Provider
