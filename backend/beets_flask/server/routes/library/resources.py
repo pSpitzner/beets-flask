@@ -16,6 +16,7 @@ from typing import (
     Any,
     Awaitable,
     Callable,
+    Literal,
     ParamSpec,
     Sequence,
     TypedDict,
@@ -158,20 +159,7 @@ def resource(
     return make_response
 
 
-@resource_bp.route("/item/<int:id>", methods=["GET", "DELETE", "PATCH"])
-@resource(Item, patchable=True)
-async def item(id: int):
-    item = g.lib.get_item(id)
-    if not item:
-        raise NotFoundException(f"Item with beets_id:'{id}' not found in beets db.")
-
-    return item
-
-
-@resource_bp.route("/item/query/<path:query>", methods=["GET", "DELETE", "PATCH"])
-@resource_query(Item, patchable=True)
-async def item_query(query: str):
-    return g.lib.items(query)
+# ---------------------------------- Albums ---------------------------------- #
 
 
 @resource_bp.route("/album/<int:id>", methods=["GET", "DELETE", "PATCH"])
@@ -181,57 +169,6 @@ async def album(id: int):
     if not item:
         raise NotFoundException(f"Album with beets_id:'{id}' not found in beets db.")
     return item
-
-
-@resource_bp.route("/album/query/<path:query>", methods=["GET", "DELETE", "PATCH"])
-@resource_query(Album, patchable=False)
-async def album_query(query: str):
-    return g.lib.albums(query)
-
-
-# Artists are handled slightly differently, as they are not a beets model but can be
-# derived from the items.
-@resource_bp.route("/artist/<path:artist_name>/albums", methods=["GET"])
-async def albums_by_artist(artist_name: str):
-    """Get all items for a specific artist."""
-    log.debug(f"Album query for artist '{artist_name}'")
-
-    with g.lib.transaction() as tx:
-        rows = tx.query(
-            f"SELECT id FROM albums WHERE instr(albumartist, ?) > 0",
-            (artist_name,),
-        )
-
-    expanded = expanded_response()
-    minimal = minimal_response()
-
-    return jsonify(
-        [
-            _rep(g.lib.get_album(row[0]), expand=expanded, minimal=minimal)
-            for row in rows
-        ]
-    )
-
-
-# Items by artist are handled slightly differently, as they are not a beets model but can be
-# derived from the items.
-@resource_bp.route("/artist/<path:artist_name>/items", methods=["GET"])
-async def items_by_artist(artist_name: str):
-    """Get all items for a specific artist."""
-    log.debug(f"Item query for artist '{artist_name}'")
-
-    with g.lib.transaction() as tx:
-        rows = tx.query(
-            f"SELECT id FROM items WHERE instr(artist, ?) > 0",
-            (artist_name,),
-        )
-
-    expanded = expanded_response()
-    minimal = minimal_response()
-
-    return jsonify(
-        [_rep(g.lib.get_item(row[0]), expand=expanded, minimal=minimal) for row in rows]
-    )
 
 
 @resource_bp.route("/album/bf_id/<string:bf_id>", methods=["GET"])
@@ -292,7 +229,6 @@ async def all_albums(query: str = ""):
 
     sub_query = parse_query_string(query, Album)
 
-    start = time.perf_counter()
     paginated_query = PaginatedQuery(
         cursor=cursor,
         sub_query=sub_query,
@@ -319,6 +255,128 @@ async def all_albums(query: str = ""):
             "next": next_url,
             "total": total,
         }
+    )
+
+
+# Artists are handled slightly differently, as they are not a beets model but can be
+# derived from the items.
+@resource_bp.route("/artist/<path:artist_name>/albums", methods=["GET"])
+async def albums_by_artist(artist_name: str):
+    """Get all items for a specific artist."""
+    log.debug(f"Album query for artist '{artist_name}'")
+
+    with g.lib.transaction() as tx:
+        rows = tx.query(
+            f"SELECT id FROM albums WHERE instr(albumartist, ?) > 0",
+            (artist_name,),
+        )
+
+    expanded = expanded_response()
+    minimal = minimal_response()
+
+    return jsonify(
+        [
+            _rep(g.lib.get_album(row[0]), expand=expanded, minimal=minimal)
+            for row in rows
+        ]
+    )
+
+
+# ----------------------------------- Items ---------------------------------- #
+
+
+@resource_bp.route("/item/<int:id>", methods=["GET", "DELETE", "PATCH"])
+@resource(Item, patchable=True)
+async def item(id: int):
+    item = g.lib.get_item(id)
+    if not item:
+        raise NotFoundException(f"Item with beets_id:'{id}' not found in beets db.")
+
+    return item
+
+
+@resource_bp.route("/items", methods=["GET"], defaults={"query": ""})
+@resource_bp.route("/items/<path:query>", methods=["GET"])
+async def all_items(query: str = ""):
+    """Get all items in the library.
+
+    If a query is provided, it will be used to filter the items.
+    """
+    log.debug(f"Item query: {query}")
+    params = dict(request.args)
+    cursor = pop_query_param(params, "cursor", Cursor.from_string, None)
+    if cursor is None:
+        order_by_column = pop_query_param(params, "order_by", str, "added")
+        order_by_direction = pop_query_param(params, "order_dir", str, "DESC")
+        cursor = Cursor(
+            order_by_column=order_by_column,
+            order_by_direction=order_by_direction,
+            last_order_by_value=None,
+            last_id=None,
+        )
+
+    n_items = pop_query_param(
+        params,
+        "n_items",
+        int,
+        50,  # Default number of items per page
+    )
+
+    if len(params) > 0:
+        raise InvalidUsageException(
+            "Unexpected query parameters: , ".join(params.keys())
+        )
+
+    sub_query = parse_query_string(query, Item)
+
+    paginated_query = PaginatedQuery(
+        cursor=cursor,
+        sub_query=sub_query,
+        n_items=n_items,
+        table="items",
+    )
+    items = list(g.lib.items(paginated_query, paginated_query))
+
+    # Update cursor
+    next_url: str | None = None
+
+    total = paginated_query.total(g.lib)
+    if len(items) == n_items and len(items) > 0:
+        last_item = items[-1]
+
+        cursor.last_order_by_value = str(
+            getattr(last_item, cursor.order_by_column, None)
+        )
+        cursor.last_id = str(last_item.id)
+        next_url = f"{request.path}?cursor={cursor.to_string()}&n_items={n_items}"
+
+    return jsonify(
+        {
+            "items": [_rep(item, expand=False, minimal=True) for item in items],
+            "next": next_url,
+            "total": total,
+        }
+    )
+
+
+# Items by artist are handled slightly differently, as they are not a beets model but can be
+# derived from the items.
+@resource_bp.route("/artist/<path:artist_name>/items", methods=["GET"])
+async def items_by_artist(artist_name: str):
+    """Get all items for a specific artist."""
+    log.debug(f"Item query for artist '{artist_name}'")
+
+    with g.lib.transaction() as tx:
+        rows = tx.query(
+            f"SELECT id FROM items WHERE instr(artist, ?) > 0",
+            (artist_name,),
+        )
+
+    expanded = expanded_response()
+    minimal = minimal_response()
+
+    return jsonify(
+        [_rep(g.lib.get_item(row[0]), expand=expanded, minimal=minimal) for row in rows]
     )
 
 
@@ -429,13 +487,20 @@ class PaginatedQuery(Query, Sort):
 
     _sub_query: tuple[Query, Sort] | None
 
+    table: Literal["albums", "items"]
+
     def __init__(
-        self, cursor: Cursor, sub_query: tuple[Query, Sort], n_items=50
+        self,
+        cursor: Cursor,
+        sub_query: tuple[Query, Sort],
+        n_items=50,
+        table: Literal["albums", "items"] = "albums",
     ) -> None:
         super().__init__()
         self.n_items = n_items
         self.cursor = cursor
         self._sub_query = sub_query
+        self.table = table
 
     def clause(self) -> tuple[str | None, Sequence[Any]]:
         """Return the SQL clause and values for the query."""
@@ -472,7 +537,7 @@ class PaginatedQuery(Query, Sort):
             vs = ()
 
         with g.lib.transaction() as tx:
-            count = tx.query(f"SELECT COUNT(*) FROM albums WHERE {cs}", vs)[0][0]
+            count = tx.query(f"SELECT COUNT(*) FROM {self.table} WHERE {cs}", vs)[0][0]
         return count
 
 

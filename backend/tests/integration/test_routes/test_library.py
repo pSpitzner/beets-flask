@@ -108,7 +108,7 @@ class TestArtistsEndpoint(IsolatedBeetsLibraryMixin):
 # ----------------------------------- album ---------------------------------- #
 
 
-class TestAlbumsEndpoints(IsolatedBeetsLibraryMixin):
+class TestAlbumEndpoints(IsolatedBeetsLibraryMixin):
     """Test class for the Albums endpoint in the API.
 
     This class contains tests for retrieving albums and individual album details
@@ -264,7 +264,7 @@ class TestAlbumsPagination(IsolatedBeetsLibraryMixin):
 # ----------------------------------- Items ---------------------------------- #
 
 
-class TestItemsEndpoint(IsolatedBeetsLibraryMixin):
+class TestItemEndpoint(IsolatedBeetsLibraryMixin):
     """Test class for the Items endpoint in the API.
 
     This class contains tests for retrieving items and individual item details
@@ -291,6 +291,40 @@ class TestItemsEndpoint(IsolatedBeetsLibraryMixin):
             data = await response.get_json()
             assert response.status_code == 200, "Response status code is not 200"
             assert data["id"] == item.id, "Data id does not match item id"
+
+
+class TestItemsPagination(IsolatedBeetsLibraryMixin):
+    """Test if pagination of items works as expected"""
+
+    @pytest.fixture(autouse=True)
+    def items(self):  # type: ignore
+        """Fixture to add items to the beets library before running tests."""
+        nItems = 100
+        if len(self.beets_lib.items()) == 0:
+            for i in range(nItems):
+                artist = "Even" if i % 2 == 0 else f"Odd"
+                self.beets_lib.add(
+                    beets_lib_item(artist=f"{artist}", album=f"Album {i}")
+                )
+
+        assert len(self.beets_lib.items()) == nItems
+
+    async def test_get_items(self, client: Client):
+        """Test the GET request to retrieve all items with pagination.
+
+        Asserts:
+            - The response status code is 200.
+            - The returned data contains the expected number of items.
+            - The next cursor is provided for pagination.
+        """
+        response = await client.get("/api_v1/library/items/?n_items=10")
+        data = await response.get_json()
+        assert response.status_code == 200, "Response status code is not 200"
+        assert "items" in data, "Items are not provided in the response"
+        assert len(data["items"]) == 10, "Data length is not 10"
+        assert "next" in data, "Next cursor is not provided"
+        assert "total" in data, "Total count is not provided"
+        assert data["total"] == 100, "Total count does not match expected value"
 
 
 # ---------------------------------------------------------------------------- #
