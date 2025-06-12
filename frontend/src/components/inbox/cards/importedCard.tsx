@@ -1,4 +1,4 @@
-import { ImportIcon } from "lucide-react";
+import { ImportIcon, LibraryIcon, UndoIcon } from "lucide-react";
 import {
     Alert,
     AlertProps,
@@ -8,13 +8,15 @@ import {
     Card,
     Divider,
     Skeleton,
+    Typography,
+    useTheme,
 } from "@mui/material";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 
 import { APIError } from "@/api/common";
 import { albumImportedOptions } from "@/api/library";
 import { enqueueMutationOptions, sessionQueryOptions } from "@/api/session";
-import { BackButton } from "@/components/common/inputs/back";
 import { humanizeBytes } from "@/components/common/units/bytes";
 import { relativeTime } from "@/components/common/units/time";
 import { useStatusSocket } from "@/components/common/websocket/status";
@@ -36,6 +38,7 @@ export function ImportedCard({
     folderHash: string;
     folderPath: string;
 }) {
+    const theme = useTheme();
     const { data: session } = useQuery(
         sessionQueryOptions({
             folderPath,
@@ -64,7 +67,15 @@ export function ImportedCard({
                 title="Imported into beets library"
                 // FIXME: Timezones seem broken, at least for me it is 2 hours off
                 subtitle={"Imported " + relativeTime(session.updated_at)}
-            />
+            >
+                <Box sx={{ ml: "auto", alignSelf: "flex-start" }}>
+                    {session.tasks.length > 1 && (
+                        <Typography variant="caption" component="div" textAlign="right">
+                            {session.tasks.length} tasks completed
+                        </Typography>
+                    )}
+                </Box>
+            </CardHeader>
             <Divider />
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                 {session.tasks.map((task) => (
@@ -72,12 +83,10 @@ export function ImportedCard({
                 ))}
             </Box>
             <Box display="flex" gap={2}>
-                <BackButton variant="outlined" color="secondary" size="medium" />
                 <Button
                     variant="outlined"
                     color="secondary"
                     loading={isPending}
-                    sx={{ ml: "auto" }}
                     onClick={() => {
                         mutate({
                             socket,
@@ -89,6 +98,7 @@ export function ImportedCard({
                             delete_files: true,
                         });
                     }}
+                    startIcon={<UndoIcon size={theme.iconSize.md} />}
                 >
                     Undo Import
                 </Button>
@@ -100,11 +110,12 @@ export function ImportedCard({
 // Shows some information on the imported album
 // using the beets library
 function ImportedTaskInfo({ task }: { task: SerializedTaskState }) {
+    const theme = useTheme();
     const {
         data: album,
         error,
         isPending,
-    } = useQuery(albumImportedOptions(task.id, true, true));
+    } = useQuery(albumImportedOptions(task.id, true, false));
 
     const chosenCandidate = task.candidates.find(
         (c) => c.id === task.chosen_candidate_id
@@ -120,9 +131,9 @@ function ImportedTaskInfo({ task }: { task: SerializedTaskState }) {
         throw error;
     }
 
-    return (
-        <Box>
-            {isPending && (
+    if (isPending) {
+        return (
+            <Box>
                 <Skeleton
                     variant="rectangular"
                     width="100%"
@@ -131,9 +142,74 @@ function ImportedTaskInfo({ task }: { task: SerializedTaskState }) {
                         borderRadius: 1,
                     }}
                 />
-            )}
-            {task.duplicate_action}
-            {album && <AlbumInfo album={album} />}
+            </Box>
+        );
+    }
+
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                gap: 1,
+                width: "100%",
+            }}
+        >
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "row",
+                    flexGrow: 1,
+                    flexWrap: "wrap",
+                    columnGap: 1,
+                    label: {
+                        color: "text.secondary",
+                    },
+                }}
+            >
+                <Typography variant="h6" component="div" sx={{ width: "100%" }}>
+                    {album.albumartist} - {album.name}
+                </Typography>
+                <Box>
+                    <Typography variant="body2" component="label">
+                        Source:
+                    </Typography>
+                    <Typography variant="body1" component="div" ml={1}>
+                        {task.toppath || task.paths.join(", ")}
+                    </Typography>
+                </Box>
+                <Box>
+                    <Typography variant="body2" component="label">
+                        Destination:
+                    </Typography>
+                    <Typography variant="body1" component="div" ml={1}>
+                        {album.items.at(0)?.path.split("/").slice(0, -1).join("/")}
+                    </Typography>
+                </Box>
+                <Box>
+                    <Typography variant="body2" component="label">
+                        Operation:
+                    </Typography>
+                    <Typography variant="body1" component="div" ml={1}>
+                        {/* TODO: Hardcoded for now, should be dynamic */}
+                        COPY
+                    </Typography>
+                </Box>
+            </Box>
+            <Box sx={{ flexGrow: "0 1", ml: "auto", mt: "auto" }}>
+                <Link
+                    to="/library/album/$albumId"
+                    params={{ albumId: album.id }}
+                    style={{ textDecoration: "none", height: "100%" }}
+                >
+                    <Button
+                        variant="contained"
+                        color="secondary"
+                        startIcon={<LibraryIcon size={theme.iconSize.md} />}
+                    >
+                        View Album
+                    </Button>
+                </Link>
+            </Box>
         </Box>
     );
 }

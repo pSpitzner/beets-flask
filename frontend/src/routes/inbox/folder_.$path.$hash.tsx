@@ -4,6 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { inboxFolderQueryOptions } from "@/api/inbox";
 import { sessionQueryOptions } from "@/api/session";
+import { BackIconButton } from "@/components/common/inputs/back";
 import { LoadingWithFeedback } from "@/components/common/loading";
 import { PageWrapper } from "@/components/common/page";
 import { FolderCard } from "@/components/inbox/cards/folderCard";
@@ -81,14 +82,30 @@ function RouteComponent() {
 
     return (
         <PageWrapper
-            sx={{
+            sx={(theme) => ({
                 display: "flex",
                 flexDirection: "column",
-                gap: 2,
-                paddingBlock: 2,
-                paddingInline: 1,
-            }}
+                minHeight: "100%",
+                height: "100%",
+                position: "relative",
+                gap: 1,
+                [theme.breakpoints.up("laptop")]: {
+                    padding: 2,
+                },
+            })}
         >
+            <BackIconButton
+                sx={{
+                    // TODO: styling for mobile
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    zIndex: 2,
+                    margin: 0.5,
+                }}
+                size="small"
+                color="primary"
+            />
             <FolderCard folder={folder} />
             <TagCard folderHash={hash} folderPath={path} />
             <ImportedCard folderHash={hash} folderPath={path} />
