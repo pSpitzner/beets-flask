@@ -786,6 +786,12 @@ class BootlegImportSession(ImportSession):
             CandidateChoiceFallback.ASIS,
         )
 
+    @property
+    def stages(self):
+        stages = super().stages
+        stages.insert(before="user_query", stage=group_albums(self))
+        return stages
+
 
 class AutoImportSession(ImportSession):
     """Generate a preview and import if the best match is good enough.

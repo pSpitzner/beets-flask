@@ -85,7 +85,7 @@ COPY ./frontend/package.json /repo/frontend/
 COPY ./frontend/pnpm-lock.yaml /repo/frontend/
 
 WORKDIR /repo/frontend
-RUN pnpm i
+# RUN pnpm i
 
 # Extract version from package.json
 RUN mkdir -p /version

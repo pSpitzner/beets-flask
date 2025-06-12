@@ -74,6 +74,132 @@ class InvokerStatusMockMixin(ABC):
         self.statuses = []
 
 
+class TestPreview(InvokerStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin):
+    """Test generating previews.
+
+    - should add candidates
+    - should respect grouping of albums to get split into multiple tasks
+    - should respect auto-tagging on/off
+    """
+
+    @pytest.fixture()
+    def path(self) -> Path:
+        path = album_path_absolute(VALID_PATHS[0])
+        use_mock_tag_album(str(path))
+        return path
+
+    @pytest.fixture()
+    def path_multiple_tasks_flat(self) -> Path:
+        path = album_path_absolute("multi_flat")
+        use_mock_tag_album(str(path))
+        return path
+
+    async def test_preview(self, db_session: Session, path: Path):
+        stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
+        assert db_session.execute(stmt).scalar() is None, (
+            "Database should be empty before the test"
+        )
+
+        exc = await run_preview(
+            "obsolete_hash_preview",
+            str(path),
+            group_albums=False,
+            autotag=True,
+        )
+
+        assert exc is None, "Should not return an error"
+
+        # Check that status was emitted correctly, we emit once before and once after run
+        assert len(self.statuses) == 2
+        assert self.statuses[0].status == FolderStatus.PREVIEWING
+        assert self.statuses[1].status == FolderStatus.PREVIEWED
+
+        # Check db contains the tagged folder
+        stmt = select(SessionStateInDb)
+        s_state_indb = db_session.execute(stmt).scalar()
+
+        assert s_state_indb is not None
+        assert s_state_indb.folder.full_path == str(path)
+
+        # Check preview content is correct
+        s_state_live = s_state_indb.to_live_state()
+        assert s_state_live is not None
+        assert s_state_live.folder_path == path
+        assert len(s_state_live.task_states) == 1
+        assert s_state_live.tasks[0].old_paths is None
+        # old_paths should only be set after files were moved!
+
+        t_state_live = s_state_live.task_states[0]
+        assert t_state_live.progress == Progress.PREVIEW_COMPLETED
+
+        for c in t_state_live.candidate_states:
+            assert len(c.duplicate_ids) == 0, (
+                "Should not have duplicates in empty library"
+            )
+
+    @pytest.mark.parametrize(
+        "group_albums, expected_tasks",
+        [
+            (True, 2),  # Grouped albums should result in two tasks
+            (False, 1),  # Flat albums should result in four tasks
+        ],
+    )
+    @pytest.mark.parametrize("autotag", [True, False])
+    async def test_preview_grouped(
+        self,
+        db_session: Session,
+        path_multiple_tasks_flat: Path,
+        group_albums: bool,
+        expected_tasks: int,
+        autotag: bool,
+    ):
+        self.reset_database()
+        self.statuses = []
+        stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
+        assert db_session.execute(stmt).scalar() is None, (
+            "Database should be empty before the test"
+        )
+
+        exc = await run_preview(
+            "obsolete_hash_preview",
+            str(path_multiple_tasks_flat),
+            group_albums=group_albums,
+            autotag=autotag,
+        )
+
+        assert exc is None, "Should not return an error"
+
+        assert len(self.statuses) == 2
+        assert self.statuses[0].status == FolderStatus.PREVIEWING
+        assert self.statuses[1].status == FolderStatus.PREVIEWED
+
+        # Check only one session in db (we expect two tasks, in one session)
+        stmt = select(func.count()).select_from(SessionStateInDb)
+        num_sessions = db_session.execute(stmt).scalar()
+        assert num_sessions == 1, "Should have one session in the database"
+
+        # Check db contains the tagged folder
+        s_state_indb = db_session.execute(select(SessionStateInDb)).scalar()
+
+        assert s_state_indb is not None
+        assert s_state_indb.folder.full_path == str(path_multiple_tasks_flat)
+
+        # Check preview content is correct
+        s_state_live = s_state_indb.to_live_state()
+        assert s_state_live is not None
+        assert s_state_live.folder_path == path_multiple_tasks_flat
+        assert len(s_state_live.task_states) == expected_tasks
+        assert s_state_live.tasks[0].old_paths is None
+
+        for t_state_live in s_state_live.task_states:
+            assert t_state_live.progress == Progress.PREVIEW_COMPLETED
+
+            for c in t_state_live.candidate_states:
+                assert len(c.duplicate_ids) == 0, (
+                    "Should not have duplicates in empty library"
+                )
+
+
 class TestImportBest(
     InvokerStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
 ):
@@ -96,7 +222,8 @@ class TestImportBest(
         return path
 
     async def test_preview(self, db_session: Session, path: Path):
-        """Test the preview of the import process."""
+        """This is only used to set up the initial preview state for the
+        following tests."""
 
         stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
         assert db_session.execute(stmt).scalar() is None, (
@@ -109,33 +236,6 @@ class TestImportBest(
             group_albums=None,
             autotag=None,
         )
-
-        # Check that status was emitted correctly, we emit once before and once after run
-        assert len(self.statuses) == 2
-        assert self.statuses[0].status == FolderStatus.PREVIEWING
-        assert self.statuses[1].status == FolderStatus.PREVIEWED
-
-        # Check db contains the tagged folder
-        stmt = select(SessionStateInDb)
-        s_state_indb = db_session.execute(stmt).scalar()
-
-        assert s_state_indb is not None
-        assert s_state_indb.folder.full_path == str(path)
-
-        # Check preview content is correct
-        s_state_live = s_state_indb.to_live_state()
-        assert s_state_live is not None
-        assert s_state_live.folder_path == path
-        assert len(s_state_live.task_states) == 1
-        assert s_state_live.tasks[0].old_paths is None
-
-        t_state_live = s_state_live.task_states[0]
-        assert t_state_live.progress == Progress.PREVIEW_COMPLETED
-
-        for c in t_state_live.candidate_states:
-            assert len(c.duplicate_ids) == 0, (
-                "Should not have duplicates in empty library"
-            )
 
     async def test_search_candidates(self, db_session: Session, path: Path):
         """Test the search candidates of the import process.

@@ -2,6 +2,10 @@
 
 Added type hints to decorators because it is annoying to have to look up
 the type of the function usage.
+
+This is a temporary implementation. Async Generators are an antipattern
+(use coroutines instead). We only use them here because the older beets pipeline
+used Generators, and we still rely on parts of it.
 """
 
 import asyncio
