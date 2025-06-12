@@ -182,6 +182,24 @@ class SessionState(BaseState):
 
         return state
 
+    def remove_task(self, task: importer.ImportTask) -> None:
+        """Remove a task from the session state.
+
+        If the task does not exist, nothing happens.
+        """
+        state = self.get_task_state_for_task(task)
+        if state is not None:
+            self._task_states.remove(state)
+
+    def remove_task_by_id(self, id: str) -> None:
+        """Remove a task from the session state by id.
+
+        If the task does not exist, nothing happens.
+        """
+        state = self.get_task_state_by_id(id)
+        if state is not None:
+            self._task_states.remove(state)
+
     def serialize(self) -> SerializedSessionState:
         """JSON representation to match the frontend types."""
 
@@ -465,8 +483,12 @@ class CandidateState(BaseState):
         This is pretty much duct-tape.
         """
         items: list[BeetsItem] = task_state.task.items
+
         # FIXME: we do this lookup twice, once here and once in current_metadata
-        info, _ = autotag.current_metadata(items)
+        if len(items) > 0:
+            info, _ = autotag.current_metadata(items)
+        else:
+            info = {}
         info["data_source"] = "asis"
         info["data_url"] = f"file://{task_state.toppath}"
 

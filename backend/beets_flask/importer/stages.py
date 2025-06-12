@@ -296,21 +296,34 @@ def __group(item: library.Item) -> tuple[str, str]:
 def group_albums(
     session: BaseSession,
     task: ImportTask,
-) -> Generator[ImportTask, Any, None]:
-    """Highly likely this will work?? Hopefully.
-
-    Yielding might not work as expected yet.
+) -> beets_pipeline.MultiMessage:
     """
+    Groups items of the task into albums using their metadata.
+
+    The groups are identified using artist and album fields.
+
+    Creates a new Task for each found album, and removes the old task (and task_state)
+    from the session.
+    """
+
+    # Split old task into multiple, and only keep new ones!
+    session.state.remove_task(task)
 
     tasks: list[ImportTask] = []
     sorted_items = sorted(task.items, key=__group)
     for _, items in itertools.groupby(sorted_items, __group):
-        task = ImportTask(task.toppath, [i.path for i in items], list(items))
+        items = list(items)  # Consume the iterator to a list
+        task = ImportTask(task.toppath, [i.path for i in items], items)
         tasks += task.handle_created(session)
 
+    # handle the beets-flask specific states
+    for task in tasks:
+        session.state.upsert_task(task)
+
     # FIXME: Not really sure we need this tbh, see also task.skip
-    tasks.append(SentinelImportTask(task.toppath, task.paths))
-    yield from tasks
+    # tasks.append(SentinelImportTask(task.toppath, task.paths))
+
+    return beets_pipeline.MultiMessage(tasks)
 
 
 @mutator_stage
