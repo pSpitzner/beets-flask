@@ -844,7 +844,7 @@ class AutoImportSession(ImportSession):
     @property
     def stages(self):
         stages = super().stages
-        stages.insert(after="user_query", stage=match_threshold(self))
+        stages.insert(before="user_query", stage=match_threshold(self))
         return stages
 
     def match_threshold(self, task: importer.ImportTask):
@@ -856,6 +856,11 @@ class AutoImportSession(ImportSession):
         or raise an exception.
 
         Currently raising, as we do not have a dedicated progress for "not imported".
+
+        FIXME: Instead of adding a whole new stage, with progress and a session function,
+        we could simply extend the choose_match function. It's defined for the normal
+        import session, and gets called early in user_query.
+        (see #78)
         """
         try:
             task_state = self.state.get_task_state_for_task(task)
