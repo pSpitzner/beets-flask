@@ -31,14 +31,18 @@ from beets_flask.logger import log
 
 from . import sio
 
+server: libtmux.Server | None = None
 session: Session
 window: Window
 pane: Pane
+background_emit_task: asyncio.Task | None = None
 
 
 def register_tmux():
-    global session, window, pane
-    server = libtmux.Server()
+    global session, window, pane, server
+
+    if server is None:
+        server = libtmux.Server()
 
     try:
         abs_path_lib = str(get_config()["gui"]["terminal"]["start_path"].as_str())
@@ -91,13 +95,13 @@ async def emit_output():
     )
 
 
-async def emit_output_continuously(sleep_seconds=0.01):
+async def emit_output_continuously(sleep_seconds=1):
     # only emit if there was a change
     prev: list[str] = []
     prev_x, prev_y = 0, 0
     history: list[str] = []
     while True:
-        await sio.sleep(sleep_seconds)  # type: ignore
+        await asyncio.sleep(sleep_seconds)
         try:
             if is_session_alive():
                 current = pane.cmd("capture-pane", "-p", "-N", "-T", "-e").stdout
@@ -182,10 +186,11 @@ async def pty_input(sid, data):
     """Write to the child pty."""
     # log.debug(f"{sid} input {data}")
     pane.send_keys(data["input"], enter=False)
-    # await asyncio.gather(
-    #     emit_output(),
-    #     emit_cursor_position(),
-    # )
+    # re-emitting continuously at high rate causes quite high cpu load, therefore we
+    # only re-emit at low intervals, and everytime we _know_ something changed.
+    await asyncio.gather(
+        emit_output(),
+    )
 
 
 @sio.on("ptyResize", namespace="/terminal")
@@ -209,14 +214,29 @@ async def connect(sid, environ):
     """Handle new client connected."""
     log.debug(f"TerminalSocket new client connected {sid}")
     register_tmux()
-    sio.start_background_task(
-        target=emit_output_continuously,
-    )
+
+    global background_emit_task
+    if background_emit_task is None:
+        background_emit_task = asyncio.create_task(emit_output_continuously())
 
 
 @sio.on("disconnect", namespace="/terminal")
 async def disconnect(sid):
     """Handle client disconnect."""
+    global background_emit_task
+
+    # If only this client (currently about to dc) is connected,
+    # we can stop the repeatedly emitting task.
+    if (
+        background_emit_task is not None
+        and len(sio.manager.rooms.get("/terminal", {}).get(None, set())) == 1
+    ):
+        log.debug("No more clients connected, stopping background emit task.")
+        background_emit_task.cancel()
+        background_emit_task = None
+    else:
+        log.debug("Clients still connected, keeping background emit task running.")
+
     log.debug(f"TerminalSocket client disconnected {sid}")
 
 
