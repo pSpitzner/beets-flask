@@ -26,6 +26,7 @@ import { Route as InboxTaskTaskIdImport } from './routes/inbox/task.$taskId'
 import { Route as InboxFolderPathImport } from './routes/inbox/folder.$path'
 import { Route as DebugDesignLoadingImport } from './routes/debug/design/loading'
 import { Route as DebugDesignIconsImport } from './routes/debug/design/icons'
+import { Route as DebugDesignButtonsImport } from './routes/debug/design/buttons'
 import { Route as LibraryBrowseArtistsRouteImport } from './routes/library/browse/artists.route'
 import { Route as LibraryBrowseArtistsIndexImport } from './routes/library/browse/artists.index'
 import { Route as LibraryBrowseArtistsArtistImport } from './routes/library/browse/artists.$artist'
@@ -127,6 +128,12 @@ const DebugDesignLoadingRoute = DebugDesignLoadingImport.update({
 const DebugDesignIconsRoute = DebugDesignIconsImport.update({
   id: '/debug/design/icons',
   path: '/debug/design/icons',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const DebugDesignButtonsRoute = DebugDesignButtonsImport.update({
+  id: '/debug/design/buttons',
+  path: '/debug/design/buttons',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -277,6 +284,13 @@ declare module '@tanstack/react-router' {
       path: '/library/browse/artists'
       fullPath: '/library/browse/artists'
       preLoaderRoute: typeof LibraryBrowseArtistsRouteImport
+      parentRoute: typeof rootRoute
+    }
+    '/debug/design/buttons': {
+      id: '/debug/design/buttons'
+      path: '/debug/design/buttons'
+      fullPath: '/debug/design/buttons'
+      preLoaderRoute: typeof DebugDesignButtonsImport
       parentRoute: typeof rootRoute
     }
     '/debug/design/icons': {
@@ -462,6 +476,7 @@ export interface FileRoutesByFullPath {
   '/sessiondraft': typeof SessiondraftIndexRoute
   '/terminal': typeof TerminalIndexRoute
   '/library/browse/artists': typeof LibraryBrowseArtistsRouteRouteWithChildren
+  '/debug/design/buttons': typeof DebugDesignButtonsRoute
   '/debug/design/icons': typeof DebugDesignIconsRoute
   '/debug/design/loading': typeof DebugDesignLoadingRoute
   '/inbox/folder/$path': typeof InboxFolderPathRoute
@@ -490,6 +505,7 @@ export interface FileRoutesByTo {
   '/inbox': typeof InboxIndexRoute
   '/sessiondraft': typeof SessiondraftIndexRoute
   '/terminal': typeof TerminalIndexRoute
+  '/debug/design/buttons': typeof DebugDesignButtonsRoute
   '/debug/design/icons': typeof DebugDesignIconsRoute
   '/debug/design/loading': typeof DebugDesignLoadingRoute
   '/inbox/folder/$path': typeof InboxFolderPathRoute
@@ -519,6 +535,7 @@ export interface FileRoutesById {
   '/sessiondraft/': typeof SessiondraftIndexRoute
   '/terminal/': typeof TerminalIndexRoute
   '/library/browse/artists': typeof LibraryBrowseArtistsRouteRouteWithChildren
+  '/debug/design/buttons': typeof DebugDesignButtonsRoute
   '/debug/design/icons': typeof DebugDesignIconsRoute
   '/debug/design/loading': typeof DebugDesignLoadingRoute
   '/inbox/folder/$path': typeof InboxFolderPathRoute
@@ -550,6 +567,7 @@ export interface FileRouteTypes {
     | '/sessiondraft'
     | '/terminal'
     | '/library/browse/artists'
+    | '/debug/design/buttons'
     | '/debug/design/icons'
     | '/debug/design/loading'
     | '/inbox/folder/$path'
@@ -577,6 +595,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/sessiondraft'
     | '/terminal'
+    | '/debug/design/buttons'
     | '/debug/design/icons'
     | '/debug/design/loading'
     | '/inbox/folder/$path'
@@ -604,6 +623,7 @@ export interface FileRouteTypes {
     | '/sessiondraft/'
     | '/terminal/'
     | '/library/browse/artists'
+    | '/debug/design/buttons'
     | '/debug/design/icons'
     | '/debug/design/loading'
     | '/inbox/folder/$path'
@@ -634,6 +654,7 @@ export interface RootRouteChildren {
   SessiondraftIndexRoute: typeof SessiondraftIndexRoute
   TerminalIndexRoute: typeof TerminalIndexRoute
   LibraryBrowseArtistsRouteRoute: typeof LibraryBrowseArtistsRouteRouteWithChildren
+  DebugDesignButtonsRoute: typeof DebugDesignButtonsRoute
   DebugDesignIconsRoute: typeof DebugDesignIconsRoute
   DebugDesignLoadingRoute: typeof DebugDesignLoadingRoute
   InboxFolderPathRoute: typeof InboxFolderPathRoute
@@ -656,6 +677,7 @@ const rootRouteChildren: RootRouteChildren = {
   SessiondraftIndexRoute: SessiondraftIndexRoute,
   TerminalIndexRoute: TerminalIndexRoute,
   LibraryBrowseArtistsRouteRoute: LibraryBrowseArtistsRouteRouteWithChildren,
+  DebugDesignButtonsRoute: DebugDesignButtonsRoute,
   DebugDesignIconsRoute: DebugDesignIconsRoute,
   DebugDesignLoadingRoute: DebugDesignLoadingRoute,
   InboxFolderPathRoute: InboxFolderPathRoute,
@@ -689,6 +711,7 @@ export const routeTree = rootRoute
         "/sessiondraft/",
         "/terminal/",
         "/library/browse/artists",
+        "/debug/design/buttons",
         "/debug/design/icons",
         "/debug/design/loading",
         "/inbox/folder/$path",
@@ -733,6 +756,9 @@ export const routeTree = rootRoute
         "/library/browse/artists/$artist",
         "/library/browse/artists/"
       ]
+    },
+    "/debug/design/buttons": {
+      "filePath": "debug/design/buttons.tsx"
     },
     "/debug/design/icons": {
       "filePath": "debug/design/icons.tsx"
