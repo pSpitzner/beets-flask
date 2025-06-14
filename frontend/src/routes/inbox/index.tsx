@@ -25,11 +25,12 @@ import { PageWrapper } from '@/components/common/page';
 import {
     ActionIcon,
     RefreshAllFoldersButton,
-} from '@/components/inbox/actions/buttons';
-import { getActionDescription } from '@/components/inbox/actions/descriptions';
-import { InboxCard } from '@/components/inbox/cards/inboxCard';
-import { FolderSelectionProvider } from '@/components/inbox/folderSelectionContext';
-import { Folder } from '@/pythonTypes';
+} from "@/components/inbox/actions/buttons";
+import { getActionDescription } from "@/components/inbox/actions/descriptions";
+import { InboxCard } from "@/components/inbox/cards/inboxCard";
+import InboxDropzone from "@/components/inbox/fileUpload";
+import { FolderSelectionProvider } from "@/components/inbox/folderSelectionContext";
+import { Folder } from "@/pythonTypes";
 
 /* ---------------------------------- Route --------------------------------- */
 
@@ -44,7 +45,7 @@ function RouteComponent() {
     const { data: inboxes } = useSuspenseQuery(inboxQueryOptions());
 
     return (
-        <>
+        <InboxDropzone>
             <PageWrapper
                 sx={(theme) => ({
                     display: 'flex',
@@ -76,7 +77,7 @@ function RouteComponent() {
                     ))}
                 </Box>
             </PageWrapper>
-        </>
+        </InboxDropzone>
     );
 }
 
