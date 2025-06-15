@@ -839,6 +839,20 @@ def _rep_Album(
             out["sources"].append(source)
             keys = [k for k in keys if k not in f_keys]
 
+        # The mb source might be duplicated in other sources, e.g. spotify,
+        # We delete the mb source if it is a duplicate of another source.
+        mb_source = next(filter(lambda s: s["source"] == "mb", out["sources"]), None)
+        if mb_source and len(out["sources"]) > 1:
+            for source in out["sources"]:
+                if source["source"] == "mb":
+                    continue
+
+                if source["album_id"] == mb_source["album_id"]:
+                    # delete mb source
+                    out["sources"] = list(
+                        filter(lambda s: s["source"] != "mb", out["sources"])
+                    )
+
     for key in keys:
         if key == "name":
             out[key] = album.album
