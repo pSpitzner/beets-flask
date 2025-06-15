@@ -25,8 +25,6 @@ from beets_flask.watchdog.eventhandler import AIOEventHandler, AIOWatchdog
 #                                   init and watchdog                                  #
 # ------------------------------------------------------------------------------------ #
 
-_inboxes: List[OrderedDict] = []
-
 
 def register_inboxes(timeout: float = 2.5, debounce: float = 30) -> AIOWatchdog | None:
     """
@@ -42,9 +40,13 @@ def register_inboxes(timeout: float = 2.5, debounce: float = 30) -> AIOWatchdog 
         You have to wait at least this long before an autotag will trigger
         after you add the last file to an inbox.
         Default is 30 seconds.
+
+    Notes
+    -----
+    - This should not be called from uvicorn workers to avoid concurrency issues.
+      You only want one watchdog (use separate init script).
     """
-    global _inboxes
-    _inboxes = get_config()["gui"]["inbox"]["folders"].flatten().values()  # type: ignore
+    _inboxes = get_inboxes()
 
     if os.environ.get("RQ_WORKER_ID", None):
         # only launch the observer on the main process
@@ -205,7 +207,7 @@ def get_inbox_for_path(path: str | Path):
     if isinstance(path, str):
         path = Path(path)
     inbox = None
-    for i in _inboxes:
+    for i in get_inboxes():
         ipath = Path(i["path"])
         if path.is_relative_to(ipath) or path == ipath:
             inbox = i
@@ -214,12 +216,12 @@ def get_inbox_for_path(path: str | Path):
 
 
 def get_inbox_folders() -> List[str]:
-    return [i["path"] for i in _inboxes]
+    return [i["path"] for i in get_inboxes()]
 
 
 def is_inbox_folder(path: str) -> bool:
     return path in get_inbox_folders()
 
 
-def get_inboxes():
-    return _inboxes
+def get_inboxes() -> List[OrderedDict]:
+    return get_config()["gui"]["inbox"]["folders"].flatten().values()  # type: ignore
