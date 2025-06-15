@@ -31,8 +31,13 @@ cd /repo/backend
 
 redis-server --daemonize yes
 
+
+# blocking
+python ./launch_db_init.py
 python ./launch_redis_workers.py
-python ./launch_watchdog_worker.py
+
+# keeps running in the background
+python ./launch_watchdog_worker.py &
 
 redis-cli FLUSHALL
 
@@ -50,8 +55,9 @@ python ./generate_types.py
 uvicorn beets_flask.server.app:create_app --port 5001 \
     --host 0.0.0.0 \
     --factory \
-    --workers 4
-    # --reload
+    --workers 1 \
+    --use-colors \
+    --reload
 
 
 

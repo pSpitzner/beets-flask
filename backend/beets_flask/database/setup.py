@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 from functools import wraps
+from typing import Optional
 
 from deprecated import deprecated
 from quart import Quart
@@ -15,7 +16,7 @@ engine: Engine | None = None
 session_factory: scoped_session[Session]
 
 
-def setup_database(app: Quart) -> None:
+def setup_database(app: Optional[Quart] = None) -> None:
     """Set up the database connection and session factory for the FLask application.
 
     This function initializes the global `engine` and `session_factory` variables
@@ -37,10 +38,12 @@ def setup_database(app: Quart) -> None:
 
     _create_tables(engine)
 
-    # Gracefully shutdown the database session
-    @app.teardown_appcontext
-    def shutdown_session(exception=None) -> None:
-        session_factory.remove()
+    if app is not None:
+        # Gracefully shutdown the database session, if launched
+        # from within a Flask app context.
+        @app.teardown_appcontext
+        def shutdown_session(exception=None) -> None:
+            session_factory.remove()
 
 
 def __setup_factory():

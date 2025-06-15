@@ -50,13 +50,6 @@ def register_inboxes(timeout: float = 2.5, debounce: float = 30) -> AIOWatchdog 
         log.exception("WTF, redis what you doing?")
         return None
 
-    if os.getpid() != os.getppid():
-        log.exception(
-            "This is a child process (likely uvicorn worker), "
-            + "not starting inbox watchdog."
-        )
-        return None
-
     # Return early if no inboxes are configured.
     if len(_inboxes) == 0:
         return None

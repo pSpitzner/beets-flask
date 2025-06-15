@@ -42,10 +42,6 @@ def create_app(config: str | ServerConfig | None = None) -> Quart:
     register_routes(app)
     register_socketio(app)
 
-    from ..watchdog.inbox import register_inboxes
-
-    register_inboxes()
-
     log.debug("Quart app created!")
 
     return app
