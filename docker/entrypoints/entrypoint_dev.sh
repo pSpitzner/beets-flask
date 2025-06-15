@@ -9,6 +9,14 @@ cd /repo/frontend
 
 # pnpm run build:dev &  # use this for debugging with ios, port 5001 (no cors allowed)
 pnpm run dev & # normal dev, port 5173
+vite_pid=$!
+sleep 10  # Give Vite a moment to start
+if ! kill -0 $vite_pid 2>/dev/null; then
+    echo "starting vite failed, will try to fix this by installing dependencies ..."
+    pnpm install
+    pnpm run dev &
+fi
+
 
 cd /repo
 
