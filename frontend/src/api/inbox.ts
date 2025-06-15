@@ -177,3 +177,14 @@ function deleteFromFolder(
         }
     }
 }
+
+export function* walkFolder(folder: Folder): Generator<Folder | File> {
+    yield folder;
+    for (const child of folder.children) {
+        if (child.type === "directory") {
+            yield* walkFolder(child);
+        } else {
+            yield child;
+        }
+    }
+}

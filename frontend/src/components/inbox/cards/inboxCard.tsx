@@ -12,6 +12,8 @@ import {
 } from "@/components/inbox/fileTree";
 import { Folder } from "@/pythonTypes";
 
+import { DeleteImportedFoldersButton } from "../actions2/deleteFolders";
+
 export function InboxCard({ folder }: { folder: Folder }) {
     const config = useConfig();
 
@@ -158,6 +160,7 @@ export function InboxCard({ folder }: { folder: Folder }) {
                 <SelectedStats />
             </CardContent>
             <FolderActionDesktopBar />
+            <DeleteImportedFoldersButton folder={folder} />
             {/* <FolderActionsSpeedDial /> */}
         </Card>
     );
