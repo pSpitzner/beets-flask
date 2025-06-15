@@ -86,7 +86,6 @@ function RouteComponent() {
                 display: "flex",
                 flexDirection: "column",
                 minHeight: "100%",
-                height: "100%",
                 position: "relative",
                 gap: 1,
                 [theme.breakpoints.up("laptop")]: {
