@@ -30,8 +30,6 @@ def register_inboxes(timeout: float = 2.5, debounce: float = 30) -> AIOWatchdog 
     """
     Register file system watcher to monitor configured inboxes.
 
-    This should not be called from web workers.
-
     Parameters
     ----------
     timeout: float
@@ -42,6 +40,11 @@ def register_inboxes(timeout: float = 2.5, debounce: float = 30) -> AIOWatchdog 
         You have to wait at least this long before an autotag will trigger
         after you add the last file to an inbox.
         Default is 30 seconds.
+
+    Notes
+    -----
+    - This should not be called from uvicorn workers to avoid concurrency issues.
+      You only want one watchdog (use separate init script).
     """
     _inboxes = get_inboxes()
 
