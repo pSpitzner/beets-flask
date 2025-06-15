@@ -29,6 +29,9 @@ function RouteComponent() {
                     <Link to="/debug/design/loading">
                         <li>Loading states</li>
                     </Link>
+                    <Link to="/debug/design/buttons">
+                        <li>Buttons</li>
+                    </Link>
                 </Box>
             </Box>
             <Box>
