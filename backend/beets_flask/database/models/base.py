@@ -1,16 +1,17 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, List, Mapping, Self, Sequence, TypedDict
+from typing import Mapping, Self, Sequence
 from uuid import uuid4
 
-from beets.importer import ImportTask, library
-from sqlalchemy import Index, LargeBinary, select
+import pytz
+from sqlalchemy import LargeBinary, select
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
     Session,
     mapped_column,
+    reconstructor,
     registry,
 )
 from sqlalchemy.sql import func
@@ -24,6 +25,7 @@ class Base(DeclarativeBase):
     registry = registry(type_annotation_map={bytes: LargeBinary})
 
     id: Mapped[str] = mapped_column(primary_key=True)
+
     created_at: Mapped[datetime] = mapped_column(default=func.now(), index=True)
     updated_at: Mapped[datetime] = mapped_column(
         default=func.now(), onupdate=func.now()
@@ -96,3 +98,13 @@ class Base(DeclarativeBase):
 
     def to_dict(self) -> Mapping:
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+    @reconstructor
+    def _sqlalchemy_reconstructor(self):
+        # Set timezone info for created_at and updated_at
+        # Seems a bit hacky but is the only way to ensure that
+        # datetime objects are timezone-aware after deserialization
+        if self.created_at and self.created_at.tzinfo is None:
+            self.created_at = self.created_at.replace(tzinfo=pytz.UTC)
+        if self.updated_at and self.updated_at.tzinfo is None:
+            self.updated_at = self.updated_at.replace(tzinfo=pytz.UTC)
