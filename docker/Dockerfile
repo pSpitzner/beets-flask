@@ -59,7 +59,7 @@ RUN uv sync --no-install-project
 COPY ./backend/beets_flask/ /repo/backend/beets_flask/
 COPY ./backend/generate_types.py /repo/backend/
 COPY ./backend/launch_redis_workers.py /repo/backend/
-COPY ./backend/launch_watchdog_workers.py /repo/backend/
+COPY ./backend/launch_watchdog_worker.py /repo/backend/
 COPY ./backend/launch_db_init.py /repo/backend/
 
 RUN uv sync
