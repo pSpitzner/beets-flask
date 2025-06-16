@@ -10,7 +10,7 @@
 !backend/beets_flask
 !backend/pyproject.toml
 !backend/main.py
-!backend/launch_redis_workers.py
+!backend/launch_*.py
 !backend/generate_types.py
 
 !configs/
