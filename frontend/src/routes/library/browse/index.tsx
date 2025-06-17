@@ -182,33 +182,33 @@ function Albums() {
 function AlbumRecentCard(album: AlbumResponseMinimal) {
     const theme = useTheme();
     return (
-        <Box
-            sx={{
-                padding: 0.5,
-                border: "2px solid",
-                borderColor: "primary.muted",
-                width: "100%",
-                color: "primary.muted",
-                display: "flex",
-                flexDirection: "column",
-                borderRadius: 1,
-                alignItems: "space-between",
-                justifyContent: "space-between",
-                gap: 1,
-            }}
-        >
-            <Box sx={{ display: "flex", gap: 1 }}>
-                <CoverArt
-                    size="small"
-                    type="album"
-                    beetsId={album.id}
-                    sx={{
-                        height: "70px",
-                        width: "70px",
-                        flexShrink: 0,
-                    }}
-                />
-                <Link to="/library/album/$albumId" params={{ albumId: album.id }}>
+        <Link to="/library/album/$albumId" params={{ albumId: album.id }}>
+            <Box
+                sx={{
+                    padding: 0.5,
+                    border: "2px solid",
+                    borderColor: "primary.muted",
+                    width: "100%",
+                    color: "primary.muted",
+                    display: "flex",
+                    flexDirection: "column",
+                    borderRadius: 1,
+                    alignItems: "space-between",
+                    justifyContent: "space-between",
+                    gap: 1,
+                }}
+            >
+                <Box sx={{ display: "flex", gap: 1 }}>
+                    <CoverArt
+                        size="small"
+                        type="album"
+                        beetsId={album.id}
+                        sx={{
+                            height: "70px",
+                            width: "70px",
+                            flexShrink: 0,
+                        }}
+                    />
                     <Typography
                         variant="h6"
                         sx={{
@@ -218,39 +218,40 @@ function AlbumRecentCard(album: AlbumResponseMinimal) {
                             lineHeight: 1.2,
                         }}
                     >
-                        {album.name}
+                        {album.name || "[Unknown Album]"}
                     </Typography>
-                </Link>
-            </Box>
-            <Box
-                sx={{
-                    width: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "space-between",
-                    justifyContent: "space-between",
-                }}
-            >
+                </Box>
                 <Box
                     sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: 1,
-                        color: "grey.600",
-                        letterSpacing: "1px",
                         width: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "space-between",
+                        justifyContent: "space-between",
                     }}
                 >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                        <ClockIcon size={theme.iconSize.md} />
-                        <Typography variant="body2">
-                            Added {album.added ? relativeTime(album.added) : "Unknown"}
-                        </Typography>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 1,
+                            color: "grey.600",
+                            letterSpacing: "1px",
+                            width: "100%",
+                        }}
+                    >
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                            <ClockIcon size={theme.iconSize.md} />
+                            <Typography variant="body2">
+                                Added{" "}
+                                {album.added ? relativeTime(album.added) : "Unknown"}
+                            </Typography>
+                        </Box>
                     </Box>
                 </Box>
             </Box>
-        </Box>
+        </Link>
     );
 }
 
