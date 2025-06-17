@@ -5,7 +5,7 @@ import {
     HistoryIcon,
     TagIcon,
 } from "lucide-react";
-import React, { useEffect, useMemo, useState, useTransition } from "react";
+import React, { Fragment, useEffect, useMemo, useState, useTransition } from "react";
 import {
     Alert,
     AlertProps,
@@ -117,10 +117,7 @@ function UserSelection({ session }: { session: SerializedSessionState }) {
             // starting with asis than sorted by distance/penalty
             const m = new Map<string, string>();
             session.tasks.forEach((task) => {
-                const candidates = [
-                    ...currentTask.candidates,
-                    currentTask.asis_candidate,
-                ];
+                const candidates = [...task.candidates, task.asis_candidate];
                 if (candidates.length >= 1) {
                     m.set(task.id, candidates[0].id);
                 }
@@ -161,7 +158,7 @@ function UserSelection({ session }: { session: SerializedSessionState }) {
                 key={currentTask.id}
                 isPending={isPending}
                 currentTask={currentTask}
-                selectedCandidateId={selectedCandidate!.id}
+                selectedCandidateId={selectedCandidate?.id}
                 onCandidateChange={(id) => {
                     setSelectCandidates((prev) => {
                         const newMap = new Map(prev);
@@ -264,8 +261,13 @@ function SelectionHeader({
         >
             {session.tasks.length > 1 && (
                 <Box sx={{ ml: "auto", alignSelf: "flex-start" }}>
-                    <Typography variant="caption" component="div" textAlign="right">
-                        task {currentTaskIdx + 1} of {session.tasks.length}
+                    <Typography
+                        variant="caption"
+                        component="div"
+                        textAlign="right"
+                        fontWeight="bold"
+                    >
+                        Task {currentTaskIdx + 1} of {session.tasks.length}
                     </Typography>
                 </Box>
             )}
@@ -282,15 +284,15 @@ function CandidateSelectionArea({
 }: {
     isPending: boolean;
     currentTask: SerializedTaskState;
-    selectedCandidateId: SerializedCandidateState["id"];
+    selectedCandidateId?: SerializedCandidateState["id"];
     onCandidateChange: (id: string) => void;
 }) {
     return (
-        <SizeFixedWithLoading isLoading={isPending}>
+        <SizeFixedWithLoading isLoading={isPending || !selectedCandidateId}>
             <CandidateSelector
                 key={currentTask.id}
                 task={currentTask}
-                selected={selectedCandidateId}
+                selected={selectedCandidateId!}
                 onChange={onCandidateChange}
             />
         </SizeFixedWithLoading>
@@ -517,7 +519,13 @@ function ChosenCandidatesOverview({ session }: { session: SerializedSessionState
                     gap: 1,
                 }}
             >
-                <Box>
+                <Box
+                    sx={{
+                        "> div:not(:first-of-type)": {
+                            marginTop: 2,
+                        },
+                    }}
+                >
                     {session.tasks.map((task, index) => {
                         return <SelectedCandidate task={task} key={index} />;
                     })}
