@@ -39,7 +39,10 @@ export const Route = createFileRoute("/library/browse/albums")({
         const val = getStorageValue(STORAGE_KEY, DEFAULT_STORAGE_VALUE);
 
         await context.queryClient.ensureInfiniteQueryData(
-            albumsInfiniteQueryOptions(val)
+            albumsInfiniteQueryOptions({
+                ...val,
+                query: "",
+            })
         );
     },
 });
