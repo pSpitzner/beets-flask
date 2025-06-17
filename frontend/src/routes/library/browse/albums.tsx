@@ -27,9 +27,8 @@ import {
 import { CoverArt } from "@/components/library/coverArt";
 import { AlbumResponseMinimal } from "@/pythonTypes";
 
-const STORAGE_KEY = "library.browse.albums.search";
+const STORAGE_KEY = "library.browse.albums";
 const DEFAULT_STORAGE_VALUE = {
-    query: "",
     orderBy: "album" as const,
     orderDirection: "ASC" as const,
 };
@@ -132,14 +131,17 @@ function AlbumsHeader({ sx, ...props }: BoxProps) {
 
 function View({ sx, ...props }: BoxProps) {
     const [overscanStopIndex, setOverScanStopIndex] = useState(0);
-    const [view, setView] = useState<"list" | "grid">("list");
     const [search, setSearch] = useState("");
+    const debouncedQuery = useDebounce(search, 500);
+
+    const [view, setView] = useLocalStorage<"list" | "grid">(
+        STORAGE_KEY + ".view",
+        "list"
+    );
     const [queryState, setQueryState] = useLocalStorage<{
         orderBy: "album" | "albumartist" | "year";
         orderDirection: "ASC" | "DESC";
-    }>(STORAGE_KEY, DEFAULT_STORAGE_VALUE);
-
-    const debouncedQuery = useDebounce(search, 500);
+    }>(STORAGE_KEY + ".query", DEFAULT_STORAGE_VALUE);
 
     const { data, fetchNextPage, isError, isPending, isFetching, hasNextPage } =
         useInfiniteQuery(
@@ -323,7 +325,6 @@ function CoverGridRow({
                 ...style,
                 display: "flex",
                 flexWrap: "wrap",
-                border: "1px solid blue",
                 width: "100%",
                 alignItems: "center",
                 justifyContent: "center",
@@ -350,7 +351,6 @@ function CoverGridRow({
                                 backgroundColor: "primary.muted",
                                 color: "primary.contrastText",
                             },
-                            border: "1px solid green",
                         }}
                     >
                         <CoverArt
