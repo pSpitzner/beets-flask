@@ -7,12 +7,14 @@ We provide a docker image with the full beeets-flask setup. You can run it with 
 Follow these steps to quickly set up and run the Beets-Flask application using Docker.
 
 1. Create a new directory:
+
 ```bash
 mkdir beets-flask
 cd beets-flask
 ```
 
 2. Download the `docker-compose.yaml` file or create it manually and copy the content from below.
+
 ```bash
 wget https://raw.githubusercontent.com/pspitzner/beets-flask/main/docker/docker-compose.yaml
 ```
@@ -20,12 +22,12 @@ wget https://raw.githubusercontent.com/pspitzner/beets-flask/main/docker/docker-
 3. Edit the docker-compose.yaml file! Please change the configuration and volume paths, otherwise the application might not start or work correctly. See the [configuration](configuration) section for more information.
 
 4. Start the application using docker-compose.
+
 ```bash
 docker-compose up
 ```
 
 The application should now be available at `http://localhost:5001`!
-
 
 ## Using docker
 
@@ -43,6 +45,7 @@ docker run -d -p 5001:5001 \
 ```
 
 (configuration)=
+
 ## Configuration
 
 On first container launch, config files are automatically generated in the mounted `/config` folder. Configurations are read from `config/beets/config.yaml` and `config/beets-flask/config.yaml` (the latter takes precedence).
@@ -57,20 +60,18 @@ As the minimum, you need to update the information about your music folders. Add
 ```yaml
 # config/beets/config.yaml
 # Update to your mounted music folder!
-directory: /music_path/clean/ 
+directory: /music_path/clean/
 ```
- 
 
--   We have a `gui` section in the beets-flask config to tweak the container and webfrontend.
--   Place GUI settings in `config/beets-flask/config.yaml`. If you configure other fields (out of the parent `gui`) they take precedence over the beets config. This might be useful when you want different settings for beets CLI vs the beets GUI.
+-   ~~We have a `gui` section in the beets-flask config to tweak the container and webfrontend.~~ (removed for 1.0.0, will be coming back soon)
+-   ~~Place GUI settings in `config/beets-flask/config.yaml`.~~
+-   If you configure other fields (out of the parent `gui`) they take precedence over the beets config. This might be useful when you want different settings for beets CLI vs the beets GUI.
 -   Opinionated [examples](./backend/beets_flask/config/config_bf_example.yaml) are copied to `config/beets/config.yaml` and `config/beets-flask/config.yaml` on container launch.
 -   Config changes require a container restart to take effect.
 
-
-
 ### Use your existing beets library
 
-**Make a backup!** Your config folder `~/.config/beets/` should be the minimum. 
+**Make a backup!** Your config folder `~/.config/beets/` should be the minimum.
 
 Mount your existing beets config folder to the container. This way you can use your existing beets library and configuration.
 
@@ -82,10 +83,9 @@ volumes:
     - /music_path/clean/:/music_path/clean/
 ```
 
-Make sure that the `library` location in your beets `config.yaml` is either set to the path _inside_ the container, or not specified (the default will work).
+Make sure that the `library` location in your beets `config.yaml` is either set to the path _inside_ the container, or not specified (the default should work).
 
-Note that `/music_path/clean/` needs to be consistent inside and outside of the container. Otherwise beets will not be able to manage files consistently. For instance if your music is in `/home/user/music/`, you should mount with `/home/user/music/:/home/user/music/`.
-
+Note that `/music_path/clean/` needs to be consistent inside and outside of the container. Otherwise beets will not be able to manage files correctly. For instance if your music is in `/home/user/music/`, you should mount with `/home/user/music/:/home/user/music/`.
 
 ### To start from scratch or with a copy of your existing library
 
@@ -99,5 +99,4 @@ volumes:
     - /music_path/imported/:/music_path/imported/
 ```
 
-Start the container, and you will find some files placed in the mounted config folder.Than either start customizing a config here, or copy content from your `~/.config/beets/` to `/music_path/config/beets/`
-
+Start the container, and you will find some files placed in the mounted config folder. Then either start customizing a config here, or copy content from your `~/.config/beets/` to `/music_path/config/beets/`
