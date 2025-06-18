@@ -148,23 +148,30 @@ function ImportedTaskInfo({ task }: { task: SerializedTaskState }) {
 
     return (
         <Box
-            sx={{
+            sx={(theme) => ({
                 display: "flex",
-                gap: 1,
+                gap: 2,
                 width: "100%",
-            }}
+                [theme.breakpoints.down("tablet")]: {
+                    flexDirection: "column",
+                },
+            })}
         >
             <Box
-                sx={{
-                    display: "flex",
-                    flexDirection: "row",
-                    flexGrow: 1,
-                    flexWrap: "wrap",
-                    columnGap: 1,
+                sx={(theme) => ({
+                    display: "grid",
+                    gridTemplateColumns: "1fr",
+                    width: "100%",
+                    [theme.breakpoints.up("tablet")]: {
+                        gridTemplateColumns: "1fr 1fr auto",
+                        "> div:first-of-type": {
+                            gridColumn: "span 3",
+                        },
+                    },
                     label: {
                         color: "text.secondary",
                     },
-                }}
+                })}
             >
                 <Typography variant="h6" component="div" sx={{ width: "100%" }}>
                     {album.albumartist} - {album.name}
@@ -195,7 +202,7 @@ function ImportedTaskInfo({ task }: { task: SerializedTaskState }) {
                     </Typography>
                 </Box>
             </Box>
-            <Box sx={{ flexGrow: "0 1", ml: "auto", mt: "auto" }}>
+            <Box sx={{ ml: "auto", mt: "auto", width: "130px", minWidth: "130px" }}>
                 <Link
                     to="/library/album/$albumId"
                     params={{ albumId: album.id }}
