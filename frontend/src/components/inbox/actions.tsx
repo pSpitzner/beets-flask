@@ -48,6 +48,10 @@ import { useFolderSelectionContext } from "./folderSelectionContext";
 import { InboxTypeIcon, SourceTypeIcon } from "../common/icons";
 import { ClipboardCopyButton } from "../common/inputs/copy";
 import { MutationButton } from "../common/inputs/mutationButton";
+import {
+    SplitButtonOptionProps,
+    SplitButtonOptions,
+} from "../common/inputs/splitButton";
 import { formatDate } from "../common/units/time";
 import { useStatusSocket } from "../common/websocket/status";
 import { useTerminalContext } from "../frontpage/terminal";
@@ -146,6 +150,82 @@ export function FolderActionsSpeedDial() {
                 />
             </SpeedDial>
         </Zoom>
+    );
+}
+
+export function ImportSplitButton(
+    props: Omit<SplitButtonOptionProps, "options" | "onClick">
+) {
+    const theme = useTheme();
+
+    const sx = {
+        alignItems: "center",
+        justifyContent: "flex-start",
+    };
+
+    return (
+        <SplitButtonOptions
+            color="secondary"
+            options={[
+                {
+                    label: "Import Best",
+                    key: "retag",
+                    buttonProps: {
+                        startIcon: <ImportIcon size={theme.iconSize.lg} />,
+                        sx,
+                    },
+                },
+                {
+                    label: "Import Bootleg",
+                    key: "import",
+                    buttonProps: {
+                        startIcon: <ImportIcon size={theme.iconSize.lg} />,
+                        sx,
+                    },
+                },
+            ]}
+            onClick={console.log}
+            {...props}
+        />
+    );
+}
+
+export function RetagSplitButton(
+    props: Omit<SplitButtonOptionProps, "options" | "onClick">
+) {
+    const theme = useTheme();
+
+    const sx = {
+        width: "12rem",
+        alignItems: "center",
+        justifyContent: "flex-start",
+    };
+
+    return (
+        <SplitButtonOptions
+            color="secondary"
+            variant="outlined"
+            options={[
+                {
+                    label: "Retag",
+                    key: "retag",
+                    buttonProps: {
+                        startIcon: <TagIcon size={theme.iconSize.lg} />,
+                        sx,
+                    },
+                },
+                {
+                    label: "Retag",
+                    key: "retag_import",
+                    buttonProps: {
+                        startIcon: <ImportIcon size={theme.iconSize.lg} />,
+                        sx,
+                    },
+                },
+            ]}
+            onClick={console.log}
+            {...props}
+        />
     );
 }
 
