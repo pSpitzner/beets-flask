@@ -44,9 +44,33 @@ function RouteComponent() {
                         display: "flex",
                         justifyContent: "center",
                         marginTop: "1rem",
+                        gap: "1rem",
                     }}
                 >
                     <SplitButtonOptions
+                        options={[
+                            {
+                                label: "Action 1",
+                                key: "action1",
+                                buttonProps: {
+                                    startIcon: <PencilIcon size={theme.iconSize.md} />,
+                                },
+                            },
+                            {
+                                label: "Action 2",
+                                key: "action2",
+                                buttonProps: {
+                                    startIcon: <EyeIcon size={theme.iconSize.md} />,
+                                },
+                            },
+                            { label: "Action 3", key: "action3" },
+                        ]}
+                        onClick={(option, evt) => {
+                            alert(`Clicked on ${option.label}`);
+                        }}
+                    />
+                    <SplitButtonOptions
+                        color="secondary"
                         options={[
                             {
                                 label: "Action 1",

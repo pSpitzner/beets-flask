@@ -1,4 +1,4 @@
-import { LucideChevronRight } from "lucide-react";
+import { LucideChevronRight, PlusIcon, Settings } from "lucide-react";
 import { useState } from "react";
 import {
     Box,
@@ -29,7 +29,7 @@ import { useFolderSelectionContext } from "./folderSelectionContext";
 export const GridWrapper = styled(Box)(({ theme }) => ({
     display: "grid",
     // gridTemplateColumns: "[tree] 1fr [chip] auto [actions] auto [selector] auto",
-    gridTemplateColumns: "[selector] auto [tree] 1fr [chip] auto [actions] auto ",
+    gridTemplateColumns: "[selector] auto [tree] 1fr [chip] auto",
     width: "100%",
     columnGap: theme.spacing(1.5),
     // Fill columns even if content is given in other order
@@ -45,13 +45,14 @@ export const GridWrapper = styled(Box)(({ theme }) => ({
     },
 }));
 
-const GridRow = styled(Box)({
+const GridRow = styled(Box)(({ theme }) => ({
     display: "grid",
     gridColumn: "1 / -1",
     gridTemplateColumns: "subgrid",
     gridAutoFlow: "column dense",
     alignItems: "center",
-});
+    paddingInline: theme.spacing(0.5),
+}));
 
 /* ---------------------------- Folder & File component ---------------------------- */
 
@@ -78,45 +79,6 @@ export function FolderComponent({
     });
     const { isSelected, toggleSelect } = useFolderSelectionContext();
 
-    // Getting a context menu to work is a bit tricky
-    // on mobile devices, so we use a custom hook
-    // to handle the context menu events on long press
-    // we also want to allow to trigger the menu using a button
-    // for this we use a element as anchor
-    const [contextMenuAnchor, setContextMenuAnchor] = useState<
-        | {
-              top: number;
-              left: number;
-          }
-        | HTMLElement
-        | null
-    >(null);
-    const mobileSafeContext = useMobileSafeContextMenu((e) => {
-        e.preventDefault();
-
-        setContextMenuAnchor(
-            contextMenuAnchor === null
-                ? {
-                      top: e.clientY + 2,
-                      left: e.clientX - 6,
-                  }
-                : // repeated contextmenu when it is already open closes it with Chrome 84 on Ubuntu
-                  // Other native context menus might behave different.
-                  // With this behavior we prevent contextmenu from the backdrop to re-locale existing context menus.
-                  null
-        );
-
-        // Prevent text selection lost after opening the context menu on Safari and Firefox
-        const selection = document.getSelection();
-        if (selection && selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-
-            setTimeout(() => {
-                selection.addRange(range);
-            });
-        }
-    }, 500);
-
     // Create children elements from tree (recursive)
     const childElements = Object.entries(folder.children).map(([_key, values]) => {
         if (values.type === "file") {
@@ -135,7 +97,6 @@ export function FolderComponent({
             {/* Order inside the gridrow does not matter, set outside. */}
             <GridRow
                 sx={(theme) => ({
-                    paddingInline: theme.spacing(0.5),
                     borderRadius: 1,
                     position: "relative",
                     "&:hover, &[data-contextmenu='true']": {
@@ -150,9 +111,7 @@ export function FolderComponent({
                     },
                 })}
                 data-selected={isSelected(folder)}
-                data-contextmenu={Boolean(contextMenuAnchor)}
                 onClick={() => toggleSelect(folder)}
-                {...mobileSafeContext}
             >
                 {/* Current status of the folder */}
                 <Chips folder={folder} />
@@ -163,14 +122,6 @@ export function FolderComponent({
                     isOpen={isOpen}
                     setIsOpen={setIsOpen}
                     level={level}
-                />
-
-                {/* More actions*/}
-                <MoreActions
-                    f={folder}
-                    anchor={contextMenuAnchor}
-                    setAnchor={setContextMenuAnchor}
-                    sx={{ gridColumn: "actions" }}
                 />
 
                 {/* Selector */}
@@ -441,23 +392,61 @@ function Chips({ folder }: { folder: Folder }) {
 /* --------------------------------- Utility --------------------------------- */
 
 export function SelectedStats() {
-    const { nSelected } = useFolderSelectionContext();
+    const [checked, setChecked] = useState(false);
+    const { nSelected, deselectAll } = useFolderSelectionContext();
 
     return (
-        <Box
+        <GridRow
             sx={{
-                display: "flex",
-                gap: "1rem",
-                alignItems: "flex-start",
-                justifyContent: "flex-start",
-                width: "100%",
-                paddingBlock: 1,
-                paddingLeft: 1,
+                paddingBottom: 1,
             }}
         >
-            <Typography fontSize={12} variant="body2">
-                {nSelected} folder{nSelected > 1 ? "s" : null} selected
-            </Typography>
-        </Box>
+            <Checkbox
+                color="secondary"
+                indeterminate={nSelected > 0}
+                sx={{
+                    gridColumn: "selector",
+                    margin: 0,
+                    padding: 0,
+                }}
+                checked={checked}
+                onChange={() => {
+                    deselectAll();
+                    setChecked(false);
+                }}
+                disabled={nSelected === 0}
+            />
+            <Box sx={{ gridColumn: "tree", display: "flex", alignItems: "center" }}>
+                <Typography
+                    fontSize={12}
+                    variant="body2"
+                    sx={{ gridColumn: "tree", color: "text.secondary" }}
+                >
+                    {nSelected} folder{nSelected > 1 ? "s" : null} selected
+                </Typography>
+            </Box>
+
+            <Box
+                sx={{
+                    gridColumn: "-1",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "flex-end",
+                }}
+            >
+                <IconButton
+                    size="small"
+                    onClick={() => {
+                        deselectAll();
+                        setChecked(false);
+                    }}
+                    sx={{
+                        color: "text.secondary",
+                    }}
+                >
+                    <Settings size={16} />
+                </IconButton>
+            </Box>
+        </GridRow>
     );
 }

@@ -1,10 +1,23 @@
+import { PlusIcon, Settings } from "lucide-react";
 import { useMemo } from "react";
-import { Box, Card, CardContent, Tooltip, Typography } from "@mui/material";
+import {
+    Box,
+    Button,
+    Card,
+    CardContent,
+    IconButton,
+    Tooltip,
+    Typography,
+} from "@mui/material";
 
 import { useConfig } from "@/api/config";
 import { InboxTypeIcon } from "@/components/common/icons";
 import { CardHeader } from "@/components/frontpage/statsCard";
-import { FolderActionDesktopBar } from "@/components/inbox/actions";
+import {
+    FolderActionDesktopBar,
+    ImportSplitButton,
+    RetagSplitButton,
+} from "@/components/inbox/actions";
 import {
     FolderComponent,
     GridWrapper,
@@ -59,7 +72,7 @@ export function InboxCard({ folder }: { folder: Folder }) {
     }
 
     return (
-        <Card sx={{ width: "100%", padding: 2 }}>
+        <Card sx={{ width: "100%", padding: 2, overflow: "auto" }}>
             <CardHeader
                 key={folder.full_path}
                 icon={
@@ -139,6 +152,7 @@ export function InboxCard({ folder }: { folder: Folder }) {
             >
                 <GridWrapper>
                     {/* Only show inner folders */}
+                    <SelectedStats />
                     {innerFolders.map((innerFolder) => (
                         <FolderComponent
                             key={innerFolder.full_path}
@@ -157,10 +171,27 @@ export function InboxCard({ folder }: { folder: Folder }) {
                         </Box>
                     )}
                 </GridWrapper>
-                <SelectedStats />
             </CardContent>
             <FolderActionDesktopBar />
-            <DeleteImportedFoldersButton folder={folder} />
+            {/* <DeleteImportedFoldersButton folder={folder} /> */}
+            <Box
+                sx={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: 1,
+                    mt: 2,
+                    paddingInline: 2,
+                    alignItems: "center",
+                }}
+            >
+                <RetagSplitButton
+                    sx={{
+                        mr: "auto",
+                    }}
+                    disabled={true}
+                />
+                <ImportSplitButton disabled={true} />
+            </Box>
             {/* <FolderActionsSpeedDial /> */}
         </Card>
     );
