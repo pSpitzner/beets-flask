@@ -31,6 +31,7 @@ from .types import (
     AlbumInfo,
     BeetsAlbumMatch,
     BeetsItem,
+    BeetsTrackInfo,
     BeetsTrackMatch,
     ItemInfo,
     TrackInfo,
@@ -604,6 +605,10 @@ class CandidateState(BaseState):
         """Returns True if this is an "as is" candidate."""
         return self.id.startswith("asis-")
 
+    @property
+    def mapping(self):
+        return self.match.mapping
+
     # ------------------------------------ utility ----------------------------------- #
 
     def identify_duplicates(
@@ -678,19 +683,13 @@ class CandidateState(BaseState):
             # Map beets types to our types, allows serialization magic
             tracks = [TrackInfo.from_beets(track) for track in self.match.info.tracks]
 
-            # the mapping of a beets albummatch uses objects, but we don not want
-            # to send them over redundantly. convert to an index mapping,
-            # where first index is in self.items, and second is in self.match.info.tracks
-            for item, track in self.match.mapping.items():  # type: ignore
-                idx = tdx = None
-                for idx, _ in enumerate(self.items):
-                    if item.path == self.items[idx].path:
-                        break
-                for tdx, _ in enumerate(self.tracks):
-                    if track.track_id == self.tracks[tdx].track_id:
-                        break
-                if idx is not None and tdx is not None:
-                    mapping[idx] = tdx
+            log.debug(f"old paths: {self.task_state.task.old_paths}")
+            mapping = _index_mapping(
+                self.match.mapping,  # type: ignore
+                self.items,
+                self.tracks,
+            )
+
         else:
             raise ValueError(f"Unknown type of matchinfo {type(self.match.info)}")
 
@@ -706,6 +705,84 @@ class CandidateState(BaseState):
         )
 
         return res
+
+
+def _index_mapping(
+    mapping: dict[BeetsItem, BeetsTrackInfo],
+    items: list[BeetsItem],
+    tracks: list[BeetsTrackInfo],
+) -> dict[int, int]:
+    """Helper to create an index mapping from items to tracks.
+
+    the mapping of a beets albummatch uses objects, but we don not want
+    to send them over redundantly. convert to an index mapping,
+    where first index is in self.items, and second is in self.match.info.tracks
+
+    This is used to serialize the mapping of a candidate state.
+    """
+
+    cur_paths = [i.path for i in items]
+
+    log.debug(f"items: {[i.title for i in items]}")
+
+    idxs = []
+    tdxs = []
+    for item, track in mapping.items():  # type: ignore
+        # Problem: after import, mapping only contains the new items,
+        # with updated path, track indices, and titles.
+        # Thus they are very close to the track objects, and
+        # i have not found a way yet to identify them in the original
+        # items list.
+
+        # tried two approaches:
+        # * after import, we should be able use the track indices
+        # since they get set. nope: not working for non-sequential missing files
+        # * using old_paths, but they are the same as the paths in items – thus they both are not found in the mapping.
+
+        log.debug(f"track: {track.index} {track.track_alt} {track.title}")
+        log.debug(f"item: {item.track} {item.title}")
+
+        if item.path not in cur_paths:
+            # was imported already
+            # idxs.append(item.track - 1 if item.track is not None else None)
+            # tdxs.append(track.index - 1 if track.index is not None else None)
+            found_idx = found_tdx = None
+            for idx, _ in enumerate(items):
+                if item.title == items[idx].title:
+                    found_idx = idx
+                    break
+            for tdx, _ in enumerate(tracks):
+                if track == tracks[tdx]:
+                    found_tdx = tdx
+                    break
+            idxs.append(found_idx)
+            tdxs.append(found_tdx)
+
+        else:
+            # compare items via paths, and tracks via full dicts
+            # we used to compare via track_id, but this might be None.
+            found_idx = found_tdx = None
+            for idx, _ in enumerate(items):
+                if item.path == items[idx].path:
+                    found_idx = idx
+                    break
+            for tdx, _ in enumerate(tracks):
+                if track == tracks[tdx]:
+                    found_tdx = tdx
+                    break
+            idxs.append(found_idx)
+            tdxs.append(found_tdx)
+
+    if None in idxs or None in tdxs:
+        raise ValueError(
+            f"Index mapping failed: {idxs=} {tdxs=} {len(items)=} {len(tracks)=}"
+        )
+
+    res = {idx: tdx for idx, tdx in zip(idxs, tdxs)}
+
+    log.debug(f"Index mapping: {res}")
+
+    return res
 
 
 # ---------------------------- Serialization types --------------------------- #
