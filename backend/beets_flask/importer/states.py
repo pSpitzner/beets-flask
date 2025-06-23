@@ -427,6 +427,7 @@ class CandidateState(BaseState):
     id: str
     duplicate_ids: List[str]  # Beets ids of duplicates in the library (album)
     match: Union[BeetsAlbumMatch, BeetsTrackMatch]
+    _mapping: dict[int, int] | None = None  # index mapping from items to tracks
 
     # Reference upwards
     task_state: TaskState
@@ -606,8 +607,22 @@ class CandidateState(BaseState):
         return self.id.startswith("asis-")
 
     @property
-    def mapping(self):
-        return self.match.mapping
+    def mapping(self) -> dict[int, int]:
+        if self._mapping is not None:
+            return self._mapping
+        return self.current_mapping
+
+    @property
+    def current_mapping(self) -> dict[int, int]:
+        """Get the current mapping from items to tracks, calculated from the match."""
+        if isinstance(self.match, BeetsAlbumMatch):
+            return _index_mapping(
+                self.match.mapping,  # type: ignore
+                self.items,
+                self.tracks,
+            )
+
+        raise ValueError("Current mapping only available for album matches.")
 
     # ------------------------------------ utility ----------------------------------- #
 
@@ -684,11 +699,12 @@ class CandidateState(BaseState):
             tracks = [TrackInfo.from_beets(track) for track in self.match.info.tracks]
 
             log.debug(f"old paths: {self.task_state.task.old_paths}")
-            mapping = _index_mapping(
-                self.match.mapping,  # type: ignore
-                self.items,
-                self.tracks,
-            )
+            # mapping = _index_mapping(
+            #     self.match.mapping,  # type: ignore
+            #     self.items,
+            #     self.tracks,
+            # )
+            mapping = self.mapping
 
         else:
             raise ValueError(f"Unknown type of matchinfo {type(self.match.info)}")

@@ -13,10 +13,12 @@ Why not just have State and StateInDb in the same class?
 
 from __future__ import annotations
 
+import json
 import pickle
 from pathlib import Path
 from typing import List, Optional
 
+import sqlalchemy.types as types
 from beets.importer import ImportTask, action, library
 from sqlalchemy import (
     ForeignKey,
@@ -454,6 +456,32 @@ class TaskStateInDb(Base):
         return self.to_live_state().serialize()
 
 
+class IntDictType(types.TypeDecorator):
+    """
+    Stores a dict[int, int] as a JSON-encoded string in the database.
+    """
+
+    impl = types.Text
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if not isinstance(value, dict) or not all(
+            isinstance(k, int) and isinstance(v, int) for k, v in value.items()
+        ):
+            raise ValueError("Value must be a dict[int, int]")
+        return json.dumps({str(k): v for k, v in value.items()})
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        return {int(k): v for k, v in json.loads(value).items()}
+
+    def copy(self, **kw):
+        return IntDictType(self.impl.length)  # type: ignore
+
+
 class CandidateStateInDb(Base):
     """Represents a candidate (potential match) for an import task.
 
@@ -474,6 +502,11 @@ class CandidateStateInDb(Base):
 
     # Duplicate ids (if any) (beets_id)
     duplicate_ids: Mapped[str]
+
+    # association between tracks online and items on disk, from int to int
+    mapping: Mapped[IntDictType] = mapped_column(
+        IntDictType, default=None, nullable=True
+    )
 
     def __init__(
         self,
@@ -505,6 +538,8 @@ class CandidateStateInDb(Base):
             match=state.match,
             duplicate_ids=state.duplicate_ids,
         )
+        # hmm not sure why we get the type error
+        candidate.mapping = state._mapping
         return candidate
 
     def to_live_state(self, task_state: TaskState | None) -> CandidateState:
@@ -519,6 +554,7 @@ class CandidateStateInDb(Base):
             # edge case: "".split() gives ['']
             [] if len(self.duplicate_ids) == 0 else self.duplicate_ids.split(";")
         )
+        live_state._mapping = self.mapping
         return live_state
 
     def to_dict(self) -> SerializedCandidateState:

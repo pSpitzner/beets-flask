@@ -440,6 +440,10 @@ def user_query(
 
     _apply_choice(session, task)
 
+    t_state = session.state.get_task_state_for_task_raise(task)
+    for c_state in t_state.candidate_states:
+        # set our own custom attribute, which gets dumped to db
+        c_state._mapping = c_state.current_mapping
     return task
 
 
