@@ -52,6 +52,13 @@ export function CoverArt({
 
     if (isError) {
         if (error instanceof APIError) {
+            // Depending on the error we show a placeholder or an error message
+            if (error.statusCode === 404) {
+                // 404 means no cover art found, so we show a placeholder
+                return (
+                    <CoverArtPlaceholder sx={coverSx} animation={false} {...props} />
+                );
+            }
             return <CoverArtError sx={coverSx} error={error} size={size} {...props} />;
         } else {
             throw error;
