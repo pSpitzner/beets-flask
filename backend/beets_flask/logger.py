@@ -48,9 +48,9 @@ LOGGING_CONFIG = {
 if "PYTEST_VERSION" in os.environ:
     # Configure minimal logging for pytest
     logging.basicConfig(
-        level=logging.DEBUG,
         format="[%(levelname)-5s] %(asctime)s %(name)s %(filename)-8s:%(lineno)d %(message)s",
     )
+    logging.getLogger("beets-flask").setLevel(logging.DEBUG)
 else:
     logging.config.dictConfig(LOGGING_CONFIG)
 

@@ -10,7 +10,7 @@ def test_log():
 
     # Logger should have no handlers
     assert not log.handlers
-    assert log.level == 0
+    assert log.level == 10
     assert log.name == "beets-flask"
 
 

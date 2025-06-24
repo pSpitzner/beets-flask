@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from typing import Mapping, Self, Sequence
 from uuid import uuid4
 
 import pytz
-from sqlalchemy import LargeBinary, select
+from sqlalchemy import LargeBinary, select, types
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -19,10 +20,36 @@ from sqlalchemy.sql import func
 from beets_flask.logger import log
 
 
+class IntDictType(types.TypeDecorator):
+    """Stores a dict[int, int] as a JSON-encoded string in the database."""
+
+    impl = types.Text
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if not isinstance(value, dict) or not all(
+            isinstance(k, int) and isinstance(v, int) for k, v in value.items()
+        ):
+            raise ValueError("Value must be a dict[int, int]")
+        return json.dumps({str(k): v for k, v in value.items()})
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        return {int(k): v for k, v in json.loads(value).items()}
+
+    def copy(self, **kw):
+        return IntDictType(self.impl.length)  # type: ignore
+
+
 class Base(DeclarativeBase):
     __abstract__ = True
 
-    registry = registry(type_annotation_map={bytes: LargeBinary})
+    registry = registry(
+        type_annotation_map={bytes: LargeBinary, dict[int, int]: IntDictType}
+    )
 
     id: Mapped[str] = mapped_column(primary_key=True)
 
