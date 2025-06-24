@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import time
 from abc import ABC
 from dataclasses import dataclass
 from datetime import datetime
@@ -427,10 +426,10 @@ class CandidateState(BaseState):
     id: str
     duplicate_ids: List[str]  # Beets ids of duplicates in the library (album)
     match: Union[BeetsAlbumMatch, BeetsTrackMatch]
-    _mapping: dict[int, int] | None = None  # index mapping from items to tracks
-
     # Reference upwards
     task_state: TaskState
+
+    _mapping: dict[int, int] | None = None  # index mapping from items to tracks
 
     def __init__(
         self, match: Union[BeetsAlbumMatch, BeetsTrackMatch], task_state: TaskState
@@ -737,66 +736,37 @@ def _index_mapping(
     This is used to serialize the mapping of a candidate state.
     """
 
-    cur_paths = [i.path for i in items]
-
-    log.debug(f"items: {[i.title for i in items]}")
+    # log.debug(f"items: {[i.title for i in items]}")
 
     idxs = []
     tdxs = []
-    for item, track in mapping.items():  # type: ignore
-        # Problem: after import, mapping only contains the new items,
-        # with updated path, track indices, and titles.
-        # Thus they are very close to the track objects, and
-        # i have not found a way yet to identify them in the original
-        # items list.
+    for item, track in mapping.items():
+        # log.debug(f"track: {track.index} {track.track_alt} {track.title}")
+        # log.debug(f"item: {item.track} {item.title}")
 
-        # tried two approaches:
-        # * after import, we should be able use the track indices
-        # since they get set. nope: not working for non-sequential missing files
-        # * using old_paths, but they are the same as the paths in items – thus they both are not found in the mapping.
-
-        log.debug(f"track: {track.index} {track.track_alt} {track.title}")
-        log.debug(f"item: {item.track} {item.title}")
-
-        if item.path not in cur_paths:
-            # was imported already
-            # idxs.append(item.track - 1 if item.track is not None else None)
-            # tdxs.append(track.index - 1 if track.index is not None else None)
-            found_idx = found_tdx = None
-            for idx, _ in enumerate(items):
-                if item.title == items[idx].title:
-                    found_idx = idx
-                    break
-            for tdx, _ in enumerate(tracks):
-                if track == tracks[tdx]:
-                    found_tdx = tdx
-                    break
-            idxs.append(found_idx)
-            tdxs.append(found_tdx)
-
-        else:
-            # compare items via paths, and tracks via full dicts
-            # we used to compare via track_id, but this might be None.
-            found_idx = found_tdx = None
-            for idx, _ in enumerate(items):
-                if item.path == items[idx].path:
-                    found_idx = idx
-                    break
-            for tdx, _ in enumerate(tracks):
-                if track == tracks[tdx]:
-                    found_tdx = tdx
-                    break
-            idxs.append(found_idx)
-            tdxs.append(found_tdx)
+        # compare items via paths, and tracks via full dicts
+        # we used to compare via track_id, but this might be None.
+        found_idx = found_tdx = None
+        for idx, _ in enumerate(items):
+            if item.path == items[idx].path:
+                found_idx = idx
+                break
+        for tdx, _ in enumerate(tracks):
+            if track == tracks[tdx]:
+                found_tdx = tdx
+                break
+        idxs.append(found_idx)
+        tdxs.append(found_tdx)
 
     if None in idxs or None in tdxs:
         raise ValueError(
             f"Index mapping failed: {idxs=} {tdxs=} {len(items)=} {len(tracks)=}"
         )
 
-    res = {idx: tdx for idx, tdx in zip(idxs, tdxs)}
+    # ignore type for mypy, we have checked that its not None!
+    res: dict[int, int] = {idx: tdx for idx, tdx in zip(idxs, tdxs)}  # type: ignore[misc]
 
-    log.debug(f"Index mapping: {res}")
+    # log.debug(f"Index mapping: {res}")
 
     return res
 

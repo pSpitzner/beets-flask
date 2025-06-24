@@ -311,8 +311,8 @@ def group_albums(
 
     tasks: list[ImportTask] = []
     sorted_items = sorted(task.items, key=__group)
-    for _, items in itertools.groupby(sorted_items, __group):
-        items = list(items)  # Consume the iterator to a list
+    for _, _items in itertools.groupby(sorted_items, __group):
+        items = list(_items)  # Consume the iterator to a list
         task = ImportTask(task.toppath, [i.path for i in items], items)
         tasks += task.handle_created(session)
 

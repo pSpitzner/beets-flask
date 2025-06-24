@@ -58,6 +58,8 @@ typed = [
     "types-cachetools",
     "types-Deprecated",
     "types-aiofiles",
+    "types-pytz",
+    "pandas-stubs",
 ]
 all = ["beets_flask[dev,test]"]
 docs = [

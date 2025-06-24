@@ -8,12 +8,12 @@ import os
 import sys
 import time
 from asyncio.subprocess import PIPE, Process
-from typing import TYPE_CHECKING, AsyncIterator, Hashable, TypeVar
+from typing import TYPE_CHECKING, Any, AsyncIterator, Hashable, TypeVar
 
 import aiofiles
 import numpy as np
 from beets import util as beets_util
-from cachetools import TTLCache
+from cachetools import Cache, TTLCache
 from cachetools.keys import hashkey
 from quart import Blueprint, Response, g
 
@@ -27,15 +27,17 @@ if TYPE_CHECKING:
     from . import g
 
 
-transcodeCache = TTLCache(maxsize=128, ttl=60 * 60)  # 1 hour cache
-peaksCache = TTLCache(maxsize=128, ttl=60 * 60)  # 1 hour cache
+transcodeCache: Cache[Hashable, Any] = TTLCache(
+    maxsize=128, ttl=60 * 60
+)  # 1 hour cache
+peaksCache: Cache[Hashable, Any] = TTLCache(maxsize=128, ttl=60 * 60)  # 1 hour cache
 
 
 @audio_bp.route("/item/<int:item_id>/audio", methods=["GET"])
 async def item_audio(item_id: int):
     """Get the raw item data.
 
-    For streaming the audio file directly to the clien.
+    For streaming the audio file directly to the client.
     """
     item = g.lib.get_item(item_id)
     if not item:
@@ -188,7 +190,7 @@ T = TypeVar("T")
 
 
 async def cached_async_iterator(
-    key: Hashable, iterator: AsyncIterator[T], cache: TTLCache
+    key: Hashable, iterator: AsyncIterator[T], cache: Cache[Hashable, list[T]]
 ) -> AsyncIterator[T]:
     """Cache the results of an async iterator."""
 
