@@ -477,11 +477,12 @@ class CandidateStateInDb(Base):
     duplicate_ids: Mapped[str]
 
     # association between tracks online and items on disk, from int to int
-    mapping: Mapped[dict[int, int] | None]
+    mapping: Mapped[dict[int, int]]
 
     def __init__(
         self,
         match: BeetsAlbumMatch | BeetsTrackMatch,
+        mapping: dict[int, int],
         duplicate_ids: List[str] = [],
         id: str | None = None,
     ):
@@ -500,23 +501,25 @@ class CandidateStateInDb(Base):
 
         self.match = pickle.dumps(match)
         self.duplicate_ids = ";".join(map(str, duplicate_ids))
+        self.mapping = mapping
 
     @classmethod
     def from_live_state(cls, state: CandidateState) -> CandidateStateInDb:
         """Create the DB representation of a live CandidateState."""
-        candidate = cls(
+        return cls(
             id=state.id,
             match=state.match,
             duplicate_ids=state.duplicate_ids,
+            mapping=state._mapping,
         )
-        candidate.mapping = state._mapping
-        return candidate
 
     def to_live_state(self, task_state: TaskState | None) -> CandidateState:
         """Recreate the live CandidateState with underlying task from its stored version in the db."""
         if task_state is None:
             task_state = self.task.to_live_state()
-        live_state = CandidateState(pickle.loads(self.match), task_state)
+        live_state = CandidateState(
+            pickle.loads(self.match), task_state, mapping=self.mapping
+        )
         live_state.id = self.id
         live_state.created_at = self.created_at
         live_state.updated_at = self.updated_at
@@ -524,7 +527,6 @@ class CandidateStateInDb(Base):
             # edge case: "".split() gives ['']
             [] if len(self.duplicate_ids) == 0 else self.duplicate_ids.split(";")
         )
-        live_state._mapping = self.mapping
         return live_state
 
     def to_dict(self) -> SerializedCandidateState:

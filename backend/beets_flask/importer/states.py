@@ -429,26 +429,36 @@ class CandidateState(BaseState):
     # Reference upwards
     task_state: TaskState
 
-    _mapping: dict[int, int] | None = None  # index mapping from items to tracks
+    _mapping: dict[int, int]  # index mapping from items to tracks
 
     def __init__(
-        self, match: Union[BeetsAlbumMatch, BeetsTrackMatch], task_state: TaskState
+        self,
+        match: Union[BeetsAlbumMatch, BeetsTrackMatch],
+        task_state: TaskState,
+        mapping: dict[int, int] | None = None,
     ) -> None:
         super().__init__()
         self.match = match
         self.duplicate_ids = []  # checked and set by session
         self.task_state = task_state
 
+        # current_mapping is dynamic and looks at the match to generate integer / index mapping
+        # this can cause problems, when loading a previously imported candidate from the db
+        # as, in this case, the mapping is wrong and _index_mapping will fail.
+        # we take care of this by manually overwriting when constructing from the db.
+        self._mapping = mapping or self.current_mapping
+
     def __repr__(self) -> str:
         return (
             f"CandidateState:\n"
             + f" * id={self.id}\n"
-            + f" * match={self.match}\n"
+            + f" * match={self.match.info.album}\n"
             + f" * task_state_id={self.task_state.id}\n"
             + f" * distance={self.distance}\n"
             + f" * penalties={self.penalties}\n"
             + f" * {len(self.items)=}\n"
             + f" * {len(self.tracks)=}\n"
+            + f" * mapping={self.mapping}\n"
         )
 
     @property
@@ -607,16 +617,14 @@ class CandidateState(BaseState):
 
     @property
     def mapping(self) -> dict[int, int]:
-        if self._mapping is not None:
-            return self._mapping
-        return self.current_mapping
+        return self._mapping
 
     @property
     def current_mapping(self) -> dict[int, int]:
         """Get the current mapping from items to tracks, calculated from the match."""
         if isinstance(self.match, BeetsAlbumMatch):
             return _index_mapping(
-                self.match.mapping,  # type: ignore
+                self.match.mapping,
                 self.items,
                 self.tracks,
             )
@@ -697,7 +705,6 @@ class CandidateState(BaseState):
             # Map beets types to our types, allows serialization magic
             tracks = [TrackInfo.from_beets(track) for track in self.match.info.tracks]
 
-            log.debug(f"old paths: {self.task_state.task.old_paths}")
             # mapping = _index_mapping(
             #     self.match.mapping,  # type: ignore
             #     self.items,
@@ -759,13 +766,13 @@ def _index_mapping(
         tdxs.append(found_tdx)
 
     if None in idxs or None in tdxs:
+        # breakpoint()
         raise ValueError(
             f"Index mapping failed: {idxs=} {tdxs=} {len(items)=} {len(tracks)=}"
         )
 
     # ignore type for mypy, we have checked that its not None!
     res: dict[int, int] = {idx: tdx for idx, tdx in zip(idxs, tdxs)}  # type: ignore[misc]
-
     # log.debug(f"Index mapping: {res}")
 
     return res

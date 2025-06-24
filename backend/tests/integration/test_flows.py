@@ -6,6 +6,7 @@ has a well defined path to follow.
 """
 
 from abc import ABC
+from codecs import ascii_encode
 from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest import mock
@@ -14,7 +15,12 @@ import pytest
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
-from beets_flask.database.models.states import FolderInDb, SessionStateInDb
+from beets_flask.database.models.states import (
+    CandidateState,
+    CandidateStateInDb,
+    FolderInDb,
+    SessionStateInDb,
+)
 from beets_flask.disk import Folder
 from beets_flask.importer.progress import FolderStatus
 from beets_flask.importer.session import CandidateChoice, TaskIdMappingArg
@@ -126,6 +132,7 @@ class TestPreview(InvokerStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
         assert s_state_live is not None
         assert s_state_live.folder_path == path
         assert len(s_state_live.task_states) == 1
+
         assert s_state_live.tasks[0].old_paths is None
         # old_paths should only be set after files were moved!
 
@@ -136,6 +143,8 @@ class TestPreview(InvokerStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
             assert len(c.duplicate_ids) == 0, (
                 "Should not have duplicates in empty library"
             )
+
+            assert c._mapping is not None, "Candidate should have a mapping"
 
     @pytest.mark.parametrize(
         "group_albums, expected_tasks",
@@ -221,6 +230,23 @@ class TestImportBest(
         use_mock_tag_album(str(path))
         return path
 
+    def check_mapping_consistency(self, db_session: Session):
+        """
+        check that the mapping always goes from 0 to x where x is the amount of tracks.
+
+        since we query from online data, mappinngs might not be fully reproducible.
+        """
+
+        stmt = select(SessionStateInDb)
+        s_states_indb = db_session.execute(stmt).scalars()
+
+        for s in s_states_indb:
+            for t in s.to_live_state().task_states:
+                for c in t.candidate_states:
+                    assert c.mapping in [{0: x} for x in range(0, c.num_tracks)]
+
+        return True
+
     async def test_preview(self, db_session: Session, path: Path):
         """This is only used to set up the initial preview state for the
         following tests."""
@@ -236,6 +262,9 @@ class TestImportBest(
             group_albums=None,
             autotag=None,
         )
+
+        # Check if mapping is set correctly
+        assert self.check_mapping_consistency(db_session)
 
     async def test_search_candidates(self, db_session: Session, path: Path):
         """Test the search candidates of the import process.
@@ -279,6 +308,9 @@ class TestImportBest(
         album_ids = [c.match.info.album_id for c in t_state_live.candidate_states]
         assert id_99_red_balloons in album_ids, "Should have added the new candidate"
 
+        # Check if mapping is set correctly
+        assert self.check_mapping_consistency(db_session)
+
     async def test_regenerate_preview(self, db_session: Session, path: Path):
         """Test the regeneration of the preview of the import process.
 
@@ -311,6 +343,9 @@ class TestImportBest(
         db_session.execute(stmt)
         db_session.commit()
 
+        # Check if mapping is set correctly
+        assert self.check_mapping_consistency(db_session)
+
     async def test_import(self, db_session: Session, path: Path):
         """
         Test the import of the tagged folder.
@@ -324,6 +359,9 @@ class TestImportBest(
             "Database should contain the one preview session state from the previous test"
         )
 
+        # Check if mapping is set correctly
+        assert self.check_mapping_consistency(db_session)
+
         self.statuses = []
         exc = await run_import_candidate(
             "obsolete_hash_import",
@@ -332,7 +370,9 @@ class TestImportBest(
             duplicate_actions=None,  # None uses config
         )
         assert exc is None, "Should not return an error"
-        # raise NotImplementedError("Implement me")
+
+        # Check if mapping is still correctly after import
+        assert self.check_mapping_consistency(db_session)
 
         # Check that status was emitted correctly, we emit once before and once after run
         assert len(self.statuses) == 2
