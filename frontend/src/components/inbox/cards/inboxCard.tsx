@@ -4,6 +4,7 @@ import {
     Box,
     Button,
     Card,
+    CardActions,
     CardContent,
     IconButton,
     Tooltip,
@@ -72,7 +73,35 @@ export function InboxCard({ folder }: { folder: Folder }) {
     }
 
     return (
-        <Card sx={{ width: "100%", padding: 2, overflow: "auto" }}>
+        <Card
+            sx={(theme) => ({
+                width: "100%",
+                padding: 2,
+
+                // Content (file tree)
+                ".MuiCardContent-root": {
+                    margin: 0,
+                    paddingTop: 2,
+                    paddingInline: 1,
+                },
+
+                // Actions (buttons)
+                ".MuiCardActions-root": {
+                    display: "flex",
+                    flexDirection: "row",
+                },
+
+                // Remove some padding on very small screens
+                [theme.breakpoints.down("tablet")]: {
+                    padding: 1,
+                    paddingInline: 0,
+                    ".MuiCardContent-root": {
+                        paddingInline: 0.5,
+                    },
+                    ".MuiCardActions-root": {},
+                },
+            })}
+        >
             <CardHeader
                 key={folder.full_path}
                 icon={
@@ -142,14 +171,7 @@ export function InboxCard({ folder }: { folder: Folder }) {
                     </Typography>
                 </Box>
             </CardHeader>
-            <CardContent
-                sx={{
-                    paddingInline: 1,
-                    paddingTop: 1,
-                    m: 0,
-                    paddingBottom: "0 !important",
-                }}
-            >
+            <CardContent>
                 <GridWrapper>
                     {/* Only show inner folders */}
                     <SelectedStats />
@@ -172,27 +194,49 @@ export function InboxCard({ folder }: { folder: Folder }) {
                     )}
                 </GridWrapper>
             </CardContent>
-            <FolderActionDesktopBar />
-            {/* <DeleteImportedFoldersButton folder={folder} /> */}
-            <Box
-                sx={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    gap: 1,
-                    mt: 2,
-                    paddingInline: 2,
-                    alignItems: "center",
-                }}
-            >
+            <CardActions>
+                {/* <DeleteImportedFoldersButton folder={folder} /> */}
+
                 <RetagSplitButton
-                    sx={{
-                        mr: "auto",
-                    }}
-                    disabled={true}
+                    sx={(theme) => ({
+                        [theme.breakpoints.down("tablet")]: {
+                            ".MuiButton-root": {
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                margin: 0,
+                                paddingTop: 1.2,
+                                gap: 0.25,
+
+                                span: {
+                                    margin: 0,
+                                },
+                                fontSize: theme.typography.caption.fontSize,
+                            },
+                        },
+                    })}
                 />
-                <ImportSplitButton disabled={true} />
-            </Box>
-            {/* <FolderActionsSpeedDial /> */}
+                <ImportSplitButton
+                    sx={(theme) => ({
+                        [theme.breakpoints.down("tablet")]: {
+                            ".MuiButton-root": {
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                margin: 0,
+                                paddingTop: 1.2,
+                                gap: 0.25,
+
+                                span: {
+                                    margin: 0,
+                                },
+                                fontSize: theme.typography.caption.fontSize,
+                            },
+                        },
+                        ml: "auto !important", // Align to the right
+                    })}
+                />
+            </CardActions>
         </Card>
     );
 }

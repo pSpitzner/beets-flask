@@ -99,7 +99,7 @@ export function SplitButtonOptions({
                 {...props}
             >
                 <Button {...selectedOption.buttonProps} onClick={handleMainButtonClick}>
-                    {selectedOption.label}
+                    <span>{selectedOption.label}</span>
                 </Button>
                 <Button
                     onClick={handleToggle}
@@ -124,7 +124,6 @@ export function SplitButtonOptions({
                 anchorEl={anchorRef.current}
                 role={undefined}
                 transition
-                disablePortal
             >
                 {({ TransitionProps, placement }) => (
                     <Grow

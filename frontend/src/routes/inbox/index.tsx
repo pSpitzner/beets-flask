@@ -92,7 +92,7 @@ function RouteComponent() {
 function PageHeader({ inboxes, ...props }: { inboxes: Folder[] } & BoxProps) {
     return (
         <Box
-            sx={{
+            sx={(theme) => ({
                 display: "grid",
                 alignItems: "center",
                 justifyContent: "center",
@@ -101,7 +101,12 @@ function PageHeader({ inboxes, ...props }: { inboxes: Folder[] } & BoxProps) {
                 gridTemplateColumns: "1fr",
                 gridTemplateRows: "1fr",
                 paddingInline: 2,
-            }}
+
+                [theme.breakpoints.down("laptop")]: {
+                    paddingTop: 1,
+                    paddingInline: 1,
+                },
+            })}
             {...props}
         >
             <Typography

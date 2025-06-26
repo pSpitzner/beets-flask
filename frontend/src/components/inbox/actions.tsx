@@ -196,7 +196,6 @@ export function RetagSplitButton(
     const theme = useTheme();
 
     const sx = {
-        width: "12rem",
         alignItems: "center",
         justifyContent: "flex-start",
     };
