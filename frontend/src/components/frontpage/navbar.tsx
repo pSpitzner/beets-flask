@@ -57,6 +57,7 @@ const StyledTabs = styled(Tabs)(({ theme }) => ({
             justifyContent: "center",
             alignItems: "center",
         },
+        background: "linear-gradient(to bottom, transparent, black)",
     },
 }));
 
