@@ -301,6 +301,13 @@ def dir_files(path: Path) -> int:
         return -1
 
 
+def clear_cache():
+    """Clear the cache for all cached functions."""
+    path_to_folder.cache.clear()  # type: ignore
+    dir_size.cache.clear()  # type: ignore
+    dir_files.cache.clear()  # type: ignore
+
+
 __all__ = [
     "dir_size",
 ]

@@ -111,7 +111,6 @@ class InboxHandler(AIOEventHandler):
             return
 
         # trigger cache clear and gui update of inbox directories
-        path_to_folder.cache.clear()  # type: ignore
         status_update = asyncio.create_task(send_status_update(FileSystemUpdate()))
 
         try:

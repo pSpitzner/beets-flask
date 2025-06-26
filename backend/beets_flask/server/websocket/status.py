@@ -15,6 +15,7 @@ from quart import json
 
 from beets_flask.database import db_session_factory
 from beets_flask.database.models.states import FolderInDb
+from beets_flask.disk import clear_cache
 from beets_flask.importer.progress import FolderStatus
 from beets_flask.invoker.job import JobMeta
 from beets_flask.logger import log
@@ -83,6 +84,7 @@ async def job_update(sid, data):
 @sio_catch_exception
 async def fs_update(sid, data):
     log.debug(f"file_system_update: {data}")
+    clear_cache()
     await sio.emit("file_system_update", data, namespace=namespace)
 
 
