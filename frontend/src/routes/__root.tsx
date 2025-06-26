@@ -5,7 +5,7 @@ import { HeadContent } from "@tanstack/react-router";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 
 import { PageWrapper } from "@/components/common/page";
-import NavBar from "@/components/frontpage/navbar";
+import NavBar, { NAVBAR_HEIGHT } from "@/components/frontpage/navbar";
 import { TerminalContextProvider } from "@/components/frontpage/terminal";
 import {
     AudioContextProvider,
@@ -54,18 +54,14 @@ function RootComponent() {
                     sx={(theme) => ({
                         flexGrow: 1,
                         [theme.breakpoints.up("laptop")]: {
-                            paddingTop: "48px", // Navbar
+                            paddingTop: NAVBAR_HEIGHT.desktop,
                         },
                         [theme.breakpoints.down("laptop")]: {
                             position: "fixed",
-                            bottom: "48px", // Navbar height
-                            height: "calc(100dvh - 48px)", // Navbar height
+                            height: "100dvh",
                         },
                         width: "100%",
                         height: "100%",
-
-                        // if we want to move Navbar bottom
-                        // marginTop: { xs: 0, md: "64px" },
                         overflow: "auto",
                         display: "flex",
                         flexDirection: "column",
@@ -74,9 +70,22 @@ function RootComponent() {
                 >
                     <TerminalContextProvider>
                         <AudioContextProvider>
-                            {/* A bit messy but needed for the audio player scroll */}
-                            <Box sx={{ height: "100%", overflow: "hidden" }}>
-                                <Box sx={{ height: "100%", overflow: "auto" }}>
+                            {/* A bit messy but needed for translucent navbar effect on mobile */}
+                            <Box
+                                sx={{
+                                    height: "100%",
+                                    overflow: "visible",
+                                }}
+                            >
+                                <Box
+                                    sx={(theme) => ({
+                                        height: "100%",
+                                        overflow: "auto",
+                                        [theme.breakpoints.down("laptop")]: {
+                                            paddingBottom: NAVBAR_HEIGHT.mobile,
+                                        },
+                                    })}
+                                >
                                     <Outlet />
                                 </Box>
                                 <LazyAudioPlayer />
