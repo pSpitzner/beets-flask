@@ -1,4 +1,10 @@
-import { LucideChevronRight, PlusIcon, Settings } from "lucide-react";
+import {
+    LucideChevronRight,
+    PlusIcon,
+    Settings,
+    SquareArrowOutUpRightIcon,
+    SquareChartGanttIcon,
+} from "lucide-react";
 import { useState } from "react";
 import {
     Box,
@@ -10,6 +16,7 @@ import {
     Typography,
     useTheme,
 } from "@mui/material";
+import { Link } from "@tanstack/react-router";
 
 import {
     BestCandidateChip,
@@ -29,7 +36,7 @@ import { useFolderSelectionContext } from "./folderSelectionContext";
 export const GridWrapper = styled(Box)(({ theme }) => ({
     display: "grid",
     // gridTemplateColumns: "[tree] 1fr [chip] auto [actions] auto [selector] auto",
-    gridTemplateColumns: "[selector] auto [tree] 1fr [chip] auto",
+    gridTemplateColumns: "[selector] auto [tree] 1fr [chip] auto [actions] auto",
     width: "100%",
     columnGap: theme.spacing(1.5),
     // Fill columns even if content is given in other order
@@ -135,6 +142,23 @@ export function FolderComponent({
                     color="secondary"
                     disabled={unSelectable}
                 />
+
+                {/* Link to subpage */}
+                <Link
+                    to="/inbox/folder/$path/$hash"
+                    params={{ path: folder.full_path, hash: folder.hash }}
+                    style={{
+                        gridColumn: "actions",
+                        textDecoration: "none",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "flex-end",
+                    }}
+                >
+                    <IconButton>
+                        <SquareChartGanttIcon size={16} />
+                    </IconButton>
+                </Link>
             </GridRow>
 
             {/* Children */}
@@ -396,11 +420,7 @@ export function SelectedStats() {
     const { nSelected, deselectAll } = useFolderSelectionContext();
 
     return (
-        <GridRow
-            sx={{
-                paddingBottom: 1,
-            }}
-        >
+        <GridRow sx={{}}>
             <Checkbox
                 color="secondary"
                 indeterminate={nSelected > 0}
@@ -435,7 +455,6 @@ export function SelectedStats() {
                 }}
             >
                 <IconButton
-                    size="small"
                     onClick={() => {
                         deselectAll();
                         setChecked(false);
