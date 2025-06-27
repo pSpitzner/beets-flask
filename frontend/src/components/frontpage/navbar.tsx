@@ -6,54 +6,124 @@ import Tab, { tabClasses, TabProps } from "@mui/material/Tab";
 import Tabs, { tabsClasses } from "@mui/material/Tabs";
 import { createLink, LinkProps, useRouterState } from "@tanstack/react-router";
 
+export const NAVBAR_HEIGHT = {
+    desktop: "48px",
+    mobile: "74px",
+};
+
+const StyledTabs = styled(Tabs)(({ theme }) => ({
+    color: "inherit",
+    overflow: "hidden",
+    display: "flex",
+    width: "100%",
+    justifyContent: "center",
+    [`& .${tabsClasses.indicator}`]: {
+        position: "absolute",
+        top: `calc(50% - 8px)`,
+        height: "16px",
+        filter: "blur(50px)",
+        backgroundColor: theme.palette.secondary.main,
+        zIndex: -1,
+    },
+    [`& .MuiTabs-scroller`]: {
+        width: "100%",
+        overflow: "visible",
+    },
+    // Spacing of tabs for different breakpoints
+    [`& .MuiTabs-flexContainer`]: {
+        width: "100%",
+        gap: "4px",
+        justifyContent: "center",
+        [theme.breakpoints.up("laptop")]: {
+            gap: "30px",
+        },
+    },
+    [`&:hover .mouse-trail`]: {
+        opacity: 1,
+    },
+
+    // Mobile grid for equal spacing
+    [theme.breakpoints.down("laptop")]: {
+        "& .MuiTabs-list": {
+            width: "auto",
+            display: "grid",
+            gridTemplateColumns: "repeat(5, 1fr)",
+            gridTemplateRows: "1fr",
+            alignItems: "center",
+            justifyItems: "center",
+        },
+        "& .MuiTabs-scroller": {
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+        },
+        background: "linear-gradient(to bottom, transparent, black)",
+    },
+}));
+
 interface StyledTabProps extends Omit<LinkProps, "children">, Omit<TabProps, "ref"> {
     label: string | ReactElement;
 }
 
-const StyledTab = createLink(
-    styled(Tab)<StyledTabProps>(({ theme }) => ({
-        lineHeight: "inherit",
-        marginTop: 7,
-        minHeight: 32,
+const StyledTab = styled(createLink(Tab))<StyledTabProps>(({ theme }) => ({
+    lineHeight: "inherit",
+    marginTop: 7,
+    minHeight: 32,
+    minWidth: 0,
+    flexDirection: "row",
+    letterSpacing: "1px",
+    justifyContent: "center",
+    gap: "0.5rem",
+    textTransform: "uppercase",
+    overflow: "visible",
+    transition: "color 0.3s linear",
+    "& svg": {
+        fontSize: 16,
+        width: 16,
+        height: 16,
+    },
+    [theme.breakpoints.up(960)]: {
         minWidth: 0,
-        flexDirection: "row",
-        letterSpacing: "1px",
-        justifyContent: "center",
-        gap: "0.5rem",
-        textTransform: "uppercase",
-        overflow: "visible",
-        transition: "color 0.3s linear",
+    },
+    [`& .${tabClasses.labelIcon}`]: {
+        minHeight: 53,
+    },
+    [`& .${tabClasses.icon}`]: {
+        marginBottom: 0,
+    },
+    [`&:hover`]: {
+        color: darken(theme.palette.secondary.main, 0.2),
+        transition: "color 1s linear, text-shadow 5s ease-in",
+        textShadow: `0 0 50px ${theme.palette.secondary.main}`,
+    },
+    [`&[data-status="active"]`]: {
+        color: theme.palette.secondary.main,
+    },
+
+    //Mobile styles
+    [theme.breakpoints.down("laptop")]: {
+        marginTop: 0,
+        height: NAVBAR_HEIGHT.mobile,
+        display: "flex",
+        flexDirection: "column",
+
         "& svg": {
             fontSize: 16,
-            width: 16,
-            height: 16,
+            width: theme.iconSize.lg,
+            height: theme.iconSize.lg,
         },
-        [theme.breakpoints.up(960)]: {
-            minWidth: 0,
-        },
-        [`& .${tabClasses.labelIcon}`]: {
-            minHeight: 53,
-        },
-        [`& .${tabClasses.icon}`]: {
-            marginBottom: 0,
-        },
-        [`&:hover`]: {
-            color: darken(theme.palette.secondary.main, 0.2),
-            transition: "color 1s linear, text-shadow 5s ease-in",
-            textShadow: `0 0 50px ${theme.palette.secondary.main}`,
-        },
-        [`&[data-status="active"]`]: {
-            color: theme.palette.secondary.main,
-        },
-    }))
-);
+    },
+}));
 
 const TabLabel = styled(Typography)(({ theme }) => ({
     marginLeft: 8,
     lineHeight: "12px",
-    [theme.breakpoints.down(960)]: {
+    [theme.breakpoints.down("laptop")]: {
         marginLeft: 0,
-        display: "none",
+        fontSize: theme.typography.caption.fontSize,
+        lineHeight: "inherit",
+        textAlign: "center",
+        width: "100%",
     },
 }));
 
@@ -94,40 +164,9 @@ function NavTabs() {
     };
 
     return (
-        <Tabs
+        <StyledTabs
             ref={ref}
             value={currentIdx === -1 ? false : currentIdx}
-            sx={(theme) => ({
-                color: "inherit",
-                overflow: "hidden",
-                display: "flex",
-                width: "100%",
-                justifyContent: "center",
-                [`& .${tabsClasses.indicator}`]: {
-                    position: "absolute",
-                    top: `calc(50% - 8px)`,
-                    height: "16px",
-                    filter: "blur(50px)",
-                    backgroundColor: theme.palette.secondary.main,
-                    zIndex: -1,
-                },
-                [`& .MuiTabs-scroller`]: {
-                    width: "100%",
-                    overflow: "visible",
-                },
-                // Spacing of tabs for different breakpoints
-                [`& .MuiTabs-flexContainer`]: {
-                    width: "100%",
-                    gap: "4px",
-                    justifyContent: "center",
-                    [theme.breakpoints.up("laptop")]: {
-                        gap: "30px",
-                    },
-                },
-                [`&:hover .mouse-trail`]: {
-                    opacity: 1,
-                },
-            })}
             onMouseMove={handleMouseMove}
         >
             {navItems.map((item) => (
@@ -135,11 +174,15 @@ function NavTabs() {
             ))}
             {/* Mouse hover effect */}
             <MouseTrail />
-        </Tabs>
+        </StyledTabs>
     );
 }
 
-/** Sticky top navbar */
+/** Navbar component
+ *
+ * on desktop: fixed to the top
+ * on mobile: fixed to the bottom
+ */
 export default function NavBar() {
     return (
         <Box
@@ -148,16 +191,18 @@ export default function NavBar() {
                 bottom: 0,
                 zIndex: 10,
                 width: "100dvw",
-                height: "48px",
+                height: NAVBAR_HEIGHT.mobile,
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "flex-start",
-                borderBottom: "1px solid",
-                borderColor: "divider",
                 backdropFilter: "blur(25px)",
                 //backgroundColor: "#21252933",
+
                 [theme.breakpoints.up("laptop")]: {
                     top: 0,
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
+                    height: NAVBAR_HEIGHT.desktop,
                 },
             })}
         >
