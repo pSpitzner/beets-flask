@@ -43,10 +43,6 @@ const TrackChangesGrid = styled(Box)(({ theme }) => ({
     fontSize: theme.typography.body2.fontSize,
     lineHeight: 1.25,
 
-    "[data-haschanges=false]": {
-        color: theme.palette.diffs.light,
-    },
-
     //Column gap
     "> * > *": {
         paddingInline: theme.spacing(0.75),
@@ -468,7 +464,6 @@ export function TrackChangesExtended() {
             {/*Changes grid*/}
             <TrackChangesGrid>
                 {pairs_extended.map(([item, track, change], i) =>
-                    // only use this component if both item and track are defined
                     item && track ? (
                         <TrackChangesRow
                             key={i}
@@ -476,6 +471,7 @@ export function TrackChangesExtended() {
                             to={track}
                             pairChanges={change}
                             forceMajorChange={false}
+                            colorizeChanges={true}
                         />
                     ) : (
                         <TrackChangesRowOneNotFound
@@ -682,6 +678,8 @@ function TrackChangesRowOneNotFound({
     forceMajorChange: boolean;
     setForceMajorChange?: (value: boolean) => void;
 }) {
+    const theme = useTheme();
+
     if (!from && !to) {
         // both are undefined, we cannot render anything
         return null;
@@ -689,14 +687,17 @@ function TrackChangesRowOneNotFound({
 
     let fixedFrom: ItemInfo;
     let fixedTo: ItemInfo | TrackInfo;
+    let missingKind = undefined;
     // simply map the missing item to the present one,
     // then no changes visible.
     if (!from) {
         fixedTo = to as TrackInfo;
         fixedFrom = to as ItemInfo;
+        missingKind = "item";
     } else {
         fixedTo = from;
         fixedFrom = from;
+        missingKind = "track";
     }
 
     return TrackChangesRow({
@@ -705,9 +706,12 @@ function TrackChangesRowOneNotFound({
         pairChanges: pairChanges,
         forceMajorChange,
         setForceMajorChange,
+        colorizeChanges: false,
         sx: {
-            // TODO: how to disable custom styling of nested children?
-            color: "red !important",
+            color:
+                missingKind === "item"
+                    ? theme.palette.diffs.missingItem
+                    : theme.palette.diffs.missingTrack,
         },
     });
 }
@@ -718,6 +722,7 @@ function TrackChangesRow({
     pairChanges,
     forceMajorChange,
     setForceMajorChange = () => {},
+    colorizeChanges = true,
     sx = {},
 }: {
     from: ItemInfo;
@@ -727,6 +732,7 @@ function TrackChangesRow({
     // the state of all rows
     forceMajorChange: boolean;
     setForceMajorChange?: (value: boolean) => void;
+    colorizeChanges?: boolean;
     sx?: SxProps<Theme>;
 }) {
     // FIXME: the backend types seem wrong, why optional?
@@ -738,14 +744,12 @@ function TrackChangesRow({
         time: trackLengthRep(from.length),
         idx: from.index ?? 0,
         data: fromParts,
-        color: theme.palette.diffs.removed,
         type: "from",
     };
     const toD = {
         time: trackLengthRep(to.length),
         idx: to.index ?? 0,
         data: toParts,
-        color: theme.palette.diffs.added,
         type: "to",
     };
 
@@ -784,36 +788,79 @@ function TrackChangesRow({
         }
     }, [pairChanges.titleHasChanged, diff, setForceMajorChange]);
 
+    const sx_clr_classes = {
+        ".diffclr_added": {
+            color: colorizeChanges
+                ? hasChanges
+                    ? theme.palette.diffs.added
+                    : theme.palette.diffs.light
+                : "inherit",
+        },
+        ".diffclr_removed": {
+            color: colorizeChanges
+                ? hasChanges
+                    ? theme.palette.diffs.removed
+                    : theme.palette.diffs.light
+                : "inherit",
+        },
+        ".diffclr_changed": {
+            color: colorizeChanges
+                ? hasChanges
+                    ? theme.palette.diffs.changed
+                    : theme.palette.diffs.light
+                : "inherit",
+        },
+        ".diffclr_light": {
+            color: colorizeChanges
+                ? hasChanges
+                    ? theme.palette.diffs.light
+                    : theme.palette.diffs.light
+                : "inherit",
+        },
+        ".diffclr_inherit": {
+            color: "inherit",
+        },
+    };
+
     if (forceMajorChange) {
         return (
             <Box
-                sx={{ ...sx, display: "contents" }}
-                data-haschanges={hasChanges}
+                sx={{ ...sx, ...sx_clr_classes, display: "contents" }}
                 data-full={true}
             >
                 {/* index */}
                 <Box
                     sx={{
-                        color: pairChanges.titleHasChanged
-                            ? fromD.color
-                            : theme.palette.diffs.light,
                         justifyContent: "flex-end",
                         textAlign: "right",
                     }}
+                    className={
+                        pairChanges.titleHasChanged
+                            ? "diffclr_removed"
+                            : "diffclr_light"
+                    }
                 >
                     {fromD.idx}
                 </Box>
 
                 {/* title and time */}
-                <Box>{fromD.data}</Box>
+                <Box
+                    className={
+                        pairChanges.titleHasChanged
+                            ? "diffclr_removed"
+                            : "diffclr_light"
+                    }
+                >
+                    {fromD.data}
+                </Box>
                 <Box
                     sx={{
                         display: "flex",
                         justifyContent: "flex-begin",
-                        color: pairChanges.timeHasChanged
-                            ? fromD.color
-                            : theme.palette.diffs.light,
                     }}
+                    className={
+                        pairChanges.timeHasChanged ? "diffclr_removed" : "diffclr_light"
+                    }
                 >
                     {fromD.time}
                 </Box>
@@ -829,32 +876,38 @@ function TrackChangesRow({
                 >
                     <ArrowRightIcon
                         size={theme.iconSize.xs}
-                        color={theme.palette.diffs.changed}
+                        className="diffclr_changed"
                     />
                 </Box>
 
                 {/* index */}
                 <Box
                     sx={{
-                        color: pairChanges.indexHasChanged
-                            ? toD.color
-                            : theme.palette.diffs.light,
                         textAlign: "right",
                     }}
+                    className={
+                        pairChanges.titleHasChanged ? "diffclr_added" : "diffclr_light"
+                    }
                 >
                     {toD.idx}
                 </Box>
 
                 {/* title and time */}
-                <Box>{toD.data}</Box>
+                <Box
+                    className={
+                        pairChanges.titleHasChanged ? "diffclr_added" : "diffclr_light"
+                    }
+                >
+                    {toD.data}
+                </Box>
                 <Box
                     sx={{
                         justifyContent: "flex-end",
                         display: "flex",
-                        color: pairChanges.timeHasChanged
-                            ? toD.color
-                            : theme.palette.diffs.light,
                     }}
+                    className={
+                        pairChanges.timeHasChanged ? "diffclr_added" : "diffclr_light"
+                    }
                 >
                     {toD.time}
                 </Box>
@@ -872,11 +925,11 @@ function TrackChangesRow({
         <Box
             sx={{
                 ...sx,
+                ...sx_clr_classes,
                 display: "grid",
                 gridColumn: "1 / -1",
                 gridTemplateColumns: "subgrid",
             }}
-            data-haschanges={hasChanges}
         >
             {/* index */}
             <Box
@@ -899,51 +952,50 @@ function TrackChangesRow({
                     <>
                         <Box
                             sx={{
-                                color: fromD.color,
                                 textAlign: "right",
                             }}
+                            className="diffclr_removed"
                         >
                             {fromD.idx}
                         </Box>
                         <ArrowRightIcon
                             size={theme.iconSize.xs}
-                            color={theme.palette.diffs.changed}
+                            className="diffclr_changed"
                         />
                     </>
                 )}
                 <Box
-                    sx={{
-                        color: pairChanges.indexHasChanged
-                            ? toD.color
-                            : theme.palette.diffs.light,
-                    }}
+                    className={
+                        pairChanges.indexHasChanged ? "diffclr_added" : "diffclr_light"
+                    }
                 >
                     {toD.idx}
                 </Box>
             </Box>
 
-            {/*Title has no changes in mimal*/}
+            {/*Title has no changes in minimal*/}
             <Box
                 sx={{
                     textAlign: "right",
                     display: "flex",
-                    color: pairChanges.titleHasChanged
-                        ? "inherit"
-                        : theme.palette.diffs.light,
                 }}
+                className={
+                    pairChanges.titleHasChanged ? "diffclr_inherit" : "diffclr_light"
+                }
             >
                 {diff.map((part, index) => (
                     <Box
                         key={index}
-                        sx={(theme) => ({
-                            color: part.added
-                                ? theme.palette.diffs.added
-                                : part.removed
-                                  ? theme.palette.diffs.removed
-                                  : "inherit",
-
+                        sx={{
                             textDecoration: part.removed ? "line-through" : "none",
-                        })}
+                        }}
+                        className={
+                            part.added
+                                ? "diffclr_added"
+                                : part.removed
+                                  ? "diffclr_removed"
+                                  : "diffclr_inherit"
+                        }
                         component="span"
                     >
                         {part.value}
@@ -968,27 +1020,25 @@ function TrackChangesRow({
                     <>
                         <Box
                             sx={{
-                                color: pairChanges.timeHasChanged
-                                    ? fromD.color
-                                    : "inherit",
                                 textAlign: "right",
                             }}
+                            className="diffclr_removed"
                         >
                             {fromD.time}
                         </Box>
                         <ArrowRightIcon
                             size={theme.iconSize.xs}
-                            color={theme.palette.diffs.changed}
+                            className="diffclr_changed"
                         />
                     </>
                 )}
                 <Box
                     sx={{
-                        color: pairChanges.timeHasChanged
-                            ? toD.color
-                            : theme.palette.diffs.light,
                         textAlign: "right",
                     }}
+                    className={
+                        pairChanges.timeHasChanged ? "diffclr_added" : "diffclr_light"
+                    }
                 >
                     {toD.time}
                 </Box>
@@ -1015,17 +1065,7 @@ function useDiffParts(
 
     diff.forEach((part, index) => {
         const span = (
-            <Box
-                key={index}
-                sx={(theme) => ({
-                    color: part.added
-                        ? theme.palette.diffs.added
-                        : part.removed
-                          ? theme.palette.diffs.removed
-                          : theme.palette.text.primary,
-                })}
-                component="span"
-            >
+            <Box key={index} component="span">
                 {part.value}
             </Box>
         );
