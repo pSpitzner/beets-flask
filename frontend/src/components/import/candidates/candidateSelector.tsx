@@ -47,7 +47,7 @@ import {
     GenericDetailsItem,
     GenericDetailsItemWithDiff,
     TrackChanges,
-    TrackDiff,
+    TrackDiffsAfterImport,
     TrackDiffContextProvider,
     useTrackDiffContext,
 } from "./diff";
@@ -114,7 +114,8 @@ export function CandidateSelector({
     );
 }
 
-export function SelectedCandidate({
+//
+export function ImportedCandidate({
     task,
     ...props
 }: {
@@ -178,7 +179,7 @@ export function SelectedCandidate({
                 </Box>
             </Box>
             <Box sx={{ pt: 2 }}>
-                <TrackDiff items={task.items} candidate={candidate} />
+                <TrackDiffsAfterImport items={task.items} candidate={candidate} />
             </Box>
         </Box>
     );
