@@ -19,7 +19,7 @@ interface Option {
     buttonProps?: ButtonProps; // Optional props for the button, allowing customization like icons, styles, etc.
 }
 
-interface SplitButtonOptionProps extends Omit<ButtonGroupProps, "onClick"> {
+export interface SplitButtonOptionProps extends Omit<ButtonGroupProps, "onClick"> {
     options: Option[]; // Array of options for the dropdown
     onClick: (
         option: Option,
@@ -99,7 +99,7 @@ export function SplitButtonOptions({
                 {...props}
             >
                 <Button {...selectedOption.buttonProps} onClick={handleMainButtonClick}>
-                    {selectedOption.label}
+                    <span>{selectedOption.label}</span>
                 </Button>
                 <Button
                     onClick={handleToggle}
@@ -124,7 +124,6 @@ export function SplitButtonOptions({
                 anchorEl={anchorRef.current}
                 role={undefined}
                 transition
-                disablePortal
             >
                 {({ TransitionProps, placement }) => (
                     <Grow

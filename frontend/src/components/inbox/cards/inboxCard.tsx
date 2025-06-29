@@ -1,10 +1,24 @@
+import { PlusIcon, Settings } from "lucide-react";
 import { useMemo } from "react";
-import { Box, Card, CardContent, Tooltip, Typography } from "@mui/material";
+import {
+    Box,
+    Button,
+    Card,
+    CardActions,
+    CardContent,
+    IconButton,
+    Tooltip,
+    Typography,
+} from "@mui/material";
 
 import { useConfig } from "@/api/config";
 import { InboxTypeIcon } from "@/components/common/icons";
 import { CardHeader } from "@/components/frontpage/statsCard";
-import { FolderActionDesktopBar } from "@/components/inbox/actions";
+import {
+    FolderActionDesktopBar,
+    ImportSplitButton,
+    RetagSplitButton,
+} from "@/components/inbox/actions";
 import {
     FolderComponent,
     GridWrapper,
@@ -59,7 +73,35 @@ export function InboxCard({ folder }: { folder: Folder }) {
     }
 
     return (
-        <Card sx={{ width: "100%", padding: 2 }}>
+        <Card
+            sx={(theme) => ({
+                width: "100%",
+                padding: 2,
+
+                // Content (file tree)
+                ".MuiCardContent-root": {
+                    margin: 0,
+                    paddingTop: 2,
+                    paddingInline: 1,
+                },
+
+                // Actions (buttons)
+                ".MuiCardActions-root": {
+                    display: "flex",
+                    flexDirection: "row",
+                },
+
+                // Remove some padding on very small screens
+                [theme.breakpoints.down("tablet")]: {
+                    padding: 1,
+                    paddingInline: 0,
+                    ".MuiCardContent-root": {
+                        paddingInline: 0.5,
+                    },
+                    ".MuiCardActions-root": {},
+                },
+            })}
+        >
             <CardHeader
                 key={folder.full_path}
                 icon={
@@ -129,16 +171,10 @@ export function InboxCard({ folder }: { folder: Folder }) {
                     </Typography>
                 </Box>
             </CardHeader>
-            <CardContent
-                sx={{
-                    paddingInline: 1,
-                    paddingTop: 1,
-                    m: 0,
-                    paddingBottom: "0 !important",
-                }}
-            >
+            <CardContent>
                 <GridWrapper>
                     {/* Only show inner folders */}
+                    <SelectedStats />
                     {innerFolders.map((innerFolder) => (
                         <FolderComponent
                             key={innerFolder.full_path}
@@ -157,11 +193,50 @@ export function InboxCard({ folder }: { folder: Folder }) {
                         </Box>
                     )}
                 </GridWrapper>
-                <SelectedStats />
             </CardContent>
-            <FolderActionDesktopBar />
-            <DeleteImportedFoldersButton folder={folder} />
-            {/* <FolderActionsSpeedDial /> */}
+            <CardActions>
+                {/* <DeleteImportedFoldersButton folder={folder} /> */}
+
+                <RetagSplitButton
+                    sx={(theme) => ({
+                        [theme.breakpoints.down("tablet")]: {
+                            ".MuiButton-root": {
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                margin: 0,
+                                paddingTop: 1.2,
+                                gap: 0.25,
+
+                                span: {
+                                    margin: 0,
+                                },
+                                fontSize: theme.typography.caption.fontSize,
+                            },
+                        },
+                    })}
+                />
+                <ImportSplitButton
+                    sx={(theme) => ({
+                        [theme.breakpoints.down("tablet")]: {
+                            ".MuiButton-root": {
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                margin: 0,
+                                paddingTop: 1.2,
+                                gap: 0.25,
+
+                                span: {
+                                    margin: 0,
+                                },
+                                fontSize: theme.typography.caption.fontSize,
+                            },
+                        },
+                        ml: "auto !important", // Align to the right
+                    })}
+                />
+            </CardActions>
         </Card>
     );
 }
