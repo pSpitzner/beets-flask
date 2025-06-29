@@ -4,6 +4,7 @@ import {
     BrainIcon,
     CalendarIcon,
     CassetteTapeIcon,
+    CheckIcon,
     ChevronsDownUpIcon,
     ChevronsUpDownIcon,
     CircleCheckBigIcon,
@@ -15,8 +16,6 @@ import {
     FlagIcon,
     FolderIcon,
     FolderOpen,
-    GitPullRequestArrowIcon,
-    GitPullRequestClosedIcon,
     HashIcon,
     HistoryIcon,
     HourglassIcon,
@@ -34,12 +33,14 @@ import {
     UserRoundIcon,
 } from "lucide-react";
 import { sneaker } from "@lucide/lab";
-import { CircularProgress, Tooltip } from "@mui/material";
+import { CircularProgress, Tooltip, useTheme } from "@mui/material";
 
 import { MinimalConfig } from "@/api/config";
 import { FolderStatus } from "@/pythonTypes";
 
 import { GrowingRipple } from "./loading";
+
+import { PairChanges } from "../import/candidates/diff";
 
 /** Icon to show a folder, shows a disc icon if the folder is an album.
  *
@@ -101,14 +102,12 @@ export function PenaltyTypeIcon({ type, ...props }: { type: string } & LucidePro
         case "track":
         case "track_changes":
             return <AudioLinesIcon {...props} />;
-        case "missing_items":
-        case "unmatched_tracks":
         case "extra_tracks":
-            return <GitPullRequestArrowIcon {...props} />;
-        case "unmatched_items":
-        case "missing_tracks":
+        case "extra_track":
+            return <ExtraTrack {...props} />;
         case "extra_items":
-            return <GitPullRequestClosedIcon {...props} />;
+        case "extra_item":
+            return <ExtraItem {...props} />;
         case "media":
             return <CassetteTapeIcon {...props} />;
         case "mediums":
@@ -213,8 +212,8 @@ export function FolderStatusIcon({
 function Spotify(props: LucideProps) {
     return (
         <svg
-            width={props.size}
-            height={props.size}
+            width={props.size || 24}
+            height={props.size || 24}
             viewBox={`-1 0 18 18`}
             fill="none"
             stroke="currentColor"
@@ -245,6 +244,99 @@ function Spotify(props: LucideProps) {
     );
 }
 
+// Online-Globe with questionmark
+function ExtraItem(props: LucideProps) {
+    return (
+        <svg
+            width={props.size || 24}
+            height={props.size || 24}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            version="1.1"
+            {...props}
+        >
+            <g transform="matrix(1,0,0,1,-1729,0)">
+                <g id="id112" transform="matrix(0.615385,0,0,0.615385,666.231,4.30769)">
+                    <g transform="matrix(1,0,0,1,-8.10543,-10.4)">
+                        <g transform="matrix(1.625,0,0,1.625,-1028.54,-1911.11)">
+                            <g transform="matrix(1,0,0,1,1700.35,1178.15)">
+                                <path d="M18,15.28c0.2,-0.4 0.5,-0.8 0.9,-1c0.85,-0.491 1.937,-0.324 2.6,0.4c0.3,0.4 0.5,0.8 0.5,1.3c0,1.3 -2,2 -2,2" />
+                            </g>
+                            <g transform="matrix(1,0,0,1,1700.35,1178.15)">
+                                <path d="M20,22l0,0.01" />
+                            </g>
+                        </g>
+                        <g transform="matrix(1.625,0,0,1.625,1735.19,3.4)">
+                            <path d="M15.534,21.357c-1.099,0.415 -2.29,0.643 -3.534,0.643c-5.519,0 -10,-4.481 -10,-10c0,-5.519 4.481,-10 10,-10c5.033,0 9.203,3.726 9.898,8.568" />
+                        </g>
+                        <g transform="matrix(1.625,0,0,1.625,1735.19,3.4)">
+                            <path d="M12,2c-5.302,5.567 -5.302,14.433 0,20" />
+                        </g>
+                        <g transform="matrix(1.625,0,0,1.625,1735.19,3.4)">
+                            <path d="M15.879,10.308c-0.35,-3.026 -1.643,-5.96 -3.879,-8.308" />
+                        </g>
+                        <g transform="matrix(1.625,0,0,1.625,1735.19,3.4)">
+                            <path d="M2,12l11.988,0" />
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </svg>
+    );
+}
+
+// Hard-Drive with questionmark
+function ExtraTrack(props: LucideProps) {
+    return (
+        <svg
+            width={props.size || 24}
+            height={props.size || 24}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            version="1.1"
+            {...props}
+        >
+            <g transform="matrix(1,0,0,1,-1672.14,-2.6)">
+                <g
+                    id="id11231"
+                    transform="matrix(0.0995851,0,0,0.0995851,1566.98,94.1187)"
+                >
+                    <g transform="matrix(10.0417,0,0,10.0417,-15734.6,-949.125)">
+                        <g transform="matrix(1,0,0,1,-27.9809,-1176.16)">
+                            <g transform="matrix(1,0,0,1,1700.35,1178.15)">
+                                <path d="M18,15.28c0.2,-0.4 0.5,-0.8 0.9,-1c0.85,-0.491 1.937,-0.324 2.6,0.4c0.3,0.4 0.5,0.8 0.5,1.3c0,1.3 -2,2 -2,2" />
+                            </g>
+                            <g transform="matrix(1,0,0,1,1700.35,1178.15)">
+                                <path d="M20,22l0,0.01" />
+                            </g>
+                        </g>
+                        <g transform="matrix(0.65,0,0,1,1672.51,2)">
+                            <path d="M23.538,12l-21.538,0" />
+                        </g>
+                        <g transform="matrix(1,0,0,1,1671.81,2)">
+                            <path d="M21.061,10.124l-2.511,-5.014c-0.337,-0.679 -1.032,-1.11 -1.79,-1.11l-9.52,0c-0.758,0 -1.453,0.431 -1.79,1.11l-3.45,6.89l-0,6c-0,1.097 0.903,2 2,2l12,0" />
+                        </g>
+                        <g transform="matrix(1,0,0,1,1671.81,2)">
+                            <path d="M6,16l0.01,0" />
+                        </g>
+                        <g transform="matrix(1,0,0,1,1671.81,2)">
+                            <path d="M10,16l0.01,0" />
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </svg>
+    );
+}
+
 export function InboxTypeIcon({
     type,
     ...props
@@ -258,6 +350,37 @@ export function InboxTypeIcon({
             return <RocketIcon {...props} />;
     }
     return <InboxIcon {...props} />;
+}
+
+/** Icon to indicate the change to a track.
+ *
+ * This is used in mainly for the candidates diff view.
+ */
+export function ChangeIcon({
+    type,
+    ...props
+}: {
+    type?: PairChanges["changeType"];
+} & LucideProps) {
+    const theme = useTheme();
+
+    props = {
+        size: theme.iconSize.sm,
+        ...props,
+    };
+
+    switch (type) {
+        case "extra_item":
+            return <PenaltyTypeIcon type="extra_items" {...props} />;
+        case "extra_track":
+            return <PenaltyTypeIcon type="extra_tracks" {...props} />;
+        case "change_minor":
+        case "change_major":
+            return <PenaltyTypeIcon type="tracks" {...props} />;
+        case "no_change":
+        default:
+            return <CheckIcon {...props} />;
+    }
 }
 
 /* ------------------------------- Selections ------------------------------- */

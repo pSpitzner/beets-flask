@@ -19,6 +19,7 @@ import {
 import {
     ButtonGroup,
     DialogContent,
+    Divider,
     IconButton,
     Radio,
     Skeleton,
@@ -46,9 +47,10 @@ import {
     ExtraTracks,
     GenericDetailsItem,
     GenericDetailsItemWithDiff,
+    NoChanges,
     TrackChanges,
-    TrackDiff,
     TrackDiffContextProvider,
+    TrackDiffsAfterImport,
     useTrackDiffContext,
 } from "./diff";
 import { MetaChip } from "./metaChips";
@@ -114,7 +116,8 @@ export function CandidateSelector({
     );
 }
 
-export function SelectedCandidate({
+//
+export function ImportedCandidate({
     task,
     ...props
 }: {
@@ -178,7 +181,8 @@ export function SelectedCandidate({
                 </Box>
             </Box>
             <Box sx={{ pt: 2 }}>
-                <TrackDiff items={task.items} candidate={candidate} />
+                <Divider sx={{ mb: 2 }} />
+                <TrackDiffsAfterImport items={task.items} candidate={candidate} />
             </Box>
         </Box>
     );
@@ -772,7 +776,7 @@ function OverviewChanges({
                 },
             })}
         >
-            {/* first column, inmportant */}
+            {/* first column, important */}
             <GenericDetailsItemWithDiff
                 icon={<PenaltyTypeIcon type="artist" />}
                 from={metadata.artist}
@@ -866,14 +870,14 @@ function OverviewChanges({
                     }}
                 />
                 <TrackChangesDetailItem
-                    kind="extra_tracks"
+                    kind="extra_items"
                     sx={{
                         gridColumn: "2",
                         gridRow: "5",
                     }}
                 />
                 <TrackChangesDetailItem
-                    kind="extra_items"
+                    kind="extra_tracks"
                     sx={{
                         gridColumn: "2",
                         gridRow: "6",
@@ -925,7 +929,7 @@ function TrackChangesDetailItem({
     kind,
     ...props
 }: {
-    kind: string;
+    kind: "track_changes" | "extra_tracks" | "extra_items";
 } & BoxProps) {
     const { extra_tracks, extra_items, candidate, nChanges, pairs } =
         useTrackDiffContext();
@@ -945,37 +949,40 @@ function TrackChangesDetailItem({
             if (candidate.penalties.includes("tracks")) {
                 // TODO: get number of changed tracks, but that is currently
                 // deeply nested in the subcomponent...
+                tooltip =
+                    "Shows which items (on disk) are mapped to tracks (from the candidate). Changes are highlighted in red and green.";
                 text = "Tracks changed";
                 dialogTitle = `${nChanges} of ${pairs.length} tracks changed`;
                 color = "diffs.changed";
-                tooltip =
-                    "Shows which items (on disk) are mapped to tracks (from the candidate). Changes are highlighted in red and green.";
                 content = <TrackChanges />;
             } else {
                 text = "No severe track changes";
+                content = <TrackChanges />;
             }
             break;
         case "extra_items":
-            if (candidate.penalties.includes("missing_tracks")) {
-                pl = "track" + (extra_tracks.length !== 1 ? "s" : "");
-                text = `${extra_tracks.length} ${pl} missing on disk`;
-                color = "diffs.changed";
-                tooltip =
-                    "Tracks found online that could not be matched to tracks on disk (usually because they are missing).";
-                content = <ExtraTracks />;
-            } else {
-                text = "All tracks online present on disk";
-            }
-            break;
-        case "extra_tracks":
-            if (candidate.penalties.includes("unmatched_tracks")) {
-                pl = "item" + (extra_items.length !== 1 ? "s" : "");
-                text = `${extra_items.length} ${pl} tracks on disk not part of the candidate`;
-                color = "diffs.changed";
+            if (extra_items.length > 0) {
                 tooltip = "Tracks on disk that could not be matched to tracks online.";
+                pl = "track" + (extra_items.length !== 1 ? "s" : "");
+                text = `${extra_items.length} ${pl} from disk not found online`;
+                color = "diffs.extraItem";
                 content = <ExtraItems />;
             } else {
                 text = "All tracks on disk found online";
+                content = <NoChanges type="extra_items" />;
+            }
+            break;
+        case "extra_tracks":
+            if (extra_tracks.length > 0) {
+                tooltip =
+                    "Tracks found online that could not be found on disk (usually because they are missing).";
+                pl = "item" + (extra_tracks.length !== 1 ? "s" : "");
+                text = `${extra_tracks.length} ${pl} missing on disk`;
+                color = "diffs.extraTrack";
+                content = <ExtraTracks />;
+            } else {
+                text = "All tracks online present on disk";
+                content = <NoChanges type="extra_tracks" />;
             }
             break;
         default:

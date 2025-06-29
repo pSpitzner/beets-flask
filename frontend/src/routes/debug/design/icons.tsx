@@ -3,6 +3,7 @@ import { Box, Typography, useTheme } from "@mui/material";
 import { createFileRoute } from "@tanstack/react-router";
 
 import {
+    ChangeIcon,
     CollapseAllIcon,
     DeselectAllIcon,
     ExpandAllIcon,
@@ -220,50 +221,50 @@ function RouteComponent() {
                             color={theme.palette.diffs.changed}
                         />
                     </Box>
-                    Unmatched Tracks
+                    Extra Tracks
                     <Box display="flex" gap={0.5}>
-                        <PenaltyTypeIcon type="unmatched_tracks" size={20} />
+                        <PenaltyTypeIcon type="extra_tracks" size={20} />
                         <PenaltyTypeIcon
-                            type="unmatched_tracks"
+                            type="extra_tracks"
                             size={20}
                             color={theme.palette.success.main}
                         />
                         <PenaltyTypeIcon
-                            type="unmatched_tracks"
+                            type="extra_tracks"
                             size={20}
                             color={theme.palette.warning.main}
                         />
                         <PenaltyTypeIcon
-                            type="unmatched_tracks"
+                            type="extra_tracks"
                             size={20}
                             color={theme.palette.error.main}
                         />
                         <PenaltyTypeIcon
-                            type="unmatched_tracks"
+                            type="extra_tracks"
                             size={20}
                             color={theme.palette.diffs.changed}
                         />
                     </Box>
-                    Missing Tracks
+                    Extra items
                     <Box display="flex" gap={0.5}>
-                        <PenaltyTypeIcon type="missing_tracks" size={20} />
+                        <PenaltyTypeIcon type="extra_items" size={20} />
                         <PenaltyTypeIcon
-                            type="missing_tracks"
+                            type="extra_items"
                             size={20}
                             color={theme.palette.success.main}
                         />
                         <PenaltyTypeIcon
-                            type="missing_tracks"
+                            type="extra_items"
                             size={20}
                             color={theme.palette.warning.main}
                         />
                         <PenaltyTypeIcon
-                            type="missing_tracks"
+                            type="extra_items"
                             size={20}
                             color={theme.palette.error.main}
                         />
                         <PenaltyTypeIcon
-                            type="missing_tracks"
+                            type="extra_items"
                             size={20}
                             color={theme.palette.diffs.changed}
                         />
@@ -497,6 +498,41 @@ function RouteComponent() {
                     <InboxTypeIcon size={20} type={"bootleg"} />
                     Off (default)
                     <InboxTypeIcon size={20} />
+                </Box>
+            </Box>
+            <Box>
+                <Typography
+                    variant="h2"
+                    gutterBottom
+                    sx={{ fontSize: "1.5rem", fontWeight: "bold" }}
+                >
+                    Change Types
+                </Typography>
+                <Typography variant="body1">
+                    Change types are show for track diffs, to indicate the type of
+                    change that was made to the track.
+                </Typography>
+                <Box
+                    sx={{
+                        display: "grid",
+                        gridTemplateColumns: "auto auto",
+                        columnGap: 2,
+                        justifyContent: "flex-start",
+                        alignItems: "center",
+                        paddingX: 2,
+                        paddingY: 1,
+                    }}
+                >
+                    Extra Item
+                    <ChangeIcon size={20} type={"extra_item"} />
+                    Extra Track
+                    <ChangeIcon size={20} type={"extra_track"} />
+                    Change minor
+                    <ChangeIcon size={20} type={"change_minor"} />
+                    Change major
+                    <ChangeIcon size={20} type={"change_major"} />
+                    No change
+                    <ChangeIcon size={20} />
                 </Box>
             </Box>
         </PageWrapper>

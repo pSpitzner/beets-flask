@@ -2,26 +2,18 @@ import { Change } from "diff";
 import { ArrowRightIcon } from "lucide-react";
 import React, {
     createContext,
-    Dispatch,
     ReactElement,
     ReactNode,
-    SetStateAction,
     useContext,
     useEffect,
     useMemo,
     useState,
 } from "react";
-import {
-    styled,
-    SxProps,
-    Theme,
-    Tooltip,
-    useMediaQuery,
-    useTheme,
-} from "@mui/material";
+import { styled, SxProps, Theme, Tooltip, Typography, useTheme } from "@mui/material";
 import Box, { BoxProps } from "@mui/material/Box";
 
 import { useDiff } from "@/components/common/hooks/useDiff";
+import { ChangeIcon } from "@/components/common/icons";
 import { trackLengthRep } from "@/components/common/units/time";
 import {
     ItemInfo,
@@ -38,14 +30,7 @@ import {
 const TrackChangesGrid = styled(Box)(({ theme }) => ({
     display: "grid",
     width: "min-content",
-    gridTemplateColumns: `repeat(7, max-content)`,
-    paddingInline: theme.spacing(2),
-    fontSize: theme.typography.body2.fontSize,
-    lineHeight: 1.25,
-
-    "[data-haschanges=false]": {
-        color: theme.palette.diffs.light,
-    },
+    gridTemplateColumns: `repeat(8, max-content)`,
 
     //Column gap
     "> * > *": {
@@ -58,11 +43,6 @@ const TrackChangesGrid = styled(Box)(({ theme }) => ({
             repeat(4, max-content)
         `,
 
-        // Every 5th child spans 2
-        "> * > *:nth-of-type(7n)": {
-            gridColumn: "span 2",
-            justifySelf: "flex-start",
-        },
         // Apply Margin to 2nd row in full layout,
         // this seperates the different items
         // we select the first 4 items i.e. [1] t1 ->
@@ -75,13 +55,44 @@ const TrackChangesGrid = styled(Box)(({ theme }) => ({
     },
 }));
 
+export type PairChanges = {
+    titleHasChanged: boolean;
+    timeHasChanged: boolean;
+    indexHasChanged: boolean;
+    numChanges: number; // how many of the above components changed
+    changeType?:
+        | "no_change"
+        | "change_minor"
+        | "change_major"
+        | "extra_track"
+        | "extra_item";
+};
+
+function didPairChange(
+    from: TrackInfo | ItemInfo,
+    to: TrackInfo | ItemInfo
+): PairChanges {
+    const changes = {
+        titleHasChanged: from.title !== to.title,
+        timeHasChanged: Math.abs((from.length || 0) - (to.length || 0)) > 5,
+        indexHasChanged: from.index !== to.index,
+    };
+    return {
+        ...changes,
+        numChanges:
+            Number(changes.titleHasChanged) +
+            Number(changes.timeHasChanged) +
+            Number(changes.indexHasChanged),
+    };
+}
+
 const TrackDiffContext = createContext<{
     extra_items: ItemInfo[];
     extra_tracks: TrackInfo[];
-    pairs: Array<[ItemInfo, TrackInfo]>;
+    pairs: Array<[ItemInfo, TrackInfo, PairChanges]>;
+    pairs_extended: Array<[ItemInfo | undefined, TrackInfo | undefined, PairChanges]>;
     candidate: SerializedCandidateState;
     items: SerializedTaskState["items"];
-    setNChanges: Dispatch<SetStateAction<number>>;
     nChanges: number;
 } | null>(null);
 
@@ -98,60 +109,97 @@ export function TrackDiffContextProvider({
     candidate: SerializedCandidateState;
     items: SerializedTaskState["items"];
 }) {
-    // Changes is a bit of a hack
-    const [nChanges, setNChanges] = useState(0);
-
     // Create Venn diagram
     // items ∩ tracks = pairs
     // items' ∩ tracks = extra_items
     // items ∩ tracks' = extra_tracks
-    const { extra_items, extra_tracks, pairs } = useMemo(() => {
-        const extra_items: ItemInfo[] = [];
-        const extra_tracks: TrackInfo[] = [];
-        const pairs: Array<[ItemInfo, TrackInfo]> = [];
+    const { extra_items, extra_tracks, pairs, pairs_extended, nChanges } =
+        useMemo(() => {
+            const extra_items: ItemInfo[] = [];
+            const extra_tracks: TrackInfo[] = [];
+            const pairs: Array<[ItemInfo, TrackInfo, PairChanges]> = [];
+            let pairs_extended: Array<
+                [ItemInfo | undefined, TrackInfo | undefined, PairChanges]
+            > = [];
+            let nChanges = 0;
 
-        // mapping is a dict of item_idx -> track_idx
-        for (const item_idx in candidate.mapping) {
-            const track_idx = candidate.mapping[item_idx];
-            const item = items[item_idx];
-            const track = candidate.tracks[track_idx];
-            if (item && track) {
-                pairs.push([item, track]);
-            } else {
-                console.warn(
-                    `TrackDiffContextProvider: item ${item_idx} or track ${track_idx} not found`
-                );
+            // mapping is a dict of item_idx -> track_idx
+            for (const item_idx in candidate.mapping) {
+                const track_idx = candidate.mapping[item_idx];
+                const item = items[item_idx];
+                const track = candidate.tracks[track_idx];
+                if (item && track) {
+                    const change = didPairChange(item, track);
+                    // change type needs more details, computed in trackdiffrow
+                    pairs.push([item, track, change]);
+                    nChanges += Number(change.numChanges > 0);
+                } else {
+                    console.warn(
+                        `TrackDiffContextProvider: item ${item_idx} or track ${track_idx} not found`
+                    );
+                }
             }
-        }
 
-        // FIXME: could be a bit more efficient with sets
-        for (let i = 0; i < candidate.tracks.length; i++) {
-            const track = candidate.tracks[i];
-            if (!pairs.some(([, other]) => other.index === track.index)) {
-                extra_tracks.push(track);
+            // FIXME: could be a bit more efficient with sets
+            for (let i = 0; i < candidate.tracks.length; i++) {
+                const track = candidate.tracks[i];
+                if (!pairs.some(([, other]) => other.index === track.index)) {
+                    extra_tracks.push(track);
+                }
             }
-        }
-        for (let i = 0; i < items.length; i++) {
-            const item = items[i];
-            if (!pairs.some(([other]) => other.index === item.index)) {
-                extra_items.push(item);
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                if (!pairs.some(([other]) => other.index === item.index)) {
+                    extra_items.push(item);
+                }
             }
-        }
 
-        pairs.sort((a, b) => {
-            const a_idx = a[1].index ?? 0;
-            const b_idx = b[1].index ?? 0;
-            if (a_idx < b_idx) return -1;
-            if (a_idx > b_idx) return 1;
-            return 0;
-        });
+            pairs.sort((a, b) => {
+                const a_idx = a[1].index ?? 0;
+                const b_idx = b[1].index ?? 0;
+                if (a_idx < b_idx) return -1;
+                if (a_idx > b_idx) return 1;
+                return 0;
+            });
 
-        return {
-            extra_items,
-            extra_tracks,
-            pairs,
-        };
-    }, [items, candidate]);
+            // create a list of pairs_extended for all items - track combinations,
+            // even where one side cannot be associated with the other.
+            // then the missing side should just be undefined.
+            // Add all matched pairs
+            pairs_extended = structuredClone(pairs);
+            extra_tracks.forEach((track) => {
+                // we have the convention that missing items/tracks do not have literal
+                // changes of title, time etc - this helps with lower-level code,
+                // where we do string comparisons.
+                const change = didPairChange(track, track);
+                change.changeType = "extra_track";
+                pairs_extended.push([undefined, track, change]);
+            });
+
+            // Sort pairs_extended by canonical track order (right-hand side)
+            // Pairs and extra tracks come first (ordered by track index), then extra items at the end
+            pairs_extended.sort((a, b) => {
+                const a_idx = a[1]!.index ?? 0;
+                const b_idx = b[1]!.index ?? 0;
+                if (a_idx < b_idx) return -1;
+                if (a_idx > b_idx) return 1;
+                return 0;
+            });
+
+            extra_items.forEach((item) => {
+                const change = didPairChange(item, item);
+                change.changeType = "extra_item";
+                pairs_extended.push([item, undefined, didPairChange(item, item)]);
+            });
+
+            return {
+                extra_items,
+                extra_tracks,
+                pairs,
+                pairs_extended,
+                nChanges,
+            };
+        }, [items, candidate]);
 
     return (
         <TrackDiffContext.Provider
@@ -159,9 +207,9 @@ export function TrackDiffContextProvider({
                 extra_items,
                 extra_tracks,
                 pairs,
+                pairs_extended,
                 candidate,
                 items,
-                setNChanges,
                 nChanges,
             }}
         >
@@ -183,10 +231,10 @@ export function useTrackDiffContext() {
 /** The track diff contains a variety of information.
  *
  * - TrackChanges, shows how items (on disk) are mapped to tracks (from the candidate).
- * - UnmatchedTracks, shows tracks that are not matched to any item.
- * - UnmatchedItems, shows items that are not missing from the candidate.
+ * - ExtraTracks, shows tracks that are not matched to any item (missing on disk).
+ * - ExtraItems, shows items that are missing from the candidate (not found online).
  */
-export function TrackDiff({
+export function TrackDiffsAfterImport({
     items,
     candidate,
 }: {
@@ -195,74 +243,21 @@ export function TrackDiff({
 }) {
     const theme = useTheme();
 
-    if (!candidate.penalties.includes("tracks")) {
-        return (
-            <Box>
-                <TrackChangesGrid
-                    sx={{
-                        color: theme.palette.diffs.light,
-                    }}
-                >
-                    {candidate.tracks
-                        .sort((a) => a.index ?? 0)
-                        .map((track, i) => (
-                            <TrackRow
-                                key={i}
-                                index={track.index || 0}
-                                title={track.title || ""}
-                                time={trackLengthRep(track.length)}
-                            />
-                        ))}
-                </TrackChangesGrid>
-            </Box>
-        );
-    }
-
     // Show all track changes, unmatched tracks and unmatched items
     return (
         <TrackDiffContextProvider candidate={candidate} items={items}>
-            <TrackDiffInner />
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    fontSize: theme.typography.body1.fontSize,
+                    lineHeight: 1.25,
+                }}
+            >
+                <TrackChangesExtended />
+            </Box>
         </TrackDiffContextProvider>
-    );
-}
-
-function TrackDiffInner() {
-    const { extra_tracks, extra_items, pairs } = useTrackDiffContext();
-    const isDesktop = useMediaQuery((theme) => theme.breakpoints.up("desktop"));
-
-    // sort problematic diffs by number of changes, so big blocks appear first
-    const nodes: Array<[React.ReactNode, number]> = [
-        [<TrackChanges key={1} />, pairs.length],
-        [<ExtraTracks key={2} />, extra_tracks.length],
-        [<ExtraItems key={3} />, extra_items.length],
-    ];
-
-    // but do not do this on mobile
-    if (isDesktop) {
-        nodes.sort((a, b) => b[1] - a[1]);
-    }
-
-    return (
-        <Box
-            sx={(theme) => ({
-                display: "flex",
-                flexDirection: "row",
-                rowGap: 0.25,
-                columnGap: 1,
-                flexWrap: "wrap",
-                justifyContent: "space-between",
-                "> *": {
-                    flexGrow: 1,
-                    flexShrink: 0,
-
-                    [theme.breakpoints.down("tablet")]: {
-                        minWidth: "100%",
-                    },
-                },
-            })}
-        >
-            {nodes.map(([node]) => node)}
-        </Box>
     );
 }
 
@@ -274,18 +269,17 @@ export function ExtraTracks() {
     }
     return (
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <Typography variant="body1" color="text.secondary" pb={1}>
+                The following tracks are included in the candidate (found online) but
+                could not be found on disk.
+            </Typography>
             <TrackChangesGrid
                 sx={{
-                    color: theme.palette.diffs.light,
+                    color: theme.palette.diffs.extraTrack,
                 }}
             >
                 {extra_tracks.map((track, i) => (
-                    <TrackRow
-                        key={i}
-                        index={track.index || 0}
-                        title={track.title || ""}
-                        time={trackLengthRep(track.length)}
-                    />
+                    <TrackRow key={i} to={track} color="inherit" />
                 ))}
             </TrackChangesGrid>
         </Box>
@@ -300,18 +294,17 @@ export function ExtraItems() {
     }
     return (
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <Typography variant="body1" color="text.secondary" pb={1}>
+                The following tracks are included in the folder (on disk) but could not
+                be found in the candidates (online).
+            </Typography>
             <TrackChangesGrid
                 sx={{
-                    color: theme.palette.diffs.light,
+                    color: theme.palette.diffs.extraItem,
                 }}
             >
                 {extra_items.map((item, i) => (
-                    <TrackRow
-                        key={i}
-                        index={item.index || 0}
-                        title={item.title || ""}
-                        time={trackLengthRep(item.length)}
-                    />
+                    <TrackRow key={i} from={item} color="inherit" />
                 ))}
             </TrackChangesGrid>
         </Box>
@@ -320,10 +313,11 @@ export function ExtraItems() {
 
 /** Shows all track changes as a list/grid
  *
+ * Appear as popup after clicking
  * has to be used inside a TrackDiffContextProvider
  */
 export function TrackChanges() {
-    const { pairs, setNChanges } = useTrackDiffContext();
+    const { pairs } = useTrackDiffContext();
 
     // force major change layout for all rows
     const [titleChange, setTitleChange] = useState(false);
@@ -342,16 +336,100 @@ export function TrackChanges() {
         >
             {/*Changes grid*/}
             <TrackChangesGrid>
-                {pairs.map(([item, track], i) => (
+                {pairs.map(([item, track, change], i) => (
                     <TrackChangesRow
                         key={i}
                         from={item}
                         to={track}
+                        pairChanges={change}
                         forceMajorChange={titleChange}
                         setForceMajorChange={setTitleChange}
-                        setChangeCounter={setNChanges}
                     />
                 ))}
+            </TrackChangesGrid>
+        </Box>
+    );
+}
+
+export function NoChanges({
+    type,
+}: {
+    type: "track_changes" | "extra_tracks" | "extra_items";
+}) {
+    let text = "No changes detected.";
+    switch (type) {
+        case "track_changes":
+            text = "No track changes detected.";
+            break;
+        case "extra_tracks":
+            text = "All tracks online present on disk.";
+            break;
+        case "extra_items":
+            text = "All tracks on disk found online.";
+            break;
+    }
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                textAlign: "center",
+            }}
+        >
+            <Typography variant="body1" color="text.secondary" fontSize={"1.1rem"}>
+                {text}
+                <br />
+                Perfectly balanced, as all things should be.
+            </Typography>
+        </Box>
+    );
+}
+/** Shows all track changes, including extra and missing
+ *
+ * used as a summary after import
+ * has to be used inside a TrackDiffContextProvider
+ */
+export function TrackChangesExtended() {
+    const { pairs, pairs_extended } = useTrackDiffContext();
+
+    // create a list of pairs_extended for all items - track combinations, even where one side cannot be associated
+    // with the other. then the missing side should just be undefined.
+
+    if (pairs.length === 0) {
+        return null;
+    }
+
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+            }}
+        >
+            {/*Changes grid*/}
+            <TrackChangesGrid>
+                {pairs_extended.map(([item, track, change], i) =>
+                    item && track ? (
+                        <TrackChangesRow
+                            key={i}
+                            from={item}
+                            to={track}
+                            pairChanges={change}
+                            forceMajorChange={false}
+                            colorizeChanges={true}
+                        />
+                    ) : (
+                        <TrackRow
+                            key={i}
+                            from={item}
+                            to={track}
+                            pairChanges={change}
+                            forceMajorChange={false}
+                        />
+                    )
+                )}
             </TrackChangesGrid>
         </Box>
     );
@@ -480,101 +558,144 @@ export function GenericDetailsItemWithDiff({
     );
 }
 
+/**
+ * Wrapper around TrackChangesRow that handles undefined `from` or `to` values.
+ * (indicating a missing item or missing track, respectively).
+ *
+ * we have the convention that missing items/tracks do not have literal
+ * changes of title, time etc - this helps with lower-level code,
+ * where we do string comparisons.
+ */
 function TrackRow({
-    index,
-    title,
-    time,
+    from,
+    to,
+    pairChanges,
+    forceMajorChange,
+    setForceMajorChange,
+    color,
 }: {
-    index: number;
-    title: string;
-    time: string;
+    from?: ItemInfo;
+    to?: TrackInfo | ItemInfo;
+    pairChanges?: PairChanges;
+    forceMajorChange?: boolean;
+    setForceMajorChange?: (value: boolean) => void;
+    color?: string;
 }) {
+    const theme = useTheme();
+
+    if (!from && !to) {
+        // both are undefined, we cannot render anything
+        return null;
+    }
+
+    let fixedFrom: ItemInfo;
+    let fixedTo: ItemInfo | TrackInfo;
+    let missingKind = undefined;
+    // simply map the missing item to the present one,
+    // then no changes visible.
+    if (!from) {
+        fixedTo = to as TrackInfo;
+        fixedFrom = to as ItemInfo;
+        missingKind = "item";
+    } else {
+        fixedTo = from;
+        fixedFrom = from;
+        missingKind = "track";
+    }
+
+    if (!pairChanges) {
+        pairChanges = didPairChange(fixedFrom, fixedTo);
+        if (missingKind === "item") {
+            pairChanges.changeType = "extra_track";
+        } else if (missingKind === "track") {
+            pairChanges.changeType = "extra_item";
+        }
+    }
+
+    color =
+        color ||
+        (missingKind === "item"
+            ? theme.palette.diffs.extraTrackLight
+            : theme.palette.diffs.extraItemLight);
+
     return (
-        <Box
+        <TrackChangesRow
+            from={fixedFrom}
+            to={fixedTo}
+            pairChanges={pairChanges}
+            forceMajorChange={forceMajorChange}
+            setForceMajorChange={setForceMajorChange}
+            colorizeChanges={false}
             sx={{
-                display: "grid",
-                gridColumn: "1 / -1",
-                gridTemplateColumns: "subgrid",
+                color,
             }}
-        >
-            {/* Index */}
-            <Box
-                sx={{
-                    color: "inherit",
-                    textAlign: "right",
-                }}
-            >
-                {index}
-            </Box>
-
-            {/* Title */}
-            <Box
-                sx={{
-                    textAlign: "right",
-                    display: "flex",
-                }}
-            >
-                {title}
-            </Box>
-
-            {/* Length */}
-            <Box
-                sx={{
-                    color: "inherit",
-                    textAlign: "right",
-                }}
-            >
-                {time}
-            </Box>
-        </Box>
+        />
     );
 }
 
 function TrackChangesRow({
     from,
     to,
-    forceMajorChange,
-    setForceMajorChange,
-    setChangeCounter,
+    pairChanges,
+    forceMajorChange = false,
+    setForceMajorChange = () => {},
+    colorizeChanges = true,
+    sx = {},
 }: {
     from: ItemInfo;
     to: TrackInfo | ItemInfo;
-    forceMajorChange: boolean;
-    setForceMajorChange: (value: boolean) => void;
-    // HACK: Changes counter
-    setChangeCounter?: Dispatch<SetStateAction<number>>;
+    pairChanges?: PairChanges;
+    // HACK: React-Anti-Pattern: we do a computation in each row that we need to set
+    // the state of all rows
+    forceMajorChange?: boolean;
+    setForceMajorChange?: (value: boolean) => void;
+    colorizeChanges?: boolean;
+    sx?: SxProps<Theme>;
 }) {
     // FIXME: the backend types seem wrong, why optional?
     const theme = useTheme();
+
     const { fromParts, toParts, diff } = useDiffParts(from.title || "", to.title || "");
 
     const fromD = {
         time: trackLengthRep(from.length),
         idx: from.index ?? 0,
         data: fromParts,
-        color: theme.palette.diffs.removed,
         type: "from",
     };
     const toD = {
         time: trackLengthRep(to.length),
         idx: to.index ?? 0,
         data: toParts,
-        color: theme.palette.diffs.added,
         type: "to",
     };
 
-    const changed = {
-        title: from.title !== to.title,
-        time: Math.abs((from.length || 0) - (to.length || 0)) > 5,
-        index: from.index !== to.index,
-    };
+    pairChanges = pairChanges || didPairChange(from, to);
 
-    const hasChanges = changed.title || changed.time || changed.index;
+    const hasChanges =
+        pairChanges.titleHasChanged ||
+        pairChanges.timeHasChanged ||
+        pairChanges.indexHasChanged;
 
+    // update change_type
+    // TODO: think about how and where to differentiate major/minor on
+    // higher-level components or context.
+    if (hasChanges) {
+        pairChanges.changeType = "change_minor";
+    } else {
+        pairChanges.changeType = pairChanges.changeType || "no_change";
+    }
+
+    /* ---------------------------- Major changes --------------------------- */
+
+    // TODO: this is a bit harder to move to the context. we do not want to
+    // compute the text-level diff for each row twice (probably expensive)
+    // depending on the number of changes we render a slightly different row
+    // major change shows changes with arrow i.e. [1] t1 -> [2] t2
     useEffect(() => {
         // if there is a major change in the title, we force the major change layout
         // for all rows
-        if (changed.title) {
+        if (pairChanges.titleHasChanged) {
             //Count changed chars vs unchanged
             let total = 0;
             let changed = 0;
@@ -591,48 +712,81 @@ function TrackChangesRow({
                 setForceMajorChange(true);
             }
         }
-    }, [changed.title, diff, setForceMajorChange]);
+    }, [pairChanges.titleHasChanged, diff, setForceMajorChange]);
 
-    useEffect(() => {
-        if (setChangeCounter && hasChanges) {
-            setChangeCounter((prev) => prev + 1);
-        }
+    const sx_clr_classes = {
+        ".diffclr_added": {
+            color: colorizeChanges
+                ? hasChanges
+                    ? theme.palette.diffs.added
+                    : theme.palette.diffs.light
+                : "inherit",
+        },
+        ".diffclr_removed": {
+            color: colorizeChanges
+                ? hasChanges
+                    ? theme.palette.diffs.removed
+                    : theme.palette.diffs.light
+                : "inherit",
+        },
+        ".diffclr_changed": {
+            color: colorizeChanges
+                ? hasChanges
+                    ? theme.palette.diffs.changed
+                    : theme.palette.diffs.light
+                : "inherit",
+        },
+        ".diffclr_light": {
+            color: colorizeChanges
+                ? hasChanges
+                    ? theme.palette.diffs.light
+                    : theme.palette.diffs.light
+                : "inherit",
+        },
+        ".diffclr_inherit": {
+            color: "inherit",
+        },
+    };
 
-        return () => {
-            if (setChangeCounter && hasChanges) {
-                setChangeCounter((prev) => prev - 1);
-            }
-        };
-    }, [hasChanges, setChangeCounter]);
-
-    // depending on the number of changes we render a slightly different row
-    // major change shows changes with arrow i.e. [1] t1 -> [2] t2
     if (forceMajorChange) {
         return (
             <Box
-                sx={{ display: "contents" }}
-                data-haschanges={hasChanges}
+                sx={{ ...sx, ...sx_clr_classes, display: "contents" }}
                 data-full={true}
             >
                 {/* index */}
                 <Box
                     sx={{
-                        color: changed.index ? fromD.color : theme.palette.diffs.light,
                         justifyContent: "flex-end",
                         textAlign: "right",
                     }}
+                    className={
+                        pairChanges.titleHasChanged
+                            ? "diffclr_removed"
+                            : "diffclr_light"
+                    }
                 >
                     {fromD.idx}
                 </Box>
 
                 {/* title and time */}
-                <Box>{fromD.data}</Box>
+                <Box
+                    className={
+                        pairChanges.titleHasChanged
+                            ? "diffclr_removed"
+                            : "diffclr_light"
+                    }
+                >
+                    {fromD.data}
+                </Box>
                 <Box
                     sx={{
                         display: "flex",
                         justifyContent: "flex-begin",
-                        color: changed.time ? fromD.color : theme.palette.diffs.light,
                     }}
+                    className={
+                        pairChanges.timeHasChanged ? "diffclr_removed" : "diffclr_light"
+                    }
                 >
                     {fromD.time}
                 </Box>
@@ -647,35 +801,54 @@ function TrackChangesRow({
                     }}
                 >
                     <ArrowRightIcon
-                        size={theme.iconSize.xs}
-                        color={theme.palette.diffs.changed}
+                        size={theme.iconSize.sm}
+                        className="diffclr_changed"
                     />
                 </Box>
 
                 {/* index */}
                 <Box
                     sx={{
-                        color: changed.index ? toD.color : theme.palette.diffs.light,
                         textAlign: "right",
                     }}
+                    className={
+                        pairChanges.titleHasChanged ? "diffclr_added" : "diffclr_light"
+                    }
                 >
                     {toD.idx}
                 </Box>
 
                 {/* title and time */}
-                <Box>{toD.data}</Box>
+                <Box
+                    className={
+                        pairChanges.titleHasChanged ? "diffclr_added" : "diffclr_light"
+                    }
+                >
+                    {toD.data}
+                </Box>
                 <Box
                     sx={{
                         justifyContent: "flex-end",
                         display: "flex",
-                        color: changed.time ? toD.color : theme.palette.diffs.light,
                     }}
+                    className={
+                        pairChanges.timeHasChanged ? "diffclr_added" : "diffclr_light"
+                    }
                 >
                     {toD.time}
+                </Box>
+                {/* Icon indicating which type of change (extra item...) */}
+                <Box
+                    sx={{ display: "flex", alignItems: "center" }}
+                    className="diffclr_light"
+                >
+                    <ChangeIcon type={pairChanges.changeType} />
                 </Box>
             </Box>
         );
     }
+
+    /* ---------------------------- Minor changes --------------------------- */
 
     // Minor changes show only the changed title or change value
     // i.e. [1] t1 -> t2
@@ -684,11 +857,12 @@ function TrackChangesRow({
     return (
         <Box
             sx={{
+                ...sx,
+                ...sx_clr_classes,
                 display: "grid",
                 gridColumn: "1 / -1",
                 gridTemplateColumns: "subgrid",
             }}
-            data-haschanges={hasChanges}
         >
             {/* index */}
             <Box
@@ -701,55 +875,60 @@ function TrackChangesRow({
                     // this aligns the indexs
                     //        [2]
                     // [2] -> [3]
-                    gridTemplateColumns: changed.index ? "1fr auto 1fr" : "auto",
+                    gridTemplateColumns: pairChanges.indexHasChanged
+                        ? "1fr auto 1fr"
+                        : "auto",
                     alignItems: "center",
                 }}
             >
-                {changed.index && (
+                {pairChanges.indexHasChanged && (
                     <>
                         <Box
                             sx={{
-                                color: fromD.color,
                                 textAlign: "right",
                             }}
+                            className="diffclr_removed"
                         >
                             {fromD.idx}
                         </Box>
                         <ArrowRightIcon
-                            size={theme.iconSize.xs}
-                            color={theme.palette.diffs.changed}
+                            size={theme.iconSize.sm}
+                            className="diffclr_changed"
                         />
                     </>
                 )}
                 <Box
-                    sx={{
-                        color: changed.index ? toD.color : theme.palette.diffs.light,
-                    }}
+                    className={
+                        pairChanges.indexHasChanged ? "diffclr_added" : "diffclr_light"
+                    }
                 >
                     {toD.idx}
                 </Box>
             </Box>
 
-            {/*Title has no changes in mimal*/}
+            {/*Title has no changes in minimal*/}
             <Box
                 sx={{
                     textAlign: "right",
                     display: "flex",
-                    color: changed.title ? "inherit" : theme.palette.diffs.light,
                 }}
+                className={
+                    pairChanges.titleHasChanged ? "diffclr_inherit" : "diffclr_light"
+                }
             >
                 {diff.map((part, index) => (
                     <Box
                         key={index}
-                        sx={(theme) => ({
-                            color: part.added
-                                ? theme.palette.diffs.added
-                                : part.removed
-                                  ? theme.palette.diffs.removed
-                                  : "inherit",
-
+                        sx={{
                             textDecoration: part.removed ? "line-through" : "none",
-                        })}
+                        }}
+                        className={
+                            part.added
+                                ? "diffclr_added"
+                                : part.removed
+                                  ? "diffclr_removed"
+                                  : "diffclr_inherit"
+                        }
                         component="span"
                     >
                         {part.value}
@@ -764,34 +943,46 @@ function TrackChangesRow({
                     display: "grid",
                     gap: 0.5,
                     justifyContent: "flex-end",
-                    gridTemplateColumns: changed.time ? "1fr auto 1fr" : "auto",
+                    gridTemplateColumns: pairChanges.timeHasChanged
+                        ? "1fr auto 1fr"
+                        : "auto",
                     alignItems: "center",
                 }}
             >
-                {changed.time && (
+                {pairChanges.timeHasChanged && (
                     <>
                         <Box
                             sx={{
-                                color: changed.time ? fromD.color : "inherit",
                                 textAlign: "right",
                             }}
+                            className="diffclr_removed"
                         >
                             {fromD.time}
                         </Box>
                         <ArrowRightIcon
-                            size={theme.iconSize.xs}
-                            color={theme.palette.diffs.changed}
+                            size={theme.iconSize.sm}
+                            className="diffclr_changed"
                         />
                     </>
                 )}
                 <Box
                     sx={{
-                        color: changed.time ? toD.color : theme.palette.diffs.light,
                         textAlign: "right",
                     }}
+                    className={
+                        pairChanges.timeHasChanged ? "diffclr_added" : "diffclr_light"
+                    }
                 >
                     {toD.time}
                 </Box>
+            </Box>
+
+            {/* Icon indicating which type of change (extra item...) */}
+            <Box
+                sx={{ display: "flex", alignItems: "center" }}
+                className="diffclr_light"
+            >
+                <ChangeIcon type={pairChanges.changeType} />
             </Box>
         </Box>
     );
@@ -815,17 +1006,7 @@ function useDiffParts(
 
     diff.forEach((part, index) => {
         const span = (
-            <Box
-                key={index}
-                sx={(theme) => ({
-                    color: part.added
-                        ? theme.palette.diffs.added
-                        : part.removed
-                          ? theme.palette.diffs.removed
-                          : theme.palette.text.primary,
-                })}
-                component="span"
-            >
+            <Box key={index} component="span">
                 {part.value}
             </Box>
         );
@@ -958,7 +1139,7 @@ export function StyledDiff({
                 <>
                     {fromParts}
                     <ArrowRightIcon
-                        size={theme.iconSize.xs}
+                        size={theme.iconSize.sm}
                         color={theme.palette.diffs.changed}
                     />
                     {toParts}

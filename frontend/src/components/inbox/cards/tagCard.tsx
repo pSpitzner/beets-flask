@@ -5,7 +5,7 @@ import {
     HistoryIcon,
     TagIcon,
 } from "lucide-react";
-import React, { Fragment, useEffect, useMemo, useState, useTransition } from "react";
+import React, { useEffect, useMemo, useState, useTransition } from "react";
 import {
     Alert,
     AlertProps,
@@ -30,7 +30,7 @@ import {
 } from "@/components/import/candidates/actions";
 import {
     CandidateSelector,
-    SelectedCandidate,
+    ImportedCandidate,
 } from "@/components/import/candidates/candidateSelector";
 import {
     Progress,
@@ -527,7 +527,7 @@ function ChosenCandidatesOverview({ session }: { session: SerializedSessionState
                     }}
                 >
                     {session.tasks.map((task, index) => {
-                        return <SelectedCandidate task={task} key={index} />;
+                        return <ImportedCandidate task={task} key={index} />;
                     })}
                 </Box>
             </Box>
