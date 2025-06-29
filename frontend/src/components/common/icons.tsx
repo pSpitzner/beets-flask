@@ -102,13 +102,12 @@ export function PenaltyTypeIcon({ type, ...props }: { type: string } & LucidePro
         case "track":
         case "track_changes":
             return <AudioLinesIcon {...props} />;
-        case "unmatched_tracks":
-        case "unmatched_track":
-            return <MissingOnDisk {...props} />;
-        case "missing_tracks":
-        case "unmatched_items":
-        case "unmatched_item":
-            return <MissingOnline {...props} />;
+        case "extra_tracks":
+        case "extra_track":
+            return <ExtraTrack {...props} />;
+        case "extra_items":
+        case "extra_item":
+            return <ExtraItem {...props} />;
         case "media":
             return <CassetteTapeIcon {...props} />;
         case "mediums":
@@ -245,8 +244,8 @@ function Spotify(props: LucideProps) {
     );
 }
 
-// Missing Items
-function MissingOnline(props: LucideProps) {
+// Online-Globe with questionmark
+function ExtraItem(props: LucideProps) {
     return (
         <svg
             width={props.size || 24}
@@ -290,7 +289,8 @@ function MissingOnline(props: LucideProps) {
     );
 }
 
-function MissingOnDisk(props: LucideProps) {
+// Hard-Drive with questionmark
+function ExtraTrack(props: LucideProps) {
     return (
         <svg
             width={props.size || 24}
@@ -370,10 +370,10 @@ export function ChangeIcon({
     };
 
     switch (type) {
-        case "unmatched_item":
-            return <PenaltyTypeIcon type="unmatched_items" {...props} />;
-        case "unmatched_track":
-            return <PenaltyTypeIcon type="unmatched_tracks" {...props} />;
+        case "extra_item":
+            return <PenaltyTypeIcon type="extra_items" {...props} />;
+        case "extra_track":
+            return <PenaltyTypeIcon type="extra_tracks" {...props} />;
         case "change_minor":
         case "change_major":
             return <PenaltyTypeIcon type="tracks" {...props} />;

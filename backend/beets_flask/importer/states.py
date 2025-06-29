@@ -593,14 +593,19 @@ class CandidateState(BaseState):
         # "tracks" are meta-data i.e. online.
         # but penalties:
         # "unmatched_tracks" have online not on disk
-        # "missing_tracks" have on disk, not online (in bf we call this unmatched_items)
+        # "missing_tracks" have on disk, not online
 
         # beets object | beets penalty    | beets_flask
         # -------------|------------------|------------
-        # extra_items  | missing_tracks   | unmatched_items
-        # extra_tracks | unmatched_tracks | unmatched_tracks
+        # extra_items  | unmatched_tracks | extra_items
+        # extra_tracks | missing_tracks   | extra_tracks
 
-        penalties = [p.replace("missing_tracks", "unmatched_items") for p in penalties]
+        penalties = [
+            p.replace("unmatched_tracks", "extra_items").replace(
+                "missing_tracks", "extra_tracks"
+            )
+            for p in penalties
+        ]
 
         return list(penalties)
 

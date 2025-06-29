@@ -11,10 +11,10 @@ type DiffColors = {
     changed: string;
     changedLight: string;
     light: string;
-    missingItem: string;
-    missingTrack: string;
-    missingItemLight: string;
-    missingTrackLight: string;
+    extraTrack: string;
+    extraItem: string;
+    extraTrackLight: string;
+    extraItemLight: string;
 };
 
 // TS Augmentation to add custom breakpoints (see below)
@@ -120,10 +120,10 @@ const darkTheme = createTheme({
             changed: "#ebcb8c",
             changedLight: "#403b31",
             light: "#ACB3B9",
-            missingItem: "#ebcb8c",
-            missingTrack: "#1F518E",
-            missingItemLight: "#403b31",
-            missingTrackLight: "#32455C",
+            extraTrack: "#ebcb8c",
+            extraItem: "#4C98CB",
+            extraTrackLight: "#403b31",
+            extraItemLight: "#32455C",
         },
     },
     components: {

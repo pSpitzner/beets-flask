@@ -221,50 +221,50 @@ function RouteComponent() {
                             color={theme.palette.diffs.changed}
                         />
                     </Box>
-                    Unmatched Tracks
+                    Extra Tracks
                     <Box display="flex" gap={0.5}>
-                        <PenaltyTypeIcon type="unmatched_tracks" size={20} />
+                        <PenaltyTypeIcon type="extra_tracks" size={20} />
                         <PenaltyTypeIcon
-                            type="unmatched_tracks"
+                            type="extra_tracks"
                             size={20}
                             color={theme.palette.success.main}
                         />
                         <PenaltyTypeIcon
-                            type="unmatched_tracks"
+                            type="extra_tracks"
                             size={20}
                             color={theme.palette.warning.main}
                         />
                         <PenaltyTypeIcon
-                            type="unmatched_tracks"
+                            type="extra_tracks"
                             size={20}
                             color={theme.palette.error.main}
                         />
                         <PenaltyTypeIcon
-                            type="unmatched_tracks"
+                            type="extra_tracks"
                             size={20}
                             color={theme.palette.diffs.changed}
                         />
                     </Box>
-                    Unmatched items
+                    Extra items
                     <Box display="flex" gap={0.5}>
-                        <PenaltyTypeIcon type="unmatched_items" size={20} />
+                        <PenaltyTypeIcon type="extra_items" size={20} />
                         <PenaltyTypeIcon
-                            type="unmatched_items"
+                            type="extra_items"
                             size={20}
                             color={theme.palette.success.main}
                         />
                         <PenaltyTypeIcon
-                            type="unmatched_items"
+                            type="extra_items"
                             size={20}
                             color={theme.palette.warning.main}
                         />
                         <PenaltyTypeIcon
-                            type="unmatched_items"
+                            type="extra_items"
                             size={20}
                             color={theme.palette.error.main}
                         />
                         <PenaltyTypeIcon
-                            type="unmatched_items"
+                            type="extra_items"
                             size={20}
                             color={theme.palette.diffs.changed}
                         />
@@ -523,10 +523,10 @@ function RouteComponent() {
                         paddingY: 1,
                     }}
                 >
-                    Missing track
-                    <ChangeIcon size={20} type={"unmatched_item"} />
-                    Missing item
-                    <ChangeIcon size={20} type={"unmatched_track"} />
+                    Extra Item
+                    <ChangeIcon size={20} type={"extra_item"} />
+                    Extra Track
+                    <ChangeIcon size={20} type={"extra_track"} />
                     Change minor
                     <ChangeIcon size={20} type={"change_minor"} />
                     Change major

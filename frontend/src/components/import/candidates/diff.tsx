@@ -43,11 +43,6 @@ const TrackChangesGrid = styled(Box)(({ theme }) => ({
             repeat(4, max-content)
         `,
 
-        // Every 5th child spans 2
-        "> * > *:nth-of-type(8n)": {
-            gridColumn: "span 2",
-            justifySelf: "flex-start",
-        },
         // Apply Margin to 2nd row in full layout,
         // this seperates the different items
         // we select the first 4 items i.e. [1] t1 ->
@@ -69,8 +64,8 @@ export type PairChanges = {
         | "no_change"
         | "change_minor"
         | "change_major"
-        | "unmatched_track"
-        | "unmatched_item";
+        | "extra_track"
+        | "extra_item";
 };
 
 function didPairChange(
@@ -177,7 +172,7 @@ export function TrackDiffContextProvider({
                 // changes of title, time etc - this helps with lower-level code,
                 // where we do string comparisons.
                 const change = didPairChange(track, track);
-                change.changeType = "unmatched_track";
+                change.changeType = "extra_track";
                 pairs_extended.push([undefined, track, change]);
             });
 
@@ -193,10 +188,9 @@ export function TrackDiffContextProvider({
 
             extra_items.forEach((item) => {
                 const change = didPairChange(item, item);
-                change.changeType = "unmatched_item";
+                change.changeType = "extra_item";
                 pairs_extended.push([item, undefined, didPairChange(item, item)]);
             });
-            console.log("Pairs extended", pairs_extended);
 
             return {
                 extra_items,
@@ -237,8 +231,8 @@ export function useTrackDiffContext() {
 /** The track diff contains a variety of information.
  *
  * - TrackChanges, shows how items (on disk) are mapped to tracks (from the candidate).
- * - UnmatchedTracks, shows tracks that are not matched to any item.
- * - UnmatchedItems, shows items that are not missing from the candidate.
+ * - ExtraTracks, shows tracks that are not matched to any item (missing on disk).
+ * - ExtraItems, shows items that are missing from the candidate (not found online).
  */
 export function TrackDiffsAfterImport({
     items,
@@ -267,7 +261,7 @@ export function TrackDiffsAfterImport({
     );
 }
 
-export function UnmatchedTracks() {
+export function ExtraTracks() {
     const { extra_tracks } = useTrackDiffContext();
     const theme = useTheme();
     if (extra_tracks.length === 0) {
@@ -281,7 +275,7 @@ export function UnmatchedTracks() {
             </Typography>
             <TrackChangesGrid
                 sx={{
-                    color: theme.palette.diffs.missingItem,
+                    color: theme.palette.diffs.extraTrack,
                 }}
             >
                 {extra_tracks.map((track, i) => (
@@ -292,7 +286,7 @@ export function UnmatchedTracks() {
     );
 }
 
-export function UnmatchedItems() {
+export function ExtraItems() {
     const { extra_items } = useTrackDiffContext();
     const theme = useTheme();
     if (extra_items.length === 0) {
@@ -306,16 +300,11 @@ export function UnmatchedItems() {
             </Typography>
             <TrackChangesGrid
                 sx={{
-                    color: theme.palette.diffs.light,
+                    color: theme.palette.diffs.extraItem,
                 }}
             >
                 {extra_items.map((item, i) => (
-                    <TrackRowOld
-                        key={i}
-                        index={item.index || 0}
-                        title={item.title || ""}
-                        time={trackLengthRep(item.length)}
-                    />
+                    <TrackRow key={i} from={item} color="inherit" />
                 ))}
             </TrackChangesGrid>
         </Box>
@@ -365,8 +354,20 @@ export function TrackChanges() {
 export function NoChanges({
     type,
 }: {
-    type: "track_changes" | "unmatched_tracks" | "unmatched_items";
+    type: "track_changes" | "extra_tracks" | "extra_items";
 }) {
+    let text = "No changes detected.";
+    switch (type) {
+        case "track_changes":
+            text = "No track changes detected.";
+            break;
+        case "extra_tracks":
+            text = "All tracks online present on disk.";
+            break;
+        case "extra_items":
+            text = "All tracks on disk found online.";
+            break;
+    }
     return (
         <Box
             sx={{
@@ -377,9 +378,9 @@ export function NoChanges({
             }}
         >
             <Typography variant="body1" color="text.secondary" fontSize={"1.1rem"}>
-                No {type.replace("_", " ")} detected.
+                {text}
                 <br />
-                Great sources you have!
+                Perfectly balanced, as all things should be.
             </Typography>
         </Box>
     );
@@ -655,17 +656,17 @@ function TrackRow({
     if (!pairChanges) {
         pairChanges = didPairChange(fixedFrom, fixedTo);
         if (missingKind === "item") {
-            pairChanges.changeType = "unmatched_track";
+            pairChanges.changeType = "extra_track";
         } else if (missingKind === "track") {
-            pairChanges.changeType = "unmatched_item";
+            pairChanges.changeType = "extra_item";
         }
     }
 
     color =
         color ||
         (missingKind === "item"
-            ? theme.palette.diffs.missingItemLight
-            : theme.palette.diffs.missingTrackLight);
+            ? theme.palette.diffs.extraTrackLight
+            : theme.palette.diffs.extraItemLight);
 
     return (
         <TrackChangesRow
@@ -850,7 +851,7 @@ function TrackChangesRow({
                     }}
                 >
                     <ArrowRightIcon
-                        size={theme.iconSize.xs}
+                        size={theme.iconSize.sm}
                         className="diffclr_changed"
                     />
                 </Box>
@@ -941,7 +942,7 @@ function TrackChangesRow({
                             {fromD.idx}
                         </Box>
                         <ArrowRightIcon
-                            size={theme.iconSize.xs}
+                            size={theme.iconSize.sm}
                             className="diffclr_changed"
                         />
                     </>
@@ -1009,7 +1010,7 @@ function TrackChangesRow({
                             {fromD.time}
                         </Box>
                         <ArrowRightIcon
-                            size={theme.iconSize.xs}
+                            size={theme.iconSize.sm}
                             className="diffclr_changed"
                         />
                     </>
@@ -1188,7 +1189,7 @@ export function StyledDiff({
                 <>
                     {fromParts}
                     <ArrowRightIcon
-                        size={theme.iconSize.xs}
+                        size={theme.iconSize.sm}
                         color={theme.palette.diffs.changed}
                     />
                     {toParts}
