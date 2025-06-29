@@ -29,6 +29,7 @@ import {
     SerializedTaskState,
     TrackInfo,
 } from "@/pythonTypes";
+import { ChangeIcon, PenaltyTypeIcon } from "@/components/common/icons";
 
 /* ------------------------------- Track Diff ------------------------------- */
 // Basically a grid layout showing the changes to all tracks
@@ -38,7 +39,7 @@ import {
 const TrackChangesGrid = styled(Box)(({ theme }) => ({
     display: "grid",
     width: "min-content",
-    gridTemplateColumns: `repeat(7, max-content)`,
+    gridTemplateColumns: `repeat(8, max-content)`,
     paddingInline: theme.spacing(2),
     fontSize: theme.typography.body2.fontSize,
     lineHeight: 1.25,
@@ -55,7 +56,7 @@ const TrackChangesGrid = styled(Box)(({ theme }) => ({
         `,
 
         // Every 5th child spans 2
-        "> * > *:nth-of-type(7n)": {
+        "> * > *:nth-of-type(8n)": {
             gridColumn: "span 2",
             justifySelf: "flex-start",
         },
@@ -71,11 +72,17 @@ const TrackChangesGrid = styled(Box)(({ theme }) => ({
     },
 }));
 
-type PairChanges = {
+export type PairChanges = {
     titleHasChanged: boolean;
     timeHasChanged: boolean;
     indexHasChanged: boolean;
     numChanges: number; // how many of the above components changed
+    changeType?:
+        | "no_change"
+        | "change_minor"
+        | "change_major"
+        | "missing_track"
+        | "missing_item";
 };
 
 function didPairChange(
@@ -140,6 +147,7 @@ export function TrackDiffContextProvider({
                 const track = candidate.tracks[track_idx];
                 if (item && track) {
                     const change = didPairChange(item, track);
+                    // change type needs more details, computed in trackdiffrow
                     pairs.push([item, track, change]);
                     nChanges += Number(change.numChanges > 0);
                 } else {
@@ -171,13 +179,18 @@ export function TrackDiffContextProvider({
                 return 0;
             });
 
-            // create a list of pairs_extended for all items - track combinations, even where one side cannot be associated
-            // with the other. then the missing side should just be undefined.
+            // create a list of pairs_extended for all items - track combinations,
+            // even where one side cannot be associated with the other.
+            // then the missing side should just be undefined.
             // Add all matched pairs
             pairs_extended = structuredClone(pairs);
             extra_tracks.forEach((track) => {
-                // we have the convention that missing items/tracks are not changes!
-                pairs_extended.push([undefined, track, didPairChange(track, track)]);
+                // we have the convention that missing items/tracks do not have literal
+                // changes of title, time etc - this helps with lower-level code,
+                // where we do string comparisons.
+                const change = didPairChange(track, track);
+                change.changeType = "missing_item";
+                pairs_extended.push([undefined, track, change]);
             });
 
             // Sort pairs_extended by canonical track order (right-hand side)
@@ -191,6 +204,8 @@ export function TrackDiffContextProvider({
             });
 
             extra_items.forEach((item) => {
+                const change = didPairChange(item, item);
+                change.changeType = "missing_track";
                 pairs_extended.push([item, undefined, didPairChange(item, item)]);
             });
 
@@ -664,6 +679,10 @@ function TrackRow({
 /**
  * Wrapper around TrackChangesRow that handles undefined `from` or `to` values.
  * (indicating a missing item or missing track, respectively).
+ *
+ * we have the convention that missing items/tracks do not have literal
+ * changes of title, time etc - this helps with lower-level code,
+ * where we do string comparisons.
  */
 function TrackChangesRowOneNotFound({
     from,
@@ -710,8 +729,8 @@ function TrackChangesRowOneNotFound({
         sx: {
             color:
                 missingKind === "item"
-                    ? theme.palette.diffs.missingItem
-                    : theme.palette.diffs.missingTrack,
+                    ? theme.palette.diffs.missingItemLight
+                    : theme.palette.diffs.missingTrackLight,
         },
     });
 }
@@ -759,6 +778,15 @@ function TrackChangesRow({
         pairChanges.titleHasChanged ||
         pairChanges.timeHasChanged ||
         pairChanges.indexHasChanged;
+
+    // update change_type
+    // TODO: think about how and where to differentiate major/minor on
+    // higher-level components or context.
+    if (hasChanges) {
+        pairChanges.changeType = "change_minor";
+    } else {
+        pairChanges.changeType = pairChanges.changeType || "no_change";
+    }
 
     /* ---------------------------- Major changes --------------------------- */
 
@@ -911,6 +939,13 @@ function TrackChangesRow({
                 >
                     {toD.time}
                 </Box>
+                {/* Icon indicating which type of change (extra item...) */}
+                <Box
+                    sx={{ display: "flex", alignItems: "center" }}
+                    className="diffclr_light"
+                >
+                    <ChangeIcon type={pairChanges.changeType} />
+                </Box>
             </Box>
         );
     }
@@ -1042,6 +1077,14 @@ function TrackChangesRow({
                 >
                     {toD.time}
                 </Box>
+            </Box>
+
+            {/* Icon indicating which type of change (extra item...) */}
+            <Box
+                sx={{ display: "flex", alignItems: "center" }}
+                className="diffclr_light"
+            >
+                <ChangeIcon type={pairChanges.changeType} />
             </Box>
         </Box>
     );

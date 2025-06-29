@@ -3,6 +3,7 @@ import { Box, Typography, useTheme } from "@mui/material";
 import { createFileRoute } from "@tanstack/react-router";
 
 import {
+    ChangeIcon,
     CollapseAllIcon,
     DeselectAllIcon,
     ExpandAllIcon,
@@ -497,6 +498,41 @@ function RouteComponent() {
                     <InboxTypeIcon size={20} type={"bootleg"} />
                     Off (default)
                     <InboxTypeIcon size={20} />
+                </Box>
+            </Box>
+            <Box>
+                <Typography
+                    variant="h2"
+                    gutterBottom
+                    sx={{ fontSize: "1.5rem", fontWeight: "bold" }}
+                >
+                    Change Types
+                </Typography>
+                <Typography variant="body1">
+                    Change types are show for track diffs, to indicate the type of
+                    change that was made to the track.
+                </Typography>
+                <Box
+                    sx={{
+                        display: "grid",
+                        gridTemplateColumns: "auto auto",
+                        columnGap: 2,
+                        justifyContent: "flex-start",
+                        alignItems: "center",
+                        paddingX: 2,
+                        paddingY: 1,
+                    }}
+                >
+                    Missing track
+                    <ChangeIcon size={20} type={"missing_track"} />
+                    Missing item
+                    <ChangeIcon size={20} type={"missing_item"} />
+                    Change minor
+                    <ChangeIcon size={20} type={"change_minor"} />
+                    Change major
+                    <ChangeIcon size={20} type={"change_major"} />
+                    No change
+                    <ChangeIcon size={20} />
                 </Box>
             </Box>
         </PageWrapper>

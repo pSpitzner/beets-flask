@@ -4,6 +4,8 @@ import {
     BrainIcon,
     CalendarIcon,
     CassetteTapeIcon,
+    CheckCircle2Icon,
+    CheckIcon,
     ChevronsDownUpIcon,
     ChevronsUpDownIcon,
     CircleCheckBigIcon,
@@ -34,12 +36,13 @@ import {
     UserRoundIcon,
 } from "lucide-react";
 import { sneaker } from "@lucide/lab";
-import { CircularProgress, Tooltip } from "@mui/material";
+import { CircularProgress, Tooltip, useTheme } from "@mui/material";
 
 import { MinimalConfig } from "@/api/config";
 import { FolderStatus } from "@/pythonTypes";
 
 import { GrowingRipple } from "./loading";
+import { PairChanges } from "../import/candidates/diff";
 
 /** Icon to show a folder, shows a disc icon if the folder is an album.
  *
@@ -258,6 +261,37 @@ export function InboxTypeIcon({
             return <RocketIcon {...props} />;
     }
     return <InboxIcon {...props} />;
+}
+
+/** Icon to indicate the change to a track.
+ *
+ * This is used in mainly for the candidates diff view.
+ */
+export function ChangeIcon({
+    type,
+    ...props
+}: {
+    type?: PairChanges["changeType"];
+} & LucideProps) {
+    const theme = useTheme();
+
+    props = {
+        size: theme.iconSize.sm,
+        ...props,
+    };
+
+    switch (type) {
+        case "missing_track":
+            return <PenaltyTypeIcon type="missing_tracks" {...props} />;
+        case "missing_item":
+            return <PenaltyTypeIcon type="missing_items" {...props} />;
+        case "change_minor":
+        case "change_major":
+            return <PenaltyTypeIcon type="tracks" {...props} />;
+        case "no_change":
+        default:
+            return <CheckIcon {...props} />;
+    }
 }
 
 /* ------------------------------- Selections ------------------------------- */
