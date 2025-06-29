@@ -4,7 +4,6 @@ import {
     BrainIcon,
     CalendarIcon,
     CassetteTapeIcon,
-    CheckCircle2Icon,
     CheckIcon,
     ChevronsDownUpIcon,
     ChevronsUpDownIcon,
@@ -17,8 +16,6 @@ import {
     FlagIcon,
     FolderIcon,
     FolderOpen,
-    GitPullRequestArrowIcon,
-    GitPullRequestClosedIcon,
     HashIcon,
     HistoryIcon,
     HourglassIcon,
@@ -42,6 +39,7 @@ import { MinimalConfig } from "@/api/config";
 import { FolderStatus } from "@/pythonTypes";
 
 import { GrowingRipple } from "./loading";
+
 import { PairChanges } from "../import/candidates/diff";
 
 /** Icon to show a folder, shows a disc icon if the folder is an album.

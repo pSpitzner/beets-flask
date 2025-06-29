@@ -17,11 +17,9 @@ import { Link } from "@tanstack/react-router";
 import { APIError } from "@/api/common";
 import { albumImportedOptions } from "@/api/library";
 import { enqueueMutationOptions, sessionQueryOptions } from "@/api/session";
-import { humanizeBytes } from "@/components/common/units/bytes";
 import { relativeTime } from "@/components/common/units/time";
 import { useStatusSocket } from "@/components/common/websocket/status";
 import {
-    AlbumResponseMinimalExpanded,
     EnqueueKind,
     Progress,
     SerializedCandidateState,
@@ -216,22 +214,6 @@ function ImportedTaskInfo({ task }: { task: SerializedTaskState }) {
                         View Album
                     </Button>
                 </Link>
-            </Box>
-        </Box>
-    );
-}
-
-function AlbumInfo({ album }: { album: AlbumResponseMinimalExpanded }) {
-    return (
-        <Box>
-            <Box component="ul" sx={{ m: 0 }}>
-                <li>
-                    size:{" "}
-                    {humanizeBytes(
-                        album.items.reduce((acc, item) => acc + item.size, 0)
-                    )}
-                </li>
-                <li>Beets id: {album.id}</li>
             </Box>
         </Box>
     );

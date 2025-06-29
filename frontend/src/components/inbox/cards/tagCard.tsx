@@ -5,7 +5,7 @@ import {
     HistoryIcon,
     TagIcon,
 } from "lucide-react";
-import React, { Fragment, useEffect, useMemo, useState, useTransition } from "react";
+import React, { useEffect, useMemo, useState, useTransition } from "react";
 import {
     Alert,
     AlertProps,

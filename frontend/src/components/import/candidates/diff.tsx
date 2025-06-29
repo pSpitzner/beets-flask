@@ -1,29 +1,19 @@
 import { Change } from "diff";
-import { ArrowRightIcon, Divide } from "lucide-react";
+import { ArrowRightIcon } from "lucide-react";
 import React, {
     createContext,
-    Dispatch,
     ReactElement,
     ReactNode,
-    SetStateAction,
     useContext,
     useEffect,
     useMemo,
     useState,
 } from "react";
-import {
-    Divider,
-    styled,
-    SxProps,
-    Theme,
-    Tooltip,
-    Typography,
-    useMediaQuery,
-    useTheme,
-} from "@mui/material";
+import { styled, SxProps, Theme, Tooltip, Typography, useTheme } from "@mui/material";
 import Box, { BoxProps } from "@mui/material/Box";
 
 import { useDiff } from "@/components/common/hooks/useDiff";
+import { ChangeIcon } from "@/components/common/icons";
 import { trackLengthRep } from "@/components/common/units/time";
 import {
     ItemInfo,
@@ -31,7 +21,6 @@ import {
     SerializedTaskState,
     TrackInfo,
 } from "@/pythonTypes";
-import { ChangeIcon, PenaltyTypeIcon } from "@/components/common/icons";
 
 /* ------------------------------- Track Diff ------------------------------- */
 // Basically a grid layout showing the changes to all tracks
@@ -401,15 +390,7 @@ export function NoChanges({
  * has to be used inside a TrackDiffContextProvider
  */
 export function TrackChangesExtended() {
-    const { pairs, pairs_extended, items, extra_items, extra_tracks } =
-        useTrackDiffContext();
-
-    const theme = useTheme();
-
-    console.log("Extra items", extra_items);
-    console.log("Extra tracks", extra_tracks);
-    console.log("items", items);
-    console.log("pairs", pairs);
+    const { pairs, pairs_extended } = useTrackDiffContext();
 
     // create a list of pairs_extended for all items - track combinations, even where one side cannot be associated
     // with the other. then the missing side should just be undefined.

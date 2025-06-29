@@ -64,7 +64,7 @@ function RouteComponent() {
                             },
                             { label: "Action 3", key: "action3" },
                         ]}
-                        onClick={(option, evt) => {
+                        onClick={(option, _evt) => {
                             alert(`Clicked on ${option.label}`);
                         }}
                     />
