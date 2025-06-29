@@ -53,6 +53,7 @@ We provide a docker image with the full beeets-flask setup. You can run it with 
 
 ```sh
 docker run -d -p 5001:5001 \
+    -e TZ=Europe/Berlin \
     -e USER_ID=1000 \
     -e GROUP_ID=1000 \
     -v /wherever/config/:/config \
@@ -73,6 +74,7 @@ services:
             - "5001:5001"
         environment:
             # 502 is default on macos, 1000 on linux
+            TZ: Europe/Berlin
             USER_ID: 1000
             GROUP_ID: 1000
         volumes:
