@@ -43,14 +43,14 @@ import {
 
 import { CandidateSearch } from "./actions";
 import {
+    ExtraItems,
+    ExtraTracks,
     GenericDetailsItem,
     GenericDetailsItemWithDiff,
     NoChanges,
     TrackChanges,
     TrackDiffContextProvider,
     TrackDiffsAfterImport,
-    ExtraItems,
-    ExtraTracks,
     useTrackDiffContext,
 } from "./diff";
 import { MetaChip } from "./metaChips";

@@ -558,56 +558,6 @@ export function GenericDetailsItemWithDiff({
     );
 }
 
-function TrackRowOld({
-    index,
-    title,
-    time,
-}: {
-    index: number;
-    title: string;
-    time: string;
-}) {
-    return (
-        <Box
-            sx={{
-                display: "grid",
-                gridColumn: "1 / -1",
-                gridTemplateColumns: "subgrid",
-            }}
-        >
-            {/* Index */}
-            <Box
-                sx={{
-                    color: "inherit",
-                    textAlign: "right",
-                }}
-            >
-                {index}
-            </Box>
-
-            {/* Title */}
-            <Box
-                sx={{
-                    textAlign: "right",
-                    display: "flex",
-                }}
-            >
-                {title}
-            </Box>
-
-            {/* Length */}
-            <Box
-                sx={{
-                    color: "inherit",
-                    textAlign: "right",
-                }}
-            >
-                {time}
-            </Box>
-        </Box>
-    );
-}
-
 /**
  * Wrapper around TrackChangesRow that handles undefined `from` or `to` values.
  * (indicating a missing item or missing track, respectively).
