@@ -1,5 +1,5 @@
 import { Change } from "diff";
-import { ArrowRightIcon } from "lucide-react";
+import { ArrowRightIcon, Divide } from "lucide-react";
 import React, {
     createContext,
     Dispatch,
@@ -12,6 +12,7 @@ import React, {
     useState,
 } from "react";
 import {
+    Divider,
     styled,
     SxProps,
     Theme,
@@ -40,9 +41,6 @@ const TrackChangesGrid = styled(Box)(({ theme }) => ({
     display: "grid",
     width: "min-content",
     gridTemplateColumns: `repeat(8, max-content)`,
-    paddingInline: theme.spacing(2),
-    fontSize: theme.typography.body2.fontSize,
-    lineHeight: 1.25,
 
     //Column gap
     "> * > *": {
@@ -245,6 +243,12 @@ export function useTrackDiffContext() {
     return context;
 }
 
+/** The track diff contains a variety of information.
+ *
+ * - TrackChanges, shows how items (on disk) are mapped to tracks (from the candidate).
+ * - UnmatchedTracks, shows tracks that are not matched to any item.
+ * - UnmatchedItems, shows items that are not missing from the candidate.
+ */
 export function TrackDiffsAfterImport({
     items,
     candidate,
@@ -257,101 +261,19 @@ export function TrackDiffsAfterImport({
     // Show all track changes, unmatched tracks and unmatched items
     return (
         <TrackDiffContextProvider candidate={candidate} items={items}>
+            <Divider sx={{ mb: 2 }} />
             <Box
                 sx={{
                     display: "flex",
                     flexDirection: "row",
+                    alignItems: "center",
+                    fontSize: theme.typography.body1.fontSize,
+                    lineHeight: 1.25,
                 }}
             >
                 <TrackChangesExtended />
             </Box>
         </TrackDiffContextProvider>
-    );
-}
-
-/** The track diff contains a variety of information.
- *
- * - TrackChanges, shows how items (on disk) are mapped to tracks (from the candidate).
- * - UnmatchedTracks, shows tracks that are not matched to any item.
- * - UnmatchedItems, shows items that are not missing from the candidate.
- */
-export function TrackDiffs({
-    items,
-    candidate,
-}: {
-    items: SerializedTaskState["items"];
-    candidate: SerializedCandidateState;
-}) {
-    const theme = useTheme();
-
-    if (!candidate.penalties.includes("tracks")) {
-        return (
-            <Box>
-                <TrackChangesGrid
-                    sx={{
-                        color: theme.palette.diffs.light,
-                    }}
-                >
-                    {candidate.tracks
-                        .sort((a) => a.index ?? 0)
-                        .map((track, i) => (
-                            <TrackRow
-                                key={i}
-                                index={track.index || 0}
-                                title={track.title || ""}
-                                time={trackLengthRep(track.length)}
-                            />
-                        ))}
-                </TrackChangesGrid>
-            </Box>
-        );
-    }
-
-    // Show all track changes, unmatched tracks and unmatched items
-    return (
-        <TrackDiffContextProvider candidate={candidate} items={items}>
-            <TrackDiffInner />
-        </TrackDiffContextProvider>
-    );
-}
-
-function TrackDiffInner() {
-    const { extra_tracks, extra_items, pairs } = useTrackDiffContext();
-    const isDesktop = useMediaQuery((theme) => theme.breakpoints.up("desktop"));
-
-    // sort problematic diffs by number of changes, so big blocks appear first
-    const nodes: Array<[React.ReactNode, number]> = [
-        [<TrackChanges key={1} />, pairs.length],
-        [<ExtraTracks key={2} />, extra_tracks.length],
-        [<ExtraItems key={3} />, extra_items.length],
-    ];
-
-    // but do not do this on mobile
-    if (isDesktop) {
-        nodes.sort((a, b) => b[1] - a[1]);
-    }
-
-    return (
-        <Box
-            sx={(theme) => ({
-                display: "flex",
-                flexDirection: "row",
-                rowGap: 0.25,
-                columnGap: 1,
-                flexWrap: "wrap",
-                justifyContent: "space-between",
-                "> *": {
-                    flexGrow: 1,
-                    flexShrink: 0,
-
-                    [theme.breakpoints.down("tablet")]: {
-                        minWidth: "100%",
-                    },
-                },
-            })}
-        >
-            {nodes.map(([node]) => node)}
-        </Box>
     );
 }
 
@@ -409,6 +331,7 @@ export function ExtraItems() {
 
 /** Shows all track changes as a list/grid
  *
+ * Appear as popup after clicking
  * has to be used inside a TrackDiffContextProvider
  */
 export function TrackChanges() {
@@ -448,6 +371,7 @@ export function TrackChanges() {
 
 /** Shows all track changes, including extra and missing
  *
+ * used as a summary after import
  * has to be used inside a TrackDiffContextProvider
  */
 export function TrackChangesExtended() {
