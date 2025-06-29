@@ -39,11 +39,13 @@ jobs:
                   cd ./frontend
                   pnpm install --frozen-lockfile
             - name: Run ESLint
+              id: eslint
               continue-on-error: true
               run: |
                   cd ./frontend
                   pnpm run lint
             - name: Run TypeScript type check
+              id: check-types
               run: |
                   cd ./frontend
                   pnpm run check-types
