@@ -19,6 +19,7 @@ import {
 import {
     ButtonGroup,
     DialogContent,
+    Divider,
     IconButton,
     Radio,
     Skeleton,
@@ -42,14 +43,15 @@ import {
 
 import { CandidateSearch } from "./actions";
 import {
-    ExtraItems,
-    ExtraTracks,
+    UnmatchedItems,
+    UnmatchedTracks,
     GenericDetailsItem,
     GenericDetailsItemWithDiff,
     TrackChanges,
     TrackDiffsAfterImport,
     TrackDiffContextProvider,
     useTrackDiffContext,
+    NoChanges,
 } from "./diff";
 import { MetaChip } from "./metaChips";
 
@@ -179,6 +181,7 @@ export function ImportedCandidate({
                 </Box>
             </Box>
             <Box sx={{ pt: 2 }}>
+                <Divider sx={{ mb: 2 }} />
                 <TrackDiffsAfterImport items={task.items} candidate={candidate} />
             </Box>
         </Box>
@@ -773,7 +776,7 @@ function OverviewChanges({
                 },
             })}
         >
-            {/* first column, inmportant */}
+            {/* first column, important */}
             <GenericDetailsItemWithDiff
                 icon={<PenaltyTypeIcon type="artist" />}
                 from={metadata.artist}
@@ -867,14 +870,14 @@ function OverviewChanges({
                     }}
                 />
                 <TrackChangesDetailItem
-                    kind="extra_tracks"
+                    kind="unmatched_items"
                     sx={{
                         gridColumn: "2",
                         gridRow: "5",
                     }}
                 />
                 <TrackChangesDetailItem
-                    kind="extra_items"
+                    kind="unmatched_tracks"
                     sx={{
                         gridColumn: "2",
                         gridRow: "6",
@@ -926,7 +929,7 @@ function TrackChangesDetailItem({
     kind,
     ...props
 }: {
-    kind: string;
+    kind: "track_changes" | "unmatched_tracks" | "unmatched_items";
 } & BoxProps) {
     const { extra_tracks, extra_items, candidate, nChanges, pairs } =
         useTrackDiffContext();
@@ -954,29 +957,32 @@ function TrackChangesDetailItem({
                 content = <TrackChanges />;
             } else {
                 text = "No severe track changes";
+                content = <TrackChanges />;
             }
             break;
-        case "extra_items":
-            if (candidate.penalties.includes("missing_tracks")) {
+        case "unmatched_items":
+            if (candidate.penalties.includes("unmatched_items")) {
                 pl = "track" + (extra_tracks.length !== 1 ? "s" : "");
                 text = `${extra_tracks.length} ${pl} missing on disk`;
                 color = "diffs.changed";
                 tooltip =
-                    "Tracks found online that could not be matched to tracks on disk (usually because they are missing).";
-                content = <ExtraTracks />;
+                    "Tracks found online that could not be found on disk (usually because they are missing).";
+                content = <UnmatchedTracks />;
             } else {
                 text = "All tracks online present on disk";
+                content = <NoChanges type="unmatched_items" />;
             }
             break;
-        case "extra_tracks":
+        case "unmatched_tracks":
             if (candidate.penalties.includes("unmatched_tracks")) {
                 pl = "item" + (extra_items.length !== 1 ? "s" : "");
                 text = `${extra_items.length} ${pl} tracks on disk not part of the candidate`;
                 color = "diffs.changed";
                 tooltip = "Tracks on disk that could not be matched to tracks online.";
-                content = <ExtraItems />;
+                content = <UnmatchedItems />;
             } else {
                 text = "All tracks on disk found online";
+                content = <NoChanges type="unmatched_tracks" />;
             }
             break;
         default:

@@ -585,7 +585,24 @@ class CandidateState(BaseState):
 
     @property
     def penalties(self) -> List[str]:
-        return list(self.match.distance.keys())
+        penalties = list(self.match.distance.keys())
+
+        # renaming for consistency!
+        # Beets has a somewhat unintuitive naming:
+        # "items" are things on disk
+        # "tracks" are meta-data i.e. online.
+        # but penalties:
+        # "unmatched_tracks" have online not on disk
+        # "missing_tracks" have on disk, not online (in bf we call this unmatched_items)
+
+        # beets object | beets penalty    | beets_flask
+        # -------------|------------------|------------
+        # extra_items  | missing_tracks   | unmatched_items
+        # extra_tracks | unmatched_tracks | unmatched_tracks
+
+        penalties = [p.replace("missing_tracks", "unmatched_items") for p in penalties]
+
+        return list(penalties)
 
     @property
     def num_tracks(self) -> int:

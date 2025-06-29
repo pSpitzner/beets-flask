@@ -17,6 +17,7 @@ import {
     SxProps,
     Theme,
     Tooltip,
+    Typography,
     useMediaQuery,
     useTheme,
 } from "@mui/material";
@@ -79,8 +80,8 @@ export type PairChanges = {
         | "no_change"
         | "change_minor"
         | "change_major"
-        | "missing_track"
-        | "missing_item";
+        | "unmatched_track"
+        | "unmatched_item";
 };
 
 function didPairChange(
@@ -187,7 +188,7 @@ export function TrackDiffContextProvider({
                 // changes of title, time etc - this helps with lower-level code,
                 // where we do string comparisons.
                 const change = didPairChange(track, track);
-                change.changeType = "missing_item";
+                change.changeType = "unmatched_track";
                 pairs_extended.push([undefined, track, change]);
             });
 
@@ -203,9 +204,10 @@ export function TrackDiffContextProvider({
 
             extra_items.forEach((item) => {
                 const change = didPairChange(item, item);
-                change.changeType = "missing_track";
+                change.changeType = "unmatched_item";
                 pairs_extended.push([item, undefined, didPairChange(item, item)]);
             });
+            console.log("Pairs extended", pairs_extended);
 
             return {
                 extra_items,
@@ -261,7 +263,6 @@ export function TrackDiffsAfterImport({
     // Show all track changes, unmatched tracks and unmatched items
     return (
         <TrackDiffContextProvider candidate={candidate} items={items}>
-            <Divider sx={{ mb: 2 }} />
             <Box
                 sx={{
                     display: "flex",
@@ -277,7 +278,7 @@ export function TrackDiffsAfterImport({
     );
 }
 
-export function ExtraTracks() {
+export function UnmatchedTracks() {
     const { extra_tracks } = useTrackDiffContext();
     const theme = useTheme();
     if (extra_tracks.length === 0) {
@@ -285,25 +286,24 @@ export function ExtraTracks() {
     }
     return (
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <Typography variant="body1" color="text.secondary" pb={1}>
+                The following tracks are included in the candidate (found online) but
+                could not be found on disk.
+            </Typography>
             <TrackChangesGrid
                 sx={{
-                    color: theme.palette.diffs.light,
+                    color: theme.palette.diffs.missingItem,
                 }}
             >
                 {extra_tracks.map((track, i) => (
-                    <TrackRow
-                        key={i}
-                        index={track.index || 0}
-                        title={track.title || ""}
-                        time={trackLengthRep(track.length)}
-                    />
+                    <TrackRow key={i} to={track} color="inherit" />
                 ))}
             </TrackChangesGrid>
         </Box>
     );
 }
 
-export function ExtraItems() {
+export function UnmatchedItems() {
     const { extra_items } = useTrackDiffContext();
     const theme = useTheme();
     if (extra_items.length === 0) {
@@ -311,13 +311,17 @@ export function ExtraItems() {
     }
     return (
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <Typography variant="body1" color="text.secondary" pb={1}>
+                The following tracks are included in the folder (on disk) but could not
+                be found in the candidates (online).
+            </Typography>
             <TrackChangesGrid
                 sx={{
                     color: theme.palette.diffs.light,
                 }}
             >
                 {extra_items.map((item, i) => (
-                    <TrackRow
+                    <TrackRowOld
                         key={i}
                         index={item.index || 0}
                         title={item.title || ""}
@@ -369,6 +373,28 @@ export function TrackChanges() {
     );
 }
 
+export function NoChanges({
+    type,
+}: {
+    type: "track_changes" | "unmatched_tracks" | "unmatched_items";
+}) {
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                textAlign: "center",
+            }}
+        >
+            <Typography variant="body1" color="text.secondary" fontSize={"1.1rem"}>
+                No {type.replace("_", " ")} detected.
+                <br />
+                Great sources you have!
+            </Typography>
+        </Box>
+    );
+}
 /** Shows all track changes, including extra and missing
  *
  * used as a summary after import
@@ -413,7 +439,7 @@ export function TrackChangesExtended() {
                             colorizeChanges={true}
                         />
                     ) : (
-                        <TrackChangesRowOneNotFound
+                        <TrackRow
                             key={i}
                             from={item}
                             to={track}
@@ -550,7 +576,7 @@ export function GenericDetailsItemWithDiff({
     );
 }
 
-function TrackRow({
+function TrackRowOld({
     index,
     title,
     time,
@@ -608,18 +634,20 @@ function TrackRow({
  * changes of title, time etc - this helps with lower-level code,
  * where we do string comparisons.
  */
-function TrackChangesRowOneNotFound({
+function TrackRow({
     from,
     to,
     pairChanges,
     forceMajorChange,
     setForceMajorChange,
+    color,
 }: {
     from?: ItemInfo;
     to?: TrackInfo | ItemInfo;
     pairChanges?: PairChanges;
-    forceMajorChange: boolean;
+    forceMajorChange?: boolean;
     setForceMajorChange?: (value: boolean) => void;
+    color?: string;
 }) {
     const theme = useTheme();
 
@@ -643,27 +671,41 @@ function TrackChangesRowOneNotFound({
         missingKind = "track";
     }
 
-    return TrackChangesRow({
-        from: fixedFrom,
-        to: fixedTo,
-        pairChanges: pairChanges,
-        forceMajorChange,
-        setForceMajorChange,
-        colorizeChanges: false,
-        sx: {
-            color:
-                missingKind === "item"
-                    ? theme.palette.diffs.missingItemLight
-                    : theme.palette.diffs.missingTrackLight,
-        },
-    });
+    if (!pairChanges) {
+        pairChanges = didPairChange(fixedFrom, fixedTo);
+        if (missingKind === "item") {
+            pairChanges.changeType = "unmatched_track";
+        } else if (missingKind === "track") {
+            pairChanges.changeType = "unmatched_item";
+        }
+    }
+
+    color =
+        color ||
+        (missingKind === "item"
+            ? theme.palette.diffs.missingItemLight
+            : theme.palette.diffs.missingTrackLight);
+
+    return (
+        <TrackChangesRow
+            from={fixedFrom}
+            to={fixedTo}
+            pairChanges={pairChanges}
+            forceMajorChange={forceMajorChange}
+            setForceMajorChange={setForceMajorChange}
+            colorizeChanges={false}
+            sx={{
+                color,
+            }}
+        />
+    );
 }
 
 function TrackChangesRow({
     from,
     to,
     pairChanges,
-    forceMajorChange,
+    forceMajorChange = false,
     setForceMajorChange = () => {},
     colorizeChanges = true,
     sx = {},
@@ -673,7 +715,7 @@ function TrackChangesRow({
     pairChanges?: PairChanges;
     // HACK: React-Anti-Pattern: we do a computation in each row that we need to set
     // the state of all rows
-    forceMajorChange: boolean;
+    forceMajorChange?: boolean;
     setForceMajorChange?: (value: boolean) => void;
     colorizeChanges?: boolean;
     sx?: SxProps<Theme>;

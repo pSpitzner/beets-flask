@@ -245,26 +245,26 @@ function RouteComponent() {
                             color={theme.palette.diffs.changed}
                         />
                     </Box>
-                    Missing Tracks
+                    Unmatched items
                     <Box display="flex" gap={0.5}>
-                        <PenaltyTypeIcon type="missing_tracks" size={20} />
+                        <PenaltyTypeIcon type="unmatched_items" size={20} />
                         <PenaltyTypeIcon
-                            type="missing_tracks"
+                            type="unmatched_items"
                             size={20}
                             color={theme.palette.success.main}
                         />
                         <PenaltyTypeIcon
-                            type="missing_tracks"
+                            type="unmatched_items"
                             size={20}
                             color={theme.palette.warning.main}
                         />
                         <PenaltyTypeIcon
-                            type="missing_tracks"
+                            type="unmatched_items"
                             size={20}
                             color={theme.palette.error.main}
                         />
                         <PenaltyTypeIcon
-                            type="missing_tracks"
+                            type="unmatched_items"
                             size={20}
                             color={theme.palette.diffs.changed}
                         />
@@ -524,9 +524,9 @@ function RouteComponent() {
                     }}
                 >
                     Missing track
-                    <ChangeIcon size={20} type={"missing_track"} />
+                    <ChangeIcon size={20} type={"unmatched_item"} />
                     Missing item
-                    <ChangeIcon size={20} type={"missing_item"} />
+                    <ChangeIcon size={20} type={"unmatched_track"} />
                     Change minor
                     <ChangeIcon size={20} type={"change_minor"} />
                     Change major
