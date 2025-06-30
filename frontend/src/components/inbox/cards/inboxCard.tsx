@@ -1,57 +1,33 @@
-import { PlusIcon, Settings } from "lucide-react";
 import { useMemo } from "react";
 import {
     Box,
-    Button,
     Card,
     CardActions,
     CardContent,
-    IconButton,
     Tooltip,
     Typography,
 } from "@mui/material";
 
-import { useConfig } from "@/api/config";
+import { useInboxFolderConfig, useInboxFolderGridConfig } from "@/api/config";
 import { InboxTypeIcon } from "@/components/common/icons";
 import { CardHeader } from "@/components/frontpage/statsCard";
-import {
-    FolderActionDesktopBar,
-    ImportSplitButton,
-    RetagSplitButton,
-} from "@/components/inbox/actions";
+import { ImportSplitButton, RetagSplitButton } from "@/components/inbox/actions";
 import {
     FolderComponent,
     GridWrapper,
-    SelectedStats,
+    InboxGridHeader,
 } from "@/components/inbox/fileTree";
 import { Folder } from "@/pythonTypes";
 
-import { DeleteImportedFoldersButton } from "../actions2/deleteFolders";
-
 export function InboxCard({ folder }: { folder: Folder }) {
-    const config = useConfig();
-
-    // configuration for this inbox folder
-    const folderConfig = useMemo<(typeof config)["gui"]["inbox"]["folders"][0]>(() => {
-        const fc = Object.entries(config.gui.inbox.folders).find(
-            ([_k, v]) => v.path === folder.full_path
-        );
-
-        return fc
-            ? fc[1]
-            : {
-                  name: "Inbox",
-                  autotag: false,
-                  path: folder.full_path,
-              };
-    }, [config, folder.full_path]);
+    const folderConfig = useInboxFolderConfig(folder.full_path);
+    const { config: folderGridConfig } = useInboxFolderGridConfig(folder.full_path);
+    const threshold = folderConfig.auto_threshold;
 
     const innerFolders = useMemo(() => {
         // Filter out folders that are not albums or files
         return folder.children.filter((f) => f.type === "directory");
     }, [folder.children]);
-
-    const threshold = folderConfig.auto_threshold ?? config.match.strong_rec_thresh;
 
     let tooltip: string;
     switch (folderConfig.autotag) {
@@ -172,9 +148,9 @@ export function InboxCard({ folder }: { folder: Folder }) {
                 </Box>
             </CardHeader>
             <CardContent>
-                <GridWrapper>
+                <GridWrapper config={folderGridConfig}>
                     {/* Only show inner folders */}
-                    <SelectedStats />
+                    <InboxGridHeader inboxFolderConfig={folderConfig} />
                     {innerFolders.map((innerFolder) => (
                         <FolderComponent
                             key={innerFolder.full_path}

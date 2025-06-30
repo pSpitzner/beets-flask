@@ -1,42 +1,72 @@
 import {
+    ChevronDown,
+    ChevronDownIcon,
+    ChevronLeftIcon,
+    ChevronRightIcon,
+    ChevronUpIcon,
+    InfoIcon,
     LucideChevronRight,
-    PlusIcon,
     Settings,
-    SquareArrowOutUpRightIcon,
+    SettingsIcon,
     SquareChartGanttIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { DndContext } from "@dnd-kit/core";
 import {
+    Alert,
+    AlertTitle,
     Box,
+    BoxProps,
+    Button,
+    ButtonGroup,
     Checkbox,
+    DialogContent,
     IconButton,
+    iconClasses,
+    List,
+    ListItem,
+    ListItemText,
+    Paper,
     styled,
-    SxProps,
-    Theme,
     Typography,
     useTheme,
 } from "@mui/material";
 import { Link } from "@tanstack/react-router";
 
 import {
+    InboxFolderGridConfig,
+    useInboxFolderConfig,
+    useInboxFolderGridConfig,
+} from "@/api/config";
+import {
     BestCandidateChip,
     DuplicateChip,
     FolderStatusChip,
     HashMismatchChip,
+    StyledChip,
 } from "@/components/common/chips";
-import { useMobileSafeContextMenu } from "@/components/common/hooks/useMobileSafeContextMenu";
 import { FileTypeIcon, FolderTypeIcon } from "@/components/common/icons";
 import { File, Folder } from "@/pythonTypes";
 
-import { MoreActions } from "./actions";
 import { useFolderSelectionContext } from "./folderSelectionContext";
+import { GridTemplateSettings } from "./settings/gridTemplateSettings";
+
+import { JSONPretty } from "../common/debugging/json";
+import { Dialog } from "../common/dialogs";
 
 /* ------------------------------ Grid wrapper ------------------------------ */
 
-export const GridWrapper = styled(Box)(({ theme }) => ({
+type GridWrapperProps = {
+    config: InboxFolderGridConfig;
+};
+
+export const GridWrapper = styled(Box)<GridWrapperProps>(({ theme, config }) => ({
     display: "grid",
-    // gridTemplateColumns: "[tree] 1fr [chip] auto [actions] auto [selector] auto",
-    gridTemplateColumns: "[selector] auto [tree] 1fr [chip] auto [actions] auto",
+    // Construct order of columns from config
+    // Default should be "[selector] auto [tree] 1fr [chip] auto [actions] auto",
+    gridTemplateColumns: config.gridTemplateColumns
+        .map((col) => `[${col.name}] ${col.size}`)
+        .join(" "),
     width: "100%",
     columnGap: theme.spacing(1.5),
     // Fill columns even if content is given in other order
@@ -50,6 +80,16 @@ export const GridWrapper = styled(Box)(({ theme }) => ({
             rgba(0, 0, 0, 0.01) 100%
         )`,
     },
+
+    ...Object.fromEntries(
+        config.gridTemplateColumns.map((col) => [
+            `.${col.name}`,
+            {
+                display: col.hidden ? "hidden" : undefined,
+                gridColumn: col.name,
+            },
+        ])
+    ),
 }));
 
 const GridRow = styled(Box)(({ theme }) => ({
@@ -133,9 +173,7 @@ export function FolderComponent({
 
                 {/* Selector */}
                 <Checkbox
-                    sx={{
-                        gridColumn: "selector",
-                    }}
+                    className="selector"
                     size="medium"
                     checked={isSelected(folder)}
                     style={{ padding: 0 }}
@@ -147,8 +185,8 @@ export function FolderComponent({
                 <Link
                     to="/inbox/folder/$path/$hash"
                     params={{ path: folder.full_path, hash: folder.hash }}
+                    className="actions"
                     style={{
-                        gridColumn: "actions",
                         textDecoration: "none",
                         display: "flex",
                         alignItems: "center",
@@ -167,38 +205,37 @@ export function FolderComponent({
     );
 }
 
-function FileComponent({ file, level = 0 }: { file: File; level?: number }) {
+export function FileComponent({ file, level = 0 }: { file: File; level?: number }) {
     return (
         <GridRow>
             <FileName file={file} level={level} />
-            {/* Emtpy grid items for alignment */}
-            <Box sx={{ gridColumn: "chip", minWidth: 0 }} />
-            <Box sx={{ gridColumn: "selector", minWidth: 0 }} />
         </GridRow>
     );
 }
 
-function FolderTreeRow({
+export function FolderTreeRow({
     folder,
     isOpen,
     setIsOpen,
     level = 0,
+    ...props
 }: {
     folder: Folder;
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
     level?: number;
-}) {
+} & BoxProps) {
     const whiteness = Math.max(100 - (MAX_LEVEL - level) * 15, 30);
     return (
         <LevelIndentWrapper
             level={level}
+            className="tree"
             sx={(theme) => ({
-                gridColumn: "tree",
                 [theme.breakpoints.down("laptop")]: {
                     color: `hsl(210deg, 8.75%, ${whiteness}%)`,
                 },
             })}
+            {...props}
         >
             {/* Collapse/Expand button */}
             <IconButton
@@ -246,12 +283,13 @@ function FileName({ file, level = 0 }: { file: File; level?: number }) {
     return (
         <LevelIndentWrapper
             level={level}
+            className="tree"
             sx={{
                 fontSize: "0.7rem",
                 fontFamily: "monospace",
                 color: "#999",
                 gridColumnStart: "tree",
-                gridColumnEnd: "-1", // Allow full size
+                gridColumnEnd: "-1 !important", // Allow full size
                 minWidth: "0",
             }}
         >
@@ -315,11 +353,11 @@ function LevelIndentWrapper({
     children,
     sx,
     level = 0,
+    ...props
 }: {
     children: React.ReactNode;
-    sx?: SxProps<Theme>;
     level?: number;
-}) {
+} & BoxProps) {
     const theme = useTheme();
 
     return (
@@ -343,6 +381,7 @@ function LevelIndentWrapper({
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                 ...(Array.isArray(sx) ? sx : [sx]),
             ]}
+            {...props}
         >
             {Array.from({ length: Math.floor(level) }, (_, i) => (
                 <Box
@@ -385,8 +424,8 @@ function Chips({ folder }: { folder: Folder }) {
         <Box
             display="flex"
             alignItems="center"
+            className="chip"
             sx={(theme) => ({
-                gridColumn: "chip",
                 position: "relative",
                 gap: 0.5,
                 [theme.breakpoints.down("tablet")]: {
@@ -415,17 +454,25 @@ function Chips({ folder }: { folder: Folder }) {
 
 /* --------------------------------- Utility --------------------------------- */
 
-export function SelectedStats() {
+export function InboxGridHeader({
+    inboxFolderConfig,
+}: {
+    inboxFolderConfig: ReturnType<typeof useInboxFolderConfig>;
+}) {
+    const theme = useTheme();
+    const [open, setOpen] = useState(false);
     const [checked, setChecked] = useState(false);
     const { nSelected, deselectAll } = useFolderSelectionContext();
+    const { config: inboxFolderGridConfig, setGridTemplateColumns } =
+        useInboxFolderGridConfig(inboxFolderConfig.path);
 
     return (
-        <GridRow sx={{}}>
+        <GridRow>
             <Checkbox
                 color="secondary"
                 indeterminate={nSelected > 0}
+                className="selector"
                 sx={{
-                    gridColumn: "selector",
                     margin: 0,
                     padding: 0,
                 }}
@@ -436,36 +483,263 @@ export function SelectedStats() {
                 }}
                 disabled={nSelected === 0}
             />
-            <Box sx={{ gridColumn: "tree", display: "flex", alignItems: "center" }}>
+            <Box className="tree" sx={{ display: "flex", alignItems: "center" }}>
                 <Typography
                     fontSize={12}
                     variant="body2"
-                    sx={{ gridColumn: "tree", color: "text.secondary" }}
+                    sx={{ color: "text.secondary" }}
                 >
                     {nSelected} folder{nSelected > 1 ? "s" : null} selected
                 </Typography>
             </Box>
 
             <Box
+                className="actions"
                 sx={{
-                    gridColumn: "-1",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "flex-end",
                 }}
             >
                 <IconButton
-                    onClick={() => {
-                        deselectAll();
-                        setChecked(false);
-                    }}
+                    onClick={() => setOpen(true)}
                     sx={{
                         color: "text.secondary",
                     }}
                 >
                     <Settings size={16} />
                 </IconButton>
+                <Dialog
+                    open={open}
+                    onClose={() => setOpen(false)}
+                    title={`${inboxFolderConfig.name} settings`}
+                    title_icon={<Settings size={theme.iconSize.xl} />}
+                    color="secondary"
+                >
+                    <DialogContent>
+                        <Alert
+                            severity="info"
+                            sx={{
+                                width: "min-content",
+                                minWidth: "100%",
+                                marginBottom: 2,
+                            }}
+                        >
+                            <AlertTitle>Settings are not persistent</AlertTitle>
+                            <Box sx={{ minWidth: "100%" }}>
+                                At the moment, all settings are only applied to the
+                                current browser and are saved in local storage. We might
+                                add persistent settings in the future.
+                            </Box>
+                        </Alert>
+
+                        <GridTemplateSettings
+                            inboxFolderGridConfig={inboxFolderGridConfig}
+                            setGridTemplateColumns={setGridTemplateColumns}
+                        />
+                        <ActionSettings />
+                    </DialogContent>
+                </Dialog>
             </Box>
         </GridRow>
+    );
+}
+
+function ActionSettings() {
+    const dragging = useRef<HTMLDivElement | null>(null);
+    const [primaryActions, setPrimaryActions] = useState<string[]>(["p1", "p2"]);
+    const [secondaryActions, setSecondaryActions] = useState<string[]>([]);
+
+    const [actions, setActions] = useState(["retag", "delete", "import"]);
+
+    function handleDragOver(e: React.DragEvent<HTMLDivElement>) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Get positions within the element
+        const target = e.currentTarget;
+        const rect = target.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+
+        const draggedAction = e.dataTransfer.getData("text/plain");
+        const dragStartIndex = actions.indexOf(draggedAction);
+
+        const newIndex = Math.floor((y / target.clientHeight) * actions.length);
+
+        if (dragStartIndex === -1 && dragStartIndex !== newIndex) {
+            console.warn("Dragged action not found in actions list");
+            return;
+        }
+
+        setActions((prevActions) => {
+            const newActions = [...prevActions];
+            // Remove the dragged action from its old position
+            const ele = newActions.splice(dragStartIndex, 1);
+            newActions.splice(newIndex, 0, ...ele);
+            // Insert the dragged action at the new position
+            return [...newActions];
+        });
+    }
+
+    function handleDragEnd() {
+        if (dragging.current) {
+            dragging.current.style.opacity = "1"; // Reset opacity after drag ends
+            dragging.current = null;
+        }
+    }
+    function handleDragStart(e: React.DragEvent<HTMLDivElement>, action: string) {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.dropEffect = "move";
+        e.dataTransfer.setData("text/plain", action);
+
+        // Set style to indicate dragging
+        dragging.current = e.currentTarget;
+        dragging.current.style.opacity = "0.5";
+
+        window.addEventListener("dragend", handleDragEnd, { once: true });
+    }
+
+    return (
+        <Box
+            sx={{
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+                gap: 1,
+            }}
+        >
+            <Typography
+                variant="h6"
+                sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                }}
+            >
+                Actions
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+                Change the <em>primary</em> and <em>secondary</em> actions that can be
+                applied to the selected folders. Depending on the order of the actions,
+                the first action will be shown as a button, the rest will be in a
+                dropdown menu.
+            </Typography>
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 1,
+                    paddingBlock: 2,
+                    position: "relative",
+                }}
+                onDragOver={handleDragOver}
+            >
+                {actions.map((action) => (
+                    <Box
+                        width="100%"
+                        key={action}
+                        border="1px solid #ccc"
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, action)}
+                        sx={{
+                            //Highlight on dragging
+                            "&:hover": {
+                                borderColor: "secondary.main",
+                                cursor: "move",
+                            },
+                            paddingInline: 1,
+                        }}
+                    >
+                        {action}
+                    </Box>
+                ))}
+            </Box>
+            <Box
+                sx={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    width: "100%",
+                    gap: 2,
+                }}
+            >
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 1,
+                    }}
+                >
+                    <Typography variant="h6">Primary actions</Typography>
+                    <Box
+                        sx={{
+                            minHeight: "2.5rem",
+                            border: "1px solid",
+                            borderColor: "secondary.main",
+                            borderRadius: 1,
+                            width: "100%",
+                            height: "100%",
+                        }}
+                    >
+                        {primaryActions.map((action) => (
+                            <StyledChip
+                                key={action}
+                                label={action}
+                                onDelete={() =>
+                                    setPrimaryActions((prev) =>
+                                        prev.filter((a) => a !== action)
+                                    )
+                                }
+                                color="secondary"
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, action)}
+                                sx={{
+                                    margin: "0.25rem",
+                                    cursor: "move",
+                                }}
+                            />
+                        ))}
+                    </Box>
+                </Box>
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 1,
+                    }}
+                >
+                    <Typography variant="h6">Secondary actions</Typography>
+                    <Box
+                        sx={{
+                            minHeight: "2.5rem",
+                            border: "1px dashed",
+                            borderColor: "secondary.main",
+                            borderRadius: 1,
+                            width: "100%",
+                            height: "100%",
+                        }}
+                    >
+                        {secondaryActions.map((action) => (
+                            <StyledChip
+                                key={action}
+                                label={action}
+                                onDelete={() =>
+                                    setSecondaryActions((prev) =>
+                                        prev.filter((a) => a !== action)
+                                    )
+                                }
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, action)}
+                                sx={{
+                                    margin: "0.25rem",
+                                    cursor: "move",
+                                }}
+                            />
+                        ))}
+                    </Box>
+                </Box>
+            </Box>
+        </Box>
     );
 }
