@@ -8,7 +8,7 @@ import { UseMutationOptions } from "@tanstack/react-query";
 
 import type { File, Folder, InboxStats } from "@/pythonTypes";
 
-import { queryClient } from "./common";
+import { APIError, queryClient } from "./common";
 
 // Tree of inbox folders
 export const inboxQueryOptions = () => ({
@@ -103,7 +103,7 @@ export const fileMetaQueryOptions = (paths: string[]) => ({
 
 export const deleteFoldersMutationOptions: UseMutationOptions<
     Response | undefined,
-    Error,
+    APIError,
     {
         folderPaths: string[];
         folderHashes: string[];

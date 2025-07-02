@@ -55,51 +55,136 @@ export const useConfig = () => {
     return data;
 };
 
-// This is kinda intertwined with the fileTree
-export interface InboxFolderGridConfig {
-    gridTemplateColumns: Array<{
-        name: "selector" | "tree" | "chip" | "actions";
-        size: "1fr" | "auto";
-        hidden?: boolean;
-    }>;
-    primaryActions: string[];
-    secondaryActions: string[];
+// This is kinda intertwined with the fileTree and action buttons as this is
+// mainly a frontend configuration. Maybe we should move this to a different file?
+
+export type GridColumn = {
+    name: "selector" | "tree" | "chip" | "actions";
+    size: "1fr" | "auto";
+    hidden?: boolean;
+};
+
+type ActionOptionMap = {
+    retag: {
+        group_albums: boolean;
+        autotag: boolean;
+    };
+    undo: {
+        delete_files: boolean;
+    };
+    import_best: undefined;
+    import_bootleg: undefined;
+    delete: undefined;
+    delete_imported_folders: undefined;
+};
+
+export type Action = {
+    [K in keyof ActionOptionMap]: {
+        name: K;
+        label?: string; // Optional label for the action, defaults to name with underscores replaced by spaces
+    } & (ActionOptionMap[K] extends undefined
+        ? { options?: never }
+        : { options: ActionOptionMap[K] });
+}[keyof ActionOptionMap];
+
+export type ActionButtonConfig = {
+    variant: "outlined" | "contained" | "text";
+    // List of actions that this button can perform, e.g. a mapping to our enqueue actions
+    actions: Array<Action>;
+};
+
+export interface InboxFolderFrontendConfig {
+    gridTemplateColumns: Array<GridColumn>;
+    actionButtons: {
+        primary: ActionButtonConfig;
+        secondary: ActionButtonConfig;
+        extra: ActionButtonConfig;
+    };
 }
 
-export const DEFAULT_INBOX_FOLDER_GRID_CONFIG: InboxFolderGridConfig = {
+export const DEFAULT_INBOX_FOLDER_FRONTEND_CONFIG: InboxFolderFrontendConfig = {
     gridTemplateColumns: [
         { name: "selector", size: "auto" },
         { name: "tree", size: "1fr" },
         { name: "chip", size: "auto" },
         { name: "actions", size: "auto" },
     ],
-    primaryActions: ["import", "delete"],
-    secondaryActions: ["retag"],
+    actionButtons: {
+        primary: {
+            variant: "contained",
+            actions: [
+                {
+                    name: "import_best",
+                },
+                {
+                    name: "import_bootleg",
+                },
+            ],
+        },
+        secondary: {
+            variant: "outlined",
+            actions: [
+                {
+                    name: "retag",
+                    label: "Retag",
+                    options: {
+                        group_albums: false,
+                        autotag: true,
+                    },
+                },
+                {
+                    name: "undo",
+                    options: {
+                        delete_files: true,
+                    },
+                },
+                {
+                    name: "delete",
+                },
+            ],
+        },
+        extra: {
+            variant: "text",
+            actions: [
+                {
+                    name: "delete_imported_folders",
+                },
+            ],
+        },
+    },
 };
 
-export const useInboxFolderGridConfig = (fullpath: string) => {
-    const [config, setConfig] = useLocalStorage<InboxFolderGridConfig>(
+export const useInboxFolderFrontendConfig = (fullpath: string) => {
+    const [config, setConfig] = useLocalStorage<InboxFolderFrontendConfig>(
         "inbox_folder_grid_config_" + fullpath,
-        DEFAULT_INBOX_FOLDER_GRID_CONFIG
+        DEFAULT_INBOX_FOLDER_FRONTEND_CONFIG
     );
 
-    const setGridTemplateColumns = (
-        columns: Array<{
-            name: "selector" | "tree" | "chip" | "actions";
-            size: "1fr" | "auto";
-            hidden?: boolean;
-        }>
-    ) => {
+    const setGridTemplateColumns = (columns: Array<GridColumn>) => {
         setConfig({
             ...config,
             gridTemplateColumns: columns,
         });
     };
 
+    const setActionButtons = (actionButtons: {
+        primary: ActionButtonConfig;
+        secondary: ActionButtonConfig;
+        extra: ActionButtonConfig;
+    }) => {
+        setConfig({
+            ...config,
+            actionButtons: actionButtons,
+        });
+    };
+
     return {
         config,
+        gridTemplateColumns: config.gridTemplateColumns,
+        actionButtons: config.actionButtons,
         setConfig,
         setGridTemplateColumns,
+        setActionButtons,
     };
 };
 

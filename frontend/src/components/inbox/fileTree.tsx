@@ -1,32 +1,13 @@
-import {
-    ChevronDown,
-    ChevronDownIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
-    ChevronUpIcon,
-    InfoIcon,
-    LucideChevronRight,
-    Settings,
-    SettingsIcon,
-    SquareChartGanttIcon,
-} from "lucide-react";
-import { useRef, useState } from "react";
-import { DndContext } from "@dnd-kit/core";
+import { LucideChevronRight, Settings, SquareChartGanttIcon } from "lucide-react";
+import { useState } from "react";
 import {
     Alert,
     AlertTitle,
     Box,
     BoxProps,
-    Button,
-    ButtonGroup,
     Checkbox,
     DialogContent,
     IconButton,
-    iconClasses,
-    List,
-    ListItem,
-    ListItemText,
-    Paper,
     styled,
     Typography,
     useTheme,
@@ -34,39 +15,36 @@ import {
 import { Link } from "@tanstack/react-router";
 
 import {
-    InboxFolderGridConfig,
+    InboxFolderFrontendConfig,
     useInboxFolderConfig,
-    useInboxFolderGridConfig,
+    useInboxFolderFrontendConfig,
 } from "@/api/config";
 import {
     BestCandidateChip,
     DuplicateChip,
     FolderStatusChip,
     HashMismatchChip,
-    StyledChip,
 } from "@/components/common/chips";
 import { FileTypeIcon, FolderTypeIcon } from "@/components/common/icons";
 import { File, Folder } from "@/pythonTypes";
 
 import { useFolderSelectionContext } from "./folderSelectionContext";
+import { ActionButtonSettings } from "./settings/actionButtonSettings";
 import { GridTemplateSettings } from "./settings/gridTemplateSettings";
 
-import { JSONPretty } from "../common/debugging/json";
 import { Dialog } from "../common/dialogs";
 
 /* ------------------------------ Grid wrapper ------------------------------ */
 
 type GridWrapperProps = {
-    config: InboxFolderGridConfig;
+    config: InboxFolderFrontendConfig["gridTemplateColumns"];
 };
 
 export const GridWrapper = styled(Box)<GridWrapperProps>(({ theme, config }) => ({
     display: "grid",
     // Construct order of columns from config
     // Default should be "[selector] auto [tree] 1fr [chip] auto [actions] auto",
-    gridTemplateColumns: config.gridTemplateColumns
-        .map((col) => `[${col.name}] ${col.size}`)
-        .join(" "),
+    gridTemplateColumns: config.map((col) => `[${col.name}] ${col.size}`).join(" "),
     width: "100%",
     columnGap: theme.spacing(1.5),
     // Fill columns even if content is given in other order
@@ -82,10 +60,10 @@ export const GridWrapper = styled(Box)<GridWrapperProps>(({ theme, config }) => 
     },
 
     ...Object.fromEntries(
-        config.gridTemplateColumns.map((col) => [
+        config.map((col) => [
             `.${col.name}`,
             {
-                display: col.hidden ? "hidden" : undefined,
+                display: col.hidden ? "none" : undefined,
                 gridColumn: col.name,
             },
         ])
@@ -186,6 +164,7 @@ export function FolderComponent({
                     to="/inbox/folder/$path/$hash"
                     params={{ path: folder.full_path, hash: folder.hash }}
                     className="actions"
+                    preload="intent"
                     style={{
                         textDecoration: "none",
                         display: "flex",
@@ -463,8 +442,12 @@ export function InboxGridHeader({
     const [open, setOpen] = useState(false);
     const [checked, setChecked] = useState(false);
     const { nSelected, deselectAll } = useFolderSelectionContext();
-    const { config: inboxFolderGridConfig, setGridTemplateColumns } =
-        useInboxFolderGridConfig(inboxFolderConfig.path);
+    const {
+        gridTemplateColumns,
+        setGridTemplateColumns,
+        actionButtons,
+        setActionButtons,
+    } = useInboxFolderFrontendConfig(inboxFolderConfig.path);
 
     return (
         <GridRow>
@@ -516,13 +499,14 @@ export function InboxGridHeader({
                     title_icon={<Settings size={theme.iconSize.xl} />}
                     color="secondary"
                 >
-                    <DialogContent>
+                    <DialogContent
+                        sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+                    >
                         <Alert
                             severity="info"
                             sx={{
                                 width: "min-content",
                                 minWidth: "100%",
-                                marginBottom: 2,
                             }}
                         >
                             <AlertTitle>Settings are not persistent</AlertTitle>
@@ -532,214 +516,17 @@ export function InboxGridHeader({
                                 add persistent settings in the future.
                             </Box>
                         </Alert>
-
                         <GridTemplateSettings
-                            inboxFolderGridConfig={inboxFolderGridConfig}
+                            gridTemplateColumns={gridTemplateColumns}
                             setGridTemplateColumns={setGridTemplateColumns}
                         />
-                        <ActionSettings />
+                        <ActionButtonSettings
+                            actionButtons={actionButtons}
+                            setActionButtons={setActionButtons}
+                        />
                     </DialogContent>
                 </Dialog>
             </Box>
         </GridRow>
-    );
-}
-
-function ActionSettings() {
-    const dragging = useRef<HTMLDivElement | null>(null);
-    const [primaryActions, setPrimaryActions] = useState<string[]>(["p1", "p2"]);
-    const [secondaryActions, setSecondaryActions] = useState<string[]>([]);
-
-    const [actions, setActions] = useState(["retag", "delete", "import"]);
-
-    function handleDragOver(e: React.DragEvent<HTMLDivElement>) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        // Get positions within the element
-        const target = e.currentTarget;
-        const rect = target.getBoundingClientRect();
-        const y = e.clientY - rect.top;
-
-        const draggedAction = e.dataTransfer.getData("text/plain");
-        const dragStartIndex = actions.indexOf(draggedAction);
-
-        const newIndex = Math.floor((y / target.clientHeight) * actions.length);
-
-        if (dragStartIndex === -1 && dragStartIndex !== newIndex) {
-            console.warn("Dragged action not found in actions list");
-            return;
-        }
-
-        setActions((prevActions) => {
-            const newActions = [...prevActions];
-            // Remove the dragged action from its old position
-            const ele = newActions.splice(dragStartIndex, 1);
-            newActions.splice(newIndex, 0, ...ele);
-            // Insert the dragged action at the new position
-            return [...newActions];
-        });
-    }
-
-    function handleDragEnd() {
-        if (dragging.current) {
-            dragging.current.style.opacity = "1"; // Reset opacity after drag ends
-            dragging.current = null;
-        }
-    }
-    function handleDragStart(e: React.DragEvent<HTMLDivElement>, action: string) {
-        e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.dropEffect = "move";
-        e.dataTransfer.setData("text/plain", action);
-
-        // Set style to indicate dragging
-        dragging.current = e.currentTarget;
-        dragging.current.style.opacity = "0.5";
-
-        window.addEventListener("dragend", handleDragEnd, { once: true });
-    }
-
-    return (
-        <Box
-            sx={{
-                width: "100%",
-                display: "flex",
-                flexDirection: "column",
-                gap: 1,
-            }}
-        >
-            <Typography
-                variant="h6"
-                sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                }}
-            >
-                Actions
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-                Change the <em>primary</em> and <em>secondary</em> actions that can be
-                applied to the selected folders. Depending on the order of the actions,
-                the first action will be shown as a button, the rest will be in a
-                dropdown menu.
-            </Typography>
-            <Box
-                sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 1,
-                    paddingBlock: 2,
-                    position: "relative",
-                }}
-                onDragOver={handleDragOver}
-            >
-                {actions.map((action) => (
-                    <Box
-                        width="100%"
-                        key={action}
-                        border="1px solid #ccc"
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, action)}
-                        sx={{
-                            //Highlight on dragging
-                            "&:hover": {
-                                borderColor: "secondary.main",
-                                cursor: "move",
-                            },
-                            paddingInline: 1,
-                        }}
-                    >
-                        {action}
-                    </Box>
-                ))}
-            </Box>
-            <Box
-                sx={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    width: "100%",
-                    gap: 2,
-                }}
-            >
-                <Box
-                    sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        gap: 1,
-                    }}
-                >
-                    <Typography variant="h6">Primary actions</Typography>
-                    <Box
-                        sx={{
-                            minHeight: "2.5rem",
-                            border: "1px solid",
-                            borderColor: "secondary.main",
-                            borderRadius: 1,
-                            width: "100%",
-                            height: "100%",
-                        }}
-                    >
-                        {primaryActions.map((action) => (
-                            <StyledChip
-                                key={action}
-                                label={action}
-                                onDelete={() =>
-                                    setPrimaryActions((prev) =>
-                                        prev.filter((a) => a !== action)
-                                    )
-                                }
-                                color="secondary"
-                                draggable
-                                onDragStart={(e) => handleDragStart(e, action)}
-                                sx={{
-                                    margin: "0.25rem",
-                                    cursor: "move",
-                                }}
-                            />
-                        ))}
-                    </Box>
-                </Box>
-                <Box
-                    sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        gap: 1,
-                    }}
-                >
-                    <Typography variant="h6">Secondary actions</Typography>
-                    <Box
-                        sx={{
-                            minHeight: "2.5rem",
-                            border: "1px dashed",
-                            borderColor: "secondary.main",
-                            borderRadius: 1,
-                            width: "100%",
-                            height: "100%",
-                        }}
-                    >
-                        {secondaryActions.map((action) => (
-                            <StyledChip
-                                key={action}
-                                label={action}
-                                onDelete={() =>
-                                    setSecondaryActions((prev) =>
-                                        prev.filter((a) => a !== action)
-                                    )
-                                }
-                                draggable
-                                onDragStart={(e) => handleDragStart(e, action)}
-                                sx={{
-                                    margin: "0.25rem",
-                                    cursor: "move",
-                                }}
-                            />
-                        ))}
-                    </Box>
-                </Box>
-            </Box>
-        </Box>
     );
 }

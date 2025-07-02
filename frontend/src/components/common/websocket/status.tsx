@@ -13,14 +13,13 @@ import { type QueryClient } from "@tanstack/react-query";
 
 import { queryClient } from "@/api/common";
 import { invalidateSession, statusQueryOptions } from "@/api/session";
+import { StatusSocket } from "@/api/websocket";
 import { FileSystemUpdate, FolderStatus, FolderStatusUpdate } from "@/pythonTypes";
 
 import useSocket from "./useSocket";
-
-import type { Socket } from "socket.io-client";
 interface StatusContextI {
     isConnected: boolean;
-    socket: Socket | null;
+    socket: StatusSocket | null;
 }
 
 const StatusContext = createContext<StatusContextI | null>(null);

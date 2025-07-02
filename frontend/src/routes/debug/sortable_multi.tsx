@@ -13,9 +13,7 @@ import {
     useSensors,
 } from "@dnd-kit/core";
 import {
-    AnimateLayoutChanges,
     arrayMove,
-    defaultAnimateLayoutChanges,
     SortableContext,
     sortableKeyboardCoordinates,
     useSortable,
@@ -55,7 +53,7 @@ function RouteComponent() {
         [items]
     );
 
-    // Allto use pointers and keyboard sensors for drag and drop
+    // Allow use pointers and keyboard sensors for drag and drop
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, {
@@ -233,9 +231,6 @@ function SortableItem({ id }: { id: UniqueIdentifier }) {
         </div>
     );
 }
-
-const animateLayoutChanges: AnimateLayoutChanges = (args) =>
-    defaultAnimateLayoutChanges({ ...args, wasDragging: true });
 
 function DroppableContainer({ id, children, sx }: BoxProps & { id: UniqueIdentifier }) {
     const { setNodeRef } = useDroppable({

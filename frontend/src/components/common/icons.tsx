@@ -337,13 +337,17 @@ function ExtraTrack(props: LucideProps) {
     );
 }
 
+export function BootlegIcon(props: LucideProps) {
+    return <Icon iconNode={sneaker} {...props} />;
+}
+
 export function InboxTypeIcon({
     type,
     ...props
 }: { type?: MinimalConfig["gui"]["inbox"]["folders"][0]["autotag"] } & LucideProps) {
     switch (type) {
         case "bootleg":
-            return <Icon iconNode={sneaker} {...props} />;
+            return <BootlegIcon {...props} />;
         case "preview":
             return <TagIcon {...props} />;
         case "auto":

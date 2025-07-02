@@ -1,4 +1,10 @@
-import { InfoIcon, RotateCcwIcon, SquareChartGanttIcon } from "lucide-react";
+import {
+    EyeIcon,
+    EyeOffIcon,
+    InfoIcon,
+    RotateCcwIcon,
+    SquareChartGanttIcon,
+} from "lucide-react";
 import { useCallback, useState } from "react";
 import {
     closestCenter,
@@ -30,8 +36,9 @@ import {
 } from "@mui/material";
 
 import {
-    DEFAULT_INBOX_FOLDER_GRID_CONFIG,
-    type InboxFolderGridConfig,
+    DEFAULT_INBOX_FOLDER_FRONTEND_CONFIG,
+    GridColumn,
+    type InboxFolderFrontendConfig,
 } from "@/api/config";
 import { File, Folder } from "@/pythonTypes";
 
@@ -45,17 +52,15 @@ import { FileComponent, FolderTreeRow } from "../fileTree";
  * the full capability from scratch is quite much work.
  */
 export function GridTemplateSettings({
-    inboxFolderGridConfig,
+    gridTemplateColumns,
     setGridTemplateColumns,
 }: {
-    inboxFolderGridConfig: InboxFolderGridConfig;
+    gridTemplateColumns: InboxFolderFrontendConfig["gridTemplateColumns"];
     setGridTemplateColumns: (
-        cols: InboxFolderGridConfig["gridTemplateColumns"]
+        cols: InboxFolderFrontendConfig["gridTemplateColumns"]
     ) => void;
 }) {
-    const items = inboxFolderGridConfig.gridTemplateColumns.map(
-        (col) => col.name
-    ) as string[];
+    const items = gridTemplateColumns.map((col) => col.name) as string[];
     const [active, setActive] = useState<UniqueIdentifier | null>(null);
 
     const sensors = useSensors(
@@ -81,14 +86,14 @@ export function GridTemplateSettings({
             if (activeId !== overId) {
                 setGridTemplateColumns(
                     arrayMove(
-                        inboxFolderGridConfig.gridTemplateColumns,
+                        gridTemplateColumns,
                         items.indexOf(activeId),
                         items.indexOf(overId)
                     )
                 );
             }
         },
-        [inboxFolderGridConfig.gridTemplateColumns, items, setGridTemplateColumns]
+        [gridTemplateColumns, items, setGridTemplateColumns]
     );
     const handleDragStart = useCallback(({ active }: DragOverEvent) => {
         setActive(active.id);
@@ -121,7 +126,7 @@ export function GridTemplateSettings({
                         size={16}
                         onClick={() =>
                             setGridTemplateColumns(
-                                DEFAULT_INBOX_FOLDER_GRID_CONFIG.gridTemplateColumns
+                                DEFAULT_INBOX_FOLDER_FRONTEND_CONFIG.gridTemplateColumns
                             )
                         }
                     />
@@ -136,9 +141,12 @@ export function GridTemplateSettings({
                 display="flex"
                 gap={1}
                 width="100%"
-                sx={{
+                sx={(theme) => ({
                     paddingBlock: 1,
-                }}
+                    [theme.breakpoints.down("tablet")]: {
+                        flexWrap: "wrap",
+                    },
+                })}
             >
                 <DndContext
                     sensors={sensors}
@@ -151,21 +159,52 @@ export function GridTemplateSettings({
                         items={items}
                         strategy={horizontalListSortingStrategy}
                     >
-                        {inboxFolderGridConfig.gridTemplateColumns.map((col) => (
+                        {gridTemplateColumns.map((col) => (
                             <SortableItem
                                 id={col.name}
                                 key={col.name}
                                 sx={{
                                     display: "flex",
                                     paddingBlock: 1,
-                                    paddingInline: 2,
+                                    paddingInline: 1,
                                     border: "2px dashed gray",
-                                    flexDirection: "column",
+                                    flexDirection: "row",
                                     flexGrow: col.name === "tree" ? 1 : 0,
                                     justifyContent: "center",
+                                    alignItems: "center",
+                                    gap: 1,
                                 }}
                             >
-                                <ExampleCol key={col.name} name={col.name} />
+                                <Box sx={{ flexGrow: 1 }} color="gray">
+                                    <ExampleCol key={col.name} name={col.name} />
+                                </Box>
+                                <IconButton
+                                    size="small"
+                                    sx={{
+                                        color: "default",
+                                        m: 0,
+                                        p: 0,
+                                    }}
+                                    onClick={() => {
+                                        setGridTemplateColumns(
+                                            gridTemplateColumns.map((c) =>
+                                                c.name === col.name
+                                                    ? {
+                                                          ...c,
+                                                          hidden: !c.hidden,
+                                                      }
+                                                    : c
+                                            )
+                                        );
+                                    }}
+                                    title="Toggle visibility of this column"
+                                >
+                                    {col.hidden ? (
+                                        <EyeOffIcon size={18} />
+                                    ) : (
+                                        <EyeIcon size={18} />
+                                    )}
+                                </IconButton>
                             </SortableItem>
                         ))}
                     </SortableContext>
@@ -181,13 +220,10 @@ export function GridTemplateSettings({
                                     alignItems: "center",
                                     justifyContent: "center",
                                     minHeight: 52, // A bit of a hack to ensure the overlay has the same height as the items
+                                    position: "relative",
                                 }}
                             >
-                                <ExampleCol
-                                    name={
-                                        active as InboxFolderGridConfig["gridTemplateColumns"][number]["name"]
-                                    }
-                                />
+                                <ExampleCol name={active as GridColumn["name"]} />
                             </Box>
                         )}
                     </DragOverlay>
@@ -234,7 +270,7 @@ function SortableItem({
 }
 
 const dummyFolder = {
-    full_path: "Folder tree",
+    full_path: "Folder",
     hash: "",
     is_album: false,
     children: [
@@ -247,11 +283,7 @@ const dummyFolder = {
 } as Folder;
 
 // This shows an example of how to render a column in the grid template.
-function ExampleCol({
-    name,
-}: {
-    name: InboxFolderGridConfig["gridTemplateColumns"][number]["name"];
-}) {
+function ExampleCol({ name }: { name: GridColumn["name"] }) {
     const theme = useTheme();
     const [expanded, setExpanded] = useState(false);
 
@@ -262,8 +294,8 @@ function ExampleCol({
                     size="medium"
                     checked={expanded}
                     onChange={() => setExpanded(!expanded)}
-                    color="secondary"
                     sx={{ m: 0, p: 0 }}
+                    disabled
                 />
             );
         case "tree":

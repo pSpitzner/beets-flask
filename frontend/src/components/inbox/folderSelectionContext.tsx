@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 
 import { Folder } from "@/pythonTypes";
 
@@ -33,10 +33,6 @@ export function FolderSelectionProvider({ children }: { children: React.ReactNod
         hashes: Folder["hash"][];
         paths: Folder["full_path"][];
     }>({ hashes: [], paths: [] });
-
-    useEffect(() => {
-        console.debug("FoldersSelectionProvider", "selected", selected);
-    }, [selected]);
 
     const toggleSelect = (folder: Folder) => {
         setSelected((selected) => {
