@@ -74,8 +74,12 @@ type ActionOptionMap = {
     };
     import_best: undefined;
     import_bootleg: undefined;
+    import_terminal: undefined;
     delete: undefined;
     delete_imported_folders: undefined;
+    copy_path: {
+        escape: boolean; // Whether to escape the path for shell usage
+    };
 };
 
 export type Action = {
@@ -102,6 +106,44 @@ export interface InboxFolderFrontendConfig {
     };
 }
 
+export const ACTIONS: Record<string, Action> = {
+    retag: {
+        name: "retag",
+        label: "Retag",
+        options: {
+            group_albums: false,
+            autotag: true,
+        },
+    },
+    undo: {
+        name: "undo",
+        options: {
+            delete_files: true,
+        },
+    },
+    import_best: {
+        name: "import_best",
+    },
+    import_bootleg: {
+        name: "import_bootleg",
+    },
+    import_terminal: {
+        name: "import_terminal",
+    },
+    delete: {
+        name: "delete",
+    },
+    delete_imported_folders: {
+        name: "delete_imported_folders",
+    },
+    copy_path: {
+        name: "copy_path",
+        options: {
+            escape: true, // Whether to escape the path for shell usage
+        },
+    },
+};
+
 export const DEFAULT_INBOX_FOLDER_FRONTEND_CONFIG: InboxFolderFrontendConfig = {
     gridTemplateColumns: [
         { name: "selector", size: "auto" },
@@ -112,44 +154,15 @@ export const DEFAULT_INBOX_FOLDER_FRONTEND_CONFIG: InboxFolderFrontendConfig = {
     actionButtons: {
         primary: {
             variant: "contained",
-            actions: [
-                {
-                    name: "import_best",
-                },
-                {
-                    name: "import_bootleg",
-                },
-            ],
+            actions: [ACTIONS.import_best, ACTIONS.import_bootleg],
         },
         secondary: {
             variant: "outlined",
-            actions: [
-                {
-                    name: "retag",
-                    label: "Retag",
-                    options: {
-                        group_albums: false,
-                        autotag: true,
-                    },
-                },
-                {
-                    name: "undo",
-                    options: {
-                        delete_files: true,
-                    },
-                },
-                {
-                    name: "delete",
-                },
-            ],
+            actions: [ACTIONS.retag, ACTIONS.undo, ACTIONS.delete],
         },
         extra: {
             variant: "text",
-            actions: [
-                {
-                    name: "delete_imported_folders",
-                },
-            ],
+            actions: [ACTIONS.delete_imported_folders],
         },
     },
 };

@@ -1,4 +1,5 @@
 import { useMutation, UseMutationOptions } from "@tanstack/react-query";
+import { useNavigate, UseNavigateResult } from "@tanstack/react-router";
 
 import { APIError } from "@/api/common";
 import { Action } from "@/api/config";
@@ -6,7 +7,9 @@ import { deleteFoldersMutationOptions } from "@/api/inbox";
 import { enqueueMutationOptions } from "@/api/session";
 import { StatusSocket } from "@/api/websocket";
 import { assertUnreachable } from "@/components/common/debugging/typing";
+import { formatDate } from "@/components/common/units/time";
 import { useStatusSocket } from "@/components/common/websocket/status";
+import { TerminalContextI, useTerminalContext } from "@/components/frontpage/terminal";
 import { EnqueueKind } from "@/pythonTypes";
 
 import { InboxCardContext, useInboxCardContext } from "../cards/inboxCard";
@@ -19,12 +22,16 @@ export function useActionMutation(action: Action) {
     const { socket } = useStatusSocket();
     const selectionContext = useFolderSelectionContext();
     const inboxContext = useInboxCardContext();
+    const terminalContext = useTerminalContext();
+    const navigate = useNavigate();
 
     const [options, mutationArgs] = actionMutationOptionsAndArgs(
         action,
         socket,
         selectionContext,
-        inboxContext
+        inboxContext,
+        terminalContext,
+        navigate
     );
     const { mutate, mutateAsync, ...mutations } = useMutation({
         ...options,
@@ -45,7 +52,9 @@ function actionMutationOptionsAndArgs<T = unknown>(
     action: Action,
     socket: StatusSocket | null,
     selectionContext: FolderSelectionContext,
-    inboxContext: InboxCardContext
+    inboxContext: InboxCardContext,
+    terminalContext: TerminalContextI,
+    navigate: UseNavigateResult<string>
 ): [UseMutationOptions<unknown, APIError, T>, T] {
     const { name, options } = action;
     switch (name) {
@@ -112,7 +121,105 @@ function actionMutationOptionsAndArgs<T = unknown>(
                     folderHashes: inboxContext.importedFolders.map((f) => f.hash),
                 } as T,
             ];
+        case "copy_path":
+            return [
+                copyPathMutationOptions as UseMutationOptions<unknown, APIError, T>,
+                {
+                    selected: selectionContext.selected,
+                    escape: options?.escape ?? true, // default to escaping paths
+                } as T,
+            ];
+        case "import_terminal":
+            return [
+                importTerminalMutationOptions as UseMutationOptions<
+                    unknown,
+                    APIError,
+                    T
+                >,
+                {
+                    selected: selectionContext.selected,
+                    terminalContext,
+                    navigate,
+                } as T,
+            ];
         default:
             return assertUnreachable(name);
     }
 }
+
+const copyPathMutationOptions: UseMutationOptions<
+    unknown,
+    APIError,
+    { selected: FolderSelectionContext["selected"]; escape: boolean }
+> = {
+    mutationFn: async ({ selected, escape }) => {
+        if (selected.paths.length === 0) {
+            throw new Error("No folders selected");
+        }
+
+        // If clipboard API is not supported, throw an error
+        if (!navigator.clipboard) {
+            throw new Error("Clipboard API not supported");
+        }
+
+        let selectedPaths: string[];
+        let text: string;
+        if (escape) {
+            selectedPaths = selected.paths.map(_escapePathForBash);
+        } else {
+            selectedPaths = selected.paths;
+        }
+        if (selectedPaths.length > 1) {
+            text = selectedPaths.join("\\n");
+        } else {
+            text = selectedPaths.join(" ");
+        }
+
+        await navigator.clipboard.writeText(text);
+    },
+    onSuccess: () => {
+        // Optionally, you can show a success message or perform other actions
+        console.log("Paths copied to clipboard successfully.");
+    },
+};
+
+function _escapePathForBash(path: string) {
+    // escaping path is fishy, but this seems to be the best compromise
+    // https://stackoverflow.com/questions/1779858/how-do-i-escape-a-string-for-a-shell-command-in-node
+    return `'${path.replace(/'/g, `'\\''`)}'`;
+}
+
+const importTerminalMutationOptions: UseMutationOptions<
+    unknown,
+    APIError,
+    {
+        selected: FolderSelectionContext["selected"];
+        terminalContext: TerminalContextI;
+        navigate: UseNavigateResult<string>;
+    }
+> = {
+    mutationFn: async ({ selected, terminalContext, navigate }) => {
+        if (selected.paths.length === 0) {
+            throw new Error("No folders selected");
+        }
+
+        terminalContext.clearInput();
+        let text = "";
+        const importId = "cli-" + Math.random().toString(36).slice(2, 16);
+        const importDate = formatDate(new Date(), "%Y%m%d_%H%M%S");
+        const selectedPaths = selected.paths.map(_escapePathForBash);
+
+        text = "\\\n  " + selectedPaths.join(" \\\n  ");
+        text += ` \\\n  --set gui_import_id='${importId}'`;
+        text += ` \\\n  --set gui_import_date='${importDate}'`;
+
+        terminalContext.inputText(`beet import -t ${text}`);
+        await navigate({
+            to: "/terminal",
+        });
+    },
+    onSuccess: () => {
+        // Optionally, you can show a success message or perform other actions
+        console.log("Import command sent to terminal successfully.");
+    },
+};

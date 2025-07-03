@@ -16,6 +16,10 @@ export function getActionDescription(action: Action): string {
             return "Delete the selected folders from your inbox.";
         case "delete_imported_folders":
             return "Delete all folders from the inbox that have been imported.";
+        case "copy_path":
+            return "Copy the path of the selected album(s) to the clipboard.";
+        case "import_terminal":
+            return "Import the selected album(s) using the terminal, this will open a terminal window and run the import command.";
         default:
             return assertUnreachable(name);
     }

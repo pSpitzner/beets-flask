@@ -1,4 +1,11 @@
-import { HistoryIcon, ImportIcon, TagIcon, Trash2Icon } from "lucide-react";
+import {
+    ClipboardIcon,
+    HistoryIcon,
+    ImportIcon,
+    TagIcon,
+    TerminalIcon,
+    Trash2Icon,
+} from "lucide-react";
 import { useState } from "react";
 import { Box, Button, ButtonProps, useTheme } from "@mui/material";
 
@@ -197,6 +204,10 @@ export function ActionIcon({ action }: { action: ActionButtonConfig["actions"][0
             return <Trash2Icon size={size} />;
         case "delete_imported_folders":
             return <Trash2Icon size={size} />;
+        case "copy_path":
+            return <ClipboardIcon size={size} />;
+        case "import_terminal":
+            return <TerminalIcon size={size} />;
         default:
             return assertUnreachable(name);
     }

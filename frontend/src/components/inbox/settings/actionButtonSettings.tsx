@@ -45,6 +45,7 @@ import {
 
 import {
     Action,
+    ACTIONS,
     DEFAULT_INBOX_FOLDER_FRONTEND_CONFIG,
     InboxFolderFrontendConfig,
 } from "@/api/config";
@@ -738,12 +739,7 @@ function AddActionButton({
     const theme = useTheme();
     const [open, setOpen] = useState(false);
 
-    const defaultActions: Array<Action> = Object.entries(
-        DEFAULT_INBOX_FOLDER_FRONTEND_CONFIG.actionButtons
-    ).reduce((acc, [_key, value]) => {
-        acc.push(...value.actions);
-        return acc;
-    }, [] as Array<Action>);
+    const defaultActions: Array<Action> = Object.entries(ACTIONS).map(([_, a]) => a);
     const [action, setAction] = useState<Action>(defaultActions[0]);
 
     return (
