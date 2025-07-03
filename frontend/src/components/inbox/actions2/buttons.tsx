@@ -21,11 +21,16 @@ export function InboxActions({
 }: {
     actionButtons: InboxFolderFrontendConfig["actionButtons"];
 }) {
+    const hasPrimaryOrSecondaryActions =
+        actionButtons.primary.actions.length > 0 ||
+        actionButtons.secondary.actions.length > 0;
+    const hasExtraActions = actionButtons.extra.actions.length > 0;
+
     return (
         <>
             <Box
                 sx={{
-                    display: "flex",
+                    display: hasPrimaryOrSecondaryActions ? "flex" : "none",
                     gap: 1,
                     alignItems: "center",
                     justifyContent: "space-between",
@@ -45,8 +50,10 @@ export function InboxActions({
             <Box
                 sx={{
                     width: "100%",
-                    marginTop: actionButtons.extra.actions.length > 0 ? 2 : 0,
+                    marginTop: hasPrimaryOrSecondaryActions && hasExtraActions ? 1 : 0,
                     marginLeft: "0 !important",
+                    display: "flex",
+                    gap: 2,
                 }}
             >
                 {actionButtons.extra.actions.map((action, index) => (
@@ -121,7 +128,7 @@ function ActionButtonMultiple({
     actions,
     ...props
 }: {
-    actions: ActionButtonConfig["actions"];
+    actions: Action[];
 } & Omit<SplitButtonOptionProps, "options">) {
     const [open, setOpen] = useState(false);
     const [selectedActionIdx, setSelectedActionIdx] = useState(0);
@@ -150,6 +157,7 @@ function ActionButtonMultiple({
         key: action.name,
         buttonProps: {
             startIcon: <ActionIcon action={action} />,
+            //disabled: selected.hashes.length === 0,
         },
     }));
 
