@@ -144,7 +144,7 @@ interface EnqueueImportUndo {
     delete_files?: boolean;
 }
 
-type EnqueueParams =
+export type EnqueueParams =
     | EnqueuePreviewAddCandidate
     | EnqueuePreview
     | EnqueueImportCandidate
@@ -166,6 +166,9 @@ export const enqueueMutationOptions: UseMutationOptions<
     } & EnqueueParams
 > = {
     mutationFn: async ({ socket, selected, kind, ...extra }) => {
+        if (!selected || selected.hashes.length === 0) {
+            return [];
+        }
         // Generate a unique job reference for each folder
         // to avoid collisions
         const jobRefs = [];
@@ -278,7 +281,7 @@ export const useImportMutation = (
     duplicateActions: Map<SerializedTaskState["id"], DuplicateAction>
 ) => {
     const { socket } = useStatusSocket();
-    const { ...props } = useMutation(enqueueMutationOptions);
+    const { mutate, mutateAsync, ...props } = useMutation(enqueueMutationOptions);
 
     return {
         ...props,
@@ -293,7 +296,7 @@ export const useImportMutation = (
                 taskIdMapDuplicateActions[taskId] = duplicateAction;
             }
 
-            return props.mutate({
+            return mutate({
                 socket,
                 kind: EnqueueKind.IMPORT_CANDIDATE,
                 selected: {
@@ -315,7 +318,7 @@ export const useImportMutation = (
                 taskIdMapDuplicateActions[taskId] = duplicateAction;
             }
 
-            return await props.mutateAsync({
+            return await mutateAsync({
                 socket,
                 kind: EnqueueKind.IMPORT_CANDIDATE,
                 selected: {

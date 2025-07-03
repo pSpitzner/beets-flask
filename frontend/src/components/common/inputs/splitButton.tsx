@@ -19,14 +19,20 @@ interface Option {
     buttonProps?: ButtonProps; // Optional props for the button, allowing customization like icons, styles, etc.
 }
 
-interface SplitButtonOptionProps extends Omit<ButtonGroupProps, "onClick"> {
+export interface SplitButtonOptionProps extends Omit<ButtonGroupProps, "onClick"> {
     options: Option[]; // Array of options for the dropdown
-    onClick: (
+    onClick?: (
         option: Option,
         evt: React.MouseEvent<HTMLButtonElement, MouseEvent>
     ) => void; // Callback when an option is selected
+    onMenuItemClick?: (
+        option: Option,
+        index: number,
+        evt: React.MouseEvent<HTMLLIElement, MouseEvent>
+    ) => void; // Callback when a menu item is clicked
     btnProps?: ButtonProps; // Additional props for the main button
     defaultSelectedIndex?: number; // Optional default selected index
+    loading?: boolean; // Optional loading state for the button
 }
 
 /**
@@ -41,9 +47,13 @@ interface SplitButtonOptionProps extends Omit<ButtonGroupProps, "onClick"> {
 export function SplitButtonOptions({
     options,
     onClick,
+    onMenuItemClick,
     defaultSelectedIndex = 0,
+    loading = false,
     ...props
 }: SplitButtonOptionProps) {
+    const ref = useRef<HTMLDivElement>(null);
+    const [minWidth, setMinWidth] = useState(0);
     const anchorRef = useRef<HTMLDivElement>(null);
     const [open, setOpen] = useState(false);
     const [selectedIdx, setSelectedIdx] = useState(defaultSelectedIndex);
@@ -57,9 +67,10 @@ export function SplitButtonOptions({
     const handleMenuItemClick = useCallback(
         (event: React.MouseEvent<HTMLLIElement, MouseEvent>, index: number) => {
             setSelectedIdx(index);
+            onMenuItemClick?.(options[index], index, event);
             setOpen(false);
         },
-        []
+        [onMenuItemClick, options]
     );
 
     /**
@@ -84,7 +95,7 @@ export function SplitButtonOptions({
      */
     const handleMainButtonClick = useCallback(
         (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-            onClick(selectedOption, event);
+            onClick?.(selectedOption, event);
             handleClose(event.nativeEvent);
         },
         [onClick, selectedOption, handleClose]
@@ -98,8 +109,15 @@ export function SplitButtonOptions({
                 aria-label="split button"
                 {...props}
             >
-                <Button {...selectedOption.buttonProps} onClick={handleMainButtonClick}>
-                    {selectedOption.label}
+                <Button
+                    {...selectedOption.buttonProps}
+                    onClick={handleMainButtonClick}
+                    loading={loading}
+                    sx={{
+                        minWidth: `${minWidth}px !important`, // Ensure the button has a minimum width
+                    }}
+                >
+                    <span>{selectedOption.label}</span>
                 </Button>
                 <Button
                     onClick={handleToggle}
@@ -120,11 +138,11 @@ export function SplitButtonOptions({
                     maxWidth: `calc(${anchorRef.current?.clientWidth}px - ${theme.spacing(1)})`, // Ensure max width matches the button group
                     overflow: "hidden",
                 })}
+                ref={ref}
                 open={open}
                 anchorEl={anchorRef.current}
                 role={undefined}
                 transition
-                disablePortal
             >
                 {({ TransitionProps, placement }) => (
                     <Grow
@@ -163,7 +181,17 @@ export function SplitButtonOptions({
                                             >
                                                 {option.buttonProps?.startIcon}
                                             </span>
-                                            <span style={{ flexGrow: 1 }}>
+                                            <span
+                                                style={{ flexGrow: 1 }}
+                                                ref={(el) => {
+                                                    setMinWidth((prev) =>
+                                                        Math.max(
+                                                            prev,
+                                                            el?.offsetWidth || 0
+                                                        )
+                                                    );
+                                                }}
+                                            >
                                                 {option.label}
                                             </span>
                                             <span style={{ flexShrink: 0 }}>

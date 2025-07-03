@@ -45,6 +45,12 @@ function RouteComponent() {
                     <Link to="/debug/error">
                         <li>Test error page</li>
                     </Link>
+                    <Link to="/debug/sortable">
+                        <li>Drag and drop sortable list</li>
+                    </Link>
+                    <Link to="/debug/sortable_multi">
+                        <li>Drag and drop sortable multiple containers</li>
+                    </Link>
                 </Box>
             </Box>
         </PageWrapper>
