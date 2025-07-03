@@ -45,7 +45,7 @@ export function InboxActions({
             <Box
                 sx={{
                     width: "100%",
-                    marginTop: 2,
+                    marginTop: actionButtons.extra.actions.length > 0 ? 2 : 0,
                     marginLeft: "0 !important",
                 }}
             >
