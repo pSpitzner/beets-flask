@@ -104,7 +104,7 @@ export async function invalidateSession(
                 return qHash == folderHash;
             }
             // Otherwise invalidate all sessions with the given path
-            return qPath == folderPath || qHash == folderPath;
+            return qPath == folderPath || qHash == folderHash;
         },
     });
 }
@@ -269,6 +269,9 @@ export const enqueueMutationOptions: UseMutationOptions<
             new Promise((resolve) => setTimeout(resolve, 500)),
         ];
         await Promise.all(ps);
+    },
+    onError: (_error, _variables, _context) => {
+        console.error("Enqueue mutation failed", _error);
     },
 };
 
