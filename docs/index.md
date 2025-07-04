@@ -11,14 +11,12 @@ hide-toc: true
 This documentation is very much a work in progress. If you have any questions or suggestions, please feel free to open an issue or a pull request.
 ```
 
-
 ## Features
 
 ```{include} ../README.md
 :start-after: <!-- start features -->
 :end-before: <!-- end features -->
 ```
-
 
 ## Motivation
 
@@ -27,16 +25,14 @@ This documentation is very much a work in progress. If you have any questions or
 :end-before: <!-- end motivation -->
 ```
 
-
-
 ```{toctree}
 :hidden:
 :caption: 📚 Guides
 
 getting-started.md
+inboxes.md
 plugins.md
 ```
-
 
 ```{toctree}
 :hidden:
@@ -45,4 +41,3 @@ plugins.md
 develop/contribution.md
 develop/resources/index.md
 ```
-
