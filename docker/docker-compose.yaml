@@ -5,6 +5,8 @@ services:
         ports:
             - "5001:5001"
         environment:
+            # Change to your timezone
+            TZ: "Europe/Berlin"
             # 502 is default on macos, 1000 on linux
             USER_ID: 1000
             GROUP_ID: 1000

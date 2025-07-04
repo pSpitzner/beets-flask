@@ -51,6 +51,7 @@ We provide a docker image with the full beeets-flask setup. You can run it with 
 
 **Using docker**
 
+<!-- start setup container -->
 ```sh
 docker run -d -p 5001:5001 \
     -e TZ=Europe/Berlin \
@@ -62,6 +63,7 @@ docker run -d -p 5001:5001 \
     --name beets-flask \
     pspitzner/beets-flask:stable
 ```
+<!-- end setup container -->
 
 **Using docker compose**
 

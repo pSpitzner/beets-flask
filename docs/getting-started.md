@@ -19,6 +19,11 @@ cd beets-flask
 wget https://raw.githubusercontent.com/pspitzner/beets-flask/main/docker/docker-compose.yaml
 ```
 
+If you want to create it manually, you can use the following content:
+
+```{literalinclude} ../docker/docker-compose.yaml
+```
+
 3. Edit the docker-compose.yaml file! Please change the configuration and volume paths, otherwise the application might not start or work correctly. See the [configuration](configuration) section for more information.
 
 4. Start the application using docker-compose.
@@ -29,19 +34,14 @@ docker-compose up
 
 The application should now be available at `http://localhost:5001`!
 
+
 ## Using docker
 
 Similarly, you can also run the application using docker directly. Feel free to adjust the following command to your needs.
 
-```bash
-docker run -d -p 5001:5001 \
-    -e USER_ID=1000 \
-    -e GROUP_ID=1000 \
-    -v /wherever/config/:/config \
-    -v /music_path/inbox/:/music_path/inbox/ \
-    -v /music_path/clean/:/music_path/clean/ \
-    --name beets-flask \
-    pspitzner/beets-flask:stable
+```{include} ../README.md
+:start-after: <!-- start setup container -->
+:end-before: <!-- end setup container -->
 ```
 
 (configuration)=
@@ -51,7 +51,7 @@ docker run -d -p 5001:5001 \
 On first container launch, config files are automatically generated in the mounted `/config` folder. Configurations are read from `config/beets/config.yaml` and `config/beets-flask/config.yaml` (the latter takes precedence).
 
 ```{warning}
-Configuration changes are only applied on container restart. Restat your container with `docker restart beets-flask` after changing a configuration
+Configuration changes are only applied on container restart. Restart your container with `docker restart beets-flask` after changing a configuration
 option.
 ```
 
