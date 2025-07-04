@@ -76,6 +76,7 @@ function actionMutationOptionsAndArgs<T = unknown>(
                     socket,
                     kind: EnqueueKind.IMPORT_UNDO,
                     delete_files: options?.delete_files ?? true,
+                    selected: selectionContext.selected,
                 } as T,
             ];
         case "import_best":
