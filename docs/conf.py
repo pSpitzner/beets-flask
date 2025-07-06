@@ -77,4 +77,4 @@ html_theme_options = {
 html_css_files = [
     "custom.css",
 ]
-html_logo = "../frontend/public/logo_beets.png"
+html_logo = "../frontend/public/logo_flask.png"

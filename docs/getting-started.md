@@ -22,6 +22,7 @@ wget https://raw.githubusercontent.com/pspitzner/beets-flask/main/docker/docker-
 If you want to create it manually, you can use the following content:
 
 ```{literalinclude} ../docker/docker-compose.yaml
+
 ```
 
 3. Edit the docker-compose.yaml file! Please change the configuration and volume paths, otherwise the application might not start or work correctly. See the [configuration](configuration) section for more information.
@@ -33,7 +34,6 @@ docker-compose up
 ```
 
 The application should now be available at `http://localhost:5001`!
-
 
 ## Using docker
 
@@ -48,14 +48,17 @@ Similarly, you can also run the application using docker directly. Feel free to 
 
 ## Configuration
 
-On first container launch, config files are automatically generated in the mounted `/config` folder. Configurations are read from `config/beets/config.yaml` and `config/beets-flask/config.yaml` (the latter takes precedence).
+On first container launch, config files are automatically generated in the mounted `/config` folder. Configurations are read from:
+
+-   `config/beets/config.yaml` (for the original cli tool that we wrap)
+-   `config/beets-flask/config.yaml` (for frontend and container settings)
 
 ```{warning}
 Configuration changes are only applied on container restart. Restart your container with `docker restart beets-flask` after changing a configuration
 option.
 ```
 
-As the minimum, you need to update the information about your music folders. Additionally you may edit our beets-flask configuration. I.e. update the `config/beets/config.yaml` to point to your music library, the config mount has to point to the same folders inside and outside the container!
+As the minimum, you need to update the information about your music folders. Edit `config/beets/config.yaml` to point to your music library: The config mount has to point to the same folders inside and outside the container!
 
 ```yaml
 # config/beets/config.yaml
@@ -63,9 +66,22 @@ As the minimum, you need to update the information about your music folders. Add
 directory: /music_path/clean/
 ```
 
--   ~~We have a `gui` section in the beets-flask config to tweak the container and webfrontend.~~ (removed for 1.0.0, will be coming back soon)
--   ~~Place GUI settings in `config/beets-flask/config.yaml`.~~
--   If you configure other fields (out of the parent `gui`) they take precedence over the beets config. This might be useful when you want different settings for beets CLI vs the beets GUI.
+Additionally you may edit our beets-flask configuration. Most likely, you want to configure at least on inbox:
+
+```yaml
+# config/beets-flask/config.yaml
+
+gui:
+    inbox:
+        folders:
+            MyInbox:
+                name: "An Inbox that only generates the previews"
+                path: "/music_path/inbox_preview"
+                autotag: "preview"
+```
+
+-   All container and webfrontend-related settings (thus, everything in `config/beets-flask/config.yaml`) need to go into the `gui` section.
+-   If you configure other fields (out of the parent `gui`) in the beets-flask config, they take precedence over the beets config. This might be useful when you want different settings for beets CLI vs the beets GUI.
 -   Opinionated [examples](./backend/beets_flask/config/config_bf_example.yaml) are copied to `config/beets/config.yaml` and `config/beets-flask/config.yaml` on container launch.
 -   Config changes require a container restart to take effect.
 

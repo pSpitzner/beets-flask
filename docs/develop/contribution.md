@@ -31,7 +31,7 @@ pip install -e .[dev]
 ```
 
 2.2 **Install the dependencies (frontend):**
-We use (pnpm)[https://pnpm.io/] to manage the frontend dependencies. You may use any other package manager.
+We use [pnpm](https://pnpm.io/) to manage the frontend dependencies. You may use any other package manager.
 
 ```bash
 cd frontend

@@ -8,7 +8,7 @@ Developing on a macOS host might have some quirks.
 
 ## iTerm tmux
 
-You can use iTerms tmux support to natively connect to the session that we have running in the beets container. Simply create a new iterm profile with the following start command:
+You can use iTerm's tmux support to natively connect to the session that we have running in the beets container. Simply create a new iterm profile with the following start command:
 
 ```
 ssh -t  your_server "/usr/bin/docker exec -it -u beetle beets-flask /usr/bin/tmux -CC new -A -s beets-socket-term"
