@@ -87,7 +87,7 @@ function Hero() {
             >
                 <Box
                     component="img"
-                    src="/logo.png"
+                    src="/logo_flask.png"
                     alt="Logo"
                     sx={{
                         width: "150px",

@@ -30,7 +30,7 @@ export const Route = createRootRouteWithContext<{
             {
                 rel: "icon",
                 type: "image/png",
-                href: "/logo.png",
+                href: "/logo_beets.png",
             },
         ],
     }),

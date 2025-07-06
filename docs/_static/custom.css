@@ -1,3 +1,7 @@
 .table-wrapper table {
     width: 100%;
 }
+
+.icon {
+    vertical-align: middle;
+}

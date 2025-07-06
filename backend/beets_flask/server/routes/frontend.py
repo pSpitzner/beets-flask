@@ -14,7 +14,8 @@ async def reverse_proxy(path):
     # not include assets
     if (
         not "assets" in path
-        and not "logo.png" in path
+        and not "logo_beets.png" in path
+        and not "logo_flask.png" in path
         and not path.startswith("favicon.ico")
     ):
         path = "index.html"
@@ -22,8 +23,10 @@ async def reverse_proxy(path):
     # Remove everything infront of assets
     if "assets" in path:
         path = path[path.index("assets") :]
-    if "logo.png" in path:
-        path = path[path.index("logo.png") :]
+    if "logo_beets.png" in path:
+        path = path[path.index("logo_beets.png") :]
+    if "logo_flask.png" in path:
+        path = path[path.index("logo_flask.png") :]
 
     r = await send_from_directory(current_app.config["FRONTEND_DIST_DIR"], path)
     return r

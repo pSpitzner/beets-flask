@@ -1,0 +1,16 @@
+{% extends "furo/base.html" %}
+
+{%- block scripts %}
+
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+    lucide.createIcons({
+        attrs: {
+            class: ['icon'],
+
+        },
+        nameAttr: 'data-lucide'
+    });
+</script>
+
+{% endblock %}

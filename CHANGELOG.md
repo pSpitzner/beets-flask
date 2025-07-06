@@ -5,10 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - upcoming
+## [1.0.0] - 25-07-06
 
 This is a breaking change, you will need to update your configs and delete your beets-flask
 database (**not** the beets db!).
+
+This marks a major milestone for beets-flask, as we now pretty happy with the current features
+and the overall architecture.
 
 ### Changed
 
@@ -23,8 +26,11 @@ database (**not** the beets db!).
 -   Terminal now has a bit of scroll-back and history.
 -   Much better test coverage.
 -   Now using [py2ts](https://github.com/semohr/py2ts) to automatically generate frontend (typescript) types from their backend (python) equivalents.
+-   New and improved logo.
 
-## [0.1.1] - unreleased
+## [0.1.1] - 25-06-08
+
+Small version bump with fixes before jumping to 1.0.0.
 
 ### Added
 
