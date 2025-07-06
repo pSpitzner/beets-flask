@@ -29,7 +29,7 @@
 
 <!-- end features -->
 
-https://github.com/user-attachments/assets/dd526b9d-9351-4f7c-9034-1071e4ff66e6
+https://github.com/user-attachments/assets/b7c7ae32-36ac-4950-b2ed-186b80d7075b
 
 ## Motivation
 
