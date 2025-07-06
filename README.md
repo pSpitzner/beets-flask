@@ -1,6 +1,6 @@
 <!-- start intro -->
 <p align="center">
-    <h1 align="center">Beets Flask</h1>
+    <h1 align="center">Beets-flask</h1>
 </p>
 
 [![version number](https://img.shields.io/github/package-json/v/pspitzner/beets-flask/main?filename=frontend%2Fpackage.json&label=version&color=blue)](https://github.com/pSpitzner/beets-flask/blob/main/CHANGELOG.md)
@@ -52,6 +52,7 @@ We provide a docker image with the full beeets-flask setup. You can run it with 
 **Using docker**
 
 <!-- start setup container -->
+
 ```sh
 docker run -d -p 5001:5001 \
     -e TZ=Europe/Berlin \
@@ -63,6 +64,7 @@ docker run -d -p 5001:5001 \
     --name beets-flask \
     pspitzner/beets-flask:stable
 ```
+
 <!-- end setup container -->
 
 **Using docker compose**
