@@ -10,6 +10,7 @@ gui:
 
     library:
         readonly: no
+        artist_separators: [",", ";", "&"]
 
     terminal:
         start_path: "/repo"
