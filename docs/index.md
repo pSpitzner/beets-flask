@@ -30,7 +30,7 @@ This documentation is very much a work in progress. If you have any questions or
 :caption: 📚 Guides
 
 getting-started.md
-inboxes.md
+configuration.md
 plugins.md
 ```
 
