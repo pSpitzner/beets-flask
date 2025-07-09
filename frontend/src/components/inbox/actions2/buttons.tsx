@@ -1,24 +1,44 @@
 import {
     ClipboardIcon,
+    EyeIcon,
+    EyeOffIcon,
+    GroupIcon,
     HistoryIcon,
     ImportIcon,
+    RefreshCwIcon,
     TagIcon,
     TerminalIcon,
     Trash2Icon,
+    UngroupIcon,
 } from "lucide-react";
 import { useState } from "react";
-import { Box, Button, ButtonProps, useTheme } from "@mui/material";
+import {
+    Box,
+    BoxProps,
+    Button,
+    ButtonProps,
+    Checkbox,
+    IconButton,
+    Tooltip,
+    useTheme,
+} from "@mui/material";
+import { useMutation } from "@tanstack/react-query";
 
 import { Action, ActionButtonConfig, InboxFolderFrontendConfig } from "@/api/config";
+import { enqueueMutationOptions } from "@/api/session";
 import { assertUnreachable } from "@/components/common/debugging/typing";
 import { BootlegIcon } from "@/components/common/icons";
 import {
     SplitButtonOptionProps,
     SplitButtonOptions,
 } from "@/components/common/inputs/splitButton";
+import { useStatusSocket } from "@/components/common/websocket/status";
+import { EnqueueKind, JobStatusUpdate } from "@/pythonTypes";
 
 import { ActionDialog } from "./dialogs";
 import { useActionMutation } from "./mutations";
+
+/* ----------------------------- Generic buttons ---------------------------- */
 
 /**
  * Create the actions component from the InboxFolderFrontendConfig
@@ -94,25 +114,28 @@ function ActionButton({ variant, actions }: ActionButtonConfig) {
 
 function ActionButtonSingle({
     action,
+    onMutate,
     ...props
 }: Omit<ButtonProps, "action"> & {
     action: Action;
+    onMutate?: (ret: unknown) => void;
 }) {
     const [open, setOpen] = useState(false);
-    const { mutate, isPending } = useActionMutation(action);
+    const { mutateAsync, isPending } = useActionMutation(action);
 
     // Some actions might have a confirmation dialog, so we need to handle that
     // note: we need to call this without jsx to check if it returns a dialog or not
     const Dialog = ActionDialog({ action, open, setOpen });
 
-    const handleClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    const handleClick = async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         if (Dialog !== null && !e.shiftKey) {
             e.preventDefault();
             setOpen(true);
             return;
         }
         // If no dialog or shift key is pressed, execute the action immediately
-        mutate();
+        const r = await mutateAsync();
+        onMutate?.(r);
     };
 
     return (
@@ -211,4 +234,146 @@ export function ActionIcon({ action }: { action: ActionButtonConfig["actions"][0
         default:
             return assertUnreachable(name);
     }
+}
+
+/* ---------------------------- Specific Buttons ---------------------------- */
+
+export function RefreshAllFoldersButton() {
+    // See inbox2 route
+    const { mutate, isPending } = useMutation({
+        mutationKey: ["refreshInboxTree"],
+    });
+    const theme = useTheme();
+
+    return (
+        <Tooltip title="Refresh folders">
+            <IconButton
+                onClick={() => mutate()}
+                sx={{
+                    animation: isPending ? "spin 1s linear infinite" : "none",
+                    "@keyframes spin": {
+                        from: { transform: "rotate(0deg)" },
+                        to: { transform: "rotate(360deg)" },
+                    },
+                }}
+                disabled={isPending}
+            >
+                <RefreshCwIcon size={theme.iconSize.lg} />
+            </IconButton>
+        </Tooltip>
+    );
+}
+
+export function RetagButtonGroup({
+    selected,
+    onRetag,
+    sx,
+    ...props
+}: {
+    selected: {
+        paths: string[];
+        hashes: string[];
+    };
+    onRetag?: (ret: JobStatusUpdate[]) => void;
+} & BoxProps) {
+    const theme = useTheme();
+
+    const { socket } = useStatusSocket();
+    // TODO: Error handling
+    const { mutateAsync, isPending } = useMutation(enqueueMutationOptions);
+
+    const [options, setOptions] = useState<{
+        group_albums: boolean;
+        autotag: boolean;
+    }>({
+        group_albums: false,
+        autotag: true,
+    });
+
+    return (
+        <Box
+            sx={[
+                {
+                    display: "flex",
+                    gap: 1,
+                    alignItems: "center",
+                },
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                ...(Array.isArray(sx) ? sx : [sx]),
+            ]}
+            {...props}
+        >
+            <Tooltip title="Group albums">
+                <Checkbox
+                    color="secondary"
+                    icon={<GroupIcon size={theme.iconSize.lg} />}
+                    checkedIcon={<UngroupIcon size={theme.iconSize.lg} />}
+                    sx={{
+                        margin: "0px",
+                        borderRadius: "0px",
+                        width: "30px",
+                        height: "30px",
+                        minHeight: "30px",
+                        minWidth: "30px",
+                        padding: 0.5,
+                    }}
+                    checked={!options.group_albums}
+                    onChange={(e) => {
+                        setOptions((prev) => ({
+                            ...prev,
+                            group_albums: !e.target.checked,
+                        }));
+                    }}
+                />
+            </Tooltip>
+            <Tooltip title="Online lookup (autotag)">
+                <Checkbox
+                    color="secondary"
+                    icon={<EyeOffIcon size={theme.iconSize.md} />}
+                    checkedIcon={<EyeIcon size={theme.iconSize.md} />}
+                    sx={{
+                        margin: "0px",
+                        borderRadius: "0px",
+                        width: "30px",
+                        height: "30px",
+                        minHeight: "30px",
+                        minWidth: "30px",
+                        padding: 0.5,
+                    }}
+                    checked={options.autotag}
+                    onChange={(e) => {
+                        setOptions((prev) => ({
+                            ...prev,
+                            autotag: e.target.checked,
+                        }));
+                    }}
+                />
+            </Tooltip>
+            <Tooltip
+                title={`(Re)tag the folder (${options.autotag ? "with lookup" : "skipping lookup"}, ${options.group_albums ? "group by metadata" : "group by folder"})`}
+            >
+                <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={async () => {
+                        if (!socket) {
+                            console.error("No socket connection");
+                            return;
+                        }
+                        const r = await mutateAsync({
+                            socket,
+                            selected,
+                            kind: EnqueueKind.PREVIEW,
+                            ...options,
+                        });
+                        onRetag?.(r);
+                    }}
+                    loading={isPending}
+                    startIcon={<TagIcon size={theme.iconSize.sm} />}
+                >
+                    (Re)tag
+                </Button>
+            </Tooltip>
+        </Box>
+    );
 }
