@@ -23,7 +23,7 @@ import { Folder } from "@/pythonTypes";
 
 import { CardHeader } from "./common";
 
-import { RetagButtonGroup } from "../actions2/buttons";
+import { RetagButtonGroup } from "../actions/buttons";
 
 /** Shows the general folder information!
  *

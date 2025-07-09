@@ -31,7 +31,7 @@ import {
     SourceTypeIcon,
 } from "@/components/common/icons";
 import { PageWrapper } from "@/components/common/page";
-import { RefreshAllFoldersButton } from "@/components/inbox/actions2/buttons";
+import { RefreshAllFoldersButton } from "@/components/inbox/actions/buttons";
 import { InboxCard } from "@/components/inbox/cards/inboxCard";
 import { FolderSelectionProvider } from "@/components/inbox/folderSelectionContext";
 import { Folder } from "@/pythonTypes";
