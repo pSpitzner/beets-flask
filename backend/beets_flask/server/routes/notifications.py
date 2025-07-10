@@ -6,12 +6,16 @@ For instance new tags generated or new imported albums
 
 import base64
 import json
-from typing import NamedTuple
+from typing import NamedTuple, TypedDict
 
 import ecdsa
-from quart import Blueprint
+from quart import Blueprint, request
 
 from beets_flask.config.beets_config import get_bf_config_dir
+from beets_flask.database import db_session_factory
+from beets_flask.database.models import PushSubscription
+from beets_flask.server.routes.exception import InvalidUsageException
+from beets_flask.server.utility import pop_query_param
 
 notification_bp = Blueprint("notifications", __name__, url_prefix="/notifications")
 
@@ -68,3 +72,82 @@ def _generate_vapid_keypair():
         .strip(b"=")
         .decode("utf-8"),
     )
+
+
+@notification_bp.route("/subscribe", methods=["POST"])
+async def subscribe():
+    """Subscribe to push notifications."""
+    # The request should contain the subscription object
+    params = await request.get_json()
+
+    # Standard PushSubscription fields
+    endpoint = pop_query_param(params, "endpoint", str, default=None)
+    expiration_time = pop_query_param(params, "expirationTime", int, default=None)
+    keys = pop_query_param(params, "keys", dict, default=None)
+
+    if not endpoint or not keys:
+        raise InvalidUsageException(
+            "Missing 'endpoint' parameter in subscription",
+            status_code=400,
+        )
+
+    # Extra options for the subscription (i.e. which notifications to receive)
+    options = pop_query_param(params, "options", dict, default=None)
+
+    if len(params) > 0:
+        raise InvalidUsageException(
+            "Invalid parameters provided for subscription",
+            status_code=400,
+        )
+
+    # Check if the endpoint already exists in the database
+    # if yes update, if no insert new
+    with db_session_factory() as db_session:
+        instance = PushSubscription.get_by(
+            PushSubscription.id == endpoint, session=db_session
+        )
+        if instance:
+            # Update existing subscription
+            instance.keys = keys
+            instance.expiration_time = expiration_time
+            # TODO update options if needed
+            db_session.commit()
+        else:
+            # Create new subscription
+            instance = PushSubscription(
+                id=endpoint,
+                keys=keys,
+                expiration_time=expiration_time,
+            )
+            db_session.add(instance)
+            db_session.commit()
+
+            print(f"Received subscription: {instance}")
+
+    return "Subscription added successfully", 200
+
+
+@notification_bp.route("/unsubscribe", methods=["POST"])
+async def unsubscribe():
+    """Unsubscribe from push notifications."""
+    params = await request.get_json()
+
+    endpoint = pop_query_param(params, "endpoint", str, default=None)
+
+    if not endpoint:
+        raise InvalidUsageException(
+            "Missing 'endpoint' parameter in subscription",
+            status_code=400,
+        )
+
+    with db_session_factory() as db_session:
+        instance = PushSubscription.get_by(
+            PushSubscription.id == endpoint, session=db_session
+        )
+        if not instance:
+            return "No subscription found for the given endpoint", 200
+
+        db_session.delete(instance)
+        db_session.commit()
+
+    return "Unsubscribed successfully", 200

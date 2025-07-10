@@ -1,4 +1,5 @@
 from .base import Base
+from .pushSubscription import PushSubscription
 from .states import CandidateStateInDb, FolderInDb, SessionStateInDb, TaskStateInDb
 
 __all__ = [
@@ -7,4 +8,5 @@ __all__ = [
     "SessionStateInDb",
     "TaskStateInDb",
     "CandidateStateInDb",
+    "PushSubscription",
 ]
