@@ -6,8 +6,10 @@ import pytest
 
 from beets_flask.disk import Folder
 
+from ..test_flows import SendStatusMockMixin
 
-class TestDeleteEndpoint:
+
+class TestDeleteEndpoint(SendStatusMockMixin):
     tmp_path: Path
 
     @pytest.fixture(autouse=True)

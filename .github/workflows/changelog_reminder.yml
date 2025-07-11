@@ -1,0 +1,35 @@
+name: Verify changelog updated
+
+on:
+    pull_request_target:
+        types:
+            - opened
+            - ready_for_review
+
+jobs:
+    check_changes:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Get all updated Python files
+              id: changed-files
+              uses: tj-actions/changed-files@v46
+              with:
+                  files: |
+                      **.py
+                      **.ts
+                      **.tsx
+
+            - name: Check for the changelog update
+              id: changelog-update
+              uses: tj-actions/changed-files@v46
+              with:
+                  files: CHANGELOG.md
+
+            - name: Comment under the PR with a reminder
+              if: steps.changed-files.outputs.any_changed == 'true' && steps.changelog-update.outputs.any_changed == 'false'
+              uses: thollander/actions-comment-pull-request@v2
+              with:
+                  message: "Thank you for the PR! The changelog has not been updated, so here is a friendly reminder to check if you need to add an entry."
+                  GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"

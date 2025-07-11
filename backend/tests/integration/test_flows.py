@@ -16,8 +16,6 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from beets_flask.database.models.states import (
-    CandidateState,
-    CandidateStateInDb,
     FolderInDb,
     SessionStateInDb,
 )
@@ -32,7 +30,7 @@ from beets_flask.invoker.enqueue import (
     run_preview,
     run_preview_add_candidates,
 )
-from beets_flask.server.websocket.status import FolderStatusUpdate, JobStatusUpdate
+from beets_flask.server.websocket.status import FolderStatusUpdate
 from tests.mixins.database import IsolatedBeetsLibraryMixin, IsolatedDBMixin
 from tests.unit.test_importer.conftest import (
     VALID_PATHS,
@@ -41,14 +39,14 @@ from tests.unit.test_importer.conftest import (
 )
 
 
-class InvokerStatusMockMixin(ABC):
+class SendStatusMockMixin(ABC):
     """
     Allows to test without a running websocket server for
     status updates in the invoker.
 
     Usage:
     ```
-    class TestMyFeature(InvokerStatusMockMixin):
+    class TestMyFeature(SendStatusMockMixin):
         def test_something(self):
             # add to clean db
             assert self.statuses == [SomeStatus]
@@ -80,7 +78,7 @@ class InvokerStatusMockMixin(ABC):
         self.statuses = []
 
 
-class TestPreview(InvokerStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin):
+class TestPreview(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin):
     """Test generating previews.
 
     - should add candidates
@@ -209,9 +207,7 @@ class TestPreview(InvokerStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
                 )
 
 
-class TestImportBest(
-    InvokerStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
-):
+class TestImportBest(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin):
     """Test a typical import using the best candidate.
 
     This should be the most common case, i.e. the candidate looks good!
@@ -607,9 +603,7 @@ class TestImportBest(
         assert exc["type"] == "IntegrityException"
 
 
-class TestImportAuto(
-    InvokerStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
-):
+class TestImportAuto(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin):
     """Test that the preview + threshold-dependent import works.
 
     The flow is as follows:
@@ -668,7 +662,7 @@ class TestImportAuto(
 
 
 class TestChooseCandidatesSingleTask(
-    InvokerStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
+    SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
 ):
     """Test a typical import using a choosen candidate."""
 
@@ -730,7 +724,7 @@ class TestChooseCandidatesSingleTask(
 
 
 class TestMultipleTasks(
-    InvokerStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
+    SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
 ):
     """Test a typical import of a multiple tasks using choosen candidates."""
 
@@ -841,9 +835,7 @@ class TestMultipleTasks(
         assert exc is None, "Should not return an error"
 
 
-class TestImportAsis(
-    InvokerStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
-):
+class TestImportAsis(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin):
     """Test a typical import using the asis candidate.
 
     We have an extra test for this as the asis candidate is a bit special,
@@ -863,7 +855,7 @@ class TestImportAsis(
 
 
 class TestImportCandidate(
-    InvokerStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
+    SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
 ):
     """Test a typical import using the specific candidate.
 

@@ -128,6 +128,15 @@ async def send_status_update(
     await client.disconnect()
 
 
+async def trigger_clear_cache():
+    """Trigger a cache clear via the status socket."""
+    # This is used to clear the cache when a folder is deleted.
+    # We use the FileSystemUpdate event to trigger this.
+    # This clears the cache in all workers and clients
+    clear_cache()
+    await send_status_update(FileSystemUpdate())
+
+
 R = TypeVar("R")  # Return
 P = ParamSpec("P")  # Parameters
 

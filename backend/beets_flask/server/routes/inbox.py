@@ -12,14 +12,16 @@ from tinytag import TinyTag
 
 from beets_flask.database import db_session_factory
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
-from beets_flask.disk import Folder, dir_files, dir_size, log, path_to_folder
+from beets_flask.disk import Folder, dir_files, dir_size, path_to_folder
 from beets_flask.importer.progress import Progress
 from beets_flask.server.exceptions import InvalidUsageException, NotFoundException
 from beets_flask.server.routes.library.artwork import send_image
 from beets_flask.server.utility import (
     pop_folder_params,
     pop_paths_param,
-    pop_query_param,
+)
+from beets_flask.server.websocket.status import (
+    trigger_clear_cache,
 )
 from beets_flask.watchdog.inbox import (
     get_inbox_folders,
@@ -124,7 +126,7 @@ async def get_folder():
 @inbox_bp.route("/tree/refresh", methods=["POST"])
 async def refresh_cache():
     """Clear the cache for the path_to_dict function."""
-    path_to_folder.cache.clear()  # type: ignore
+    await trigger_clear_cache()
     return "Ok"
 
 
@@ -171,7 +173,7 @@ async def delete():
         shutil.rmtree(f.full_path)
 
     # Clear the cache for the deleted folders
-    path_to_folder.cache.clear()  # type: ignore
+    await trigger_clear_cache()
 
     return jsonify(
         {
