@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.1] - Upcoming
 
+### Added
+
+- Configuration option for artist separator characters `gui.library.artist_separator`
+- Docs subpage for configuration (including content)
+
 ### Fixed
 
 - Cache invalidation now triggers on delete folder in frontend [#138](https://github.com/pSpitzner/beets-flask/issues/138)
+- In albums and items view the clicking on artists does not return any results if the contained a separator character (e.g. `&`) [#132](https://github.com/pSpitzner/beets-flask/issues/138)
 
 ## [1.0.0] - 25-07-06
 

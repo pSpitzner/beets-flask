@@ -3,14 +3,14 @@
 Split artists by separators, and do some basic aggregation.
 """
 
+import re
 from typing import TYPE_CHECKING
 
 import pandas as pd
-from cachetools.keys import hashkey
 from quart import Blueprint, Response, g
 
-from beets_flask.logger import log
-from beets_flask.server.exceptions import IntegrityException, NotFoundException
+from beets_flask.config import get_config
+from beets_flask.server.exceptions import NotFoundException
 
 artists_bp = Blueprint("artists", __name__)
 
@@ -23,6 +23,13 @@ if TYPE_CHECKING:
 # Also artistids are not used, but they are in the database.
 
 # Note: I wanted to use polars first but it does not support alpine images yet, so we use pandas instead.
+
+
+ARTIST_SEPARATORS: list[str] = get_config()["gui"]["library"][
+    "artist_separators"
+].as_str_seq()
+
+split_pattern = "|".join(map(re.escape, ARTIST_SEPARATORS))
 
 
 def get_artists_pandas(table: str, artist: str | None = None) -> pd.DataFrame:
@@ -51,23 +58,25 @@ def get_artists_pandas(table: str, artist: str | None = None) -> pd.DataFrame:
     else:
         raise ValueError(f"Invalid table name: {table}. Must be 'items' or 'albums'.")
 
-    if artist is not None:
+    # Split the artist string by the specified separators
+    artists = [a.strip() for a in re.split(split_pattern, artist)] if artist else None
+
+    if artists is not None:
         # If an artist is specified, filter the query
-        query += f" WHERE instr(artist, ?) > 0"
+        for i, a in enumerate(artists):
+            if i == 0:
+                query += f" WHERE instr(artist, ?) > 0"
+            else:
+                query += f" AND instr(artist, ?) > 0"
 
     with g.lib.transaction() as tx:
-        rows = tx.query(query, (artist,)) if artist else tx.query(query)
+        rows = tx.query(query, artists) if artists else tx.query(query)
 
     # Read from the database
     df = pd.DataFrame(rows, columns=["artist", "added"])
 
-    # Split artists by ',' or ';' and explode into separate rows
-    separators = [",", ";", "&"]
-
-    # Split artist strings into lists
-    df["artist"] = df["artist"].str.split(rf"[{''.join(separators)}]")
-
-    # Explode lists to rows
+    # Split artist strings into lists and explode into separate rows
+    df["artist"] = df["artist"].str.split(rf"[{''.join(ARTIST_SEPARATORS)}]")
     df = df.explode("artist")
 
     # Strip whitespace
@@ -85,9 +94,14 @@ def get_artists_pandas(table: str, artist: str | None = None) -> pd.DataFrame:
         .reset_index()
     )
 
-    if artist is not None:
-        # If an artist is specified, filter the result
-        result = result[result["artist"].str.contains(artist, case=False)]
+    if artists is not None:
+        # If an artist is specified, filter the result (respect the separator and resolve as or)
+        result = result[
+            result["artist"].str.contains("|".join(artists), case=False, regex=True)
+        ]
+        # Overwrite if there are multiple artists (i.e. joined by a separator)
+        if len(artists) > 1 and not result.empty:
+            result["artist"] = artist
 
     return result
 

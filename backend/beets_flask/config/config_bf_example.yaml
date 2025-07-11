@@ -12,6 +12,9 @@ gui:
 
     library:
         readonly: no
+        # Use to split artists in the library view if using multiple artists in a field.
+        # Set to an empty list to disable this feature.
+        artist_separators: [",", ";", "&"]
 
     terminal:
         start_path: "/music/inbox" # the directory where to start new terminal sessions

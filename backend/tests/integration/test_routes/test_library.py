@@ -49,7 +49,6 @@ class TestArtistsEndpoint(IsolatedBeetsLibraryMixin):
             self.beets_lib.add(beets_lib_item(album_id=a.id, artist=artist))
             self._albums.append(a)
 
-    @pytest.mark.asyncio
     async def test_get_artists(self, client: Client):
         """Test the GET request to retrieve all albums by a specific artist.
 
@@ -87,7 +86,6 @@ class TestArtistsEndpoint(IsolatedBeetsLibraryMixin):
             assert "artist" in data, "Artist key is not in the response"
             assert data["artist"] == artist, "Artist does not match requested artist"
 
-    @pytest.mark.asyncio
     async def test_get_artist(self, client: Client):
         """Test the GET request to retrieve a specific artist by its ID.
 
@@ -103,6 +101,31 @@ class TestArtistsEndpoint(IsolatedBeetsLibraryMixin):
             # We added one album and one item for each artist
             assert len(data) == 1, "Data length is not 1"
             assert data[0]["albumartist"] == artist, "Data artist does not match artist"
+
+    async def test_separator(self, client: Client):
+        """Test the GET request to retrieve a specific artist with a separator in the name.
+
+        Should return the artist even if the name contains a separator.
+        """
+        # Test with a separator in the artist name
+        response = await client.get("/api_v1/library/artists/Foo; Bar, Baz")
+        data = await response.get_json()
+        assert response.status_code == 200, "Response status code is not 200"
+        assert data["artist"] == "Foo; Bar, Baz", (
+            "Data artist does not match requested artist with separator"
+        )
+
+        # Order of the artists should not matter, so we can also test with a different order
+        response = await client.get("/api_v1/library/artists/Foo; Baz")
+        data = await response.get_json()
+        assert response.status_code == 200, "Response status code is not 200"
+        assert data["artist"] == "Foo; Baz", (
+            "Data artist does not match requested artist with separator"
+        )
+
+        # Should not be found if one of the joined artists is not in the library
+        response = await client.get("/api_v1/library/artists/Foo; Bar, NotInLibrary")
+        assert response.status_code == 404, "Response status code is not 404"
 
 
 # ----------------------------------- album ---------------------------------- #
