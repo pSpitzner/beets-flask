@@ -1,86 +1,80 @@
 /** Service worker. injected with vite-pwa-plugin */
 /// <reference lib="webworker" />
 
+import { assertUnreachable } from "./components/common/debugging/typing";
+import { TaggedNotification } from "./pythonTypes";
+
+// Trickery to get the correct type for the service worker global scope
 const worker: ServiceWorkerGlobalScope = self as unknown as ServiceWorkerGlobalScope;
 
-interface PushDataTagged {
-    type: "tagged";
-    // A new folder was just tagged
-    hash: string;
-    path: string;
+type PushData = TaggedNotification;
 
-    best_match: number;
-
-    title: string;
-    artist: string;
+// Typing is not up to date, e.g. actions are missing
+interface NotificationOptionsEx extends NotificationOptions {
+    actions?: {
+        action: string;
+        title: string;
+        icon: string;
+        type?: string; // Optional, but can be used to specify the type of action
+    }[];
 }
 
-interface PushDataImported {
-    //TODO
-    type: "imported";
-    hash: string;
-    path: string;
+function pushDataToNotificationOptions(
+    data: PushData
+): [string, NotificationOptionsEx] {
+    switch (data.type) {
+        case "tagged":
+            return [
+                `Tagging '${data.path.replace(data.inboxPath || "", "...")}' completed!`,
+                {
+                    body: `Found ${data.nCandidates} candidates\n\tbest: ${data.bestCandidate} (${Math.round(data.bestCandidateMatch * 100)}%)`,
+                    tag: data.hash, // Use the hash as the tag for uniqueness we can update the notification later if there
+                    //an import
+                    icon: "/logo_flask.svg",
+                    actions: [
+                        {
+                            action: "open-folder",
+                            title: "Review tagged folder",
+                            icon: "/tag.svg",
+                        },
+                    ],
+                },
+            ];
+        default:
+            return assertUnreachable(data.type);
+    }
 }
-
-type PushData = PushDataTagged | PushDataImported;
-
+/** Handles if we receive push notifications.
+ * This should be called if our server sends a push message.
+ */
 worker.addEventListener("push", (event) => {
     const data: PushData | null = (event.data?.json() as PushData) ?? null;
-    console.log("Received a push message", event, data);
 
-    let title = "Huh?";
-    const options: NotificationOptions & {
-        actions?: {
-            // See https://web.dev/articles/push-notifications-display-a-notification#actions_buttons
-            // for more information on actions
-            action: string;
-            title: string;
-            icon: string;
-            type?: string; // Optional, but can be used to specify the type of action
-        }[];
-    } = {
-        body: "You received a push message, but we don't know what to do with it.",
-    };
-
-    if (data) {
-        switch (data.type) {
-            case "tagged":
-                title = `Tagged: ${data.title} by ${data.artist}`;
-                options.body = `Folder: ${data.path} (Best match: ${data.best_match})`;
-                options.tag = data.hash; // Use the hash as the tag for uniqueness
-                options.icon = "/logo_flask.svg";
-                options.actions = [
-                    {
-                        action: "open-folder",
-                        title: "Review tagged folder",
-                        icon: "/tag.svg",
-                    },
-                ];
-                break;
-            case "imported":
-                //TODO
-                break;
-            default:
-                console.warn("Unknown push data type", data);
-        }
-    } else {
-        console.warn("Received push message without data", event);
+    if (!data) {
+        // This should not happen, but if it does, we log a warning and show a generic notification
+        console.warn("Push message without data", event);
+        return worker.registration.showNotification("Huh?");
     }
 
-    options.data = data; // Store the data in the notification for later use
+    const args = pushDataToNotificationOptions(data);
+    args[1].data = data; // Store the data in the notification for later use
+
     event.waitUntil(
         isClientFocused().then((clientIsFocused) => {
             // If the client is focused, we don't need to show a notification
             if (clientIsFocused) {
-                console.log("Client is focused, not showing notification.");
+                console.debug("Client is focused, not showing notification.");
                 return;
             } else {
-                return worker.registration.showNotification(title, options);
+                return worker.registration.showNotification(...args);
             }
         })
     );
 });
 
+/** Handles notification clicks.
+ * Called if the user clicks on a notification.
+ */
 worker.addEventListener("notificationclick", (event) => {
     const data = event.notification.data as PushData | null;
     const clickedNotification = event.notification;
@@ -92,19 +86,23 @@ worker.addEventListener("notificationclick", (event) => {
     }
 
     if (event.action == "open-folder") {
-        event.waitUntil(openFolder(data.path, data.hash));
-    }
-    if (event.action == "open-inbox") {
+        event.waitUntil(openInboxFolder(data.path, data.hash));
+    } else if (event.action == "open-inbox") {
         event.waitUntil(openUrl("/inbox"));
+    } else {
+        // If no action is specified, we just open the homepage
+        event.waitUntil(openUrl("/"));
     }
 
     clickedNotification.close();
 });
 
+/* --------------------------------- helpers -------------------------------- */
+
 /** Open the inbox details for a specific
  * folder path and hash in the browser.
  */
-async function openFolder(path: string, hash: string) {
+async function openInboxFolder(path: string, hash: string) {
     const allClients = await worker.clients.matchAll({
         type: "window",
     });

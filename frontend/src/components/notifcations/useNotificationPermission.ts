@@ -10,6 +10,12 @@ export function useNotificationPermission() {
             setAvailable(false);
             return;
         }
+        const isSecureContext = window.isSecureContext;
+        if (!isSecureContext) {
+            console.log("Notifications are blocked: Must use HTTPS (or localhost).");
+            setAvailable(false);
+            return;
+        }
     }, []);
 
     useEffect(() => {

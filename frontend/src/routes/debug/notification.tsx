@@ -1,5 +1,5 @@
-import { MailCheckIcon, MailIcon } from "lucide-react";
-import { Alert, Box, Button, useTheme } from "@mui/material";
+import { MailCheckIcon, MailIcon, MailXIcon } from "lucide-react";
+import { Alert, AlertTitle, Box, Button, useTheme } from "@mui/material";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -16,151 +16,156 @@ export const Route = createFileRoute("/debug/notification")({
 
 function RouteComponent() {
     return (
-        <Box sx={{ padding: "2rem", textAlign: "center" }}>
+        <Box sx={{ padding: "2rem" }}>
             <h1>Notification Test Page</h1>
             <p>
                 This page is used to test the notification functionality of the
                 application. Click the button below to request notification permissions
                 and subscribe to notifications.
             </p>
-            <SubscribeToNotificationsButton />
-            <SetupPushNotifications />
+            <SubscribeToNotifications />
         </Box>
     );
 }
 
-function SubscribeToNotificationsButton() {
+/** This component handles the subscription to notifications.
+ *
+ * We try to keep it simple and only show one button at a time to the user.
+ *
+ * Notifications consist of two parts,
+ * 1. The browser's Notification API, which allows us to show notifications to the user.
+ * 2. The Push API, which allows us to send notifications from the server to the browser.
+ *
+ * The browser needs to support both APIs, and the user needs to grant permission.
+ */
+function SubscribeToNotifications() {
     const theme = useTheme();
-    const { permission } = useNotificationPermission();
+    const { permission, available, requestPermission } = useNotificationPermission();
+    const { data: subscription, error: subscriptionError } = useQuery(
+        pushSubscriptionQueryOptions
+    );
 
-    if (permission === "granted") {
+    if (!available || subscriptionError) {
         return (
-            <Button
-                variant="contained"
-                disabled
-                startIcon={<MailCheckIcon size={theme.iconSize.md} />}
-            >
-                Notifications are allowed!
-            </Button>
-        );
-    }
-
-    if (permission === "prompt") {
-        return (
-            <Button
-                variant="contained"
-                onClick={() => {
-                    askPermission()
-                        .then(() => {
-                            console.log("Notification permission granted.");
-                        })
-                        .catch((error) => {
-                            alert("Failed to subscribe to notifications: " + error);
-                        });
+            <Box
+                sx={{
+                    gap: 1,
+                    display: "flex",
+                    flexDirection: "column",
                 }}
-                startIcon={<MailIcon size={theme.iconSize.md} />}
             >
-                Request Notification Permission
-            </Button>
+                {!available && (
+                    <Alert severity="warning">
+                        <AlertTitle>Notification API not available</AlertTitle>
+                        Notifications are not available in this browser. Please use a
+                        modern browser that supports the Notifications API. You might
+                        need to host this application on a secure context (HTTPS or use
+                        localhost).
+                    </Alert>
+                )}
+                {subscriptionError && (
+                    <Alert severity="warning">
+                        <AlertTitle>Push API not available</AlertTitle>
+                        {subscriptionError.message}
+                    </Alert>
+                )}
+            </Box>
         );
     }
 
-    // denied
     return (
         <Box
             sx={{
+                gap: 1,
                 display: "flex",
                 flexDirection: "column",
-                alignItems: "center",
-                gap: 1,
             }}
         >
-            <Alert severity="error">
-                You denied the notification permission. You might need to enable it in
-                your browser to try again!
-            </Alert>
-            <Button
-                variant="outlined"
-                color="error"
-                onClick={() => {
-                    askPermission()
-                        .then(() => {
-                            console.log("Notification permission granted.");
-                        })
-                        .catch((error) => {
-                            alert("Failed to subscribe to notifications: " + error);
-                        });
+            {permission === "granted" && (
+                <Alert
+                    severity="success"
+                    icon={<MailCheckIcon size={theme.iconSize.md} />}
+                >
+                    <AlertTitle>Notification permissions granted</AlertTitle>
+                    You have granted permission to receive notifications.
+                </Alert>
+            )}
+            {permission === "denied" && (
+                <Alert severity="error" icon={<MailXIcon size={theme.iconSize.md} />}>
+                    <AlertTitle>Notification permissions denied</AlertTitle>
+                    You have denied permission to receive notifications. You may need to
+                    change this in your browser settings manually!
+                </Alert>
+            )}
+            {permission === "granted" && !subscription && (
+                <Alert severity="warning">
+                    <AlertTitle>Not subscribed to push notifications</AlertTitle>
+                    You are not subscribed to push notifications. You will not receive
+                    updates from the server.
+                </Alert>
+            )}
+            <Box
+                sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    marginTop: 1,
                 }}
             >
-                Request Notification Permission
-            </Button>
+                {permission === "prompt" || !subscription ? (
+                    <RequestPermissionAndSubscribeButton
+                        requestPermission={requestPermission}
+                    />
+                ) : (
+                    <UnsubscribeButton />
+                )}
+            </Box>
         </Box>
     );
 }
 
-function SetupPushNotifications() {
-    const { data: subscription, error } = useQuery(pushSubscriptionQueryOptions);
-
-    if (error) {
-        return (
-            <Alert severity="error">
-                Failed to fetch push subscription: {error.message}
-            </Alert>
-        );
-    }
-
-    // Unsubscribe from push notifications
-    if (subscription) {
-        return <UnsubscribeButton />;
-    }
-
-    // Subscribe to push notifications
-    return (
-        <Box sx={{ textAlign: "center", marginTop: "1rem" }}>
-            <Alert severity="info">
-                You are not subscribed to push notifications. Click the button below to
-                subscribe.
-            </Alert>
-            <SubscribeButton />
-        </Box>
-    );
-}
-
-function SubscribeButton() {
-    // TODO: error handling
+function RequestPermissionAndSubscribeButton({
+    requestPermission,
+}: {
+    requestPermission?: () => Promise<void>;
+}) {
+    const theme = useTheme();
     const { mutate, isPending } = useMutation(subscribeMutationOptions);
+    // TODO: error handling
 
     return (
-        <Button variant="contained" onClick={() => mutate()} loading={isPending}>
-            Subscribe to Notifications
+        <Button
+            variant="contained"
+            color="primary"
+            onClick={async () => {
+                try {
+                    await requestPermission?.();
+                    mutate();
+                } catch (error) {
+                    alert("Failed to subscribe to notifications: " + error);
+                }
+            }}
+            loading={isPending}
+            startIcon={<MailIcon size={theme.iconSize.md} />}
+        >
+            Subscribe
         </Button>
     );
 }
 
 function UnsubscribeButton() {
-    // TODO: error handling
+    const theme = useTheme();
     const { mutate, isPending } = useMutation(unsubscribeMutationOptions);
+    // TODO: error handling
 
     return (
-        <Button variant="outlined" onClick={() => mutate()} loading={isPending}>
-            Unsubscribe from Notifications
+        <Button
+            variant="outlined"
+            onClick={() => mutate()}
+            loading={isPending}
+            color="error"
+            startIcon={<MailXIcon size={theme.iconSize.md} />}
+        >
+            Unsubscribe
         </Button>
     );
-}
-
-function askPermission() {
-    return new Promise(function (resolve, reject) {
-        const permissionResult = Notification.requestPermission(function (result) {
-            resolve(result);
-        });
-
-        // eslint-disable-next-line @typescript-eslint/no-misused-promises
-        if (permissionResult) {
-            permissionResult.then(resolve, reject);
-        }
-    }).then(function (permissionResult) {
-        if (permissionResult !== "granted") {
-            throw new Error("We weren't granted permission.");
-        }
-    });
 }

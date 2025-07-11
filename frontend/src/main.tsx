@@ -139,7 +139,11 @@ if (
             .register(
                 import.meta.env.MODE === "production"
                     ? "/worker.js"
-                    : "/dev-sw.js?dev-sw"
+                    : "/dev-sw.js?dev-sw",
+                {
+                    scope: "/",
+                    type: "module",
+                }
             )
             .then((registration) => {
                 console.log(

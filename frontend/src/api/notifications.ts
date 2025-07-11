@@ -100,7 +100,9 @@ export const pushSubscriptionQueryOptions = queryOptions<
             console.warn(
                 "Service Worker and therefore Push Notifications are not supported in this browser."
             );
-            throw new PushSubscriptionError("Browser lacks Service Worker support");
+            throw new PushSubscriptionError(`Browser lacks Service Worker support. Please use a
+                modern browser that supports the Push API. You might need to host this application
+                on a secure context (HTTPS or use localhost).`);
         }
 
         // Get pushManager from the service worker registration
@@ -110,12 +112,13 @@ export const pushSubscriptionQueryOptions = queryOptions<
                 "Push Manager is not available in this service worker registration.",
                 registration
             );
-            throw new PushSubscriptionError("PushManager unavailable");
+            throw new PushSubscriptionError("PushManager unavailable.");
         }
 
         return await registration.pushManager.getSubscription();
     },
     staleTime: Infinity,
+    retry: false,
 });
 
 async function invalidatePushSubscriptionQuery(data?: PushSubscription | null) {
