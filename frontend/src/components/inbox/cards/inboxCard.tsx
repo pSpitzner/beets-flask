@@ -21,7 +21,7 @@ import {
 } from "@/components/inbox/fileTree";
 import { Folder, Progress } from "@/pythonTypes";
 
-import { InboxActions } from "../actions2/buttons";
+import { InboxActions } from "../actions/buttons";
 
 /** Context for easier use of inbox card related variables child
  * components.

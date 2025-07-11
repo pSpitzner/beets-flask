@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Cache invalidation now triggers on delete folder in frontend [#138](https://github.com/pSpitzner/beets-flask/issues/138)
 - In albums and items view the clicking on artists does not return any results if the contained a separator character (e.g. `&`) [#132](https://github.com/pSpitzner/beets-flask/issues/138)
+- Cleanup old actions.tsx file, which included old unused code [#134](https://github.com/pSpitzner/beets-flask/issues/134)
 
 ## [1.0.0] - 25-07-06
 

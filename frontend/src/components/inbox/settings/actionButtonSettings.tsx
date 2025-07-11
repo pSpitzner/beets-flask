@@ -51,11 +51,11 @@ import {
 } from "@/api/config";
 import { Dialog } from "@/components/common/dialogs";
 
-import { ActionIcon } from "../actions2/buttons";
+import { ActionIcon } from "../actions/buttons";
 import {
     getActionDescription,
     getActionOptionDescription,
-} from "../actions2/descriptions";
+} from "../actions/descriptions";
 
 /** A list to add new action and arrange actions.
  *

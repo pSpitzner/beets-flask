@@ -23,8 +23,7 @@ import { Folder } from "@/pythonTypes";
 
 import { CardHeader } from "./common";
 
-import { BackButton } from "../../common/inputs/back";
-import { RetagButton } from "../actions";
+import { RetagButtonGroup } from "../actions/buttons";
 
 /** Shows the general folder information!
  *
@@ -42,7 +41,7 @@ export function FolderCard({ folder }: { folder: Folder }) {
 
     const {
         data: session,
-        isFetching,
+        isPending,
         refetch,
         error,
     } = useQuery({
@@ -118,7 +117,7 @@ export function FolderCard({ folder }: { folder: Folder }) {
             {showNoSessionWarning && (
                 <NoSessionFound
                     refetch={refetch}
-                    refetchPending={isFetching}
+                    refetchPending={isPending}
                     folderPath={folder.full_path}
                     folderHash={urlParams.hash ?? folder.hash}
                 />
@@ -307,10 +306,38 @@ function NoSessionFound({
                 {...props}
             >
                 <AlertTitle>No active session found</AlertTitle>
-                <Typography variant="body2">
-                    Seems like you haven't started an import on this folder yet. If you
-                    want to start a new import, choose one of the options below.
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Typography variant="body2">
+                        Seems like you haven't started an import on this folder yet. If
+                        you want to start a new import, choose one of the options below.
+                    </Typography>
+                    <Tooltip title="Retry to fetch the session.">
+                        <IconButton
+                            color="secondary"
+                            size="medium"
+                            sx={{
+                                ml: "auto",
+                                //animation on refetching
+                                animation: refetchPending
+                                    ? "spin 1s linear infinite normal forwards"
+                                    : "none",
+                                "@keyframes spin": {
+                                    "0%": {
+                                        transform: "rotate(0deg)",
+                                    },
+                                    "100%": {
+                                        transform: "rotate(360deg)",
+                                    },
+                                },
+                            }}
+                            onClick={() => {
+                                refetch();
+                            }}
+                        >
+                            <RefreshCwIcon size={theme.iconSize.lg} />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
             </Alert>
             <Box
                 sx={{
@@ -321,53 +348,25 @@ function NoSessionFound({
                     paddingInline: 1,
                 }}
             >
-                <BackButton variant="outlined" color="secondary" />
-                <Tooltip title="Retry to fetch the session.">
-                    <IconButton
-                        color="secondary"
-                        size="medium"
-                        sx={{
-                            ml: "auto",
-                            //animation on refetching
-                            animation: refetchPending
-                                ? "spin 1s linear infinite normal forwards"
-                                : "none",
-                            "@keyframes spin": {
-                                "0%": {
-                                    transform: "rotate(0deg)",
-                                },
-                                "100%": {
-                                    transform: "rotate(360deg)",
-                                },
+                <RetagButtonGroup
+                    sx={{ ml: "auto" }}
+                    selected={{
+                        paths: [folderPath],
+                        hashes: [folderHash],
+                    }}
+                    onRetag={async (r) => {
+                        // Redirect to the correct tagging page i.e. the hash might change
+                        // one a retag is triggered
+                        const newHash = r[0].job_metas[0].folder_hash;
+                        await router.navigate({
+                            to: "/inbox/folder/$path/$hash",
+                            params: {
+                                path: folderPath,
+                                hash: newHash,
                             },
-                        }}
-                        onClick={() => {
-                            refetch();
-                        }}
-                    >
-                        <RefreshCwIcon size={theme.iconSize.lg} />
-                    </IconButton>
-                </Tooltip>
-                <Tooltip title="Retag this folder.">
-                    <RetagButton
-                        folderPaths={[folderPath]}
-                        folderHashes={[folderHash]}
-                        variant="contained"
-                        color="secondary"
-                        onRetag={async (r) => {
-                            // Redirect to the correct tagging page i.e. the hash might change
-                            // one a retag is triggered
-                            const newHash = r[0].job_metas[0].folder_hash;
-                            await router.navigate({
-                                to: "/inbox/folder/$path/$hash",
-                                params: {
-                                    path: folderPath,
-                                    hash: newHash,
-                                },
-                            });
-                        }}
-                    />
-                </Tooltip>
+                        });
+                    }}
+                />
             </Box>
         </>
     );
