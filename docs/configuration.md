@@ -87,5 +87,5 @@ The `gui.terminal.start_path` option specifies the path that is used when starti
 The `gui.num_preview_workers` option specifies the number of worker threads that are used to generate previews for the inboxes. This is useful to speed up the preview generation process, especially when you have a large number of items in your inboxes. The default value is `4`.
 
 ```{info}
-While you can use multiple workers, to fetch candidates for import. The import itself is always done sequentially. This is to ensure that the import process is not interrupted by other operations.
+You can use multiple workers to fetch candidates before importing (previewing). However, the import itself is always done sequentially. This is to ensure that the import process is not interrupted by other operations.
 ```
