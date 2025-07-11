@@ -1134,15 +1134,38 @@ export function StyledDiff({
     }
 
     return (
-        <Box sx={{ lineHeight: 1.25 }} {...props}>
+        <Box
+            sx={{
+                lineHeight: 1.25,
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+            }}
+            {...props}
+        >
             {majorChange && fromParts.length > 0 && toParts.length > 0 ? (
                 <>
-                    {fromParts}
+                    <Box
+                        sx={(theme) => ({
+                            color: theme.palette.diffs.removed,
+                            textDecoration: "line-through",
+                        })}
+                        component="span"
+                    >
+                        {fromParts}
+                    </Box>
                     <ArrowRightIcon
                         size={theme.iconSize.sm}
                         color={theme.palette.diffs.changed}
                     />
-                    {toParts}
+                    <Box
+                        sx={(theme) => ({
+                            color: theme.palette.diffs.added,
+                        })}
+                        component="span"
+                    >
+                        {toParts}
+                    </Box>
                 </>
             ) : (
                 diff.map((part, index) => (

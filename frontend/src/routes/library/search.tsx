@@ -40,14 +40,13 @@ function SearchPage() {
     return (
         <SearchContextProvider>
             <PageWrapper
-                sx={{
+                sx={(theme) => ({
                     display: "flex",
                     flexDirection: "column",
-                    gap: 1,
-                    py: 1,
-                    pt: 1.5,
-                    height: "100%",
-
+                    gap: theme.spacing(1),
+                    paddingTop: theme.spacing(1),
+                    paddingInline: theme.spacing(1),
+                    minHeight: "100%",
                     // styling for code blocks
                     code: {
                         backgroundColor: "#212529",
@@ -57,7 +56,7 @@ function SearchPage() {
                         fontSize: "0.9em",
                         whiteSpace: "nowrap",
                     },
-                }}
+                })}
             >
                 <SearchBar />
                 <Box

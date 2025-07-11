@@ -505,12 +505,14 @@ class CandidateState(BaseState):
 
         def _generate_kwargs(item):
             kwargs = {}
-            for key in item._dirty:
+            # before import the keys are in _dirty,
+            # after import in _fields
+            for key in list(item._dirty) + list(item._fields):
                 val = getattr(item, key)
                 if val is not None and val != "":
                     kwargs[key] = val
             # tracks use index, items use track, and beets diff preview crashes without index
-            kwargs["index"] = item.track or -1
+            kwargs["index"] = item.track or 0
             return kwargs
 
         tracks = [autotag.TrackInfo(**_generate_kwargs(i)) for i in items]

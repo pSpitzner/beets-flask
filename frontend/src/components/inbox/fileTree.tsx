@@ -171,6 +171,9 @@ export function FolderComponent({
                         alignItems: "center",
                         justifyContent: "flex-end",
                     }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                    }}
                 >
                     <IconButton>
                         <SquareChartGanttIcon size={16} />

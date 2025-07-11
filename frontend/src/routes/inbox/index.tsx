@@ -54,7 +54,7 @@ function RouteComponent() {
                 sx={(theme) => ({
                     display: "flex",
                     flexDirection: "column",
-                    height: "100%",
+                    minHeight: "100%",
                     alignItems: "center",
                     paddingTop: theme.spacing(1),
                     paddingInline: theme.spacing(0.5),
