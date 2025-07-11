@@ -20,25 +20,42 @@ from sqlalchemy.sql import func
 from beets_flask.logger import log
 
 
-class IntDictType(types.TypeDecorator):
-    """Stores a dict[int, int] as a JSON-encoded string in the database."""
+class DictType(types.TypeDecorator):
+    """Stores a dict[int|str, int|str] as a JSON-encoded string in the database."""
 
     impl = types.Text
     cache_ok = True
+
+    allowed_types = (int, str)
 
     def process_bind_param(self, value, dialect):
         if value is None:
             return None
         if not isinstance(value, dict) or not all(
-            isinstance(k, int) and isinstance(v, int) for k, v in value.items()
+            isinstance(k, self.allowed_types) and isinstance(v, self.allowed_types)
+            for k, v in value.items()
         ):
-            raise ValueError("Value must be a dict[int, int]")
+            raise ValueError("Value must be a dict[int|str, int|str].")
         return json.dumps({str(k): v for k, v in value.items()})
 
     def process_result_value(self, value, dialect):
         if value is None:
             return None
-        return {int(k): v for k, v in json.loads(value).items()}
+        return json.loads(value)
+
+    def copy(self, **kw):
+        return DictType(self.impl.length)  # type: ignore
+
+
+class IntDictType(DictType):
+    """Stores a dict[int, int] as a JSON-encoded string in the database."""
+
+    allowed_types = (int,)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        return {int(k): int(v) for k, v in json.loads(value).items()}
 
     def copy(self, **kw):
         return IntDictType(self.impl.length)  # type: ignore
@@ -48,7 +65,11 @@ class Base(DeclarativeBase):
     __abstract__ = True
 
     registry = registry(
-        type_annotation_map={bytes: LargeBinary, dict[int, int]: IntDictType}
+        type_annotation_map={
+            bytes: LargeBinary,
+            dict[int, int]: IntDictType,
+            dict[str, str]: DictType,
+        }
     )
 
     id: Mapped[str] = mapped_column(primary_key=True)

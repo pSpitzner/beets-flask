@@ -26,6 +26,7 @@ print(config["gui"]["tags"].get(default="default_value"))
 """
 
 import os
+from pathlib import Path
 
 from beets import IncludeLazyConfig as BeetsConfig
 from beets.plugins import load_plugins
@@ -89,9 +90,7 @@ class InteractiveBeetsConfig(BeetsConfig, metaclass=Singleton):
 
         # Load config from default location (set via env var)
         # if it is set otherwise use the default location
-        ib_folder = os.getenv("BEETSFLASKDIR")
-        if ib_folder is None:
-            ib_folder = os.path.expanduser("~/.config/beets-flask")
+        ib_folder = get_bf_config_dir()
         ib_config_path = os.path.join(ib_folder, "config.yaml")
 
         # Check if the user config exists
@@ -193,6 +192,16 @@ def get_config(force_refresh=False) -> InteractiveBeetsConfig:
     return config
 
 
-__all__ = ["refresh_config", "get_config"]
+def get_bf_config_dir() -> Path:
+    """Get the path to the beets-flask config directory."""
+    # This is the directory where the config.yaml file is stored
+    # and where the vapid keys are stored.
+
+    return Path(
+        os.getenv("BEETSFLASKDIR", os.path.expanduser("~/.config/beets-flask"))
+    ).resolve()
+
+
+__all__ = ["refresh_config", "get_config", "get_bf_config_dir"]
 
 # raise NotImplementedError("This module should not be imported.")

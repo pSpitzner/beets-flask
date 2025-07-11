@@ -19,6 +19,7 @@ import { Route as FrontpageIndexImport } from './routes/_frontpage/index'
 import { Route as LibrarySearchImport } from './routes/library/search'
 import { Route as DebugSortablemultiImport } from './routes/debug/sortable_multi'
 import { Route as DebugSortableImport } from './routes/debug/sortable'
+import { Route as DebugNotificationImport } from './routes/debug/notification'
 import { Route as DebugJobsImport } from './routes/debug/jobs'
 import { Route as DebugErrorImport } from './routes/debug/error'
 import { Route as DebugAudioImport } from './routes/debug/audio'
@@ -88,6 +89,12 @@ const DebugSortablemultiRoute = DebugSortablemultiImport.update({
 const DebugSortableRoute = DebugSortableImport.update({
   id: '/debug/sortable',
   path: '/debug/sortable',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const DebugNotificationRoute = DebugNotificationImport.update({
+  id: '/debug/notification',
+  path: '/debug/notification',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -249,6 +256,13 @@ declare module '@tanstack/react-router' {
       path: '/debug/jobs'
       fullPath: '/debug/jobs'
       preLoaderRoute: typeof DebugJobsImport
+      parentRoute: typeof rootRoute
+    }
+    '/debug/notification': {
+      id: '/debug/notification'
+      path: '/debug/notification'
+      fullPath: '/debug/notification'
+      preLoaderRoute: typeof DebugNotificationImport
       parentRoute: typeof rootRoute
     }
     '/debug/sortable': {
@@ -497,6 +511,7 @@ export interface FileRoutesByFullPath {
   '/debug/audio': typeof DebugAudioRoute
   '/debug/error': typeof DebugErrorRoute
   '/debug/jobs': typeof DebugJobsRoute
+  '/debug/notification': typeof DebugNotificationRoute
   '/debug/sortable': typeof DebugSortableRoute
   '/debug/sortable_multi': typeof DebugSortablemultiRoute
   '/library/search': typeof LibrarySearchRoute
@@ -529,6 +544,7 @@ export interface FileRoutesByTo {
   '/debug/audio': typeof DebugAudioRoute
   '/debug/error': typeof DebugErrorRoute
   '/debug/jobs': typeof DebugJobsRoute
+  '/debug/notification': typeof DebugNotificationRoute
   '/debug/sortable': typeof DebugSortableRoute
   '/debug/sortable_multi': typeof DebugSortablemultiRoute
   '/library/search': typeof LibrarySearchRoute
@@ -560,6 +576,7 @@ export interface FileRoutesById {
   '/debug/audio': typeof DebugAudioRoute
   '/debug/error': typeof DebugErrorRoute
   '/debug/jobs': typeof DebugJobsRoute
+  '/debug/notification': typeof DebugNotificationRoute
   '/debug/sortable': typeof DebugSortableRoute
   '/debug/sortable_multi': typeof DebugSortablemultiRoute
   '/library/search': typeof LibrarySearchRoute
@@ -594,6 +611,7 @@ export interface FileRouteTypes {
     | '/debug/audio'
     | '/debug/error'
     | '/debug/jobs'
+    | '/debug/notification'
     | '/debug/sortable'
     | '/debug/sortable_multi'
     | '/library/search'
@@ -625,6 +643,7 @@ export interface FileRouteTypes {
     | '/debug/audio'
     | '/debug/error'
     | '/debug/jobs'
+    | '/debug/notification'
     | '/debug/sortable'
     | '/debug/sortable_multi'
     | '/library/search'
@@ -654,6 +673,7 @@ export interface FileRouteTypes {
     | '/debug/audio'
     | '/debug/error'
     | '/debug/jobs'
+    | '/debug/notification'
     | '/debug/sortable'
     | '/debug/sortable_multi'
     | '/library/search'
@@ -687,6 +707,7 @@ export interface RootRouteChildren {
   DebugAudioRoute: typeof DebugAudioRoute
   DebugErrorRoute: typeof DebugErrorRoute
   DebugJobsRoute: typeof DebugJobsRoute
+  DebugNotificationRoute: typeof DebugNotificationRoute
   DebugSortableRoute: typeof DebugSortableRoute
   DebugSortablemultiRoute: typeof DebugSortablemultiRoute
   LibrarySearchRoute: typeof LibrarySearchRoute
@@ -712,6 +733,7 @@ const rootRouteChildren: RootRouteChildren = {
   DebugAudioRoute: DebugAudioRoute,
   DebugErrorRoute: DebugErrorRoute,
   DebugJobsRoute: DebugJobsRoute,
+  DebugNotificationRoute: DebugNotificationRoute,
   DebugSortableRoute: DebugSortableRoute,
   DebugSortablemultiRoute: DebugSortablemultiRoute,
   LibrarySearchRoute: LibrarySearchRoute,
@@ -748,6 +770,7 @@ export const routeTree = rootRoute
         "/debug/audio",
         "/debug/error",
         "/debug/jobs",
+        "/debug/notification",
         "/debug/sortable",
         "/debug/sortable_multi",
         "/library/search",
@@ -777,6 +800,9 @@ export const routeTree = rootRoute
     },
     "/debug/jobs": {
       "filePath": "debug/jobs.tsx"
+    },
+    "/debug/notification": {
+      "filePath": "debug/notification.tsx"
     },
     "/debug/sortable": {
       "filePath": "debug/sortable.tsx"

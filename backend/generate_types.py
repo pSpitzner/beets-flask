@@ -23,6 +23,7 @@ from beets_flask.server.routes.library.resources import (
     ItemResponseMinimal,
 )
 from beets_flask.server.routes.library.stats import LibraryStats
+from beets_flask.server.routes.notifications import TaggedNotification
 from beets_flask.server.websocket.status import (
     FileSystemUpdate,
     FolderStatusUpdate,
@@ -73,6 +74,11 @@ elements.append(AlbumResponseMinimalExpanded)
 elements.append(FolderStatusUpdate)
 elements.append(JobStatusUpdate)
 elements.append(FileSystemUpdate)
+
+
+# ------------------------------- Notifications ------------------------------ #
+
+elements.append(TaggedNotification)
 
 
 with open("../frontend/src/pythonTypes.ts", "w") as f:

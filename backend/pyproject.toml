@@ -40,6 +40,8 @@ dependencies = [
     "aiofiles",
     "numpy",
     "pandas",
+    "ecdsa",
+    "pywebpush",
 ]
 
 [project.optional-dependencies]
