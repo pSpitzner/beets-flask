@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Styling of candidate overview (major changes were not colored)
+- For bootlegs, display of track changes after import no longer broken
 - Navigating from inbox into folder details no longer toggles selection.
 - Padding issue where navbar could block content on mobile.
 - Cache invalidation now triggers on delete folder in frontend [#138](https://github.com/pSpitzner/beets-flask/issues/138)
