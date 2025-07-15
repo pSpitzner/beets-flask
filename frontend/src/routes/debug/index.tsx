@@ -51,6 +51,9 @@ function RouteComponent() {
                     <Link to="/debug/sortable_multi">
                         <li>Drag and drop sortable multiple containers</li>
                     </Link>
+                    <Link to="/debug/notification">
+                        <li>Notification test page</li>
+                    </Link>
                 </Box>
             </Box>
         </PageWrapper>

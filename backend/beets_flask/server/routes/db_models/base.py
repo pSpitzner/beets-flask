@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Generic, Sequence, TypeVar
+from typing import Generic, Sequence, TypeVar
 
 from quart import Blueprint, request
 from sqlalchemy import select
@@ -42,6 +42,7 @@ class ModelAPIBlueprint(Generic[T]):
         """Register the routes for the blueprint."""
         self.blueprint.route("/", methods=["GET"])(self.get_all)
         self.blueprint.route("/id/<id>", methods=["GET"])(self.get_by_id)
+        self.blueprint.route("/id/<id>", methods=["DELETE"])(self.delete_by_id)
 
     async def get_all(self):
         params = dict(request.args)
@@ -78,6 +79,16 @@ class ModelAPIBlueprint(Generic[T]):
                 )
 
             return item.to_dict()
+
+    async def delete_by_id(self, id: str):
+        with db_session_factory() as session:
+            item = self.model.get_by(self.model.id == id, session=session)
+            if not item:
+                return {"message": f"Item with id {id} not found"}, 200
+            session.delete(item)
+            session.commit()
+
+        return {"message": f"Item with id {id} deleted successfully"}, 200
 
 
 # ------------------------------- Local Utility ------------------------------ #

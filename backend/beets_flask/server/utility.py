@@ -1,5 +1,7 @@
 from pathlib import Path
-from typing import Callable, TypeVar, cast
+from typing import Callable, cast
+
+from typing_extensions import TypeVar
 
 from beets_flask.invoker.job import ExtraJobMeta
 from beets_flask.logger import log
@@ -9,8 +11,7 @@ from .exceptions import InvalidUsageException
 R = TypeVar("R")
 D = TypeVar(
     "D",
-    # Fixme: Add once we update to python 3.13
-    # default=None,
+    default=None,
 )
 
 
@@ -66,7 +67,7 @@ def pop_extra_meta(params: dict, n_jobs=1) -> list[ExtraJobMeta]:
         The request args.
     """
 
-    job_refs: list[str] = pop_query_param(
+    job_refs: list[str] | None = pop_query_param(
         params=params, key="job_frontend_refs", convert_func=list, default=None
     )
 
