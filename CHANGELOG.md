@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configuration option for artist separator characters `gui.library.artist_separator`
 - Docs subpage for configuration (including content)
 - `typing_extensions` is now a dependency, to allow for more typing features
+- The model api routes now allows for `DELETE` requests to delete resources by id. Not used yet but will be helpful for future features.
 
 ### Fixed
 
