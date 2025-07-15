@@ -14,30 +14,24 @@ class DictType(types.TypeDecorator):
     impl = types.Text
     cache_ok = True
 
-    allowed_types = (int, str)
     allowed_keys_types: tuple[type, ...] = (str,)
     allowed_values_types: tuple[type | Any, ...] = (Any,)
 
     def process_bind_param(self, value, dialect):
         if value is None:
             return None
-        if not isinstance(value, dict) or not all(
-            isinstance(k, self.allowed_types) and isinstance(v, self.allowed_types)
-            for k, v in value.items()
-        ):
-            raise ValueError("Value must be a dict[int|str, int|str].")
         if not isinstance(value, dict):
             raise ValueError("Value must be a dict")
 
         # Any type needs some special handling
         allowed_types_v: tuple[type, ...] = tuple(
-            filter(lambda x: x is not Any, self.allowed_types_values)
+            filter(lambda x: x is not Any, self.allowed_values_types)
         )
 
         if not len(allowed_types_v) == 0:
             if not all(isinstance(v, allowed_types_v) for v in value.values()):
                 raise ValueError(
-                    f"Value must be a dict with values of type {allowed_types_v}."
+                    f"Value must be a dict with values of type {allowed_types_v}. Got: {value.values()}"
                 )
 
         if not all(isinstance(k, self.allowed_keys_types) for k in value.keys()):
@@ -57,9 +51,8 @@ class DictType(types.TypeDecorator):
 class IntDictType(DictType):
     """Stores a dict[int, int] as a JSON-encoded string in the database."""
 
-    allowed_types = (int,)
     allowed_keys_types = (int,)
-    allowed_values_types = (str,)
+    allowed_values_types = (int,)
 
     def process_result_value(self, value, dialect):
         if value is None:
