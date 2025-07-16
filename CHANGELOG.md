@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Configuration option for artist separator characters `gui.library.artist_separator`
 - Docs subpage for configuration (including content)
+- `typing_extensions` is now a dependency, to allow for more typing features
 
 ### Fixed
 
