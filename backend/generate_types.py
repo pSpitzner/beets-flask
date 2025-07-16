@@ -1,9 +1,4 @@
-# main.py
-from types import UnionType
-from typing import Any
-
-from py2ts import generate_ts
-from py2ts.data import ts_reference_str
+from py2ts.builder import TSBuilder
 
 from beets_flask.importer.states import (
     SerializedSessionState,
@@ -35,49 +30,46 @@ prefix = """/*
  */
 """
 
-elements: list[type | UnionType] = []
+builder = TSBuilder()
+
 
 # Session state
-elements.append(SerializedSessionState)
+builder.add(SerializedSessionState)
 
 # ------------------------------- inbox routes ------------------------------- #
 
 # Folder
-elements.append(Folder)
-elements.append(InboxStats)
+builder.add(Folder)
+builder.add(InboxStats)
 
 
 # Invoker / enqueue
-elements.append(EnqueueKind)
-elements.append(Search)
-elements.append(CandidateChoiceFallback)
+builder.add(EnqueueKind)
+builder.add(Search)
+builder.add(CandidateChoiceFallback)
 
 
 # ------------------------------ library routes ------------------------------ #
 
 # Stats
-elements.append(LibraryStats)
+builder.add(LibraryStats)
 
 # Item responses
-elements.append(ItemResponse)
-elements.append(ItemResponseMinimal)
+builder.add(ItemResponse)
+builder.add(ItemResponseMinimal)
 
 # Album responses
-elements.append(AlbumResponse)
-elements.append(AlbumResponseMinimal)
-elements.append(AlbumResponseExpanded)
-elements.append(AlbumResponseMinimalExpanded)
+builder.add(AlbumResponse)
+builder.add(AlbumResponseMinimal)
+builder.add(AlbumResponseExpanded)
+builder.add(AlbumResponseMinimalExpanded)
 
 # ------------------------------ Status updates ------------------------------ #
 
-elements.append(FolderStatusUpdate)
-elements.append(JobStatusUpdate)
-elements.append(FileSystemUpdate)
+builder.add(FolderStatusUpdate)
+builder.add(JobStatusUpdate)
+builder.add(FileSystemUpdate)
 
 
-with open("../frontend/src/pythonTypes.ts", "w") as f:
-    f.write(prefix)
-
-    f.write(ts_reference_str([generate_ts(e) for e in elements]))
-
+builder.save_file("../frontend/src/pythonTypes.ts")
 print("✅ Typescript types generated successfully!")
