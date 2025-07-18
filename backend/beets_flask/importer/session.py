@@ -30,7 +30,7 @@ from collections import defaultdict
 from copy import deepcopy
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, List, Literal, TypedDict, TypeGuard, TypeVar, cast
+from typing import Any, Callable, Literal, TypedDict, TypeGuard, TypeVar
 
 import nest_asyncio
 from beets import autotag, importer, plugins
@@ -601,7 +601,12 @@ class ImportSession(BaseSession):
             for task in self.state.task_states:
                 task.set_progress(Progress.PREVIEW_COMPLETED)
 
-        return await super().run_async()
+        state = await super().run_async()
+
+        # Trigger cli_exit event to have compatibility with beets plugin that
+        # execute after the import is completed.
+        plugins.send("cli_exit", lib=self.lib)
+        return state
 
     # ------------------------------ Stages ------------------------------ #
 
@@ -968,6 +973,10 @@ class UndoSession(BaseSession):
         # Update our state and progress
         for t_state in self.state.task_states:
             t_state.set_progress(Progress.DELETION_COMPLETED)
+
+        # Send cli_exit event to have compatibility with beets plugin that
+        # execute after the import is completed.
+        plugins.send("cli_exit", lib=self.lib)
 
         return self.state
 
