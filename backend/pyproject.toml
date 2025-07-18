@@ -40,6 +40,7 @@ dependencies = [
     "aiofiles",
     "numpy",
     "pandas",
+    "ecdsa",
     "typing_extensions",
 ]
 
