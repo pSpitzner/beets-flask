@@ -29,6 +29,25 @@ export interface Search {
 	search_album: null | string;
 }
 
+export interface PushWebHook extends Base {
+	url: string;
+	method: string;
+	headers: Record<string, string> | null;
+	params: Record<string, string> | null;
+	body: Record<string, any> | null;
+	settings: PushSettings;
+}
+
+export interface PushSubscription extends Base {
+	keys: Record<string, string>;
+	expiration_time: null | number;
+	settings: PushSettings;
+}
+
+export interface PushSettings extends Base {
+	is_active: boolean;
+}
+
 export interface LibraryStats {
 	libraryPath: string;
 	items: number;

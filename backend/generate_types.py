@@ -1,6 +1,7 @@
 from py2ts.builder import TSBuilder
 
 from beets_flask.disk import Archive, File, FileSystemItem, Folder
+from beets_flask.database.models.push import PushSubscription, PushWebHook
 from beets_flask.importer.states import (
     SerializedSessionState,
 )
@@ -73,6 +74,12 @@ builder.add(AlbumResponseMinimalExpanded)
 builder.add(FolderStatusUpdate)
 builder.add(JobStatusUpdate)
 builder.add(FileSystemUpdate)
+
+
+# ---------------------------- Push/Notifications ---------------------------- #
+
+builder.add(PushSubscription, exclude={"settings_id"})
+builder.add(PushWebHook, exclude={"settings_id"})
 
 
 builder.save_file("../frontend/src/pythonTypes.ts")
