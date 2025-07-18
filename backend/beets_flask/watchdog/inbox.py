@@ -204,10 +204,10 @@ async def auto_tag(folder_path: Path, inbox_kind: str | None = None):
 # ------------------------------------------------------------------------------------ #
 
 
-def get_inbox_for_path(path: str | Path):
+def get_inbox_for_path(path: str | Path) -> OrderedDict | None:
     if isinstance(path, str):
         path = Path(path)
-    inbox = None
+    inbox: OrderedDict | None = None
     for i in get_inboxes():
         ipath = Path(i["path"])
         if path.is_relative_to(ipath) or path == ipath:
