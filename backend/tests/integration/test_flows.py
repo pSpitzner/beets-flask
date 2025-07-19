@@ -32,6 +32,7 @@ from beets_flask.invoker.enqueue import (
 )
 from beets_flask.server.websocket.status import FolderStatusUpdate
 from tests.mixins.database import IsolatedBeetsLibraryMixin, IsolatedDBMixin
+from tests.mixins.plugins import PluginEventsMixin
 from tests.unit.test_importer.conftest import (
     VALID_PATHS,
     album_path_absolute,
@@ -64,7 +65,7 @@ class SendStatusMockMixin(ABC):
     # What we found is that, as is now, we get a websocket that survives between
     # different test functions.
     @pytest.fixture(autouse=True, scope="function")
-    def mock(self):
+    def mock_status(self):
         """Mock the emit_status decorator"""
 
         with mock.patch(
@@ -833,6 +834,71 @@ class TestMultipleTasks(
             duplicate_actions=duplicate_actions,
         )
         assert exc is None, "Should not return an error"
+
+
+class TestPluginEvents(
+    SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin, PluginEventsMixin
+):
+    """Test that the plugin events are triggered correctly.
+
+    This is important to maintain compatibility with beets plugins that
+    expect certain events to be triggered during the import/tag process.
+    """
+
+    @pytest.fixture()
+    def path(self) -> Path:
+        path = album_path_absolute(VALID_PATHS[0])
+        use_mock_tag_album(str(path))
+        return path
+
+    async def test_preview_events(self, db_session: Session, path: Path):
+        self.events = []
+
+        await run_preview(
+            "obsolete_hash_preview",
+            str(path),
+            group_albums=None,
+            autotag=None,
+        )
+
+        assert "import_begin" in self.events[0]
+        assert "import_task_created" in self.events[1]
+        assert "import_task_start" in self.events[2]
+        assert len(self.events) == 3
+
+    async def test_import_auto_events(self, db_session: Session, path: Path):
+        self.events = []
+
+        exc = await run_import_auto(
+            "obsolete_hash_import_auto",
+            str(path),
+            import_threshold=1.0,
+            duplicate_actions={"*": "remove"},
+        )
+        assert exc is None, "Should not return an error"
+
+        assert "import_begin" == self.events[0]
+        # TODO: Does not trigger import_task_created and import_task_start
+        assert "import_task_before_choice" in self.events[1]
+        assert "import_task_choice" in self.events[2]
+        assert "import_task_apply" in self.events[3]
+        # TODO: Seems like quite some database change operations are done here
+        assert "cli_exit" in self.events[-1]
+
+    async def test_undo_events(self, db_session: Session, path: Path):
+        self.events = []
+
+        exc = await run_import_undo(
+            "obsolete_hash_import",
+            str(path),
+            delete_files=True,
+        )
+        assert exc is None, "Should not return an error"
+
+        # TODO: Does not trigger started events
+        assert "item_removed" in self.events
+        assert "album_removed" in self.events
+        assert "cli_exit" == self.events[-1]
 
 
 class TestImportAsis(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin):
