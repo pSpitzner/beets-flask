@@ -1,5 +1,5 @@
 from .base import Base
-from .push import PushSettings, PushSubscription, PushWebHook
+from .push import SubscriptionSettings, PushSubscription, WebhookSubscription
 from .states import CandidateStateInDb, FolderInDb, SessionStateInDb, TaskStateInDb
 
 __all__ = [
@@ -9,6 +9,6 @@ __all__ = [
     "TaskStateInDb",
     "CandidateStateInDb",
     "PushSubscription",
-    "PushSettings",
-    "PushWebHook",
+    "SubscriptionSettings",
+    "WebhookSubscription",
 ]

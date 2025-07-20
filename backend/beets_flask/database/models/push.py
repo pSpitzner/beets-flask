@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Mapping
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base
 
 
-class PushSettings(Base):
+class SubscriptionSettings(Base):
     """Represents options for a push subscription.
 
     This class is used to store additional options for a push subscription,
@@ -32,7 +32,7 @@ class PushSettings(Base):
         self.is_active = is_active if is_active is not None else self.is_active
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> PushSettings:
+    def from_dict(cls, data: dict[str, Any]) -> SubscriptionSettings:
         """Create a PushSettings instance from a dictionary."""
         instance = cls()
         instance.update_from_dict(data)
@@ -54,19 +54,21 @@ class PushSubscription(Base):
 
     # Settings on when to trigger this
     settings_id: Mapped[str] = mapped_column(ForeignKey("push_settings.id"), index=True)
-    settings: Mapped[PushSettings] = relationship(foreign_keys=[settings_id])
+    settings: Mapped[SubscriptionSettings] = relationship(
+        foreign_keys=[settings_id], cascade="all"
+    )
 
     def __init__(
         self,
         id: str,
         keys: dict[str, str] | None = None,
         expiration_time: int | None = None,
-        settings: PushSettings | None = None,
+        settings: SubscriptionSettings | None = None,
     ):
         super().__init__(id=id)
         self.keys = keys or {}
         self.expiration_time = expiration_time
-        self.settings = settings or PushSettings()
+        self.settings = settings or SubscriptionSettings()
 
     @property
     def endpoint(self) -> str:
@@ -77,8 +79,15 @@ class PushSubscription(Base):
         """
         return self.id
 
+    def to_dict(self) -> Mapping:
+        col_map = super().to_dict()
+        return {
+            **col_map,
+            "settings": self.settings.to_dict(),
+        }
 
-class PushWebHook(Base):
+
+class WebhookSubscription(Base):
     """Webhook handlers for push notifications.
 
     Additionally to :class:`PushSubscription`, this class can be used to handle push notifications
@@ -98,7 +107,9 @@ class PushWebHook(Base):
 
     # Settings on when to trigger this
     settings_id: Mapped[str] = mapped_column(ForeignKey("push_settings.id"), index=True)
-    settings: Mapped[PushSettings] = relationship(foreign_keys=[settings_id])
+    settings: Mapped[SubscriptionSettings] = relationship(
+        foreign_keys=[settings_id], cascade="all"
+    )
 
     def __init__(
         self,
@@ -107,7 +118,7 @@ class PushWebHook(Base):
         headers: dict[str, str] | None = None,
         params: dict[str, str] | None = None,
         body: dict[str, Any] | None = None,
-        settings: PushSettings | None = None,
+        settings: SubscriptionSettings | None = None,
     ):
         """Initialize a PushWebHooks instance."""
         super().__init__()
@@ -116,4 +127,11 @@ class PushWebHook(Base):
         self.headers = headers
         self.params = params
         self.body = body
-        self.settings = settings or PushSettings()
+        self.settings = settings or SubscriptionSettings()
+
+    def to_dict(self) -> Mapping:
+        col_map = super().to_dict()
+        return {
+            **col_map,
+            "settings": self.settings.to_dict(),
+        }

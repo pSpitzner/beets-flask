@@ -3,19 +3,22 @@ from typing import Any
 from quart import request
 
 from beets_flask.database import db_session_factory
-from beets_flask.database.models import PushSettings, PushSubscription, PushWebHook
+from beets_flask.database.models import (
+    SubscriptionSettings,
+    PushSubscription,
+    WebhookSubscription,
+)
 from beets_flask.server.routes.exception import InvalidUsageException
 from beets_flask.server.utility import pop_query_param
 
 from .base import ModelAPIBlueprint
 
 
-class WebHookBlueprint(ModelAPIBlueprint[PushWebHook]):
+class WebHookBlueprint(ModelAPIBlueprint[WebhookSubscription]):
     def __init__(self):
-        super().__init__(PushWebHook, url_prefix="/webhook")
-        self.register_routes()
+        super().__init__(WebhookSubscription, url_prefix="/webhook")
 
-    def register_routes(self):
+    def _register_routes(self):
         """Register the routes for the blueprint."""
         super()._register_routes()
         self.blueprint.route("/", methods=["POST"])(self.upsert)
@@ -42,8 +45,8 @@ class WebHookBlueprint(ModelAPIBlueprint[PushWebHook]):
         with db_session_factory() as db_session:
             if id:
                 # update
-                if web_hook := PushWebHook.get_by(
-                    PushWebHook.id == id, session=db_session
+                if web_hook := WebhookSubscription.get_by(
+                    WebhookSubscription.id == id, session=db_session
                 ):
                     web_hook.url = url
                     web_hook.method = method
@@ -60,13 +63,13 @@ class WebHookBlueprint(ModelAPIBlueprint[PushWebHook]):
                         status_code=404,
                     )
             # insert
-            web_hook = PushWebHook(
+            web_hook = WebhookSubscription(
                 url=url,
                 method=method,
                 headers=headers,
                 params=params,
                 body=body,
-                settings=PushSettings.from_dict(settings or {}),
+                settings=SubscriptionSettings.from_dict(settings or {}),
             )
             db_session.add(web_hook)
             db_session.commit()
@@ -108,9 +111,8 @@ class WebHookBlueprint(ModelAPIBlueprint[PushWebHook]):
 class SubscriptionBlueprint(ModelAPIBlueprint[PushSubscription]):
     def __init__(self):
         super().__init__(PushSubscription, url_prefix="/subscription")
-        self.register_routes()
 
-    def register_routes(self):
+    def _register_routes(self):
         """Register the routes for the blueprint."""
         super()._register_routes()
         self.blueprint.route("/", methods=["POST"])(self.upsert)
@@ -146,7 +148,7 @@ class SubscriptionBlueprint(ModelAPIBlueprint[PushSubscription]):
                 id=endpoint,
                 keys=keys,
                 expiration_time=expiration_time,
-                settings=PushSettings.from_dict(settings or {}),
+                settings=SubscriptionSettings.from_dict(settings or {}),
             )
             db_session.add(subscription)
             db_session.commit()

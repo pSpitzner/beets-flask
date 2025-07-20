@@ -16,6 +16,7 @@ import { Route as SessiondraftIndexImport } from './routes/sessiondraft/index'
 import { Route as InboxIndexImport } from './routes/inbox/index'
 import { Route as DebugIndexImport } from './routes/debug/index'
 import { Route as FrontpageIndexImport } from './routes/_frontpage/index'
+import { Route as SettingsNotificationsImport } from './routes/settings/notifications'
 import { Route as LibrarySearchImport } from './routes/library/search'
 import { Route as DebugSortablemultiImport } from './routes/debug/sortable_multi'
 import { Route as DebugSortableImport } from './routes/debug/sortable'
@@ -70,6 +71,12 @@ const DebugIndexRoute = DebugIndexImport.update({
 const FrontpageIndexRoute = FrontpageIndexImport.update({
   id: '/_frontpage/',
   path: '/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const SettingsNotificationsRoute = SettingsNotificationsImport.update({
+  id: '/settings/notifications',
+  path: '/settings/notifications',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -270,6 +277,13 @@ declare module '@tanstack/react-router' {
       path: '/library/search'
       fullPath: '/library/search'
       preLoaderRoute: typeof LibrarySearchImport
+      parentRoute: typeof rootRoute
+    }
+    '/settings/notifications': {
+      id: '/settings/notifications'
+      path: '/settings/notifications'
+      fullPath: '/settings/notifications'
+      preLoaderRoute: typeof SettingsNotificationsImport
       parentRoute: typeof rootRoute
     }
     '/_frontpage/': {
@@ -500,6 +514,7 @@ export interface FileRoutesByFullPath {
   '/debug/sortable': typeof DebugSortableRoute
   '/debug/sortable_multi': typeof DebugSortablemultiRoute
   '/library/search': typeof LibrarySearchRoute
+  '/settings/notifications': typeof SettingsNotificationsRoute
   '/': typeof FrontpageIndexRoute
   '/debug': typeof DebugIndexRoute
   '/inbox': typeof InboxIndexRoute
@@ -532,6 +547,7 @@ export interface FileRoutesByTo {
   '/debug/sortable': typeof DebugSortableRoute
   '/debug/sortable_multi': typeof DebugSortablemultiRoute
   '/library/search': typeof LibrarySearchRoute
+  '/settings/notifications': typeof SettingsNotificationsRoute
   '/': typeof FrontpageIndexRoute
   '/debug': typeof DebugIndexRoute
   '/inbox': typeof InboxIndexRoute
@@ -563,6 +579,7 @@ export interface FileRoutesById {
   '/debug/sortable': typeof DebugSortableRoute
   '/debug/sortable_multi': typeof DebugSortablemultiRoute
   '/library/search': typeof LibrarySearchRoute
+  '/settings/notifications': typeof SettingsNotificationsRoute
   '/_frontpage/': typeof FrontpageIndexRoute
   '/debug/': typeof DebugIndexRoute
   '/inbox/': typeof InboxIndexRoute
@@ -597,6 +614,7 @@ export interface FileRouteTypes {
     | '/debug/sortable'
     | '/debug/sortable_multi'
     | '/library/search'
+    | '/settings/notifications'
     | '/'
     | '/debug'
     | '/inbox'
@@ -628,6 +646,7 @@ export interface FileRouteTypes {
     | '/debug/sortable'
     | '/debug/sortable_multi'
     | '/library/search'
+    | '/settings/notifications'
     | '/'
     | '/debug'
     | '/inbox'
@@ -657,6 +676,7 @@ export interface FileRouteTypes {
     | '/debug/sortable'
     | '/debug/sortable_multi'
     | '/library/search'
+    | '/settings/notifications'
     | '/_frontpage/'
     | '/debug/'
     | '/inbox/'
@@ -690,6 +710,7 @@ export interface RootRouteChildren {
   DebugSortableRoute: typeof DebugSortableRoute
   DebugSortablemultiRoute: typeof DebugSortablemultiRoute
   LibrarySearchRoute: typeof LibrarySearchRoute
+  SettingsNotificationsRoute: typeof SettingsNotificationsRoute
   FrontpageIndexRoute: typeof FrontpageIndexRoute
   DebugIndexRoute: typeof DebugIndexRoute
   InboxIndexRoute: typeof InboxIndexRoute
@@ -715,6 +736,7 @@ const rootRouteChildren: RootRouteChildren = {
   DebugSortableRoute: DebugSortableRoute,
   DebugSortablemultiRoute: DebugSortablemultiRoute,
   LibrarySearchRoute: LibrarySearchRoute,
+  SettingsNotificationsRoute: SettingsNotificationsRoute,
   FrontpageIndexRoute: FrontpageIndexRoute,
   DebugIndexRoute: DebugIndexRoute,
   InboxIndexRoute: InboxIndexRoute,
@@ -751,6 +773,7 @@ export const routeTree = rootRoute
         "/debug/sortable",
         "/debug/sortable_multi",
         "/library/search",
+        "/settings/notifications",
         "/_frontpage/",
         "/debug/",
         "/inbox/",
@@ -786,6 +809,9 @@ export const routeTree = rootRoute
     },
     "/library/search": {
       "filePath": "library/search.tsx"
+    },
+    "/settings/notifications": {
+      "filePath": "settings/notifications.tsx"
     },
     "/_frontpage/": {
       "filePath": "_frontpage/index.tsx"

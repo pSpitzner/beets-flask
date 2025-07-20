@@ -41,6 +41,7 @@ dependencies = [
     "numpy",
     "pandas",
     "ecdsa",
+    "pywebpush",
     "typing_extensions",
 ]
 

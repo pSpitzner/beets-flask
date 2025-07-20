@@ -97,3 +97,106 @@ def register_notifications(app: Blueprint | Quart):
     notification_bp.register_blueprint(WebHookBlueprint().blueprint)
     notification_bp.register_blueprint(SubscriptionBlueprint().blueprint)
     app.register_blueprint(notification_bp)
+
+
+# ----------------------------------- Tests ---------------------------------- #
+
+
+@notification_bp.route("/notify_test", methods=["POST"])
+async def notify_test():
+    """Send a test notification to all subscribed clients."""
+    params = await request.get_json() or {}
+
+    inbox = get_inbox_for_path(
+        "/music/inbox/to/album",
+    )
+    # Create a test notification
+    notification = TaggedNotification(
+        hash="test_hash",
+        path="/music/inbox/to/album",
+        type="tagged",
+        nCandidates=10,
+        bestCandidate="Test Album - Test Artist",
+        bestCandidateMatch=0.95,
+        inboxPath=inbox["path"] if inbox else None,
+    )
+
+    if len(params) > 0:
+        raise InvalidUsageException(
+            "Invalid parameters provided for notification",
+            status_code=400,
+        )
+
+    # Push the notification
+    push_notification(notification)
+
+    return "Test notification sent successfully", 200
+
+
+from sqlalchemy import select
+
+
+def push_notification(
+    notification: Notification,
+):
+    """Push a notification to all subscribed clients."""
+    vapid_keys = get_vapid_keypair()
+
+    # Get all subscriptions from the database
+    with db_session_factory() as db_session:
+        stmt = select(PushSubscription)
+        subscriptions = db_session.scalars(stmt).all()
+
+        if not subscriptions:
+            return
+
+        # Try to send the notification to each subscription
+        # it the status is 410 Gone, remove the subscription
+
+        for subscription in subscriptions:
+            keys = subscription.keys
+            try:
+                webpush(
+                    subscription_info={
+                        "endpoint": subscription.id,
+                        "keys": {k: v for k, v in keys.items()},
+                    },
+                    data=json.dumps(notification),
+                    vapid_private_key=vapid_keys.private,
+                    vapid_claims={"sub": "mailto:test@test.de"},
+                )
+            except WebPushException as e:
+                if e.response is not None and e.response.status_code == 410:
+                    # Subscription is no longer valid, remove it
+                    instance = PushSubscription.get_by(
+                        PushSubscription.id == subscription.id,
+                        session=db_session,
+                    )
+                    if instance:
+                        db_session.delete(instance)
+                        db_session.commit()
+                else:
+                    log.exception(
+                        f"Failed to send notification to {subscription.id}", e
+                    )
+    log.debug(f"Notification sent to {len(subscriptions)} subscribers")
+
+
+# ---------------------------- Notification types ---------------------------- #
+
+
+class Notification(TypedDict):
+    """Notification for tagged albums."""
+
+    hash: str
+    path: str
+
+
+class TaggedNotification(Notification):
+    """Notification for tagged albums with a type."""
+
+    type: Literal["tagged"]
+    nCandidates: int
+    bestCandidate: str  # title - artist
+    bestCandidateMatch: float  # match percentage (1.0 = 100%)
+    inboxPath: str | None  # path to the inbox this folder is in

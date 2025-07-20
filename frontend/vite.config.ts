@@ -4,6 +4,7 @@ import reactDev from "@vitejs/plugin-react-swc";
 import { TanStackRouterVite } from "@tanstack/router-vite-plugin";
 import tsconfigPaths from "vite-tsconfig-paths";
 import svgr from "vite-plugin-svgr";
+import { VitePWA } from "vite-plugin-pwa";
 
 const ReactCompilerConfig = {
     target: "19", // '17' | '18' | '19'
@@ -28,6 +29,21 @@ export default defineConfig(({ mode }) => {
                   })
                 : reactDev(),
             svgr(),
+            // Service worker registration
+            VitePWA({
+                srcDir: "src",
+                filename: "worker.ts",
+                strategies: "injectManifest",
+                injectRegister: null, // we do it manually
+                manifest: false,
+                injectManifest: {
+                    injectionPoint: undefined,
+                },
+                devOptions: {
+                    enabled: true,
+                    type: "module",
+                },
+            }),
         ],
         // not minifying helped when debugging in production mode
         // we can enable this again when the code base is a bit more mature.
