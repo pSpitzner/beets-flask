@@ -288,48 +288,41 @@ export function FolderTreeRow({
     setIsOpen?: (open: boolean) => void;
     level?: number;
 } & BoxProps) {
-    const whiteness = Math.max(100 - (MAX_LEVEL - level) * 15, 30);
-
     // either, archive, album or normal folder
     const isArchive = folder.type === "archive";
     const isAlbum = !isArchive && folder.is_album;
 
     return (
-        <LevelIndentWrapper
-            level={level}
-            className="tree"
-            sx={(theme) => ({
-                [theme.breakpoints.down("laptop")]: {
-                    color: `hsl(210deg, 8.75%, ${whiteness}%)`,
-                },
-            })}
-            {...props}
-        >
+        <LevelIndentWrapper level={level} className="tree" {...props}>
             {/* Collapse/Expand button*/}
-            <IconButton
-                onClick={(e) => {
-                    setIsOpen?.(!isOpen);
-                    e.stopPropagation();
-                    e.preventDefault();
-                }}
-                size="small"
-                sx={{
-                    padding: "0px",
-                    margin: "0px",
-                    marginRight: "-2px",
-                    color: "inherit",
-                }}
-                disableRipple
-                disabled={isArchive} // Disable for archives
-            >
-                <LucideChevronRight
-                    size={ICON_SIZE}
-                    style={{
-                        transform: isOpen ? "rotate(90deg)" : "",
-                        transition: "transform 0.15s ease-in-out",
+            {folder.type === "directory" && (
+                <IconButton
+                    onClick={(e) => {
+                        setIsOpen?.(!isOpen);
+                        e.stopPropagation();
+                        e.preventDefault();
                     }}
-                />
-            </IconButton>
+                    size="small"
+                    sx={{
+                        padding: "0px",
+                        margin: "0px",
+                        marginRight: "-2px",
+                        color: "inherit",
+                    }}
+                    disableRipple
+                    disabled={isArchive} // Disable for archives
+                >
+                    <LucideChevronRight
+                        size={ICON_SIZE}
+                        style={{
+                            transform: isOpen ? "rotate(90deg)" : "",
+                            transition: "transform 0.15s ease-in-out",
+                        }}
+                    />
+                </IconButton>
+            )}
+
+            {/* Folder/Archive icon */}
 
             <FolderTypeIcon
                 isAlbum={isAlbum}

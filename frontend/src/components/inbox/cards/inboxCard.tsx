@@ -21,7 +21,7 @@ import {
     GridWrapper,
     InboxGridHeader,
 } from "@/components/inbox/fileTree";
-import { Folder, Progress } from "@/pythonTypes";
+import { Archive, Folder, Progress } from "@/pythonTypes";
 
 import { InboxActions } from "../actions/buttons";
 
@@ -30,7 +30,7 @@ import { InboxActions } from "../actions/buttons";
  */
 export interface InboxCardContext {
     folder: Folder;
-    importedFolders: Folder[];
+    importedFolders: (Folder | Archive)[];
 
     // Configs
     folderConfig: ReturnType<typeof useInboxFolderConfig>;
@@ -247,29 +247,29 @@ function InboxCardHeader() {
 function InboxCardContent() {
     const { folder: inbox, folderConfig, gridTemplateColumns } = useInboxCardContext();
 
-    const innerFolders = useMemo(() => {
-        // Filter out folders that are not albums or files
-        return inbox.children.filter(
-            (f) => f.type === "directory" || f.type === "archive"
-        );
-    }, [inbox.children]);
-
     return (
         <CardContent>
             <GridWrapper config={gridTemplateColumns}>
                 {/* Only show inner folders */}
                 <InboxGridHeader inboxFolderConfig={folderConfig} />
-                {innerFolders.map((folder) => {
-                    if (folder.type === "directory") {
-                        return <FolderComponent key={folder.hash} folder={folder} />;
+                {inbox.children.map((child) => {
+                    if (child.type === "directory") {
+                        return <FolderComponent key={child.hash} folder={child} />;
                     }
-                    if (folder.type === "archive") {
-                        return <ArchiveComponent key={folder.hash} archive={folder} />;
+                    if (child.type === "archive") {
+                        return <ArchiveComponent key={child.hash} archive={child} />;
+                    }
+                })}
+
+                {/* files at bottom */}
+                {inbox.children.map((child) => {
+                    if (child.type === "file") {
+                        return <FileComponent key={child.full_path} file={child} />;
                     }
                 })}
 
                 {/* If no inner folders, show a message */}
-                {innerFolders.length === 0 && (
+                {inbox.children.length === 0 && (
                     <Box
                         sx={{
                             gridColumn: "1 / -1",
@@ -294,62 +294,3 @@ function InboxCardActions() {
         </CardActions>
     );
 }
-
-/**
- *                 <Box
-                    sx={{
-                        display: "flex",
-                        flexDirection: "row",
-                        width: "100%",
-                    }}
-                >
-                    <RetagSplitButton
-                        sx={(theme) => ({
-                            [theme.breakpoints.down("tablet")]: {
-                                ".MuiButton-root": {
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    alignItems: "center",
-                                    margin: 0,
-                                    paddingTop: 1.2,
-                                    gap: 0.25,
-
-                                    span: {
-                                        margin: 0,
-                                    },
-                                    fontSize: theme.typography.caption.fontSize,
-                                },
-                            },
-                        })}
-                    />
-                    <ImportSplitButton
-                        sx={(theme) => ({
-                            [theme.breakpoints.down("tablet")]: {
-                                ".MuiButton-root": {
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    alignItems: "center",
-                                    margin: 0,
-                                    paddingTop: 1.2,
-                                    gap: 0.25,
-
-                                    span: {
-                                        margin: 0,
-                                    },
-                                    fontSize: theme.typography.caption.fontSize,
-                                },
-                            },
-                            ml: "auto !important", // Align to the right
-                        })}
-                    />
-                </Box>
-                <Box
-                    sx={{
-                        width: "100%",
-                        marginTop: 2,
-                        marginLeft: "0 !important",
-                    }}
-                >
-                    <DeleteImportedFoldersButton folder={folder} />
-                </Box>
- */
