@@ -15,6 +15,8 @@ import { sessionQueryOptions } from "@/api/session";
 import { InboxTypeIcon } from "@/components/common/icons";
 import { CardHeader } from "@/components/frontpage/statsCard";
 import {
+    ArchiveComponent,
+    FileComponent,
     FolderComponent,
     GridWrapper,
     InboxGridHeader,
@@ -243,21 +245,30 @@ function InboxCardHeader() {
 }
 
 function InboxCardContent() {
-    const { folder, folderConfig, gridTemplateColumns } = useInboxCardContext();
+    const { folder: inbox, folderConfig, gridTemplateColumns } = useInboxCardContext();
 
     const innerFolders = useMemo(() => {
         // Filter out folders that are not albums or files
-        return folder.children.filter((f) => f.type === "directory");
-    }, [folder.children]);
+        return inbox.children.filter(
+            (f) => f.type === "directory" || f.type === "archive"
+        );
+    }, [inbox.children]);
 
     return (
         <CardContent>
             <GridWrapper config={gridTemplateColumns}>
                 {/* Only show inner folders */}
                 <InboxGridHeader inboxFolderConfig={folderConfig} />
-                {innerFolders.map((innerFolder) => (
-                    <FolderComponent key={innerFolder.full_path} folder={innerFolder} />
-                ))}
+                {innerFolders.map((folder) => {
+                    if (folder.type === "directory") {
+                        return <FolderComponent key={folder.hash} folder={folder} />;
+                    }
+                    if (folder.type === "archive") {
+                        return <ArchiveComponent key={folder.hash} archive={folder} />;
+                    }
+                })}
+
+                {/* If no inner folders, show a message */}
                 {innerFolders.length === 0 && (
                     <Box
                         sx={{

@@ -316,6 +316,7 @@ export interface File {
 export interface Archive {
 	type: "archive";
 	full_path: string;
+	hash: string;
 }
 
 export interface TrackInfo extends MusicInfo {
