@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Artists separators were not regex escaped correctly, leading to issues with artists containing special characters. Additionally an empty list of separators was not handled correctly. [#159](https://github.com/pSpitzner/beets-flask/issues/159)
 
+### Added
+
+- Support for importing archives `zip` and `tar` files. Support for `rar` and `7z` files can be added via custom startup and requirements files. See the [FAQ](https://beets-flask.readthedocs.io/latest/faq.html) for more information.
 
 ## [1.0.1] - 25-07-17
 
