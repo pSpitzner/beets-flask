@@ -143,6 +143,7 @@ class FolderInDb(Base):
             if isinstance(path, str):
                 path = Path(path)
             # Check if archive
+            f_on_disk: Folder | Archive
             if path.is_dir():
                 f_on_disk = Folder.from_path(path)
             else:
