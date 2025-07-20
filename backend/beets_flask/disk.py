@@ -14,7 +14,12 @@ from typing import (
     TypedDict,
 )
 
-from beets.importer import MULTIDISC_MARKERS, MULTIDISC_PAT_FMT, albums_in_dir
+from beets.importer import (
+    MULTIDISC_MARKERS,
+    MULTIDISC_PAT_FMT,
+    ArchiveImportTask,
+    albums_in_dir,
+)
 from cachetools import Cache, TTLCache, cached
 from natsort import os_sorted
 
@@ -32,9 +37,7 @@ audio_regex = re.compile(
 
 def is_archive_file(path: Path | str) -> bool:
     """Check if a file is an archive file based on its extension."""
-    if isinstance(path, str):
-        path = Path(path)
-    return path.suffix.lower() in {".zip", ".rar", ".tar", ".gz", ".7z", ".tar.gz"}
+    return ArchiveImportTask.is_archive(str(path))
 
 
 # TODO: Maybe we can simplify this by having a shared base class for Folder and Archive?
@@ -90,7 +93,7 @@ class Folder:
                     continue
 
                 full_path = os.path.join(dirpath, filename)
-                if is_archive_file(filename):
+                if is_archive_file(full_path):
                     children.append(
                         Archive(
                             type="archive",
