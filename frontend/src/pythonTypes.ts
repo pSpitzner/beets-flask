@@ -67,7 +67,7 @@ export interface FolderStatusUpdate {
 
 export interface Folder {
 	type: "directory";
-	children: Array<File | Folder>;
+	children: Array<Archive | File | Folder>;
 	full_path: string;
 	hash: string;
 	is_album: boolean;
@@ -301,16 +301,21 @@ export interface ItemInfo extends MusicInfo {
 	format: null | string;
 }
 
-export interface File {
-	type: "file";
-	full_path: string;
-}
-
 export interface AlbumSource {
 	source: string;
 	album_id: string;
 	artist_id?: string;
 	extra?: Record<string, string>;
+}
+
+export interface File {
+	type: "file";
+	full_path: string;
+}
+
+export interface Archive {
+	type: "archive";
+	full_path: string;
 }
 
 export interface TrackInfo extends MusicInfo {
