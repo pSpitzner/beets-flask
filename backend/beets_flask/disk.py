@@ -19,7 +19,7 @@ from beets.importer import MULTIDISC_MARKERS, MULTIDISC_PAT_FMT, albums_in_dir
 from cachetools import Cache, TTLCache, cached
 from natsort import os_sorted
 
-from beets_flask.dirhash_custom import dirhash_c
+from beets_flask.dirhash_custom import archive_hash, dirhash_c
 from beets_flask.logger import log
 from beets_flask.utility import AUDIO_EXTENSIONS
 
@@ -31,10 +31,17 @@ audio_regex = re.compile(
 )
 
 
+def is_archive_file(path: Path | str) -> bool:
+    """Check if a file is an archive file based on its extension."""
+    if isinstance(path, str):
+        path = Path(path)
+    return path.suffix.lower() in {".zip", ".rar", ".tar", ".gz", ".7z", ".tar.gz"}
+
+
 @dataclass
 class Folder:
     type: Literal["directory"]
-    children: Sequence[Folder | File]
+    children: Sequence[Folder | File | Archive]
     full_path: str
     hash: str
 
@@ -69,7 +76,7 @@ class Folder:
         for dirpath, dirnames, filenames in os.walk(path, topdown=False):
             # As we iterate from bottom to top, we can access the elements from
             # the lookup table as they are already created
-            children: list[Folder | File] = [
+            children: list[Folder | File | Archive] = [
                 lookup[os.path.join(dirpath, sub_dir)]
                 for sub_dir in os_sorted(dirnames)
             ]
@@ -81,12 +88,22 @@ class Folder:
                     continue
 
                 full_path = os.path.join(dirpath, filename)
-                children.append(
-                    File(
-                        type="file",
-                        full_path=os.path.abspath(full_path),
+                if is_archive_file(filename):
+                    children.append(
+                        Archive(
+                            type="archive",
+                            full_path=os.path.abspath(full_path),
+                            hash=archive_hash(full_path, cache=cache).hex(),
+                        )
                     )
-                )
+                    continue
+                else:
+                    children.append(
+                        File(
+                            type="file",
+                            full_path=os.path.abspath(full_path),
+                        )
+                    )
 
             # Add current directory to lookup
             lookup[dirpath] = Folder(
@@ -107,7 +124,7 @@ class Folder:
     def path(self) -> Path:
         return Path(self.full_path)
 
-    def walk(self) -> Iterator[Folder | File]:
+    def walk(self) -> Iterator[Folder | File | Archive]:
         """Walk the folder and yield all files and folders."""
         yield self
         for child in self.children:
@@ -120,6 +137,12 @@ class Folder:
 class File(TypedDict):
     type: Literal["file"]
     full_path: str
+
+
+class Archive(TypedDict):
+    type: Literal["archive"]
+    full_path: str
+    hash: str
 
 
 @cached(cache=TTLCache(maxsize=1024, ttl=900), info=True)
