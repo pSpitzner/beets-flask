@@ -38,7 +38,7 @@ from beets.ui import UserError, _open_library
 from deprecated import deprecated
 
 from beets_flask.config import get_config
-from beets_flask.disk import is_album_folder
+from beets_flask.disk import is_album_folder, is_archive_file
 from beets_flask.importer.progress import Progress, ProgressState
 from beets_flask.importer.types import (
     BeetsAlbum,
@@ -201,8 +201,8 @@ class BaseSession(importer.ImportSession, ABC):
     ):
         if not state.path.exists():
             raise FileNotFoundError(f"Path {state.path} does not exist.")
-        if not state.path.is_dir() and not is_album_folder(state.path):
-            raise ValueError(f"Path {state.path} is not an album folder.")
+        if state.path.is_file() and not is_archive_file(state.path):
+            raise ValueError(f"Path {state.path} is not an archive file.")
 
         # FIXME: This is a super bad convention of the original beets.
         # We do not want to pollute a global config object every time a session runs.

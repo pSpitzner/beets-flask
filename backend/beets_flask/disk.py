@@ -9,7 +9,6 @@ from typing import (
     Iterator,
     List,
     Literal,
-    Mapping,
     Sequence,
     Set,
     TypedDict,
@@ -36,6 +35,9 @@ def is_archive_file(path: Path | str) -> bool:
     if isinstance(path, str):
         path = Path(path)
     return path.suffix.lower() in {".zip", ".rar", ".tar", ".gz", ".7z", ".tar.gz"}
+
+
+# TODO: Maybe we can simplify this by having a shared base class for Folder and Archive?
 
 
 @dataclass
@@ -134,15 +136,43 @@ class Folder:
                 yield child
 
 
-class File(TypedDict):
-    type: Literal["file"]
-    full_path: str
-
-
-class Archive(TypedDict):
+@dataclass
+class Archive:
     type: Literal["archive"]
     full_path: str
     hash: str
+
+    # Defaults to true, as we assume that we can import an archive as an album
+    is_album: bool = True
+
+    @classmethod
+    def from_path(
+        cls, path: Path | str, cache: Cache[str, bytes] | None = None
+    ) -> Archive:
+        """Create an Archive object from a path."""
+        if isinstance(path, str):
+            path = Path(path)
+
+        if not is_archive_file(path):
+            raise ValueError(f"Path `{path}` is not an archive file.")
+
+        if cache is None:
+            cache = Cache(maxsize=2**16)
+
+        return cls(
+            type="archive",
+            full_path=str(path.resolve()),
+            hash=archive_hash(path, cache=cache).hex(),
+        )
+
+    @property
+    def path(self) -> Path:
+        return Path(self.full_path)
+
+
+class File(TypedDict):
+    type: Literal["file"]
+    full_path: str
 
 
 @cached(cache=TTLCache(maxsize=1024, ttl=900), info=True)
