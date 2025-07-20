@@ -114,6 +114,14 @@ export function FolderComponent({
             return (
                 <FolderComponent folder={values} key={values.hash} level={level + 1} />
             );
+        } else if (values.type === "archive") {
+            return (
+                <ArchiveComponent
+                    archive={values}
+                    key={values.hash}
+                    level={level + 1}
+                />
+            );
         }
     });
 
