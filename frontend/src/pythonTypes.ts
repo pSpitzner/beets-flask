@@ -317,6 +317,7 @@ export interface Archive {
 	type: "archive";
 	full_path: string;
 	hash: string;
+	is_album: boolean;
 }
 
 export interface TrackInfo extends MusicInfo {

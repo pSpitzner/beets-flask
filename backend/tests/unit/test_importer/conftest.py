@@ -124,7 +124,12 @@ def tag_album(
         # easiest way... and we hope music brainz does not change its data too often!
         log.debug(f"Using default lookup {album_path=}")
         res = _tag_album(items, search_artist, search_album, search_ids)
-        with open(Path(album_path) / f"lookup_{items_hash}.pickle", "wb") as f:
+
+        outdir = Path(album_path)
+        if not outdir.is_dir():
+            outdir = outdir.parent
+
+        with open(outdir / f"lookup_{items_hash}.pickle", "wb") as f:
             pickle.dump(res, f)
 
         return res
