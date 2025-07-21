@@ -25,7 +25,7 @@ class TestArtistsEndpoint(IsolatedBeetsLibraryMixin):
     from the beets library via the API.
     """
 
-    artists = ["Basstripper", "Beta", "Foo; Bar, Baz"]
+    artists = ["Basstripper", "Beta", "Foo; Bar,Baz"]
     expected_artists = [
         "Basstripper",
         "Beta",
@@ -108,10 +108,10 @@ class TestArtistsEndpoint(IsolatedBeetsLibraryMixin):
         Should return the artist even if the name contains a separator.
         """
         # Test with a separator in the artist name
-        response = await client.get("/api_v1/library/artists/Foo; Bar, Baz")
+        response = await client.get("/api_v1/library/artists/Foo; Bar,Baz")
         data = await response.get_json()
         assert response.status_code == 200, "Response status code is not 200"
-        assert data["artist"] == "Foo; Bar, Baz", (
+        assert data["artist"] == "Foo; Bar,Baz", (
             "Data artist does not match requested artist with separator"
         )
 
@@ -126,6 +126,25 @@ class TestArtistsEndpoint(IsolatedBeetsLibraryMixin):
         # Should not be found if one of the joined artists is not in the library
         response = await client.get("/api_v1/library/artists/Foo; Bar, NotInLibrary")
         assert response.status_code == 404, "Response status code is not 404"
+
+    async def test_no_separators(self, client: Client):
+        # Validate that the logic works if no separators are defined
+        from beets_flask.config.beets_config import refresh_config
+
+        config = refresh_config()
+        config["gui"]["artist_separators"] = []
+
+        # Mock artist_seperators
+        with mock.patch(
+            "beets_flask.server.routes.library.artists.ARTIST_SEPARATORS",
+            [],
+        ):
+            response = await client.get("/api_v1/library/artists/Foo; Bar")
+            data = await response.get_json()
+            assert response.status_code == 200, "Response status code is not 200"
+            assert data["artist"] == "Foo; Bar,Baz", (
+                "Data artist does not match requested artist without separators"
+            )
 
 
 # ----------------------------------- album ---------------------------------- #

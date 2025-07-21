@@ -20,7 +20,7 @@ We extend the [default beets configuration](https://beets.readthedocs.io/en/stab
 
 The `gui.library` section contains options for the library view in the web interface. It allows you to configure how the library is displayed and how we interact with the beets library.
 
-- `artist_separator`: A list of characters that are used to split artist names in the library view. This is mainly used to handle artist searches and filtering. If you don't want this feature, you can set it to an empty list `[]`. The default is `[";", ",", "&"]`.
+- `artist_separators`: A list of characters that are used to split artist names in the library view. This is mainly used to handle artist searches and filtering. If you don't want this feature, you can set it to an empty list `[]`. The default is `[";", ",", "&"]`.
 
 ## Inboxes
 
