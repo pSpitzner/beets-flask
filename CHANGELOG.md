@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Upcoming - Unreleased
 
+## [1.0.2] - 25-07-21
+
+### Fixed
+
+- Artists separators were not regex escaped correctly, leading to issues with artists containing special characters. Additionally an empty list of separators was not handled correctly. [#159](https://github.com/pSpitzner/beets-flask/issues/159)
+
 
 ## [1.0.1] - 25-07-17
 

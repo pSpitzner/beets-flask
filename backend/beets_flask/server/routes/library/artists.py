@@ -29,7 +29,12 @@ ARTIST_SEPARATORS: list[str] = get_config()["gui"]["library"][
     "artist_separators"
 ].as_str_seq()
 
-split_pattern = "|".join(map(re.escape, ARTIST_SEPARATORS))
+
+def _split_pattern(separators: list[str]) -> str:
+    return "|".join(map(re.escape, separators))
+
+
+split_pattern_artists = _split_pattern(ARTIST_SEPARATORS)
 
 
 def get_artists_pandas(table: str, artist: str | None = None) -> pd.DataFrame:
@@ -52,6 +57,7 @@ def get_artists_pandas(table: str, artist: str | None = None) -> pd.DataFrame:
             SELECT
                 albumartist AS artist,
                 added
+                
             FROM
                 albums
         """
@@ -59,7 +65,13 @@ def get_artists_pandas(table: str, artist: str | None = None) -> pd.DataFrame:
         raise ValueError(f"Invalid table name: {table}. Must be 'items' or 'albums'.")
 
     # Split the artist string by the specified separators
-    artists = [a.strip() for a in re.split(split_pattern, artist)] if artist else None
+    artists: list[str] | None
+    if len(ARTIST_SEPARATORS) > 0 and artist is not None:
+        artists = [a.strip() for a in re.split(split_pattern_artists, artist)]
+    elif artist is not None:
+        artists = [artist.strip()]
+    else:
+        artists = None
 
     if artists is not None:
         # If an artist is specified, filter the query
@@ -76,8 +88,9 @@ def get_artists_pandas(table: str, artist: str | None = None) -> pd.DataFrame:
     df = pd.DataFrame(rows, columns=["artist", "added"])
 
     # Split artist strings into lists and explode into separate rows
-    df["artist"] = df["artist"].str.split(rf"[{''.join(ARTIST_SEPARATORS)}]")
-    df = df.explode("artist")
+    if len(ARTIST_SEPARATORS) > 0:
+        df["artist"] = df["artist"].str.split(split_pattern_artists)
+        df = df.explode("artist")
 
     # Strip whitespace
     df["artist"] = df["artist"].str.strip()
@@ -97,7 +110,9 @@ def get_artists_pandas(table: str, artist: str | None = None) -> pd.DataFrame:
     if artists is not None:
         # If an artist is specified, filter the result (respect the separator and resolve as or)
         result = result[
-            result["artist"].str.contains("|".join(artists), case=False, regex=True)
+            result["artist"].str.contains(
+                _split_pattern(artists), case=False, regex=True
+            )
         ]
         # Overwrite if there are multiple artists (i.e. joined by a separator)
         if len(artists) > 1 and not result.empty:
