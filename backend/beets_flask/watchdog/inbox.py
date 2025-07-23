@@ -11,9 +11,11 @@ from beets_flask import invoker
 from beets_flask.config import get_config
 from beets_flask.database.models.states import SessionStateInDb
 from beets_flask.disk import (
+    Archive,
     Folder,
     album_folders_from_track_paths,
     all_album_folders,
+    is_archive_file,
     path_to_folder,
 )
 from beets_flask.invoker import enqueue
@@ -114,14 +116,20 @@ class InboxHandler(AIOEventHandler):
         status_update = asyncio.create_task(send_status_update(FileSystemUpdate()))
 
         try:
-            album_folder = album_folders_from_track_paths([fullpath])[0]
+            log.debug(f"File change at {fullpath}")
+            if is_archive_file(fullpath):
+                album_folder = Path(fullpath)
+            else:
+                album_folder = album_folders_from_track_paths([fullpath])[0]
         except IndexError:
             log.debug(f"File change at {fullpath} but is no album_folder")
             return
 
         album_folder_key = str(album_folder.resolve())
+        log.debug(album_folder_key)
 
         task = asyncio.create_task(self.task_func(album_folder))
+        log.debug(task)
         if current := self.debounce.get(album_folder_key, None):
             try:
                 current.cancel()
@@ -176,7 +184,10 @@ async def auto_tag(path: Path, inbox_kind: str | None = None):
             log.error(f"Unknown autotagging kind {inbox_kind} for {path}")
             return
 
-    folder = Folder.from_path(path)
+    if is_archive_file(path):
+        folder = Archive.from_path(path)
+    else:
+        folder = Folder.from_path(path)
 
     # check if we have a session for this folder already.
     # if so, skip imports but update the previews.

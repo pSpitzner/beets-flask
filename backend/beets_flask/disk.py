@@ -295,6 +295,16 @@ def all_album_folders(root_dir: Path | str, subdirs: bool = False) -> List[Path]
             else:
                 folders.append(paths[0])
 
+    # albums_in_dir is a native beets function, which we want to keep.
+    # But it currently does not yield archives.
+    # TODO: Better solution than to search all files again would be to integrate
+    # out archive logic into albums_in_dir.
+    for path in root_dir.glob("**/*"):
+        if is_archive_file(path):
+            # Something to decide: add zip as album, even if already in an album folder?
+            # if not is_album_folder(path.parent):
+            folders.append(path.resolve().as_posix().encode("utf-8"))
+
     return [Path(f.decode("utf-8")) for f in folders]
 
 
