@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Upcoming - Unreleased
 
+### Fixed
+
+- Fixed search results not showing [#161](https://github.com/pSpitzner/beets-flask/issues/161)) 
+
+
+
 ## [1.0.2] - 25-07-21
 
 ### Fixed

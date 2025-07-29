@@ -47,6 +47,7 @@ function SearchPage() {
                     paddingTop: theme.spacing(1),
                     paddingInline: theme.spacing(1),
                     minHeight: "100%",
+                    height: "100%",
                     // styling for code blocks
                     code: {
                         backgroundColor: "#212529",
