@@ -180,7 +180,6 @@ function deleteFromFolder(
 
 export function* walkFolder(folder: Folder): Generator<FileSystemItem> {
     yield folder;
-    console.log("Walking folder:", folder);
     for (const child of folder.children) {
         if (child.type === "directory") {
             yield* walkFolder(child as Folder);
