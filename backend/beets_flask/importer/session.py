@@ -38,7 +38,7 @@ from beets.ui import UserError, _open_library
 from deprecated import deprecated
 
 from beets_flask.config import get_config
-from beets_flask.disk import is_album_folder, is_archive_file
+from beets_flask.disk import is_archive_file
 from beets_flask.importer.progress import Progress, ProgressState
 from beets_flask.importer.types import (
     BeetsAlbum,

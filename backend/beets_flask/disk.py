@@ -308,13 +308,27 @@ def album_folders_from_track_paths(
     return sorted(album_folders, key=lambda s: str(s).lower())
 
 
-def is_album_folder(path: Path | str | bytes):
-    if isinstance(path, Path):
-        path = str(path).encode("utf-8")
+def is_album_folder(path: Path | str):
+    """Check if a path is an album folder.
+
+    Returns true if the path is detected as an album by beets, or if it is an archive file.
+    -------
+    path : Path | str
+        The path to check, can be a folder, file or archive.
+
+    Note
+    ----
+    Except in tests, we dont use this function yet.
+    Its logic is duplicated in `all_album_folders`. (We should consolidate.)
+    """
     if isinstance(path, str):
-        path = path.encode("utf-8")
-    for paths, _ in albums_in_dir(path):
-        if path in paths:
+        path = Path(path).absolute()
+    if is_archive_file(path):
+        return True
+    for paths, items in albums_in_dir(path):
+        if all(is_archive_file(i.decode("utf-8")) for i in items):
+            continue
+        if str(path).encode("utf-8") in paths:
             return True
     return False
 
@@ -341,30 +355,34 @@ def all_album_folders(root_dir: Path | str, subdirs: bool = False) -> List[Path]
         root_dir = Path(root_dir)
 
     folders: list[bytes] = []
-    for paths, _ in albums_in_dir(root_dir.absolute()):
+    for paths, items in albums_in_dir(root_dir.absolute()):
+        # Our choice on handling archives:
+        # - archives are always simple albums. no multi-disc logic supported,
+        #   all discs need to be _inside_ the archive.
+        # - if a folder contains only archives, it will never be considered an
+        #   album folder
+        # - if a folder contains a mix of archives and music files, it will be
+        #   considered an album folder (as we think archives might be metadata or additional files e.g. cover art)
+
+        if all(is_archive_file(i.decode("utf-8")) for i in items):
+            folders.extend(items)
+            continue
+
         if subdirs:
             folders.extend(p for p in paths)
         else:
             # the top-level path is always the first in the list
             # however, there is an edgecase, if we have a rogue element in a multi-disc folder:
-            # artist/album/should_not_be_here.mp3
-            # artist/album/CD1/track.mp3
-            # artist/album/CD2/track.mp3
-            # then albums_in_dir returns [album], [CD1, CD2] so that picking the first element is wrong. we would want all 3: album, CD1 and CD2. but in this case, the parent `album` should already be in our set when we check [CD1, CD2]
+            # - artist/album/should_not_be_here.mp3
+            # - artist/album/CD1/track.mp3
+            # - artist/album/CD2/track.mp3
+            # -> then albums_in_dir returns [album], [CD1, CD2] so that picking the first element is wrong.
+            # we would want all 3: album, CD1 and CD2. but in this case, the parent `album` should already
+            # be in our set when we check [CD1, CD2]
             if os.path.dirname(paths[0]) in folders:
                 folders.extend(p for p in paths)
             else:
                 folders.append(paths[0])
-
-    # albums_in_dir is a native beets function, which we want to keep.
-    # But it currently does not yield archives.
-    # TODO: Better solution than to search all files again would be to integrate
-    # out archive logic into albums_in_dir.
-    for path in root_dir.glob("**/*"):
-        if is_archive_file(path):
-            # Something to decide: add zip as album, even if already in an album folder?
-            # if not is_album_folder(path.parent):
-            folders.append(path.resolve().as_posix().encode("utf-8"))
 
     return [Path(f.decode("utf-8")) for f in folders]
 
