@@ -183,57 +183,88 @@ function View({ sx, ...props }: BoxProps) {
         >
             {/* Header with some controls */}
             <Box
-                sx={{
+                sx={(theme) => ({
                     display: "flex",
                     gap: 4,
                     width: "100%",
                     padding: 2,
-                }}
+                    [theme.breakpoints.down(500)]: {
+                        flexDirection: "column",
+                        alignItems: "flex-start",
+                        gap: 2,
+                    },
+                })}
             >
                 <Search
                     loading={isPending}
-                    sx={{
+                    sx={(theme) => ({
                         mr: "auto",
                         minHeight: "unset",
                         height: "100%",
+
                         input: { height: "100%", p: 0 },
                         ".MuiInputBase-root": {
                             height: "100%",
                         },
-                    }}
+                        [theme.breakpoints.down(500)]: {
+                            width: "100%",
+                            minHeight: "44px",
+                        },
+                    })}
                     value={search}
                     setValue={(newQuery: string) => {
                         setSearch(newQuery);
                     }}
                 />
-                <SortToggle
-                    value={{
-                        value: queryState.orderBy,
-                        direction: queryState.orderDirection,
-                    }}
-                    setValue={(newSort: CurrentSort) => {
-                        setQueryState({
-                            ...queryState,
-                            orderBy: newSort.value as "album" | "albumartist" | "year",
-                            orderDirection: newSort.direction,
-                        });
-                    }}
-                    items={[
-                        {
-                            label: "Title",
-                            value: "album",
+                <Box
+                    sx={(theme) => ({
+                        display: "flex",
+                        columnGap: 4,
+                        height: "100%",
+                        justifyContent: "flex-end",
+                        [theme.breakpoints.down(325)]: {
+                            flexDirection: "column",
+                            alignItems: "flex-end",
+                            rowGap: 2,
+                            width: "100%",
+                            "> *": {
+                                height: "44px",
+                            },
                         },
-                        {
-                            label: "Artist",
-                            value: "albumartist",
-                        },
-                        {
-                            label: "Year",
-                            value: "year",
-                        },
-                    ]}
-                />
-                <ViewToggle view={view} setView={setView} />
+                    })}
+                >
+                    <SortToggle
+                        value={{
+                            value: queryState.orderBy,
+                            direction: queryState.orderDirection,
+                        }}
+                        setValue={(newSort: CurrentSort) => {
+                            setQueryState({
+                                ...queryState,
+                                orderBy: newSort.value as
+                                    | "album"
+                                    | "albumartist"
+                                    | "year",
+                                orderDirection: newSort.direction,
+                            });
+                        }}
+                        items={[
+                            {
+                                label: "Title",
+                                value: "album",
+                            },
+                            {
+                                label: "Artist",
+                                value: "albumartist",
+                            },
+                            {
+                                label: "Year",
+                                value: "year",
+                            },
+                        ]}
+                    />
+                    <ViewToggle view={view} setView={setView} />
+                </Box>
             </Box>
             {/* table */}
             <Box
