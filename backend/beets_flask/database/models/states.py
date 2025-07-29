@@ -95,7 +95,6 @@ class FolderInDb(Base):
     def to_live_folder(self) -> Folder:
         """Recreate the live Folder object from its stored version in the db."""
         return Folder(
-            type="directory",
             children=[],
             full_path=self.full_path,
             hash=self.hash,

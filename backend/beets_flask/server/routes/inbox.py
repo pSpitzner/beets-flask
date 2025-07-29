@@ -17,7 +17,7 @@ from beets_flask.disk import (
     Folder,
     dir_files,
     dir_size,
-    is_archive_file,
+    fs_item_from_path,
     path_to_folder,
 )
 from beets_flask.importer.progress import Progress
@@ -106,12 +106,12 @@ async def get_folder():
     if folder is None and folder_path is not None:
         try:
             folder_path = Path(folder_path).resolve()
-            if folder_path.is_dir():
-                # If the path is absolute, we can create the folder directly
-                folder = Folder.from_path(folder_path, subdirs=False)
-            elif is_archive_file(folder_path):
-                # Archive support
-                folder = Archive.from_path(folder_path)
+            # If the path is absolute, we can create the folder directly
+            _folder = fs_item_from_path(folder_path, subdirs=False)
+            assert isinstance(_folder, (Folder, Archive)), (
+                "Path must be a folder or archive"
+            )
+            folder = _folder
         except FileNotFoundError:
             # Try to lookup in db, maybe folder doesn't exist anymore?
             with db_session_factory() as session:

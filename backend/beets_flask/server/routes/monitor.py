@@ -1,6 +1,6 @@
 from quart import Blueprint
 from rq.job import Job
-from rq.worker import BaseWorker, Worker
+from rq.worker import Worker
 
 from beets_flask.redis import queues, redis_conn
 
@@ -46,7 +46,7 @@ async def get_worker_status():
         dict: A dictionary containing the status of each worker.
 
     """
-    workers: list[BaseWorker] = Worker.all(connection=redis_conn)
+    workers: list[Worker] = Worker.all(connection=redis_conn)
 
     ret_dict = {}
     for w in workers:
