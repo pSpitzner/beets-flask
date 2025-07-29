@@ -14,7 +14,7 @@ import { Link } from "@tanstack/react-router";
 
 import { useConfig } from "@/api/config";
 import { sessionQueryOptions, statusQueryOptions } from "@/api/session";
-import { Archive, Folder, FolderStatus, Progress } from "@/pythonTypes";
+import { Folder, FolderStatus, Progress } from "@/pythonTypes";
 
 import { FolderStatusIcon, PenaltyTypeIcon, SourceTypeIconWithTooltip } from "./icons";
 
@@ -153,10 +153,7 @@ export function MatchChip({
 
 /** Shows a chip if the candidate is a duplicate.
  */
-export function DuplicateChip({
-    folder,
-    ...props
-}: { folder: Folder | Archive } & ChipProps) {
+export function DuplicateChip({ folder, ...props }: { folder: Folder } & ChipProps) {
     const theme = useTheme();
     const { data: session } = useQuery(
         sessionQueryOptions({ folderPath: folder.full_path })
@@ -196,10 +193,7 @@ export function DuplicateChip({
 /** Shows the current import status of the
  * folder.
  */
-export function FolderStatusChip({
-    folder,
-    ...props
-}: { folder: Folder | Archive } & ChipProps) {
+export function FolderStatusChip({ folder, ...props }: { folder: Folder } & ChipProps) {
     const { data: statuses } = useQuery(statusQueryOptions);
     const theme = useTheme();
 
@@ -264,7 +258,7 @@ export function FolderStatusChip({
 export function BestCandidateChip({
     folder,
     ...props
-}: { folder: Folder | Archive } & ChipProps) {
+}: { folder: Folder } & ChipProps) {
     // FIXME: Fetching the full session here is kinda overkill
     // Only use path here, and
     // TODO: add hash inconsistency warning badge!
@@ -295,10 +289,7 @@ export function BestCandidateChip({
  *
  * This may happen if new files are added or content changed.
  */
-export function HashMismatchChip({
-    folder,
-    ...props
-}: { folder: Folder | Archive } & ChipProps) {
+export function HashMismatchChip({ folder, ...props }: { folder: Folder } & ChipProps) {
     const theme = useTheme();
     const { data: session } = useQuery(
         sessionQueryOptions({ folderPath: folder.full_path })

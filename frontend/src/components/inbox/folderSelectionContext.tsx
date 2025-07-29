@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useState } from "react";
 
-import { Archive, Folder } from "@/pythonTypes";
+import { Folder } from "@/pythonTypes";
 
 /* --------------------------------- Context -------------------------------- */
 // Allows to trigger actions on a single or multiple folders
@@ -11,8 +11,8 @@ export interface FolderSelectionContext {
         hashes: Array<Folder["hash"]>;
         paths: Array<Folder["full_path"]>;
     };
-    toggleSelect(folder: Folder | Archive): void;
-    isSelected(folder: Folder | Archive): boolean;
+    toggleSelect(folder: Folder): void;
+    isSelected(folder: Folder): boolean;
     deselectAll(): void;
 }
 
@@ -34,7 +34,7 @@ export function FolderSelectionProvider({ children }: { children: React.ReactNod
         paths: Folder["full_path"][];
     }>({ hashes: [], paths: [] });
 
-    const toggleSelect = (folder: Folder | Archive) => {
+    const toggleSelect = (folder: Folder) => {
         setSelected((selected) => {
             if (selected.hashes.includes(folder.hash)) {
                 const idx = selected.hashes.indexOf(folder.hash);
@@ -56,7 +56,7 @@ export function FolderSelectionProvider({ children }: { children: React.ReactNod
     };
 
     const isSelected = useCallback(
-        (folder: Folder | Archive) => selected.hashes.includes(folder.hash),
+        (folder: Folder) => selected.hashes.includes(folder.hash),
         [selected]
     );
 

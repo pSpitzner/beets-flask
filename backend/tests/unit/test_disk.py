@@ -1,6 +1,5 @@
 import os
 import shutil
-import zipfile
 from pathlib import Path
 
 import pytest
@@ -99,19 +98,6 @@ def s_base(tmpdir_factory):
     touch(os.path.join(base, "artist/album_good/track_1.mp3"))
     touch(os.path.join(base, "artist/album_good/track_2.mp3"))
 
-    # Archive, needs to be an actual zip file, just touching is not enough for the beets' internal archive detection
-    os.makedirs(os.path.join(base, "artist/archive"))
-    with zipfile.ZipFile(os.path.join(base, "artist/archive/foo.zip"), "w") as _zipf:
-        pass
-
-    # Dir with archive and music files
-    os.makedirs(os.path.join(base, "artist/archive_and_music"))
-    touch(os.path.join(base, "artist/archive_and_music/track_1.mp3"))
-    with zipfile.ZipFile(
-        os.path.join(base, "artist/archive_and_music/foo.zip"), "w"
-    ) as _zipf:
-        pass
-
     yield base
 
     shutil.rmtree(base)
@@ -123,7 +109,7 @@ from beets_flask.disk import is_album_folder
 class TestIsAlbumFolder:
     @pytest.mark.parametrize(
         "type",
-        [Path, str],
+        [Path, str, lambda x: str(x).encode("utf-8")],
     )
     def test_folder_empty(self, type, s_base):
         p = type(s_base + "/artist/album_empty")
@@ -131,7 +117,7 @@ class TestIsAlbumFolder:
 
     @pytest.mark.parametrize(
         "type",
-        [Path, str],
+        [Path, str, lambda x: str(x).encode("utf-8")],
     )
     def test_folder_good(self, type, s_base):
         p = type(s_base + "/artist/album_good")
@@ -151,17 +137,6 @@ class TestIsAlbumFolder:
         assert is_album_folder(s_base + "/artist/album_rogue/CD1")
         assert is_album_folder(s_base + "/artist/album_rogue/CD2")
 
-    def test_archive(self, s_base):
-        assert is_album_folder(s_base + "/artist/archive") == False
-        assert is_album_folder(s_base + "/artist/archive/foo.zip")
-
-    @pytest.mark.skip("is_album_folder tricky logic for archive and music")
-    # but this is desired behaviour. revisit when consolidating
-    # `is_album_folder` and `all_album_folders`
-    def test_archive_and_music(self, s_base):
-        assert is_album_folder(s_base + "/artist/archive_and_music")
-        assert is_album_folder(s_base + "/artist/archive_and_music/foo.zip") == False
-
 
 class TestAllAlbumFolders:
     @pytest.mark.parametrize(
@@ -178,11 +153,6 @@ class TestAllAlbumFolders:
             type(s_base + "/artist/album_rogue"),
             type(s_base + "/artist/album_rogue/CD1"),
             type(s_base + "/artist/album_rogue/CD2"),
-            # Archive is detected as an album folder
-            type(s_base + "/artist/archive/foo.zip"),
-            # Archive and music is detected as an album folder
-            # the archive inside is not
-            type(s_base + "/artist/archive_and_music"),
         ]
 
         found_folders = all_album_folders(s_base)
@@ -205,19 +175,12 @@ class TestAllAlbumFolders:
             type(s_base + "/artist/album_rogue"),
             type(s_base + "/artist/album_rogue/CD1"),
             type(s_base + "/artist/album_rogue/CD2"),
-            # archives count as directories (album folders).
-            type(s_base + "/artist/archive/foo.zip"),
-            # Archive and music is detected as an album folder
-            type(s_base + "/artist/archive_and_music"),
         ]
 
         found_folders = all_album_folders(s_base, subdirs=True)
         expected_folders = [Path(p) for p in all_albums_with_subdirs]
 
         assert set(found_folders) == set(expected_folders)
-
-    # All zips in folder -> parent not album
-    # One zip + other filers -> parent is album
 
 
 class TestIsWithinMultiDir:
@@ -235,7 +198,6 @@ class TestIsWithinMultiDir:
         assert is_within_multi_dir(type(s_base + "/artist/album_rogue/CD2"))
         assert not is_within_multi_dir(type(s_base + "/artist/album_multi/"))
         assert not is_within_multi_dir(type(s_base + "/artist/album_good/"))
-        assert not is_within_multi_dir(type(s_base + "/artist/archive/foo.zip"))
 
 
 # input, use_parent_for_multidisc, expected

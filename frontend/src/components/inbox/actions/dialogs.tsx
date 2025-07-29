@@ -97,7 +97,6 @@ const DeleteImportedFoldersDialog = ({
                             >
                                 <FolderTypeIcon
                                     isAlbum={f.is_album}
-                                    isArchive={f.type === "archive"}
                                     isOpen={false}
                                     size={theme.iconSize.md}
                                 />

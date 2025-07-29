@@ -3,9 +3,6 @@
  * For more information, see:
  * https://github.com/semohr/py2ts
  */
-export type File = FileSystemItem;
-
-
 export interface SerializedSessionState {
 	id: string;
 	created_at: Date;
@@ -68,17 +65,17 @@ export interface FolderStatusUpdate {
 	event: "folder_status_update";
 }
 
-export interface Folder extends FileSystemItem {
-	children: Array<FileSystemItem>;
+export interface Folder {
+	type: "directory";
+	children: Array<File | Folder>;
+	full_path: string;
+	hash: string;
+	is_album: boolean;
 }
 
 export interface FileSystemUpdate {
 	exc: SerializedException | null;
 	event: "file_system_update";
-}
-
-export interface Archive extends FileSystemItem {
-	is_album: boolean;
 }
 
 export interface AlbumResponseMinimalExpanded {
@@ -304,11 +301,9 @@ export interface ItemInfo extends MusicInfo {
 	format: null | string;
 }
 
-export interface FileSystemItem {
-	type: "archive" | "directory" | "file";
+export interface File {
+	type: "file";
 	full_path: string;
-	hash: string;
-	is_album: boolean;
 }
 
 export interface AlbumSource {

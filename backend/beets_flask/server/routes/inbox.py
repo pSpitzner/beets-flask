@@ -12,14 +12,7 @@ from tinytag import TinyTag
 
 from beets_flask.database import db_session_factory
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
-from beets_flask.disk import (
-    Archive,
-    Folder,
-    dir_files,
-    dir_size,
-    fs_item_from_path,
-    path_to_folder,
-)
+from beets_flask.disk import Folder, dir_files, dir_size, path_to_folder
 from beets_flask.importer.progress import Progress
 from beets_flask.server.exceptions import InvalidUsageException, NotFoundException
 from beets_flask.server.routes.library.artwork import send_image
@@ -79,7 +72,7 @@ async def get_folder():
             f"Only absolute paths are allowed. Got: {folder_path=}"
         )
 
-    folder: Folder | Archive | None = None
+    folder: Folder | None = None
 
     # If a hash is provided, try to get the folder from the inbox cache first
     # If this fails, try to get from db
@@ -87,7 +80,7 @@ async def get_folder():
         inbox_folders = get_inbox_folders()
         for inbox_folder in inbox_folders:
             for f in path_to_folder(inbox_folder, subdirs=False).walk():
-                if isinstance(f, (Folder, Archive)) and f.hash == folder_hash:
+                if isinstance(f, Folder) and f.hash == folder_hash:
                     folder = f
                     break
 
@@ -106,12 +99,7 @@ async def get_folder():
     if folder is None and folder_path is not None:
         try:
             folder_path = Path(folder_path).resolve()
-            # If the path is absolute, we can create the folder directly
-            _folder = fs_item_from_path(folder_path, subdirs=False)
-            assert isinstance(_folder, (Folder, Archive)), (
-                "Path must be a folder or archive"
-            )
-            folder = _folder
+            folder = Folder.from_path(folder_path, subdirs=False)
         except FileNotFoundError:
             # Try to lookup in db, maybe folder doesn't exist anymore?
             with db_session_factory() as session:

@@ -6,7 +6,7 @@
 
 import { UseMutationOptions } from "@tanstack/react-query";
 
-import type { FileSystemItem, Folder, InboxStats } from "@/pythonTypes";
+import type { File, Folder, InboxStats } from "@/pythonTypes";
 
 import { APIError, queryClient } from "./common";
 
@@ -156,7 +156,7 @@ export const deleteFoldersMutationOptions: UseMutationOptions<
 function deleteFromFolder(
     hashes: string[],
     paths: string[],
-    folders: FileSystemItem[]
+    folders: (Folder | File)[]
 ) {
     // break recursion
     if (folders.length === 0) {
@@ -173,16 +173,16 @@ function deleteFromFolder(
             folders.splice(i, 1);
             i--;
         } else if (f.type === "directory") {
-            deleteFromFolder(hashes, paths, (f as Folder).children);
+            deleteFromFolder(hashes, paths, f.children);
         }
     }
 }
 
-export function* walkFolder(folder: Folder): Generator<FileSystemItem> {
+export function* walkFolder(folder: Folder): Generator<Folder | File> {
     yield folder;
     for (const child of folder.children) {
         if (child.type === "directory") {
-            yield* walkFolder(child as Folder);
+            yield* walkFolder(child);
         } else {
             yield child;
         }

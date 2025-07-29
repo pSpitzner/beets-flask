@@ -18,9 +18,8 @@ import { useQuery } from "@tanstack/react-query";
 import { createLink, useParams, useRouter } from "@tanstack/react-router";
 
 import { APIError } from "@/api/common";
-import { walkFolder } from "@/api/inbox";
 import { sessionQueryOptions } from "@/api/session";
-import { Archive, Folder } from "@/pythonTypes";
+import { Folder } from "@/pythonTypes";
 
 import { CardHeader } from "./common";
 
@@ -37,7 +36,7 @@ import { RetagButtonGroup } from "../actions/buttons";
  * Allows to trigger a retagging of the folder.
  * -> no session found
  */
-export function FolderCard({ folder }: { folder: Folder | Archive }) {
+export function FolderCard({ folder }: { folder: Folder }) {
     const urlParams = useParams({ strict: false });
 
     const {
@@ -82,9 +81,7 @@ export function FolderCard({ folder }: { folder: Folder | Archive }) {
     const showNoSessionWarning =
         prevError instanceof APIError && prevError.name == "NotFoundException";
 
-    const isArchive = folder.type === "archive";
-    const isAlbum = !isArchive && folder.is_album;
-    const counts = !isArchive && countFilesFolders(folder as Folder);
+    const counts = countFilesFolders(folder);
 
     return (
         <Card
@@ -102,16 +99,10 @@ export function FolderCard({ folder }: { folder: Folder | Archive }) {
                 subtitle={urlParams.hash ?? folder.hash}
             >
                 <Box sx={{ ml: "auto", alignSelf: "flex-start" }}>
-                    {counts != false ? (
-                        <Typography variant="caption" component="div" textAlign="right">
-                            Includes {counts.nFiles} files <br /> in {counts.nFolders}{" "}
-                            folders
-                        </Typography>
-                    ) : (
-                        <Typography variant="caption" component="div" textAlign="right">
-                            Archive
-                        </Typography>
-                    )}
+                    <Typography variant="caption" component="div" textAlign="right">
+                        Includes {counts.nFiles} files <br /> in {counts.nFolders}{" "}
+                        folders
+                    </Typography>
                 </Box>
             </CardHeader>
             {showHashWarning || showNoSessionWarning ? <Divider /> : null}
@@ -131,7 +122,7 @@ export function FolderCard({ folder }: { folder: Folder | Archive }) {
                     folderHash={urlParams.hash ?? folder.hash}
                 />
             )}
-            {!isAlbum && !isArchive && <NoAlbumWarning />}
+            {!folder.is_album && <NoAlbumWarning />}
         </Card>
     );
 }
@@ -383,22 +374,26 @@ function NoSessionFound({
 
 const Link = createLink(MuiLink);
 
-function countFilesFolders(folder: Folder) {
-    const counts = {
-        nFolders: 0,
-        nFiles: 0,
-        nArchives: 0,
-    };
-
-    for (const child of walkFolder(folder)) {
-        if (child.type === "directory") {
-            counts.nFolders += 1;
-        } else if (child.type === "file") {
-            counts.nFiles += 1;
-        } else if (child.type === "archive") {
-            counts.nArchives += 1;
-        }
+function countFilesFolders(
+    folder: Folder,
+    s_acc: { nFolders: number; nFiles: number } | undefined = undefined
+) {
+    if (folder.children.length === 0) {
+        return {
+            nFolders: 1,
+            nFiles: 0,
+        };
     }
-
-    return counts;
+    return folder.children.reduce(
+        (acc, child) => {
+            if (child.type === "file") {
+                acc["nFiles"] += 1;
+            } else {
+                acc["nFolders"] += 1;
+                acc = countFilesFolders(child, acc);
+            }
+            return acc;
+        },
+        s_acc || { nFolders: 1, nFiles: 0 }
+    );
 }

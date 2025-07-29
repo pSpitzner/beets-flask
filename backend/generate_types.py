@@ -1,6 +1,5 @@
 from py2ts.builder import TSBuilder
 
-from beets_flask.disk import Archive, File, FileSystemItem, Folder
 from beets_flask.importer.states import (
     SerializedSessionState,
 )
@@ -9,7 +8,7 @@ from beets_flask.invoker.enqueue import (
     CandidateChoiceFallback,
     Search,
 )
-from beets_flask.server.routes.inbox import InboxStats
+from beets_flask.server.routes.inbox import Folder, InboxStats
 from beets_flask.server.routes.library.resources import (
     AlbumResponse,
     AlbumResponseExpanded,
@@ -40,9 +39,6 @@ builder.add(SerializedSessionState)
 # ------------------------------- inbox routes ------------------------------- #
 
 # Folder
-builder.add(FileSystemItem)
-builder.add(File)
-builder.add(Archive)
 builder.add(Folder)
 builder.add(InboxStats)
 

@@ -65,29 +65,4 @@ def dirhash_c(
     return hash.digest()
 
 
-def archive_hash(
-    f_path: str | Path,
-    cache: Optional[Cache[str, bytes]] = None,
-) -> bytes:
-    """Compute a hash for an archive file."""
-
-    if isinstance(f_path, Path):
-        f_path = str(f_path.resolve())
-
-    if cache is not None and f_path in cache:
-        return cache[f_path]
-
-    hash = md5()
-    fs = os.stat(f_path)
-    hash.update(fs.st_size.to_bytes(8, byteorder="big"))
-    hash.update(fs.st_ino.to_bytes(8, byteorder="big"))
-    hash.update(str(fs.st_mtime).encode())
-    hash.update(os.path.basename(f_path).encode())
-
-    if cache is not None:
-        cache[f_path] = hash.digest()
-
-    return hash.digest()
-
-
-__all__ = ["dirhash_c", "archive_hash"]
+__all__ = ["dirhash_c"]

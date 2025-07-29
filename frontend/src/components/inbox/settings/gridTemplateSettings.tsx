@@ -313,7 +313,7 @@ function ExampleCol({ name }: { name: GridColumn["name"] }) {
                     />
                     {expanded && (
                         <FileComponent
-                            file={dummyFolder.children[0]}
+                            file={dummyFolder.children[0] as File}
                             level={1}
                         />
                     )}

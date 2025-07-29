@@ -5,7 +5,6 @@ flows may be triggered from the frontend by the users and we want to ensure that
 has a well defined path to follow.
 """
 
-import re
 from abc import ABC
 from codecs import ascii_encode
 from pathlib import Path
@@ -83,31 +82,24 @@ class SendStatusMockMixin(ABC):
 class TestPreview(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin):
     """Test generating previews.
 
-    Minimal test to ensure that the preview flow works as expected.
-    - uses a valid album path
-    - uses an archive file
+    - should add candidates
+    - should respect grouping of albums to get split into multiple tasks
+    - should respect auto-tagging on/off
     """
 
-    @pytest.fixture(
-        params=[
-            VALID_PATHS[0],
-            "1991.zip",
-        ]
-    )
-    def path(self, request) -> Path:
-        path = album_path_absolute(request.param)
+    @pytest.fixture()
+    def path(self) -> Path:
+        path = album_path_absolute(VALID_PATHS[0])
         use_mock_tag_album(str(path))
         return path
 
     @pytest.fixture()
-    async def test_preview(
-        self,
-        db_session: Session,
-        path,
-    ):
-        self.statuses = []
-        self.reset_database()
+    def path_multiple_tasks_flat(self) -> Path:
+        path = album_path_absolute("multi_flat")
+        use_mock_tag_album(str(path))
+        return path
 
+    async def test_preview(self, db_session: Session, path: Path):
         stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
         assert db_session.execute(stmt).scalar() is None, (
             "Database should be empty before the test"
@@ -116,7 +108,7 @@ class TestPreview(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixi
         exc = await run_preview(
             "obsolete_hash_preview",
             str(path),
-            group_albums=None,
+            group_albums=False,
             autotag=True,
         )
 
@@ -153,19 +145,6 @@ class TestPreview(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixi
 
             assert c._mapping is not None, "Candidate should have a mapping"
 
-
-class TestPreviewMultipleTasks(
-    SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
-):
-    """Test generating previews with multiple tasks."""
-
-    @pytest.fixture()
-    def path(self) -> Path:
-        path = album_path_absolute("multi_flat")
-        use_mock_tag_album(str(path))
-        return path
-
-    @pytest.fixture()
     @pytest.mark.parametrize(
         "group_albums, expected_tasks",
         [
@@ -177,14 +156,13 @@ class TestPreviewMultipleTasks(
     async def test_preview_grouped(
         self,
         db_session: Session,
-        path: Path,
+        path_multiple_tasks_flat: Path,
         group_albums: bool,
         expected_tasks: int,
         autotag: bool,
     ):
-        self.statuses = []
         self.reset_database()
-
+        self.statuses = []
         stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
         assert db_session.execute(stmt).scalar() is None, (
             "Database should be empty before the test"
@@ -192,7 +170,7 @@ class TestPreviewMultipleTasks(
 
         exc = await run_preview(
             "obsolete_hash_preview",
-            str(path),
+            str(path_multiple_tasks_flat),
             group_albums=group_albums,
             autotag=autotag,
         )
@@ -212,12 +190,12 @@ class TestPreviewMultipleTasks(
         s_state_indb = db_session.execute(select(SessionStateInDb)).scalar()
 
         assert s_state_indb is not None
-        assert s_state_indb.folder.full_path == str(path)
+        assert s_state_indb.folder.full_path == str(path_multiple_tasks_flat)
 
         # Check preview content is correct
         s_state_live = s_state_indb.to_live_state()
         assert s_state_live is not None
-        assert s_state_live.folder_path == path
+        assert s_state_live.folder_path == path_multiple_tasks_flat
         assert len(s_state_live.task_states) == expected_tasks
         assert s_state_live.tasks[0].old_paths is None
 
