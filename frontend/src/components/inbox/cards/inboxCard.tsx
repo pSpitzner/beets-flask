@@ -254,7 +254,12 @@ function InboxCardContent() {
                 <InboxGridHeader inboxFolderConfig={folderConfig} />
                 {inbox.children.map((child) => {
                     if (child.type === "directory") {
-                        return <FolderComponent key={child.hash} folder={child} />;
+                        return (
+                            <FolderComponent
+                                key={child.hash}
+                                folder={child as Folder}
+                            />
+                        );
                     }
                     if (child.type === "archive") {
                         return <ArchiveComponent key={child.hash} archive={child} />;

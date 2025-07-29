@@ -1,7 +1,9 @@
+import { useMemo } from "react";
 import { Box } from "@mui/material";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
+import { walkFolder } from "@/api/inbox";
 import { FolderComponent } from "@/components/sessiondraft/comps";
 import { Folder } from "@/pythonTypes";
 
@@ -22,7 +24,15 @@ export const Route = createFileRoute("/sessiondraft/")({
 
 function RouteComponent() {
     const { data } = useSuspenseQuery(inboxQueryOptions());
-    const flat = _unpack_tree(data[0]);
+    const flat = useMemo(() => {
+        const folders = [];
+        for (const item of walkFolder(data[0])) {
+            if (item.type === "directory") {
+                folders.push(item as Folder);
+            }
+        }
+        return folders;
+    }, [data]);
 
     return (
         <Box
@@ -41,20 +51,4 @@ function RouteComponent() {
             ))}
         </Box>
     );
-}
-
-function _unpack_tree(root: Folder) {
-    const flat: Folder[] = [];
-
-    function unpack(folder: Folder) {
-        flat.push(folder);
-        for (const child of Object.values(folder.children)) {
-            if (child.type === "directory") {
-                unpack(child);
-            }
-        }
-    }
-
-    unpack(root);
-    return flat;
 }

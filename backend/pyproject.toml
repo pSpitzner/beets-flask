@@ -31,7 +31,7 @@ dependencies = [
     "uvicorn>=0.34.0",
     # beets plugin dependencies
     "pylast>=5.2.0",
-    "py2ts @ git+https://github.com/semohr/py2ts.git@v0.3.1",
+    "py2ts @ git+https://github.com/semohr/py2ts.git@v0.4.1",
     #"scantree>=0.0.4",
     "natsort",
     "tinytag",

@@ -5,46 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 25-07-29
+
+### Added
+
+-   Support for importing archives `zip` and `tar` files. Support for `rar` and `7z` files can be added via custom startup and requirements files. See the [FAQ](https://beets-flask.readthedocs.io/latest/faq.html) for more information.
+
+### Dependencies
+
+-   Updated `py2ts` to version `0.4.1`
+
 ## [1.0.3] - 25-07-29
 
 ### Fixed
 
-- Fixed search results not showing [#161](https://github.com/pSpitzner/beets-flask/issues/161)) 
-- Fixed search box not clickable on small screens [#162](https://github.com/pSpitzner/beets-flask/issues/162)
+-   Fixed search results not showing [#161](https://github.com/pSpitzner/beets-flask/issues/161)) 
+-   Fixed search box not clickable on small screens [#162](https://github.com/pSpitzner/beets-flask/issues/162)
 
 ## [1.0.2] - 25-07-21
 
 ### Fixed
 
-- Artists separators were not regex escaped correctly, leading to issues with artists containing special characters. Additionally an empty list of separators was not handled correctly. [#159](https://github.com/pSpitzner/beets-flask/issues/159)
+-   Artists separators were not regex escaped correctly, leading to issues with artists containing special characters. Additionally an empty list of separators was not handled correctly. [#159](https://github.com/pSpitzner/beets-flask/issues/159)
 
-### Added
-
-- Support for importing archives `zip` and `tar` files. Support for `rar` and `7z` files can be added via custom startup and requirements files. See the [FAQ](https://beets-flask.readthedocs.io/latest/faq.html) for more information.
 
 ## [1.0.1] - 25-07-17
 
 ### Added
 
-- Configuration option for artist separator characters `gui.library.artist_separator`
-- Docs subpage for configuration (including content)
-- `typing_extensions` is now a dependency, to allow for more typing features
-- The model api routes now allows for `DELETE` requests to delete resources by id. Not used yet but will be helpful for future features.
+-   Configuration option for artist separator characters `gui.library.artist_separator`
+-   Docs subpage for configuration (including content)
+-   `typing_extensions` is now a dependency, to allow for more typing features
+-   The model api routes now allows for `DELETE` requests to delete resources by id. Not used yet but will be helpful for future features.
 
 ### Fixed
 
-- Styling of candidate overview (major changes were not colored)
-- For bootlegs, display of track changes after import no longer broken
-- Navigating from inbox into folder details no longer toggles selection.
-- Padding issue where navbar could block content on mobile.
-- Cache invalidation now triggers on delete folder in frontend [#138](https://github.com/pSpitzner/beets-flask/issues/138)
-- In albums and items view the clicking on artists does not return any results if the contained a separator character (e.g. `&`) [#132](https://github.com/pSpitzner/beets-flask/issues/138)
-- Cleanup old actions.tsx file, which included old unused code [#134](https://github.com/pSpitzner/beets-flask/issues/134)
-- The `cli_exit` event is now triggered after the import task is finished. This adds compatibility with some plugins which expected this event to be triggered after the import task is done. [#154](https://github.com/pSpitzner/beets-flask/issues/154).
+-   Styling of candidate overview (major changes were not colored)
+-   For bootlegs, display of track changes after import no longer broken
+-   Navigating from inbox into folder details no longer toggles selection.
+-   Padding issue where navbar could block content on mobile.
+-   Cache invalidation now triggers on delete folder in frontend [#138](https://github.com/pSpitzner/beets-flask/issues/138)
+-   In albums and items view the clicking on artists does not return any results if the contained a separator character (e.g. `&`) [#132](https://github.com/pSpitzner/beets-flask/issues/138)
+-   Cleanup old actions.tsx file, which included old unused code [#134](https://github.com/pSpitzner/beets-flask/issues/134)
+-   The `cli_exit` event is now triggered after the import task is finished. This adds compatibility with some plugins which expected this event to be triggered after the import task is done. [#154](https://github.com/pSpitzner/beets-flask/issues/154).
 
 ### Changed
 
-- Created `types.py` file to hold custom sqlalchemy types, and moved `IntDictType` there.
+-   Created `types.py` file to hold custom sqlalchemy types, and moved `IntDictType` there.
 
 ## [1.0.0] - 25-07-06
 
@@ -156,7 +163,9 @@ Small version bump with fixes before jumping to 1.0.0.
 
 -   initial commit
 
-[1.0.3]: https://github.com/pSpitzner/beets-flask/compare/v1.0.1...v1.0.3
+
+[1.1.0]: https://github.com/pSpitzner/beets-flask/compare/v1.0.3...v1.1.0
+[1.0.3]: https://github.com/pSpitzner/beets-flask/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/pSpitzner/beets-flask/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/pSpitzner/beets-flask/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/pSpitzner/beets-flask/compare/v0.1.0...v1.0.0
