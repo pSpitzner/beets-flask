@@ -202,7 +202,10 @@ class BaseSession(importer.ImportSession, ABC):
         if not state.path.exists():
             raise FileNotFoundError(f"Path {state.path} does not exist.")
         if state.path.is_file() and not is_archive_file(state.path):
-            raise ValueError(f"Path {state.path} is not an archive file.")
+            raise ValueError(
+                f"Path {state.path} is not an archive file. "
+                + "Importing singletons is not supported yet."
+            )
 
         # FIXME: This is a super bad convention of the original beets.
         # We do not want to pollute a global config object every time a session runs.
