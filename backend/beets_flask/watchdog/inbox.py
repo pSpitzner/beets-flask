@@ -120,10 +120,7 @@ class InboxHandler(AIOEventHandler):
             return
 
         album_folder_key = str(album_folder.resolve())
-        log.debug(album_folder_key)
-
         task = asyncio.create_task(self.task_func(album_folder))
-        log.debug(task)
         if current := self.debounce.get(album_folder_key, None):
             try:
                 current.cancel()
