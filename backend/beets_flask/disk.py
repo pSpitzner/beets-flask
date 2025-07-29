@@ -81,6 +81,7 @@ def fs_item_from_path(
         return File.from_path(path, cache=cache)
 
 
+@dataclass
 class Folder(FileSystemItem):
     children: Sequence[FileSystemItem]
 

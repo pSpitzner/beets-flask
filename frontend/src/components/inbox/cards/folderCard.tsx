@@ -84,7 +84,7 @@ export function FolderCard({ folder }: { folder: Folder | Archive }) {
 
     const isArchive = folder.type === "archive";
     const isAlbum = !isArchive && folder.is_album;
-    const counts = !isArchive && countFilesFolders(folder);
+    const counts = !isArchive && countFilesFolders(folder as Folder);
 
     return (
         <Card
