@@ -46,7 +46,7 @@ async def get_worker_status():
         dict: A dictionary containing the status of each worker.
 
     """
-    workers: list[Worker] = Worker.all(connection=redis_conn)
+    workers = Worker.all(connection=redis_conn)
 
     ret_dict = {}
     for w in workers:
