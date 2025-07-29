@@ -32,7 +32,7 @@ from sqlalchemy.orm import (
 )
 
 from beets_flask.database.models.base import Base
-from beets_flask.disk import Folder
+from beets_flask.disk import Archive, Folder
 from beets_flask.importer.progress import Progress
 from beets_flask.importer.states import (
     CandidateState,
@@ -82,7 +82,7 @@ class FolderInDb(Base):
         self.is_album = is_album
 
     @classmethod
-    def from_live_folder(cls, folder: Folder) -> FolderInDb:
+    def from_live_folder(cls, folder: Folder | Archive) -> FolderInDb:
         """Create a FolderInDb object from a Folder object."""
         f_in_db = cls(
             path=folder.path,
@@ -95,7 +95,6 @@ class FolderInDb(Base):
     def to_live_folder(self) -> Folder:
         """Recreate the live Folder object from its stored version in the db."""
         return Folder(
-            type="directory",
             children=[],
             full_path=self.full_path,
             hash=self.hash,
@@ -127,7 +126,7 @@ class FolderInDb(Base):
         return Path(self.full_path)
 
     @classmethod
-    def get_current_on_disk(cls, hash: str, path: Path | str) -> Folder:
+    def get_current_on_disk(cls, hash: str, path: Path | str) -> Folder | Archive:
         """
         Check that a folders hash is still the same, as you have previously determined.
 
@@ -140,7 +139,15 @@ class FolderInDb(Base):
         from beets_flask.database.setup import db_session_factory
 
         with db_session_factory() as db_session:
-            f_on_disk = Folder.from_path(path)
+            if isinstance(path, str):
+                path = Path(path)
+            # Check if archive
+            f_on_disk: Folder | Archive
+            if path.is_dir():
+                f_on_disk = Folder.from_path(path)
+            else:
+                f_on_disk = Archive.from_path(path)
+
             f_in_db = FolderInDb.get_by(FolderInDb.id == hash, session=db_session)
             if f_in_db is None:
                 f_in_db = FolderInDb.from_live_folder(f_on_disk)
@@ -403,7 +410,7 @@ class TaskStateInDb(Base):
 
         task = cls(
             id=state.id,
-            toppath=state.task.toppath,
+            toppath=str(state.toppath).encode("utf-8") if state.toppath else None,
             paths=state.task.paths,
             items=state.task.items,
             candidates=[

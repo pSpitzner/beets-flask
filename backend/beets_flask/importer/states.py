@@ -15,7 +15,7 @@ from beets.ui import _open_library
 from deprecated import deprecated
 
 from beets_flask.config import get_config
-from beets_flask.disk import Folder
+from beets_flask.disk import Archive, Folder
 from beets_flask.importer.progress import (
     Progress,
     ProgressState,
@@ -80,7 +80,7 @@ class SessionState(BaseState):
     # should be set to none whenever the session is started
     exc: SerializedException | None = None
 
-    def __init__(self, folder: Folder | Path) -> None:
+    def __init__(self, folder: Folder | Archive | Path) -> None:
         super().__init__()
 
         # Alternate constructor is part of the SessionStateInDb class
@@ -88,7 +88,12 @@ class SessionState(BaseState):
         if isinstance(folder, str):
             folder = Path(folder)
         if isinstance(folder, Path):
-            folder = Folder.from_path(folder)
+            if folder.is_dir():
+                # If the path is a file, we assume it is an archive
+                folder = Folder.from_path(folder)
+            else:
+                folder = Archive.from_path(folder)
+
         # Why not just a folder object as member?
         # -> We do not always want to compute the children (or save them to db)
         self.folder_path = folder.path
@@ -313,7 +318,7 @@ class TaskState(BaseState):
     @property
     def toppath(self) -> Path | None:
         """Highest-level (common) folder holding music files."""
-        if self.task.toppath is not None:
+        if self.task.toppath is not None and isinstance(self.task.toppath, bytes):
             return Path(self.task.toppath.decode("utf-8"))
         return None
 

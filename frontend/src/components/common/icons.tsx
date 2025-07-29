@@ -25,6 +25,7 @@ import {
     ListChecksIcon,
     LucideProps,
     Mic2Icon,
+    PackageIcon,
     RocketIcon,
     TagIcon,
     TagsIcon,
@@ -50,8 +51,13 @@ import { PairChanges } from "../import/candidates/diff";
 export function FolderTypeIcon({
     isAlbum,
     isOpen,
+    isArchive = false,
     ...props
-}: { isAlbum: boolean; isOpen: boolean } & LucideProps) {
+}: { isAlbum: boolean; isOpen: boolean; isArchive?: boolean } & LucideProps) {
+    if (isArchive) {
+        return <PackageIcon {...props} />;
+    }
+
     if (isAlbum) {
         return (
             <Disc3Icon
