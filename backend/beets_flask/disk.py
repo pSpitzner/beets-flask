@@ -3,23 +3,27 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 from typing import (
     Iterator,
     List,
     Literal,
-    Mapping,
     Sequence,
     Set,
-    TypedDict,
 )
 
-from beets.importer import MULTIDISC_MARKERS, MULTIDISC_PAT_FMT, albums_in_dir
+from beets.importer import (
+    MULTIDISC_MARKERS,
+    MULTIDISC_PAT_FMT,
+    ArchiveImportTask,
+    albums_in_dir,
+)
 from cachetools import Cache, TTLCache, cached
 from natsort import os_sorted
 
-from beets_flask.dirhash_custom import dirhash_c
+from beets_flask.dirhash_custom import archive_hash, dirhash_c
 from beets_flask.logger import log
 from beets_flask.utility import AUDIO_EXTENSIONS
 
@@ -32,18 +36,76 @@ audio_regex = re.compile(
 
 
 @dataclass
-class Folder:
-    type: Literal["directory"]
-    children: Sequence[Folder | File]
+class FileSystemItem(ABC):
+    """Base class for file system items."""
+
+    type: Literal["file", "directory", "archive"]
     full_path: str
     hash: str
 
-    # If beets has marked this folder as an album
+    # If beets has marked this folder as an album, or, if its a file, archives can be
+    # imported. Singletons (importing music files directly) is not supported yet.
     is_album: bool
+
+    @property
+    def path(self) -> Path:
+        # For convenience, to get `full_path` as a Path object,
+        # but in the frontend and sqlite database, we use strings (full_path).
+        return Path(self.full_path)
+
+    @path.setter
+    def path(self, value: Path) -> None:
+        self.full_path = str(value)
+
+    @classmethod
+    @abstractmethod
+    def from_path(
+        cls, path: Path | str, cache: Cache[str, bytes] | None = None
+    ) -> FileSystemItem:
+        """Create a FileSystemItem object from a path."""
+        raise NotImplementedError("This method should be implemented in subclasses.")
+
+
+def fs_item_from_path(
+    path: Path | str, cache: Cache[str, bytes] | None = None, subdirs: bool = True
+) -> File | Folder | Archive:
+    """Create a _specific_ FileSystemItem from a path."""
+    if isinstance(path, str):
+        path = Path(path)
+
+    if path.is_dir():
+        return Folder.from_path(path, cache=cache, subdirs=subdirs)
+    elif is_archive_file(path):
+        return Archive.from_path(path, cache=cache)
+    else:
+        return File.from_path(path, cache=cache)
+
+
+@dataclass
+class Folder(FileSystemItem):
+    children: Sequence[FileSystemItem]
+
+    def __init__(
+        self,
+        children: Sequence[FileSystemItem],
+        full_path: str,
+        hash: str,
+        is_album: bool = False,
+    ):
+        super().__init__(
+            full_path=full_path,
+            hash=hash,
+            is_album=is_album,
+            type="directory",
+        )
+        self.children = children
 
     @classmethod
     def from_path(
-        cls, path: Path | str, subdirs=True, cache: Cache[str, bytes] | None = None
+        cls,
+        path: Path | str,
+        cache: Cache[str, bytes] | None = None,
+        subdirs=True,
     ) -> Folder:
         """Create a Folder object from a path."""
 
@@ -69,7 +131,7 @@ class Folder:
         for dirpath, dirnames, filenames in os.walk(path, topdown=False):
             # As we iterate from bottom to top, we can access the elements from
             # the lookup table as they are already created
-            children: list[Folder | File] = [
+            children: list[FileSystemItem] = [
                 lookup[os.path.join(dirpath, sub_dir)]
                 for sub_dir in os_sorted(dirnames)
             ]
@@ -81,16 +143,13 @@ class Folder:
                     continue
 
                 full_path = os.path.join(dirpath, filename)
+                # Here, we know this not a folder, so we can use fs_item_from_path.
                 children.append(
-                    File(
-                        type="file",
-                        full_path=os.path.abspath(full_path),
-                    )
+                    fs_item_from_path(path=os.path.abspath(full_path), cache=cache)
                 )
 
             # Add current directory to lookup
             lookup[dirpath] = Folder(
-                type="directory",
                 children=children,
                 full_path=os.path.abspath(dirpath),
                 hash=dirhash_c(
@@ -103,11 +162,7 @@ class Folder:
 
         return lookup[str(path)]
 
-    @property
-    def path(self) -> Path:
-        return Path(self.full_path)
-
-    def walk(self) -> Iterator[Folder | File]:
+    def walk(self) -> Iterator[FileSystemItem]:
         """Walk the folder and yield all files and folders."""
         yield self
         for child in self.children:
@@ -117,9 +172,70 @@ class Folder:
                 yield child
 
 
-class File(TypedDict):
-    type: Literal["file"]
-    full_path: str
+@dataclass
+class Archive(FileSystemItem):
+    # Defaults to true, as we assume that we can import an archive as an album
+    is_album: bool = True
+
+    def __init__(self, full_path: str, hash: str):
+        super().__init__(
+            full_path=full_path,
+            hash=hash,
+            is_album=True,  # Archives are always considered albums
+            type="archive",
+        )
+
+    @classmethod
+    def from_path(
+        cls, path: Path | str, cache: Cache[str, bytes] | None = None
+    ) -> Archive:
+        """Create an Archive object from a path."""
+        if isinstance(path, str):
+            path = Path(path)
+
+        if not is_archive_file(path):
+            raise FileNotFoundError(f"Path `{path}` is not an archive file.")
+
+        if cache is None:
+            cache = Cache(maxsize=2**16)
+
+        return cls(
+            full_path=str(path.resolve()),
+            hash=archive_hash(path, cache=cache).hex(),
+        )
+
+
+def is_archive_file(path: Path | str) -> bool:
+    """Check if a file is an archive file based on its extension."""
+    return ArchiveImportTask.is_archive(str(path))
+
+
+@dataclass
+class File(FileSystemItem):
+    def __init__(self, full_path: str):
+        super().__init__(
+            full_path=full_path,
+            hash="",  # Files do not have a hash atm (maybe later we can add a hash)
+            is_album=False,  # Files are not considered albums
+            type="file",
+        )
+
+    @classmethod
+    def from_path(
+        cls, path: Path | str, cache: Cache[str, bytes] | None = None
+    ) -> File:
+        """Create a File object from a path."""
+        if isinstance(path, str):
+            path = Path(path)
+
+        if not path.is_file():
+            raise FileNotFoundError(f"Path `{path}` is not a file.")
+
+        full_path = str(path.resolve())
+
+        return cls(
+            full_path=full_path,
+        )
 
 
 @cached(cache=TTLCache(maxsize=1024, ttl=900), info=True)
@@ -160,18 +276,20 @@ def album_folders_from_track_paths(
     """
 
     folders_to_check: Set[Path] = set()
+    album_folders: Set[Path] = set()
     for path in track_paths:
         # FIXME: For backwards compatibility, we allow a string as input
         if isinstance(path, str):
             path = Path(path)
 
-        if path.is_file():
+        if is_archive_file(path):
+            album_folders.add(path.resolve())
+        elif path.is_file():
             folders_to_check.add(path.parent.resolve())
         else:
             # just to be nice and manage directories instead of files
             folders_to_check.add(path.resolve())
 
-    album_folders: Set[Path] = set()
     for folder in folders_to_check:
         afs = all_album_folders(folder, subdirs=True)
         for af in afs:
@@ -191,13 +309,27 @@ def album_folders_from_track_paths(
     return sorted(album_folders, key=lambda s: str(s).lower())
 
 
-def is_album_folder(path: Path | str | bytes):
-    if isinstance(path, Path):
-        path = str(path).encode("utf-8")
+def is_album_folder(path: Path | str):
+    """Check if a path is an album folder.
+
+    Returns true if the path is detected as an album by beets, or if it is an archive file.
+    -------
+    path : Path | str
+        The path to check, can be a folder, file or archive.
+
+    Note
+    ----
+    Except in tests, we dont use this function yet.
+    Its logic is duplicated in `all_album_folders`. (We should consolidate.)
+    """
     if isinstance(path, str):
-        path = path.encode("utf-8")
-    for paths, _ in albums_in_dir(path):
-        if path in paths:
+        path = Path(path).absolute()
+    if is_archive_file(path):
+        return True
+    for paths, items in albums_in_dir(path):
+        if all(is_archive_file(i.decode("utf-8")) for i in items):
+            continue
+        if str(path).encode("utf-8") in paths:
             return True
     return False
 
@@ -224,16 +356,30 @@ def all_album_folders(root_dir: Path | str, subdirs: bool = False) -> List[Path]
         root_dir = Path(root_dir)
 
     folders: list[bytes] = []
-    for paths, _ in albums_in_dir(root_dir.absolute()):
+    for paths, items in albums_in_dir(root_dir.absolute()):
+        # Our choice on handling archives:
+        # - archives are always simple albums. no multi-disc logic supported,
+        #   all discs need to be _inside_ the archive.
+        # - if a folder contains only archives, it will never be considered an
+        #   album folder
+        # - if a folder contains a mix of archives and music files, it will be
+        #   considered an album folder (as we think archives might be metadata or additional files e.g. cover art)
+
+        if all(is_archive_file(i.decode("utf-8")) for i in items):
+            folders.extend(items)
+            continue
+
         if subdirs:
             folders.extend(p for p in paths)
         else:
             # the top-level path is always the first in the list
             # however, there is an edgecase, if we have a rogue element in a multi-disc folder:
-            # artist/album/should_not_be_here.mp3
-            # artist/album/CD1/track.mp3
-            # artist/album/CD2/track.mp3
-            # then albums_in_dir returns [album], [CD1, CD2] so that picking the first element is wrong. we would want all 3: album, CD1 and CD2. but in this case, the parent `album` should already be in our set when we check [CD1, CD2]
+            # - artist/album/should_not_be_here.mp3
+            # - artist/album/CD1/track.mp3
+            # - artist/album/CD2/track.mp3
+            # -> then albums_in_dir returns [album], [CD1, CD2] so that picking the first element is wrong.
+            # we would want all 3: album, CD1 and CD2. but in this case, the parent `album` should already
+            # be in our set when we check [CD1, CD2]
             if os.path.dirname(paths[0]) in folders:
                 folders.extend(p for p in paths)
             else:
@@ -308,6 +454,4 @@ def clear_cache():
     dir_files.cache.clear()  # type: ignore
 
 
-__all__ = [
-    "dir_size",
-]
+__all__ = ["dir_size", "fs_item_from_path"]

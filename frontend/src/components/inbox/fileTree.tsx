@@ -26,7 +26,7 @@ import {
     HashMismatchChip,
 } from "@/components/common/chips";
 import { FileTypeIcon, FolderTypeIcon } from "@/components/common/icons";
-import { File, Folder } from "@/pythonTypes";
+import { Archive, File, Folder } from "@/pythonTypes";
 
 import { useFolderSelectionContext } from "./folderSelectionContext";
 import { ActionButtonSettings } from "./settings/actionButtonSettings";
@@ -79,7 +79,7 @@ const GridRow = styled(Box)(({ theme }) => ({
     paddingInline: theme.spacing(0.5),
 }));
 
-/* ---------------------------- Folder & File component ---------------------------- */
+/* ---------------------------- Folder, File & Archive component ---------------------------- */
 
 const ICON_SIZE = 20;
 // TODO: calculate dynamic depending on currently shown depth
@@ -112,7 +112,19 @@ export function FolderComponent({
             );
         } else if (values.type === "directory") {
             return (
-                <FolderComponent folder={values} key={values.hash} level={level + 1} />
+                <FolderComponent
+                    folder={values as Folder}
+                    key={values.hash}
+                    level={level + 1}
+                />
+            );
+        } else if (values.type === "archive") {
+            return (
+                <ArchiveComponent
+                    archive={values}
+                    key={values.hash}
+                    level={level + 1}
+                />
             );
         }
     });
@@ -186,6 +198,79 @@ export function FolderComponent({
         </>
     );
 }
+/** Very similar to a folder component but omitting the
+ * expand/collapse button.
+ * FIXME: We might be able to merge this with the FolderComponent
+ */
+export function ArchiveComponent({
+    archive,
+    level = 0,
+}: {
+    archive: Archive;
+    level?: number;
+}) {
+    const { isSelected, toggleSelect } = useFolderSelectionContext();
+
+    return (
+        <GridRow
+            sx={(theme) => ({
+                borderRadius: 1,
+                position: "relative",
+                "&:hover, &[data-contextmenu='true']": {
+                    background: `linear-gradient(
+                            to right,
+                            ${theme.palette.secondary.muted} 0%,
+                            transparent 100%
+                        ) !important`,
+                },
+                "&[data-selected='true']": {
+                    backgroundColor: theme.palette.action.selected + " !important",
+                },
+            })}
+            data-selected={isSelected(archive)}
+            onClick={() => toggleSelect(archive)}
+        >
+            {/* Current status of the archive */}
+            <Chips folder={archive} />
+
+            <FolderTreeRow
+                folder={archive}
+                isOpen={false} // No expand/collapse for archives
+                level={level}
+            />
+
+            {/* Selector */}
+            <Checkbox
+                className="selector"
+                size="medium"
+                checked={isSelected(archive)}
+                style={{ padding: 0 }}
+                color="secondary"
+            />
+
+            {/* Link to subpage */}
+            <Link
+                to="/inbox/folder/$path/$hash"
+                params={{ path: archive.full_path, hash: archive.hash }}
+                className="actions"
+                preload="intent"
+                style={{
+                    textDecoration: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "flex-end",
+                }}
+                onClick={(e) => {
+                    e.stopPropagation();
+                }}
+            >
+                <IconButton>
+                    <SquareChartGanttIcon size={16} />
+                </IconButton>
+            </Link>
+        </GridRow>
+    );
+}
 
 export function FileComponent({ file, level = 0 }: { file: File; level?: number }) {
     return (
@@ -202,51 +287,51 @@ export function FolderTreeRow({
     level = 0,
     ...props
 }: {
-    folder: Folder;
+    folder: Folder | Archive;
     isOpen: boolean;
-    setIsOpen: (open: boolean) => void;
+    setIsOpen?: (open: boolean) => void;
     level?: number;
 } & BoxProps) {
-    const whiteness = Math.max(100 - (MAX_LEVEL - level) * 15, 30);
+    // either, archive, album or normal folder
+    const isArchive = folder.type === "archive";
+    const isAlbum = !isArchive && folder.is_album;
+
     return (
-        <LevelIndentWrapper
-            level={level}
-            className="tree"
-            sx={(theme) => ({
-                [theme.breakpoints.down("laptop")]: {
-                    color: `hsl(210deg, 8.75%, ${whiteness}%)`,
-                },
-            })}
-            {...props}
-        >
-            {/* Collapse/Expand button */}
-            <IconButton
-                onClick={(e) => {
-                    setIsOpen(!isOpen);
-                    e.stopPropagation();
-                    e.preventDefault();
-                }}
-                size="small"
-                sx={{
-                    padding: "0px",
-                    margin: "0px",
-                    marginRight: "-2px",
-                    color: "inherit",
-                }}
-                disableRipple
-            >
-                <LucideChevronRight
-                    size={ICON_SIZE}
-                    style={{
-                        transform: isOpen ? "rotate(90deg)" : "",
-                        transition: "transform 0.15s ease-in-out",
+        <LevelIndentWrapper level={level} className="tree" {...props}>
+            {/* Collapse/Expand button*/}
+            {folder.type === "directory" && (
+                <IconButton
+                    onClick={(e) => {
+                        setIsOpen?.(!isOpen);
+                        e.stopPropagation();
+                        e.preventDefault();
                     }}
-                />
-            </IconButton>
+                    size="small"
+                    sx={{
+                        padding: "0px",
+                        margin: "0px",
+                        marginRight: "-2px",
+                        color: "inherit",
+                    }}
+                    disableRipple
+                    disabled={isArchive} // Disable for archives
+                >
+                    <LucideChevronRight
+                        size={ICON_SIZE}
+                        style={{
+                            transform: isOpen ? "rotate(90deg)" : "",
+                            transition: "transform 0.15s ease-in-out",
+                        }}
+                    />
+                </IconButton>
+            )}
+
+            {/* Folder/Archive icon */}
 
             <FolderTypeIcon
-                isAlbum={folder.is_album}
+                isAlbum={isAlbum}
                 isOpen={isOpen}
+                isArchive={isArchive}
                 size={ICON_SIZE}
             />
 
@@ -275,20 +360,22 @@ function FileName({ file, level = 0 }: { file: File; level?: number }) {
                 minWidth: "0",
             }}
         >
-            <Box
-                sx={{
-                    // for horizontal lines on desktop
-                    position: "absolute",
-                    left: ICON_SIZE / 2 - 0.5 + ICON_SIZE * (level - 1) + "px",
-                    width: ICON_SIZE + "px",
-                    height: "1px",
-                    backgroundColor: "#495057",
-                    flexShrink: 0,
-                    [theme.breakpoints.down("laptop")]: {
-                        visibility: "hidden",
-                    },
-                }}
-            />
+            {level > 0 && (
+                <Box
+                    sx={{
+                        // for horizontal lines on desktop
+                        position: "absolute",
+                        left: ICON_SIZE / 2 - 0.5 + ICON_SIZE * (level - 1) + "px",
+                        width: ICON_SIZE + "px",
+                        height: "1px",
+                        backgroundColor: "#495057",
+                        flexShrink: 0,
+                        [theme.breakpoints.down("laptop")]: {
+                            visibility: "hidden",
+                        },
+                    }}
+                />
+            )}
             <Box
                 sx={{
                     display: "flex",
@@ -304,7 +391,8 @@ function FileName({ file, level = 0 }: { file: File; level?: number }) {
                     type={type}
                     size={ICON_SIZE * 0.7}
                     style={{
-                        marginLeft: ICON_SIZE * 0.7 + "px",
+                        //3px aligns the icon with the other icons
+                        marginLeft: level > 0 ? ICON_SIZE * 0.7 + "px" : "3px",
                         flexShrink: 0,
                     }}
                 />
@@ -397,8 +485,8 @@ function LevelIndentWrapper({
 }
 
 /**Shows the percentage of the best match and its source */
-function Chips({ folder }: { folder: Folder }) {
-    if (!folder.is_album) {
+function Chips({ folder }: { folder: Folder | Archive }) {
+    if (!(folder.type == "archive") && !folder.is_album) {
         return <Box />;
     }
 

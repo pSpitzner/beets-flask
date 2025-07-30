@@ -11,10 +11,9 @@ from beets_flask import invoker
 from beets_flask.config import get_config
 from beets_flask.database.models.states import SessionStateInDb
 from beets_flask.disk import (
-    Folder,
     album_folders_from_track_paths,
     all_album_folders,
-    path_to_folder,
+    fs_item_from_path,
 )
 from beets_flask.invoker import enqueue
 from beets_flask.logger import log
@@ -114,13 +113,13 @@ class InboxHandler(AIOEventHandler):
         status_update = asyncio.create_task(send_status_update(FileSystemUpdate()))
 
         try:
+            log.debug(f"File change at {fullpath}")
             album_folder = album_folders_from_track_paths([fullpath])[0]
         except IndexError:
             log.debug(f"File change at {fullpath} but is no album_folder")
             return
 
         album_folder_key = str(album_folder.resolve())
-
         task = asyncio.create_task(self.task_func(album_folder))
         if current := self.debounce.get(album_folder_key, None):
             try:
@@ -140,19 +139,19 @@ class InboxHandler(AIOEventHandler):
             log.exception(f"Error in inbox handler task for {album_folder}", e)
 
 
-async def auto_tag(path: Path, inbox_kind: str | None = None):
+async def auto_tag(folder_path: Path, inbox_kind: str | None = None):
     """Retag a (taggable) folder.
 
     Parameters
     ----------
     path: str
-        Full path to the folder
+        Full path to the folder or archive file to retag.
     kind: str, optional
         If None, the configured autotag kind from the inbox this folder is in will be used.
     """
-    inbox = get_inbox_for_path(path)
+    inbox = get_inbox_for_path(folder_path)
     if inbox is None:
-        log.error(f"Path {path} is not in any inbox, skipping autotagging.")
+        log.error(f"Path {folder_path} is not in any inbox, skipping autotagging.")
         return
 
     if inbox_kind is None:
@@ -170,13 +169,16 @@ async def auto_tag(path: Path, inbox_kind: str | None = None):
         case "bootleg":
             enq_kind = invoker.EnqueueKind.IMPORT_BOOTLEG
         case False | None:
-            log.debug(f"Autotagging disabled for {path}, skipping.")
+            log.debug(f"Autotagging disabled for {folder_path}, skipping.")
             return
         case _:
-            log.error(f"Unknown autotagging kind {inbox_kind} for {path}")
+            log.error(f"Unknown autotagging kind {inbox_kind} for {folder_path}")
             return
 
-    folder = Folder.from_path(path)
+    folder = fs_item_from_path(folder_path)
+    if not folder.is_album:
+        log.info(f"Path {folder_path} is not an album folder, skipping autotagging.")
+        return
 
     # check if we have a session for this folder already.
     # if so, skip imports but update the previews.

@@ -541,6 +541,12 @@ def manipulate_files(
         # actions, that is fine: Upon re-import, we raise a duplicate action error,
         # which is shown to the user, and then the duplicate actions will appear.
 
+    if task_state.toppath is not None and len(session.state.task_states) == 1:
+        # If we have only one task and no toppath this indicates that we are
+        # operating on a temp directory we override the toppath
+        # to the session's folder path.
+        task.toppath = session.state.folder_path
+
     return task
 
 
