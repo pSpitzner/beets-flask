@@ -1,63 +1,23 @@
 /** Service worker. injected with vite-pwa-plugin */
 /// <reference lib="webworker" />
 
-import { assertUnreachable } from "./components/common/debugging/typing";
-import { TaggedNotification } from "./pythonTypes";
+import { PushNotification, PushNotificationOptions } from "./pythonTypes/notifications";
 
 // Trickery to get the correct type for the service worker global scope
 const worker: ServiceWorkerGlobalScope = self as unknown as ServiceWorkerGlobalScope;
 
-type PushData = TaggedNotification;
-
-// Typing is not up to date, e.g. actions are missing
-interface NotificationOptionsEx extends NotificationOptions {
-    actions?: {
-        action: string;
-        title: string;
-        icon: string;
-        type?: string; // Optional, but can be used to specify the type of action
-    }[];
-}
-
-function pushDataToNotificationOptions(
-    data: PushData
-): [string, NotificationOptionsEx] {
-    switch (data.type) {
-        case "tagged":
-            return [
-                `Tagging '${data.path.replace(data.inboxPath || "", "...")}' completed!`,
-                {
-                    body: `Found ${data.nCandidates} candidates\n\tbest: ${data.bestCandidate} (${Math.round(data.bestCandidateMatch * 100)}%)`,
-                    tag: data.hash, // Use the hash as the tag for uniqueness we can update the notification later if there
-                    //an import
-                    icon: "/logo_flask.svg",
-                    actions: [
-                        {
-                            action: "open-folder",
-                            title: "Review tagged folder",
-                            icon: "/tag.svg",
-                        },
-                    ],
-                },
-            ];
-        default:
-            return assertUnreachable(data.type);
-    }
-}
 /** Handles if we receive push notifications.
  * This should be called if our server sends a push message.
  */
 worker.addEventListener("push", (event) => {
-    const data: PushData | null = (event.data?.json() as PushData) ?? null;
+    const data: PushNotification | null =
+        (event.data?.json() as PushNotification) ?? null;
 
+    // This should not happen, but if it does, we log a warning and show a generic notification
     if (!data) {
-        // This should not happen, but if it does, we log a warning and show a generic notification
         console.warn("Push message without data", event);
         return worker.registration.showNotification("Huh?");
     }
-
-    const args = pushDataToNotificationOptions(data);
-    args[1].data = data; // Store the data in the notification for later use
 
     event.waitUntil(
         isClientFocused().then((clientIsFocused) => {
@@ -66,7 +26,14 @@ worker.addEventListener("push", (event) => {
                 console.debug("Client is focused, not showing notification.");
                 return;
             } else {
-                return worker.registration.showNotification(...args);
+                try {
+                    return worker.registration.showNotification(
+                        data.title,
+                        (data.options as NotificationOptions) || undefined
+                    );
+                } catch (error) {
+                    console.error("Error showing notification:", error);
+                }
             }
         })
     );
@@ -76,7 +43,7 @@ worker.addEventListener("push", (event) => {
  * Called if the user clicks on a notification.
  */
 worker.addEventListener("notificationclick", (event) => {
-    const data = event.notification.data as PushData | null;
+    const data = event.notification.data as PushNotificationOptions["data"];
     const clickedNotification = event.notification;
 
     if (!data) {
@@ -85,13 +52,27 @@ worker.addEventListener("notificationclick", (event) => {
         return;
     }
 
-    if (event.action == "open-folder") {
-        event.waitUntil(openInboxFolder(data.path, data.hash));
-    } else if (event.action == "open-inbox") {
-        event.waitUntil(openUrl("/inbox"));
-    } else {
-        // If no action is specified, we just open the homepage
-        event.waitUntil(openUrl("/"));
+    switch (event.action) {
+        case "open-inbox-details":
+            // If the action is to open inbox details, we open the folder
+            // with the specified path and hash
+            if (data.path && data.hash) {
+                event.waitUntil(openInboxFolder(data.path, data.hash));
+            } else {
+                console.warn(
+                    "Notification click with open-inbox-details action but no path or hash",
+                    event
+                );
+            }
+            break;
+        case "open-inbox":
+            // If the action is to open the inbox, we just open the inbox page
+            event.waitUntil(openUrl("/inbox"));
+            break;
+        default:
+            // If no action is specified, we just open the homepage
+            event.waitUntil(openUrl("/"));
+            break;
     }
 
     clickedNotification.close();

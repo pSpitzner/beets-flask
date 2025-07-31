@@ -1,5 +1,5 @@
 from .base import Base
-from .push import SubscriptionSettings, PushSubscription, WebhookSubscription
+from .notifications import PushSubscription, SubscriptionSettings, WebhookSubscription
 from .states import CandidateStateInDb, FolderInDb, SessionStateInDb, TaskStateInDb
 
 __all__ = [

@@ -8,7 +8,7 @@ import {
     PushSubscription as PyPushSubscription,
     SubscriptionSettings,
     WebhookSubscription,
-} from "@/pythonTypes";
+} from "@/pythonTypes/notifications";
 
 import { APIError, queryClient } from "./common";
 
@@ -22,7 +22,10 @@ export class PushSubscriptionError extends Error {
 /* -------------------------------- webhooks -------------------------------- */
 
 export interface WebhookSubscribeRequest
-    extends Omit<WebhookSubscription, "settings" | "id" | "created_at" | "updated_at"> {
+    extends Omit<
+        WebhookSubscription,
+        "settings" | "id" | "created_at" | "updated_at" | "type"
+    > {
     settings: null | SubscriptionSettings;
     id?: string; // Optional ID for upsert
 }
@@ -156,6 +159,28 @@ export const webhooksInfiniteQueryOptions = () => {
             return data.pages.flatMap((p) => p.items || []);
         },
     });
+};
+
+export const testWebhookMutationOptions: UseMutationOptions<
+    { status: "ok" } | { status: "error"; error: string },
+    APIError | PushSubscriptionError,
+    WebhookSubscribeRequest
+> = {
+    mutationKey: ["webhook", "test"],
+    mutationFn: async (data: WebhookSubscribeRequest | WebhookSubscription) => {
+        const response = await fetch(`/notifications/webhook/test`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+        });
+        const result = (await response.json()) as
+            | { status: "ok" }
+            | { status: "error"; error: string };
+        console.log("Test webhook result", result);
+        return result;
+    },
 };
 
 /* ------------------------------ web push api ------------------------------ */

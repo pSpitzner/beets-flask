@@ -35,7 +35,7 @@ export function isValidUrl(str: string) {
         // Attempt to create a URL object from the string
         new URL(str);
         return true;
-    } catch (_err) {
+    } catch {
         // If an error is thrown, the string is not a valid URL
         return false;
     }

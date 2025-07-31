@@ -6,15 +6,6 @@
 export type File = FileSystemItem;
 
 
-export interface WebhookSubscription extends Base {
-	url: string;
-	method: string;
-	headers: Record<string, string> | null;
-	params: Record<string, string> | null;
-	body: Record<string, any> | null;
-	settings: SubscriptionSettings;
-}
-
 export interface SerializedSessionState {
 	id: string;
 	created_at: Date;
@@ -36,16 +27,6 @@ export interface Search {
 	search_ids: Array<string>;
 	search_artist: null | string;
 	search_album: null | string;
-}
-
-export interface SubscriptionSettings extends Base {
-	is_active: boolean;
-}
-
-export interface PushSubscription extends Base {
-	keys: Record<string, string>;
-	expiration_time: null | number;
-	settings: SubscriptionSettings;
 }
 
 export interface LibraryStats {
@@ -94,12 +75,6 @@ export interface Folder extends FileSystemItem {
 export interface FileSystemUpdate {
 	exc: SerializedException | null;
 	event: "file_system_update";
-}
-
-export interface Base {
-	id: string;
-	created_at: Date;
-	updated_at: Date;
 }
 
 export interface Archive extends FileSystemItem {

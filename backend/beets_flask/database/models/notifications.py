@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Mapping
+from enum import Enum
+from typing import Any, Literal, Mapping
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -87,6 +88,10 @@ class PushSubscription(Base):
         }
 
 
+class WebhookType(Enum):
+    WEBPUSH = 0
+
+
 class WebhookSubscription(Base):
     """Webhook handlers for push notifications.
 
@@ -96,7 +101,8 @@ class WebhookSubscription(Base):
 
     __tablename__ = "push_webhooks"
 
-    # Rquired fields for push webhooks
+    type: Mapped[WebhookType]
+    # Required fields for push webhooks
     url: Mapped[str]
     method: Mapped[str]  # e.g., "POST", "GET"
 
@@ -122,6 +128,7 @@ class WebhookSubscription(Base):
     ):
         """Initialize a PushWebHooks instance."""
         super().__init__()
+        self.type = WebhookType.WEBPUSH
         self.url = url
         self.method = method
         self.headers = headers

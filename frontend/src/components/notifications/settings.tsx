@@ -1,6 +1,6 @@
 import { Checkbox, FormControl, FormControlLabel, FormHelperText } from "@mui/material";
 
-import { SubscriptionSettings } from "@/pythonTypes";
+import { SubscriptionSettings } from "@/pythonTypes/notifications";
 
 /** Shared settings form for push and webhooks */
 export const NotificationsSettings = ({

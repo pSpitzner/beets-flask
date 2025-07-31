@@ -4,8 +4,8 @@ from quart import request
 
 from beets_flask.database import db_session_factory
 from beets_flask.database.models import (
-    SubscriptionSettings,
     PushSubscription,
+    SubscriptionSettings,
     WebhookSubscription,
 )
 from beets_flask.server.routes.exception import InvalidUsageException
@@ -26,20 +26,9 @@ class WebHookBlueprint(ModelAPIBlueprint[WebhookSubscription]):
     async def upsert(self):
         """Upsert a push webhook."""
         params = await request.get_json()
-        id, url, method, headers, params, body, settings = self._parse_webhook_params(
+        id, url, method, headers, params, body, settings = self.parse_webhook_params(
             params
         )
-
-        if not url:
-            raise InvalidUsageException(
-                "Missing 'url' parameter in webhook subscription",
-                status_code=400,
-            )
-        if not method:
-            raise InvalidUsageException(
-                "Missing 'method' parameter in webhook subscription",
-                status_code=400,
-            )
 
         # Upsert webhook
         with db_session_factory() as db_session:
@@ -76,7 +65,8 @@ class WebHookBlueprint(ModelAPIBlueprint[WebhookSubscription]):
 
             return web_hook.to_dict(), 201
 
-    def _parse_webhook_params(self, params: Any):
+    @staticmethod
+    def parse_webhook_params(params: Any):
         """Parse the parameters for the webhook subscription."""
         if not isinstance(params, dict):
             raise InvalidUsageException(
@@ -97,6 +87,17 @@ class WebHookBlueprint(ModelAPIBlueprint[WebhookSubscription]):
         # Settings for the webhook
         settings = pop_query_param(params, "settings", dict, default=None)
 
+        if not url:
+            raise InvalidUsageException(
+                "Missing 'url' parameter in webhook subscription",
+                status_code=400,
+            )
+        if not method:
+            raise InvalidUsageException(
+                "Missing 'method' parameter in webhook subscription",
+                status_code=400,
+            )
+
         return (
             id,
             url,
@@ -108,7 +109,7 @@ class WebHookBlueprint(ModelAPIBlueprint[WebhookSubscription]):
         )
 
 
-class SubscriptionBlueprint(ModelAPIBlueprint[PushSubscription]):
+class PushBlueprint(ModelAPIBlueprint[PushSubscription]):
     def __init__(self):
         super().__init__(PushSubscription, url_prefix="/subscription")
 
@@ -120,15 +121,9 @@ class SubscriptionBlueprint(ModelAPIBlueprint[PushSubscription]):
     async def upsert(self):
         """Upsert a push subscription."""
         params = await request.get_json()
-        endpoint, expiration_time, keys, settings = self._parse_subscription_params(
+        endpoint, expiration_time, keys, settings = self.parse_subscription_params(
             params
         )
-
-        if not endpoint or not keys:
-            raise InvalidUsageException(
-                "Missing 'endpoint' or 'keys' parameter in subscription",
-                status_code=400,
-            )
 
         # Upsert subscription (id == endpoint)
         with db_session_factory() as db_session:
@@ -154,7 +149,8 @@ class SubscriptionBlueprint(ModelAPIBlueprint[PushSubscription]):
             db_session.commit()
             return subscription.to_dict(), 201
 
-    def _parse_subscription_params(self, params: Any):
+    @staticmethod
+    def parse_subscription_params(params: Any):
         """Parse the parameters for the push API."""
         if not isinstance(params, dict):
             raise InvalidUsageException(
@@ -173,6 +169,12 @@ class SubscriptionBlueprint(ModelAPIBlueprint[PushSubscription]):
         if len(params) > 0:
             raise InvalidUsageException(
                 "Invalid parameters provided for subscription",
+                status_code=400,
+            )
+
+        if not endpoint or not keys:
+            raise InvalidUsageException(
+                "Missing 'endpoint' or 'keys' parameter in subscription",
                 status_code=400,
             )
 

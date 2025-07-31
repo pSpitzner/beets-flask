@@ -27,7 +27,7 @@ import {
     unsubscribePushMutationOptions,
     updatePushMutationOptions,
 } from "@/api/notifications";
-import { SubscriptionSettings } from "@/pythonTypes";
+import { SubscriptionSettings } from "@/pythonTypes/notifications";
 
 import { NotificationsSettings } from "./settings";
 import { useNotificationPermission } from "./useNotificationPermission";

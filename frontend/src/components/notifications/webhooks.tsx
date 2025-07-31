@@ -19,7 +19,8 @@ import {
     Trash2Icon,
     WebhookIcon,
 } from "lucide-react";
-import { useState } from "react";
+import test from "node:test";
+import { useEffect, useState } from "react";
 import {
     Box,
     BoxProps,
@@ -41,11 +42,12 @@ import { useInfiniteQuery, useMutation } from "@tanstack/react-query";
 
 import {
     deleteWebhookMutationOptions,
+    testWebhookMutationOptions,
     upsertWebhookMutationOptions,
     webhooksInfiniteQueryOptions,
     WebhookSubscribeRequest,
 } from "@/api/notifications";
-import { WebhookSubscription } from "@/pythonTypes";
+import { WebhookSubscription } from "@/pythonTypes/notifications";
 
 import { Dialog } from "../common/dialogs";
 import { isValidUrl } from "../common/strings";
@@ -224,7 +226,7 @@ function AddButton(props: ButtonProps) {
                             justifyContent: "space-between",
                         }}
                     >
-                        <Button variant="text">Test</Button>
+                        <TestWebhookButton webhook={newHook} />
                         <Button
                             variant="contained"
                             startIcon={<PlusIcon size={theme.iconSize.md} />}
@@ -311,6 +313,43 @@ function DeleteIconButton({ webhookId }: { webhookId: string }) {
     );
 }
 
+function TestWebhookButton({
+    webhook,
+}: {
+    webhook: WebhookSubscription | WebhookSubscribeRequest;
+}) {
+    const {
+        mutateAsync: testWebhook,
+        data,
+        isPending,
+    } = useMutation(testWebhookMutationOptions);
+
+    useEffect(() => {
+        // Am a bit lazy here we just alert the error
+        // TODO: maybe show a snackbar instead?
+        if (data?.status === "error") {
+            alert(`Webhook notification test failed: ${data.error}`);
+        }
+    }, [data]);
+
+    return (
+        <Button
+            variant="text"
+            onClick={async () => {
+                await testWebhook(webhook);
+            }}
+            loading={isPending}
+        >
+            {!data ? "Test" : null}
+            {data?.status === "ok" ? (
+                <span style={{ color: "green" }}>Test successful</span>
+            ) : data?.status === "error" ? (
+                <span style={{ color: "red" }}>Test failed</span>
+            ) : null}
+        </Button>
+    );
+}
+
 function SettingsIconButton({ webhook }: { webhook: WebhookSubscription }) {
     const theme = useTheme();
     const [open, setOpen] = useState(false);
@@ -345,16 +384,7 @@ function SettingsIconButton({ webhook }: { webhook: WebhookSubscription }) {
                             justifyContent: "space-between",
                         }}
                     >
-                        <Button
-                            variant="text"
-                            onClick={() => {
-                                alert(
-                                    "This feature is not implemented yet. Please check the console for more information."
-                                );
-                            }}
-                        >
-                            Test
-                        </Button>
+                        <TestWebhookButton webhook={webhookCopy} />
                         <Button
                             variant="contained"
                             onClick={async () => {
