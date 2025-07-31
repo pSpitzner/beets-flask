@@ -41,8 +41,8 @@ class ModelAPIBlueprint(Generic[T]):
     def _register_routes(self) -> None:
         """Register the routes for the blueprint."""
         self.blueprint.route("/", methods=["GET"])(self.get_all)
-        self.blueprint.route("/id/<id>", methods=["GET"])(self.get_by_id)
-        self.blueprint.route("/id/<id>", methods=["DELETE"])(self.delete_by_id)
+        self.blueprint.route("/id/<path:id>", methods=["GET"])(self.get_by_id)
+        self.blueprint.route("/id/<path:id>", methods=["DELETE"])(self.delete_by_id)
 
     async def get_all(self):
         params = dict(request.args)

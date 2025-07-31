@@ -1,10 +1,11 @@
-import { BookOpenIcon, BugIcon, GithubIcon } from "lucide-react";
+import { BookOpenIcon, BugIcon, GithubIcon, SettingsIcon } from "lucide-react";
 import { Box, Link, Typography, useTheme } from "@mui/material";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { inboxStatsQueryOptions } from "@/api/inbox";
 import { libraryStatsQueryOptions } from "@/api/library";
+import { Link as TanLink } from "@/components/common/link";
 import { PageWrapper } from "@/components/common/page";
 import { InboxStatsCard, LibraryStatsCard } from "@/components/frontpage/statsCard";
 
@@ -188,6 +189,10 @@ function Footer() {
             >
                 {versionString} &copy; 2025 P. Spitzner &amp; S. Mohr
             </Typography>
+
+            <TanLink to="/settings/notifications">
+                <SettingsIcon size={theme.iconSize.lg} />
+            </TanLink>
 
             <Link
                 href="https://beets-flask.readthedocs.io/en/latest/"
