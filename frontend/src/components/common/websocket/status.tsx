@@ -14,7 +14,7 @@ import { type QueryClient } from "@tanstack/react-query";
 import { queryClient } from "@/api/common";
 import { invalidateSession, statusQueryOptions } from "@/api/session";
 import { StatusSocket } from "@/api/websocket";
-import { FileSystemUpdate, FolderStatus, FolderStatusUpdate } from "@/pythonTypes";
+import { FileSystemUpdate, FolderStatusUpdate } from "@/pythonTypes";
 
 import useSocket from "./useSocket";
 interface StatusContextI {
