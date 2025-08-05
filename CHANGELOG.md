@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Fixed session invalidation on folder updates. This especially fixes an issues where the watchdog would not trigger a session invalidation when a folder was deleted or renamed. [#163](https://github.com/pSpitzner/beets-flask/issues/163)
+
 ## [1.1.0] - 25-07-29
 
 ### Added
