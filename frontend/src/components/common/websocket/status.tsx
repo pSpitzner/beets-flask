@@ -65,16 +65,9 @@ export function StatusContextProvider({
                 }
             );
 
-            if (
-                updateData.status == FolderStatus.IMPORTED ||
-                updateData.status == FolderStatus.PREVIEWED ||
-                updateData.status == FolderStatus.DELETED ||
-                updateData.status == FolderStatus.FAILED
-            ) {
-                invalidateSession(updateData.hash, updateData.path, false).catch(
-                    console.error
-                );
-            }
+            invalidateSession(updateData.hash, updateData.path, false).catch(
+                console.error
+            );
         }
 
         async function handleFileSystemUpdate(updateData: FileSystemUpdate) {
