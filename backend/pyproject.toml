@@ -40,6 +40,8 @@ dependencies = [
     "aiofiles",
     "numpy",
     "pandas",
+    "ecdsa",
+    "pywebpush",
     "typing_extensions",
 ]
 
@@ -144,5 +146,7 @@ module = [
     "mediafile.*",
     "nest_asyncio",
     "dirhash",
+    "ecdsa",
+    "pywebpush",
 ]
 ignore_missing_imports = true

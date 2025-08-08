@@ -1,5 +1,9 @@
 from py2ts.builder import TSBuilder
 
+from beets_flask.database.models.notifications import (
+    PushSubscription,
+    WebhookSubscription,
+)
 from beets_flask.disk import Archive, File, FileSystemItem, Folder
 from beets_flask.importer.states import (
     SerializedSessionState,
@@ -19,6 +23,7 @@ from beets_flask.server.routes.library.resources import (
     ItemResponseMinimal,
 )
 from beets_flask.server.routes.library.stats import LibraryStats
+from beets_flask.server.routes.notifications import PushNotification
 from beets_flask.server.websocket.status import (
     FileSystemUpdate,
     FolderStatusUpdate,
@@ -75,5 +80,19 @@ builder.add(JobStatusUpdate)
 builder.add(FileSystemUpdate)
 
 
-builder.save_file("../frontend/src/pythonTypes.ts")
+builder.save_file("../frontend/src/pythonTypes/index.ts")
 print("✅ Typescript types generated successfully!")
+
+
+# ---------------------------- Push/Notifications ---------------------------- #
+
+# We place all notification related types in another file to keep a cleaner structure
+notification_builder = TSBuilder()
+
+notification_builder.add(PushSubscription, exclude={"settings_id"})
+notification_builder.add(WebhookSubscription, exclude={"settings_id"})
+notification_builder.add(PushNotification)
+notification_builder.add(InboxStats)
+
+notification_builder.save_file("../frontend/src/pythonTypes/notifications.ts")
+print("✅ Notification types generated successfully!")

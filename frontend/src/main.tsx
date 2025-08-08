@@ -127,3 +127,47 @@ if (!rootElement.innerHTML) {
         </StrictMode>
     );
 }
+
+// Service Worker registration
+
+if (
+    "serviceWorker" in navigator &&
+    (window.location.protocol === "https:" || window.location.hostname === "localhost")
+) {
+    window.addEventListener("load", async () => {
+        await navigator.serviceWorker
+            .register(
+                import.meta.env.MODE === "production"
+                    ? "/worker.js"
+                    : "/dev-sw.js?dev-sw",
+                {
+                    scope: "/",
+                    type: "module",
+                }
+            )
+            .then((registration) => {
+                console.log(
+                    "[SW registration]",
+                    "Successfully registered service worker:",
+                    registration.scope,
+                    registration
+                );
+            });
+
+        await navigator.serviceWorker.ready.then((registration) => {
+            console.log(
+                "[SW registration]",
+                "Service worker is ready:",
+                registration.active
+            );
+            registration.active?.postMessage({
+                type: "SKIP_WAITING",
+            });
+        });
+    });
+} else {
+    console.warn(
+        "[SW registration]",
+        "Service worker is not supported or not secure. Skipping registration."
+    );
+}
