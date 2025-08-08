@@ -247,34 +247,43 @@ function PushSettings({ subscription }: { subscription: PushSubscriptionReturn }
                 title_icon={<BellIcon size={theme.iconSize.lg} />}
                 title="Configure Push Notifications"
             >
-                <DialogContent>
+                <DialogContent
+                    sx={{
+                        width: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 2,
+                    }}
+                >
                     <Typography variant="body2" color="text.secondary">
                         Configure your push notification settings below. These settings
                         will be applied to your current device subscription only.
                     </Typography>
-                    <NotificationsSettings
-                        settings={subSettingsCopy}
-                        setSettings={setSubSettingsCopy}
-                    />
+
+                    <Box
+                        sx={{
+                            display: "flex",
+                            gap: 1,
+                            p: 1,
+                            backgroundColor: "rgba(0, 0, 0, 0.05)",
+                            border: `1px solid ${theme.palette.divider}`,
+                            borderRadius: 1,
+                        }}
+                    >
+                        <NotificationsSettings
+                            settings={subSettingsCopy}
+                            setSettings={setSubSettingsCopy}
+                        />
+                    </Box>
 
                     <Box
                         sx={{
                             display: "flex",
                             gap: 1,
                             marginTop: 2,
-                            justifyContent: "space-between",
+                            justifyContent: "flex-end",
                         }}
                     >
-                        <Button
-                            variant="text"
-                            onClick={() => {
-                                alert(
-                                    "This feature is not implemented yet. Please check the console for more information."
-                                );
-                            }}
-                        >
-                            Test
-                        </Button>
                         <Button
                             variant="contained"
                             onClick={async () => {

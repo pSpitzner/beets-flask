@@ -415,3 +415,25 @@ async function invalidatePushQuery(sub: PushSubscriptionReturn | null = null) {
         .cancelQueries(pushQueryOptions)
         .then(() => queryClient.invalidateQueries(pushQueryOptions));
 }
+
+export const testPushMutationOptions: UseMutationOptions<
+    { status: "ok" } | { status: "error"; error: string },
+    APIError | PushSubscriptionError,
+    PushSubscriptionUpsertRequest
+> = {
+    mutationKey: ["subscription", "test"],
+    mutationFn: async (data: PushSubscriptionUpsertRequest) => {
+        const response = await fetch(`/notifications/subscription/test`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+        });
+        const result = (await response.json()) as
+            | { status: "ok" }
+            | { status: "error"; error: string };
+        console.log("Test push result", result);
+        return result;
+    },
+};

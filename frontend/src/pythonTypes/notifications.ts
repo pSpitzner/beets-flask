@@ -4,80 +4,81 @@
  * https://github.com/semohr/py2ts
  */
 export interface WebhookSubscription extends Base {
-    type: WebhookType;
-    url: string;
-    method: string;
-    headers: Record<string, string> | null;
-    params: Record<string, string> | null;
-    body: Record<string, any> | null;
-    settings: SubscriptionSettings;
+	type: WebhookType;
+	url: string;
+	method: string;
+	headers: Record<string, string> | null;
+	params: Record<string, string> | null;
+	body: Record<string, any> | null;
+	settings: SubscriptionSettings;
 }
 
 export interface SubscriptionSettings extends Base {
-    is_active: boolean;
+	is_active: boolean;
 }
 
 export interface PushSubscription extends Base {
-    keys: Record<string, string>;
-    expiration_time: null | number;
-    settings: SubscriptionSettings;
+	keys: Record<string, string>;
+	expiration_time: null | number;
+	settings: SubscriptionSettings;
 }
 
 export interface TaggedData {
-    type: "tagged";
-    path: string;
-    hash: string;
-    nCandidates: number;
-    bestCandidate: Candidate;
+	type: "tagged";
+	path: string;
+	hash: string;
+	nCandidates: number;
+	bestCandidate: Candidate;
 }
 
 export interface PushNotificationOptions {
-    actions?: Array<PushAction>;
-    badge?: string;
-    body?: string;
-    data?: TaggedData;
-    icon?: string;
-    image?: string;
-    renotify?: boolean;
-    requireInteraction?: boolean;
-    tag?: string;
-    vibrate?: Array<number>;
+	actions?: Array<PushAction>;
+	badge?: string;
+	body?: string;
+	data?: TaggedData;
+	icon?: string;
+	image?: string;
+	renotify?: boolean;
+	requireInteraction?: boolean;
+	tag?: string;
+	vibrate?: Array<number>;
 }
 
 export interface PushNotification {
-    title: string;
-    options?: PushNotificationOptions;
+	title: string;
+	options?: PushNotificationOptions;
 }
 
 export interface InboxStats {
-    name: string;
-    path: string;
-    tagged_via_gui: number;
-    imported_via_gui: number;
-    size: number;
-    nFiles: number;
-    last_created: Date | null;
+	name: string;
+	path: string;
+	tagged_via_gui: number;
+	imported_via_gui: number;
+	size: number;
+	nFiles: number;
+	last_created: Date | null;
 }
 
 export interface Candidate {
-    title: string;
-    artist: null | string;
-    match: number;
-    source: null | string;
+	title: string;
+	artist: null | string;
+	match: number;
+	source: null | string;
 }
 
 export interface Base {
-    id: string;
-    created_at: Date;
-    updated_at: Date;
+	id: string;
+	created_at: Date;
+	updated_at: Date;
 }
 
 export enum WebhookType {
-    WEBPUSH = 0,
+	WEBPUSH = 0,
 }
 
 export interface PushAction {
-    action: string;
-    title: string;
-    icon?: string;
+	action: string;
+	title: string;
+	icon?: string;
 }
+

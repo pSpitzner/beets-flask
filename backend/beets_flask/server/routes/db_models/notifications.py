@@ -161,6 +161,10 @@ class PushBlueprint(ModelAPIBlueprint[PushSubscription]):
         # Standard PushSubscription fields
         endpoint = pop_query_param(params, "endpoint", str, default=None)
         expiration_time = pop_query_param(params, "expirationTime", int, default=None)
+        if not expiration_time:
+            expiration_time = pop_query_param(
+                params, "expiration_time", int, default=None
+            )
         keys = pop_query_param(params, "keys", dict, default=None)
 
         # Extra options for the subscription (i.e. which notifications to receive)
@@ -168,7 +172,8 @@ class PushBlueprint(ModelAPIBlueprint[PushSubscription]):
 
         if len(params) > 0:
             raise InvalidUsageException(
-                "Invalid parameters provided for subscription",
+                "Invalid parameters provided for subscription"
+                + f" (unknown parameters: {', '.join(params.keys())})",
                 status_code=400,
             )
 

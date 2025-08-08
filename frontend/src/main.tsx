@@ -134,8 +134,8 @@ if (
     "serviceWorker" in navigator &&
     (window.location.protocol === "https:" || window.location.hostname === "localhost")
 ) {
-    window.addEventListener("load", () => {
-        navigator.serviceWorker
+    window.addEventListener("load", async () => {
+        await navigator.serviceWorker
             .register(
                 import.meta.env.MODE === "production"
                     ? "/worker.js"
@@ -152,14 +152,18 @@ if (
                     registration.scope,
                     registration
                 );
-            })
-            .catch((err) => {
-                console.error(
-                    "[SW registration]",
-                    "Service worker registration failed:",
-                    err
-                );
             });
+
+        await navigator.serviceWorker.ready.then((registration) => {
+            console.log(
+                "[SW registration]",
+                "Service worker is ready:",
+                registration.active
+            );
+            registration.active?.postMessage({
+                type: "SKIP_WAITING",
+            });
+        });
     });
 } else {
     console.warn(

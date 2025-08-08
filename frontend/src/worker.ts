@@ -13,6 +13,8 @@ worker.addEventListener("push", (event) => {
     const data: PushNotification | null =
         (event.data?.json() as PushNotification) ?? null;
 
+    console.debug("Push event received:", event, data);
+
     // This should not happen, but if it does, we log a warning and show a generic notification
     if (!data) {
         console.warn("Push message without data", event);
@@ -48,6 +50,7 @@ worker.addEventListener("notificationclick", (event) => {
 
     if (!data) {
         console.warn("Notification click without data", event);
+        event.waitUntil(openUrl("/"));
         clickedNotification.close();
         return;
     }
@@ -76,6 +79,17 @@ worker.addEventListener("notificationclick", (event) => {
     }
 
     clickedNotification.close();
+});
+
+/** Handle service worker update
+ * This is called when the service worker needs to be updated i.e. service worker file changed.
+ */
+worker.addEventListener("message", async (event) => {
+    console.debug("Service worker message received:", event);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (event.data && event.data.type === "SKIP_WAITING") {
+        await worker.skipWaiting();
+    }
 });
 
 /* --------------------------------- helpers -------------------------------- */
