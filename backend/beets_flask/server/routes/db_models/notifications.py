@@ -66,26 +66,26 @@ class WebHookBlueprint(ModelAPIBlueprint[WebhookSubscription]):
             return web_hook.to_dict(), 201
 
     @staticmethod
-    def parse_webhook_params(params: Any):
+    def parse_webhook_params(data: Any):
         """Parse the parameters for the webhook subscription."""
-        if not isinstance(params, dict):
+        if not isinstance(data, dict) or not data:
             raise InvalidUsageException(
                 "Invalid parameters provided for webhook subscription",
                 status_code=400,
             )
 
         # Standard PushSubscription fields
-        id = pop_query_param(params, "id", str, default=None)
-        url = pop_query_param(params, "url", str, default=None)
-        method = pop_query_param(params, "method", str, default=None)
+        id = pop_query_param(data, "id", str, default=None)
+        url = pop_query_param(data, "url", str, default=None)
+        method = pop_query_param(data, "method", str, default=None)
 
         # Optional fields for webhook
-        headers = pop_query_param(params, "headers", dict, default=None)
-        params = pop_query_param(params, "params", dict, default=None)
-        body = pop_query_param(params, "body", dict, default=None)
+        headers: dict | None = pop_query_param(data, "headers", dict, default=None)
+        params: dict | None = pop_query_param(data, "params", dict, default=None)
+        body: dict | None = pop_query_param(data, "body", dict, default=None)
 
         # Settings for the webhook
-        settings = pop_query_param(params, "settings", dict, default=None)
+        settings: dict | None = pop_query_param(data, "settings", dict, default=None)
 
         if not url:
             raise InvalidUsageException(
@@ -165,10 +165,10 @@ class PushBlueprint(ModelAPIBlueprint[PushSubscription]):
             expiration_time = pop_query_param(
                 params, "expiration_time", int, default=None
             )
-        keys = pop_query_param(params, "keys", dict, default=None)
+        keys: dict | None = pop_query_param(params, "keys", dict, default=None)
 
         # Extra options for the subscription (i.e. which notifications to receive)
-        settings = pop_query_param(params, "settings", dict, default=None)
+        settings: dict | None = pop_query_param(params, "settings", dict, default=None)
 
         if len(params) > 0:
             raise InvalidUsageException(
