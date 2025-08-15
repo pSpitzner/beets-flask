@@ -124,7 +124,7 @@ Small version bump with fixes before jumping to 1.0.0.
 
 ### Fixed
 
--   Config parsing should now work [@16af9d02](16af9d02bb59555177790bbccde93af26f15e8c7)
+-   Config parsing should now work
 
 ### Added
 
@@ -170,6 +170,7 @@ Small version bump with fixes before jumping to 1.0.0.
 -   initial commit
 
 
+[Unreleased]: https://github.com/pSpitzner/beets-flask/compare/v1.1.0...HEAD
 [1.1.0]: https://github.com/pSpitzner/beets-flask/compare/v1.0.3...v1.1.0
 [1.0.3]: https://github.com/pSpitzner/beets-flask/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/pSpitzner/beets-flask/compare/v1.0.1...v1.0.2
