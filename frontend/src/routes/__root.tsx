@@ -125,6 +125,9 @@ function LazyAudioPlayer(props: BoxProps, ref: React.Ref<HTMLDivElement> = null)
                     [theme.breakpoints.down("laptop")]: {
                         paddingBottom: NAVBAR_HEIGHT.mobile,
                     },
+                    [theme.breakpoints.up("laptop")]: {
+                        paddingBottom: 1,
+                    },
                 })}
                 {...props}
             >
