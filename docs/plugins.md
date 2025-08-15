@@ -60,7 +60,7 @@ Also, your container start-up time might increase considerably.
 
 Place the following in a `requirements.txt` file in the `/config` folder.
 
-```txt
+```
 beets[discogs]
 ```
 

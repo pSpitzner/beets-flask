@@ -89,3 +89,22 @@ The `gui.num_preview_workers` option specifies the number of worker threads that
 ```{info}
 You can use multiple workers to fetch candidates before importing (previewing). However, the import itself is always done sequentially. This is to ensure that the import process is not interrupted by other operations.
 ```
+
+The `gui.inbox.ignore` option specifies a list of file patterns to ignore when scanning the inbox folders. This is useful to exclude temporary files or other unwanted files from being shown in the inbox. This does not ignore these files on beets import! If you prefer a
+unified approach use the default [beets `ignore`](https://docs.beets.io/en/stable/reference/config.html#ignore) config which we also use to ignore files in the inbox.
+
+```yaml
+# beets/config.yaml
+ignore:
+  - "*.tmp"
+  - "*.log"
+  - "*.bak"
+
+# beets-flask/config.yaml
+gui:
+  inbox:
+    ignore:
+      - "*.tmp"
+      - "*.log"
+      - "*.bak"
+```

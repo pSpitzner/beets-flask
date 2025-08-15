@@ -10,8 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Session cache wasn't invalidated on all folder updates. This especially fixes an issues where the watchdog would not trigger a session invalidation when a folder was deleted or renamed. [#163](https://github.com/pSpitzner/beets-flask/issues/163)
+- We now use the beets `ignore` config option to ignore files and folders in the inbox view. This allows you to ignore files like `*.tmp`, `*.log`, etc. We also allow users to define the `gui.inbox.ignore` option to customize the ignored file patterns. [#176](https://github.com/pSpitzner/beets-flask/issues/176)
 - Scrollbar for beets instructions wasn't visible on small screens.
-
 
 ### Other (dev)
 

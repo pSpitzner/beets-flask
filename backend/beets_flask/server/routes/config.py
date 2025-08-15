@@ -49,6 +49,23 @@ async def get_basic():
     )
 
 
+@config_bp.route("/refresh", methods=["POST"])
+async def refresh():
+    """Refresh the config object.
+
+    Mainly for debug purposes as it only refresh the config for
+    the main thread.
+
+    ```
+    curl -X POST http://localhost:5001/api_v1/config/refresh
+    ```
+    """
+    from beets_flask.config.beets_config import refresh_config
+
+    refresh_config()
+    return jsonify({"status": "ok"})
+
+
 def _serializable(input):
     """
     Convert bytes to str in a nested dictionary.

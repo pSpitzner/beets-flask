@@ -5,6 +5,7 @@ import re
 import subprocess
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from fnmatch import fnmatch
 from pathlib import Path
 from typing import (
     Iterator,
@@ -23,6 +24,7 @@ from beets.importer import (
 from cachetools import Cache, TTLCache, cached
 from natsort import os_sorted
 
+from beets_flask.config import get_config
 from beets_flask.dirhash_custom import archive_hash, dirhash_c
 from beets_flask.logger import log
 from beets_flask.utility import AUDIO_EXTENSIONS
@@ -109,6 +111,10 @@ class Folder(FileSystemItem):
     ) -> Folder:
         """Create a Folder object from a path."""
 
+        ignore_globs_b: list[str] = get_config()["ignore"].as_str_seq()
+        ignore_globs_bf: list[str] = get_config()["gui"]["inbox"]["ignore"].as_str_seq()
+        ignore_globs = ignore_globs_b + ignore_globs_bf
+
         if isinstance(path, str):
             path = Path(path)
 
@@ -142,7 +148,13 @@ class Folder(FileSystemItem):
                 if not non_hidden_regex.match(filename):
                     continue
 
+                # Skip beets ignored files
+                # TODO: I think we could optimize this by
+                # compiling to regex
                 full_path = os.path.join(dirpath, filename)
+                if any(fnmatch(full_path, pat) for pat in ignore_globs):
+                    continue
+
                 # Here, we know this not a folder, so we can use fs_item_from_path.
                 children.append(
                     fs_item_from_path(path=os.path.abspath(full_path), cache=cache)
