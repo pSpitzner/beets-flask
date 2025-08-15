@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scrollbar for beets instructions wasn't visible on small screens.
 
 
+### Other (dev)
+
+- Simplified translucent scroll setup in `__root.tsx`
+
 ## [1.1.0] - 25-07-29
 
 ### Added

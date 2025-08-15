@@ -1,6 +1,6 @@
 import { Home, Inbox, Library, Search, Terminal } from "lucide-react";
 import { MouseEvent, ReactElement, useRef } from "react";
-import { Box, darken, Typography, useTheme } from "@mui/material";
+import { Box, BoxProps, darken, Typography, useTheme } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import Tab, { tabClasses, TabProps } from "@mui/material/Tab";
 import Tabs, { tabsClasses } from "@mui/material/Tabs";
@@ -183,7 +183,7 @@ function NavTabs() {
  * on desktop: fixed to the top
  * on mobile: fixed to the bottom
  */
-export default function NavBar() {
+export default function NavBar(props: BoxProps) {
     return (
         <Box
             sx={(theme) => ({
@@ -205,6 +205,7 @@ export default function NavBar() {
                     height: NAVBAR_HEIGHT.desktop,
                 },
             })}
+            {...props}
         >
             <NavTabs />
         </Box>

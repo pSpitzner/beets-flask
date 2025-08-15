@@ -1,5 +1,5 @@
-import { lazy, Suspense, useEffect, useMemo, useRef } from "react";
-import Box from "@mui/material/Box";
+import { lazy, Suspense, useEffect, useState } from "react";
+import Box, { BoxProps } from "@mui/material/Box";
 import { QueryClient } from "@tanstack/react-query";
 import { HeadContent } from "@tanstack/react-router";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
@@ -37,64 +37,68 @@ export const Route = createRootRouteWithContext<{
 });
 
 function RootComponent() {
+    // We need to keep track of the audio player height
+    // to properly allow scrolling behind it.
+    const [instance, setInstance] = useState(null);
+    const [audioHeight, setAudioHeight] = useState<number | null>(null);
+    useEffect(() => {
+        if (!instance) return;
+        const playerElem = instance;
+        const resizeObserver = new ResizeObserver((entries) => {
+            const height = entries[0].borderBoxSize[0].blockSize;
+            setAudioHeight(height);
+        });
+        resizeObserver.observe(playerElem);
+        return () => {
+            resizeObserver.unobserve(playerElem);
+        };
+    }, [instance]);
+
     return (
-        <>
-            <HeadContent />
-            <main
-                style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    height: "100dvh",
-                    overflow: "hidden",
-                }}
-            >
-                <NavBar />
-                <Box
-                    id="main-content"
-                    sx={(theme) => ({
-                        flexGrow: 1,
-                        [theme.breakpoints.up("laptop")]: {
-                            paddingTop: NAVBAR_HEIGHT.desktop,
-                        },
-                        [theme.breakpoints.down("laptop")]: {
-                            position: "fixed",
-                            height: "100dvh",
-                        },
-                        width: "100%",
-                        height: "100%",
-                        overflow: "auto",
+        <TerminalContextProvider>
+            <AudioContextProvider>
+                <HeadContent />
+                <main
+                    style={{
                         display: "flex",
                         flexDirection: "column",
-                        position: "relative",
-                    })}
+                        height: "100dvh",
+                        overflow: "hidden",
+                    }}
                 >
-                    <TerminalContextProvider>
-                        <AudioContextProvider>
-                            {/* A bit messy but needed for translucent navbar effect on mobile */}
-                            <Box
-                                sx={{
-                                    height: "100%",
-                                    overflow: "visible",
-                                }}
-                            >
-                                <Box
-                                    sx={(theme) => ({
-                                        height: "100%",
-                                        overflow: "auto",
-                                        [theme.breakpoints.down("laptop")]: {
-                                            paddingBottom: NAVBAR_HEIGHT.mobile,
-                                        },
-                                    })}
-                                >
-                                    <Outlet />
-                                </Box>
-                                <LazyAudioPlayer />
-                            </Box>
-                        </AudioContextProvider>
-                    </TerminalContextProvider>
-                </Box>
-            </main>
-        </>
+                    <NavBar id="navbar" />
+                    <Box
+                        id="main-content"
+                        sx={(theme) => ({
+                            [theme.breakpoints.down("laptop")]: {
+                                position: "fixed",
+                                height: "100dvh",
+                            },
+                            width: "100%",
+                            height: "100%",
+                            overflow: "visible",
+                        })}
+                    >
+                        <Box
+                            sx={(theme) => ({
+                                height: "100%",
+                                overflow: "auto",
+
+                                // includes padding for the navbar at bottom if
+                                // on mobile
+                                paddingBottom: `${audioHeight || 0}px`,
+                                [theme.breakpoints.up("laptop")]: {
+                                    paddingTop: NAVBAR_HEIGHT.desktop,
+                                },
+                            })}
+                        >
+                            <Outlet />
+                        </Box>
+                    </Box>
+                    <LazyAudioPlayer id="audio-player" ref={setInstance} />
+                </main>
+            </AudioContextProvider>
+        </TerminalContextProvider>
     );
 }
 
@@ -106,45 +110,36 @@ function RootComponent() {
  */
 const AudioPlayer = lazy(() => import("@/components/library/audio/player"));
 
-function LazyAudioPlayer() {
-    const ref = useRef<HTMLDivElement>(null);
-    const { items } = useAudioContext();
-    const nItems = useMemo(() => items.length, [items]);
-
-    useEffect(() => {
-        if (nItems == 0 || !ref.current) return;
-        const playerElem = ref.current;
-
-        // Add padding the the pages to allow for scrolling
-        const prevElement = playerElem.previousElementSibling as HTMLDivElement;
-        const childPrevElement = prevElement?.firstElementChild as HTMLDivElement;
-
-        const resizeObserver = new ResizeObserver((entries) => {
-            const height = entries[0].borderBoxSize[0].blockSize;
-            childPrevElement.style.paddingBottom = `${height}px`;
-            childPrevElement.style.overflow = "auto";
-        });
-        resizeObserver.observe(playerElem);
-        return () => {
-            childPrevElement.style.paddingBottom = "0px";
-            resizeObserver.unobserve(playerElem);
-        };
-    }, [nItems]);
+function LazyAudioPlayer(props: BoxProps, ref: React.Ref<HTMLDivElement> = null) {
+    const { showGlobalPlayer } = useAudioContext();
 
     return (
         <Suspense fallback={<Box />}>
             <Box
                 ref={ref}
-                sx={{
+                sx={(theme) => ({
                     position: "absolute",
                     bottom: 0,
                     width: "100%",
                     zIndex: 1,
-                }}
+                    [theme.breakpoints.down("laptop")]: {
+                        paddingBottom: NAVBAR_HEIGHT.mobile,
+                    },
+                })}
+                {...props}
             >
-                <PageWrapper sx={{ padding: 1 }}>
-                    <AudioPlayer />
-                </PageWrapper>
+                {
+                    // Only render the audio player if there are items in the queue
+                    showGlobalPlayer && (
+                        <PageWrapper
+                            sx={{
+                                paddingInline: 1,
+                            }}
+                        >
+                            <AudioPlayer />
+                        </PageWrapper>
+                    )
+                }
             </Box>
         </Suspense>
     );

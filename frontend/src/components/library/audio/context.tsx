@@ -31,6 +31,7 @@ interface AudioContextI {
     // Queue
     currentItem: ItemResponse | null;
     items: ItemResponse[];
+    nItems: number;
     hasNext: boolean;
     hasPrev: boolean;
     nextItem: () => ItemResponse | null;
@@ -50,6 +51,9 @@ interface AudioContextI {
     volume: number;
     setVolume: (value: number) => void;
     toggleMuted: () => void;
+
+    // Visuals
+    showGlobalPlayer: boolean;
 }
 
 const AudioContext = createContext<AudioContextI | null>(null);
@@ -121,6 +125,8 @@ export function AudioContextProvider({ children }: { children: React.ReactNode }
         return navigate(-1);
     };
 
+    const nItems = useMemo(() => items.length, [items]);
+
     return (
         <AudioContext.Provider
             value={{
@@ -139,6 +145,7 @@ export function AudioContextProvider({ children }: { children: React.ReactNode }
                 currentTime,
                 // queue related
                 items,
+                nItems,
                 currentItem,
                 hasNext,
                 hasPrev,
@@ -153,6 +160,7 @@ export function AudioContextProvider({ children }: { children: React.ReactNode }
                 volume,
                 setVolume,
                 toggleMuted,
+                showGlobalPlayer: nItems > 0, // Show player if there are items in the queue
             }}
         >
             {children}
