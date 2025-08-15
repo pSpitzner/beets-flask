@@ -64,6 +64,7 @@ export default defineConfig(({ mode }) => {
                     ws: true,
                 },
             },
+            allowedHosts: ["belar"],
         },
         define: {
             // Load from package.json
