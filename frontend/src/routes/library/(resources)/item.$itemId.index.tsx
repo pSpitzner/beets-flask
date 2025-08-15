@@ -4,8 +4,7 @@ import { Box, Button, Typography, useTheme } from "@mui/material";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { Item, itemQueryOptions, ItemResponseFull } from "@/api/library";
-import { JSONPretty } from "@/components/common/debugging/json";
+import { itemQueryOptions, ItemResponseFull } from "@/api/library";
 import { formatDate, humanizeDuration } from "@/components/common/units/time";
 import { useAudioContext } from "@/components/library/audio/context";
 

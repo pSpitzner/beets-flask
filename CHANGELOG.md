@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Session cache wasn't invalidated on all folder updates. This especially fixes an issues where the watchdog would not trigger a session invalidation when a folder was deleted or renamed. [#163](https://github.com/pSpitzner/beets-flask/issues/163)
 
+### Added
+
+- The items/track view now shows some basic information and you may play the track from there too.
+
 ## [1.1.0] - 25-07-29
 
 ### Added
