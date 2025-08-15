@@ -39,6 +39,7 @@ faq.md
 :hidden:
 :caption: 📖 Reference
 
+changelog.md
 develop/contribution.md
 develop/resources/index.md
 ```
