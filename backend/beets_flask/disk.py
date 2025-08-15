@@ -30,7 +30,6 @@ from beets_flask.logger import log
 from beets_flask.utility import AUDIO_EXTENSIONS
 
 # Regex pattern to exclude hidden files (files starting with ".")
-non_hidden_regex = re.compile(r"^(?!\.).+$")
 audio_regex = re.compile(
     r".*\.(" + "|".join(AUDIO_EXTENSIONS) + ")$",
     re.IGNORECASE,
@@ -83,6 +82,11 @@ def fs_item_from_path(
         return File.from_path(path, cache=cache)
 
 
+def _matches_patterns(s: str, patterns: list[str]) -> bool:
+    """Check if a string matches any of the given patterns."""
+    return any(fnmatch(s, pat) for pat in patterns)
+
+
 @dataclass
 class Folder(FileSystemItem):
     children: Sequence[FileSystemItem]
@@ -111,9 +115,7 @@ class Folder(FileSystemItem):
     ) -> Folder:
         """Create a Folder object from a path."""
 
-        ignore_globs_b: list[str] = get_config()["ignore"].as_str_seq()
-        ignore_globs_bf: list[str] = get_config()["gui"]["inbox"]["ignore"].as_str_seq()
-        ignore_globs = ignore_globs_b + ignore_globs_bf
+        ignore_globs = get_config().ignore_globs
 
         if isinstance(path, str):
             path = Path(path)
@@ -135,6 +137,20 @@ class Folder(FileSystemItem):
 
         # Iterate over all directories from bottom to top
         for dirpath, dirnames, filenames in os.walk(path, topdown=False):
+            if _matches_patterns(os.path.basename(dirpath), ignore_globs):
+                continue
+
+            # Skip ignored files
+            # TODO: I think we could optimize this by
+            # compiling to regex
+            dirnames = filter(
+                lambda d: not _matches_patterns(d, ignore_globs), dirnames
+            )
+
+            filenames = filter(
+                lambda f: not _matches_patterns(f, ignore_globs), filenames
+            )
+
             # As we iterate from bottom to top, we can access the elements from
             # the lookup table as they are already created
             children: list[FileSystemItem] = [
@@ -144,17 +160,7 @@ class Folder(FileSystemItem):
 
             # Add all files to children
             for filename in os_sorted(filenames):
-                # Skip hidden files
-                if not non_hidden_regex.match(filename):
-                    continue
-
-                # Skip beets ignored files
-                # TODO: I think we could optimize this by
-                # compiling to regex
                 full_path = os.path.join(dirpath, filename)
-                if any(fnmatch(full_path, pat) for pat in ignore_globs):
-                    continue
-
                 # Here, we know this not a folder, so we can use fs_item_from_path.
                 children.append(
                     fs_item_from_path(path=os.path.abspath(full_path), cache=cache)

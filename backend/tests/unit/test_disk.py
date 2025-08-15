@@ -1,13 +1,15 @@
 import os
 import shutil
+from unittest import mock
 import zipfile
 from pathlib import Path
 
+from confuse import AttrDict
 import pytest
 from cachetools import Cache
 
 from beets_flask.dirhash_custom import dirhash_c
-from beets_flask.disk import audio_regex
+from beets_flask.disk import Folder, _matches_patterns, audio_regex
 
 
 def touch(path):
@@ -336,3 +338,121 @@ def test_dirhash(tmpdir_factory: pytest.TempdirFactory, cache: Cache | None):
 
     os.rename(base / "subdir", base / "subdir2")
     assert dirhash_c(base, cache) != hash_1
+
+
+@pytest.fixture
+def tmp_dir_with_ignored_items(tmpdir):
+    """Fixture to create a temporary directory with ignored files and folders."""
+    base = Path(tmpdir)
+
+    # Create ignored files and folders
+    ignored_files = [
+        ".hidden_file.txt",
+        "temp_file.tmp",
+        "backup~",
+    ]
+    ignored_dirs = [
+        ".hidden_dir",
+        "temp_dir",
+    ]
+
+    for file in ignored_files:
+        (base / file).touch()
+
+    for dir_name in ignored_dirs:
+        (base / dir_name).mkdir()
+
+    # Create non-ignored files and folders
+    (base / "visible_file.txt").touch()
+    (base / "visible_dir").mkdir()
+
+    return base
+
+
+def test_matches_patterns():
+    """Test that _matches_patterns correctly identifies ignored patterns."""
+    patterns = ["*.tmp", ".*", "*~", "temp_*"]
+
+    # Files that should be ignored
+    assert _matches_patterns("temp_file.tmp", patterns)
+    assert _matches_patterns(".hidden", patterns)
+    assert _matches_patterns("backup~", patterns)
+    assert _matches_patterns("temp_dir", patterns)
+
+    # Files that should not be ignored
+    assert not _matches_patterns("visible.txt", patterns)
+    assert not _matches_patterns("normal_file", patterns)
+    assert not _matches_patterns("music.mp3", patterns)
+
+
+def test_from_path_ignores_files_and_folders(tmp_dir_with_ignored_items):
+    """Test that Folder.from_path ignores files and folders based on patterns."""
+    # Mock the config to return specific ignore patterns
+    ignore_patterns = ["*.tmp", ".*", "*~", "temp_*"]
+
+    # Patch the get_config function to return our test ignore patterns
+    with mock.patch("beets_flask.disk.get_config") as mock_get_config:
+        mock_get_config.return_value = AttrDict(
+            {
+                "ignore_globs": ignore_patterns,
+            }
+        )
+
+        folder = Folder.from_path(tmp_dir_with_ignored_items, subdirs=False)
+
+        # Check that ignored files are not present
+        ignored_files = [".hidden_file.txt", "temp_file.tmp", "backup~"]
+        for file in ignored_files:
+            assert not any(os.path.basename(c.full_path) == file for c in folder.walk())
+
+        # Check that ignored directories are not present
+        ignored_dirs = [".hidden_dir", "temp_dir"]
+        for dir_name in ignored_dirs:
+            assert not any(
+                os.path.basename(c.full_path) == dir_name for c in folder.walk()
+            )
+
+        # Check that non-ignored items are present
+        assert any(
+            os.path.basename(c.full_path) == "visible_file.txt" for c in folder.walk()
+        )
+        assert any(
+            os.path.basename(c.full_path) == "visible_dir" for c in folder.walk()
+        )
+
+
+def test_from_path_ignores_nested_items(tmpdir):
+    """Test that Folder.from_path ignores nested files and folders."""
+    base = Path(tmpdir)
+
+    # Create a nested structure with ignored items
+    (base / "visible_dir").mkdir()
+    (base / "visible_dir" / ".hidden_nested").mkdir()
+    (base / "visible_dir" / ".hidden_nested" / "file.txt").touch()
+    (base / "visible_dir" / "temp_file.tmp").touch()
+    (base / "visible_dir" / "normal_file.txt").touch()
+
+    # Mock the config to return specific ignore patterns
+    ignore_patterns = ["*.tmp", ".*"]
+
+    with mock.patch("beets_flask.disk.get_config") as mock_get_config:
+        mock_get_config.return_value = AttrDict(
+            {
+                "ignore_globs": ignore_patterns,
+            }
+        )
+
+        folder = Folder.from_path(base, subdirs=True)
+
+        # Check that ignored nested items are not present
+        assert not any(
+            os.path.basename(c.full_path) == ".hidden_nested" for c in folder.walk()
+        )
+        assert not any(
+            os.path.basename(c.full_path) == "temp_file.tmp" for c in folder.walk()
+        )
+
+        # Check that non-ignored nested items are present
+        assert any(
+            os.path.basename(c.full_path) == "normal_file.txt" for c in folder.walk()
+        )

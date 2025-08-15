@@ -146,6 +146,25 @@ class InteractiveBeetsConfig(BeetsConfig, metaclass=Singleton):
                 "autotag": False,
             }
 
+    @property
+    def ignore_globs(self) -> list[str]:
+        """
+        Get the list of ignore globs from the config.
+
+        If user does not set this in their beets flask config, we use whats in beets.
+        (We do this via a placeholder string "_use_beets_ignore")
+        If the user sets an empty list [], that means no files are ignored.
+
+        """
+        gui_globs: list[str] | str = get_config()["gui"]["inbox"]["ignore"].get()  # type: ignore
+        if gui_globs is None or gui_globs == "_use_beets_ignore":
+            gui_globs: list[str] = self["ignore"].as_str_seq()  # type: ignore
+        elif isinstance(gui_globs, str):
+            gui_globs = [gui_globs]
+        elif isinstance(gui_globs, list):
+            gui_globs = gui_globs
+        return gui_globs
+
 
 # Monkey patch the beets config
 import beets
