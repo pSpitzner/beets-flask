@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Simplified translucent scroll setup in `__root.tsx`
 
+### Added
+
+- The items/track view now shows some basic information and you may play the track from there too.
+
 ## [1.1.0] - 25-07-29
 
 ### Added
