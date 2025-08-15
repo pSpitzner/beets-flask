@@ -44,10 +44,8 @@ function SearchPage() {
                     display: "flex",
                     flexDirection: "column",
                     gap: theme.spacing(1),
-                    paddingTop: theme.spacing(1),
+                    paddingTop: theme.spacing(1.5),
                     paddingInline: theme.spacing(1),
-                    minHeight: "100%",
-                    height: "100%",
                     // styling for code blocks
                     code: {
                         backgroundColor: "#212529",
@@ -57,6 +55,7 @@ function SearchPage() {
                         fontSize: "0.9em",
                         whiteSpace: "nowrap",
                     },
+                    height: "100%",
                 })}
             >
                 <SearchBar />
@@ -67,6 +66,7 @@ function SearchPage() {
                         gap: 1,
                         width: "100%",
                         height: "100%",
+                        overflow: "auto",
 
                         [theme.breakpoints.down("laptop")]: {
                             flexDirection: "column",
