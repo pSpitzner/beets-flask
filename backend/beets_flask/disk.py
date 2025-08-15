@@ -5,6 +5,7 @@ import re
 import subprocess
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from fnmatch import fnmatch
 from pathlib import Path
 from typing import (
     Iterator,
@@ -23,12 +24,12 @@ from beets.importer import (
 from cachetools import Cache, TTLCache, cached
 from natsort import os_sorted
 
+from beets_flask.config import get_config
 from beets_flask.dirhash_custom import archive_hash, dirhash_c
 from beets_flask.logger import log
 from beets_flask.utility import AUDIO_EXTENSIONS
 
 # Regex pattern to exclude hidden files (files starting with ".")
-non_hidden_regex = re.compile(r"^(?!\.).+$")
 audio_regex = re.compile(
     r".*\.(" + "|".join(AUDIO_EXTENSIONS) + ")$",
     re.IGNORECASE,
@@ -81,6 +82,11 @@ def fs_item_from_path(
         return File.from_path(path, cache=cache)
 
 
+def _matches_patterns(s: str, patterns: list[str]) -> bool:
+    """Check if a string matches any of the given patterns."""
+    return any(fnmatch(s, pat) for pat in patterns)
+
+
 @dataclass
 class Folder(FileSystemItem):
     children: Sequence[FileSystemItem]
@@ -109,6 +115,8 @@ class Folder(FileSystemItem):
     ) -> Folder:
         """Create a Folder object from a path."""
 
+        ignore_globs = get_config().ignore_globs
+
         if isinstance(path, str):
             path = Path(path)
 
@@ -129,19 +137,28 @@ class Folder(FileSystemItem):
 
         # Iterate over all directories from bottom to top
         for dirpath, dirnames, filenames in os.walk(path, topdown=False):
+            if _matches_patterns(os.path.basename(dirpath), ignore_globs):
+                continue
+
+            # Skip ignored files
+            # TODO: I think we could optimize this by
+            # compiling to regex
+            _dirnames = filter(
+                lambda d: not _matches_patterns(d, ignore_globs), dirnames
+            )
+            _filenames = filter(
+                lambda f: not _matches_patterns(f, ignore_globs), filenames
+            )
+
             # As we iterate from bottom to top, we can access the elements from
             # the lookup table as they are already created
             children: list[FileSystemItem] = [
                 lookup[os.path.join(dirpath, sub_dir)]
-                for sub_dir in os_sorted(dirnames)
+                for sub_dir in os_sorted(_dirnames)
             ]
 
             # Add all files to children
-            for filename in os_sorted(filenames):
-                # Skip hidden files
-                if not non_hidden_regex.match(filename):
-                    continue
-
+            for filename in os_sorted(_filenames):
                 full_path = os.path.join(dirpath, filename)
                 # Here, we know this not a folder, so we can use fs_item_from_path.
                 children.append(

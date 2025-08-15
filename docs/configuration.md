@@ -89,3 +89,35 @@ The `gui.num_preview_workers` option specifies the number of worker threads that
 ```{info}
 You can use multiple workers to fetch candidates before importing (previewing). However, the import itself is always done sequentially. This is to ensure that the import process is not interrupted by other operations.
 ```
+
+---
+
+The `gui.inbox.ignore` option specifies a list of file patterns to ignore when scanning the inbox folders. This is useful to exclude temporary files or other unwanted files from being shown in the inbox. 
+
+If not set, this will default to the [`ignore`](https://docs.beets.io/en/stable/reference/config.html#ignore) config from the `beets/config.yaml` file.
+
+To show all files in the inbox (independent of which files beets will copy) set this to an empty list `[]`.
+
+```yaml
+# beets-flask/config.yaml
+gui:
+  inbox:
+    ignore:
+        # Usually you want to keep these in place.
+        # When customizing, we _do not_ copy beets defaults over.
+        - ".*"
+        - "*~"
+        - "System Volume Information"
+        - "lost+found"
+        # also exclude some common resource files on Synology NAS
+        - "@eaDir"
+        - "@SynoEAStream"
+
+# default in beets config
+ignore:
+  - ".*"
+  - "*~"
+  - "System Volume Information"
+  - "lost+found"
+
+```
