@@ -143,11 +143,10 @@ class Folder(FileSystemItem):
             # Skip ignored files
             # TODO: I think we could optimize this by
             # compiling to regex
-            dirnames = filter(
+            _dirnames = filter(
                 lambda d: not _matches_patterns(d, ignore_globs), dirnames
             )
-
-            filenames = filter(
+            _filenames = filter(
                 lambda f: not _matches_patterns(f, ignore_globs), filenames
             )
 
@@ -155,11 +154,11 @@ class Folder(FileSystemItem):
             # the lookup table as they are already created
             children: list[FileSystemItem] = [
                 lookup[os.path.join(dirpath, sub_dir)]
-                for sub_dir in os_sorted(dirnames)
+                for sub_dir in os_sorted(_dirnames)
             ]
 
             # Add all files to children
-            for filename in os_sorted(filenames):
+            for filename in os_sorted(_filenames):
                 full_path = os.path.join(dirpath, filename)
                 # Here, we know this not a folder, so we can use fs_item_from_path.
                 children.append(

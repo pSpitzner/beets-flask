@@ -26,6 +26,7 @@ print(config["gui"]["tags"].get(default="default_value"))
 """
 
 import os
+from typing import cast
 
 from beets import IncludeLazyConfig as BeetsConfig
 from beets.plugins import load_plugins
@@ -163,7 +164,7 @@ class InteractiveBeetsConfig(BeetsConfig, metaclass=Singleton):
             gui_globs = [gui_globs]
         elif isinstance(gui_globs, list):
             gui_globs = gui_globs
-        return gui_globs
+        return cast(list[str], gui_globs)
 
 
 # Monkey patch the beets config
