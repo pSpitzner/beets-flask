@@ -4,7 +4,7 @@
 
 Beets by default does not support 7z and rar files. However, you can enable support for these formats by installing the `unrar` and/or `py7zr` packages in your container. (See also [beets documentation](https://beets.readthedocs.io/en/stable/reference/cli.html#import)).
 
-As we are running an alpine image this is not as straightforward as it sounds. 
+As we are running an alpine image this is not as straightforward as it sounds.
 
 ### `rar` support
 
@@ -33,14 +33,34 @@ rarfile
 
 ### `7z` support
 
-To enable `7z` support, you can use the `py7zr` package, which also needs some shenanigans to install on Alpine Linux. 
+To enable `7z` support, you can use the `py7zr` package, which also needs some shenanigans to install on Alpine Linux.
 
 ```bash
 # /config/startup.sh
 apk add gcc musl-dev linux-headers
 
-```txt
 # /config/requirements.txt
 py7zr
 ```
 
+## Troubleshooting and Debugging
+
+A good starting point is to check the logs of the container. We can do this by running:
+
+```bash
+docker logs beets-flask
+```
+
+To get more detailed information, we can set environment variable of the container:
+
+```yaml
+services:
+    beets-flask:
+        environment:
+            BEETSFLASKLOG: "/logs/beets-flask.log"
+            LOG_LEVEL_BEETSFLASK: DEBUG
+        volumes:
+            - /path/to/logs/on/host:/logs
+```
+
+Which lets you increase the logs verbosity, and define where to put the logs.
