@@ -7,6 +7,8 @@ RUN addgroup -g 1000 beetle && \
     adduser -D -u 1000 -G beetle beetle
 
 ENV HOSTNAME="beets-container"
+ENV EDITOR="vi"
+# need to set some cli editor so `beet edit` works, vi comes with alpine
 
 # map beets directory and our configs to /config
 RUN mkdir -p /config/beets
