@@ -26,6 +26,7 @@ print(config["gui"]["tags"].get(default="default_value"))
 """
 
 import os
+import sys
 from typing import cast
 
 from beets import IncludeLazyConfig as BeetsConfig
@@ -180,6 +181,9 @@ def refresh_config():
     """
     global config
 
+    # Keep reference to old config
+    old_config = getattr(beets, "config", None)
+
     config = InteractiveBeetsConfig()
 
     # Hack: We have to manually load the plugins as this
@@ -189,6 +193,27 @@ def refresh_config():
     log.debug(f"Loading plugins: {plugin_list}")
 
     beets.config = config
+    sys.modules["beets"].config = config  # type: ignore
+
+    # Update any existing references in other modules
+    for module_name, mod in list(sys.modules.items()):
+        if mod is None:
+            continue
+
+        if not (
+            module_name.startswith("beets")  # includes beets and beetsplug
+        ):
+            continue
+
+        for attr_name in dir(mod):
+            try:
+                if getattr(mod, attr_name) is old_config:
+                    setattr(mod, attr_name, config)
+                    log.debug(f"Updated config in {module_name}.{attr_name}")
+            except Exception as e:
+                log.debug(f"Could not check {module_name}.{attr_name}", exc_info=e)
+                continue
+
     return config
 
 
