@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - Upcoming
 
+
+## [1.1.2] - 29-08-15
+
 ### Fixed
 
 - Updated refresh_config to scan all modules for config references and overwrite them as needed to ensure consistency [#188](https://github.com/pSpitzner/beets-flask/issues/188)
@@ -187,7 +190,8 @@ Small version bump with fixes before jumping to 1.0.0.
 -   initial commit
 
 
-[Unreleased]: https://github.com/pSpitzner/beets-flask/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/pSpitzner/beets-flask/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/pSpitzner/beets-flask/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/pSpitzner/beets-flask/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/pSpitzner/beets-flask/compare/v1.0.3...v1.1.0
 [1.0.3]: https://github.com/pSpitzner/beets-flask/compare/v1.0.2...v1.0.3
