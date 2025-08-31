@@ -26,7 +26,7 @@ curl -LsSf https://api.github.com/repos/EDM115/unrar-alpine/releases/latest \
 apk add --no-cache libstdc++ libgcc
 ```
 
-```txt
+```bash
 # /config/requirements.txt
 rarfile
 ```

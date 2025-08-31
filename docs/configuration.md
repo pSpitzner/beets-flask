@@ -27,17 +27,17 @@ The `gui.library` section contains options for the library view in the web inter
 Allows you to configure the inboxes that are used to automatically import music files into your library. You may add multiple inboxes, each may have a different purpose.
 
 
-The `gui.inbox.folders` section allows you to define multiple inboxes, each with a name, path, and an `autotag` setting. The `autotag` setting determines how the files in the inbox are processed by beets-flask. 
+The `gui.inbox.folders` section allows you to define multiple inboxes, each with a name, path, and an `autotag` setting. The `autotag` setting determines how the files in the inbox are processed by beets-flask.
 
 - <i data-lucide="inbox"></i> `"no"` you have to do everything manually.
 - <i data-lucide="tag"></i> `"preview"` fetch meta data from online sources, but don't import yet.
 - <i data-lucide="rocket"></i> `"auto"` fetch meta data, and import if the match is good enough (based on threshold).
-- <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sneaker-icon lucide-sneaker"><path d="M14.1 7.9 12.5 10"/><path d="M17.4 10.1 16 12"/><path d="M2 16a2 2 0 0 0 2 2h13c2.8 0 5-2.2 5-5a2 2 0 0 0-2-2c-.8 0-1.6-.2-2.2-.7l-6.2-4.2c-.4-.3-.9-.2-1.3.1 0 0-.6.8-1.2 1.1a3.5 3.5 0 0 1-4.2.1C4.4 7 3.7 6.3 3.7 6.3A.92.92 0 0 0 2 7Z"/><path d="M2 11c0 1.7 1.3 3 3 3h7"/></svg> `"bootleg"` you are sure the meta data is fine, or it does not exist online.    
+- <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sneaker-icon lucide-sneaker"><path d="M14.1 7.9 12.5 10"/><path d="M17.4 10.1 16 12"/><path d="M2 16a2 2 0 0 0 2 2h13c2.8 0 5-2.2 5-5a2 2 0 0 0-2-2c-.8 0-1.6-.2-2.2-.7l-6.2-4.2c-.4-.3-.9-.2-1.3.1 0 0-.6.8-1.2 1.1a3.5 3.5 0 0 1-4.2.1C4.4 7 3.7 6.3 3.7 6.3A.92.92 0 0 0 2 7Z"/><path d="M2 11c0 1.7 1.3 3 3 3h7"/></svg> `"bootleg"` you are sure the meta data is fine, or it does not exist online.
     Drop files to import as-is in here, _but still create one subfolder for each
     import session you want to create_. (Beets acts on _folders_.
     Files directly inside the inbox wont trigger an imported)
 
-#### Multiple inboxes example configuration
+### Multiple inboxes example configuration
 
 Note that the top label (i.e. Inbox1, Inbox2...) does not matter.
 
@@ -86,13 +86,13 @@ The `gui.terminal.start_path` option specifies the path that is used when starti
 
 The `gui.num_preview_workers` option specifies the number of worker threads that are used to generate previews for the inboxes. This is useful to speed up the preview generation process, especially when you have a large number of items in your inboxes. The default value is `4`.
 
-```{info}
+```{note}
 You can use multiple workers to fetch candidates before importing (previewing). However, the import itself is always done sequentially. This is to ensure that the import process is not interrupted by other operations.
 ```
 
 ---
 
-The `gui.inbox.ignore` option specifies a list of file patterns to ignore when scanning the inbox folders. This is useful to exclude temporary files or other unwanted files from being shown in the inbox. 
+The `gui.inbox.ignore` option specifies a list of file patterns to ignore when scanning the inbox folders. This is useful to exclude temporary files or other unwanted files from being shown in the inbox.
 
 If not set, this will default to the [`ignore`](https://docs.beets.io/en/stable/reference/config.html#ignore) config from the `beets/config.yaml` file.
 

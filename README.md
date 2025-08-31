@@ -47,6 +47,7 @@ This is the main idea with beets-flask: For all folders in your inbox, we genera
 
 We provide a docker image with the full beeets-flask setup. You can run it with docker-compose or docker. We recommend using the `stable` tag, alternatively you may use `latest` for the most recent build.
 
+
 ### Setup container
 
 **Using docker**
@@ -104,3 +105,7 @@ This will create a container with the following folder structure:
 ```
 
 Check our [**documentation**](https://beets-flask.readthedocs.io/en/latest/) for more information!
+
+## Limitations
+
+There are a few known issues, see the corresponding [docs section](https://beets-flask.readthedocs.io/latest/limitations.html) for details.

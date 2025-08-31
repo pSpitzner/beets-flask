@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - Upcoming
 
+### Added
+- Docs now have a section on [limiations](https://beets-flask.readthedocs.io/latest/limitations.html)
+
+### Fixed
+- Trailing slashes in configured inbox paths no longer cause crashes. [#182](https://github.com/pSpitzner/beets-flask/issues/182)
+- The container now sets the `EDITOR` environment variable to `vi` so that `beet edit` and `beet config -e` work out of the box.
 
 ## [1.1.2] - 29-08-15
 
@@ -45,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
--   Fixed search results not showing [#161](https://github.com/pSpitzner/beets-flask/issues/161)) 
+-   Fixed search results not showing [#161](https://github.com/pSpitzner/beets-flask/issues/161))
 -   Fixed search box not clickable on small screens [#162](https://github.com/pSpitzner/beets-flask/issues/162)
 
 ## [1.0.2] - 25-07-21
