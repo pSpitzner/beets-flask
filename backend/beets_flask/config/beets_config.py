@@ -148,6 +148,13 @@ class InteractiveBeetsConfig(BeetsConfig, metaclass=Singleton):
                 "autotag": False,
             }
 
+        # make sure to remove trailing slashes from user configured inbox paths
+        for folder in self["gui"]["inbox"]["folders"].values():
+            fp: str = folder["path"].as_str()  # type: ignore
+            if fp.endswith("/"):
+                folder["path"] = fp.rstrip("/")
+                log.debug(f"Removed trailing slash from inbox path: {folder['path']}")
+
     @property
     def ignore_globs(self) -> list[str]:
         """
