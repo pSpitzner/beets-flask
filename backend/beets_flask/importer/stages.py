@@ -519,9 +519,9 @@ def manipulate_files(
             operation = MoveOperation.COPY
 
         task.manipulate_files(
+            session,
             operation,
-            write=session.config["write"],
-            session=session,
+            write=session.config["write"]
         )
 
     # Progress, cleanup, and event.

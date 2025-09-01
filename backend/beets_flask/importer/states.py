@@ -688,9 +688,7 @@ class CandidateState(BaseState):
             List[str],
             get_config()["import"]["duplicate_keys"]["album"].as_str_seq() or [],
         )
-        dup_query = library.Album.all_fields_query(
-            {key: tmp_album.get(key) for key in keys}
-        )
+        dup_query = tmp_album.duplicates_query(keys)
 
         # Re-Importing: Don't count albums with the same files as duplicates.
         task_paths = {i.path for i in self.task_state.task.items if i}
