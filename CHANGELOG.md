@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Docs now have a section on [limiations](https://beets-flask.readthedocs.io/latest/limitations.html)
 
+### Dependencies
+
+- Updated `beets` to version `2.3.1`
+
 ### Fixed
 - Trailing slashes in configured inbox paths no longer cause crashes. [#182](https://github.com/pSpitzner/beets-flask/issues/182)
 - The container now sets the `EDITOR` environment variable to `vi` so that `beet edit` and `beet config -e` work out of the box.
