@@ -8,7 +8,7 @@ Plugin support is experimental.
 Installing beets plugins varies depending on the particular plugin.
 [See the official docs](https://docs.beets.io/en/latest/plugins/index.html).
 
-We might automate this in the future, but for now you can place a `requirements.txt` and/or `startup.sh` in the `/config` folder. The `requirements.txt` may include [python dependencies](https://pip.pypa.io/en/stable/reference/requirements-file-format/), and the `startup.sh` file may be an executable shell script that is compatible with the container's alpine linux base.
+We might automate this in the future, but for now you can place a `requirements.txt` and/or `startup.sh` in either the `/config` folder or `/config/beets-flask` folder. The `requirements.txt` may include [python dependencies](https://pip.pypa.io/en/stable/reference/requirements-file-format/), and the `startup.sh` file may be an executable shell script that is compatible with the container's alpine linux base.
 
 On startup, the container will run the startup script if it exists, and afterwards install the requirements from the `requirements.txt` file using pip.
 
@@ -16,7 +16,7 @@ On startup, the container will run the startup script if it exists, and afterwar
 
 For example, we can install the [keyfinder plugin](https://docs.beets.io/en/latest/plugins/keyfinder.html) via `startup.sh`, as  it requires quite a few build steps.
 
-Place the following in a `startup.sh` file in the `/config` folder.
+Place the following in a `startup.sh` file in either the `/config` folder or `/config/beets-flask` folder.
 
 ```sh
 #!/bin/sh
