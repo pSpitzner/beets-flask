@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Issue with vite server not correctly loading `pythonTypes.ts` on first start (tabs vs space issue). Only occurred in dev mode only.
-- Dev docker container now also uses `beetle` user instead of root, to better mimic production environment.
+- Resolved an issue in Vite development server where pythonTypes.ts would fail to load on first start due to inconsistent indentation (tabs vs spaces). This only affected the dev environment.
+- Development Docker container now runs as the `beetle` user instead of root, improving parity with the production environment.
 
 ### Dependencies
 
