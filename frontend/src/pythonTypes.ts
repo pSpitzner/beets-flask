@@ -7,331 +7,331 @@ export type File = FileSystemItem;
 
 
 export interface SerializedSessionState {
-	id: string;
-	created_at: Date;
-	updated_at: Date;
-	folder_path: string;
-	folder_hash: string;
-	tasks: Array<SerializedTaskState>;
-	status: SerializedProgressState;
-	exc?: SerializedException | null;
+    id: string;
+    created_at: Date;
+    updated_at: Date;
+    folder_path: string;
+    folder_hash: string;
+    tasks: Array<SerializedTaskState>;
+    status: SerializedProgressState;
+    exc?: SerializedException | null;
 }
 
 export interface SerializedProgressState {
-	progress: Progress;
-	message: null | string;
-	plugin_name: null | string;
+    progress: Progress;
+    message: null | string;
+    plugin_name: null | string;
 }
 
 export interface Search {
-	search_ids: Array<string>;
-	search_artist: null | string;
-	search_album: null | string;
+    search_ids: Array<string>;
+    search_artist: null | string;
+    search_album: null | string;
 }
 
 export interface LibraryStats {
-	libraryPath: string;
-	items: number;
-	albums: number;
-	artists: number;
-	genres: number;
-	labels: number;
-	size: number;
-	lastItemAdded: null | number;
-	lastItemModified: null | number;
-	runtime: number;
+    libraryPath: string;
+    items: number;
+    albums: number;
+    artists: number;
+    genres: number;
+    labels: number;
+    size: number;
+    lastItemAdded: null | number;
+    lastItemModified: null | number;
+    runtime: number;
 }
 
 export interface JobStatusUpdate {
-	message: string;
-	num_jobs: number;
-	job_metas: Array<JobMeta>;
-	exc: SerializedException | null;
-	event: "job_status_update";
+    message: string;
+    num_jobs: number;
+    job_metas: Array<JobMeta>;
+    exc: SerializedException | null;
+    event: "job_status_update";
 }
 
 export interface InboxStats {
-	name: string;
-	path: string;
-	tagged_via_gui: number;
-	imported_via_gui: number;
-	size: number;
-	nFiles: number;
-	last_created: Date | null;
+    name: string;
+    path: string;
+    tagged_via_gui: number;
+    imported_via_gui: number;
+    size: number;
+    nFiles: number;
+    last_created: Date | null;
 }
 
 export interface FolderStatusUpdate {
-	path: string;
-	hash: string;
-	status: FolderStatus;
-	exc: SerializedException | null;
-	event: "folder_status_update";
+    path: string;
+    hash: string;
+    status: FolderStatus;
+    exc: SerializedException | null;
+    event: "folder_status_update";
 }
 
 export interface Folder extends FileSystemItem {
-	children: Array<FileSystemItem>;
+    children: Array<FileSystemItem>;
 }
 
 export interface FileSystemUpdate {
-	exc: SerializedException | null;
-	event: "file_system_update";
+    exc: SerializedException | null;
+    event: "file_system_update";
 }
 
 export interface Archive extends FileSystemItem {
-	is_album: boolean;
+    is_album: boolean;
 }
 
 export interface AlbumResponseMinimalExpanded {
-	id: number;
-	name: string;
-	albumartist: string;
-	year: number;
-	added: Date;
-	items: Array<ItemResponseMinimal>;
-	gui_import_id?: string;
-	gui_import_date?: string;
-	albumtype?: string;
+    id: number;
+    name: string;
+    albumartist: string;
+    year: number;
+    added: Date;
+    items: Array<ItemResponseMinimal>;
+    gui_import_id?: string;
+    gui_import_date?: string;
+    albumtype?: string;
 }
 
 export interface AlbumResponseMinimal {
-	id: number;
-	name: string;
-	albumartist: string;
-	year: number;
-	added: Date;
+    id: number;
+    name: string;
+    albumartist: string;
+    year: number;
+    added: Date;
 }
 
 export interface AlbumResponseExpanded {
-	id: number;
-	name: string;
-	albumartist: string;
-	year: number;
-	added: Date;
-	genre: string;
-	label: string;
-	sources: Array<AlbumSource>;
-	items: Array<ItemResponse>;
-	gui_import_id?: string;
-	gui_import_date?: string;
-	albumtype?: string;
+    id: number;
+    name: string;
+    albumartist: string;
+    year: number;
+    added: Date;
+    genre: string;
+    label: string;
+    sources: Array<AlbumSource>;
+    items: Array<ItemResponse>;
+    gui_import_id?: string;
+    gui_import_date?: string;
+    albumtype?: string;
 }
 
 export interface AlbumResponse {
-	id: number;
-	name: string;
-	albumartist: string;
-	year: number;
-	added: Date;
-	genre: string;
-	label: string;
-	sources: Array<AlbumSource>;
+    id: number;
+    name: string;
+    albumartist: string;
+    year: number;
+    added: Date;
+    genre: string;
+    label: string;
+    sources: Array<AlbumSource>;
 }
 
 export enum Progress {
-	NOT_STARTED = 0,
-	READING_FILES = 10,
-	GROUPING_ALBUMS = 11,
-	LOOKING_UP_CANDIDATES = 12,
-	IDENTIFYING_DUPLICATES = 13,
-	PREVIEW_COMPLETED = 20,
-	DELETION_COMPLETED = 21,
-	OFFERING_MATCHES = 30,
-	MATCH_THRESHOLD = 31,
-	WAITING_FOR_USER_SELECTION = 32,
-	EARLY_IMPORTING = 33,
-	IMPORTING = 34,
-	MANIPULATING_FILES = 35,
-	IMPORT_COMPLETED = 40,
-	DELETING = 50,
+    NOT_STARTED = 0,
+    READING_FILES = 10,
+    GROUPING_ALBUMS = 11,
+    LOOKING_UP_CANDIDATES = 12,
+    IDENTIFYING_DUPLICATES = 13,
+    PREVIEW_COMPLETED = 20,
+    DELETION_COMPLETED = 21,
+    OFFERING_MATCHES = 30,
+    MATCH_THRESHOLD = 31,
+    WAITING_FOR_USER_SELECTION = 32,
+    EARLY_IMPORTING = 33,
+    IMPORTING = 34,
+    MANIPULATING_FILES = 35,
+    IMPORT_COMPLETED = 40,
+    DELETING = 50,
 }
 
 export enum FolderStatus {
-	UNKNOWN = -2,
-	FAILED = -1,
-	NOT_STARTED = 0,
-	PENDING = 1,
-	PREVIEWING = 2,
-	PREVIEWED = 3,
-	IMPORTING = 4,
-	IMPORTED = 5,
-	DELETING = 6,
-	DELETED = 7,
+    UNKNOWN = -2,
+    FAILED = -1,
+    NOT_STARTED = 0,
+    PENDING = 1,
+    PREVIEWING = 2,
+    PREVIEWED = 3,
+    IMPORTING = 4,
+    IMPORTED = 5,
+    DELETING = 6,
+    DELETED = 7,
 }
 
 export enum EnqueueKind {
-	PREVIEW = 'preview',
-	PREVIEW_ADD_CANDIDATES = 'preview_add_candidates',
-	IMPORT_CANDIDATE = 'import_candidate',
-	IMPORT_AUTO = 'import_auto',
-	IMPORT_UNDO = 'import_undo',
-	IMPORT_BOOTLEG = 'import_bootleg',
-	_AUTO_IMPORT = '_auto_import',
-	_AUTO_PREVIEW = '_auto_preview',
+    PREVIEW = 'preview',
+    PREVIEW_ADD_CANDIDATES = 'preview_add_candidates',
+    IMPORT_CANDIDATE = 'import_candidate',
+    IMPORT_AUTO = 'import_auto',
+    IMPORT_UNDO = 'import_undo',
+    IMPORT_BOOTLEG = 'import_bootleg',
+    _AUTO_IMPORT = '_auto_import',
+    _AUTO_PREVIEW = '_auto_preview',
 }
 
 export enum CandidateChoiceFallback {
-	ASIS = 1,
-	BEST = 2,
+    ASIS = 1,
+    BEST = 2,
 }
 
 export interface SerializedException {
-	type: string;
-	message: string;
-	description?: null | string;
-	trace?: null | string;
+    type: string;
+    message: string;
+    description?: null | string;
+    trace?: null | string;
 }
 
 export interface Metadata {
-	artist: null | string;
-	album: null | string;
-	albumartist: null | string;
-	year: null | string;
-	disctotal: null | string;
-	mb_albumid: null | string;
-	label: null | string;
-	barcode: null | string;
-	catalognum: null | string;
-	country: null | string;
-	media: null | string;
-	albumdisambig: null | string;
+    artist: null | string;
+    album: null | string;
+    albumartist: null | string;
+    year: null | string;
+    disctotal: null | string;
+    mb_albumid: null | string;
+    label: null | string;
+    barcode: null | string;
+    catalognum: null | string;
+    country: null | string;
+    media: null | string;
+    albumdisambig: null | string;
 }
 
 export interface SerializedTaskState {
-	id: string;
-	created_at: Date;
-	updated_at: Date;
-	items: Array<ItemInfo>;
-	current_metadata: Metadata;
-	candidates: Array<SerializedCandidateState>;
-	asis_candidate: SerializedCandidateState;
-	duplicate_action: null | string;
-	chosen_candidate_id: null | string;
-	completed: boolean;
-	toppath: null | string;
-	paths: Array<string>;
+    id: string;
+    created_at: Date;
+    updated_at: Date;
+    items: Array<ItemInfo>;
+    current_metadata: Metadata;
+    candidates: Array<SerializedCandidateState>;
+    asis_candidate: SerializedCandidateState;
+    duplicate_action: null | string;
+    chosen_candidate_id: null | string;
+    completed: boolean;
+    toppath: null | string;
+    paths: Array<string>;
 }
 
 export interface SerializedCandidateState {
-	id: string;
-	created_at: Date;
-	updated_at: Date;
-	duplicate_ids: Array<string>;
-	type: string;
-	penalties: Array<string>;
-	distance: number;
-	info: AlbumInfo | ItemInfo | TrackInfo;
-	mapping: Record<number, number>;
-	tracks: Array<TrackInfo>;
+    id: string;
+    created_at: Date;
+    updated_at: Date;
+    duplicate_ids: Array<string>;
+    type: string;
+    penalties: Array<string>;
+    distance: number;
+    info: AlbumInfo | ItemInfo | TrackInfo;
+    mapping: Record<number, number>;
+    tracks: Array<TrackInfo>;
 }
 
 export interface JobMeta {
-	folder_hash: string;
-	folder_path: string;
-	job_id: string;
-	job_kind: string;
-	job_frontend_ref?: null | string;
+    folder_hash: string;
+    folder_path: string;
+    job_id: string;
+    job_kind: string;
+    job_frontend_ref?: null | string;
 }
 
 export interface ItemResponseMinimal {
-	id: number;
-	name: string;
-	path: string;
-	artist: string;
-	year: number;
-	album: string;
-	albumartist: string;
-	album_id: number;
-	isrc?: string;
-	size: number;
+    id: number;
+    name: string;
+    path: string;
+    artist: string;
+    year: number;
+    album: string;
+    albumartist: string;
+    album_id: number;
+    isrc?: string;
+    size: number;
 }
 
 export interface ItemSource {
-	source: string;
-	track_id: string;
-	album_id?: string;
-	artist_id?: string;
-	extra?: Record<string, Array<string> | string>;
+    source: string;
+    track_id: string;
+    album_id?: string;
+    artist_id?: string;
+    extra?: Record<string, Array<string> | string>;
 }
 
 export interface ItemResponse {
-	id: number;
-	name: string;
-	path: string;
-	artist: string;
-	year: number;
-	album: string;
-	albumartist: string;
-	album_id: number;
-	isrc?: string;
-	size: number;
-	genre: string;
-	label: string;
-	samplerate: number;
-	bitrate: number;
-	bpm: number;
-	bitdepth: number;
-	channels: number;
-	format: string;
-	encoder_info: string;
-	encoder_settings: string;
-	initial_key: string;
-	length: number;
-	track: number;
-	tracktotal: number;
-	added: number;
-	catalognum: string;
-	sources: Array<ItemSource>;
+    id: number;
+    name: string;
+    path: string;
+    artist: string;
+    year: number;
+    album: string;
+    albumartist: string;
+    album_id: number;
+    isrc?: string;
+    size: number;
+    genre: string;
+    label: string;
+    samplerate: number;
+    bitrate: number;
+    bpm: number;
+    bitdepth: number;
+    channels: number;
+    format: string;
+    encoder_info: string;
+    encoder_settings: string;
+    initial_key: string;
+    length: number;
+    track: number;
+    tracktotal: number;
+    added: number;
+    catalognum: string;
+    sources: Array<ItemSource>;
 }
 
 export interface MusicInfo {
-	type: "album" | "item" | "track";
-	artist: null | string;
-	album: null | string;
-	data_url: null | string;
-	data_source: null | string;
-	year: null | number;
-	genre: null | string;
-	media: null | string;
+    type: "album" | "item" | "track";
+    artist: null | string;
+    album: null | string;
+    data_url: null | string;
+    data_source: null | string;
+    year: null | number;
+    genre: null | string;
+    media: null | string;
 }
 
 export interface ItemInfo extends MusicInfo {
-	title: null | string;
-	length: null | number;
-	isrc: null | string;
-	index: null | number;
-	path: null | string;
-	bitrate: null | number;
-	format: null | string;
+    title: null | string;
+    length: null | number;
+    isrc: null | string;
+    index: null | number;
+    path: null | string;
+    bitrate: null | number;
+    format: null | string;
 }
 
 export interface FileSystemItem {
-	type: "archive" | "directory" | "file";
-	full_path: string;
-	hash: string;
-	is_album: boolean;
+    type: "archive" | "directory" | "file";
+    full_path: string;
+    hash: string;
+    is_album: boolean;
 }
 
 export interface AlbumSource {
-	source: string;
-	album_id: string;
-	artist_id?: string;
-	extra?: Record<string, string>;
+    source: string;
+    album_id: string;
+    artist_id?: string;
+    extra?: Record<string, string>;
 }
 
 export interface TrackInfo extends MusicInfo {
-	title: null | string;
-	length: null | number;
-	isrc: null | string;
-	index: null | number;
-	medium_index: null | number;
-	medium: null | number;
+    title: null | string;
+    length: null | number;
+    isrc: null | string;
+    index: null | number;
+    medium_index: null | number;
+    medium: null | number;
 }
 
 export interface AlbumInfo extends MusicInfo {
-	mediums: null | number;
-	country: null | string;
-	label: null | string;
-	catalognum: null | string;
-	albumdisambig: null | string;
+    mediums: null | number;
+    country: null | string;
+    label: null | string;
+    catalognum: null | string;
+    albumdisambig: null | string;
 }
 

@@ -101,7 +101,11 @@ ENV IB_SERVER_CONFIG="dev_docker"
 # relies on mounting this volume
 WORKDIR /repo
 USER root
-ENTRYPOINT ["./docker/entrypoints/entrypoint_dev.sh"]
+ENTRYPOINT [ \
+    "/bin/sh", "-c", \
+    "./docker/entrypoints/entrypoint_fix_permissions.sh && \ 
+    su beetle -c ./docker/entrypoints/entrypoint_dev.sh" \
+    ]
 
 # ------------------------------------------------------------------------------------ #
 #                                        Testing                                       #
