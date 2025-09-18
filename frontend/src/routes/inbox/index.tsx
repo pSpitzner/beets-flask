@@ -1,13 +1,4 @@
-import {
-    ClipboardIcon,
-    FolderClockIcon,
-    HistoryIcon,
-    ImportIcon,
-    InfoIcon,
-    TagIcon,
-    TerminalIcon,
-    Trash2Icon,
-} from "lucide-react";
+import { FolderClockIcon, InfoIcon, SettingsIcon, TagIcon } from "lucide-react";
 import { useState } from "react";
 import {
     Box,
@@ -20,6 +11,7 @@ import {
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
+import { Action } from "@/api/config";
 import { inboxQueryOptions } from "@/api/inbox";
 import { MatchChip, StyledChip } from "@/components/common/chips";
 import { Dialog } from "@/components/common/dialogs";
@@ -28,10 +20,13 @@ import {
     FolderStatusIcon,
     FolderTypeIcon,
     PenaltyTypeIcon,
-    SourceTypeIcon,
 } from "@/components/common/icons";
 import { PageWrapper } from "@/components/common/page";
-import { RefreshAllFoldersButton } from "@/components/inbox/actions/buttons";
+import {
+    ActionIcon,
+    RefreshAllFoldersButton,
+} from "@/components/inbox/actions/buttons";
+import { getActionDescription } from "@/components/inbox/actions/descriptions";
 import { InboxCard } from "@/components/inbox/cards/inboxCard";
 import { FolderSelectionProvider } from "@/components/inbox/folderSelectionContext";
 import { Folder } from "@/pythonTypes";
@@ -230,62 +225,34 @@ function InfoDescription() {
                         Actions
                     </Typography>
                     <Box component="p">
-                        You may trigger an action on one or multiple folders by right
-                        clicking on the folder or long pressing on mobile. You can also
-                        select multiple folders and trigger an action on all of the
-                        selected folders at once using the speed dial at the bottom left
-                        (right on mobile).
+                        You may trigger an action on one or multiple folders by
+                        selecting them and then clicking on one of the action buttons
+                        that appear at the bottom of the inbox.
+                    </Box>
+                    <Box component="p">
+                        You may configure the available actions and their order for each
+                        inbox using the settings button{" "}
+                        <SettingsIcon size={theme.iconSize.sm} /> in the top right
+                        corner of each inbox card.
                     </Box>
                     <Box
                         sx={{
                             display: "grid",
                             columnGap: 1,
-                            gridTemplateColumns: "min-content max-content auto",
-                            "> div": {
-                                display: "grid",
-                                gridTemplateColumns: "subgrid",
-                                gridColumn: "span 3",
-                                alignItems: "center",
-                            },
+                            gridTemplateColumns: "auto auto",
+                            gridAutoRows: "min-content min-content",
                             pl: 1,
+                            rowGap: 1,
                         }}
                         component="p"
                     >
-                        <Box>
-                            <TagIcon size={theme.iconSize.md} />
-                            <Typography>Retag</Typography>
-                            <Typography variant="caption">(description)</Typography>
-                        </Box>
-                        <Box sx={{ mt: 0.75 }}>
-                            <ImportIcon size={theme.iconSize.md} />
-                            <Typography>Import</Typography>
-                            <Typography variant="caption">(description)</Typography>
-                        </Box>
-                        <Box>
-                            <SourceTypeIcon size={theme.iconSize.md} type="asis" />
-                            <Typography>Import (asis)</Typography>
-                            <Typography variant="caption">(description)</Typography>
-                        </Box>
-                        <Box>
-                            <TerminalIcon size={theme.iconSize.md} />
-                            <Typography>Import (via terminal)</Typography>
-                            <Typography variant="caption">(description)</Typography>
-                        </Box>
-                        <Box sx={{ mt: 0.75 }}>
-                            <ClipboardIcon size={theme.iconSize.md} />
-                            <Typography>Copy path</Typography>
-                            <Typography variant="caption">(description)</Typography>
-                        </Box>
-                        <Box>
-                            <Trash2Icon size={theme.iconSize.md} />
-                            <Typography>Delete folder</Typography>
-                            <Typography variant="caption">(description)</Typography>
-                        </Box>
-                        <Box>
-                            <HistoryIcon size={theme.iconSize.md} />
-                            <Typography>Undo import</Typography>
-                            <Typography variant="caption">(description)</Typography>
-                        </Box>
+                        <ActionInfo action="retag" />
+                        <ActionInfo action="import_best" />
+                        <ActionInfo action="import_bootleg" />
+                        <ActionInfo action="import_terminal" />
+                        <ActionInfo action="copy_path" />
+                        <ActionInfo action="delete" />
+                        <ActionInfo action="undo" />
                     </Box>
                     {/* Tree view */}
                     <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
@@ -429,5 +396,29 @@ function InfoDescription() {
                 </DialogContent>
             </Dialog>
         </>
+    );
+}
+
+function ActionInfo({ action }: { action: Action["name"] }) {
+    return (
+        <Box>
+            <Box
+                sx={{
+                    display: "grid",
+                    gap: 1,
+                    alignItems: "center",
+                    gridTemplateColumns: "min-content max-content",
+                    flexShrink: 0,
+                }}
+            >
+                <ActionIcon action={action} />
+                <Typography>
+                    {action.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                </Typography>
+            </Box>
+            <Typography variant="caption" component="div">
+                {getActionDescription(action)}
+            </Typography>
+        </Box>
     );
 }
