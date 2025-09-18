@@ -21,3 +21,10 @@ The simple workaround is to place individual files in their own folder (or zip t
 See also:
 - [#186](https://github.com/pSpitzner/beets-flask/issues/186#issuecomment-3201103451)
 
+## Only the import option `copy` is supported
+
+In order to provide an easy way to correct automatic imports that went wrong, it is easiest to only allow copies, because an undo would also require restoring file meta data.
+We are thinking about workarounds that add back the convenience of automatic deletion.
+
+See also:
+- [#193](https://github.com/pSpitzner/beets-flask/issues/193)

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Docs now have a section on [limiations](https://beets-flask.readthedocs.io/latest/limitations.html)
+- Pip `requirements.txt` and `startup.sh` can now be placed in `/config/` or `/config/beets-flask`, the latter is installed later.
 
 ### Fixed
 
