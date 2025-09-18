@@ -1,8 +1,8 @@
 import { Action } from "@/api/config";
 import { assertUnreachable } from "@/components/common/debugging/typing";
 
-export function getActionDescription(action: Action): string {
-    const name = action.name;
+export function getActionDescription(action: Action | Action["name"]): string {
+    const name = typeof action === "string" ? action : action.name;
     switch (name) {
         case "retag":
             return "Retag the selected album(s) this includes fetching candidates from your configured metadata sources.";

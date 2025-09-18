@@ -208,12 +208,13 @@ function ActionButtonMultiple({
 }
 
 // TODO move into icons
-export function ActionIcon({ action }: { action: ActionButtonConfig["actions"][0] }) {
+export function ActionIcon({ action }: { action: Action | Action["name"] }) {
     const theme = useTheme();
 
     const size = theme.iconSize.md; // Adjust size as needed
 
-    const name = action.name;
+    const name = typeof action === "string" ? action : action.name;
+
     switch (name) {
         case "retag":
             return <TagIcon size={size} />;

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - Upcoming
 
+### Added
+
+- The inbox info button now has a description of all actions [#145](https://github.com/pSpitzner/beets-flask/issues/145) 
+
 ## [1.1.3] - 25-09-18
 
 ### Added
