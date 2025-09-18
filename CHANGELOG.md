@@ -8,11 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased] - Upcoming
 
 ### Added
+
 - Docs now have a section on [limiations](https://beets-flask.readthedocs.io/latest/limitations.html)
+
+### Fixed
+
+- Resolved an issue in Vite development server where pythonTypes.ts would fail to load on first start due to inconsistent indentation (tabs vs spaces). This only affected the dev environment.
+- Development Docker container now runs as the `beetle` user instead of root, improving parity with the production environment.
 
 ### Dependencies
 
 - Updated `beets` to version `2.3.1`
+- Updated `py2ts` to version `0.6.1`, now uses pypi distribution instead of github repo.
+
+
 
 ### Fixed
 - Trailing slashes in configured inbox paths no longer cause crashes. [#182](https://github.com/pSpitzner/beets-flask/issues/182)
