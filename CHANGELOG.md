@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - Upcoming
 
+## [1.1.3] - 25-09-18
+
 ### Added
 
 - Docs now have a section on [limiations](https://beets-flask.readthedocs.io/latest/limitations.html)
@@ -16,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Resolved an issue in Vite development server where pythonTypes.ts would fail to load on first start due to inconsistent indentation (tabs vs spaces). This only affected the dev environment.
 - Development Docker container now runs as the `beetle` user instead of root, improving parity with the production environment.
+- Trailing slashes in configured inbox paths no longer cause crashes. [#182](https://github.com/pSpitzner/beets-flask/issues/182)
+- The container now sets the `EDITOR` environment variable to `vi` so that `beet edit` and `beet config -e` work out of the box.
+
 
 ### Dependencies
 
@@ -23,12 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated `py2ts` to version `0.6.1`, now uses pypi distribution instead of github repo.
 
 
-
-### Fixed
-- Trailing slashes in configured inbox paths no longer cause crashes. [#182](https://github.com/pSpitzner/beets-flask/issues/182)
-- The container now sets the `EDITOR` environment variable to `vi` so that `beet edit` and `beet config -e` work out of the box.
-
-## [1.1.2] - 29-08-15
+## [1.1.2] - 25-08-29
 
 ### Fixed
 
@@ -210,7 +210,8 @@ Small version bump with fixes before jumping to 1.0.0.
 -   initial commit
 
 
-[Unreleased]: https://github.com/pSpitzner/beets-flask/compare/v1.1.2...HEAD
+[Unreleased]: https://github.com/pSpitzner/beets-flask/compare/v1.1.3...HEAD
+[1.1.3]: https://github.com/pSpitzner/beets-flask/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/pSpitzner/beets-flask/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/pSpitzner/beets-flask/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/pSpitzner/beets-flask/compare/v1.0.3...v1.1.0
