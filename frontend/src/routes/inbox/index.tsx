@@ -28,7 +28,7 @@ import {
 } from "@/components/inbox/actions/buttons";
 import { getActionDescription } from "@/components/inbox/actions/descriptions";
 import { InboxCard } from "@/components/inbox/cards/inboxCard";
-import InboxDropzone from "@/components/inbox/fileUpload";
+import { DragProvider, DropZone } from "@/components/inbox/fileUploadNew";
 import { FolderSelectionProvider } from "@/components/inbox/folderSelectionContext";
 import { Folder } from "@/pythonTypes";
 
@@ -45,39 +45,44 @@ function RouteComponent() {
     const { data: inboxes } = useSuspenseQuery(inboxQueryOptions());
 
     return (
-        <InboxDropzone>
-            <PageWrapper
-                sx={(theme) => ({
-                    display: 'flex',
-                    flexDirection: 'column',
-                    minHeight: '100%',
-                    alignItems: 'center',
-                    paddingTop: theme.spacing(1),
-                    paddingInline: theme.spacing(0.5),
-                    [theme.breakpoints.up('laptop')]: {
-                        height: 'auto',
-                        paddingTop: theme.spacing(2),
-                        paddingInline: theme.spacing(1),
-                    },
-                })}
+        <PageWrapper
+            sx={(theme) => ({
+                display: "flex",
+                flexDirection: "column",
+                minHeight: "100%",
+                alignItems: "center",
+                paddingTop: theme.spacing(1),
+                paddingInline: theme.spacing(0.5),
+                [theme.breakpoints.up("laptop")]: {
+                    height: "auto",
+                    paddingTop: theme.spacing(2),
+                    paddingInline: theme.spacing(1),
+                },
+            })}
+        >
+            <PageHeader inboxes={inboxes} />
+            <Box
+                sx={{
+                    width: "100%",
+                    display: "flex",
+                    gap: 2,
+                    flexDirection: "column",
+                }}
             >
-                <PageHeader inboxes={inboxes} />
-                <Box
-                    sx={{
-                        width: '100%',
-                        display: 'flex',
-                        gap: 2,
-                        flexDirection: 'column',
-                    }}
-                >
+                <DragProvider>
                     {inboxes.map((folder) => (
                         <FolderSelectionProvider key={folder.full_path}>
-                            <InboxCard folder={folder} />
+                            <DropZone
+                                id={folder.full_path}
+                                targetDir={folder.full_path}
+                            >
+                                <InboxCard key={folder.full_path} folder={folder} />
+                            </DropZone>
                         </FolderSelectionProvider>
                     ))}
-                </Box>
-            </PageWrapper>
-        </InboxDropzone>
+                </DragProvider>
+            </Box>
+        </PageWrapper>
     );
 }
 
