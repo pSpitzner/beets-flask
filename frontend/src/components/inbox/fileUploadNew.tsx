@@ -37,19 +37,41 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
         const abortController = new AbortController();
 
         // Global window events
-        window.addEventListener("dragover", () => setIsOverWindow(true), {
-            signal: abortController.signal,
-        });
+        window.addEventListener(
+            "dragover",
+            (e) => {
+                e.preventDefault(); // Prevent default to allow drop
+                setIsOverWindow(true);
+            },
+            {
+                signal: abortController.signal,
+            }
+        );
         window.addEventListener("dragend", resetDragState, {
             signal: abortController.signal,
         });
-        window.addEventListener("dragleave", () => setIsOverWindow(false), {
-            signal: abortController.signal,
-        });
+        window.addEventListener(
+            "dragleave",
+            (e) => {
+                // Only reset if we're leaving the window completely
+                if (e.clientX === 0 && e.clientY === 0) {
+                    setIsOverWindow(false);
+                    setHoveredZoneId(null);
+                }
+            },
+            {
+                signal: abortController.signal,
+            }
+        );
         window.addEventListener(
             "drop",
             (e) => {
-                e.preventDefault();
+                // Only prevent default and stop propagation if NOT over a valid dropzone
+                if (!hoveredZoneId) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log("Drop prevented - not over a valid dropzone");
+                }
                 resetDragState();
             },
             {
@@ -60,7 +82,7 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
         return () => {
             abortController.abort();
         };
-    }, [resetDragState]);
+    }, [resetDragState, hoveredZoneId, setIsOverWindow, setHoveredZoneId]);
 
     return (
         <DragContext.Provider
@@ -110,7 +132,7 @@ export function DropZone({
 
     const { isOverWindow, hoveredZoneId, setHoveredZoneId } = dragContext;
     const isOverZone = hoveredZoneId === id;
-    const isOtherZoneHovered = isOverWindow && hoveredZoneId && hoveredZoneId !== id;
+    const isOverWindowButNotThis = isOverWindow && hoveredZoneId !== id;
 
     const resetDragState = useCallback(() => {
         setHoveredZoneId(null);
@@ -132,13 +154,15 @@ export function DropZone({
 
         const handleDrop = (event: DragEvent) => {
             event.preventDefault();
-            resetDragState();
+            event.stopPropagation();
+
             const files = event.dataTransfer?.files;
             if (files && files.length > 0) {
                 console.log("Dropped files:", files);
                 // TODO: Upload the first file only
                 mutate({ file: files[0], targetDir });
             }
+            resetDragState();
         };
 
         // Dropzone related drag events
@@ -176,33 +200,24 @@ export function DropZone({
                         right: 0,
                         bottom: 0,
                         borderRadius: 2,
-                        border: `2px dotted ${theme.palette.secondary.main}`,
+                        border: `2px dashed ${theme.palette.secondary.main}`,
                         backgroundColor: alpha(theme.palette.secondary.main, 0.1),
-                        backdropFilter: "blur(1px)",
+                        backdropFilter: "blur(2px)",
                         zIndex: 1,
                         pointerEvents: "none",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
+                        fontSize: "2rem",
+                        fontWeight: "bold",
+                        color: theme.palette.secondary.main,
+                        textShadow: `0 0 8px rgba(0,0,0,0.3)`,
                     })}
                 >
-                    <Box
-                        // PS: just wanted the text to create some more blur
-                        // so that it is always readble. but we have this extra backdrop
-                        sx={(theme) => ({
-                            fontSize: "2rem",
-                            fontWeight: "bold",
-                            color: theme.palette.secondary.main,
-                            backdropFilter: "blur(8px)",
-                            padding: 2,
-                            borderRadius: 1,
-                        })}
-                    >
-                        Drop to upload
-                    </Box>
+                    Drop to upload
                 </Box>
             )}
-            {isOtherZoneHovered && (
+            {isOverWindowButNotThis && (
                 <Box
                     // Style for non-hovered inboxes when another is being hovered
                     sx={(theme) => ({
@@ -212,7 +227,7 @@ export function DropZone({
                         right: 0,
                         bottom: 0,
                         borderRadius: 2,
-                        border: `2px dotted ${theme.palette.primary.main}`,
+                        border: `2px dashed ${theme.palette.primary.main}`,
                         backgroundColor: alpha(theme.palette.primary.main, 0.05),
                         backdropFilter: "blur(4px)",
                         margin: -0.5,
