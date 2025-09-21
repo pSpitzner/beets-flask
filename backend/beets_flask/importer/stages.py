@@ -34,7 +34,7 @@ from beets.importer.stages import (
     _extend_pipeline,
     _freshen_items,
 )
-from beets.util import MoveOperation, displayable_path
+from beets.util import MoveOperation, displayable_path, bytestring_path
 from beets.util import pipeline as beets_pipeline
 
 from beets_flask import log
@@ -545,7 +545,7 @@ def manipulate_files(
         # If we have only one task and no toppath this indicates that we are
         # operating on a temp directory we override the toppath
         # to the session's folder path.
-        task.toppath = session.state.folder_path
+        task.toppath = bytestring_path(session.state.folder_path)
 
     return task
 

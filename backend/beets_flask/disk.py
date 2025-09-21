@@ -23,6 +23,7 @@ from beets.importer.tasks import (
     MULTIDISC_PAT_FMT,
     albums_in_dir,
 )
+from beets.util import bytestring_path
 from cachetools import Cache, TTLCache, cached
 from natsort import os_sorted
 
@@ -345,7 +346,7 @@ def is_album_folder(path: Path | str):
         path = Path(path).absolute()
     if is_archive_file(path):
         return True
-    for paths, items in albums_in_dir(path):
+    for paths, items in albums_in_dir(bytestring_path(path)):
         if all(is_archive_file(i.decode("utf-8")) for i in items):
             continue
         if str(path).encode("utf-8") in paths:
@@ -375,7 +376,7 @@ def all_album_folders(root_dir: Path | str, subdirs: bool = False) -> List[Path]
         root_dir = Path(root_dir)
 
     folders: list[bytes] = []
-    for paths, items in albums_in_dir(root_dir.absolute()):
+    for paths, items in albums_in_dir(bytestring_path(root_dir.absolute())):
         # Our choice on handling archives:
         # - archives are always simple albums. no multi-disc logic supported,
         #   all discs need to be _inside_ the archive.

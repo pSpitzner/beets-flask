@@ -12,6 +12,7 @@ from uuid import uuid4 as uuid
 import beets.ui.commands as uicommands
 from beets import autotag, importer, library
 from beets.ui import _open_library
+from beets.util import bytestring_path
 from deprecated import deprecated
 
 from beets_flask.config import get_config
@@ -336,7 +337,7 @@ class TaskState(BaseState):
             return [self.toppath]
 
         items: list[bytes] = []
-        for _, i in importer.tasks.albums_in_dir(self.toppath):
+        for _, i in importer.tasks.albums_in_dir(bytestring_path(self.toppath)):
             # the generator returns a nested list of the outer diretories
             # and file paths. thus, extend and then cast
             items.extend(i)

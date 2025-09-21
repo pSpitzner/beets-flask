@@ -35,6 +35,7 @@ from typing import Any, Callable, Literal, TypedDict, TypeGuard, TypeVar
 import nest_asyncio
 from beets import autotag, importer, plugins
 from beets.ui import UserError, _open_library
+from beets.util import bytestring_path
 from deprecated import deprecated
 
 from beets_flask.config import get_config
@@ -220,7 +221,7 @@ class BaseSession(importer.ImportSession, ABC):
 
         super().__init__(
             lib=_open_library(config),
-            paths=[state.path],
+            paths=[bytestring_path(state.path)],
             query=None,
             loghandler=None,
         )
