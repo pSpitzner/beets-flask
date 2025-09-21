@@ -100,7 +100,7 @@ class MusicInfo(ABC):
         if isinstance(info, autotag.TrackInfo):
             kwargs["type"] = "track"
             return TrackInfo(**kwargs)
-        elif isinstance(info, autotag.Item):
+        elif isinstance(info, BeetsItem):
             return ItemInfo(**kwargs)
         elif isinstance(info, autotag.AlbumInfo):
             kwargs["type"] = "album"
