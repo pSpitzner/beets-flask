@@ -621,7 +621,7 @@ class ImportSession(BaseSession):
         stages.append(user_query(self))
 
         # Early import stages
-        plugs: list[plugins.BeetsPlugin] = plugins.find_plugins()
+        plugs = plugins.find_plugins()
         for p in plugs:
             for stage in p.get_early_import_stages():
                 stages.append(
