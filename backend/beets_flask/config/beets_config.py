@@ -30,7 +30,7 @@ import sys
 from typing import cast
 
 from beets import IncludeLazyConfig as BeetsConfig
-from beets.plugins import load_plugins
+from beets.plugins import get_plugin_names, load_plugins, _instances as plugin_instances
 from confuse import YamlSource
 
 from beets_flask.logger import log
@@ -193,14 +193,15 @@ def refresh_config():
 
     config = InteractiveBeetsConfig()
 
-    # Hack: We have to manually load the plugins as this
-    # is normally done by beets
-    plugin_list = config["plugins"].as_str_seq()
-    load_plugins(plugin_list)
-    log.debug(f"Loading plugins: {plugin_list}")
-
     beets.config = config
     sys.modules["beets"].config = config  # type: ignore
+
+    # Hack: We have to manually load the plugins as this
+    # is normally done by beets. Clear the list to force
+    # actual reload.
+    plugin_instances.clear()
+    load_plugins()
+    log.debug(f"Loading plugins: {get_plugin_names()}")
 
     # Update any existing references in other modules
     for module_name, mod in list(sys.modules.items()):
