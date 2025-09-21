@@ -18,7 +18,8 @@ import pickle
 from pathlib import Path
 from typing import List, Optional
 
-from beets.importer import ImportTask, action, library
+from beets.importer import ImportTask, Action
+from beets.library.models import Item as LibraryItem
 from sqlalchemy import (
     ForeignKey,
     UniqueConstraint,
@@ -358,7 +359,7 @@ class TaskStateInDb(Base):
     # old_paths contain original file paths, but are only set when files are moved.
     # (which breaks some deep links that before were identical to paths, but no more!)
     items: Mapped[bytes]
-    choice_flag: Mapped[action | None]
+    choice_flag: Mapped[Action | None]
 
     # To allow for continue we need to store the current artist and album
     # TODO: REMOVE this is not needed!! We can look at the asis candidate for this!
@@ -374,11 +375,11 @@ class TaskStateInDb(Base):
         toppath: bytes | None = None,
         paths: List[bytes] = [],
         old_paths: List[bytes] | None = None,
-        items: List[library.Item] = [],
+        items: List[LibraryItem] = [],
         candidates: List[CandidateStateInDb] = [],
         chosen_candidate_id: str | None = None,
         progress: Progress = Progress.NOT_STARTED,
-        choice_flag: action | None = None,
+        choice_flag: Action | None = None,
         cur_artist: str | None = None,
         cur_album: str | None = None,
     ):

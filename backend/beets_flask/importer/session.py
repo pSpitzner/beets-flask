@@ -315,7 +315,7 @@ class BaseSession(importer.ImportSession, ABC):
             "Skipping duplicate resolution. "
             + f"Your session should implement this! -> {self.__class__.__name__}"
         )
-        task.set_choice(importer.action.SKIP)
+        task.set_choice(importer.Action.SKIP)
 
     def choose_item(self, task: importer.ImportTask):
         """Overload default choose item and skip it.
@@ -323,7 +323,7 @@ class BaseSession(importer.ImportSession, ABC):
         This session should not reach this stage.
         """
         self.logger.debug(f"skipping choose_item {task}")
-        return importer.action.SKIP
+        return importer.Action.SKIP
 
     def should_resume(self, path):
         """Overload default should_resume and skip it.
@@ -703,7 +703,7 @@ class ImportSession(BaseSession):
         # ASIS
         if candidate_state.id == task_state.asis_candidate.id:
             log.debug(f"Importing {task} as-is")
-            return importer.action.ASIS
+            return importer.Action.ASIS
 
         return candidate_state.match
 
@@ -723,7 +723,7 @@ class ImportSession(BaseSession):
         task_state.duplicate_action = task_duplicate_action
         match task_duplicate_action:
             case "skip":
-                task.set_choice(importer.action.SKIP)
+                task.set_choice(importer.Action.SKIP)
             case "keep":
                 pass
             case "remove":

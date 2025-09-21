@@ -16,9 +16,11 @@ from typing import (
 )
 
 from beets.importer import (
+    ArchiveImportTask,
+)
+from beets.importer.tasks import (
     MULTIDISC_MARKERS,
     MULTIDISC_PAT_FMT,
-    ArchiveImportTask,
     albums_in_dir,
 )
 from cachetools import Cache, TTLCache, cached

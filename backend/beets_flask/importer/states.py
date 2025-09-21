@@ -336,7 +336,7 @@ class TaskState(BaseState):
             return [self.toppath]
 
         items: list[bytes] = []
-        for _, i in importer.albums_in_dir(self.toppath):
+        for _, i in importer.tasks.albums_in_dir(self.toppath):
             # the generator returns a nested list of the outer diretories
             # and file paths. thus, extend and then cast
             items.extend(i)
@@ -363,11 +363,11 @@ class TaskState(BaseState):
         return best
 
     @property
-    def choice_flag(self) -> importer.action | None:
+    def choice_flag(self) -> importer.tasks.Action | None:
         return self.task.choice_flag
 
     @choice_flag.setter
-    def choice_flag(self, value: importer.action | None):
+    def choice_flag(self, value: importer.tasks.Action | None):
         self.task.choice_flag = value
 
     @property

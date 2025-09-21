@@ -26,13 +26,13 @@ from typing import (
 from beets import library, plugins
 from beets.importer import (
     ImportTask,
-    ImportTaskFactory,
     SentinelImportTask,
+    Action,
+)
+from beets.importer.tasks import ImportTaskFactory
+from beets.importer.stages import (
     _extend_pipeline,
     _freshen_items,
-    action,
-    # apply_choice,
-    # resolve_duplicates,
 )
 from beets.util import MoveOperation, displayable_path
 from beets.util import pipeline as beets_pipeline
@@ -404,7 +404,7 @@ def user_query(
     # TODO: Import as singletons i.e. task.choice_flag is action.TRACKS
 
     # As albums: group items by albums and create task for each album
-    if task.choice_flag is action.ALBUMS:
+    if task.choice_flag is Action.ALBUMS:
         log.warning("This should never run via beets-flask!")
         return _extend_pipeline(
             [task],
