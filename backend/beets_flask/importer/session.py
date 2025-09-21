@@ -354,9 +354,7 @@ class BaseSession(importer.ImportSession, ABC):
         # Restrict the initial lookup to IDs specified by the user via the -m
         # option. Currently all the IDs are passed onto the tasks directly.
         # FIXME: Revisit, we want to avoid using the global config.
-        task.search_ids = self.config["search_ids"].as_str_seq()
-
-        task.lookup_candidates()
+        task.lookup_candidates(self.config["search_ids"].as_str_seq())
 
         # Update our state
         task_state = self.state.get_task_state_for_task_raise(task)
