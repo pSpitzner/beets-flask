@@ -99,7 +99,6 @@ class TestPreview(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixi
         use_mock_tag_album(str(path))
         return path
 
-    @pytest.fixture()
     async def test_preview(
         self,
         db_session: Session,
@@ -165,7 +164,6 @@ class TestPreviewMultipleTasks(
         use_mock_tag_album(str(path))
         return path
 
-    @pytest.fixture()
     @pytest.mark.parametrize(
         "group_albums, expected_tasks",
         [
@@ -312,7 +310,6 @@ class TestImportBest(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
                 }
             },
         )
-
         assert exc is None, "Should not return an error"
 
         stmt = select(SessionStateInDb)
