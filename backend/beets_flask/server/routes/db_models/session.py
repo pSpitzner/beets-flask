@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Tuple
 
 from quart import jsonify, request
 from rq.job import Job
@@ -230,7 +229,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
 
 def _get_folder_status_from_db(
     hash: str,
-) -> Tuple[FolderStatus, datetime | None, SerializedException | None]:
+) -> tuple[FolderStatus, datetime | None, SerializedException | None]:
     with db_session_factory() as db_session:
         stmt_s = (
             select(SessionStateInDb)
@@ -270,7 +269,7 @@ def _get_folder_status_from_db(
 
 def _get_folder_status_from_queues(
     hash: str,
-) -> Tuple[FolderStatus, datetime | None, SerializedException | None]:
+) -> tuple[FolderStatus, datetime | None, SerializedException | None]:
     from beets_flask.redis import queues, redis_conn
 
     # could not simply import queues from beets_flask.redis ?
