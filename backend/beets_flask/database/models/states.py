@@ -13,10 +13,12 @@ Why not just have State and StateInDb in the same class?
 
 from __future__ import annotations
 
+import io
 import pickle
 from pathlib import Path
 from typing import Optional
 
+from beets.autotag.distance import Distance
 from beets.importer import Action, ImportTask
 from beets.library.models import Item as LibraryItem
 from sqlalchemy import (
@@ -525,7 +527,9 @@ class CandidateStateInDb(Base):
         if task_state is None:
             task_state = self.task.to_live_state()
         live_state = CandidateState(
-            pickle.loads(self.match), task_state, mapping=self.mapping
+            CustomUnpickler(io.BytesIO(self.match)).load(),
+            task_state,
+            mapping=self.mapping,
         )
         live_state.id = self.id
         live_state.created_at = self.created_at
@@ -538,6 +542,19 @@ class CandidateStateInDb(Base):
 
     def to_dict(self) -> SerializedCandidateState:
         return self.to_live_state(self.task.to_live_state()).serialize()
+
+
+# Hotfix for match unpickler to resolve beets distance moved
+# TODO: We should fix this in general and not pickle beets objects
+class CustomUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        """Override the find_class method to redirect Distance class references."""
+        # Redirect Distance class from beets.autotag.hooks to beets.distance
+        if module == "beets.autotag.hooks" and name == "Distance":
+            return Distance
+
+        # For all other classes, use the default lookup mechanism
+        return super().find_class(module, name)
 
 
 __all__ = ["SessionStateInDb", "TaskStateInDb", "CandidateStateInDb"]
