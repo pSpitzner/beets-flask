@@ -12,7 +12,7 @@ from uuid import uuid4 as uuid
 import beets.ui.commands as uicommands
 from beets import autotag, importer, library
 from beets.ui import _open_library
-from beets.util import bytestring_path
+from beets.util import bytestring_path, get_most_common_tags
 from deprecated import deprecated
 
 from beets_flask.config import get_config
@@ -378,9 +378,8 @@ class TaskState(BaseState):
         This is the metadata of the music files on disk.
         (In a beets context, cur_artist and cur_album)
         """
-        likelies, consensus = autotag.current_metadata(self.items)
-        # FIXME: Type hint be fixed once we update beets
-        return Metadata(**{k: str(v) for k, v in likelies.items()})  # type: ignore
+        likelies, _ = get_most_common_tags(self.items)
+        return Metadata(**{k: str(v) for k, v in likelies.items()})  # type: ignore[typeddict-item]
 
     # ---------------------------------------------------------------------------- #
 
@@ -503,7 +502,7 @@ class CandidateState(BaseState):
 
         # FIXME: we do this lookup twice, once here and once in current_metadata
         if len(items) > 0:
-            info, _ = autotag.current_metadata(items)
+            info, _ = get_most_common_tags(items)
         else:
             info = {}
         info["data_source"] = "asis"
