@@ -9,33 +9,20 @@ used Generators, and we still rely on parts of it.
 """
 
 import asyncio
-import inspect
 from collections.abc import AsyncGenerator, AsyncIterable
 from typing import (
     Any,
-    Callable,
     Coroutine,
     Generator,
     Generic,
     Iterable,
     Literal,
     Optional,
-    ParamSpec,
     Sequence,
-    Sized,
-    Tuple,
     TypeVar,
-    TypeVarTuple,
-    Union,
-    Unpack,
-    cast,
 )
 
-from beets import importer
 from beets.util.pipeline import MultiMessage, _allmsgs
-from beets.util.pipeline import Pipeline as BeetsPipeline
-
-from beets_flask.logger import log
 
 # Generics for Generators
 Y = TypeVar("Y")  # yield

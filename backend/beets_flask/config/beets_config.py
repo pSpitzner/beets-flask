@@ -30,7 +30,8 @@ import sys
 from typing import cast
 
 from beets import IncludeLazyConfig as BeetsConfig
-from beets.plugins import get_plugin_names, load_plugins, _instances as plugin_instances
+from beets.plugins import _instances as plugin_instances
+from beets.plugins import get_plugin_names, load_plugins
 from confuse import YamlSource
 
 from beets_flask.logger import log

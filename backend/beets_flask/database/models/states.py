@@ -13,12 +13,11 @@ Why not just have State and StateInDb in the same class?
 
 from __future__ import annotations
 
-import json
 import pickle
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
-from beets.importer import ImportTask, Action
+from beets.importer import Action, ImportTask
 from beets.library.models import Item as LibraryItem
 from sqlalchemy import (
     ForeignKey,
@@ -190,7 +189,7 @@ class SessionStateInDb(Base):
 
     __tablename__ = "session"
 
-    tasks: Mapped[List[TaskStateInDb]] = relationship(
+    tasks: Mapped[list[TaskStateInDb]] = relationship(
         back_populates="session",
         # all: All operations cascade i.e. session.merge!
         # delete-orphan: Automatic deletion of tasks if not referenced
@@ -223,7 +222,7 @@ class SessionStateInDb(Base):
         self,
         folder: FolderInDb,
         id: str | None = None,
-        tasks: List[TaskStateInDb] = [],
+        tasks: list[TaskStateInDb] = [],
         progress: Progress = Progress.NOT_STARTED,
         exc: SerializedException | None = None,
     ):
@@ -339,7 +338,7 @@ class TaskStateInDb(Base):
         foreign_keys=[session_id],
     )
 
-    candidates: Mapped[List[CandidateStateInDb]] = relationship(
+    candidates: Mapped[list[CandidateStateInDb]] = relationship(
         back_populates="task",
         foreign_keys="[CandidateStateInDb.task_id]",
         cascade="all, delete-orphan",
@@ -373,10 +372,10 @@ class TaskStateInDb(Base):
         self,
         id: str | None = None,
         toppath: bytes | None = None,
-        paths: List[bytes] = [],
-        old_paths: List[bytes] | None = None,
-        items: List[LibraryItem] = [],
-        candidates: List[CandidateStateInDb] = [],
+        paths: list[bytes] = [],
+        old_paths: list[bytes] | None = None,
+        items: list[LibraryItem] = [],
+        candidates: list[CandidateStateInDb] = [],
         chosen_candidate_id: str | None = None,
         progress: Progress = Progress.NOT_STARTED,
         choice_flag: Action | None = None,
@@ -491,7 +490,7 @@ class CandidateStateInDb(Base):
         self,
         match: BeetsAlbumMatch | BeetsTrackMatch,
         mapping: dict[int, int],
-        duplicate_ids: List[str] = [],
+        duplicate_ids: list[str] = [],
         id: str | None = None,
     ):
         super().__init__(id)

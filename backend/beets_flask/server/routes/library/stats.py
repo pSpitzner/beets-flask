@@ -1,4 +1,3 @@
-import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, TypedDict, cast
 

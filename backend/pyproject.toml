@@ -85,8 +85,7 @@ packages = ["beets_flask"]
 allow-direct-references = true
 
 [tool.ruff]
-include = ["pyproject.toml", "beets_flask/**/*.py"]
-exclude = ["beets_flask/**/dirhash.py"]
+include = ["pyproject.toml", "beets_flask/**/*.py", "tests/**/*.py"]
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**/*" = ["D"]
@@ -99,10 +98,10 @@ select = [
     # Augment the convention by requiring an imperative mood for all docstrings.
     "D401",
     # Unused imports
+    "F401",
 ]
 ignore = [
     # Ignore req. for public facing functions docstrings
-    "F401",
     "D10",
     "D401",
     "D202",

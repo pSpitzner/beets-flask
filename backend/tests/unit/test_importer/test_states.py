@@ -1,7 +1,6 @@
 import logging
 from abc import ABC
 from pathlib import Path
-from typing import List
 
 import pytest
 from beets import autotag, importer
@@ -20,7 +19,7 @@ from tests.mixins.database import IsolatedBeetsLibraryMixin, IsolatedDBMixin
 log = logging.getLogger(__name__)
 
 
-def get_album_match(tracks: List[BeetsTrackInfo], items, **info):
+def get_album_match(tracks: list[BeetsTrackInfo], items, **info):
     match = BeetsAlbumMatch(
         distance=autotag.Distance(),
         info=autotag.AlbumInfo(
@@ -230,10 +229,10 @@ class TestSessionState(StateTest):
 
         # the asis candidate sets the date freshly every time.
         for t_l, t_c in zip(tasks_loaded, tasks_current):
-            t_c["asis_candidate"].pop("created_at")
-            t_c["asis_candidate"].pop("updated_at")
-            t_l["asis_candidate"].pop("created_at")
-            t_l["asis_candidate"].pop("updated_at")
+            t_c["asis_candidate"].pop("created_at")  # type: ignore[misc]
+            t_c["asis_candidate"].pop("updated_at")  # type: ignore[misc]
+            t_l["asis_candidate"].pop("created_at")  # type: ignore[misc]
+            t_l["asis_candidate"].pop("updated_at")  # type: ignore[misc]
         assert tasks_loaded == tasks_current
 
         assert serialized["status"]["message"] is None

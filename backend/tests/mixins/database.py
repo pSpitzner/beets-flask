@@ -111,6 +111,6 @@ class IsolatedBeetsLibraryMixin(ABC):
         # mock needed for the library to be available in the resources endpoints
         with mock.patch(
             "beets_flask.server.routes.library.resources.g",
-            namedtuple("g", ["lib", "config"])(lib, None),
+            namedtuple("g", ["lib", "config"])(lib, None),  # type: ignore[call-arg, arg-type]
         ):
             return lib

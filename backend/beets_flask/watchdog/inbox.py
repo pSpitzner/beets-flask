@@ -2,7 +2,7 @@ import asyncio
 import os
 import signal
 from pathlib import Path
-from typing import List, OrderedDict
+from typing import OrderedDict
 
 from watchdog.events import FileMovedEvent, FileSystemEvent
 from watchdog.observers.polling import PollingObserver
@@ -216,7 +216,7 @@ def get_inbox_for_path(path: str | Path):
     return inbox
 
 
-def get_inbox_folders() -> List[str]:
+def get_inbox_folders() -> list[str]:
     return [i["path"] for i in get_inboxes()]
 
 
@@ -224,5 +224,5 @@ def is_inbox_folder(path: str) -> bool:
     return path in get_inbox_folders()
 
 
-def get_inboxes() -> List[OrderedDict]:
+def get_inboxes() -> list[OrderedDict]:
     return get_config()["gui"]["inbox"]["folders"].flatten().values()  # type: ignore

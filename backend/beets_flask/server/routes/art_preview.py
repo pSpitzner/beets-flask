@@ -5,7 +5,7 @@ Allows fetching of art via different ids. At the moment we support:
 """
 
 import os
-from urllib.parse import quote_plus, unquote_plus
+from urllib.parse import quote_plus
 
 import aiohttp
 from quart import Blueprint, jsonify, redirect, request, url_for

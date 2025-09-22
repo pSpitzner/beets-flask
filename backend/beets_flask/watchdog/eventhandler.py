@@ -7,7 +7,6 @@ MIT License
 
 import asyncio
 from pathlib import Path
-from types import CoroutineType
 from typing import Callable, cast
 
 from watchdog.events import (

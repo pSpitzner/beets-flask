@@ -43,9 +43,7 @@ from beets_flask.disk import is_archive_file
 from beets_flask.importer.progress import Progress, ProgressState
 from beets_flask.importer.types import (
     BeetsAlbum,
-    BeetsAlbumMatch,
     BeetsLibrary,
-    BeetsTrackMatch,
     DuplicateAction,
 )
 from beets_flask.logger import log
@@ -57,7 +55,7 @@ from beets_flask.server.exceptions import (
 )
 from beets_flask.utility import capture_stdout_stderr
 
-from .pipeline import AsyncPipeline, Stage
+from .pipeline import AsyncPipeline
 from .stages import (
     StageOrder,
     group_albums,

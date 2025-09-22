@@ -25,14 +25,14 @@ def test_generate_lookup():
     They should normally exist in the repository already.
     """
     for path in VALID_PATHS:
-        path = Path(__file__).parent.parent.parent / "data" / "audio" / path
-        use_mock_tag_album(str(path))
+        p = Path(__file__).parent.parent.parent / "data" / "audio" / path
+        use_mock_tag_album(str(p))
 
-        state = SessionState(path)
+        state = SessionState(p)
         session = PreviewSession(state)
 
         state = session.run_sync()
-        assert os.path.exists(path / "lookup.pickle")
+        assert os.path.exists(p / "lookup.pickle")
 
 
 def test_album_exists(album_paths: list[Path]):

@@ -9,7 +9,6 @@ from fnmatch import fnmatch
 from pathlib import Path
 from typing import (
     Iterator,
-    List,
     Literal,
     Sequence,
     Set,
@@ -278,21 +277,21 @@ def path_to_folder(root_dir: Path | str, subdirs=True) -> Folder:
 
 
 def album_folders_from_track_paths(
-    track_paths: List[Path] | List[str], use_parent_for_multidisc: bool = True
-) -> List[Path]:
+    track_paths: list[Path] | list[str], use_parent_for_multidisc: bool = True
+) -> list[Path]:
     """Get all album folders from a list of paths to files.
 
     Parameters
     ----------
-    track_paths : List[Path]
-        List of track paths, e.g. mp3 files.
+    track_paths : list[Path]
+        list of track paths, e.g. mp3 files.
     use_parent_for_multidisc : bool, optional
         When files are in an album folder that might be a multi-disc folder (e.g. `/album/cd1`),
         return the parent (`/album`) instead of the lowest-level-folder (`/cd1`). Defaults to True.
 
     Returns
     -------
-        List[str]: album folders
+        list[str]: album folders
     """
 
     folders_to_check: Set[Path] = set()
@@ -354,7 +353,7 @@ def is_album_folder(path: Path | str):
     return False
 
 
-def all_album_folders(root_dir: Path | str, subdirs: bool = False) -> List[Path]:
+def all_album_folders(root_dir: Path | str, subdirs: bool = False) -> list[Path]:
     """
     Get all album folders from a given root dir.
 
@@ -368,7 +367,7 @@ def all_album_folders(root_dir: Path | str, subdirs: bool = False) -> List[Path]
 
     Returns
     -------
-        List[Path]
+        list[Path]
     """
 
     # FIXME: For backwards compatibility, we allow a string as input

@@ -1,12 +1,12 @@
 import os
 import shutil
-from unittest import mock
 import zipfile
 from pathlib import Path
+from unittest import mock
 
-from confuse import AttrDict
 import pytest
 from cachetools import Cache
+from confuse import AttrDict
 
 from beets_flask.dirhash_custom import dirhash_c
 from beets_flask.disk import Folder, _matches_patterns, audio_regex
@@ -68,7 +68,6 @@ def s_base(tmpdir_factory):
     Create a folder structure for testing purposes.
     No real files, just dummys
     """
-    from beets_flask.disk import Folder
 
     base = str(tmpdir_factory.mktemp("beets_flask_structure"))
 
@@ -305,7 +304,7 @@ def test_album_folders_from_track(
         assert folders[i] == Path(base + e)
 
 
-cache_options = [None, Cache(maxsize=2**16)]
+cache_options: list[Cache | None] = [None, Cache(maxsize=2**16)]
 
 
 @pytest.mark.parametrize(

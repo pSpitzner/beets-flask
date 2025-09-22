@@ -5,7 +5,6 @@ Allows to stream an item's file as mp3.
 
 import asyncio
 import os
-import sys
 import time
 from asyncio.subprocess import PIPE, Process
 from typing import TYPE_CHECKING, Any, AsyncIterator, Hashable, TypeVar

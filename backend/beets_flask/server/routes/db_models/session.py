@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from math import e
-from typing import Literal, Tuple, TypedDict
+from typing import Tuple
 
 from quart import jsonify, request
 from rq.job import Job
@@ -17,7 +16,6 @@ from beets_flask.database.models.states import (
 )
 from beets_flask.importer.progress import FolderStatus, Progress
 from beets_flask.logger import log
-from beets_flask.redis import wait_for_job_results
 from beets_flask.server.exceptions import (
     InvalidUsageException,
     NotFoundException,

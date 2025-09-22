@@ -14,7 +14,6 @@ def test_log():
     assert log.name == "beets-flask"
 
 
-from beets_flask.config.beets_config import config
 
 
 def test_config():

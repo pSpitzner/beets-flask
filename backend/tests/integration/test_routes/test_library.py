@@ -3,8 +3,6 @@ Currently still requires a beets library with some content in
 the default location of the user.
 """
 
-from collections import namedtuple
-from time import sleep
 from unittest import mock
 from urllib.parse import quote_plus
 
@@ -225,7 +223,7 @@ class TestAlbumsPagination(IsolatedBeetsLibraryMixin):
             - The next cursor is provided for pagination.
         """
 
-        next_url = "/api_v1/library/albums/?n_items=10"
+        next_url: str | None = "/api_v1/library/albums/?n_items=10"
         albums = []
         total_albums = len(self.beets_lib.albums())
         while next_url:
@@ -259,7 +257,9 @@ class TestAlbumsPagination(IsolatedBeetsLibraryMixin):
             - The returned data contains the expected number of albums.
             - The albums are ordered by artist and album name.
         """
-        next_url = f"/api_v1/library/albums/?n_items=10&order_by={order_by}&order_dir={order_dir}"
+        next_url: str | None = (
+            f"/api_v1/library/albums/?n_items=10&order_by={order_by}&order_dir={order_dir}"
+        )
 
         albums = []
         while next_url:

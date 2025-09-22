@@ -8,7 +8,6 @@ from __future__ import annotations
 import base64
 import datetime
 import os
-import time
 from dataclasses import dataclass
 from functools import wraps
 from typing import (
@@ -28,7 +27,7 @@ from beets import util as beets_util
 from beets.dbcore import Model, Query, Results
 from beets.dbcore.query import Sort
 from beets.library import Album, Item, Library, parse_query_string
-from quart import Blueprint, Response, abort, g, json, jsonify, request, url_for
+from quart import Blueprint, Response, abort, g, json, jsonify, request
 from typing_extensions import NotRequired
 
 from beets_flask.config import get_config
@@ -87,15 +86,15 @@ def resource_query(
                 # only remove the last character if it is a single escape character
                 query = query[:-1]
 
-            entities = await query_func(query)
+            entities: Sequence[T] = [e for e in await query_func(query)]
 
             method = request.method
 
             if method == "DELETE":
-                delete_entities(entities._objects, delete_files())
+                delete_entities(entities, delete_files())
                 return jsonify({"deleted": True})
             elif method == "PATCH" and patchable:
-                entities = update_entities(entities._objects, await request.get_json())
+                entities = update_entities(entities, await request.get_json())
             elif method == "GET":
                 pass
             else:
@@ -392,9 +391,7 @@ def delete_entities(entities: Sequence[Item | Album], delete_files=False) -> Non
     [entity.remove(delete=delete_files) for entity in entities]
 
 
-def update_entities(
-    entities: Sequence[Item | Album], data: dict
-) -> Sequence[Item | Album]:
+def update_entities(entities: Sequence[T], data: dict) -> Sequence[T]:
     """Helper function to update entities."""
     if get_config()["gui"]["library"]["readonly"].get(bool):
         raise ValueError("Library is read-only")

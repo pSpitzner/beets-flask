@@ -5,8 +5,6 @@ from enum import Enum
 from functools import total_ordering
 from typing import TypedDict
 
-from beets_flask.logger import log
-
 __all__ = [
     "FolderStatus",
     "Progress",

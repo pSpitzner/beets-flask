@@ -2,12 +2,12 @@ from py2ts.builder import TSBuilder
 from py2ts.config import CONFIG
 
 from beets_flask.disk import Archive, File, FileSystemItem, Folder
+from beets_flask.importer.session import CandidateChoiceFallback
 from beets_flask.importer.states import (
     SerializedSessionState,
 )
 from beets_flask.invoker import EnqueueKind
 from beets_flask.invoker.enqueue import (
-    CandidateChoiceFallback,
     Search,
 )
 from beets_flask.server.routes.inbox import InboxStats

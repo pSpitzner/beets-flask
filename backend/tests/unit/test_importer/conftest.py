@@ -1,7 +1,7 @@
 import logging
 import shutil
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 import pytest
 
@@ -95,7 +95,7 @@ def tag_album(
     items,
     search_artist: Optional[str] = None,
     search_album: Optional[str] = None,
-    search_ids: List[str] = [],
+    search_ids: list[str] = [],
 ):
     global album_path
     log.debug(f"Using monkey patched lookup {album_path=}")
