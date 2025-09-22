@@ -1,3 +1,4 @@
+import os
 from typing import Callable, cast
 
 import socketio
@@ -10,6 +11,11 @@ class TypedAsyncServer(socketio.AsyncServer):
     def on(self, event: str, namespace: str | None = None) -> Callable: ...  # type: ignore
 
 
+if os.environ.get("PYTEST_CURRENT_TEST", ""):
+    client_manager = None
+else:
+    client_manager = socketio.AsyncRedisManager("redis://")
+
 sio: TypedAsyncServer = cast(
     TypedAsyncServer,
     socketio.AsyncServer(
@@ -17,7 +23,7 @@ sio: TypedAsyncServer = cast(
         logger=False,
         engineio_logger=False,
         cors_allowed_origins="*",
-        client_manager=socketio.AsyncRedisManager("redis://"),
+        client_manager=client_manager,
     ),
 )
 
