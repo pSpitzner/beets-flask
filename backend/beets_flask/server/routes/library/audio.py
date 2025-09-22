@@ -82,6 +82,16 @@ async def item_audio_peaks(item_id: int):
     )
 
 
+class FFmpegError(RuntimeError):
+    def __init__(self, returncode: int, stderr: str):
+        super().__init__(f"FFmpeg failed with code {returncode}: {stderr.strip()}")
+        self.returncode = returncode
+        self.stderr = stderr
+
+
+FATAL_PATTERNS = ["Error", "Invalid data", "partial file", "Could not"]
+
+
 class FFmpegStreamer:
     """A class to handle streaming audio files through FFmpeg.
 
@@ -92,6 +102,7 @@ class FFmpegStreamer:
     """
 
     process: Process | None
+    _stderr_lines: list[str] = []
     chunk_size: int = 4096
 
     def __init__(self):
@@ -99,6 +110,7 @@ class FFmpegStreamer:
 
     async def start(self, *ffmpeg_args):
         """Initialize a persistent FFmpeg process with stdin open for input."""
+        self._stderr_lines = []
         self.process = await asyncio.create_subprocess_exec(
             "ffmpeg",
             *ffmpeg_args,
@@ -108,8 +120,11 @@ class FFmpegStreamer:
         )
         asyncio.create_task(self._drain_stderr())
 
-    async def stream_file(self, file_path: str) -> AsyncIterator[bytes]:
-        """Stream an audio file through the pre-warmed FFmpeg process."""
+    async def stream_file(self, file_path: str | None) -> AsyncIterator[bytes]:
+        """Stream an audio file through the pre-warmed FFmpeg process.
+
+        If file_path is None, it will just stream from the existing process.
+        """
 
         if (
             self.process is None
@@ -118,7 +133,12 @@ class FFmpegStreamer:
         ):
             raise RuntimeError("FFmpeg process not started. Call start() first.")
 
-        writer = asyncio.create_task(self._write_input(self._file_chunker(file_path)))
+        if file_path is not None and os.path.exists(file_path):
+            writer = asyncio.create_task(
+                self._write_input(self._file_chunker(file_path))
+            )
+        else:
+            writer = None
 
         start = time.process_time_ns()
         try:
@@ -128,8 +148,11 @@ class FFmpegStreamer:
                     break
                 yield chunk
         finally:
-            await writer
-            await self.process.wait()
+            if writer is not None:
+                await writer
+            return_code = await self.process.wait()
+            if return_code != 0 or self._stderr_lines:
+                raise FFmpegError(return_code, "".join(self._stderr_lines))
 
             end = time.process_time_ns()
             log.debug(f"Transcoded {file_path} in {(end - start) / 1_000_000_000:.2f}s")
@@ -151,10 +174,12 @@ class FFmpegStreamer:
                     break
                 yield chunk
         finally:
-            await self.process.wait()
+            return_code = await self.process.wait()
+            if return_code != 0 or self._stderr_lines:
+                raise FFmpegError(return_code, "".join(self._stderr_lines))
 
             end = time.process_time_ns()
-            log.info(f"Streamed  in {(end - start) / 1_000_000_000:.2f} s")
+            log.info(f"Streamed in {(end - start) / 1_000_000_000:.2f} s")
 
     async def _drain_stderr(self):
         """Continuously read and print FFmpeg stderr."""
@@ -163,7 +188,10 @@ class FFmpegStreamer:
             line = await self.process.stderr.readline()
             if not line:
                 break
-            log.error(f"FFmpeg error: {line.decode().strip()}")
+
+            decoded = line.decode().strip()
+            self._stderr_lines.append(decoded)
+            log.error(f"FFmpeg stderr: {decoded}")
 
     async def _write_input(self, input_stream: AsyncIterator[bytes]):
         assert self.process is not None
@@ -177,12 +205,27 @@ class FFmpegStreamer:
     async def _file_chunker(
         self, path: str, size: int = 64 * 1024
     ) -> AsyncIterator[bytes]:
-        async with aiofiles.open(path, "rb") as f:
-            while True:
-                data = await f.read(size)
-                if not data:
-                    break
-                yield data
+        # Use a semaphore to control read-ahead and prevent memory bloat
+        semaphore = asyncio.Semaphore(size * 100)
+
+        try:
+            async with aiofiles.open(path, "rb") as file:
+                while True:
+                    await semaphore.acquire()
+                    chunk = await file.read(size)
+                    if chunk == b"":
+                        break
+                    yield chunk
+                    semaphore.release()
+
+                log.warning(f"Finished reading file {path}")
+
+        except asyncio.CancelledError:
+            log.info(f"File reading cancelled for {path}")
+            raise
+        except Exception as e:
+            log.error(f"Error reading file {path}: {e}")
+            raise
 
 
 T = TypeVar("T")
@@ -192,51 +235,75 @@ async def cached_async_iterator(
     key: Hashable, iterator: AsyncIterator[T], cache: Cache[Hashable, list[T]]
 ) -> AsyncIterator[T]:
     """Cache the results of an async iterator."""
+    try:
+        cached = []
+        if key in cache:
+            log.debug(f"Using cached data for {key}")
+            cached = cache[key]
+        else:
+            log.debug(f"Caching data for {key}")
+            async for item in iterator:
+                cached.append(item)
+                yield item
 
-    cached = []
-    if key in cache:
-        log.debug(f"Using cached data for {key}")
-        cached = cache[key]
-    else:
-        log.debug(f"Caching data for {key}")
-        async for item in iterator:
-            cached.append(item)
+            cache[key] = cached
+            return
+
+        for item in cached:
             yield item
+    except Exception:
+        cache.pop(key, None)
+        raise
 
-        cache[key] = cached
-        return
 
-    for item in cached:
-        yield item
+STREAMABLE_FORMATS = {"wav", "flac", "ogg", "pcm"}  # extend if needed
+CONTAINER_FORMATS = {"m4a", "mp4", "mov", "alac", "aac", "mp3"}  # require seek
 
 
 async def transcode_to_webm(file_path: str) -> AsyncIterator[bytes]:
     """Transcode a file to mp3 using FFmpeg and stream it."""
     ffmpeg_streamer = FFmpegStreamer()
-    i_fmt = file_path.split(".")[-1]
+    ext = file_path.split(".")[-1].lower()
 
     # This yields quite fast transcoding
     # for me, might need a bit more benchmarking
     # fmt: off
-    await ffmpeg_streamer.start(*[
-        "-hide_banner",
-        "-loglevel", "error",
-        "-fflags", "nobuffer",
-        "-flush_packets", "0",
-        "-probesize", "32",
-        "-f", i_fmt,                        # input format
-        "-i", "-",                           # read from stdin
-        "-vn", "-sn", "-dn",                # DROP video streams
-        "-preset", "ultrafast",             # Faster MP3 encoding
-        "-map_metadata", "-1",              # Skip all metadata
-        "-map", "0:a",                      # Map all audio streams
-        "-codec:a", "libopus",
-        "-b:a", "128k",
-        "-f", "webm",                        # Force MP3 format for stdout
-        "-",                                # Output to stdout
-    ])
-    # fmt: on
-
+    if ext in STREAMABLE_FORMATS:
+        await ffmpeg_streamer.start(*[
+            "-hide_banner",
+            "-loglevel", "error",
+            "-fflags", "nobuffer",
+            "-flush_packets", "0",
+            "-probesize", "32",
+            "-f", ext, "-i", "-",               # stdin input
+            "-vn", "-sn", "-dn",                # DROP video streams
+            "-preset", "ultrafast",             # Faster MP3 encoding
+            "-map_metadata", "-1",              # Skip all metadata
+            "-map", "0:a",                      # Map all audio streams
+            "-codec:a", "libopus",
+            "-b:a", "128k",
+            "-f", "webm",                        # Force MP3 format for stdout
+            "-",                                # Output to stdout
+        ])
+        # fmt: on
+        return ffmpeg_streamer.stream_file(file_path)
+    else:
+        await ffmpeg_streamer.start(*[
+            "-hide_banner",
+            "-loglevel", "error",
+            "-fflags", "nobuffer",
+            "-flush_packets", "0",
+            "-probesize", "32",
+            "-i", str(file_path),               # file input
+            "-vn", "-sn", "-dn",                # DROP video streams
+            "-preset", "ultrafast",             # Faster MP3 encoding
+            "-map_metadata", "-1",              # Skip all metadata
+            "-map", "0:a",                      # Map all audio streams
+            "-codec:a", "libopus",
+            "-b:a", "128k",
+            "-f", "webm",                        # Force MP3 format for stdout
+            "-",                                # Output to stdout
+        ])
     return ffmpeg_streamer.stream_file(file_path)
 
 

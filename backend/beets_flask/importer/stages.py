@@ -240,7 +240,6 @@ def mutator_stage(
         task = None
         while True:
             task = yield task  # wait for send to arrive. the first next() always returns None
-            log.error(f"Mutator stage {func.__name__} got task {task}")
             # perform function on task, and in next() send the same, modified task
             # funcs prob. modify task in place?
             func(*(args + (task,)))
