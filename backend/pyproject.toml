@@ -28,7 +28,7 @@ dependencies = [
     "Deprecated>=1.2.18",
     "nest_asyncio>=1.6.0",
     # Used for hosting the web-interface & api
-    "uvicorn>=0.34.0",
+    "uvicorn>=0.36.0",
     # beets plugin dependencies
     "pylast>=5.2.0",
     "python2ts>=0.6.1",
