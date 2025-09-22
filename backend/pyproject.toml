@@ -126,6 +126,7 @@ filterwarnings = [
 pythonpath = ["."]
 asyncio_mode = "auto"
 log_format = "%(relativeCreated)-8d [%(levelname)-5s] %(name)s %(filename)-8s:%(lineno)d %(message)s"
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.coverage.report]
 omit = ["*/tests/*"]
@@ -139,10 +140,8 @@ allow_redefinition = true
 # Suppresses error messages about imports that cannot be resolved.
 module = [
     "socketio.*",
-    "beets.*",
     "confuse.*",
     "mediafile.*",
     "nest_asyncio",
-    "dirhash",
 ]
 ignore_missing_imports = true
