@@ -19,6 +19,7 @@ interface DragContextType {
     hoveredZoneId: string | null;
     setHoveredZoneId: (id: string | null) => void;
     setIsOverWindow: (isOver: boolean) => void;
+    resetDragState: () => void;
 }
 
 const DragContext = createContext<DragContextType | null>(null);
@@ -91,6 +92,7 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
                 hoveredZoneId,
                 setHoveredZoneId,
                 setIsOverWindow,
+                resetDragState,
             }}
         >
             {children}
@@ -117,11 +119,11 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
 export function DropZone({
     children,
     id,
-    targetDir = "/music/upload/",
+    targetDir,
 }: {
     children?: React.ReactNode;
     id: string;
-    targetDir?: string;
+    targetDir: string;
 }) {
     const ref = useRef<HTMLDivElement>(null);
     const dragContext = useContext(DragContext);
@@ -130,13 +132,10 @@ export function DropZone({
         throw new Error("DropZone must be used within a DragProvider");
     }
 
-    const { isOverWindow, hoveredZoneId, setHoveredZoneId } = dragContext;
+    const { isOverWindow, hoveredZoneId, setHoveredZoneId, resetDragState } =
+        dragContext;
     const isOverZone = hoveredZoneId === id;
     const isOverWindowButNotThis = isOverWindow && hoveredZoneId !== id;
-
-    const resetDragState = useCallback(() => {
-        setHoveredZoneId(null);
-    }, [setHoveredZoneId]);
 
     const { mutate } = useMutation(fileUploadMutationOptions);
 
@@ -160,7 +159,7 @@ export function DropZone({
             if (files && files.length > 0) {
                 console.log("Dropped files:", files);
                 // TODO: Upload the first file only
-                mutate({ file: files[0], targetDir });
+                mutate({ file: files[0], targetDir: targetDir });
             }
             resetDragState();
         };
@@ -179,7 +178,7 @@ export function DropZone({
         return () => {
             abortController.abort();
         };
-    }, [ref, setHoveredZoneId, resetDragState, mutate, id, targetDir]);
+    }, [ref, setHoveredZoneId, mutate, id, targetDir, resetDragState]);
 
     return (
         <Box
