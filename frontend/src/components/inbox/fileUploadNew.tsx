@@ -1,16 +1,16 @@
-import { Box, Card, LinearProgress, alpha } from "@mui/material";
 import {
+    createContext,
     useCallback,
+    useContext,
     useEffect,
     useRef,
     useState,
-    createContext,
-    useContext,
 } from "react";
-import { createPortal } from "react-dom";
-
 import React from "react";
+import { createPortal } from "react-dom";
+import { alpha, Box, LinearProgress } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
+
 import { fileUploadMutationOptions } from "@/api/fileUpload";
 
 // Context to track global drag state
@@ -26,7 +26,7 @@ interface DragContextType {
 
 interface UploadState {
     id: string; // dropzone id where upload is happening
-    fileName: string;
+    fileName?: string;
     progress: number; // 0-100
     status: "uploading" | "success" | "error";
     error?: string;
@@ -176,21 +176,25 @@ export function DropZone({
             event.stopPropagation();
 
             const files = event.dataTransfer?.files;
-            if (files && files.length > 0) {
-                const file = files[0];
-                console.log("Dropped files:", files);
+            console.log("Dropped files:", files);
 
+            let fileName = undefined;
+            if (files && files.length == 1) fileName = files[0].name;
+            else if (files && files.length > 1)
+                fileName = `'${files[0].name}' and ${files.length - 1} more`;
+
+            if (areValidFiles(files)) {
                 // Set upload state
                 setUploadState({
                     id,
-                    fileName: file.name,
+                    fileName: fileName,
                     progress: 0,
                     status: "uploading",
                 });
 
                 mutate(
                     {
-                        file,
+                        file: files[0],
                         targetDir: targetDir,
                         onProgress: (percent) => {
                             console.log(`Upload progress: ${percent.toFixed(2)}%`);
@@ -223,6 +227,16 @@ export function DropZone({
                         },
                     }
                 );
+            } else {
+                console.log("Invalid file(s) dropped:", files);
+                setUploadState({
+                    id,
+                    fileName: fileName,
+                    progress: 0,
+                    status: "error",
+                    error: "We only support uploading a single archive file (zip).",
+                });
+                setTimeout(() => setUploadState(null), 3000);
             }
             resetDragState();
         };
@@ -301,6 +315,24 @@ export function DropZone({
     );
 }
 
+function areValidFiles(files: FileList | undefined | null): files is FileList {
+    if (!files || files.length !== 1) {
+        return false;
+    }
+
+    // only allow archive files for now
+    const allowedTypes = [
+        "application/zip",
+        "application/gzip",
+        "application/vnd.rar",
+        "application/x-tar",
+        "application/x-7z-compressed",
+        "application/x-zip-compressed",
+    ];
+
+    return allowedTypes.includes(files[0].type);
+}
+
 function UploadStatusProgressOverlay({ uploadState }: { uploadState: UploadState }) {
     const getStatusColor = () => {
         switch (uploadState.status) {
@@ -320,9 +352,14 @@ function UploadStatusProgressOverlay({ uploadState }: { uploadState: UploadState
             case "uploading":
                 return `Uploading ${uploadState.fileName}...`;
             case "success":
-                return `✓ ${uploadState.fileName} uploaded successfully`;
+                return `${uploadState.fileName} uploaded successfully`;
             case "error":
-                return `✗ ${uploadState.error || "Upload failed"}`;
+                return (
+                    <>
+                        <div>{`Uploading ${uploadState.fileName} failed:`}</div>
+                        <div>{uploadState.error || "Unknown error."}</div>
+                    </>
+                );
             default:
                 return "";
         }
@@ -347,10 +384,10 @@ function UploadStatusProgressOverlay({ uploadState }: { uploadState: UploadState
             })}
         >
             <Box sx={{ width: "100%" }}>
-                <Box sx={{ color: getStatusColor(), mb: 1 }}>{getStatusText()}</Box>
+                <Box sx={{ color: getStatusColor() }}>{getStatusText()}</Box>
                 {uploadState.status === "uploading" && (
                     <>
-                        <Box sx={{ mb: 2, color: "text.secondary" }}>
+                        <Box sx={{ mb: 2, mt: 1, color: "text.secondary" }}>
                             {uploadState.progress.toFixed(1)}% complete
                         </Box>
                         <LinearProgress
