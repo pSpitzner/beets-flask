@@ -1,4 +1,4 @@
-import { Box, Card, alpha } from "@mui/material";
+import { Box, Card, LinearProgress, alpha } from "@mui/material";
 import {
     useCallback,
     useEffect,
@@ -20,6 +20,16 @@ interface DragContextType {
     setHoveredZoneId: (id: string | null) => void;
     setIsOverWindow: (isOver: boolean) => void;
     resetDragState: () => void;
+    uploadState: UploadState | null;
+    setUploadState: React.Dispatch<React.SetStateAction<UploadState | null>>;
+}
+
+interface UploadState {
+    id: string; // dropzone id where upload is happening
+    fileName: string;
+    progress: number; // 0-100
+    status: "uploading" | "success" | "error";
+    error?: string;
 }
 
 const DragContext = createContext<DragContextType | null>(null);
@@ -28,10 +38,12 @@ const DragContext = createContext<DragContextType | null>(null);
 export function DragProvider({ children }: { children: React.ReactNode }) {
     const [isOverWindow, setIsOverWindow] = useState(false);
     const [hoveredZoneId, setHoveredZoneId] = useState<string | null>(null);
+    const [uploadState, setUploadState] = useState<UploadState | null>(null);
 
     const resetDragState = useCallback(() => {
         setIsOverWindow(false);
         setHoveredZoneId(null);
+        // Don't reset upload state here - let upload completion handle it
     }, []);
 
     useEffect(() => {
@@ -41,12 +53,10 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
         window.addEventListener(
             "dragover",
             (e) => {
-                e.preventDefault(); // Prevent default to allow drop
+                e.preventDefault();
                 setIsOverWindow(true);
             },
-            {
-                signal: abortController.signal,
-            }
+            { signal: abortController.signal }
         );
         window.addEventListener("dragend", resetDragState, {
             signal: abortController.signal,
@@ -60,9 +70,7 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
                     setHoveredZoneId(null);
                 }
             },
-            {
-                signal: abortController.signal,
-            }
+            { signal: abortController.signal }
         );
         window.addEventListener(
             "drop",
@@ -75,9 +83,7 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
                 }
                 resetDragState();
             },
-            {
-                signal: abortController.signal,
-            }
+            { signal: abortController.signal }
         );
 
         return () => {
@@ -93,10 +99,12 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
                 setHoveredZoneId,
                 setIsOverWindow,
                 resetDragState,
+                uploadState,
+                setUploadState,
             }}
         >
             {children}
-            {isOverWindow &&
+            {(isOverWindow || uploadState) &&
                 createPortal(
                     <Box
                         sx={{
@@ -108,8 +116,15 @@ export function DragProvider({ children }: { children: React.ReactNode }) {
                             backgroundColor: "rgba(0, 0, 0, 0.3)",
                             backdropFilter: "blur(5px)",
                             zIndex: 1000,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
                         }}
-                    />,
+                    >
+                        {uploadState && (
+                            <UploadStatusProgressOverlay uploadState={uploadState} />
+                        )}
+                    </Box>,
                     document.body
                 )}
         </DragContext.Provider>
@@ -132,8 +147,13 @@ export function DropZone({
         throw new Error("DropZone must be used within a DragProvider");
     }
 
-    const { isOverWindow, hoveredZoneId, setHoveredZoneId, resetDragState } =
-        dragContext;
+    const {
+        isOverWindow,
+        hoveredZoneId,
+        setHoveredZoneId,
+        resetDragState,
+        setUploadState,
+    } = dragContext;
     const isOverZone = hoveredZoneId === id;
     const isOverWindowButNotThis = isOverWindow && hoveredZoneId !== id;
 
@@ -157,9 +177,52 @@ export function DropZone({
 
             const files = event.dataTransfer?.files;
             if (files && files.length > 0) {
+                const file = files[0];
                 console.log("Dropped files:", files);
-                // TODO: Upload the first file only
-                mutate({ file: files[0], targetDir: targetDir });
+
+                // Set upload state
+                setUploadState({
+                    id,
+                    fileName: file.name,
+                    progress: 0,
+                    status: "uploading",
+                });
+
+                mutate(
+                    {
+                        file,
+                        targetDir: targetDir,
+                        onProgress: (percent) => {
+                            console.log(`Upload progress: ${percent.toFixed(2)}%`);
+                            setUploadState((prev) =>
+                                prev ? { ...prev, progress: percent } : null
+                            );
+                        },
+                    },
+                    {
+                        onSuccess: () => {
+                            setUploadState((prev) =>
+                                prev
+                                    ? { ...prev, status: "success", progress: 100 }
+                                    : null
+                            );
+                            // give some time to read after success
+                            setTimeout(() => setUploadState(null), 2000);
+                        },
+                        onError: (error) => {
+                            setUploadState((prev) =>
+                                prev
+                                    ? {
+                                          ...prev,
+                                          status: "error",
+                                          error: error.message || "Upload failed",
+                                      }
+                                    : null
+                            );
+                            setTimeout(() => setUploadState(null), 3000);
+                        },
+                    }
+                );
             }
             resetDragState();
         };
@@ -178,7 +241,7 @@ export function DropZone({
         return () => {
             abortController.abort();
         };
-    }, [ref, setHoveredZoneId, mutate, id, targetDir, resetDragState]);
+    }, [ref, setHoveredZoneId, mutate, id, targetDir, resetDragState, setUploadState]);
 
     return (
         <Box
@@ -234,6 +297,74 @@ export function DropZone({
                     })}
                 ></Box>
             )}
+        </Box>
+    );
+}
+
+function UploadStatusProgressOverlay({ uploadState }: { uploadState: UploadState }) {
+    const getStatusColor = () => {
+        switch (uploadState.status) {
+            case "uploading":
+                return "primary.main";
+            case "success":
+                return "success.main";
+            case "error":
+                return "error.main";
+            default:
+                return "primary.main";
+        }
+    };
+
+    const getStatusText = () => {
+        switch (uploadState.status) {
+            case "uploading":
+                return `Uploading ${uploadState.fileName}...`;
+            case "success":
+                return `✓ ${uploadState.fileName} uploaded successfully`;
+            case "error":
+                return `✗ ${uploadState.error || "Upload failed"}`;
+            default:
+                return "";
+        }
+    };
+
+    return (
+        <Box
+            sx={(theme) => ({
+                backgroundColor: theme.palette.background.paper,
+                backdropFilter: "blur(10px)",
+                borderRadius: 2,
+                padding: 3,
+                minWidth: 400,
+                maxWidth: 600,
+                // border: `${theme.spacing(0.125)} solid ${theme.palette.divider}`,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+                boxShadow: theme.shadows[12], // out of 25 levels of elevation
+            })}
+        >
+            <Box sx={{ width: "100%" }}>
+                <Box sx={{ color: getStatusColor(), mb: 1 }}>{getStatusText()}</Box>
+                {uploadState.status === "uploading" && (
+                    <>
+                        <Box sx={{ mb: 2, color: "text.secondary" }}>
+                            {uploadState.progress.toFixed(1)}% complete
+                        </Box>
+                        <LinearProgress
+                            variant="determinate"
+                            value={uploadState.progress}
+                            sx={{
+                                height: 8,
+                                borderRadius: 4,
+                                width: "100%",
+                            }}
+                        />
+                    </>
+                )}
+            </Box>
         </Box>
     );
 }
