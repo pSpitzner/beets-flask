@@ -8,8 +8,8 @@ on:
     push:
         tags:
             - "v*.*.*"
+            - "v*.*.*-*"
             - "test-*"
-            - "rc*"
     workflow_dispatch:
 
 jobs:
@@ -26,11 +26,14 @@ jobs:
                       pspitzner/beets-flask
                       ghcr.io/pspitzner/beets-flask
                   # generate Docker tags based on the following events/attributes
+                  # We use semver and allow pre-releases (e.g. v1.0.0-b1 or v1.0.0-rc3) to be tagged as 'latest' for testing purposes
+                  # The 'stable' tag is only applied to non-prerelease versions (e.g. v1.0.0)
                   tags: |
                       type=ref,event=tag
                       type=semver,pattern={{raw}}
                       type=sha
-                      type=raw,value=stable,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+                      type=raw,value=rc,enable=${{ startsWith(github.ref, 'refs/tags/v') && contains(github.ref, '-rc') }}
+                      type=raw,value=stable,enable=${{ startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-') }}
                       type=raw,value=latest,enable=true
 
             - name: Checkout
