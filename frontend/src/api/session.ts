@@ -381,7 +381,7 @@ export const addCandidateMutationOptions: UseMutationOptions<
         // Wait for the job to finish
         return await promiseResult;
     },
-    onSuccess: async (_data, { ...variables }, context) => {
+    onSuccess: async (_data, { ...variables }, onMutateResults, context) => {
         return await enqueueMutationOptions.onSuccess?.(
             _data,
             {
@@ -392,6 +392,7 @@ export const addCandidateMutationOptions: UseMutationOptions<
                     paths: [_data[0].job_metas[0].folder_path],
                 },
             },
+            onMutateResults,
             context
         );
     },
@@ -401,7 +402,7 @@ export const addCandidateMutationOptions: UseMutationOptions<
     onError: (_error, _variables, _context) => {
         return;
     },
-    onSettled: async (_data, error, variables, context) => {
+    onSettled: async (_data, error, variables, onMutateResults, context) => {
         if (!_data) {
             return;
         }
@@ -417,6 +418,7 @@ export const addCandidateMutationOptions: UseMutationOptions<
                     paths: [_data[0].job_metas[0].folder_path],
                 },
             },
+            onMutateResults,
             context
         );
     },
