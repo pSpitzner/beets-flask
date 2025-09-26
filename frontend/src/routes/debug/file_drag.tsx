@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Box } from "@mui/material";
 import { useCallback, useEffect, useRef, useState } from "react";
-
 import React from "react";
+import { Box } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+
 import { fileUploadMutationOptions } from "@/api/fileUpload";
 
 export const Route = createFileRoute("/debug/file_drag")({
