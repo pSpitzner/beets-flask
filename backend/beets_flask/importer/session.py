@@ -35,6 +35,7 @@ from typing import Any, Callable, Literal, TypedDict, TypeGuard, TypeVar
 import nest_asyncio
 from beets import autotag, importer, plugins
 from beets.ui import UserError, _open_library
+from beets.util import bytestring_path
 from deprecated import deprecated
 
 from beets_flask.config import get_config
@@ -42,9 +43,7 @@ from beets_flask.disk import is_archive_file
 from beets_flask.importer.progress import Progress, ProgressState
 from beets_flask.importer.types import (
     BeetsAlbum,
-    BeetsAlbumMatch,
     BeetsLibrary,
-    BeetsTrackMatch,
     DuplicateAction,
 )
 from beets_flask.logger import log
@@ -56,7 +55,7 @@ from beets_flask.server.exceptions import (
 )
 from beets_flask.utility import capture_stdout_stderr
 
-from .pipeline import AsyncPipeline, Stage
+from .pipeline import AsyncPipeline
 from .stages import (
     StageOrder,
     group_albums,
@@ -220,7 +219,7 @@ class BaseSession(importer.ImportSession, ABC):
 
         super().__init__(
             lib=_open_library(config),
-            paths=[state.path],
+            paths=[bytestring_path(state.path)],
             query=None,
             loghandler=None,
         )
@@ -315,7 +314,7 @@ class BaseSession(importer.ImportSession, ABC):
             "Skipping duplicate resolution. "
             + f"Your session should implement this! -> {self.__class__.__name__}"
         )
-        task.set_choice(importer.action.SKIP)
+        task.set_choice(importer.Action.SKIP)
 
     def choose_item(self, task: importer.ImportTask):
         """Overload default choose item and skip it.
@@ -323,7 +322,7 @@ class BaseSession(importer.ImportSession, ABC):
         This session should not reach this stage.
         """
         self.logger.debug(f"skipping choose_item {task}")
-        return importer.action.SKIP
+        return importer.Action.SKIP
 
     def should_resume(self, path):
         """Overload default should_resume and skip it.
@@ -353,9 +352,7 @@ class BaseSession(importer.ImportSession, ABC):
         # Restrict the initial lookup to IDs specified by the user via the -m
         # option. Currently all the IDs are passed onto the tasks directly.
         # FIXME: Revisit, we want to avoid using the global config.
-        task.search_ids = self.config["search_ids"].as_str_seq()
-
-        task.lookup_candidates()
+        task.lookup_candidates(self.config["search_ids"].as_str_seq())
 
         # Update our state
         task_state = self.state.get_task_state_for_task_raise(task)
@@ -622,7 +619,7 @@ class ImportSession(BaseSession):
         stages.append(user_query(self))
 
         # Early import stages
-        plugs: list[plugins.BeetsPlugin] = plugins.find_plugins()
+        plugs = plugins.find_plugins()
         for p in plugs:
             for stage in p.get_early_import_stages():
                 stages.append(
@@ -703,7 +700,7 @@ class ImportSession(BaseSession):
         # ASIS
         if candidate_state.id == task_state.asis_candidate.id:
             log.debug(f"Importing {task} as-is")
-            return importer.action.ASIS
+            return importer.Action.ASIS
 
         return candidate_state.match
 
@@ -723,7 +720,7 @@ class ImportSession(BaseSession):
         task_state.duplicate_action = task_duplicate_action
         match task_duplicate_action:
             case "skip":
-                task.set_choice(importer.action.SKIP)
+                task.set_choice(importer.Action.SKIP)
             case "keep":
                 pass
             case "remove":

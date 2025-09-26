@@ -6,12 +6,13 @@ from abc import ABC
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import List, Literal, NotRequired, Sequence, TypedDict, Union, cast
+from typing import Literal, NotRequired, Sequence, TypedDict, Union, cast
 from uuid import uuid4 as uuid
 
 import beets.ui.commands as uicommands
-from beets import autotag, importer, library
+from beets import importer
 from beets.ui import _open_library
+from beets.util import bytestring_path, get_most_common_tags
 from deprecated import deprecated
 
 from beets_flask.config import get_config
@@ -22,14 +23,18 @@ from beets_flask.importer.progress import (
     SerializedProgressState,
 )
 from beets_flask.importer.types import DuplicateAction
-from beets_flask.logger import log
 from beets_flask.server.exceptions import SerializedException
 from beets_flask.utility import capture_stdout_stderr
 
 from .types import (
     AlbumInfo,
+    BeetsAlbum,
+    BeetsAlbumInfo,
     BeetsAlbumMatch,
+    BeetsDistance,
+    BeetsImportTask,
     BeetsItem,
+    BeetsLibrary,
     BeetsTrackInfo,
     BeetsTrackMatch,
     ItemInfo,
@@ -69,7 +74,7 @@ class SessionState(BaseState):
     """
 
     id: str
-    _task_states: List[TaskState]
+    _task_states: list[TaskState]
     folder_path: Path
     folder_hash: str
 
@@ -136,7 +141,7 @@ class SessionState(BaseState):
 
     def get_task_state_for_task(
         self,
-        task: importer.ImportTask,
+        task: BeetsImportTask,
     ) -> TaskState | None:
         """Get the task state for a given task.
 
@@ -151,7 +156,7 @@ class SessionState(BaseState):
 
     def get_task_state_for_task_raise(
         self,
-        task: importer.ImportTask,
+        task: BeetsImportTask,
     ) -> TaskState:
         """Get the task state for a given task.
 
@@ -172,7 +177,7 @@ class SessionState(BaseState):
 
     def upsert_task(
         self,
-        task: importer.ImportTask,
+        task: BeetsImportTask,
     ) -> TaskState:
         """Upsert selection state.
 
@@ -187,7 +192,7 @@ class SessionState(BaseState):
 
         return state
 
-    def remove_task(self, task: importer.ImportTask) -> None:
+    def remove_task(self, task: BeetsImportTask) -> None:
         """Remove a task from the session state.
 
         If the task does not exist, nothing happens.
@@ -232,8 +237,8 @@ class TaskState(BaseState):
     """
 
     progress: ProgressState
-    task: importer.ImportTask
-    candidate_states: List[CandidateState]
+    task: BeetsImportTask
+    candidate_states: list[CandidateState]
     chosen_candidate_state_id: str | None = None
 
     # the completed state blocks the choose_match function
@@ -247,7 +252,7 @@ class TaskState(BaseState):
 
     def __init__(
         self,
-        task: importer.ImportTask,
+        task: BeetsImportTask,
     ) -> None:
         super().__init__()
         # we might run into inconsistencies here, if candidates of the task
@@ -288,7 +293,7 @@ class TaskState(BaseState):
         self,
         candidates: Sequence[Union[BeetsAlbumMatch, BeetsTrackMatch]],
         insert_at: int = 0,
-    ) -> List[CandidateState]:
+    ) -> list[CandidateState]:
         """Add new candidates to the selection state."""
         if len(self.task.candidates) == 0 or len(self.candidate_states) == 0:
             insert_at = 0
@@ -323,7 +328,7 @@ class TaskState(BaseState):
         return None
 
     @property
-    def paths(self) -> List[Path]:
+    def paths(self) -> list[Path]:
         """Lowest-level folders holding music files."""
         return [Path(p.decode("utf-8")) for p in self.task.paths]
 
@@ -336,7 +341,7 @@ class TaskState(BaseState):
             return [self.toppath]
 
         items: list[bytes] = []
-        for _, i in importer.albums_in_dir(self.toppath):
+        for _, i in importer.tasks.albums_in_dir(bytestring_path(self.toppath)):
             # the generator returns a nested list of the outer diretories
             # and file paths. thus, extend and then cast
             items.extend(i)
@@ -344,12 +349,12 @@ class TaskState(BaseState):
         return [Path(i.decode("utf-8")) for i in items]
 
     @property
-    def items(self) -> List[autotag.Item]:
+    def items(self) -> list[BeetsItem]:
         """Items (representing music files on disk) of the associated task."""
         return [item for item in self.task.items]
 
     @property
-    def items_minimal(self) -> List[ItemInfo]:
+    def items_minimal(self) -> list[ItemInfo]:
         """Items of the associated task as MinimalItemAndTrackInfo."""
         return [ItemInfo.from_beets(i) for i in self.task.items]
 
@@ -363,11 +368,11 @@ class TaskState(BaseState):
         return best
 
     @property
-    def choice_flag(self) -> importer.action | None:
+    def choice_flag(self) -> importer.tasks.Action | None:
         return self.task.choice_flag
 
     @choice_flag.setter
-    def choice_flag(self, value: importer.action | None):
+    def choice_flag(self, value: importer.tasks.Action | None):
         self.task.choice_flag = value
 
     @property
@@ -377,9 +382,8 @@ class TaskState(BaseState):
         This is the metadata of the music files on disk.
         (In a beets context, cur_artist and cur_album)
         """
-        likelies, consensus = autotag.current_metadata(self.items)
-        # FIXME: Type hint be fixed once we update beets
-        return Metadata(**{k: str(v) for k, v in likelies.items()})  # type: ignore
+        likelies, _ = get_most_common_tags(self.items)
+        return Metadata(**{k: str(v) for k, v in likelies.items()})  # type: ignore[typeddict-item]
 
     # ---------------------------------------------------------------------------- #
 
@@ -429,7 +433,7 @@ class CandidateState(BaseState):
     """
 
     id: str
-    duplicate_ids: List[str]  # Beets ids of duplicates in the library (album)
+    duplicate_ids: list[str]  # Beets ids of duplicates in the library (album)
     match: Union[BeetsAlbumMatch, BeetsTrackMatch]
     # Reference upwards
     task_state: TaskState
@@ -502,7 +506,7 @@ class CandidateState(BaseState):
 
         # FIXME: we do this lookup twice, once here and once in current_metadata
         if len(items) > 0:
-            info, _ = autotag.current_metadata(items)
+            info, _ = get_most_common_tags(items)
         else:
             info = {}
         info["data_source"] = "asis"
@@ -520,11 +524,11 @@ class CandidateState(BaseState):
             kwargs["index"] = item.track or 0
             return kwargs
 
-        tracks = [autotag.TrackInfo(**_generate_kwargs(i)) for i in items]
+        tracks = [BeetsTrackInfo(**_generate_kwargs(i)) for i in items]
 
         match = BeetsAlbumMatch(
-            distance=autotag.Distance(),
-            info=autotag.AlbumInfo(
+            distance=BeetsDistance(),
+            info=BeetsAlbumInfo(
                 tracks=tracks,
                 **info,
             ),
@@ -568,7 +572,7 @@ class CandidateState(BaseState):
         return self.match.info.album
 
     @property
-    def items(self) -> List[autotag.Item]:
+    def items(self) -> list[BeetsItem]:
         """In beets, items refers to the music files on disk.
 
         Tracks correspond to an online match, (or the library?)
@@ -576,14 +580,14 @@ class CandidateState(BaseState):
         return self.task_state.task.items
 
     @property
-    def tracks(self) -> List[autotag.TrackInfo]:
+    def tracks(self) -> list[BeetsTrackInfo]:
         """Tracks of the match (usually tracks in online match)."""
         if isinstance(self.match, BeetsAlbumMatch):
             return self.match.info.tracks
         return [self.match.info]
 
     @property
-    def distance(self) -> autotag.Distance:
+    def distance(self) -> BeetsDistance:
         """Distance of the match to the current meta data.
 
         Metadata may be from the task i.e. album or track.
@@ -591,7 +595,7 @@ class CandidateState(BaseState):
         return self.match.distance
 
     @property
-    def penalties(self) -> List[str]:
+    def penalties(self) -> list[str]:
         penalties = list(self.match.distance.keys())
 
         # renaming for consistency!
@@ -662,9 +666,7 @@ class CandidateState(BaseState):
 
     # ------------------------------------ utility ----------------------------------- #
 
-    def identify_duplicates(
-        self, lib: library.Library | None = None
-    ) -> List[library.Album]:
+    def identify_duplicates(self, lib: BeetsLibrary | None = None) -> list[BeetsAlbum]:
         """Find duplicates.
 
         Copy of beets' `task.find_duplicates` but works on any candidates' match.
@@ -683,9 +685,9 @@ class CandidateState(BaseState):
 
         # Construct a query to find duplicates with this metadata. We
         # use a temporary Album object to generate any computed fields.
-        tmp_album = library.Album(lib, **info)
-        keys: List[str] = cast(
-            List[str],
+        tmp_album = BeetsAlbum(lib, **info)
+        keys: list[str] = cast(
+            list[str],
             get_config()["import"]["duplicate_keys"]["album"].as_str_seq() or [],
         )
         dup_query = tmp_album.duplicates_query(keys)
@@ -693,7 +695,7 @@ class CandidateState(BaseState):
         # Re-Importing: Don't count albums with the same files as duplicates.
         task_paths = {i.path for i in self.task_state.task.items if i}
 
-        duplicates: List[library.Album] = []
+        duplicates: list[BeetsAlbum] = []
         for album in lib.albums(dup_query):
             # Check whether the album paths are all present in the task
             # i.e. album is being completely re-imported by the task,
@@ -722,11 +724,11 @@ class CandidateState(BaseState):
         tracks: list[TrackInfo]
         mapping: dict[int, int] = {}
 
-        if isinstance(self.match.info, autotag.TrackInfo):
+        if isinstance(self.match.info, BeetsTrackInfo):
             # This hardly ever happens, we might support this more in the future
             info = TrackInfo.from_beets(self.match.info)
             tracks = [TrackInfo.from_beets(self.match.info)]
-        elif isinstance(self.match.info, autotag.AlbumInfo):
+        elif isinstance(self.match.info, BeetsAlbumInfo):
             info = AlbumInfo.from_beets(self.match.info)
 
             # Map beets types to our types, allows serialization magic
@@ -844,39 +846,39 @@ class SerializedBaseState(TypedDict):
 class SerializedSessionState(SerializedBaseState):
     folder_path: str
     folder_hash: str
-    tasks: List[SerializedTaskState]
+    tasks: list[SerializedTaskState]
     status: SerializedProgressState
 
     exc: NotRequired[SerializedException | None]
 
 
 class SerializedTaskState(SerializedBaseState):
-    items: List[ItemInfo]
+    items: list[ItemInfo]
     current_metadata: Metadata
 
     # Fetched data
-    candidates: List[SerializedCandidateState]
+    candidates: list[SerializedCandidateState]
     asis_candidate: SerializedCandidateState
 
     duplicate_action: str | None
     chosen_candidate_id: str | None
     completed: bool
     toppath: str | None
-    paths: List[str]
+    paths: list[str]
 
 
 class SerializedCandidateState(SerializedBaseState):
-    duplicate_ids: List[str]
+    duplicate_ids: list[str]
     type: str
 
-    penalties: List[str]
+    penalties: list[str]
     distance: float
 
     info: TrackInfo | ItemInfo | AlbumInfo
 
     # Mapping from items to tracks index based
     mapping: dict[int, int]
-    tracks: List[TrackInfo]
+    tracks: list[TrackInfo]
 
 
 __all__ = [

@@ -7,7 +7,6 @@ from typing import (
     Any,
     Awaitable,
     Callable,
-    Concatenate,
     Literal,
     ParamSpec,
     TypeVar,
@@ -20,7 +19,6 @@ from sqlalchemy.orm import Session
 from beets_flask.config import get_config
 from beets_flask.database import db_session_factory
 from beets_flask.database.models.states import (
-    CandidateStateInDb,
     FolderInDb,
     SessionState,
     SessionStateInDb,
@@ -31,7 +29,6 @@ from beets_flask.importer.session import (
     AutoImportSession,
     BootlegImportSession,
     CandidateChoice,
-    CandidateChoiceFallback,
     ImportSession,
     PreviewSession,
     Search,
@@ -463,7 +460,6 @@ async def run_preview(
     return
 
 
-from collections import defaultdict
 
 
 # redis preview queue

@@ -2,7 +2,7 @@ from abc import ABC
 from unittest import mock
 
 import pytest
-from beets.plugins import send
+from beets.plugins import EventType, send
 
 
 class PluginEventsMixin(ABC):
@@ -22,7 +22,7 @@ class PluginEventsMixin(ABC):
 
     events: list[str] = []
 
-    def send_event(self, event: str, **kwargs):
+    def send_event(self, event: EventType, **kwargs):
         self.events.append(event)
         return send(event, **kwargs)
 

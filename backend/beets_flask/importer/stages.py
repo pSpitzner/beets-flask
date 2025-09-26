@@ -18,27 +18,27 @@ from typing import (
     Optional,
     TypeVar,
     TypeVarTuple,
-    Union,
-    Unpack,
     cast,
 )
 
 from beets import library, plugins
 from beets.importer import (
+    Action,
     ImportTask,
-    ImportTaskFactory,
     SentinelImportTask,
+)
+from beets.importer.stages import (
     _extend_pipeline,
     _freshen_items,
-    action,
-    # apply_choice,
-    # resolve_duplicates,
 )
-from beets.util import MoveOperation, displayable_path
+from beets.importer.tasks import ImportTaskFactory
+from beets.util import MoveOperation, bytestring_path, displayable_path
 from beets.util import pipeline as beets_pipeline
 
 from beets_flask import log
-from beets_flask.importer.progress import Progress, ProgressState
+
+from .progress import Progress, ProgressState
+from .types import BeetsImportTask
 
 if TYPE_CHECKING:
     from beets_flask.importer.session import (
@@ -171,13 +171,13 @@ Arg = TypeVarTuple("Arg")  # args und kwargs
 Ret = TypeVar("Ret")  # return type
 Task = TypeVar(
     "Task",
-    bound=ImportTask,
+    bound=BeetsImportTask,
 )  # task
 
 
 def stage(
-    func: Callable[[*Arg, Task], Ret | Generator[Task, Any, None]],
-) -> Callable[[*Arg], Generator[Ret | Task | None, Task, None]]:
+    func: Callable[[*Arg, Task], Ret | None],
+):
     """Decorate a function to become a simple stage.
 
     Yields a task and waits until the next task is sent to it.
@@ -195,7 +195,9 @@ def stage(
 
     # use the wraps decorator to lift function name etc, we use this in StageOrder class
     @wraps(func)
-    def coro(*args: *Arg) -> Generator[Ret | Task | None, Task, None]:
+    def coro(
+        *args: *Arg,
+    ) -> Generator[Ret | Task | None, Task, None]:
         # in some edge-cases we get no task. thus, we have to include the generic R
         task: Optional[Task | Ret | Generator[Task]] = None
         while True:
@@ -214,7 +216,7 @@ def stage(
 
 
 def mutator_stage(
-    func: Callable[[Unpack[Arg], Task], Ret], name: str | None = None
+    func: Callable[[*Arg, Task], Ret], name: str | None = None
 ) -> Callable[[*Arg], Generator[Ret | Task | None, Task, None]]:
     """Decorate a function that manipulates items in a coroutine to become a simple stage.
 
@@ -233,8 +235,8 @@ def mutator_stage(
 
     @wraps(func)
     def coro(
-        *args: Unpack[Arg],
-    ) -> Generator[Union[Ret, Task, None], Task, None]:
+        *args: *Arg,
+    ) -> Generator[Ret | Task | None, Task, None]:
         task = None
         while True:
             task = yield task  # wait for send to arrive. the first next() always returns None
@@ -394,7 +396,8 @@ def user_query(
         return task
 
     if session.already_merged(task.paths):
-        return beets_pipeline.BUBBLE
+        # For some reason the type hinter does not like this without cast
+        return cast(Literal["__PIPELINE_BUBBLE__"], beets_pipeline.BUBBLE)
 
     # Ask the user for a choice.
     # This calls session.choose_match(task)... but whyyy?
@@ -404,7 +407,7 @@ def user_query(
     # TODO: Import as singletons i.e. task.choice_flag is action.TRACKS
 
     # As albums: group items by albums and create task for each album
-    if task.choice_flag is action.ALBUMS:
+    if task.choice_flag is Action.ALBUMS:
         log.warning("This should never run via beets-flask!")
         return _extend_pipeline(
             [task],
@@ -518,11 +521,7 @@ def manipulate_files(
             )
             operation = MoveOperation.COPY
 
-        task.manipulate_files(
-            session,
-            operation,
-            write=session.config["write"]
-        )
+        task.manipulate_files(session, operation, write=session.config["write"])
 
     # Progress, cleanup, and event.
     task.finalize(session)
@@ -545,7 +544,7 @@ def manipulate_files(
         # If we have only one task and no toppath this indicates that we are
         # operating on a temp directory we override the toppath
         # to the session's folder path.
-        task.toppath = session.state.folder_path
+        task.toppath = bytestring_path(session.state.folder_path)
 
     return task
 

@@ -9,18 +9,20 @@ from fnmatch import fnmatch
 from pathlib import Path
 from typing import (
     Iterator,
-    List,
     Literal,
     Sequence,
     Set,
 )
 
 from beets.importer import (
+    ArchiveImportTask,
+)
+from beets.importer.tasks import (
     MULTIDISC_MARKERS,
     MULTIDISC_PAT_FMT,
-    ArchiveImportTask,
     albums_in_dir,
 )
+from beets.util import bytestring_path
 from cachetools import Cache, TTLCache, cached
 from natsort import os_sorted
 
@@ -275,21 +277,21 @@ def path_to_folder(root_dir: Path | str, subdirs=True) -> Folder:
 
 
 def album_folders_from_track_paths(
-    track_paths: List[Path] | List[str], use_parent_for_multidisc: bool = True
-) -> List[Path]:
+    track_paths: list[Path] | list[str], use_parent_for_multidisc: bool = True
+) -> list[Path]:
     """Get all album folders from a list of paths to files.
 
     Parameters
     ----------
-    track_paths : List[Path]
-        List of track paths, e.g. mp3 files.
+    track_paths : list[Path]
+        list of track paths, e.g. mp3 files.
     use_parent_for_multidisc : bool, optional
         When files are in an album folder that might be a multi-disc folder (e.g. `/album/cd1`),
         return the parent (`/album`) instead of the lowest-level-folder (`/cd1`). Defaults to True.
 
     Returns
     -------
-        List[str]: album folders
+        list[str]: album folders
     """
 
     folders_to_check: Set[Path] = set()
@@ -343,7 +345,7 @@ def is_album_folder(path: Path | str):
         path = Path(path).absolute()
     if is_archive_file(path):
         return True
-    for paths, items in albums_in_dir(path):
+    for paths, items in albums_in_dir(bytestring_path(path)):
         if all(is_archive_file(i.decode("utf-8")) for i in items):
             continue
         if str(path).encode("utf-8") in paths:
@@ -351,7 +353,7 @@ def is_album_folder(path: Path | str):
     return False
 
 
-def all_album_folders(root_dir: Path | str, subdirs: bool = False) -> List[Path]:
+def all_album_folders(root_dir: Path | str, subdirs: bool = False) -> list[Path]:
     """
     Get all album folders from a given root dir.
 
@@ -365,7 +367,7 @@ def all_album_folders(root_dir: Path | str, subdirs: bool = False) -> List[Path]
 
     Returns
     -------
-        List[Path]
+        list[Path]
     """
 
     # FIXME: For backwards compatibility, we allow a string as input
@@ -373,7 +375,7 @@ def all_album_folders(root_dir: Path | str, subdirs: bool = False) -> List[Path]
         root_dir = Path(root_dir)
 
     folders: list[bytes] = []
-    for paths, items in albums_in_dir(root_dir.absolute()):
+    for paths, items in albums_in_dir(bytestring_path(root_dir.absolute())):
         # Our choice on handling archives:
         # - archives are always simple albums. no multi-disc logic supported,
         #   all discs need to be _inside_ the archive.

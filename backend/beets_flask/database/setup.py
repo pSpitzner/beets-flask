@@ -2,7 +2,6 @@ from contextlib import contextmanager
 from functools import wraps
 from typing import Optional
 
-from deprecated import deprecated
 from quart import Quart
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, scoped_session, sessionmaker

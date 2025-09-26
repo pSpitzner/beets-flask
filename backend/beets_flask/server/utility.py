@@ -4,7 +4,6 @@ from typing import Callable, cast
 from typing_extensions import TypeVar
 
 from beets_flask.invoker.job import ExtraJobMeta
-from beets_flask.logger import log
 
 from .exceptions import InvalidUsageException
 

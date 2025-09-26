@@ -24,7 +24,7 @@ jobs:
                   cd ./backend
                   python -m pip install --upgrade pip
                   pip install ruff
-                  pip install .[typed]
+                  pip install .[typed,test]
             - name: Check style with Ruff
               continue-on-error: true
               id: ruff
@@ -36,13 +36,12 @@ jobs:
               id: mypy
               run: |
                   cd ./backend
-                  mypy --show-error-codes --check-untyped-defs --config-file ./pyproject.toml ./beets_flask
+                  mypy --show-error-codes --check-untyped-defs --config-file ./pyproject.toml .
             - name: Test with pytest
               env:
                   PYTEST_ADDOPTS: "--color=yes"
               run: |
                   cd ./backend
-                  pip install .[test]
                   coverage run -m pytest -v
             - name: Check for failures
               if: steps.ruff.outcome == 'failure' || steps.mypy.outcome == 'failure'

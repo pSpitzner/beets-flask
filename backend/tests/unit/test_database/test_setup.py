@@ -32,8 +32,7 @@ def test_reset(
     # Check if it exists
     with db_session_factory() as db_session:
         query = select(FolderInDb).where(FolderInDb.full_path == "/test")
-        f = db_session.execute(query).scalar_one_or_none()
-        assert f is not None
+        assert db_session.execute(query).scalar_one_or_none() is not None
 
     # Reset the database
     _reset_database()
@@ -41,5 +40,4 @@ def test_reset(
     # Check if it is empty
     with db_session_factory() as db_session:
         query = select(FolderInDb).where(FolderInDb.full_path == "/test")
-        f = db_session.execute(query).scalar_one_or_none()
-        assert f is None
+        assert db_session.execute(query).scalar_one_or_none() is None

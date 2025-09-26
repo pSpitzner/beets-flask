@@ -13,12 +13,14 @@ Why not just have State and StateInDb in the same class?
 
 from __future__ import annotations
 
-import json
+import io
 import pickle
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
-from beets.importer import ImportTask, action, library
+from beets.autotag.distance import Distance
+from beets.importer import Action, ImportTask
+from beets.library.models import Item as LibraryItem
 from sqlalchemy import (
     ForeignKey,
     UniqueConstraint,
@@ -189,7 +191,7 @@ class SessionStateInDb(Base):
 
     __tablename__ = "session"
 
-    tasks: Mapped[List[TaskStateInDb]] = relationship(
+    tasks: Mapped[list[TaskStateInDb]] = relationship(
         back_populates="session",
         # all: All operations cascade i.e. session.merge!
         # delete-orphan: Automatic deletion of tasks if not referenced
@@ -222,7 +224,7 @@ class SessionStateInDb(Base):
         self,
         folder: FolderInDb,
         id: str | None = None,
-        tasks: List[TaskStateInDb] = [],
+        tasks: list[TaskStateInDb] = [],
         progress: Progress = Progress.NOT_STARTED,
         exc: SerializedException | None = None,
     ):
@@ -338,7 +340,7 @@ class TaskStateInDb(Base):
         foreign_keys=[session_id],
     )
 
-    candidates: Mapped[List[CandidateStateInDb]] = relationship(
+    candidates: Mapped[list[CandidateStateInDb]] = relationship(
         back_populates="task",
         foreign_keys="[CandidateStateInDb.task_id]",
         cascade="all, delete-orphan",
@@ -358,7 +360,7 @@ class TaskStateInDb(Base):
     # old_paths contain original file paths, but are only set when files are moved.
     # (which breaks some deep links that before were identical to paths, but no more!)
     items: Mapped[bytes]
-    choice_flag: Mapped[action | None]
+    choice_flag: Mapped[Action | None]
 
     # To allow for continue we need to store the current artist and album
     # TODO: REMOVE this is not needed!! We can look at the asis candidate for this!
@@ -372,13 +374,13 @@ class TaskStateInDb(Base):
         self,
         id: str | None = None,
         toppath: bytes | None = None,
-        paths: List[bytes] = [],
-        old_paths: List[bytes] | None = None,
-        items: List[library.Item] = [],
-        candidates: List[CandidateStateInDb] = [],
+        paths: list[bytes] = [],
+        old_paths: list[bytes] | None = None,
+        items: list[LibraryItem] = [],
+        candidates: list[CandidateStateInDb] = [],
         chosen_candidate_id: str | None = None,
         progress: Progress = Progress.NOT_STARTED,
-        choice_flag: action | None = None,
+        choice_flag: Action | None = None,
         cur_artist: str | None = None,
         cur_album: str | None = None,
     ):
@@ -490,7 +492,7 @@ class CandidateStateInDb(Base):
         self,
         match: BeetsAlbumMatch | BeetsTrackMatch,
         mapping: dict[int, int],
-        duplicate_ids: List[str] = [],
+        duplicate_ids: list[str] = [],
         id: str | None = None,
     ):
         super().__init__(id)
@@ -525,7 +527,9 @@ class CandidateStateInDb(Base):
         if task_state is None:
             task_state = self.task.to_live_state()
         live_state = CandidateState(
-            pickle.loads(self.match), task_state, mapping=self.mapping
+            CustomUnpickler(io.BytesIO(self.match)).load(),
+            task_state,
+            mapping=self.mapping,
         )
         live_state.id = self.id
         live_state.created_at = self.created_at
@@ -538,6 +542,19 @@ class CandidateStateInDb(Base):
 
     def to_dict(self) -> SerializedCandidateState:
         return self.to_live_state(self.task.to_live_state()).serialize()
+
+
+# Hotfix for match unpickler to resolve beets distance moved
+# TODO: We should fix this in general and not pickle beets objects
+class CustomUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        """Override the find_class method to redirect Distance class references."""
+        # Redirect Distance class from beets.autotag.hooks to beets.distance
+        if module == "beets.autotag.hooks" and name == "Distance":
+            return Distance
+
+        # For all other classes, use the default lookup mechanism
+        return super().find_class(module, name)
 
 
 __all__ = ["SessionStateInDb", "TaskStateInDb", "CandidateStateInDb"]

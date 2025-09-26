@@ -5,11 +5,9 @@ flows may be triggered from the frontend by the users and we want to ensure that
 has a well defined path to follow.
 """
 
-import re
 from abc import ABC
-from codecs import ascii_encode
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import Literal
 from unittest import mock
 
 import pytest
@@ -23,6 +21,7 @@ from beets_flask.database.models.states import (
 from beets_flask.disk import Folder
 from beets_flask.importer.progress import FolderStatus
 from beets_flask.importer.session import CandidateChoice, TaskIdMappingArg
+from beets_flask.importer.types import DuplicateAction
 from beets_flask.invoker.enqueue import (
     Progress,
     run_import_auto,
@@ -99,7 +98,6 @@ class TestPreview(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixi
         use_mock_tag_album(str(path))
         return path
 
-    @pytest.fixture()
     async def test_preview(
         self,
         db_session: Session,
@@ -165,7 +163,6 @@ class TestPreviewMultipleTasks(
         use_mock_tag_album(str(path))
         return path
 
-    @pytest.fixture()
     @pytest.mark.parametrize(
         "group_albums, expected_tasks",
         [
@@ -312,7 +309,6 @@ class TestImportBest(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
                 }
             },
         )
-
         assert exc is None, "Should not return an error"
 
         stmt = select(SessionStateInDb)
@@ -774,13 +770,14 @@ class TestMultipleTasks(
 
         # Check db contains the tagged folder with multiple tasks
         stmt = select(SessionStateInDb)
-        s_state_indb = db_session.execute(stmt).scalar()
+        s_state_indb: SessionStateInDb | None = db_session.execute(stmt).scalar()
         assert s_state_indb is not None
         assert len(s_state_indb.tasks) > 1, "Should have multiple tasks"
 
         # For each task, choose a different candidate
 
         candidates: TaskIdMappingArg[CandidateChoice] = {}
+        assert candidates is not None
         for task in s_state_indb.tasks:
             print(task.paths)
             print([c.metadata for c in task.candidates])
@@ -812,7 +809,7 @@ class TestMultipleTasks(
         self,
         db_session: Session,
         path_multiple_tasks: Path,
-        duplicate_action: str,
+        duplicate_action: Literal["skip", "merge", "remove", "keep"],
     ):
         """Test the import of the tagged folder with duplicate action."""
 
@@ -837,8 +834,11 @@ class TestMultipleTasks(
         db_session.commit()
 
         # For each task, choose a different candidate and duplicate action
-        duplicate_actions = {}
-        candidates = {}
+        duplicate_actions: TaskIdMappingArg[DuplicateAction] = {}
+        candidates: TaskIdMappingArg[CandidateChoice] = {}
+        assert candidates is not None
+        assert duplicate_actions is not None
+
         for task in s_state_indb.tasks:
             assert len(task.candidates) > 2, "Should have candidates"
             candidates[task.id] = task.candidates[-2].id

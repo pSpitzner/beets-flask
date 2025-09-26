@@ -7,9 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - Upcoming
 
+### Fixed
+
+- We now support playing container types [m4a, mp4, mov, alac, aac, mp3] that require seeking. This should fix issues with some mp4/m4a files not playing.
+
 ### Added
 
 - The inbox info button now has a description of all actions [#145](https://github.com/pSpitzner/beets-flask/issues/145) 
+
+### Other (dev)
+
+- Fixed typing issues in `./tests` folder and enabled mypy check for it.
+- Ruff now has the F401 (imported but unused) check enabled.
+
+### Dependencies
+
+- Updated `uvicorn`  to `0.36.0`.
+- Updated `beets`  to `2.4.0`.
 
 ## [1.1.3] - 25-09-18
 

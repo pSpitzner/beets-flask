@@ -16,7 +16,7 @@ classifiers = [
 dependencies = [
     "quart>=0.20.0",
     "confuse>=2.0.1",
-    "beets==2.3.1",
+    "beets==2.4.0",
     "sqlalchemy>=2.0.35",
     "rq>=2.0.0",
     "watchdog>=5.0.3",
@@ -28,7 +28,7 @@ dependencies = [
     "Deprecated>=1.2.18",
     "nest_asyncio>=1.6.0",
     # Used for hosting the web-interface & api
-    "uvicorn>=0.34.0",
+    "uvicorn>=0.36.0",
     # beets plugin dependencies
     "pylast>=5.2.0",
     "python2ts>=0.6.1",
@@ -85,8 +85,7 @@ packages = ["beets_flask"]
 allow-direct-references = true
 
 [tool.ruff]
-include = ["pyproject.toml", "beets_flask/**/*.py"]
-exclude = ["beets_flask/**/dirhash.py"]
+include = ["pyproject.toml", "beets_flask/**/*.py", "tests/**/*.py"]
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**/*" = ["D"]
@@ -99,10 +98,10 @@ select = [
     # Augment the convention by requiring an imperative mood for all docstrings.
     "D401",
     # Unused imports
+    "F401",
 ]
 ignore = [
     # Ignore req. for public facing functions docstrings
-    "F401",
     "D10",
     "D401",
     "D202",
@@ -126,6 +125,7 @@ filterwarnings = [
 pythonpath = ["."]
 asyncio_mode = "auto"
 log_format = "%(relativeCreated)-8d [%(levelname)-5s] %(name)s %(filename)-8s:%(lineno)d %(message)s"
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.coverage.report]
 omit = ["*/tests/*"]
@@ -139,10 +139,8 @@ allow_redefinition = true
 # Suppresses error messages about imports that cannot be resolved.
 module = [
     "socketio.*",
-    "beets.*",
     "confuse.*",
     "mediafile.*",
     "nest_asyncio",
-    "dirhash",
 ]
 ignore_missing_imports = true

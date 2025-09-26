@@ -1,6 +1,5 @@
 import asyncio
-import logging
-from typing import Any, Optional
+from typing import Optional
 
 import pytest
 import socketio
@@ -25,7 +24,6 @@ class UvicornTestServer(uvicorn.Server):
     async def startup(self, sockets=None) -> None:
         """Override uvicorn startup"""
         await super().startup()
-        self.config.setup_event_loop()
         self._startup_done.set()
 
     async def start_up(self) -> None:

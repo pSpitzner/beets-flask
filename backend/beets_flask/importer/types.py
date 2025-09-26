@@ -6,7 +6,7 @@ Also includes and our own derivatives.
 from __future__ import annotations
 
 from abc import ABC
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from typing import (
     Any,
     Callable,
@@ -18,10 +18,12 @@ from typing import (
 )
 
 from beets import autotag
+from beets.autotag.distance import Distance as BeetsDistance
 from beets.autotag.hooks import AlbumInfo as BeetsAlbumInfo
 from beets.autotag.hooks import AlbumMatch as BeetsAlbumMatch
 from beets.autotag.hooks import TrackInfo as BeetsTrackInfo
 from beets.autotag.hooks import TrackMatch as BeetsTrackMatch
+from beets.importer import ImportTask as BeetsImportTask
 from beets.library import Album as BeetsAlbum
 from beets.library import Item as BeetsItem
 from beets.library import Library as BeetsLibrary
@@ -41,6 +43,8 @@ __all__ = [
     "BeetsTrackInfo",
     "BeetsTrackMatch",
     "BeetsLibrary",
+    "BeetsDistance",
+    "BeetsImportTask",
 ]
 
 # to be consistent with beets, here we do not use an enum.
@@ -100,7 +104,7 @@ class MusicInfo(ABC):
         if isinstance(info, autotag.TrackInfo):
             kwargs["type"] = "track"
             return TrackInfo(**kwargs)
-        elif isinstance(info, autotag.Item):
+        elif isinstance(info, BeetsItem):
             return ItemInfo(**kwargs)
         elif isinstance(info, autotag.AlbumInfo):
             kwargs["type"] = "album"
