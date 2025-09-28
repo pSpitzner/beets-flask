@@ -24,6 +24,7 @@ plugins: [
         inline,
         edit,
         spotify, # needs authentication https://docs.beets.io/en/latest/plugins/spotify.html
+        musicbrainz, # needs to be enabled explicitly since beets 2.4.0
     ]
 
 directory: /music/imported
@@ -120,3 +121,13 @@ match:
 spotify:
     # 0.0 gives spotify the same priority as musicbrainz
     source_weight: 0.0
+
+musicbrainz:
+    source_weight: 0.0
+    external_ids:
+        discogs: yes
+        bandcamp: yes
+        spotify: yes
+        deezer: yes
+        beatport: yes
+        tidal: yes
