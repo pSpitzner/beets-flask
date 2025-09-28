@@ -356,7 +356,6 @@ def lookup_candidates(
 
     # FIXME: what happens with our new skip logic and plugins?
     plugins.send("import_task_start", session=session, task=task)
-    log.debug(f"Looking up: {displayable_path(task.paths)}")
 
     session.lookup_candidates(task)
 
