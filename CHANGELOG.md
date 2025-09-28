@@ -7,16 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.2.0] - Upcoming
 
+### Breaking Changes
+- You need to update your beets config, and add `musicbrainz` to the list of enabled plugins. This is required since beets 2.4.0 [see here](https://github.com/beetbox/beets/releases/tag/v2.4.0)
+
 ### Fixed
 
 - We now support playing container types [m4a, mp4, mov, alac, aac, mp3] that require seeking. This should fix issues with some mp4/m4a files not playing.
 
 ### Added
 
-- The inbox info button now has a description of all actions [#145](https://github.com/pSpitzner/beets-flask/issues/145) 
+- The inbox info button now has a description of all actions [#145](https://github.com/pSpitzner/beets-flask/issues/145)
 
 ### Other (dev)
 
+- The default beets config now includes a `musicbrainz` section that enables fetching of external ids (like tidal).
 - Fixed typing issues in `./tests` folder and enabled mypy check for it.
 - Ruff now has the F401 (imported but unused) check enabled.
 
