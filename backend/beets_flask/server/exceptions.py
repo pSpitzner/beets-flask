@@ -64,8 +64,19 @@ class IntegrityException(ApiException):
 class NotImportedException(ApiException):
     """Not imported error.
 
-    So for only used for the auto import session, when the best
+    So far only used for the auto import session, when the best
     match is worse than the threshold.
+    """
+
+    status_code: int = 409
+
+
+class NoCandidatesFoundException(ApiException):
+    """No candidates found error.
+
+    Raised when an online search does not return any candidates.
+    Could be raised from automatic search (without searchid) but also when manually
+    adding more candidates via interactive search (searchid given).
     """
 
     status_code: int = 409
@@ -85,7 +96,8 @@ class UserException(Exception):
 class DuplicateException(UserException):
     """Duplicate error.
 
-    Raised when we have trouble resolving duplicates in the beets library. Users should check their config and api usage.
+    Raised when we have trouble resolving duplicates in the beets library.
+    Users should check their config and api usage.
     """
 
     status_code: int = 422

@@ -51,6 +51,7 @@ from beets_flask.server.exceptions import (
     DuplicateException,
     IntegrityException,
     NotImportedException,
+    NoCandidatesFoundException,
     to_serialized_exception,
 )
 from beets_flask.utility import capture_stdout_stderr
@@ -349,16 +350,24 @@ class BaseSession(importer.ImportSession, ABC):
     def lookup_candidates(self, task: importer.ImportTask):
         """Lookup candidates for the task."""
 
+        search_ids = self.config["search_ids"].as_str_seq()  # might be an empty list
+        log.debug(
+            f"Looking up candidates for {task.paths}, using search ids {search_ids}"
+        )
+
         # Restrict the initial lookup to IDs specified by the user via the -m
         # option. Currently all the IDs are passed onto the tasks directly.
         # FIXME: Revisit, we want to avoid using the global config.
-        task.lookup_candidates(self.config["search_ids"].as_str_seq())
+        task.lookup_candidates(search_ids)
+
+        if len(task.candidates) == 0:
+            raise NoCandidatesFoundException(
+                f"No candidates found for {task} ({task.paths})"
+            )
 
         # Update our state
         task_state = self.state.get_task_state_for_task_raise(task)
-
-        # FIXME: type hint should be fine once beets updates
-        task_state.add_candidates(task.candidates)  # type: ignore
+        task_state.add_candidates(task.candidates)
 
     # ---------------------------------- Run --------------------------------- #
 
