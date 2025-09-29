@@ -3,26 +3,38 @@ import React from "react";
 import { alpha, Box } from "@mui/material";
 
 import { useDragAndDrop } from "@/components/common/hooks/useDrag";
+import { formatDate } from "@/components/common/units/time";
 
 import { useFileUploadContext } from "./context";
 
 export function DropZone({
     children,
-    targetDir,
+    inboxDir,
 }: {
     children?: React.ReactNode;
-    targetDir: string;
+    inboxDir: string;
 }) {
     const ref = useRef<HTMLDivElement>(null);
-    const { isOverWindow, uploadFiles } = useFileUploadContext();
-    const isOverDropZone = useDragAndDrop(ref);
+    const { isOverWindow, setFileList, setUploadTargetDir } = useFileUploadContext();
+    const isOverDropZone = useDragAndDrop(ref, {
+        onDrop: (event) => {
+            if (!event.dataTransfer) return;
+            setUploadTargetDir(
+                inboxDir + `/upload_${formatDate(new Date(), "%Y%m%d_%H%M%S")}`
+            );
+            setFileList((prevFiles) => {
+                if (!event.dataTransfer) return prevFiles;
+                return [...prevFiles, ...Array.from(event.dataTransfer.files)];
+            });
+        },
+    });
 
     return (
         <Box
             ref={ref}
             sx={{
                 position: "relative",
-                zIndex: 2,
+                zIndex: 1,
             }}
         >
             {children}
