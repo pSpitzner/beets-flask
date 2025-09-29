@@ -4,21 +4,26 @@
  * ...
  */
 
-import { FileMusicIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { CheckIcon, FileMusicIcon, Upload, XIcon } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
     Box,
+    Button,
     Chip,
     DialogContent,
+    FormHelperText,
+    IconButton,
     LinearProgress,
     TextField,
     Typography,
     useTheme,
 } from "@mui/material";
 
+import { useConfig } from "@/api/config";
 import { Dialog } from "@/components/common/dialogs";
 import { useDragAndDrop } from "@/components/common/hooks/useDrag";
 import { humanizeBytes } from "@/components/common/units/bytes";
+import { humanizeDuration } from "@/components/common/units/time";
 
 import { useFileUploadContext } from "./context";
 
@@ -27,14 +32,14 @@ export function UploadDialog() {
     const { uploadState, fileList } = useFileUploadContext();
 
     useEffect(() => {
-        if (uploadState?.isPending) {
+        if (fileList.length > 0) {
             setOpen(true);
         }
-    }, [uploadState]);
+    }, [fileList.length]);
 
     return (
         <Dialog
-            open={fileList !== null || open}
+            open={true}
             title="Uploading files"
             onClose={() => {
                 setOpen(false);
@@ -42,8 +47,6 @@ export function UploadDialog() {
             title_icon={null}
         >
             <DialogContent>
-                <FileDropZone targetDir="" />
-                <SelectedFilesList />
                 <Box
                     sx={{
                         width: "100%",
@@ -54,10 +57,92 @@ export function UploadDialog() {
                 >
                     <FolderSelector />
                 </Box>
+                <FileDropZone targetDir="" />
+                <SelectedFilesListAndProgress />
                 <UploadFinished />
-                <UploadInProgress />
+                <UploadButton />
             </DialogContent>
         </Dialog>
+    );
+}
+
+function FileProgressBar({
+    file,
+    removeFile,
+}: {
+    file: string;
+    removeFile: () => void;
+}) {
+    const theme = useTheme();
+    const { uploadProgress, uploadState } = useFileUploadContext();
+
+    const fileProgress = useMemo(() => {
+        return uploadProgress.files.find((f) => f.name === file);
+    }, [uploadProgress, file]);
+
+    let percent = fileProgress?.total
+        ? (fileProgress.loaded / fileProgress.total) * 100
+        : 0;
+
+    // Workaround for files with 0 bytes
+    if (fileProgress?.total == 0 && fileProgress?.finished) {
+        percent = 100;
+    }
+
+    return (
+        <Box
+            sx={{
+                position: "relative",
+                width: "100%",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+            }}
+        >
+            <Box
+                sx={{
+                    position: "absolute",
+                    width: "100%",
+                    height: "100%",
+                    top: 0,
+                    left: 0,
+                    zIndex: 0,
+                }}
+            >
+                <LinearProgress
+                    variant="determinate"
+                    value={percent}
+                    sx={{
+                        height: `100%`,
+                        borderRadius: 1,
+                        backgroundColor: "rgba(255, 255, 255, 0.05)",
+
+                        "& .MuiLinearProgress-bar": {
+                            backgroundColor: "primary.muted",
+                        },
+                    }}
+                />
+            </Box>
+
+            <Typography variant="body1" zIndex={1} paddingLeft={1}>
+                {file}
+            </Typography>
+            <IconButton
+                size="small"
+                disabled={!uploadState.isIdle}
+                onClick={removeFile}
+            >
+                {fileProgress && uploadState.isPending && (
+                    <Typography variant="body2" fontSize="small">
+                        {percent.toFixed(0)}%
+                    </Typography>
+                )}
+                {fileProgress?.finished && <CheckIcon size={theme.iconSize.sm} />}
+                {uploadState.isIdle && !fileProgress?.finished && (
+                    <XIcon size={theme.iconSize.sm} />
+                )}
+            </IconButton>
+        </Box>
     );
 }
 
@@ -66,7 +151,7 @@ export function UploadDialog() {
  * This component displays the list of files selected for upload.
  * It allows users to remove files from the list before uploading.
  */
-function SelectedFilesList() {
+function SelectedFilesListAndProgress() {
     const { fileList, setFileList } = useFileUploadContext();
 
     const handleRemoveFile = (index: number) => {
@@ -75,46 +160,33 @@ function SelectedFilesList() {
     };
 
     if (fileList.length === 0) {
-        return (
-            <Typography variant="body2" color="text.secondary">
-                No files selected for upload.
-            </Typography>
-        );
+        return <Typography variant="body2">No files selected for upload.</Typography>;
     }
 
     return (
-        <Box
-            sx={{
-                width: "100%",
-                maxHeight: 300,
-                overflowY: "auto",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-            }}
-        >
-            <Typography variant="subtitle2" gutterBottom>
-                Selected files for upload ({fileList.length}):
+        <>
+            <Typography variant="caption" fontWeight="bold" color="text.secondary">
+                Files:
             </Typography>
             <Box
-                sx={(theme) => ({
+                sx={{
+                    width: "100%",
+                    overflowY: "auto",
                     display: "flex",
-                    flexWrap: "wrap",
-                    gap: 1,
-                    maxWidth: theme.breakpoints.values.tablet,
-                })}
+                    flexDirection: "column",
+                    gap: 0.5,
+                    pl: 0.5,
+                }}
             >
                 {fileList.map((file, index) => (
-                    <Chip
+                    <FileProgressBar
+                        file={file.name}
+                        removeFile={() => handleRemoveFile(index)}
                         key={index}
-                        label={file.name}
-                        onDelete={() => handleRemoveFile(index)}
-                        variant="outlined"
-                        size="small"
                     />
                 ))}
             </Box>
-        </Box>
+        </>
     );
 }
 
@@ -123,12 +195,21 @@ function SelectedFilesList() {
  * where the files will be uploaded.
  */
 function FolderSelector() {
-    const { uploadTargetDir, setUploadTargetDir } = useFileUploadContext();
+    const { uploadTargetDir, setUploadTargetDir, uploadState } = useFileUploadContext();
+    const config = useConfig();
+
+    let is_valid = false;
+    for (const folder of Object.values(config.gui.inbox.folders)) {
+        if (uploadTargetDir?.startsWith(folder.path)) is_valid = true;
+    }
 
     return (
         <TextField
             fullWidth
-            label="into folder"
+            error={!is_valid}
+            label="Target Folder"
+            helperText={is_valid ? null : "Folder must be inside an inbox"}
+            disabled={!uploadState.isIdle}
             value={uploadTargetDir}
             onChange={(e) => setUploadTargetDir(e.target.value)}
             placeholder="Enter folder name"
@@ -143,6 +224,36 @@ function FolderSelector() {
     );
 }
 
+/** Upload button component
+ * This component displays a button to start the upload process.
+ * It shows the number of selected files and the target upload path.
+ */
+function UploadButton() {
+    const { uploadTargetDir, fileList, uploadFiles, uploadState } =
+        useFileUploadContext();
+
+    if (uploadState.isSuccess || uploadState.isError) return null;
+
+    return (
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <Button
+                variant="contained"
+                color="primary"
+                startIcon={<Upload />}
+                onClick={uploadFiles}
+                loading={uploadState?.isPending}
+            >
+                Start upload
+            </Button>
+            <FormHelperText sx={{ mt: 1, textAlign: "center" }}>
+                Uploading {fileList.length} file
+                {fileList.length !== 1 ? "s" : ""} into{" "}
+                <Typography variant="caption">{uploadTargetDir}</Typography>
+            </FormHelperText>
+        </Box>
+    );
+}
+
 /* -------------------------------- Dropzone -------------------------------- */
 
 function FileDropZone({ targetDir }: { targetDir: string }) {
@@ -150,7 +261,7 @@ function FileDropZone({ targetDir }: { targetDir: string }) {
     const theme = useTheme();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const isDragOver = useDragAndDrop(ref);
-    const { fileList, setFileList } = useFileUploadContext();
+    const { fileList, setFileList, uploadState } = useFileUploadContext();
 
     return (
         <Box
@@ -234,8 +345,7 @@ function FileDropZone({ targetDir }: { targetDir: string }) {
 /* ----------------------------- Upload Progress ---------------------------- */
 
 function UploadFinished() {
-    const { uploadState } = useFileUploadContext();
-    const uploadProgress = uploadState.uploadProgress;
+    const { uploadState, uploadProgress } = useFileUploadContext();
 
     if (!uploadState) return null;
 
@@ -250,76 +360,22 @@ function UploadFinished() {
 
     return (
         <Box>
-            <Box>Uploaded {uploadProgress.files.nTotal} files!</Box>
+            <Box>Uploaded {uploadProgress.files.length} files!</Box>
             <Box sx={{ mt: 2, color: "text.secondary" }}>
-                <Box>{humanizeBytes(uploadProgress.files.total)}</Box>
-                {uploadProgress.files.finished && (
+                <Box>{humanizeBytes(uploadProgress.total)}</Box>
+                {uploadProgress.finished && uploadProgress.started && (
                     <Box>
-                        {uploadProgress.files.finished - uploadProgress.files.started}{" "}
-                        ms
+                        {humanizeDuration(
+                            (uploadProgress.finished - uploadProgress.started) / 1000
+                        )}
                     </Box>
                 )}
             </Box>
             <Box>
-                {uploadProgress.files.names.map((name) => (
-                    <Box key={name}>{name}</Box>
+                {uploadProgress.files.map((file) => (
+                    <Box key={file.name}>{file.name}</Box>
                 ))}
             </Box>
-        </Box>
-    );
-}
-
-function UploadInProgress() {
-    const { uploadState } = useFileUploadContext();
-    const uploadProgress = uploadState.uploadProgress;
-
-    if (!uploadState) return null;
-
-    if (!uploadState || !uploadProgress || !uploadState.isPending) {
-        return null;
-    }
-
-    let statusText = "Uploading files...";
-    if (uploadProgress && uploadProgress.files.nTotal > 1) {
-        statusText = `Uploading ${uploadProgress?.name} (${uploadProgress?.currentIndex + 1}/${
-            uploadProgress?.files.nTotal
-        }) ...`;
-    } else {
-        statusText = `Uploading ${uploadProgress?.name} ...`;
-    }
-
-    return (
-        <Box sx={{ width: "100%" }}>
-            <Box sx={{ color: "primary.main" }}>{statusText}</Box>
-            <Box sx={{ mb: 2, mt: 1, color: "text.secondary" }}>
-                {(
-                    (uploadProgress.files.loaded / uploadProgress.files.total) *
-                    100
-                ).toFixed(0)}
-                % complete
-            </Box>
-            <LinearProgress
-                variant="determinate"
-                value={(uploadProgress.files.loaded / uploadProgress.files.total) * 100}
-                sx={{
-                    height: 8,
-                    borderRadius: 4,
-                    width: "100%",
-                }}
-            />
-            {/* if multiple files, show secondary bar */}
-            {uploadProgress.files.nTotal > 1 && (
-                <LinearProgress
-                    variant="determinate"
-                    value={(uploadProgress.loaded / uploadProgress.total) * 100}
-                    sx={{
-                        mt: 1,
-                        height: 8,
-                        borderRadius: 4,
-                        width: "100%",
-                    }}
-                />
-            )}
         </Box>
     );
 }
