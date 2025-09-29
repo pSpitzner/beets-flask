@@ -73,7 +73,7 @@ function RouteComponent() {
                 <FileUploadProvider>
                     {inboxes.map((folder) => (
                         <FolderSelectionProvider key={folder.full_path}>
-                            <DropZone targetDir={folder.full_path}>
+                            <DropZone inboxDir={folder.full_path}>
                                 <InboxCard key={folder.full_path} folder={folder} />
                             </DropZone>
                         </FolderSelectionProvider>
@@ -125,7 +125,6 @@ function PageHeader({ inboxes, ...props }: { inboxes: Folder[] } & BoxProps) {
                     alignSelf: 'center',
                     display: 'flex',
                     gap: 1,
-                    zIndex: 1,
                     borderRadius: 1,
                     color: 'secondary.muted',
                     gridColumn: '1',
@@ -140,7 +139,6 @@ function PageHeader({ inboxes, ...props }: { inboxes: Folder[] } & BoxProps) {
                     alignSelf: 'center',
                     display: 'flex',
                     gap: 1,
-                    zIndex: 1,
                     borderRadius: 1,
                     color: 'secondary.muted',
                     gridColumn: '1',

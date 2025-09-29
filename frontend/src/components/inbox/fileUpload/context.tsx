@@ -3,26 +3,24 @@ import React from "react";
 import { createPortal } from "react-dom";
 import { Box } from "@mui/material";
 
-import { useFileUpload } from "@/api/fileUpload";
+import { BatchFileUploadProgress, useFileUpload } from "@/api/fileUpload";
 import { useDragAndDrop } from "@/components/common/hooks/useDrag";
 
 import { UploadDialog } from "./dialog";
 
 export type UploadState = Omit<
     ReturnType<typeof useFileUpload>,
-    "mutate" | "mutateAsync"
+    "mutate" | "mutateAsync" | "uploadProgress"
 >;
 
 // Context to track global drag state
 interface DragContextType {
     isOverWindow: boolean;
     uploadState: UploadState;
+    uploadProgress: BatchFileUploadProgress;
     fileList: Array<File>;
     setFileList: React.Dispatch<React.SetStateAction<Array<File>>>;
-    uploadFiles: (
-        files: FileList | File[],
-        targetDir: string
-    ) => Promise<{ status: string }>;
+    uploadFiles: () => Promise<{ status: string }>;
     uploadTargetDir: string | null;
     setUploadTargetDir: React.Dispatch<React.SetStateAction<string | null>>;
     backdropRef?: React.RefObject<HTMLElement | null>;
@@ -36,23 +34,22 @@ export function FileUploadProvider({ children }: { children: React.ReactNode }) 
     const [uploadTargetDir, setUploadTargetDir] = useState<string | null>(null);
 
     const isOverWindow = useDragAndDrop(null, {
-        onDrop: (event) => {
-            if (!event.dataTransfer) return;
-            setFileList((prevFiles) => {
-                if (!event.dataTransfer) return prevFiles;
-                return [...prevFiles, ...Array.from(event.dataTransfer.files)];
-            });
-        },
         preventDefault: true,
     });
-    const { mutateAsync: uploadFiles, ...uploadState } = useFileUpload();
+    const { mutateAsync, uploadProgress, ...uploadState } = useFileUpload();
 
     return (
         <FileUploadContext.Provider
             value={{
                 isOverWindow,
                 uploadState,
-                uploadFiles,
+                uploadProgress,
+                uploadFiles: async () => {
+                    if (!uploadTargetDir) {
+                        throw new Error("No target directory set for upload");
+                    }
+                    return await mutateAsync(fileList, uploadTargetDir);
+                },
                 fileList,
                 setFileList,
                 uploadTargetDir,
@@ -72,7 +69,6 @@ export function FileUploadProvider({ children }: { children: React.ReactNode }) 
                         bottom: 0,
                         backgroundColor: "rgba(0, 0, 0, 0.3)",
                         backdropFilter: "blur(4px)",
-                        zIndex: 1,
                         pointerEvents: "none",
                         display: isOverWindow ? "flex" : "none",
                     }}
@@ -86,7 +82,9 @@ export function FileUploadProvider({ children }: { children: React.ReactNode }) 
 export function useFileUploadContext() {
     const context = useContext(FileUploadContext);
     if (!context) {
-        throw new Error("useDragContext must be used within a DragProvider");
+        throw new Error(
+            "useFileUploadContext must be used within a FileUploadProvider"
+        );
     }
     return context;
 }

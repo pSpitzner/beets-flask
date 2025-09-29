@@ -6,20 +6,21 @@ import { SerializedException } from "@/pythonTypes";
 import { APIError } from "./common";
 
 export interface FileUploadProgress {
-    // currently uploading file
-    currentIndex: number;
     name: string;
     total: number; // bytes
     loaded: number;
-    files: {
-        // overall progress
-        names: string[];
-        nTotal: number;
-        total: number; // bytes
-        loaded: number;
-        started: number;
-        finished?: number;
-    };
+    started?: number;
+    finished?: number;
+}
+
+export interface BatchFileUploadProgress {
+    // overall progress
+    files: FileUploadProgress[];
+    currentIndex: number;
+    started?: number;
+    finished?: number;
+    total: number; // bytes
+    loaded: number;
 }
 
 export const fileUploadMutationOptions: UseMutationOptions<
@@ -28,59 +29,92 @@ export const fileUploadMutationOptions: UseMutationOptions<
     {
         files: File[] | FileList;
         targetDir: string;
-        onProgress?: Dispatch<SetStateAction<FileUploadProgress | null>>;
+        setProgress: Dispatch<SetStateAction<BatchFileUploadProgress>>;
     }
 > = {
-    mutationFn: async ({ files, targetDir, onProgress }) => {
+    mutationFn: async ({ files, targetDir, setProgress }) => {
         let uploadedBytesTotal = 0;
-        const startTotal = performance.now();
         const totalBytes = Array.from(files).reduce((acc, file) => acc + file.size, 0);
-
         console.log(`Uploading ${files.length} files, total size ${totalBytes} bytes`);
+
+        // init progress bars for each file
+        // Note that you cannot use an object for the batch progress, because
+        // we might not iterate its individual file progress objects in order.
+        const started = performance.now();
+        setProgress({
+            files: Array.from(files).map((file) => ({
+                name: file.name,
+                total: file.size,
+                loaded: 0,
+            })),
+            currentIndex: 0,
+            total: totalBytes,
+            loaded: 0,
+            started: started,
+        });
 
         // We opted to upload files sequentially
         // TODO: what happens if one of the files fails?
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
+
             let uploadedBytesFile = 0;
-            await uploadFile(file, targetDir, (fileProgress) => {
-                uploadedBytesTotal += fileProgress.loaded - uploadedBytesFile;
-                uploadedBytesFile = fileProgress.loaded;
-                onProgress?.({
-                    currentIndex: i,
-                    name: file.name,
-                    total: fileProgress.total,
-                    loaded: uploadedBytesFile,
-                    files: {
-                        names: Array.from(files).map((f) => f.name),
-                        nTotal: files.length,
-                        total: totalBytes,
+            await uploadFile(file, targetDir, (progressUpdate) => {
+                uploadedBytesTotal += progressUpdate.loaded - uploadedBytesFile;
+                uploadedBytesFile = progressUpdate.loaded;
+
+                setProgress((prev) => {
+                    return {
+                        ...prev,
+                        files: prev.files.map((f, idx) =>
+                            idx === i
+                                ? {
+                                      ...f,
+                                      loaded: progressUpdate.loaded,
+                                      started: f.started ?? performance.now(),
+                                  }
+                                : f
+                        ),
+                        currentIndex: i,
                         loaded: uploadedBytesTotal,
-                        started: startTotal,
-                    },
+                    };
                 });
+            });
+
+            setProgress((prev) => {
+                return {
+                    ...prev,
+                    files: prev.files.map((f, idx) =>
+                        idx === i
+                            ? {
+                                  ...f,
+                                  loaded: file.size,
+                                  started: f.started ?? performance.now(),
+                                  finished: performance.now(),
+                              }
+                            : f
+                    ),
+                    currentIndex: i + 1,
+                    loaded: uploadedBytesTotal,
+                };
             });
             console.debug(`Uploaded file ${i + 1}/${files.length}: ${file.name}`);
         }
 
-        const finishTotal = performance.now();
-        onProgress?.((prev) => {
-            if (!prev) return prev;
+        const finished = performance.now();
+        setProgress((prev) => {
             return {
                 ...prev,
-                files: {
-                    ...prev?.files,
-                    finished: finishTotal,
-                },
+                finished: finished,
+                loaded: totalBytes,
+                currentIndex: files.length,
             };
         });
-
         console.log(
             `Uploaded ${files.length} files, total size ${totalBytes} bytes in ${
-                (finishTotal - startTotal) / 1000
+                (finished - started) / 1000
             } seconds`
         );
-
         return { status: "ok" };
     },
 };
@@ -142,7 +176,12 @@ async function uploadFile(
 }
 
 export function useFileUpload() {
-    const [uploadProgress, setProgress] = useState<FileUploadProgress | null>(null);
+    const [uploadProgress, setProgress] = useState<BatchFileUploadProgress>({
+        files: [],
+        currentIndex: 0,
+        total: 0,
+        loaded: 0,
+    });
     const { mutate, mutateAsync, ...props } = useMutation(fileUploadMutationOptions);
 
     useEffect(() => {
@@ -152,10 +191,10 @@ export function useFileUpload() {
     return {
         uploadProgress,
         mutate: (files: FileList | File[], targetDir: string) => {
-            mutate({ files, targetDir, onProgress: setProgress });
+            mutate({ files, targetDir, setProgress: setProgress });
         },
         mutateAsync: (files: FileList | File[], targetDir: string) =>
-            mutateAsync({ files, targetDir, onProgress: setProgress }),
+            mutateAsync({ files, targetDir, setProgress: setProgress }),
         ...props,
     };
 }
