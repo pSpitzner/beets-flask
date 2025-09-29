@@ -28,7 +28,8 @@ import {
 } from "@/components/inbox/actions/buttons";
 import { getActionDescription } from "@/components/inbox/actions/descriptions";
 import { InboxCard } from "@/components/inbox/cards/inboxCard";
-import { DragProvider, DropZone } from "@/components/inbox/fileUploadNew";
+import { FileUploadProvider } from "@/components/inbox/fileUpload/context";
+import { DropZone } from "@/components/inbox/fileUpload/dropzone";
 import { FolderSelectionProvider } from "@/components/inbox/folderSelectionContext";
 import { Folder } from "@/pythonTypes";
 
@@ -69,18 +70,15 @@ function RouteComponent() {
                     flexDirection: "column",
                 }}
             >
-                <DragProvider>
+                <FileUploadProvider>
                     {inboxes.map((folder) => (
                         <FolderSelectionProvider key={folder.full_path}>
-                            <DropZone
-                                id={folder.full_path}
-                                targetDir={folder.full_path}
-                            >
+                            <DropZone targetDir={folder.full_path}>
                                 <InboxCard key={folder.full_path} folder={folder} />
                             </DropZone>
                         </FolderSelectionProvider>
                     ))}
-                </DragProvider>
+                </FileUploadProvider>
             </Box>
         </PageWrapper>
     );
