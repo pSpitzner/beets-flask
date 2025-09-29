@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { useMutation, UseMutationOptions } from "@tanstack/react-query";
 
 import { SerializedException } from "@/pythonTypes";
@@ -11,13 +11,14 @@ export interface FileUploadProgress {
     name: string;
     total: number; // bytes
     loaded: number;
-    started: number; // timestamp performance.now()
     files: {
         // overall progress
+        names: string[];
         nTotal: number;
         total: number; // bytes
         loaded: number;
         started: number;
+        finished?: number;
     };
 }
 
@@ -27,7 +28,7 @@ export const fileUploadMutationOptions: UseMutationOptions<
     {
         files: File[] | FileList;
         targetDir: string;
-        onProgress?: (progress: FileUploadProgress) => void;
+        onProgress?: Dispatch<SetStateAction<FileUploadProgress | null>>;
     }
 > = {
     mutationFn: async ({ files, targetDir, onProgress }) => {
@@ -42,7 +43,6 @@ export const fileUploadMutationOptions: UseMutationOptions<
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             let uploadedBytesFile = 0;
-            const startFile = performance.now();
             await uploadFile(file, targetDir, (fileProgress) => {
                 uploadedBytesTotal += fileProgress.loaded - uploadedBytesFile;
                 uploadedBytesFile = fileProgress.loaded;
@@ -51,8 +51,8 @@ export const fileUploadMutationOptions: UseMutationOptions<
                     name: file.name,
                     total: fileProgress.total,
                     loaded: uploadedBytesFile,
-                    started: startFile,
                     files: {
+                        names: Array.from(files).map((f) => f.name),
                         nTotal: files.length,
                         total: totalBytes,
                         loaded: uploadedBytesTotal,
@@ -63,9 +63,21 @@ export const fileUploadMutationOptions: UseMutationOptions<
             console.debug(`Uploaded file ${i + 1}/${files.length}: ${file.name}`);
         }
 
+        const finishTotal = performance.now();
+        onProgress?.((prev) => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                files: {
+                    ...prev?.files,
+                    finished: finishTotal,
+                },
+            };
+        });
+
         console.log(
             `Uploaded ${files.length} files, total size ${totalBytes} bytes in ${
-                (performance.now() - startTotal) / 1000
+                (finishTotal - startTotal) / 1000
             } seconds`
         );
 
@@ -147,4 +159,3 @@ export function useFileUpload() {
         ...props,
     };
 }
-
