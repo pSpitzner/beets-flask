@@ -31,17 +31,46 @@ import { useFileUploadContext } from "./context";
 export function UploadDialog() {
     const [open, setOpen] = useState(false);
     const { uploadState, fileList } = useFileUploadContext();
+    const [title, setTitle] = useState<string>("Upload files");
 
     useEffect(() => {
+        const inner = `${fileList.length} file${fileList.length !== 1 ? "s" : ""}`;
+
         if (fileList.length > 0) {
             setOpen(true);
+            setTitle(`Upload ${inner}`);
+        } else {
+            setTitle("Upload files");
         }
+
+        // PS @ SM: I played around with state-dependent titles but it felt like too much.
+        // if (uploadState.isIdle) {
+        //     setTitle(`Upload ${inner}`);
+        // } else if (uploadState.isPending) {
+        //     setTitle(`Uploading ${inner}...`);
+        // } else if (uploadState.isSuccess) {
+        //     setTitle(`Uploaded ${inner}`);
+        // } else if (uploadState.isError) {
+        //     setTitle(`Error uploading ${inner}`);
+        // }
     }, [fileList.length]);
+
+    useEffect(() => {
+        // Close dialog 3 seconds after upload is done
+        let timeout: NodeJS.Timeout;
+        if (uploadState.isSuccess || uploadState.isError) {
+            timeout = setTimeout(() => {
+                setOpen(false);
+                // currently staying below the 3s used in the mutation hook.
+            }, 2800);
+        }
+        return () => clearTimeout(timeout);
+    }, [uploadState.isSuccess, uploadState.isError]);
 
     return (
         <Dialog
             open={open}
-            title="Uploading files"
+            title={title}
             onClose={() => {
                 setOpen(false);
             }}
@@ -58,9 +87,12 @@ export function UploadDialog() {
                 >
                     <FolderSelector />
                     <FileDropZone targetDir="" />
-                    <SelectedFilesListAndProgress />
                     <UploadFinished />
-                    <UploadButton />
+                    <SelectedFilesListAndProgress />
+                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                        <CancelButton setOpen={setOpen} />
+                        <UploadButton />
+                    </Box>
                 </Box>
             </DialogContent>
         </Dialog>
@@ -158,7 +190,7 @@ function FileProgressBar({
  * It allows users to remove files from the list before uploading.
  */
 function SelectedFilesListAndProgress() {
-    const { fileList, setFileList } = useFileUploadContext();
+    const { fileList, setFileList, uploadTargetDir } = useFileUploadContext();
 
     const handleRemoveFile = (index: number) => {
         // Remove file from the selected files
@@ -251,11 +283,28 @@ function UploadButton() {
             >
                 Start upload
             </Button>
-            <FormHelperText sx={{ mt: 1, textAlign: "center" }}>
-                Uploading {fileList.length} file
-                {fileList.length !== 1 ? "s" : ""} into{" "}
-                <Typography variant="caption">{uploadTargetDir}</Typography>
-            </FormHelperText>
+        </Box>
+    );
+}
+
+function CancelButton({ setOpen }: { setOpen?: (open: boolean) => void }) {
+    const { resetProgress, uploadState } = useFileUploadContext();
+
+    if (uploadState.isSuccess || uploadState.isError) return null;
+
+    return (
+        <Box sx={{ display: "flex", justifyContent: "center" }}>
+            <Button
+                variant="outlined"
+                color="primary"
+                onClick={() => {
+                    resetProgress();
+                    if (setOpen) setOpen(false);
+                }}
+                startIcon={<XIcon />}
+            >
+                Cancel
+            </Button>
         </Box>
     );
 }
@@ -267,7 +316,8 @@ function FileDropZone({ targetDir }: { targetDir: string }) {
     const theme = useTheme();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const { fileList, setFileList, uploadState } = useFileUploadContext();
+    const { fileList, setFileList, uploadState, uploadTargetDir } =
+        useFileUploadContext();
 
     const isDragOver = useDragAndDrop(ref, {
         onDrop: (event) => {
@@ -278,6 +328,9 @@ function FileDropZone({ targetDir }: { targetDir: string }) {
             });
         },
     });
+
+    if (uploadState.isSuccess || uploadState.isError) return null;
+    // Don't show dropzone when we are done, space is taken by upload finished component
 
     return (
         <Box
@@ -362,6 +415,7 @@ function FileDropZone({ targetDir }: { targetDir: string }) {
             )}
 
             {fileList.length > 0 && (
+                // otherwise smaller box
                 <>
                     <Typography variant="body2" color="text.secondary">
                         Add more files ...
@@ -377,11 +431,11 @@ function FileDropZone({ targetDir }: { targetDir: string }) {
 function UploadFinished() {
     const { uploadState, uploadProgress } = useFileUploadContext();
 
-    if (!uploadState) return null;
-
     if (
         !uploadState ||
         !uploadProgress ||
+        !uploadProgress.started ||
+        !uploadProgress.finished ||
         uploadState.isPending ||
         uploadState.isIdle
     ) {
@@ -389,23 +443,29 @@ function UploadFinished() {
     }
 
     return (
-        <Box>
-            <Box>Uploaded {uploadProgress.files.length} files!</Box>
-            <Box sx={{ mt: 2, color: "text.secondary" }}>
-                <Box>{humanizeBytes(uploadProgress.total)}</Box>
-                {uploadProgress.finished && uploadProgress.started && (
-                    <Box>
-                        {humanizeDuration(
-                            (uploadProgress.finished - uploadProgress.started) / 1000
-                        )}
-                    </Box>
+        <Box
+            sx={(theme) => ({
+                border: "2px solid",
+                borderColor: theme.palette.secondary.main,
+                color: theme.palette.secondary.main,
+                paddingInline: 4,
+                paddingBlock: 2,
+                textAlign: "center",
+                borderRadius: 1,
+                gap: 2,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+            })}
+        >
+            <Typography variant="body2">
+                Uploaded {uploadProgress.files.length} file
+                {uploadProgress.files.length > 1 ? "s" : ""} (
+                {humanizeBytes(uploadProgress.total)}) in{" "}
+                {humanizeDuration(
+                    (uploadProgress.finished - uploadProgress.started) / 1000
                 )}
-            </Box>
-            <Box>
-                {uploadProgress.files.map((file) => (
-                    <Box key={file.name}>{file.name}</Box>
-                ))}
-            </Box>
+            </Typography>
         </Box>
     );
 }
