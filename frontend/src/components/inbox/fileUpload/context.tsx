@@ -10,14 +10,15 @@ import { UploadDialog } from "./dialog";
 
 export type UploadState = Omit<
     ReturnType<typeof useFileUpload>,
-    "mutate" | "mutateAsync" | "uploadProgress"
+    "mutate" | "mutateAsync" | "uploadProgress" | "resetProgress"
 >;
 
 // Context to track global drag state
-interface DragContextType {
+interface FileUploadContextType {
     isOverWindow: boolean;
     uploadState: UploadState;
     uploadProgress: BatchFileUploadProgress;
+    resetProgress: () => void;
     fileList: Array<File>;
     setFileList: React.Dispatch<React.SetStateAction<Array<File>>>;
     uploadFiles: () => Promise<{ status: string }>;
@@ -26,7 +27,7 @@ interface DragContextType {
     backdropRef?: React.RefObject<HTMLElement | null>;
 }
 
-const FileUploadContext = createContext<DragContextType | null>(null);
+const FileUploadContext = createContext<FileUploadContextType | null>(null);
 
 // Provider component to wrap multiple DropZones
 export function FileUploadProvider({ children }: { children: React.ReactNode }) {
@@ -36,7 +37,8 @@ export function FileUploadProvider({ children }: { children: React.ReactNode }) 
     const isOverWindow = useDragAndDrop(null, {
         preventDefault: true,
     });
-    const { mutateAsync, uploadProgress, ...uploadState } = useFileUpload();
+    const { mutateAsync, uploadProgress, resetProgress, ...uploadState } =
+        useFileUpload();
 
     return (
         <FileUploadContext.Provider
@@ -50,6 +52,7 @@ export function FileUploadProvider({ children }: { children: React.ReactNode }) 
                     }
                     return await mutateAsync(fileList, uploadTargetDir);
                 },
+                resetProgress,
                 fileList,
                 setFileList,
                 uploadTargetDir,
