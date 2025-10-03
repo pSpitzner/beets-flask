@@ -189,7 +189,7 @@ export default function NavBar(props: BoxProps) {
             sx={(theme) => ({
                 position: "fixed",
                 bottom: 0,
-                zIndex: 10,
+                zIndex: 1,
                 width: "100dvw",
                 height: NAVBAR_HEIGHT.mobile,
                 display: "flex",
