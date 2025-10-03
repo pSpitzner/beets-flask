@@ -7,6 +7,7 @@
 import { CheckIcon, FileMusicIcon, Upload, XIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+    alpha,
     Box,
     Button,
     Chip,
@@ -39,7 +40,7 @@ export function UploadDialog() {
 
     return (
         <Dialog
-            open={true}
+            open={open}
             title="Uploading files"
             onClose={() => {
                 setOpen(false);
@@ -56,11 +57,11 @@ export function UploadDialog() {
                     }}
                 >
                     <FolderSelector />
+                    <FileDropZone targetDir="" />
+                    <SelectedFilesListAndProgress />
+                    <UploadFinished />
+                    <UploadButton />
                 </Box>
-                <FileDropZone targetDir="" />
-                <SelectedFilesListAndProgress />
-                <UploadFinished />
-                <UploadButton />
             </DialogContent>
         </Dialog>
     );
@@ -124,24 +125,29 @@ function FileProgressBar({
                 />
             </Box>
 
-            <Typography variant="body1" zIndex={1} paddingLeft={1}>
+            <Typography
+                variant="body1"
+                sx={{ zIndex: 1, paddingLeft: 1, flex: 1, wordBreak: "break-word" }}
+            >
                 {file}
             </Typography>
-            <IconButton
-                size="small"
-                disabled={!uploadState.isIdle}
-                onClick={removeFile}
-            >
-                {fileProgress && uploadState.isPending && (
-                    <Typography variant="body2" fontSize="small">
-                        {percent.toFixed(0)}%
-                    </Typography>
-                )}
-                {fileProgress?.finished && <CheckIcon size={theme.iconSize.sm} />}
-                {uploadState.isIdle && !fileProgress?.finished && (
-                    <XIcon size={theme.iconSize.sm} />
-                )}
-            </IconButton>
+            <Box sx={{ flexShrink: 0 }}>
+                <IconButton
+                    size="small"
+                    disabled={!uploadState.isIdle}
+                    onClick={removeFile}
+                >
+                    {fileProgress && uploadState.isPending && (
+                        <Typography variant="body2" fontSize="small">
+                            {percent.toFixed(0)}%
+                        </Typography>
+                    )}
+                    {fileProgress?.finished && <CheckIcon size={theme.iconSize.sm} />}
+                    {uploadState.isIdle && !fileProgress?.finished && (
+                        <XIcon size={theme.iconSize.sm} />
+                    )}
+                </IconButton>
+            </Box>
         </Box>
     );
 }
@@ -260,8 +266,18 @@ function FileDropZone({ targetDir }: { targetDir: string }) {
     const ref = useRef<HTMLDivElement>(null);
     const theme = useTheme();
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const isDragOver = useDragAndDrop(ref);
+
     const { fileList, setFileList, uploadState } = useFileUploadContext();
+
+    const isDragOver = useDragAndDrop(ref, {
+        onDrop: (event) => {
+            if (!event.dataTransfer) return;
+            setFileList((prevFiles) => {
+                if (!event.dataTransfer) return prevFiles;
+                return [...prevFiles, ...Array.from(event.dataTransfer.files)];
+            });
+        },
+    });
 
     return (
         <Box
@@ -290,6 +306,7 @@ function FileDropZone({ targetDir }: { targetDir: string }) {
 
                 "&:hover": {
                     cursor: "pointer",
+                    backgroundColor: alpha(theme.palette.primary.main, 0.05),
                 },
             })}
             onClick={() => fileInputRef.current?.click()}
@@ -308,36 +325,49 @@ function FileDropZone({ targetDir }: { targetDir: string }) {
                 }}
             />
 
-            <Box>
-                <Typography
-                    variant="h6"
-                    color={
-                        isDragOver
-                            ? theme.palette.primary.contrastText
-                            : theme.palette.primary.muted
-                    }
-                    textAlign="center"
-                >
-                    Drag and drop files here
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                    or click to select files
-                </Typography>
-            </Box>
+            {fileList.length == 0 && (
+                // big box when no files added yet.
+                <>
+                    <Box>
+                        <Typography
+                            variant="h6"
+                            color={
+                                isDragOver
+                                    ? theme.palette.primary.contrastText
+                                    : theme.palette.primary.muted
+                            }
+                            textAlign="center"
+                        >
+                            Drag and drop files here
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            or click to select files
+                        </Typography>
+                    </Box>
 
-            <FileMusicIcon
-                size={60}
-                strokeWidth={1}
-                color={
-                    isDragOver
-                        ? theme.palette.primary.contrastText
-                        : theme.palette.primary.muted
-                }
-            />
+                    <FileMusicIcon
+                        size={60}
+                        strokeWidth={1}
+                        color={
+                            isDragOver
+                                ? theme.palette.primary.contrastText
+                                : theme.palette.primary.muted
+                        }
+                    />
 
-            <Typography variant="body2" color="text.secondary">
-                Allowed file types: any
-            </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        Allowed file types: any
+                    </Typography>
+                </>
+            )}
+
+            {fileList.length > 0 && (
+                <>
+                    <Typography variant="body2" color="text.secondary">
+                        Add more files ...
+                    </Typography>
+                </>
+            )}
         </Box>
     );
 }
