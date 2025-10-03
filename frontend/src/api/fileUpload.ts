@@ -176,6 +176,7 @@ async function uploadFile(
 }
 
 export function useFileUpload() {
+    const [fileList, setFileList] = useState<Array<File>>([]);
     const { mutate, mutateAsync, ...props } = useMutation(fileUploadMutationOptions);
     const [uploadProgress, setProgress] = useState<BatchFileUploadProgress>({
         files: [],
@@ -190,6 +191,7 @@ export function useFileUpload() {
             total: 0,
             loaded: 0,
         });
+        setFileList([]);
     };
 
     useEffect(() => {
@@ -216,6 +218,8 @@ export function useFileUpload() {
     return {
         uploadProgress,
         resetProgress,
+        fileList,
+        setFileList,
         mutate: (files: FileList | File[], targetDir: string) => {
             mutate({ files, targetDir, setProgress: setProgress });
         },
