@@ -176,20 +176,46 @@ async function uploadFile(
 }
 
 export function useFileUpload() {
+    const { mutate, mutateAsync, ...props } = useMutation(fileUploadMutationOptions);
     const [uploadProgress, setProgress] = useState<BatchFileUploadProgress>({
         files: [],
         currentIndex: 0,
         total: 0,
         loaded: 0,
     });
-    const { mutate, mutateAsync, ...props } = useMutation(fileUploadMutationOptions);
+    const resetProgress = () => {
+        setProgress({
+            files: [],
+            currentIndex: 0,
+            total: 0,
+            loaded: 0,
+        });
+    };
 
     useEffect(() => {
         console.log("Upload progress:", uploadProgress);
     }, [uploadProgress]);
 
+    useEffect(() => {
+        if (props.isSuccess && uploadProgress.finished) {
+            // I would also place some code here to show a snackbar notification when done.
+            // And maybe instead of using a timeout here, we could have the dialog
+            // call the resetprogress, after showing "upload completed" for some time.
+            // however, i also want to be able to dismiss the dialog and uploads should
+            // continue in the background.
+            // but then...
+            // - disable drag and drop while an upload is still ongoing ??!?
+            // - argggh we need a queue if we want to solve this right.
+            const timer = setTimeout(() => {
+                resetProgress();
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [props.isSuccess, uploadProgress.finished]);
+
     return {
         uploadProgress,
+        resetProgress,
         mutate: (files: FileList | File[], targetDir: string) => {
             mutate({ files, targetDir, setProgress: setProgress });
         },
