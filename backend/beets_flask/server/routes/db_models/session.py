@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from quart import jsonify, request
 from rq.job import Job
@@ -213,10 +213,18 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
             exc = None
             if db_date is None and job_date is None:
                 pass
-            elif (db_date or datetime.min) >= (job_date or datetime.min):
+            elif (db_date or datetime.min) + timedelta(seconds=1) >= (
+                job_date or datetime.min
+            ):
+                # hmpf. im getting the issue that job_date might be some .7secs after db_date and gets favoured.
+                # this prevents our NoCandidatesFoundException from showing up.
+                # timedelta does not seem to fully solve this, maybe missing from
+                # folderstatusupdate.
+                log.debug(f"Using status from DB: {db_date} >= {job_date}")
                 status = db_status
                 exc = db_exc
             else:
+                log.debug(f"Using status from job queue : {db_date} < {job_date}")
                 status = job_status
                 exc = job_exc
 
@@ -249,6 +257,8 @@ def _get_folder_status_from_db(
                 status = FolderStatus.DELETING
             elif s_state_indb.progress == Progress.DELETION_COMPLETED:
                 status = FolderStatus.DELETED
+            elif s_state_indb.progress == Progress.NO_CANDIDATES_FOUND:
+                status = FolderStatus.NO_CANDIATES_FOUND
             elif s_state_indb.progress == Progress.PREVIEW_COMPLETED:
                 status = FolderStatus.PREVIEWED
             elif s_state_indb.progress == Progress.IMPORT_COMPLETED:

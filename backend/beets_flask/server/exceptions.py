@@ -81,6 +81,32 @@ class NoCandidatesFoundException(ApiException):
 
     status_code: int = 409
 
+    def __init__(self, *args, status_code: int | None = None):
+        if not args:
+            try:
+                # this is finicky, lets not crash.
+                import beets.plugins as beets_plugins
+                from beets.metadata_plugins import SearchApiMetadataSourcePlugin
+
+                meta_plugins = []
+                for p in beets_plugins.find_plugins():
+                    if isinstance(p, SearchApiMetadataSourcePlugin):
+                        if p.config.name is not None:
+                            meta_plugins.append(p.config.name)
+                        else:
+                            meta_plugins.append(p.__class__.__name__)
+                if len(meta_plugins) > 0:
+                    error_text = f"Lookup found no candidates using "
+                    error_text += ", ".join(meta_plugins)
+                else:
+                    error_text = f"Lookup found no candidates. It seems no source plugins are enabled."
+                args = (error_text,)
+            except:
+                args = ("Lookup found no candidates.",)
+        super().__init__(*args)
+        if status_code is not None:
+            self.status_code = status_code
+
 
 class UserException(Exception):
     """Base class for errors caused by user input or config."""

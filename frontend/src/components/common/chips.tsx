@@ -220,11 +220,24 @@ export function FolderStatusChip({
         case FolderStatus.PREVIEWED:
             status_name = "Tagged";
             break;
+        case FolderStatus.NO_CANDIATES_FOUND:
+            // currently not used, just to weigh options!
+            status_name = "No Match";
+            break;
         case FolderStatus.DELETING:
             status_name = "Undoing";
             break;
         case FolderStatus.DELETED:
             status_name = "Undone";
+            break;
+        case FolderStatus.FAILED:
+            status_name = "Failed";
+            if (folderStatus.exc?.type === "NoCandidatesFoundException") {
+                status_name = "No Match";
+                // PS 2025-10-05: Would be nice if we could also tweak the icon,
+                // But then we would need to give FolderStatusIcon the full folderStatus
+                // and repeat this logic :/
+            }
             break;
         default:
             status_name = FolderStatus[folderStatus.status];

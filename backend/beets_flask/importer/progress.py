@@ -31,8 +31,9 @@ class Progress(Enum):
     LOOKING_UP_CANDIDATES = 12
     IDENTIFYING_DUPLICATES = 13
 
-    PREVIEW_COMPLETED = 20  # dummy, only for comparison and report, has no actual stage
-    DELETION_COMPLETED = 21  # dummy. after a successful deletion, we can restart import
+    NO_CANDIDATES_FOUND = 20  # currently not used
+    PREVIEW_COMPLETED = 21  # dummy, only for comparison and report, has no actual stage
+    DELETION_COMPLETED = 22  # dummy. after a successful deletion, we can restart import
 
     # ImportSession
     OFFERING_MATCHES = 30
@@ -109,7 +110,8 @@ class FolderStatus(int, Enum):
     Order does not matter, but we need to be able to check equality
     """
 
-    UNKNOWN = -2
+    UNKNOWN = -3
+    NO_CANDIATES_FOUND = -2
     FAILED = -1
     NOT_STARTED = 0
     PENDING = 1

@@ -27,6 +27,7 @@ import {
     Mic2Icon,
     PackageIcon,
     RocketIcon,
+    SearchXIcon,
     TagIcon,
     TagsIcon,
     Tally5Icon,
@@ -197,6 +198,9 @@ export function FolderStatusIcon({
                     disableShrink
                 />
             );
+        case FolderStatus.NO_CANDIATES_FOUND:
+            // Currently not used, but we should find a way.
+            return <SearchXIcon {...props} />;
         case FolderStatus.PREVIEWED:
             return <TagsIcon {...props} />;
         case FolderStatus.IMPORTED:

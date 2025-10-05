@@ -535,26 +535,7 @@ class AddCandidatesSession(PreviewSession):
         )
 
         if len(prop.candidates) == 0:
-            try:
-                # this is finicky, lets not crash.
-                from beets.metadata_plugins import SearchApiMetadataSourcePlugin
-
-                meta_plugins = []
-                for p in plugins.find_plugins():
-                    if isinstance(p, SearchApiMetadataSourcePlugin):
-                        if p.config.name is not None:
-                            meta_plugins.append(p.config.name)
-                        else:
-                            meta_plugins.append(p.__class__.__name__)
-                if len(meta_plugins) > 0:
-                    error_text = f"Lookup found no candidates using "
-                    error_text += ", ".join(meta_plugins)
-                else:
-                    error_text = f"Lookup found no candidates. It seems no source plugins are enabled."
-            except:
-                error_text = f"Lookup found no candidates."
-
-            raise NoCandidatesFoundException(error_text)
+            raise NoCandidatesFoundException()
 
         task_state.add_candidates(prop.candidates)
 
@@ -909,27 +890,7 @@ class AutoImportSession(ImportSession):
             distance = 2.0
 
         if len(task.candidates) == 0:
-            try:
-                # TODO: consolidate, we have a duplicate of this snippet.
-                # this is finicky, lets not crash.
-                from beets.metadata_plugins import SearchApiMetadataSourcePlugin
-
-                meta_plugins = []
-                for p in plugins.find_plugins():
-                    if isinstance(p, SearchApiMetadataSourcePlugin):
-                        if p.config.name is not None:
-                            meta_plugins.append(p.config.name)
-                        else:
-                            meta_plugins.append(p.__class__.__name__)
-                if len(meta_plugins) > 0:
-                    error_text = f"Lookup found no candidates using "
-                    error_text += ", ".join(meta_plugins)
-                else:
-                    error_text = f"Lookup found no candidates. It seems no source plugins are enabled."
-            except:
-                error_text = f"Lookup found no candidates."
-
-            raise NoCandidatesFoundException(error_text)
+            raise NoCandidatesFoundException()
 
         if distance > self.import_threshold:
             log.debug(
