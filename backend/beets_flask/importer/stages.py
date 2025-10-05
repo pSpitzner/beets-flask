@@ -36,6 +36,10 @@ from beets.util import MoveOperation, bytestring_path, displayable_path
 from beets.util import pipeline as beets_pipeline
 
 from beets_flask import log
+from beets_flask.server.exceptions import (
+    NoCandidatesFoundException,
+    to_serialized_exception,
+)
 
 from .progress import Progress, ProgressState
 from .types import BeetsImportTask
@@ -564,6 +568,10 @@ def mark_tasks_completed(session: BaseSession, task: ImportTask):
 @stage
 @set_progress(Progress.PREVIEW_COMPLETED)
 def mark_tasks_preview_completed(session: BaseSession, task: ImportTask):
+    # session.set_task_progress(task, Progress.PREVIEW_COMPLETED)
+    if len(task.candidates) == 0:
+        # use the same preview status, but pretend we had an exception
+        session.state.exc = to_serialized_exception(NoCandidatesFoundException())
     return task
 
 

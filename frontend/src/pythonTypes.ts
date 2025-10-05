@@ -5,7 +5,6 @@
  */
 export type File = FileSystemItem;
 
-
 export interface SerializedSessionState {
     id: string;
     created_at: Date;
@@ -133,8 +132,9 @@ export enum Progress {
     GROUPING_ALBUMS = 11,
     LOOKING_UP_CANDIDATES = 12,
     IDENTIFYING_DUPLICATES = 13,
-    PREVIEW_COMPLETED = 20,
-    DELETION_COMPLETED = 21,
+    NO_CANDIDATES_FOUND = 20, // currently not used
+    PREVIEW_COMPLETED = 21,
+    DELETION_COMPLETED = 22,
     OFFERING_MATCHES = 30,
     MATCH_THRESHOLD = 31,
     WAITING_FOR_USER_SELECTION = 32,
@@ -146,7 +146,8 @@ export enum Progress {
 }
 
 export enum FolderStatus {
-    UNKNOWN = -2,
+    UNKNOWN = -3,
+    NO_CANDIATES_FOUND = -2, // currently not used
     FAILED = -1,
     NOT_STARTED = 0,
     PENDING = 1,
@@ -159,14 +160,14 @@ export enum FolderStatus {
 }
 
 export enum EnqueueKind {
-    PREVIEW = 'preview',
-    PREVIEW_ADD_CANDIDATES = 'preview_add_candidates',
-    IMPORT_CANDIDATE = 'import_candidate',
-    IMPORT_AUTO = 'import_auto',
-    IMPORT_UNDO = 'import_undo',
-    IMPORT_BOOTLEG = 'import_bootleg',
-    _AUTO_IMPORT = '_auto_import',
-    _AUTO_PREVIEW = '_auto_preview',
+    PREVIEW = "preview",
+    PREVIEW_ADD_CANDIDATES = "preview_add_candidates",
+    IMPORT_CANDIDATE = "import_candidate",
+    IMPORT_AUTO = "import_auto",
+    IMPORT_UNDO = "import_undo",
+    IMPORT_BOOTLEG = "import_bootleg",
+    _AUTO_IMPORT = "_auto_import",
+    _AUTO_PREVIEW = "_auto_preview",
 }
 
 export enum CandidateChoiceFallback {
@@ -334,4 +335,3 @@ export interface AlbumInfo extends MusicInfo {
     catalognum: null | string;
     albumdisambig: null | string;
 }
-
