@@ -61,7 +61,7 @@ export function TagCard({
         })
     );
 
-    if (!session || session.status.progress < Progress.PREVIEW_COMPLETED) {
+    if (!session) {
         return null;
     }
 

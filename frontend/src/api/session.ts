@@ -377,6 +377,7 @@ export const addCandidateMutationOptions: UseMutationOptions<
 
         // no need to process, just for debugging, errors handled in custom fetch
         const _data = (await res.json()) as JobStatusUpdate;
+        console.log("Add candidate response", _data); // only gets us the enqueud job!
 
         // Wait for the job to finish
         return await promiseResult;
@@ -400,6 +401,8 @@ export const addCandidateMutationOptions: UseMutationOptions<
         return;
     },
     onError: (_error, _variables, _context) => {
+        // not raised when enqueued job fails.
+        console.log("Mutation Error", _error);
         return;
     },
     onSettled: async (_data, error, variables, onMutateResults, context) => {
