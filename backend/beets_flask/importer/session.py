@@ -361,9 +361,15 @@ class BaseSession(importer.ImportSession, ABC):
         task.lookup_candidates(search_ids)
 
         if len(task.candidates) == 0:
-            raise NoCandidatesFoundException(
-                f"No candidates found for {task} ({task.paths})"
-            )
+            # PS: 2025-10-05: I considered raising the exception
+            # right here, but then the preview sessions fail, and we dont
+            # even get the asis candidate.
+            # Since there are only two relevant places for failed candidates:
+            # - auto-import sessions
+            # - AddCandidatesSession (did raise already!)
+            # I think it's okay to raise in those sessions instead.
+            # (Import Sessions should be fine without online candidates imho)
+            log.warning(f"No candidates found for {task} ({task.paths})")
 
         # Update our state
         task_state = self.state.get_task_state_for_task_raise(task)
@@ -529,7 +535,26 @@ class AddCandidatesSession(PreviewSession):
         )
 
         if len(prop.candidates) == 0:
-            raise ValueError(f"Lookup found no candidates.")
+            try:
+                # this is finicky, lets not crash.
+                from beets.metadata_plugins import SearchApiMetadataSourcePlugin
+
+                meta_plugins = []
+                for p in plugins.find_plugins():
+                    if isinstance(p, SearchApiMetadataSourcePlugin):
+                        if p.config.name is not None:
+                            meta_plugins.append(p.config.name)
+                        else:
+                            meta_plugins.append(p.__class__.__name__)
+                if len(meta_plugins) > 0:
+                    error_text = f"Lookup found no candidates using "
+                    error_text += ", ".join(meta_plugins)
+                else:
+                    error_text = f"Lookup found no candidates. It seems no source plugins are enabled."
+            except:
+                error_text = f"Lookup found no candidates."
+
+            raise NoCandidatesFoundException(error_text)
 
         task_state.add_candidates(prop.candidates)
 
@@ -864,7 +889,8 @@ class AutoImportSession(ImportSession):
     def match_threshold(self, task: importer.ImportTask):
         """Check if the match quality is good enough to import.
 
-        Returns true if the match quality is better than threshlold.
+        Returns true if candidates were found, and the match quality is better than
+        threshlold.
 
         Note: What stops the pipeline is that we set task.choice to importer.action.SKIP,
         or raise an exception.
@@ -881,6 +907,29 @@ class AutoImportSession(ImportSession):
             distance = float(task_state.best_candidate_state.distance)  # type: ignore
         except (AttributeError, TypeError):
             distance = 2.0
+
+        if len(task.candidates) == 0:
+            try:
+                # TODO: consolidate, we have a duplicate of this snippet.
+                # this is finicky, lets not crash.
+                from beets.metadata_plugins import SearchApiMetadataSourcePlugin
+
+                meta_plugins = []
+                for p in plugins.find_plugins():
+                    if isinstance(p, SearchApiMetadataSourcePlugin):
+                        if p.config.name is not None:
+                            meta_plugins.append(p.config.name)
+                        else:
+                            meta_plugins.append(p.__class__.__name__)
+                if len(meta_plugins) > 0:
+                    error_text = f"Lookup found no candidates using "
+                    error_text += ", ".join(meta_plugins)
+                else:
+                    error_text = f"Lookup found no candidates. It seems no source plugins are enabled."
+            except:
+                error_text = f"Lookup found no candidates."
+
+            raise NoCandidatesFoundException(error_text)
 
         if distance > self.import_threshold:
             log.debug(
