@@ -3,6 +3,7 @@ import {
     ArrowLeftIcon,
     ArrowRightIcon,
     HistoryIcon,
+    SearchXIcon,
     TagIcon,
 } from "lucide-react";
 import React, { useEffect, useMemo, useState, useTransition } from "react";
@@ -66,7 +67,11 @@ export function TagCard({
 
     if (
         session.exc != null &&
-        !["DuplicateException", "NotImportedException"].includes(session.exc.type)
+        ![
+            "DuplicateException",
+            "NotImportedException",
+            "NoCandidatesFoundException",
+        ].includes(session.exc.type)
     ) {
         throw new APIError(session.exc);
     }
@@ -149,6 +154,9 @@ function UserSelection({ session }: { session: SerializedSessionState }) {
                     exc={session.exc}
                     source_type={selectedCandidate?.info.data_source || "unknown"}
                 />
+            )}
+            {session.exc?.type === "NoCandidatesFoundException" && (
+                <NoCandidatesFoundWarning exc={session.exc} />
             )}
             {session.status.progress == Progress.DELETION_COMPLETED && (
                 <UndoneWarning />
@@ -602,6 +610,27 @@ function AutoImportFailedWarning({
                 <br />
                 Maybe try searching for a better candidate?
             </Box>
+        </Alert>
+    );
+}
+
+function NoCandidatesFoundWarning({
+    exc,
+    ...props
+}: {
+    exc: SerializedException;
+} & AlertProps) {
+    return (
+        <Alert
+            severity="warning"
+            icon={<SearchXIcon />}
+            sx={{
+                ".MuiAlert-message": { width: "100%" },
+            }}
+            {...props}
+        >
+            <AlertTitle>No Candidates Found</AlertTitle>
+            <Box>{exc.message}</Box>
         </Alert>
     );
 }
