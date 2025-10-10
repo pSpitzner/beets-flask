@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Action buttons now have a slight box shadow and are a bit more visible.
 - We now support playing container types [m4a, mp4, mov, alac, aac, mp3] that require seeking. This should fix issues with some mp4/m4a files not playing.
 - If no candidates are found during an import, we now show a message instead of an empty screen. [#190](https://github.com/pSpitzner/beets-flask/issues/190)
 

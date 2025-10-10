@@ -137,6 +137,7 @@ export function SplitButtonOptions({
                     width: `calc(${anchorRef.current?.clientWidth}px - ${theme.spacing(1)})`, // Adjust width to fit within the button group
                     maxWidth: `calc(${anchorRef.current?.clientWidth}px - ${theme.spacing(1)})`, // Ensure max width matches the button group
                     overflow: "hidden",
+                    boxShadow: 8,
                 })}
                 ref={ref}
                 open={open}
