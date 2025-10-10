@@ -1,23 +1,62 @@
+from pathlib import Path
 import pytest
-from quart import Response
 
 
 class TestFileUploadErrors:
-    async def test_successful_file_upload(self, client, tmp_path, monkeypatch):
+    @pytest.mark.parametrize(
+        "filename, target_dir, expected_filename, expected_dir",
+        [
+            (
+                "simple.txt",
+                "upload_1",
+                "simple.txt",
+                "upload_1",
+            ),
+            (
+                "file%20with%20spaces.txt",
+                "upload_1/nested%20dir",
+                "file with spaces.txt",
+                "upload_1/nested dir",
+            ),
+            (
+                "file.txt",
+                "foo/bar/nested%2Fsubdir",
+                "file.txt",
+                "foo/bar/nested/subdir",
+            ),
+            (
+                "file.txt",
+                "foo/bar/nested%5Csubdir",
+                "file.txt",
+                "foo/bar/nested\\subdir",
+            ),
+        ],
+    )
+    async def test_successful_file_upload(
+        self,
+        client,
+        tmp_path,
+        monkeypatch,
+        filename,
+        target_dir,
+        expected_filename,
+        expected_dir,
+    ):
         # Setup: create a valid inbox directory
         inbox_dir = tmp_path / "inbox"
         inbox_dir.mkdir(parents=True, exist_ok=True)
-        target_dir = inbox_dir / "nested" / "subdir"
 
+        # Monkey patch the inbox folders to include our temp inbox
         monkeypatch.setattr(
             "beets_flask.server.routes.file_upload.get_inbox_folders",
             lambda: [str(inbox_dir)],
         )
-        filename = "uploaded.txt"
+
+        # Perform the upload
         file_content = b"hello test file upload"
         headers = {
             "X-Filename": filename,
-            "X-File-Target-Dir": str(target_dir),
+            "X-File-Target-Dir": str(inbox_dir / target_dir),
         }
         response = await client.post(
             "/api_v1/file_upload/",
@@ -26,13 +65,13 @@ class TestFileUploadErrors:
         )
 
         # Check status codes
-        print(f"{target_dir=}")
         data = await response.get_json()
+        print(data)
         assert response.status_code == 200
         assert data["status"] == "ok"
 
         # Check file exists in target dir and content matches
-        final_path = target_dir / filename
+        final_path = inbox_dir / expected_dir / expected_filename
         assert final_path.exists()
         with open(final_path, "rb") as f:
             assert f.read() == file_content
@@ -73,3 +112,22 @@ class TestFileUploadErrors:
         assert str(response.status_code).startswith("4")
         assert data["type"] == "InvalidUsageException"
         assert "Invalid target path" in data["message"]
+
+    async def test_invalid_filename_with_path_separators(self, client, monkeypatch):
+        # Patch get_inbox_folders to return a known inbox path
+        monkeypatch.setattr(
+            "beets_flask.server.routes.file_upload.get_inbox_folders",
+            lambda: ["/valid/inbox"],
+        )
+        response = await client.post(
+            "/api_v1/file_upload/",
+            headers={
+                "X-Filename": "invalid/../file.txt",
+                "X-File-Target-Dir": "/valid/inbox",
+            },
+            data=b"testdata",
+        )
+        data = await response.get_json()
+        assert str(response.status_code).startswith("4")
+        assert data["type"] == "InvalidUsageException"
+        assert "Invalid filename" in data["message"]
