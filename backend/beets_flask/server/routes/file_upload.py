@@ -1,8 +1,6 @@
 """Handle file uploads."""
 
-import asyncio
 import shutil
-import tempfile
 from asyncio import timeout
 from pathlib import Path
 from urllib.parse import unquote_plus
@@ -71,9 +69,14 @@ def _get_filename_and_dir() -> tuple[str, Path]:
             "Missing header: X-Filename and X-File-Target-Dir are required"
         )
 
-    # Filedir may include encoded slashes
-    filedir = unquote_plus(filedir)
+    # Assert filename does not contain path separators
     filename = unquote_plus(filename)
+    if "/" in filename or "\\" in filename:
+        raise InvalidUsageException(
+            "Invalid filename, must not contain path separators."
+        )
+
+    filedir = unquote_plus(filedir)
     filedir = Path(filedir).expanduser().resolve()
     is_valid_filepath = False
     for inbox in get_inbox_folders():
