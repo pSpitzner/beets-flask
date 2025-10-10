@@ -375,55 +375,67 @@ export const addCandidateMutationOptions: UseMutationOptions<
             }),
         });
 
-        // no need to process, just for debugging, errors handled in custom fetch
+        // No need to process the direct response, just for debugging.
+        // We only enqueue and that usually works. But the job runs in the background
+        // and conveys errors via websocket
         const _data = (await res.json()) as JobStatusUpdate;
-        console.log("Add candidate response", _data); // only gets us the enqueud job!
 
-        // Wait for the job to finish
-        return await promiseResult;
+        // Wait for the job to finish or send other (fail) updates
+        const jobUpdates: JobStatusUpdate[] = await promiseResult;
+        for (const jobUpdate of jobUpdates) {
+            if (jobUpdate.exc !== null && jobUpdate.exc !== undefined) {
+                throw new APIError(jobUpdate.exc);
+            }
+        }
     },
-    onSuccess: async (_data, { ...variables }, onMutateResults, context) => {
-        return await enqueueMutationOptions.onSuccess?.(
-            _data,
-            {
-                ...variables,
-                kind: EnqueueKind.PREVIEW_ADD_CANDIDATES,
-                selected: {
-                    hashes: [_data[0].job_metas[0].folder_hash],
-                    paths: [_data[0].job_metas[0].folder_path],
-                },
-            },
-            onMutateResults,
-            context
-        );
+    onSuccess: (_data, variables) => {
+        console.log("onSuccess", _data, variables);
     },
+    // onSuccess: async (_data, { ...variables }, onMutateResults, context) => {
+    //     return await enqueueMutationOptions.onSuccess?.(
+    //         _data,
+    //         {
+    //             ...variables,
+    //             kind: EnqueueKind.PREVIEW_ADD_CANDIDATES,
+    //             selected: {
+    //                 hashes: [_data[0].job_metas[0].folder_hash],
+    //                 paths: [_data[0].job_metas[0].folder_path],
+    //             },
+    //         },
+    //         onMutateResults,
+    //         context
+    //     );
+    // },
     onMutate: (_variables) => {
+        console.log("onMutate", _variables);
         return;
     },
     onError: (_error, _variables, _context) => {
         // not raised when enqueued job fails.
-        console.log("Mutation Error", _error);
+        console.log("onError", _error, _variables, _context);
         return;
     },
-    onSettled: async (_data, error, variables, onMutateResults, context) => {
-        if (!_data) {
-            return;
-        }
+    onSettled: (_data, error, variables, onMutateResults, context) => {
+        console.log("onSettled", _data, error, variables, onMutateResults, context);
 
-        return await enqueueMutationOptions.onSettled?.(
-            _data,
-            error,
-            {
-                ...variables,
-                kind: EnqueueKind.PREVIEW_ADD_CANDIDATES,
-                selected: {
-                    hashes: [_data[0].job_metas[0].folder_hash],
-                    paths: [_data[0].job_metas[0].folder_path],
-                },
-            },
-            onMutateResults,
-            context
-        );
+        // if (!_data) {
+        //     return;
+        // }
+
+        // return await enqueueMutationOptions.onSettled?.(
+        //     _data,
+        //     error,
+        //     {
+        //         ...variables,
+        //         kind: EnqueueKind.PREVIEW_ADD_CANDIDATES,
+        //         selected: {
+        //             hashes: [_data[0].job_metas[0].folder_hash],
+        //             paths: [_data[0].job_metas[0].folder_path],
+        //         },
+        //     },
+        //     onMutateResults,
+        //     context
+        // );
     },
 };
 
