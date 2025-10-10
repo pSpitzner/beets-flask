@@ -33,26 +33,26 @@ export function UploadDialog() {
     const { uploadState, fileList } = useFileUploadContext();
     const [title, setTitle] = useState<string>("Upload files");
 
-    useEffect(() => {
-        const inner = `${fileList.length} file${fileList.length !== 1 ? "s" : ""}`;
+    const resetDialog = useCallback(
+        (close: boolean = true) => {
+            if (close) setOpen(false);
+            reset();
+        },
+        [reset]
+    );
 
+    // SM@PS: Try to not use 'useEffect' for derived state. Kinda an antipattern
+    // React does a good job at this stuff
+    let title = "Upload files";
+    if (fileList.length > 0) {
+        title = `Upload ${fileList.length} file${fileList.length !== 1 ? "s" : ""}`;
+    }
+
+    // Open dialog when files are added
+    useEffect(() => {
         if (fileList.length > 0) {
             setOpen(true);
-            setTitle(`Upload ${inner}`);
-        } else {
-            setTitle("Upload files");
         }
-
-        // PS @ SM: I played around with state-dependent titles but it felt like too much.
-        // if (uploadState.isIdle) {
-        //     setTitle(`Upload ${inner}`);
-        // } else if (uploadState.isPending) {
-        //     setTitle(`Uploading ${inner}...`);
-        // } else if (uploadState.isSuccess) {
-        //     setTitle(`Uploaded ${inner}`);
-        // } else if (uploadState.isError) {
-        //     setTitle(`Error uploading ${inner}`);
-        // }
     }, [fileList.length]);
 
     useEffect(() => {
