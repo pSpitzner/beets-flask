@@ -144,7 +144,7 @@ async function uploadFile(
         req.responseType = "json";
         req.open("POST", "/api_v1/file_upload", true);
         req.setRequestHeader("X-Filename", encodeURIComponent(file.name));
-        req.setRequestHeader("X-File-Target-Dir", targetDir);
+        req.setRequestHeader("X-File-Target-Dir", encodeURIComponent(targetDir));
         // req.setRequestHeader("Content-Length", String(file.size));
 
         req.upload.onprogress = (event) => {
