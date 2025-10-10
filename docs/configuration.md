@@ -154,3 +154,7 @@ You can use multiple workers to fetch candidates before importing (previewing).
 However, the import itself is always done sequentially.
 This is to ensure that the import process is not interrupted by other operations.
 ```
+### `gui.inbox.temp_dir` 
+Specifies the temporary directory that is used to store files during the upload process. 
+This is useful to ensure that files are uploaded to a filesystem that is fast and has enough
+space. The default value is `/tmp/beets-flask/upload`.
