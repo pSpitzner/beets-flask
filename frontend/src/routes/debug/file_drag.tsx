@@ -28,7 +28,7 @@ function DropZone({ children }: { children?: React.ReactNode }) {
         setIsOverWindow(false);
     }, []);
 
-    const { mutate, status, isPending } = useMutation(fileUploadMutationOptions);
+    const { mutate } = useMutation(fileUploadMutationOptions);
 
     useEffect(() => {
         if (!ref.current) return;
@@ -49,7 +49,11 @@ function DropZone({ children }: { children?: React.ReactNode }) {
             const files = event.dataTransfer?.files;
             if (files && files.length > 0) {
                 console.log("Dropped files:", files);
-                mutate({ file: files[0], targetDir: "/music/upload/" }); // Upload the first file only
+                mutate({
+                    files: files,
+                    targetDir: "/music/upload/",
+                    setProgress: () => {},
+                }); // Upload all files
             }
         };
 
