@@ -9,6 +9,7 @@ from pathlib import Path
 import aiofiles
 from quart import Blueprint, jsonify, request
 
+from beets_flask.config import get_config
 from beets_flask.logger import log
 from beets_flask.server.exceptions import InvalidUsageException
 from beets_flask.watchdog.inbox import get_inbox_folders
@@ -43,13 +44,12 @@ async def upload():
     filename, filedir = _get_filename_and_dir()
     log.info(f"Uploading file {filename} to {filedir} ...")
 
-    # TODO: Config option for where to save temp files?
-    temp_path = Path(tempfile.gettempdir()) / "upload" / filename
-    temp_path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path: Path = get_config()["gui"]["inbox"]["temp_dir"].as_path()  # type: ignore
+    temp_path.mkdir(parents=True, exist_ok=True)
 
     # upload to temp location with 1 hour timeout
     async with timeout(60 * 60):
-        async with aiofiles.open(temp_path, "wb") as f:
+        async with aiofiles.open(temp_path / filename, "wb") as f:
             async for chunk in request.body:
                 await f.write(chunk)
 
