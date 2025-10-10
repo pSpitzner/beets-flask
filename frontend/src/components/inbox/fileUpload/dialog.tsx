@@ -21,13 +21,14 @@ import {
 import { useConfig } from "@/api/config";
 import { Dialog } from "@/components/common/dialogs";
 import { useDragAndDrop } from "@/components/common/hooks/useDrag";
-import { CancelButton } from "@/components/common/inputs/cancle";
+import { CancelButton, CancelButtonRef } from "@/components/common/inputs/cancle";
 import { humanizeBytes } from "@/components/common/units/bytes";
 import { humanizeDuration } from "@/components/common/units/time";
 
 import { useFileUploadContext } from "./context";
 
 export function UploadDialog() {
+    const cancelButtonRef = useRef<CancelButtonRef>(null);
     const [open, setOpen] = useState(false);
     const { fileList, reset } = useFileUploadContext();
 
@@ -83,8 +84,18 @@ export function UploadDialog() {
                             alignItems: "flex-end",
                         }}
                     >
-                        <CancelButton onCancel={resetDialog} variant="outlined" />
-                        <UploadButton />
+                        <CancelButton
+                            ref={cancelButtonRef}
+                            onCancel={resetDialog}
+                            variant="outlined"
+                        />
+                        <UploadButton
+                            onUpload={() => {
+                                // Reset dialog when successfully
+                                // uploaded after 3 seconds
+                                cancelButtonRef.current?.cancelWithTimer(3000);
+                            }}
+                        />
                     </Box>
                 </Box>
             </DialogContent>
@@ -282,7 +293,7 @@ function FolderSelector() {
  * This component displays a button to start the upload process.
  * It shows the number of selected files and the target upload path.
  */
-function UploadButton() {
+function UploadButton({ onUpload }: { onUpload: () => void }) {
     const { uploadFiles, isError, isSuccess, isPending, reset, fileList } =
         useFileUploadContext();
 
@@ -296,7 +307,7 @@ function UploadButton() {
                 if (isSuccess) {
                     reset();
                 } else {
-                    uploadFiles().catch(console.error);
+                    uploadFiles().then(onUpload).catch(console.error);
                 }
             }}
             disabled={fileList.length === 0}

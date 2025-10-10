@@ -3,7 +3,8 @@ import { useImperativeHandle, useRef, useState } from "react";
 import { Button, ButtonProps } from "@mui/material";
 
 export interface CancelButtonRef {
-    triggerCancel: (skipAnimation: boolean) => void;
+    cancel: () => void;
+    cancelWithTimer: (timeout: number) => void;
 }
 
 /** Cancel button
@@ -25,46 +26,68 @@ export interface CancelButtonRef {
 export function CancelButton({
     ref,
     onCancel,
-    timeout = 3000,
     ...props
 }: {
     ref?: React.Ref<CancelButtonRef>;
     onCancel: () => void;
-    timeout?: number;
 } & Omit<ButtonProps, "onClick" | "ref">) {
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
+    const [remainingTime, setRemainingTime] = useState(0);
+
+    const triggerCancel = (timerDuration: number = 0) => {
+        if (timerDuration <= 0) {
+            onCancel();
+            return;
+        }
+
+        setIsCancelling(true);
+        setRemainingTime(Math.ceil(timerDuration / 1000));
+
+        // Update countdown every second
+        intervalRef.current = setInterval(() => {
+            setRemainingTime((prev) => {
+                const next = prev - 1;
+                return next <= 0 ? 0 : next;
+            });
+        }, 1000);
+
+        // Execute cancel after timeout
+        timeoutRef.current = setTimeout(() => {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            onCancel();
+            setIsCancelling(false);
+            setRemainingTime(0);
+        }, timerDuration);
+    };
+
+    const cancelTimer = () => {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        setIsCancelling(false);
+        setRemainingTime(0);
+    };
 
     useImperativeHandle(ref, () => ({
-        triggerCancel: (skipAnimation) => {
-            if (skipAnimation) {
-                onCancel();
-            } else {
-                setIsCancelling(true);
-
-                timeoutRef.current = setTimeout(() => {
-                    onCancel();
-                    setIsCancelling(false);
-                }, timeout);
-            }
-        },
+        cancel: onCancel,
+        cancelWithTimer: triggerCancel,
     }));
 
     return (
         <Button
             onClick={() => {
-                if (isCancelling && timeoutRef.current) {
-                    clearTimeout(timeoutRef.current);
+                if (isCancelling) {
+                    cancelTimer();
                 } else {
-                    setIsCancelling(false);
                     onCancel();
                 }
             }}
             startIcon={<XIcon />}
-            disabled={isCancelling}
+            // TODO: a class for animations would be useful
             {...props}
         >
-            {isCancelling ? "Cancelling..." : "Cancel"}
+            {isCancelling ? `Cancelling in ${remainingTime}s...` : "Cancel"}
         </Button>
     );
 }
