@@ -39,6 +39,7 @@ export const humanizeDuration = (duration: number) => {
     if (hours > 0) parts.push(`${hours}h`);
     if (minutes > 0) parts.push(`${minutes}m`);
     if (seconds > 0) parts.push(`${seconds}s`);
+    if (parts.length === 0) return `${duration.toFixed(2)}s`;
 
     return parts.join(" ");
 };
