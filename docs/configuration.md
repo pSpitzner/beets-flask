@@ -121,3 +121,7 @@ ignore:
   - "lost+found"
 
 ```
+
+---
+
+The `gui.inbox.temp_dir` option specifies the temporary directory that is used to store files during the upload process. This is useful to ensure that files are uploaded to a filesystem that is fast and has enough space. The default value is `/tmp/beets-flask/upload`.
