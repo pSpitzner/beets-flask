@@ -5,6 +5,7 @@ import shutil
 import tempfile
 from asyncio import timeout
 from pathlib import Path
+from urllib.parse import unquote_plus
 
 import aiofiles
 from quart import Blueprint, jsonify, request
@@ -42,7 +43,7 @@ async def upload():
     """
     # validate
     filename, filedir = _get_filename_and_dir()
-    log.info(f"Uploading file {filename} to {filedir} ...")
+    log.info(f"Uploading file '{filename}' to '{filedir}' ...")
 
     temp_path: Path = get_config()["gui"]["inbox"]["temp_dir"].as_path()  # type: ignore
     temp_path.mkdir(parents=True, exist_ok=True)
@@ -54,9 +55,8 @@ async def upload():
                 await f.write(chunk)
 
     # move to final location
-    final_path = filedir / filename
-    final_path.parent.mkdir(parents=True, exist_ok=True)
-    shutil.move(temp_path, final_path)
+    filedir.mkdir(parents=True, exist_ok=True)
+    shutil.move(temp_path / filename, filedir / filename)
 
     log.info(f"Uploading file {filename} to {filedir} done!")
     return {"status": "ok"}
@@ -71,7 +71,10 @@ def _get_filename_and_dir() -> tuple[str, Path]:
             "Missing header: X-Filename and X-File-Target-Dir are required"
         )
 
-    filedir = Path(filedir)
+    # Filedir may include encoded slashes
+    filedir = unquote_plus(filedir)
+    filename = unquote_plus(filename)
+    filedir = Path(filedir).expanduser().resolve()
     is_valid_filepath = False
     for inbox in get_inbox_folders():
         if filedir.is_relative_to(inbox):
