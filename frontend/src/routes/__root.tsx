@@ -71,7 +71,6 @@ function RootComponent() {
                         id="main-content"
                         sx={(theme) => ({
                             [theme.breakpoints.down("laptop")]: {
-                                position: "fixed",
                                 height: "100dvh",
                             },
                             width: "100%",
