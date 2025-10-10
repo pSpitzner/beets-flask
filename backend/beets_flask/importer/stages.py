@@ -361,7 +361,27 @@ def lookup_candidates(
     # FIXME: what happens with our new skip logic and plugins?
     plugins.send("import_task_start", session=session, task=task)
 
-    session.lookup_candidates(task)
+    # PS 2025-10-10: we are hitting the limits of this abstraction i feel.
+    # try/catching here sets the state of the session correctly (so that the
+    # we do not break the search anymore - needs to be at `preview_completed`).
+    # however, then we dont get the exceptions into the frontend.
+    # so I think what we want is to either
+    # - set the progress conditionally, from within the stage function in sessions
+    # - extend the set_progress decorator so that it can set another progress
+    #   on exception - but that would still not suffice as lookup candidates
+    #   is used differently for preview and add-candidate sessions.
+    # ... ties very much into the whole session / task / stage logic of beets
+    # as a quick workaround, we might just hackily duckt-tape the progress
+    # setting _into_ the lookup_candidates method, but only for the add_candidate
+    # session. urgh.
+    try:
+        session.lookup_candidates(task)
+    except NoCandidatesFoundException as e:
+        raise e
+        session.set_task_progress(task, Progress.PREVIEW_COMPLETED)
+        # the only stage that follows is duplicate identification,
+        # which we can skip because if no candidates, no duplicates... I guess?
+        session.state.exc = to_serialized_exception(NoCandidatesFoundException())
 
 
 @mutator_stage
