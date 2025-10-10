@@ -77,7 +77,7 @@ function RouteComponent() {
             >
                 <FileUploadProvider>
                     {inboxes.map((folder) => (
-                        <FolderSelectionProvider>
+                        <FolderSelectionProvider key={folder.full_path}>
                             <DropZone inboxDir={folder.full_path}>
                                 <InboxCard key={folder.full_path} folder={folder} />
                             </DropZone>
