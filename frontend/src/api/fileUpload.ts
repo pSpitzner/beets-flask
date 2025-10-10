@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 import { useMutation, UseMutationOptions } from "@tanstack/react-query";
 
 import { SerializedException } from "@/pythonTypes";
@@ -176,55 +176,37 @@ async function uploadFile(
 }
 
 export function useFileUpload() {
-    const [fileList, setFileList] = useState<Array<File>>([]);
-    const { mutate, mutateAsync, ...props } = useMutation(fileUploadMutationOptions);
+    const { mutate, mutateAsync, reset, ...props } = useMutation(
+        fileUploadMutationOptions
+    );
     const [uploadProgress, setProgress] = useState<BatchFileUploadProgress>({
         files: [],
         currentIndex: 0,
         total: 0,
         loaded: 0,
     });
-    const resetProgress = () => {
-        setProgress({
-            files: [],
-            currentIndex: 0,
-            total: 0,
-            loaded: 0,
-        });
-        setFileList([]);
-    };
 
-    useEffect(() => {
-        console.log("Upload progress:", uploadProgress);
-    }, [uploadProgress]);
-
-    useEffect(() => {
-        if (props.isSuccess && uploadProgress.finished) {
-            // I would also place some code here to show a snackbar notification when done.
-            // And maybe instead of using a timeout here, we could have the dialog
-            // call the resetprogress, after showing "upload completed" for some time.
-            // however, i also want to be able to dismiss the dialog and uploads should
-            // continue in the background.
-            // but then...
-            // - disable drag and drop while an upload is still ongoing ??!?
-            // - argggh we need a queue if we want to solve this right.
-            const timer = setTimeout(() => {
-                resetProgress();
-            }, 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [props.isSuccess, uploadProgress.finished]);
+    // TODO: Snackbar on success/error
 
     return {
         uploadProgress,
-        resetProgress,
-        fileList,
-        setFileList,
         mutate: (files: FileList | File[], targetDir: string) => {
             mutate({ files, targetDir, setProgress: setProgress });
         },
         mutateAsync: (files: FileList | File[], targetDir: string) =>
             mutateAsync({ files, targetDir, setProgress: setProgress }),
+        reset: () => {
+            reset();
+            // Fully reset progress and filelist
+            setProgress({
+                files: [],
+                currentIndex: 0,
+                total: 0,
+                loaded: 0,
+            });
+        },
         ...props,
     };
 }
+
+export type FileUploadState = ReturnType<typeof useFileUpload>;

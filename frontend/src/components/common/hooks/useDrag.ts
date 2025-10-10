@@ -26,7 +26,6 @@ export function useDragAndDrop(
 
     useEffect(() => {
         let element: HTMLDivElement = window as unknown as HTMLDivElement; // cursed typing
-        console.log("useDragAndDrop", elementRef, window);
         if (elementRef) {
             if (!elementRef.current) return;
             element = elementRef.current;

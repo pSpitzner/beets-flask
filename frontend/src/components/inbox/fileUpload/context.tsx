@@ -3,72 +3,56 @@ import React from "react";
 import { createPortal } from "react-dom";
 import { Box } from "@mui/material";
 
-import { BatchFileUploadProgress, useFileUpload } from "@/api/fileUpload";
+import { FileUploadState, useFileUpload } from "@/api/fileUpload";
 import { useDragAndDrop } from "@/components/common/hooks/useDrag";
 
 import { UploadDialog } from "./dialog";
 
-export type UploadState = Omit<
-    ReturnType<typeof useFileUpload>,
-    // PS @ SM: feels wrong, this is getting too crowded, but not sure where
-    // to best place the reset logic.
-    | "mutate"
-    | "mutateAsync"
-    | "uploadProgress"
-    | "resetProgress"
-    | "fileList"
-    | "setFileList"
->;
-
-// Context to track global drag state
-interface FileUploadContextType {
-    isOverWindow: boolean;
-    uploadState: UploadState;
-    uploadProgress: BatchFileUploadProgress;
-    resetProgress: () => void;
+type FileUploadContextType = Omit<FileUploadState, "mutate" | "mutateAsync"> & {
     fileList: Array<File>;
     setFileList: React.Dispatch<React.SetStateAction<Array<File>>>;
     uploadFiles: () => Promise<{ status: string }>;
     uploadTargetDir: string | null;
     setUploadTargetDir: React.Dispatch<React.SetStateAction<string | null>>;
-    backdropRef?: React.RefObject<HTMLElement | null>;
-}
+    reset: () => void;
+
+    // drag drop
+    isOverWindow: boolean;
+};
 
 const FileUploadContext = createContext<FileUploadContextType | null>(null);
 
-// Provider component to wrap multiple DropZones
+// Provider component which allows to
+// upload files via drag and drop or file picker
 export function FileUploadProvider({ children }: { children: React.ReactNode }) {
+    const [fileList, setFileList] = useState<Array<File>>([]);
     const [uploadTargetDir, setUploadTargetDir] = useState<string | null>(null);
 
     const isOverWindow = useDragAndDrop(null, {
         preventDefault: true,
     });
-    const {
-        mutateAsync,
-        uploadProgress,
-        resetProgress,
-        fileList,
-        setFileList,
-        ...uploadState
-    } = useFileUpload();
+    const { mutateAsync, reset, ...props } = useFileUpload();
 
     return (
         <FileUploadContext.Provider
             value={{
-                isOverWindow,
-                uploadState,
-                uploadProgress,
+                ...props,
+                fileList,
+                setFileList,
                 uploadFiles: async () => {
                     if (!uploadTargetDir) {
                         throw new Error("No target directory set for upload");
                     }
                     return await mutateAsync(fileList, uploadTargetDir);
                 },
-                resetProgress,
-                fileList,
-                setFileList,
+                reset: () => {
+                    reset();
+                    setFileList([]);
+                    setUploadTargetDir(null);
+                },
                 uploadTargetDir,
                 setUploadTargetDir,
+                isOverWindow,
             }}
         >
             {children}

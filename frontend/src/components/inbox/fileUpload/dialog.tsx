@@ -5,14 +5,12 @@
  */
 
 import { CheckIcon, FileMusicIcon, Upload, XIcon } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     alpha,
     Box,
     Button,
-    Chip,
     DialogContent,
-    FormHelperText,
     IconButton,
     LinearProgress,
     TextField,
@@ -23,6 +21,7 @@ import {
 import { useConfig } from "@/api/config";
 import { Dialog } from "@/components/common/dialogs";
 import { useDragAndDrop } from "@/components/common/hooks/useDrag";
+import { CancelButton } from "@/components/common/inputs/cancle";
 import { humanizeBytes } from "@/components/common/units/bytes";
 import { humanizeDuration } from "@/components/common/units/time";
 
@@ -30,8 +29,7 @@ import { useFileUploadContext } from "./context";
 
 export function UploadDialog() {
     const [open, setOpen] = useState(false);
-    const { uploadState, fileList } = useFileUploadContext();
-    const [title, setTitle] = useState<string>("Upload files");
+    const { fileList, reset } = useFileUploadContext();
 
     const resetDialog = useCallback(
         (close: boolean = true) => {
@@ -42,7 +40,7 @@ export function UploadDialog() {
     );
 
     // SM@PS: Try to not use 'useEffect' for derived state. Kinda an antipattern
-    // React does a good job at this stuff
+    // React does a good job at this stuff byitself.
     let title = "Upload files";
     if (fileList.length > 0) {
         title = `Upload ${fileList.length} file${fileList.length !== 1 ? "s" : ""}`;
@@ -55,24 +53,12 @@ export function UploadDialog() {
         }
     }, [fileList.length]);
 
-    useEffect(() => {
-        // Close dialog 3 seconds after upload is done
-        let timeout: NodeJS.Timeout;
-        if (uploadState.isSuccess || uploadState.isError) {
-            timeout = setTimeout(() => {
-                setOpen(false);
-                // currently staying below the 3s used in the mutation hook.
-            }, 2800);
-        }
-        return () => clearTimeout(timeout);
-    }, [uploadState.isSuccess, uploadState.isError]);
-
     return (
         <Dialog
             open={open}
             title={title}
-            onClose={() => {
-                setOpen(false);
+            onClose={(_event, reason) => {
+                if (reason !== "backdropClick") resetDialog();
             }}
             title_icon={null}
         >
@@ -86,11 +72,18 @@ export function UploadDialog() {
                     }}
                 >
                     <FolderSelector />
-                    <FileDropZone targetDir="" />
+                    <FileDropZone />
                     <UploadFinished />
                     <SelectedFilesListAndProgress />
-                    <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                        <CancelButton setOpen={setOpen} />
+                    <ErrorMessage />
+                    <Box
+                        sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "flex-end",
+                        }}
+                    >
+                        <CancelButton onCancel={resetDialog} variant="outlined" />
                         <UploadButton />
                     </Box>
                 </Box>
@@ -99,6 +92,74 @@ export function UploadDialog() {
     );
 }
 
+/** Error and success message component
+ *
+ * Displays error or success messages based on the upload state.
+ */
+function ErrorMessage() {
+    const { isError, error } = useFileUploadContext();
+
+    if (!isError) return null;
+
+    return (
+        <Box>
+            <Typography variant="body2" color="error">
+                {error?.name || "Error"}
+            </Typography>
+            <Typography variant="body2" color="error">
+                {error?.message || "An unknown error occurred during file upload."}
+            </Typography>
+        </Box>
+    );
+}
+
+/** Selected files list component
+ *
+ * This component displays the list of files selected for upload.
+ * It allows users to remove files from the list before uploading.
+ */
+function SelectedFilesListAndProgress() {
+    const { fileList, setFileList } = useFileUploadContext();
+
+    const handleRemoveFile = (index: number) => {
+        // Remove file from the selected files
+        setFileList((prevFiles) => prevFiles.filter((_, i) => i !== index));
+    };
+
+    if (fileList.length === 0) {
+        return <Typography variant="body2">No files selected for upload.</Typography>;
+    }
+
+    return (
+        <>
+            <Typography variant="caption" fontWeight="bold" color="text.secondary">
+                Files:
+            </Typography>
+            <Box
+                sx={{
+                    width: "100%",
+                    overflowY: "auto",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 0.5,
+                    pl: 0.5,
+                }}
+            >
+                {fileList.map((file, index) => (
+                    <FileProgressBar
+                        file={file.name}
+                        removeFile={() => handleRemoveFile(index)}
+                        key={index}
+                    />
+                ))}
+            </Box>
+        </>
+    );
+}
+
+/** Shows a singular file and allow to remove it
+ * Also shows upload progress if available
+ */
 function FileProgressBar({
     file,
     removeFile,
@@ -107,7 +168,7 @@ function FileProgressBar({
     removeFile: () => void;
 }) {
     const theme = useTheme();
-    const { uploadProgress, uploadState } = useFileUploadContext();
+    const { uploadProgress, isIdle, isPending } = useFileUploadContext();
 
     const fileProgress = useMemo(() => {
         return uploadProgress.files.find((f) => f.name === file);
@@ -164,18 +225,14 @@ function FileProgressBar({
                 {file}
             </Typography>
             <Box sx={{ flexShrink: 0 }}>
-                <IconButton
-                    size="small"
-                    disabled={!uploadState.isIdle}
-                    onClick={removeFile}
-                >
-                    {fileProgress && uploadState.isPending && (
+                <IconButton size="small" disabled={!isIdle} onClick={removeFile}>
+                    {fileProgress && isPending && (
                         <Typography variant="body2" fontSize="small">
                             {percent.toFixed(0)}%
                         </Typography>
                     )}
                     {fileProgress?.finished && <CheckIcon size={theme.iconSize.sm} />}
-                    {uploadState.isIdle && !fileProgress?.finished && (
+                    {isIdle && !fileProgress?.finished && (
                         <XIcon size={theme.iconSize.sm} />
                     )}
                 </IconButton>
@@ -184,62 +241,21 @@ function FileProgressBar({
     );
 }
 
-/** Selected files list component
- *
- * This component displays the list of files selected for upload.
- * It allows users to remove files from the list before uploading.
- */
-function SelectedFilesListAndProgress() {
-    const { fileList, setFileList, uploadTargetDir } = useFileUploadContext();
-
-    const handleRemoveFile = (index: number) => {
-        // Remove file from the selected files
-        setFileList((prevFiles) => prevFiles.filter((_, i) => i !== index));
-    };
-
-    if (fileList.length === 0) {
-        return <Typography variant="body2">No files selected for upload.</Typography>;
-    }
-
-    return (
-        <>
-            <Typography variant="caption" fontWeight="bold" color="text.secondary">
-                Files:
-            </Typography>
-            <Box
-                sx={{
-                    width: "100%",
-                    overflowY: "auto",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 0.5,
-                    pl: 0.5,
-                }}
-            >
-                {fileList.map((file, index) => (
-                    <FileProgressBar
-                        file={file.name}
-                        removeFile={() => handleRemoveFile(index)}
-                        key={index}
-                    />
-                ))}
-            </Box>
-        </>
-    );
-}
-
 /** Folder selector component
  * This component allows users to specify a subfolder within the selected inbox folder
  * where the files will be uploaded.
  */
 function FolderSelector() {
-    const { uploadTargetDir, setUploadTargetDir, uploadState } = useFileUploadContext();
+    const { uploadTargetDir, setUploadTargetDir, isIdle } = useFileUploadContext();
     const config = useConfig();
 
-    let is_valid = false;
-    for (const folder of Object.values(config.gui.inbox.folders)) {
-        if (uploadTargetDir?.startsWith(folder.path)) is_valid = true;
-    }
+    const is_valid = useMemo(() => {
+        if (!uploadTargetDir) return true;
+        for (const folder of Object.values(config.gui.inbox.folders)) {
+            if (uploadTargetDir?.startsWith(folder.path)) return true;
+        }
+        return false;
+    }, [config.gui.inbox.folders, uploadTargetDir]);
 
     return (
         <TextField
@@ -247,8 +263,8 @@ function FolderSelector() {
             error={!is_valid}
             label="Target Folder"
             helperText={is_valid ? null : "Folder must be inside an inbox"}
-            disabled={!uploadState.isIdle}
-            value={uploadTargetDir}
+            disabled={!isIdle}
+            value={uploadTargetDir || ""}
             onChange={(e) => setUploadTargetDir(e.target.value)}
             placeholder="Enter folder name"
             size="small"
@@ -267,57 +283,37 @@ function FolderSelector() {
  * It shows the number of selected files and the target upload path.
  */
 function UploadButton() {
-    const { uploadTargetDir, fileList, uploadFiles, uploadState } =
+    const { uploadFiles, isError, isSuccess, isPending, reset, fileList } =
         useFileUploadContext();
 
-    if (uploadState.isSuccess || uploadState.isError) return null;
+    if (isError) return null;
 
     return (
-        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <Button
-                variant="contained"
-                color="primary"
-                startIcon={<Upload />}
-                onClick={uploadFiles}
-                loading={uploadState?.isPending}
-            >
-                Start upload
-            </Button>
-        </Box>
-    );
-}
-
-function CancelButton({ setOpen }: { setOpen?: (open: boolean) => void }) {
-    const { resetProgress, uploadState } = useFileUploadContext();
-
-    if (uploadState.isSuccess || uploadState.isError) return null;
-
-    return (
-        <Box sx={{ display: "flex", justifyContent: "center" }}>
-            <Button
-                variant="outlined"
-                color="primary"
-                onClick={() => {
-                    resetProgress();
-                    if (setOpen) setOpen(false);
-                }}
-                startIcon={<XIcon />}
-            >
-                Cancel
-            </Button>
-        </Box>
+        <Button
+            variant="contained"
+            startIcon={<Upload />}
+            onClick={() => {
+                if (isSuccess) {
+                    reset();
+                } else {
+                    uploadFiles().catch(console.error);
+                }
+            }}
+            disabled={fileList.length === 0}
+            loading={isPending}
+        >
+            {isSuccess ? "Upload more files" : "Upload"}
+        </Button>
     );
 }
 
 /* -------------------------------- Dropzone -------------------------------- */
 
-function FileDropZone({ targetDir }: { targetDir: string }) {
-    const ref = useRef<HTMLDivElement>(null);
+function FileDropZone() {
     const theme = useTheme();
+    const { fileList, setFileList, isSuccess, isError } = useFileUploadContext();
+    const ref = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const { fileList, setFileList, uploadState, uploadTargetDir } =
-        useFileUploadContext();
 
     const isDragOver = useDragAndDrop(ref, {
         onDrop: (event) => {
@@ -329,8 +325,9 @@ function FileDropZone({ targetDir }: { targetDir: string }) {
         },
     });
 
-    if (uploadState.isSuccess || uploadState.isError) return null;
-    // Don't show dropzone when we are done, space is taken by upload finished component
+    // Don't show dropzone when we are done,
+    // space is taken by upload finished component
+    if (isSuccess || isError) return null;
 
     return (
         <Box
@@ -429,15 +426,14 @@ function FileDropZone({ targetDir }: { targetDir: string }) {
 /* ----------------------------- Upload Progress ---------------------------- */
 
 function UploadFinished() {
-    const { uploadState, uploadProgress } = useFileUploadContext();
+    const { isPending, isIdle, uploadProgress } = useFileUploadContext();
 
     if (
-        !uploadState ||
         !uploadProgress ||
         !uploadProgress.started ||
         !uploadProgress.finished ||
-        uploadState.isPending ||
-        uploadState.isIdle
+        isPending ||
+        isIdle
     ) {
         return null;
     }
