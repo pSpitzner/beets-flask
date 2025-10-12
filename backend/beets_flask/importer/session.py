@@ -50,8 +50,8 @@ from beets_flask.logger import log
 from beets_flask.server.exceptions import (
     DuplicateException,
     IntegrityException,
-    NotImportedException,
     NoCandidatesFoundException,
+    NotImportedException,
     to_serialized_exception,
 )
 from beets_flask.utility import capture_stdout_stderr
@@ -63,8 +63,6 @@ from .stages import (
     identify_duplicates,
     lookup_candidates,
     manipulate_files,
-    mark_tasks_completed,
-    mark_tasks_preview_completed,
     match_threshold,
     plugin_stage,
     read_tasks,
@@ -335,45 +333,24 @@ class BaseSession(importer.ImportSession, ABC):
         return False
 
     def identify_duplicates(self, task: importer.ImportTask):
-        """For all candidates, check if they have duplicates in the library."""
-        task_state = self.state.get_task_state_for_task_raise(task)
+        """For all candidates, check if they have duplicates in the library.
 
-        for idx, cs in enumerate(
-            task_state.candidate_states + [task_state.asis_candidate]
-        ):
-            # This is a mutable operation i.e. cs is modfied here!
-            duplicates = cs.identify_duplicates(self.lib)
-
-            if len(duplicates) > 0:
-                log.debug(f"Found duplicates for {cs.id=}: {duplicates}")
-
-    def lookup_candidates(self, task: importer.ImportTask):
-        """Lookup candidates for the task."""
-
-        search_ids = self.config["search_ids"].as_str_seq()  # might be an empty list
-        log.debug(
-            f"Looking up candidates for {task.paths}, using search ids {search_ids}"
+        This stage should only be run for preview sessions, but we still have
+        some old code in stages.py/user_query().
+        """
+        raise NotImplementedError(
+            f"This session should not reach this stage. {self.__class__.__name__}"
         )
 
-        # Restrict the initial lookup to IDs specified by the user via the -m
-        # option. Currently all the IDs are passed onto the tasks directly.
-        # FIXME: Revisit, we want to avoid using the global config.
-        task.lookup_candidates(search_ids)
+    def lookup_candidates(self, task: importer.ImportTask):
+        """Lookup candidates for the task.
 
-        if len(task.candidates) == 0:
-            # PS: 2025-10-05: I considered raising the exception
-            # right here, but then the preview sessions fail, and we dont
-            # even get the asis candidate.
-            # Since there are only two relevant places for failed candidates:
-            # - auto-import sessions
-            # - AddCandidatesSession (did raise already!)
-            # I think it's okay to raise in those sessions instead.
-            # (Import Sessions should be fine without online candidates imho)
-            log.warning(f"No candidates found for {task} ({task.paths})")
-
-        # Update our state
-        task_state = self.state.get_task_state_for_task_raise(task)
-        task_state.add_candidates(task.candidates)
+        This stage should only be run for preview sessions, but we still have
+        some old code in stages.py/user_query().
+        """
+        raise NotImplementedError(
+            f"This session should not reach this stage. {self.__class__.__name__}"
+        )
 
     # ---------------------------------- Run --------------------------------- #
 
@@ -449,6 +426,8 @@ class PreviewSession(BaseSession):
         self.group_albums = group_albums
         self.autotag = autotag
 
+    # -------------------------------- Stages -------------------------------- #
+
     @property
     def stages(self) -> StageOrder:
         stages = StageOrder()
@@ -468,9 +447,41 @@ class PreviewSession(BaseSession):
             stages.append(lookup_candidates(self))
 
         stages.append(identify_duplicates(self))
-        stages.append(mark_tasks_preview_completed(self))
 
         return stages
+
+    # --------------------------- Stage Definitions -------------------------- #
+
+    def identify_duplicates(self, task: importer.ImportTask):
+        """For all candidates, check if they have duplicates in the library."""
+        task_state = self.state.get_task_state_for_task_raise(task)
+
+        for idx, cs in enumerate(
+            task_state.candidate_states + [task_state.asis_candidate]
+        ):
+            # This is a mutable operation i.e. candidate state is modfied here!
+            duplicates = cs.identify_duplicates(self.lib)
+
+            if len(duplicates) > 0:
+                log.debug(f"Found duplicates for {cs.id=}: {duplicates}")
+
+    def lookup_candidates(self, task: importer.ImportTask):
+        """Lookup candidates for the task."""
+
+        search_ids = self.config["search_ids"].as_str_seq()  # might be an empty list
+        log.debug(
+            f"Looking up candidates for {task.paths}, using search ids {search_ids}"
+        )
+
+        task.lookup_candidates(search_ids)
+
+        if len(task.candidates) == 0:
+            # log.warning(f"No candidates found for {task} ({task.paths})")
+            raise NoCandidatesFoundException()
+
+        # Update our state
+        task_state = self.state.get_task_state_for_task_raise(task)
+        task_state.add_candidates(task.candidates)
 
 
 class AddCandidatesSession(PreviewSession):
@@ -534,13 +545,13 @@ class AddCandidatesSession(PreviewSession):
             search_artist=search["search_artist"],
         )
 
-        if len(prop.candidates) == 0:
-            raise NoCandidatesFoundException()
-
         task_state.add_candidates(prop.candidates)
 
         # Update quality of best candidate, likely not needed for us, only beets cli.
         task.rec = max(prop.recommendation, task.rec or autotag.Recommendation.none)
+
+        if len(prop.candidates) == 0:
+            raise NoCandidatesFoundException()
 
 
 class ImportSession(BaseSession):
@@ -666,9 +677,6 @@ class ImportSession(BaseSession):
 
         # finally, move files
         stages.append(manipulate_files(self))
-
-        # If everything went well, set tasks to completed
-        stages.append(mark_tasks_completed(self))
 
         return stages
 

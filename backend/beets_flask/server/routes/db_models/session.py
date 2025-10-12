@@ -121,7 +121,6 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         Helper function which is pretty similar to enqueue. But only allows for a single
         folder hash and path.
         """
-        log.warning("Adding candidates")
         params = await request.get_json()
         task_id = pop_query_param(params, "task_id", str)
         session_id = pop_query_param(params, "session_id", str)
