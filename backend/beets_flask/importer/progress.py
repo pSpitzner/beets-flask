@@ -31,9 +31,8 @@ class Progress(Enum):
     LOOKING_UP_CANDIDATES = 12
     IDENTIFYING_DUPLICATES = 13
 
-    NO_CANDIDATES_FOUND = 20  # currently not used
-    PREVIEW_COMPLETED = 21  # dummy, only for comparison and report, has no actual stage
-    DELETION_COMPLETED = 22  # dummy. after a successful deletion, we can restart import
+    PREVIEW_COMPLETED = 20  # dummy, only for comparison and report, has no actual stage
+    DELETION_COMPLETED = 21  # dummy. after a successful deletion, we can restart import
 
     # ImportSession
     OFFERING_MATCHES = 30

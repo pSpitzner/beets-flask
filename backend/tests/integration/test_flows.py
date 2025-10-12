@@ -353,7 +353,6 @@ class TestImportBest(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
         )
         assert exc is not None, "Should return an error"
         assert exc["type"] == "NoCandidatesFoundException"
-        assert "Lookup found no candidates" in exc["message"]
 
         # Check if mapping is still set correctly
         assert self.check_mapping_consistency(db_session)

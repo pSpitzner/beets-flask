@@ -478,7 +478,6 @@ class PreviewSession(BaseSession):
         task.lookup_candidates(search_ids)
 
         if len(task.candidates) == 0:
-            # log.warning(f"No candidates found for {task} ({task.paths})")
             raise NoCandidatesFoundException()
 
         # Update our state
@@ -553,7 +552,15 @@ class AddCandidatesSession(PreviewSession):
         task.rec = max(prop.recommendation, task.rec or autotag.Recommendation.none)
 
         if len(prop.candidates) == 0:
-            raise NoCandidatesFoundException()
+            error_text = "Search found no candidates via "
+            if search["search_ids"]:
+                error_text += f"ids: {', '.join(search['search_ids'])}; "
+            if search["search_artist"]:
+                error_text += f"artist: {search['search_artist']}; "
+            if search["search_album"]:
+                error_text += f"album: {search['search_album']}; "
+            error_text += NoCandidatesFoundException.metadata_plugin_info()
+            raise NoCandidatesFoundException(error_text)
 
 
 class ImportSession(BaseSession):

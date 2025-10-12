@@ -83,26 +83,29 @@ class NoCandidatesFoundException(ApiException):
 
     def __init__(self, *args, status_code: int | None = None):
         if not args:
-            # Get enabled metadata source plugins to give a better error message
-            error_text = "Lookup found no candidates"
-            try:
-                from beets.metadata_plugins import find_metadata_source_plugins
-
-                meta_plugins: list[str] = [
-                    p.data_source for p in find_metadata_source_plugins()
-                ]
-                if len(meta_plugins) > 0:
-                    error_text += (
-                        f" using '{', '.join(meta_plugins)}' as metadata source(s)."
-                    )
-                else:
-                    error_text += ". No source plugins are enabled."
-
-            except:
-                error_text += "."
+            error_text = "Lookup found no candidates. " + self.metadata_plugin_info()
             args = (error_text,)
 
         super().__init__(*args, status_code=status_code)
+
+    @classmethod
+    def metadata_plugin_info(cls) -> str:
+        # Get enabled metadata source plugins to give a better error message
+        error_text = ""
+        try:
+            from beets.metadata_plugins import find_metadata_source_plugins
+
+            meta_plugins: list[str] = [
+                p.data_source for p in find_metadata_source_plugins()
+            ]
+            if len(meta_plugins) > 0:
+                error_text += f"Used '{', '.join(meta_plugins)}' as metadata source(s)."
+            else:
+                error_text += "No source plugins are enabled."
+
+        except:
+            error_text += "Could not determine enabled metadata source plugins."
+        return error_text
 
 
 class UserException(Exception):

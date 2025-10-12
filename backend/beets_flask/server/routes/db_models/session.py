@@ -215,10 +215,8 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
             elif (db_date or datetime.min) + timedelta(seconds=1) >= (
                 job_date or datetime.min
             ):
-                # hmpf. im getting the issue that job_date might be some .7secs after db_date and gets favoured.
-                # this prevents our NoCandidatesFoundException from showing up.
-                # timedelta does not seem to fully solve this, maybe missing from
-                # folderstatusupdate.
+                # Sometimes, the job_date might be some .7secs after db_date and would
+                # get favoured, so we added a second of leeway.
                 log.debug(f"Using status from DB: {db_date} >= {job_date}")
                 status = db_status
                 exc = db_exc
@@ -256,8 +254,6 @@ def _get_folder_status_from_db(
                 status = FolderStatus.DELETING
             elif s_state_indb.progress == Progress.DELETION_COMPLETED:
                 status = FolderStatus.DELETED
-            elif s_state_indb.progress == Progress.NO_CANDIDATES_FOUND:
-                status = FolderStatus.NO_CANDIATES_FOUND
             elif s_state_indb.progress == Progress.PREVIEW_COMPLETED:
                 status = FolderStatus.PREVIEWED
             elif s_state_indb.progress == Progress.IMPORT_COMPLETED:
