@@ -20,7 +20,10 @@ from beets_flask.database.models.states import (
 )
 from beets_flask.disk import Folder
 from beets_flask.importer.progress import FolderStatus
-from beets_flask.importer.session import CandidateChoice, TaskIdMappingArg
+from beets_flask.importer.session import (
+    CandidateChoice,
+    TaskIdMappingArg,
+)
 from beets_flask.importer.types import DuplicateAction
 from beets_flask.invoker.enqueue import (
     Progress,
@@ -324,6 +327,35 @@ class TestImportBest(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
         assert id_99_red_balloons in album_ids, "Should have added the new candidate"
 
         # Check if mapping is set correctly
+        assert self.check_mapping_consistency(db_session)
+
+    async def test_search_candidates_fails(self, db_session: Session, path: Path):
+        """Test that an exception is raised if candidate lookup fails (returns no results)."""
+
+        stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
+        s_state_indb = db_session.execute(stmt).scalar()
+
+        assert s_state_indb is not None
+        assert len(s_state_indb.tasks) == 1
+
+        exc = await run_preview_add_candidates(
+            "obsolete_hash_preview",
+            str(path),
+            search={
+                "*": {
+                    "search_ids": [
+                        "non_existing_id",
+                    ],  # Nena 99 Red Balloons
+                    "search_artist": None,
+                    "search_album": None,
+                }
+            },
+        )
+        assert exc is not None, "Should return an error"
+        assert exc["type"] == "NoCandidatesFoundException"
+        assert "Lookup found no candidates" in exc["message"]
+
+        # Check if mapping is still set correctly
         assert self.check_mapping_consistency(db_session)
 
     async def test_regenerate_preview(self, db_session: Session, path: Path):

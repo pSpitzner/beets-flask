@@ -23,6 +23,8 @@ action_for_all : TaskIdMappingArg[DuplicateAction] = {"*": "remove"}
 ```
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
 from abc import ABC, abstractmethod
