@@ -539,12 +539,25 @@ class AddCandidatesSession(PreviewSession):
 
         log.debug(f"Using {search=} for {task_state.id=}, {task_state.paths=}")
 
-        _, _, prop = autotag.tag_album(
-            task.items,
-            search_ids=search["search_ids"],
-            search_album=search["search_album"],
-            search_artist=search["search_artist"],
-        )
+        try:
+            _, _, prop = autotag.tag_album(
+                task.items,
+                search_ids=search["search_ids"],
+                search_album=search["search_album"],
+                search_artist=search["search_artist"],
+            )
+        except Exception as e:
+            from beetsplug.musicbrainz import MusicBrainzAPIError
+            from beetsplug.spotify import APIError as SpotifyAPIError
+
+            if isinstance(e, MusicBrainzAPIError):
+                raise NoCandidatesFoundException(
+                    f"Failed to contact Musicbrainz API: {e.get_message()}"
+                )
+            elif isinstance(e, SpotifyAPIError):
+                raise NoCandidatesFoundException(f"Failed to contact Spotify API: {e}")
+            else:
+                raise NoCandidatesFoundException(f"Failed to contact online APIs.")
 
         task_state.add_candidates(prop.candidates)
 
