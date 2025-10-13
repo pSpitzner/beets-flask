@@ -352,7 +352,6 @@ export const addCandidateMutationOptions: UseMutationOptions<
         task_id: string;
     } & Omit<EnqueuePreviewAddCandidate, "kind">
 > = {
-    ...enqueueMutationOptions,
     mutationFn: async ({ socket, task_id, ...extra }) => {
         // Generate a unique job reference for each folder
         // to avoid collisions
@@ -387,55 +386,25 @@ export const addCandidateMutationOptions: UseMutationOptions<
                 throw new APIError(jobUpdate.exc);
             }
         }
+        return jobUpdates;
     },
-    onSuccess: (_data, variables) => {
-        console.log("onSuccess", _data, variables);
-    },
-    // onSuccess: async (_data, { ...variables }, onMutateResults, context) => {
-    //     return await enqueueMutationOptions.onSuccess?.(
-    //         _data,
-    //         {
-    //             ...variables,
-    //             kind: EnqueueKind.PREVIEW_ADD_CANDIDATES,
-    //             selected: {
-    //                 hashes: [_data[0].job_metas[0].folder_hash],
-    //                 paths: [_data[0].job_metas[0].folder_path],
-    //             },
-    //         },
-    //         onMutateResults,
-    //         context
-    //     );
-    // },
-    onMutate: (_variables) => {
-        console.log("onMutate", _variables);
-        return;
-    },
-    onError: (_error, _variables, _context) => {
-        // not raised when enqueued job fails.
-        console.log("onError", _error, _variables, _context);
-        return;
-    },
-    onSettled: (_data, error, variables, onMutateResults, context) => {
-        console.log("onSettled", _data, error, variables, onMutateResults, context);
-
-        // if (!_data) {
-        //     return;
-        // }
-
-        // return await enqueueMutationOptions.onSettled?.(
-        //     _data,
-        //     error,
-        //     {
-        //         ...variables,
-        //         kind: EnqueueKind.PREVIEW_ADD_CANDIDATES,
-        //         selected: {
-        //             hashes: [_data[0].job_metas[0].folder_hash],
-        //             paths: [_data[0].job_metas[0].folder_path],
-        //         },
-        //     },
-        //     onMutateResults,
-        //     context
-        // );
+    onSuccess: async (_data, { ...variables }, onMutateResults, context) => {
+        // reuse base onSuccess to invalidate session
+        return await enqueueMutationOptions.onSuccess?.(
+            _data,
+            {
+                ...variables,
+                kind: EnqueueKind.PREVIEW_ADD_CANDIDATES,
+                selected: {
+                    // unpack our list of job updates to clear the cashes
+                    // for the relevant sessions
+                    hashes: [_data[0].job_metas[0].folder_hash],
+                    paths: [_data[0].job_metas[0].folder_path],
+                },
+            },
+            onMutateResults,
+            context
+        );
     },
 };
 

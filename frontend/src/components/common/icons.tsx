@@ -172,7 +172,7 @@ export function FolderStatusIcon({
     ...props
 }: {
     status: FolderStatus;
-    exception: SerializedException | null;
+    exception?: SerializedException | null;
     size?: number;
 } & LucideProps) {
     switch (status) {
