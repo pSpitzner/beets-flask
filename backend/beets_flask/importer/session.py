@@ -50,6 +50,7 @@ from beets_flask.importer.types import (
 )
 from beets_flask.logger import log
 from beets_flask.server.exceptions import (
+    ApiException,
     DuplicateException,
     IntegrityException,
     NoCandidatesFoundException,
@@ -60,7 +61,6 @@ from beets_flask.utility import capture_stdout_stderr
 
 from .pipeline import AsyncPipeline
 from .stages import (
-    ApiException,
     StageOrder,
     group_albums,
     identify_duplicates,

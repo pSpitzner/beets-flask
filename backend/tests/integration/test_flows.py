@@ -5,13 +5,12 @@ flows may be triggered from the frontend by the users and we want to ensure that
 has a well defined path to follow.
 """
 
+import pickle
 from abc import ABC
 from pathlib import Path
-import pickle
 from typing import Literal
 from unittest import mock
 
-from beets_flask.server.exceptions import SerializedException
 import pytest
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session

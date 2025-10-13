@@ -37,9 +37,7 @@ from beets.util import pipeline as beets_pipeline
 
 from beets_flask import log
 from beets_flask.server.exceptions import (
-    ApiException,
     NoCandidatesFoundException,
-    to_serialized_exception,
 )
 
 from .progress import Progress, ProgressState
