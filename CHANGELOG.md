@@ -7,9 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.2.0] - Upcoming
 
-### Breaking Changes
+### ⚠️ Important ⚠️
 
-- You need to update your beets config, and add `musicbrainz` to the list of enabled plugins. This is required since beets 2.4.0 [see here](https://github.com/beetbox/beets/releases/tag/v2.4.0)
+- You need to update your beets config, and add `musicbrainz` to the list of enabled plugins. This is required because we updated the beets backend [see here](https://github.com/beetbox/beets/releases/tag/v2.4.0)
 
 ### Fixed
 
@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Dependencies
 
 - Updated `uvicorn`  to `0.36.0`.
-- Updated `beets`  to `2.4.0`.
+- Updated `beets`  from `2.3.1` over [`2.4.0`](https://github.com/beetbox/beets/releases/tag/v2.4.0) to [`2.5.0`](https://github.com/beetbox/beets/releases/tag/v2.5.0). See the two changelogs!
 - Updated a number of frontend dependencies, including `react-query`, `react-router`, `vite`, `typescript`, `eslint`, `prettier` and others.
 
 ## [1.1.3] - 25-09-18

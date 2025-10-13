@@ -16,7 +16,7 @@ from __future__ import annotations
 import io
 import pickle
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from beets.autotag.distance import Distance
 from beets.importer import Action, ImportTask
@@ -545,16 +545,30 @@ class CandidateStateInDb(Base):
 
 
 # Hotfix for match unpickler to resolve beets distance moved
+# This is needed because various beets updates changed class implementations
+# and we want to rebuild the newer versions of some beets classes from old pickles.
 # TODO: We should fix this in general and not pickle beets objects
 class CustomUnpickler(pickle.Unpickler):
     def find_class(self, module, name):
         """Override the find_class method to redirect Distance class references."""
-        # Redirect Distance class from beets.autotag.hooks to beets.distance
+        # Redirect Distance class from beets.autotag.hooks to beets.distance (2.4.0)
         if module == "beets.autotag.hooks" and name == "Distance":
             return Distance
 
         # For all other classes, use the default lookup mechanism
         return super().find_class(module, name)
+
+    # Rewrite "source" penalty to "data_source" penalty (2.5.0)
+    def load(self) -> Any:
+        object = super().load()
+        if isinstance(object, Distance):
+            if "source" in object._penalties.keys():
+                log.debug(
+                    "Converting old distance.source to distance.data_source (changed in beets 2.5.0)"
+                )
+                object._penalties["data_source"] = object._penalties["source"]
+                del object._penalties["source"]
+        return object
 
 
 __all__ = ["SessionStateInDb", "TaskStateInDb", "CandidateStateInDb"]

@@ -118,12 +118,7 @@ match:
         # track_length: 2.0
         # track_id: 5.0
 
-spotify:
-    # 0.0 gives spotify the same priority as musicbrainz
-    source_weight: 0.0
-
 musicbrainz:
-    source_weight: 0.0
     external_ids:
         discogs: yes
         bandcamp: yes
