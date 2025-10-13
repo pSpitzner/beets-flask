@@ -37,6 +37,7 @@ from beets.util import pipeline as beets_pipeline
 
 from beets_flask import log
 from beets_flask.server.exceptions import (
+    ApiException,
     NoCandidatesFoundException,
     to_serialized_exception,
 )
@@ -119,7 +120,6 @@ def set_progress(
     before: Progress,
     after: Progress | None = None,
     on_error: dict[type[Exception], Progress] = {},
-    reraise=True,
 ) -> Callable[
     [Callable[[Session, Task, *Arg], Ret]],
     Callable[[Session, Task, *Arg], Ret | Task],
@@ -145,8 +145,6 @@ def set_progress(
     on_error: dict[type[Exception], Progress], optional
         Mapping, which Progress to set for which Exception (instance check on the
         Exception). By default, if an exception occurs, the `before` Progress is kept.
-    reraise: bool, optional
-        Whether to raise the Exception (stopping the pipeline), default: True
 
     Usage
     -----
@@ -170,6 +168,7 @@ def set_progress(
         @wraps(func)
         def wrapper(session: Session, task: Task, *args: *Arg) -> Ret | Task:
             log.debug(f"Setting progress {before=} for {task}")
+
             session.set_task_progress(task, before)
             try:
                 res = func(session, task, *args)
@@ -180,13 +179,11 @@ def set_progress(
             except Exception as e:
                 for e_to_handle, p in on_error.items():
                     if isinstance(e, e_to_handle):
-                        log.debug(f"Setting progress to {p} after Exception for {task}")
+                        log.debug(
+                            f"Setting progress to {p} after Exception for {task} {e}"
+                        )
                         session.set_task_progress(task, p)
-                        session.state.exc = to_serialized_exception(e)
-                if reraise:
-                    raise e
-                else:
-                    return task
+                raise
 
         return wrapper
 
