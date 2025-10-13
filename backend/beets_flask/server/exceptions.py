@@ -26,12 +26,20 @@ class SerializedException(TypedDict):
 class ApiException(Exception):
     """Base class for all API errors."""
 
+    persist_in_db: bool
+    """If true, the exception will be stored in the database on
+    raise in sessions.
+    TODO: Think about exception hierarchy.
+    """
     status_code: int = 500
 
-    def __init__(self, *args, status_code: int | None = None):
+    def __init__(
+        self, *args, status_code: int | None = None, persist_in_db: bool = True
+    ):
         super().__init__(*args)
         if status_code is not None:
             self.status_code = status_code
+        self.persist_in_db = persist_in_db
 
 
 class InvalidUsageException(ApiException):
@@ -81,12 +89,14 @@ class NoCandidatesFoundException(ApiException):
 
     status_code: int = 409
 
-    def __init__(self, *args, status_code: int | None = None):
+    def __init__(
+        self, *args, status_code: int | None = None, persist_in_db: bool = True
+    ):
         if not args:
             error_text = "Lookup found no candidates. " + self.metadata_plugin_info()
             args = (error_text,)
 
-        super().__init__(*args, status_code=status_code)
+        super().__init__(*args, status_code=status_code, persist_in_db=persist_in_db)
 
     @classmethod
     def metadata_plugin_info(cls) -> str:

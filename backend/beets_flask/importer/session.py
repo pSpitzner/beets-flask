@@ -60,6 +60,7 @@ from beets_flask.utility import capture_stdout_stderr
 
 from .pipeline import AsyncPipeline
 from .stages import (
+    ApiException,
     StageOrder,
     group_albums,
     identify_duplicates,
@@ -382,13 +383,20 @@ class BaseSession(importer.ImportSession, ABC):
         log.debug(f"Running {len(self.pipeline.stages)} stages.")
 
         # reset exception state
-        self.state.exc = None
+        # TODO: To clear or not to clear,
+        # exception hierarchy and own table for exceptions/warnings
+        # self.state.exc = None
         plugins.send("import_begin", session=self)
         try:
             assert self.pipeline is not None
             await self.pipeline.run_async()
         except importer.ImportAbortError:
             log.debug(f"Interactive import session aborted by user")
+        except ApiException as e:
+            if e.persist_in_db:
+                log.debug(f"Persisting exception {e} in session state")
+                self.state.exc = to_serialized_exception(e)
+            raise e
         except Exception as e:
             self.state.exc = to_serialized_exception(e)
             raise e
@@ -478,7 +486,7 @@ class PreviewSession(BaseSession):
         task.lookup_candidates(search_ids)
 
         if len(task.candidates) == 0:
-            raise NoCandidatesFoundException()
+            raise NoCandidatesFoundException(persist_in_db=True)
 
         # Update our state
         task_state = self.state.get_task_state_for_task_raise(task)
@@ -547,17 +555,28 @@ class AddCandidatesSession(PreviewSession):
                 search_artist=search["search_artist"],
             )
         except Exception as e:
+            # TODO: With beets 2.6.0 this should be revisited
+            # since beets should than be able to handle these exceptions
+            # gracefully upstream.
+            # https://github.com/beetbox/beets/pull/5965
             from beetsplug.musicbrainz import MusicBrainzAPIError
             from beetsplug.spotify import APIError as SpotifyAPIError
 
             if isinstance(e, MusicBrainzAPIError):
                 raise NoCandidatesFoundException(
-                    f"Failed to contact Musicbrainz API: {e.get_message()}"
+                    f"Failed to contact Musicbrainz API: {e.get_message()}",
+                    persist_in_db=False,
                 )
             elif isinstance(e, SpotifyAPIError):
-                raise NoCandidatesFoundException(f"Failed to contact Spotify API: {e}")
+                raise NoCandidatesFoundException(
+                    f"Failed to contact Spotify API: {e}",
+                    persist_in_db=False,
+                )
             else:
-                raise NoCandidatesFoundException(f"Failed to contact online APIs.")
+                raise NoCandidatesFoundException(
+                    f"Failed to contact online APIs.",
+                    persist_in_db=False,
+                )
 
         task_state.add_candidates(prop.candidates)
 
@@ -573,7 +592,19 @@ class AddCandidatesSession(PreviewSession):
             if search["search_album"]:
                 error_text += f"album: {search['search_album']}; "
             error_text += NoCandidatesFoundException.metadata_plugin_info()
-            raise NoCandidatesFoundException(error_text)
+            raise NoCandidatesFoundException(
+                error_text,
+                persist_in_db=False,
+            )
+        # Hack: Clear exception if we found new candidates
+        elif (
+            self.state.exc is not None
+            and self.state.exc["type"] == "NoCandidatesFoundException"
+        ):
+            log.debug(
+                "Clearing previous NoCandidatesFoundException after finding candidates via search."
+            )
+            self.state.exc = None
 
 
 class ImportSession(BaseSession):
