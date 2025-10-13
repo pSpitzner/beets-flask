@@ -1,7 +1,7 @@
 [project]
 name = "beets-flask"
 description = "An opinionated web-interface around the music organizer [beets](https://beets.io/)"
-version = "1.2.0"
+version = "1.2.0-rc2"
 authors = [
     { name = "F. Paul Spitzner", email = "paul.spitzner@gmail.com" },
     { name = "Sebastian B. Mohr", email = "sebastian@mohrenclan.de" },
@@ -142,6 +142,6 @@ module = [
     "confuse.*",
     "mediafile.*",
     "nest_asyncio",
-    "beetsplug.*"
+    "beetsplug.*",
 ]
 ignore_missing_imports = true
