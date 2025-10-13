@@ -26,12 +26,20 @@ class SerializedException(TypedDict):
 class ApiException(Exception):
     """Base class for all API errors."""
 
+    persist_in_db: bool
+    """If true, the exception will be stored in the database on
+    raise in sessions.
+    TODO: Think about exception hierarchy.
+    """
     status_code: int = 500
 
-    def __init__(self, *args, status_code: int | None = None):
+    def __init__(
+        self, *args, status_code: int | None = None, persist_in_db: bool = True
+    ):
         super().__init__(*args)
         if status_code is not None:
             self.status_code = status_code
+        self.persist_in_db = persist_in_db
 
 
 class InvalidUsageException(ApiException):
@@ -64,11 +72,50 @@ class IntegrityException(ApiException):
 class NotImportedException(ApiException):
     """Not imported error.
 
-    So for only used for the auto import session, when the best
+    So far only used for the auto import session, when the best
     match is worse than the threshold.
     """
 
     status_code: int = 409
+
+
+class NoCandidatesFoundException(ApiException):
+    """No candidates found error.
+
+    Raised when an online search does not return any candidates.
+    Could be raised from automatic search (without searchid) but also when manually
+    adding more candidates via interactive search (searchid given).
+    """
+
+    status_code: int = 409
+
+    def __init__(
+        self, *args, status_code: int | None = None, persist_in_db: bool = True
+    ):
+        if not args:
+            error_text = "Lookup found no candidates. " + self.metadata_plugin_info()
+            args = (error_text,)
+
+        super().__init__(*args, status_code=status_code, persist_in_db=persist_in_db)
+
+    @classmethod
+    def metadata_plugin_info(cls) -> str:
+        # Get enabled metadata source plugins to give a better error message
+        error_text = ""
+        try:
+            from beets.metadata_plugins import find_metadata_source_plugins
+
+            meta_plugins: list[str] = [
+                p.data_source for p in find_metadata_source_plugins()
+            ]
+            if len(meta_plugins) > 0:
+                error_text += f"Used '{', '.join(meta_plugins)}' as metadata source(s)."
+            else:
+                error_text += "No source plugins are enabled."
+
+        except:
+            error_text += "Could not determine enabled metadata source plugins."
+        return error_text
 
 
 class UserException(Exception):
@@ -85,7 +132,8 @@ class UserException(Exception):
 class DuplicateException(UserException):
     """Duplicate error.
 
-    Raised when we have trouble resolving duplicates in the beets library. Users should check their config and api usage.
+    Raised when we have trouble resolving duplicates in the beets library.
+    Users should check their config and api usage.
     """
 
     status_code: int = 422
@@ -140,14 +188,15 @@ def exception_as_return_value(
     @wraps(f)
     async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R | SerializedException:
         try:
-            ret = await f(*args, **kwargs)
+            return await f(*args, **kwargs)
+        # Some exceptions are not serializable, so we need to convert them to a
+        # serialized format. E.g. OSErrors
+        except ApiException as e:
+            log.info(e)
+            return to_serialized_exception(e)
         except Exception as e:
             log.exception(e)
-            # Some exceptions are not serializable, so we need to convert them to a
-            # serialized format. E.g. OSErrors
             return to_serialized_exception(e)
-
-        return ret
 
     return wrapper
 

@@ -27,6 +27,7 @@ import {
     Mic2Icon,
     PackageIcon,
     RocketIcon,
+    SearchXIcon,
     TagIcon,
     TagsIcon,
     Tally5Icon,
@@ -37,7 +38,7 @@ import { sneaker } from "@lucide/lab";
 import { CircularProgress, Tooltip, useTheme } from "@mui/material";
 
 import { MinimalConfig } from "@/api/config";
-import { FolderStatus } from "@/pythonTypes";
+import { FolderStatus, SerializedException } from "@/pythonTypes";
 
 import { GrowingRipple } from "./loading";
 
@@ -167,12 +168,20 @@ export function SourceTypeIconWithTooltip({
 /** Shows the status of a folder */
 export function FolderStatusIcon({
     status,
+    exception,
     ...props
-}: { status: FolderStatus; size?: number } & LucideProps) {
+}: {
+    status: FolderStatus;
+    exception?: SerializedException | null;
+    size?: number;
+} & LucideProps) {
     switch (status) {
         case FolderStatus.UNKNOWN:
             return <CircleHelpIcon {...props} />;
         case FolderStatus.FAILED:
+            if (exception && exception.type === "NoCandidatesFoundException") {
+                return <SearchXIcon {...props} />;
+            }
             return <TriangleAlertIcon {...props} />;
         case FolderStatus.NOT_STARTED:
             return <HourglassIcon {...props} />;

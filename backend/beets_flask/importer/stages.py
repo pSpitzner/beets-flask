@@ -36,6 +36,9 @@ from beets.util import MoveOperation, bytestring_path, displayable_path
 from beets.util import pipeline as beets_pipeline
 
 from beets_flask import log
+from beets_flask.server.exceptions import (
+    NoCandidatesFoundException,
+)
 
 from .progress import Progress, ProgressState
 from .types import BeetsImportTask
@@ -54,24 +57,21 @@ if TYPE_CHECKING:
     Session = TypeVar("Session", bound=BaseSession)
 
 
-def set_progress(
+def skip_until(
     progress: Progress,
 ) -> Callable[
     [Callable[[Session, Task, *Arg], Ret]],
     Callable[[Session, Task, *Arg], Ret | Task],
 ]:
-    """Decorate to set the progress of a task.
+    """Decorater to skip all tasks with progress lower than the desired one.
 
-    Basically calls
-    `session.set_progress(task, progress)`
-    before the decorated function.
-
-    Also skips the function if the task is already progressed!
+    Needed to resume up a session without re-doing everything thats already contained
+    in the state.
 
     Usage
     -----
     ```python
-    @set_progress(Progress.READING_FILES)
+    @skip_until(Progress.READING_FILES)
     def read_task(session: BaseSessionNew, task: ImportTask):
         pass
     ```
@@ -106,10 +106,82 @@ def set_progress(
                 )
                 return task
 
-            # Set the task's progress
-            session.set_task_progress(task, progress)
-            log.debug(f"Running {progress} for {task}")
+            log.debug(f"Skipped until encountered {progress} for {task}")
             return func(session, task, *args)
+
+        return wrapper
+
+    return decorator
+
+
+def set_progress(
+    before: Progress,
+    after: Progress | None = None,
+    on_error: dict[type[Exception], Progress] = {},
+) -> Callable[
+    [Callable[[Session, Task, *Arg], Ret]],
+    Callable[[Session, Task, *Arg], Ret | Task],
+]:
+    """Decorater to set the progress of a task.
+
+    Basically calls
+    `session.set_progress(task, progress)`
+    before the decorated function.
+
+    Optionally, if an Exception is encountered while processing the task,
+    another progress can be set (to account for later pipeline-steps, which will not
+    take place). By default, we still raise.
+
+    When combining, use after `skip_until()` decorator.
+
+    Parameters
+    ----------
+    before: Progress
+        Progress to set when (before) processing the task.
+    after: Progress, optional
+        Progress to set after processing the task. By default `before` is kept.
+    on_error: dict[type[Exception], Progress], optional
+        Mapping, which Progress to set for which Exception (instance check on the
+        Exception). By default, if an exception occurs, the `before` Progress is kept.
+
+    Usage
+    -----
+    ```python
+    @set_progress(Progress.READING_FILES)
+    def read_task(session: BaseSessionNew, task: ImportTask):
+        pass
+
+    @set_progress(
+        Progress.LOOKING_UP_CANDIDATES,
+        on_Error={NoCandidatesFoundException: Progress.PREVIEW_COMPLETED}
+    )
+    def lookup_candidates(session: BaseSessionNew, task: ImportTask):
+        pass
+    ```
+    """
+
+    def decorator(
+        func: Callable[[Session, Task, *Arg], Ret],
+    ) -> Callable[[Session, Task, *Arg], Ret | Task]:
+        @wraps(func)
+        def wrapper(session: Session, task: Task, *args: *Arg) -> Ret | Task:
+            log.debug(f"Setting progress {before=} for {task}")
+
+            session.set_task_progress(task, before)
+            try:
+                res = func(session, task, *args)
+                if after is not None:
+                    log.debug(f"Setting progress {after=} for {task}")
+                    session.set_task_progress(task, after)
+                return res
+            except Exception as e:
+                for e_to_handle, p in on_error.items():
+                    if isinstance(e, e_to_handle):
+                        log.debug(
+                            f"Setting progress to {p} after Exception for {task} {e}"
+                        )
+                        session.set_task_progress(task, p)
+                raise
 
         return wrapper
 
@@ -294,6 +366,7 @@ def __group(item: library.Item) -> tuple[str, str]:
 
 
 @stage
+@skip_until(Progress.GROUPING_ALBUMS)
 @set_progress(Progress.GROUPING_ALBUMS)
 def group_albums(
     session: BaseSession,
@@ -329,7 +402,11 @@ def group_albums(
 
 
 @mutator_stage
-@set_progress(Progress.LOOKING_UP_CANDIDATES)
+@skip_until(Progress.LOOKING_UP_CANDIDATES)
+@set_progress(
+    Progress.LOOKING_UP_CANDIDATES,
+    on_error={NoCandidatesFoundException: Progress.PREVIEW_COMPLETED},
+)
 def lookup_candidates(
     session: BaseSession,
     task: ImportTask,
@@ -337,7 +414,8 @@ def lookup_candidates(
     """Performing the initial MusicBrainz lookup for an album.
 
     We tweaks this from upstream beets to not
-    call `task.lookup_candidates()` but instead `session.lookup_candidates(task)`, with some extra logic
+    call `task.lookup_candidates()` but instead `session.lookup_candidates(task)`,
+    with some extra logic
 
     This is more consistent, as it allows the logic
     to be modified by each kind of session.
@@ -356,13 +434,13 @@ def lookup_candidates(
 
     # FIXME: what happens with our new skip logic and plugins?
     plugins.send("import_task_start", session=session, task=task)
-    log.debug(f"Looking up: {displayable_path(task.paths)}")
 
     session.lookup_candidates(task)
 
 
 @mutator_stage
-@set_progress(Progress.IDENTIFYING_DUPLICATES)
+@skip_until(Progress.IDENTIFYING_DUPLICATES)
+@set_progress(before=Progress.IDENTIFYING_DUPLICATES, after=Progress.PREVIEW_COMPLETED)
 def identify_duplicates(
     session: BaseSession,
     task: ImportTask,
@@ -375,6 +453,7 @@ def identify_duplicates(
 
 
 @stage
+@skip_until(Progress.WAITING_FOR_USER_SELECTION)
 @set_progress(Progress.WAITING_FOR_USER_SELECTION)
 def user_query(
     session: ImportSession,
@@ -469,6 +548,7 @@ def plugin_stage(
 
 
 @mutator_stage
+@skip_until(Progress.MATCH_THRESHOLD)
 @set_progress(Progress.MATCH_THRESHOLD)
 def match_threshold(
     session: AutoImportSession,
@@ -486,7 +566,8 @@ def match_threshold(
 
 
 @stage
-@set_progress(Progress.MANIPULATING_FILES)
+@skip_until(Progress.MANIPULATING_FILES)
+@set_progress(before=Progress.MANIPULATING_FILES, after=Progress.IMPORT_COMPLETED)
 def manipulate_files(
     session: BaseSession,
     task: ImportTask,
@@ -546,25 +627,6 @@ def manipulate_files(
         # to the session's folder path.
         task.toppath = bytestring_path(session.state.folder_path)
 
-    return task
-
-
-@stage
-@set_progress(Progress.IMPORT_COMPLETED)
-def mark_tasks_completed(session: BaseSession, task: ImportTask):
-    """
-    Wrapper to mark task as completed.
-
-    This is mainly a workaround because our progress decorator cannot set the
-    progress after stage has finished.
-    """
-
-    return task
-
-
-@stage
-@set_progress(Progress.PREVIEW_COMPLETED)
-def mark_tasks_preview_completed(session: BaseSession, task: ImportTask):
     return task
 
 

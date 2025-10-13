@@ -5,6 +5,7 @@ flows may be triggered from the frontend by the users and we want to ensure that
 has a well defined path to follow.
 """
 
+import pickle
 from abc import ABC
 from pathlib import Path
 from typing import Literal
@@ -20,7 +21,10 @@ from beets_flask.database.models.states import (
 )
 from beets_flask.disk import Folder
 from beets_flask.importer.progress import FolderStatus
-from beets_flask.importer.session import CandidateChoice, TaskIdMappingArg
+from beets_flask.importer.session import (
+    CandidateChoice,
+    TaskIdMappingArg,
+)
 from beets_flask.importer.types import DuplicateAction
 from beets_flask.invoker.enqueue import (
     Progress,
@@ -282,8 +286,8 @@ class TestImportBest(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
         # Check if mapping is set correctly
         assert self.check_mapping_consistency(db_session)
 
-    async def test_search_candidates(self, db_session: Session, path: Path):
-        """Test the search candidates of the import process.
+    async def test_add_candidates(self, db_session: Session, path: Path):
+        """Test the add candidates of the import process.
 
         This should be done in the preview step, but we want to test
         it separately to make sure that the candidates are found correctly.
@@ -325,6 +329,79 @@ class TestImportBest(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
 
         # Check if mapping is set correctly
         assert self.check_mapping_consistency(db_session)
+
+    async def test_add_candidates_fails(self, db_session: Session, path: Path):
+        """Test that an exception is raised if candidate lookup fails (returns no results)."""
+
+        stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
+        s_state_indb = db_session.execute(stmt).scalar()
+
+        assert s_state_indb is not None
+        assert len(s_state_indb.tasks) == 1
+        test_exc = {"type": "test_value"}
+        s_state_indb.exc = pickle.dumps(test_exc)
+        db_session.commit()
+
+        exc = await run_preview_add_candidates(
+            "obsolete_hash_preview",
+            str(path),
+            search={
+                "*": {
+                    "search_ids": [
+                        "non_existing_id",
+                    ],  # Nena 99 Red Balloons
+                    "search_artist": None,
+                    "search_album": None,
+                }
+            },
+        )
+        assert exc is not None, "Should return an error"
+        assert exc["type"] == "NoCandidatesFoundException"
+
+        # Refetch state from db
+        stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
+        s_state_indb = db_session.execute(stmt).scalar()
+        assert s_state_indb is not None
+        assert s_state_indb.exception is not None, "Exception should be set"
+        assert s_state_indb.exception == test_exc, "Exception should be unchanged"
+
+        # Check if mapping is still set correctly
+        assert self.check_mapping_consistency(db_session)
+
+    async def test_add_candidates_cleared(self, db_session: Session, path: Path):
+        """Tests that candidates can be added after a NoCandidatesFoundException
+        and the exception is cleared"""
+
+        stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
+        s_state_indb = db_session.execute(stmt).scalar()
+
+        assert s_state_indb is not None
+        assert len(s_state_indb.tasks) == 1
+        s_state_indb.exc = pickle.dumps({"type": "NoCandidatesFoundException"})
+        # commit
+        db_session.commit()
+
+        id_99_red_balloons = "30fd0c55-a75d-4881-ade9-ae5a51f1ba86"
+        exc = await run_preview_add_candidates(
+            "obsolete_hash_preview",
+            str(path),
+            search={
+                "*": {
+                    "search_ids": [
+                        id_99_red_balloons,
+                    ],  # Nena 99 Red Balloons
+                    "search_artist": None,
+                    "search_album": None,
+                }
+            },
+        )
+        assert exc is None, "Should not return an error"
+
+        # Refetch state from db
+        stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
+        s_state_indb = db_session.execute(stmt).scalar()
+        assert s_state_indb is not None
+        assert s_state_indb.exception is None, "Exception should have been cleared"
 
     async def test_regenerate_preview(self, db_session: Session, path: Path):
         """Test the regeneration of the preview of the import process.

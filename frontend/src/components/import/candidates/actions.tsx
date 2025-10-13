@@ -243,7 +243,7 @@ export function CandidateSearch({ task }: { task: SerializedTaskState }) {
                 </Button>
             </Tooltip>
             <Dialog
-                title={"Search for more candidates"}
+                title="Search for more candidates"
                 open={open}
                 onClose={() => setOpen(false)}
                 title_icon={<SearchIcon size={theme.iconSize.lg} />}
@@ -357,10 +357,11 @@ export function CandidateSearch({ task }: { task: SerializedTaskState }) {
                                 <FormHelperText
                                     error={isError}
                                     sx={{
+                                        marginInline: "1rem",
                                         alignSelf: "flex-end",
                                     }}
                                 >
-                                    {error.name}: {error.message}
+                                    {error.message}
                                 </FormHelperText>
                             )}
                             <Button

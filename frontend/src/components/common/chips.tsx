@@ -226,6 +226,12 @@ export function FolderStatusChip({
         case FolderStatus.DELETED:
             status_name = "Undone";
             break;
+        case FolderStatus.FAILED:
+            status_name = "Failed";
+            if (folderStatus.exc?.type === "NoCandidatesFoundException") {
+                status_name = "No Match";
+            }
+            break;
         default:
             status_name = FolderStatus[folderStatus.status];
     }
@@ -243,6 +249,7 @@ export function FolderStatusChip({
                     icon={
                         <FolderStatusIcon
                             status={folderStatus.status}
+                            exception={folderStatus.exc}
                             size={theme.iconSize.sm}
                         />
                     }

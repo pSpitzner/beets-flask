@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from quart import jsonify, request
 from rq.job import Job
@@ -121,7 +121,6 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         Helper function which is pretty similar to enqueue. But only allows for a single
         folder hash and path.
         """
-        log.warning("Adding candidates")
         params = await request.get_json()
         task_id = pop_query_param(params, "task_id", str)
         session_id = pop_query_param(params, "session_id", str)
@@ -213,10 +212,16 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
             exc = None
             if db_date is None and job_date is None:
                 pass
-            elif (db_date or datetime.min) >= (job_date or datetime.min):
+            elif (db_date or datetime.min) + timedelta(seconds=1) >= (
+                job_date or datetime.min
+            ):
+                # Sometimes, the job_date might be some .7secs after db_date and would
+                # get favoured, so we added a second of leeway.
+                log.debug(f"Using status from DB: {db_date} >= {job_date}")
                 status = db_status
                 exc = db_exc
             else:
+                log.debug(f"Using status from job queue : {db_date} < {job_date}")
                 status = job_status
                 exc = job_exc
 

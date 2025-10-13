@@ -65,6 +65,15 @@ def emit_update_on_job_change(job, connection, result, *args, **kwargs):
     """
     log.debug(f"job update for socket {job=} {connection=} {result=} {args=} {kwargs=}")
 
+    def _is_serialized_exception(d: Any):
+        # I wish we could to instance checks on our SerializedException TypedDict
+        if not isinstance(result, dict):
+            return False
+        if "type" in d and "message" in d.keys():
+            # the other keys are optional
+            return True
+        return False
+
     try:
         asyncio.run(
             send_status_update(
@@ -72,6 +81,7 @@ def emit_update_on_job_change(job, connection, result, *args, **kwargs):
                     message="Job status update",
                     num_jobs=1,
                     job_metas=[job.get_meta()],
+                    exc=result if _is_serialized_exception(result) else None,
                 )
             )
         )
@@ -485,7 +495,8 @@ async def run_preview_add_candidates(
 
         if s_state_live.progress != Progress.PREVIEW_COMPLETED:
             raise InvalidUsageException(
-                f"Session state not in preview completed state for {hash=}"
+                f"Session state not in preview completed state for {hash=} "
+                + f"Found state: {s_state_live.progress}"
             )
 
         a_session = AddCandidatesSession(
