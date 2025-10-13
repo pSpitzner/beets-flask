@@ -109,8 +109,7 @@ class FolderStatus(int, Enum):
     Order does not matter, but we need to be able to check equality
     """
 
-    UNKNOWN = -3
-    NO_CANDIATES_FOUND = -2
+    UNKNOWN = -2
     FAILED = -1
     NOT_STARTED = 0
     PENDING = 1
