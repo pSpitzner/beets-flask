@@ -18,6 +18,7 @@ import pickle
 from pathlib import Path
 from typing import Any, Optional
 
+from beets.autotag import AlbumMatch
 from beets.autotag.distance import Distance
 from beets.importer import Action, ImportTask
 from beets.library.models import Item as LibraryItem
@@ -558,17 +559,29 @@ class CustomUnpickler(pickle.Unpickler):
         # For all other classes, use the default lookup mechanism
         return super().find_class(module, name)
 
-    # Rewrite "source" penalty to "data_source" penalty (2.5.0)
     def load(self) -> Any:
         object = super().load()
         if isinstance(object, Distance):
-            if "source" in object._penalties.keys():
-                log.debug(
-                    "Converting old distance.source to distance.data_source (changed in beets 2.5.0)"
-                )
-                object._penalties["data_source"] = object._penalties["source"]
-                del object._penalties["source"]
+            self.patch_distance(object)
+
+        if isinstance(object, AlbumMatch):
+            self.patch_distance(object.distance)
+
         return object
+
+    def patch_distance(self, distance: Distance) -> Distance:
+        # Rewrite "source" penalty to "data_source" penalty (2.5.0)
+        if "source" in distance._penalties:
+            log.debug(
+                "Converting old distance.source to distance.data_source (changed in beets 2.5.0)"
+            )
+            distance._penalties["data_source"] = distance._penalties["source"]
+            del distance._penalties["source"]
+
+            # Potential infinite recursion, ah well
+            for track, d in distance.tracks.items():
+                self.patch_distance(d)
+        return distance
 
 
 __all__ = ["SessionStateInDb", "TaskStateInDb", "CandidateStateInDb"]
