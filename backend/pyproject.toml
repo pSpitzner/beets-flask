@@ -142,5 +142,6 @@ module = [
     "confuse.*",
     "mediafile.*",
     "nest_asyncio",
+    "beetsplug.*"
 ]
 ignore_missing_imports = true

@@ -146,8 +146,7 @@ export enum Progress {
 }
 
 export enum FolderStatus {
-    UNKNOWN = -3,
-    NO_CANDIATES_FOUND = -2,
+    UNKNOWN = -2,
     FAILED = -1,
     NOT_STARTED = 0,
     PENDING = 1,

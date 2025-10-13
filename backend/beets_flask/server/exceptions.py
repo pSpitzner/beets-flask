@@ -178,14 +178,15 @@ def exception_as_return_value(
     @wraps(f)
     async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R | SerializedException:
         try:
-            ret = await f(*args, **kwargs)
+            return await f(*args, **kwargs)
+        # Some exceptions are not serializable, so we need to convert them to a
+        # serialized format. E.g. OSErrors
+        except ApiException as e:
+            log.info(e)
+            return to_serialized_exception(e)
         except Exception as e:
             log.exception(e)
-            # Some exceptions are not serializable, so we need to convert them to a
-            # serialized format. E.g. OSErrors
             return to_serialized_exception(e)
-
-        return ret
 
     return wrapper
 
