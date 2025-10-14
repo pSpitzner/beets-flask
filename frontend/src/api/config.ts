@@ -3,6 +3,8 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 import { useLocalStorage } from "@/components/common/hooks/useLocalStorage";
 
+import { APIError } from "./common";
+
 export interface MinimalConfig {
     gui: {
         inbox: {
@@ -39,6 +41,9 @@ export interface MinimalConfig {
         album_disambig_fields: string[];
         singleton_disambig_fields: string[];
     };
+    plugins: Array<string>;
+    data_sources: Array<string>;
+    beets_version: string;
 }
 
 export const configQueryOptions = () =>
@@ -54,6 +59,18 @@ export const useConfig = () => {
     const { data } = useSuspenseQuery(configQueryOptions());
     return data;
 };
+
+/* ---------------------------- Raw config files ---------------------------- */
+
+export const configYamlQueryOptions = (type: "beets" | "beetsflask") =>
+    queryOptions<{ path: string; content: string }, APIError>({
+        queryKey: ["config_yaml", type],
+        queryFn: async () => {
+            const url = type === "beets" ? `/config/yaml/beets` : `/config/yaml`;
+            const response = await fetch(url);
+            return (await response.json()) as { path: string; content: string };
+        },
+    });
 
 // This is kinda intertwined with the fileTree and action buttons as this is
 // mainly a frontend configuration. Maybe we should move this to a different file?
