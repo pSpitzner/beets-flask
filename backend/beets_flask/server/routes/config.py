@@ -4,6 +4,7 @@ we need some of our settings in the frontend. proposed solution:
 fetch settings once from the backend on first page-load.
 """
 
+from beets import __version__ as beets_version
 from quart import Blueprint, jsonify
 
 from beets_flask.config import get_config
@@ -22,6 +23,13 @@ async def get_all():
 async def get_basic():
     """Get the config settings needed for the gui."""
     config = get_config()
+    plugins = config["plugins"].as_str_seq()
+    from beets.metadata_plugins import find_metadata_source_plugins
+
+    data_sources: list[str] = [
+        p.__class__.data_source for p in find_metadata_source_plugins()
+    ]
+
     return jsonify(
         {
             "gui": _serializable(config["gui"].flatten(redact=True)),
@@ -45,8 +53,31 @@ async def get_basic():
                     "singleton_disambig_fields",
                 ]
             },
+            "plugins": config["plugins"].as_str_seq(),
+            "data_sources": data_sources,
+            "beets_version": beets_version,
         }
     )
+
+
+@config_bp.route("/yaml/beets", methods=["GET"])
+async def get_raw_beets():
+    """Get the raw config yaml file."""
+    config = get_config()
+    path = config.get_beets_config_path()
+    with open(path, "r") as f:
+        content = f.read()
+    return jsonify({"path": path, "content": content})
+
+
+@config_bp.route("/yaml", methods=["GET"])
+async def get_raw():
+    """Get the raw config yaml file for beets-flask."""
+    config = get_config()
+    path = config.get_beets_flask_config_path()
+    with open(path, "r") as f:
+        content = f.read()
+    return jsonify({"path": path, "content": content})
 
 
 @config_bp.route("/refresh", methods=["POST"])
