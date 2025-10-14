@@ -19,3 +19,4 @@ gui:
         ignore: "_use_beets_ignore"
         concat_nested_folders: yes
         expand_files: no
+        temp_dir: "/tmp/beets-flask/upload"
