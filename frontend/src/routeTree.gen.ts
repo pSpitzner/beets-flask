@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VersionRouteImport } from './routes/version'
 import { Route as TerminalIndexRouteImport } from './routes/terminal/index'
 import { Route as SessiondraftIndexRouteImport } from './routes/sessiondraft/index'
 import { Route as InboxIndexRouteImport } from './routes/inbox/index'
@@ -40,6 +41,11 @@ import { Route as LibraryresourcesItemItemIdBeetsdataRouteImport } from './route
 import { Route as LibraryresourcesAlbumAlbumIdIdentifierRouteImport } from './routes/library/(resources)/album.$albumId.identifier'
 import { Route as LibraryresourcesAlbumAlbumIdBeetsdataRouteImport } from './routes/library/(resources)/album.$albumId.beetsdata'
 
+const VersionRoute = VersionRouteImport.update({
+  id: '/version',
+  path: '/version',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TerminalIndexRoute = TerminalIndexRouteImport.update({
   id: '/terminal/',
   path: '/terminal/',
@@ -203,6 +209,7 @@ const LibraryresourcesAlbumAlbumIdBeetsdataRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
+  '/version': typeof VersionRoute
   '/debug/audio': typeof DebugAudioRoute
   '/debug/error': typeof DebugErrorRoute
   '/debug/jobs': typeof DebugJobsRoute
@@ -235,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/library/item/$itemId/': typeof LibraryresourcesItemItemIdIndexRoute
 }
 export interface FileRoutesByTo {
+  '/version': typeof VersionRoute
   '/debug/audio': typeof DebugAudioRoute
   '/debug/error': typeof DebugErrorRoute
   '/debug/jobs': typeof DebugJobsRoute
@@ -265,6 +273,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/version': typeof VersionRoute
   '/debug/audio': typeof DebugAudioRoute
   '/debug/error': typeof DebugErrorRoute
   '/debug/jobs': typeof DebugJobsRoute
@@ -299,6 +308,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/version'
     | '/debug/audio'
     | '/debug/error'
     | '/debug/jobs'
@@ -331,6 +341,7 @@ export interface FileRouteTypes {
     | '/library/item/$itemId/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/version'
     | '/debug/audio'
     | '/debug/error'
     | '/debug/jobs'
@@ -360,6 +371,7 @@ export interface FileRouteTypes {
     | '/library/item/$itemId'
   id:
     | '__root__'
+    | '/version'
     | '/debug/audio'
     | '/debug/error'
     | '/debug/jobs'
@@ -393,6 +405,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  VersionRoute: typeof VersionRoute
   DebugAudioRoute: typeof DebugAudioRoute
   DebugErrorRoute: typeof DebugErrorRoute
   DebugJobsRoute: typeof DebugJobsRoute
@@ -419,6 +432,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/version': {
+      id: '/version'
+      path: '/version'
+      fullPath: '/version'
+      preLoaderRoute: typeof VersionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terminal/': {
       id: '/terminal/'
       path: '/terminal'
@@ -690,6 +710,7 @@ const LibraryresourcesItemItemIdRouteRouteWithChildren =
   )
 
 const rootRouteChildren: RootRouteChildren = {
+  VersionRoute: VersionRoute,
   DebugAudioRoute: DebugAudioRoute,
   DebugErrorRoute: DebugErrorRoute,
   DebugJobsRoute: DebugJobsRoute,
