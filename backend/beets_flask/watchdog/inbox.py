@@ -54,7 +54,12 @@ def register_inboxes(timeout: float = 2.5, debounce: float = 30) -> AIOWatchdog 
 
     # Return early if no inboxes are configured.
     if len(_inboxes) == 0:
+        log.info("Skipping watchdog, no inboxes configured")
         return None
+    log.info(
+        f"Registering watchdog with debounce of {debounce} seconds for "
+        + f"inboxes: {[i['path'] for i in _inboxes]}"
+    )
 
     # One observer for all inboxes.
     handler = InboxHandler(debounce_window=debounce)
