@@ -1,33 +1,34 @@
 # Configuration
 
-On first container launch, config files are automatically generated in the mounted `/config` folder. Configurations are read from:
+On first container launch, config files are automatically generated in the mounted `/config` folder.
+Configurations are read from:
 
 -   `config/beets/config.yaml` (for the original cli tool that we wrap)
 -   `config/beets-flask/config.yaml` (for frontend and container settings)
 
 ```{warning}
-Configuration changes are only applied on container restart. Restart your container with `docker restart beets-flask` after changing a configuration option.
+Configuration changes are only applied on container restart.
+Restart your container with `docker restart beets-flask` after changing a configuration option.
 ```
 
-We extend the [default beets configuration](https://beets.readthedocs.io/en/stable/reference/config.html) with some additional options. You may use the following example configuration as a starting point. It contains all options that can be set in the `/config/beets-flask/config.yaml`.
+We extend the [default beets configuration](https://beets.readthedocs.io/en/stable/reference/config.html) with some additional options.
+You may use the following example configuration as a starting point.
+It contains all options that can be set in the `/config/beets-flask/config.yaml`.
 
 
 ```{literalinclude} ../backend/beets_flask/config/config_bf_example.yaml
 :language: yaml
 ```
 
-## Library
-
-The `gui.library` section contains options for the library view in the web interface. It allows you to configure how the library is displayed and how we interact with the beets library.
-
-- `artist_separators`: A list of characters that are used to split artist names in the library view. This is mainly used to handle artist searches and filtering. If you don't want this feature, you can set it to an empty list `[]`. The default is `[";", ",", "&"]`.
-
 ## Inboxes
 
-Allows you to configure the inboxes that are used to automatically import music files into your library. You may add multiple inboxes, each may have a different purpose.
+Allows you to configure the inboxes that are used to automatically import music files into your library.
+You may add multiple inboxes, each may have a different purpose.
 
+### `gui.inbox.folders`
 
-The `gui.inbox.folders` section allows you to define multiple inboxes, each with a name, path, and an `autotag` setting. The `autotag` setting determines how the files in the inbox are processed by beets-flask.
+The `gui.inbox.folders` section allows you to define multiple inboxes, each with a name, path, and an `autotag` setting.
+The `autotag` setting determines how the files in the inbox are processed by beets-flask.
 
 - <i data-lucide="inbox"></i> `"no"` you have to do everything manually.
 - <i data-lucide="tag"></i> `"preview"` fetch meta data from online sources, but don't import yet.
@@ -37,7 +38,6 @@ The `gui.inbox.folders` section allows you to define multiple inboxes, each with
     import session you want to create_. (Beets acts on _folders_.
     Files directly inside the inbox wont trigger an imported)
 
-### Multiple inboxes example configuration
 
 Note that the top label (i.e. Inbox1, Inbox2...) does not matter.
 
@@ -77,22 +77,21 @@ gui:
                 # Effectively `beet import ... --group-albums -A`
 ```
 
-## Terminal
+---
 
-The `gui.terminal.start_path` option specifies the path that is used when starting the terminal in the web interface. This is useful if you want to start the terminal in a specific directory, such as your music library. The default value is `/music/inbox`. You should change this if you have a different inbox path!
-
-
-## Other options
-
-The `gui.num_preview_workers` option specifies the number of worker threads that are used to generate previews for the inboxes. This is useful to speed up the preview generation process, especially when you have a large number of items in your inboxes. The default value is `4`.
-
-```{note}
-You can use multiple workers to fetch candidates before importing (previewing). However, the import itself is always done sequentially. This is to ensure that the import process is not interrupted by other operations.
-```
+### `gui.inbox.debounce_before_autotag`
+Specify the number of seconds to wait after the last filesystem event before starting the autotagging process.
+Applies to _all_ inboxes.
+For example, when adding files one by one, the timer gets reset after each file.
+Tagging only starts after no new files have been added for the specified time.
+Increase this to avoid integrity warnings when files are added slowly.
+The default value is `30` seconds.
 
 ---
 
-The `gui.inbox.ignore` option specifies a list of file patterns to ignore when scanning the inbox folders. This is useful to exclude temporary files or other unwanted files from being shown in the inbox.
+### `gui.inbox.ignore`
+Specifies a list of file patterns to ignore when scanning the inbox folders.
+This is useful to exclude temporary files or other unwanted files from being shown in the inbox.
 
 If not set, this will default to the [`ignore`](https://docs.beets.io/en/stable/reference/config.html#ignore) config from the `beets/config.yaml` file.
 
@@ -120,4 +119,38 @@ ignore:
   - "System Volume Information"
   - "lost+found"
 
+```
+
+## Library
+
+The `gui.library` section contains options for the library view in the web interface.
+It allows you to configure how the library is displayed and how we interact with the beets library.
+
+### `gui.library.artist_separators`
+
+A list of characters that are used to split artist names in the library view.
+This is mainly used to handle artist searches and filtering.
+If you don't want this feature, you can set it to an empty list `[]`.
+The default is `[";", ",", "&"]`.
+
+## Terminal
+
+### `gui.terminal.start_path`
+Specifies the path that is used when starting the terminal in the web interface.
+This is useful if you want to start the terminal in a specific directory, such as your music library.
+The default value is `/music/inbox`.
+You should change this if you have a different inbox path!
+
+
+## Other options
+
+### `gui.num_preview_workers`
+Specifies the number of worker threads that are used to generate previews for the inboxes.
+This is useful to speed up the preview generation process, especially when you have a large number of items in your inboxes.
+The default value is `4`.
+
+```{note}
+You can use multiple workers to fetch candidates before importing (previewing).
+However, the import itself is always done sequentially.
+This is to ensure that the import process is not interrupted by other operations.
 ```
