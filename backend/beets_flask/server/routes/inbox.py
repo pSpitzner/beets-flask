@@ -1,3 +1,4 @@
+import os
 import shutil
 from datetime import datetime
 from io import BytesIO
@@ -21,6 +22,7 @@ from beets_flask.disk import (
     path_to_folder,
 )
 from beets_flask.importer.progress import Progress
+from beets_flask.logger import log
 from beets_flask.server.exceptions import InvalidUsageException, NotFoundException
 from beets_flask.server.routes.library.artwork import send_image
 from beets_flask.server.utility import (
@@ -155,6 +157,7 @@ async def delete():
     """
     params = await request.get_json()
     folder_hashes, folder_paths = pop_folder_params(params, allow_empty=False)
+    log.debug(f"Deleting folders: {folder_paths=}, {folder_hashes=}")
 
     # Deduplicate based on both path and hash (order-preserving)
     seen: set[tuple[Path, str]] = set()
@@ -171,9 +174,12 @@ async def delete():
 
     # Check that all hashes are (still) valid
     cache: Cache[str, bytes] = Cache(maxsize=2**16)
-    folders: list[Folder] = []
+    folders: list[Folder | Archive] = []
     for folder_path, folder_hash in folder_paths_and_hashes:
-        f = Folder.from_path(folder_path, cache=cache)
+        f = fs_item_from_path(folder_path, cache=cache)
+        if not isinstance(f, (Folder, Archive)):
+            log.debug(f"Skipping deletion of {folder_path}, not a folder or archive")
+            continue
         folders.append(f)
         if f.hash != folder_hash:
             raise InvalidUsageException(
@@ -182,7 +188,14 @@ async def delete():
 
     # Delete the folders
     for f in folders:
-        shutil.rmtree(f.full_path)
+        if isinstance(f, Archive):
+            os.remove(f.full_path)
+        elif isinstance(f, Folder):
+            shutil.rmtree(f.full_path)
+        else:
+            raise InvalidUsageException(
+                f"Cannot delete object of type {type(f)} at {f.full_path}"
+            )
 
     # Clear the cache for the deleted folders
     await trigger_clear_cache()

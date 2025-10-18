@@ -93,7 +93,7 @@ function actionMutationOptionsAndArgs<T = unknown>(
                 enqueueMutationOptions as UseMutationOptions<unknown, APIError, T>,
                 {
                     socket,
-                    kind: EnqueueKind.IMPORT_CANDIDATE,
+                    kind: EnqueueKind.IMPORT_BOOTLEG,
                     selected: selectionContext.selected,
                 } as T,
             ];
