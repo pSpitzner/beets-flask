@@ -29,6 +29,7 @@ from beets_flask.importer.types import DuplicateAction
 from beets_flask.invoker.enqueue import (
     Progress,
     run_import_auto,
+    run_import_bootleg,
     run_import_candidate,
     run_import_undo,
     run_preview,
@@ -1034,3 +1035,45 @@ class TestImportCandidate(
     @pytest.mark.skip(reason="Implement")
     def test_import_candidate(self, db_session: Session, path: Path):
         raise NotImplementedError("Implement me")
+
+
+class TestImportBootleg(
+    SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
+):
+    """Test that import without lookup works.
+
+    The flow is as follows:
+    - Import candidate asis
+    """
+
+    @pytest.fixture()
+    def path(self) -> Path:
+        path = album_path_absolute(VALID_PATHS[0])
+        use_mock_tag_album(str(path))
+        return path
+
+    async def test_import_bootleg(self, db_session: Session, path: Path):
+        """
+        Check that the import goes through, no matter what.
+        """
+        self.statuses = []
+        self.reset_database()
+
+        stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
+        assert db_session.execute(stmt).scalar() is None, (
+            "Database should be empty before the test"
+        )
+
+        self.statuses = []
+
+        exc = await run_import_bootleg(
+            "obsolete_hash_import_auto",
+            str(path),
+        )
+
+        assert exc is None, "Should not return an error"
+
+        assert len(self.statuses) == 2
+        assert self.statuses[0].status == FolderStatus.IMPORTING
+        assert self.statuses[1].status == FolderStatus.IMPORTED
+        assert len(self.beets_lib.albums()) == 1

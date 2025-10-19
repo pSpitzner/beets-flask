@@ -470,8 +470,6 @@ async def run_preview(
     return
 
 
-
-
 # redis preview queue
 @exception_as_return_value
 @emit_folder_status(before=FolderStatus.PREVIEWING, after=FolderStatus.PREVIEWED)
@@ -572,7 +570,7 @@ async def run_import_auto(
         )
 
         try:
-            i_session.run_sync()
+            await i_session.run_async()
         finally:
             s_state_indb = SessionStateInDb.from_live_state(i_session.state)
             db_session.merge(instance=s_state_indb)
@@ -596,7 +594,7 @@ async def run_import_bootleg(hash: str, path: str):
         i_session = BootlegImportSession(s_state_live)
 
         try:
-            i_session.run_sync()
+            await i_session.run_async()
         finally:
             s_state_indb = SessionStateInDb.from_live_state(i_session.state)
             db_session.merge(instance=s_state_indb)
