@@ -11,7 +11,6 @@ gui:
     num_preview_workers: 4 # how many previews to generate in parallel
 
     library:
-        readonly: no
         # Use to split artists in the library view if using multiple artists in a field.
         # Set to an empty list to disable this feature.
         artist_separators: [",", ";", "&"]
@@ -20,12 +19,6 @@ gui:
         start_path: "/music/inbox" # the directory where to start new terminal sessions
 
     inbox:
-        # specify ignore patterns to hide from all inbox views.
-        # If not configured, we use the settings from your beets config,
-        # which by default holds [".*", "*~", "System Volume Information", "lost+found"].
-        # To show all files in the frontend, set this to an empty list:
-        # ignore: []
-
         folders:
             # --------------------------------- README -------------------------------- #
             # Before using the inbox feature, you need to create the folders
