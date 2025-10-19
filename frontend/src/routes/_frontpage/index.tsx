@@ -5,6 +5,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { inboxStatsQueryOptions } from "@/api/inbox";
 import { libraryStatsQueryOptions } from "@/api/library";
+import { Link as InternalLink } from "@/components/common/link";
 import { PageWrapper } from "@/components/common/page";
 import { InboxStatsCard, LibraryStatsCard } from "@/components/frontpage/statsCard";
 
@@ -150,14 +151,17 @@ function Hero() {
 
 /* ------------------------------ Footer section ---------------------------- */
 
-function Footer() {
-    const theme = useTheme();
-
+export function VersionString() {
     let versionString = `v${__FRONTEND_VERSION__}`;
     if (__MODE__ !== "production") {
         // Append the mode to the version string if not in production
         versionString += ` (${__MODE__})`;
     }
+    return versionString;
+}
+
+function Footer() {
+    const theme = useTheme();
 
     return (
         <Box
@@ -182,12 +186,14 @@ function Footer() {
                 },
             })}
         >
-            <Typography
-                variant="caption"
-                sx={{ color: "grey.700", mr: "auto", alignSelf: "flex-end" }}
-            >
-                {versionString} &copy; 2025 P. Spitzner &amp; S. Mohr
-            </Typography>
+            <InternalLink to="/version" sx={{ textDecoration: "none", mr: "auto" }}>
+                <Typography
+                    variant="caption"
+                    sx={{ color: "grey.700", alignSelf: "flex-end" }}
+                >
+                    <VersionString /> &copy; 2025 P. Spitzner &amp; S. Mohr
+                </Typography>
+            </InternalLink>
 
             <Link
                 href="https://beets-flask.readthedocs.io/en/latest/"

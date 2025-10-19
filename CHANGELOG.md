@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - The inbox info button now has a description of all actions [#145](https://github.com/pSpitzner/beets-flask/issues/145)
+- Subpage for version information and configs. You can access it via the version number in the navbar. [#205](https://github.com/pSpitzner/beets-flask/issues/205)
 
 ### Other (dev)
 
