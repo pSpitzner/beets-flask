@@ -41,6 +41,7 @@ dependencies = [
     "numpy",
     "pandas",
     "typing_extensions",
+    "eyconf @ git+https://github.com/semohr/eyconf.git@allow_additional",
 ]
 
 [project.optional-dependencies]
