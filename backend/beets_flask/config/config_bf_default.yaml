@@ -18,5 +18,3 @@ gui:
     inbox:
         ignore: "_use_beets_ignore"
         debounce_before_autotag: 30
-        concat_nested_folders: yes
-        expand_files: no

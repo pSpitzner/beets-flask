@@ -36,6 +36,8 @@ from confuse import YamlSource
 
 from beets_flask.logger import log
 
+from .beets_config_schema import validate
+
 
 def _copy_file(src, dest):
     with open(src) as src_file, open(dest, "w") as dest_file:
@@ -206,6 +208,7 @@ def refresh_config():
     old_config = getattr(beets, "config", None)
 
     config = InteractiveBeetsConfig()
+    validate(config.flatten()["gui"])
 
     beets.config = config
     sys.modules["beets"].config = config  # type: ignore
