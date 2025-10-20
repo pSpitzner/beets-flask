@@ -8,8 +8,6 @@ import { APIError } from "./common";
 export interface MinimalConfig {
     gui: {
         inbox: {
-            concat_nested_folders: boolean;
-            expand_files: boolean;
             folders: Record<
                 string,
                 {
