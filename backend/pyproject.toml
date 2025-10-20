@@ -41,6 +41,7 @@ dependencies = [
     "numpy",
     "typing_extensions",
     "polars>=1.36.1",
+    "eyconf @ git+https://github.com/semohr/eyconf.git@allow_additional",
 ]
 
 [project.optional-dependencies]
