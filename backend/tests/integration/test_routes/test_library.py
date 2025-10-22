@@ -130,7 +130,7 @@ class TestArtistsEndpoint(IsolatedBeetsLibraryMixin):
         from beets_flask.config.beets_config import refresh_config
 
         config = refresh_config()
-        config["gui"]["artist_separators"] = []
+        config["gui"]["library"]["artist_separators"] = []
 
         # Mock artist_seperators
         with mock.patch(
