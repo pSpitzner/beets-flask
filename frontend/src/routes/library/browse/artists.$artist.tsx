@@ -1,5 +1,6 @@
 import { AudioLinesIcon, Disc3Icon, User2Icon } from "lucide-react";
 import { useMemo, useState } from "react";
+import { List, RowComponentProps } from "react-window";
 import {
     alpha,
     Box,
@@ -437,10 +438,16 @@ function AlbumsGrid({ albums }: { albums: AlbumResponseMinimal[] }): JSX.Element
     );
 }
 
-function AlbumsListRow({ data: album }: FixedListChildrenProps<AlbumResponseMinimal>) {
+function AlbumsListRow({
+    index,
+    albums,
+}: RowComponentProps<{
+    albums: AlbumResponseMinimal[];
+}>) {
     const theme = useTheme();
+    const album = albums.at(index);
 
-    // loading state (if albums is none)
+    // TODO: loading state (if albums is none)
     if (!album) {
         return null;
     }
@@ -477,10 +484,19 @@ function AlbumsListRow({ data: album }: FixedListChildrenProps<AlbumResponseMini
     );
 }
 
-function AlbumsList({ albums }: { albums: AlbumResponseMinimal[] }): JSX.Element {
+function AlbumsList({
+    albums,
+    total,
+}: {
+    albums: AlbumResponseMinimal[];
+    total?: number;
+}) {
     return (
-        <FixedList data={albums} itemHeight={35}>
-            {AlbumsListRow}
-        </FixedList>
+        <List
+            rowProps={{ albums }}
+            rowCount={total ?? albums.length}
+            rowHeight={35}
+            rowComponent={AlbumsListRow}
+        />
     );
 }

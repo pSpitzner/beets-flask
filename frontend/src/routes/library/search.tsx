@@ -1,5 +1,6 @@
 import { AudioLinesIcon, Disc3Icon, DotIcon, OctagonX, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { List, ListProps, RowComponentProps } from "react-window";
 import {
     IconButton,
     InputAdornment,
@@ -243,14 +244,13 @@ function SearchResults() {
 }
 
 const LISTROWHEIGHT = 50;
+const OVERSCANCOUNT = 10;
+interface RowProps {
+    items: Item<true>[];
+}
 
-function ItemsListAutoFetchData({
-    ...props
-}: Omit<
-    FixedListProps<AlbumResponseMinimal>,
-    "data" | "itemCount" | "itemHeight" | "children"
->) {
-    const [overScanStopIndex, setOverScanStopIndex] = useState(0);
+function ItemsListAutoFetchData() {
+    const [visibleContentStopIndex, setVisibleContentStopIndex] = useState(0);
     const { queryItems } = useSearchContext();
 
     const data = queryItems?.data || {
@@ -266,27 +266,33 @@ function ItemsListAutoFetchData({
     // Fetch new pages on scroll
     useEffect(() => {
         if (
-            overScanStopIndex >= numLoaded - 10 &&
+            visibleContentStopIndex >= numLoaded - OVERSCANCOUNT &&
             !isFetching &&
             !isError &&
             hasNextPage
         ) {
             void fetchNextPage?.();
         }
-    }, [overScanStopIndex, numLoaded, fetchNextPage, isFetching, isError, hasNextPage]);
+    }, [
+        visibleContentStopIndex,
+        numLoaded,
+        fetchNextPage,
+        isFetching,
+        isError,
+        hasNextPage,
+    ]);
 
     return (
-        <FixedList
-            data={data.items}
-            itemCount={data.total}
-            itemHeight={LISTROWHEIGHT}
-            onItemsRendered={({ overscanStopIndex }) => {
-                setOverScanStopIndex(overscanStopIndex);
+        <List
+            rowCount={data.total}
+            rowHeight={LISTROWHEIGHT}
+            overscanCount={OVERSCANCOUNT}
+            rowProps={{ items: data.items }}
+            onRowsRendered={({ stopIndex }) => {
+                setVisibleContentStopIndex((prev) => Math.max(prev, stopIndex));
             }}
-            {...props}
-        >
-            {ItemsListRow}
-        </FixedList>
+            rowComponent={ItemsListRow}
+        />
     );
 }
 
@@ -296,7 +302,7 @@ function AlbumsListAutoFetchData({
     FixedListProps<AlbumResponseMinimal>,
     "data" | "itemCount" | "itemHeight" | "children"
 >) {
-    const [overScanStopIndex, setOverScanStopIndex] = useState(0);
+    const [visibleContentStopIndex, setVisibleContentStopIndex] = useState(0);
     const { queryAlbums } = useSearchContext();
 
     const data = queryAlbums?.data || {
@@ -312,7 +318,7 @@ function AlbumsListAutoFetchData({
     // Fetch new pages on scroll
     useEffect(() => {
         if (
-            overScanStopIndex >= numLoaded - 10 &&
+            visibleContentStopIndex >= numLoaded - OVERSCANCOUNT &&
             !isFetching &&
             !isError &&
             hasNextPage
@@ -320,22 +326,30 @@ function AlbumsListAutoFetchData({
             console.log("Fetching next page of albums");
             void fetchNextPage?.();
         }
-    }, [overScanStopIndex, numLoaded, fetchNextPage, isFetching, isError, hasNextPage]);
+    }, [
+        visibleContentStopIndex,
+        numLoaded,
+        fetchNextPage,
+        isFetching,
+        isError,
+        hasNextPage,
+    ]);
 
     return (
         <AlbumsList
             data={data}
-            onItemsRendered={({ overscanStopIndex }) => {
-                setOverScanStopIndex(overscanStopIndex);
+            onRowsRendered={({ overscanStopIndex }) => {
+                setVisibleContentStopIndex(overscanStopIndex);
             }}
             {...props}
         />
     );
 }
 
-function ItemsListRow({ data: item, style }: FixedListChildrenProps<Item<true>>) {
+function ItemsListRow({ index, items, style }: RowComponentProps<RowProps>) {
     const theme = useTheme();
-    if (!item) {
+    const item = items[index];
+    if (!items) {
         return <LoadingRow style={style} />;
     }
     return (

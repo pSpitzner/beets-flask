@@ -1,5 +1,6 @@
 import { Disc3Icon } from "lucide-react";
 import { memo, useEffect, useState } from "react";
+import { List, ListProps, RowComponentProps } from "react-window";
 import { Box, BoxProps, Divider, Skeleton, Typography, useTheme } from "@mui/material";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -14,13 +15,10 @@ import { BackIconButton } from "@/components/common/inputs/back";
 import { Search } from "@/components/common/inputs/search";
 import { PageWrapper } from "@/components/common/page";
 import {
+    CellComponentProps,
     CurrentSort,
-    FixedGrid,
-    FixedGridChildrenProps,
-    FixedGridProps,
-    FixedList,
-    FixedListChildrenProps,
-    FixedListProps,
+    DynamicFlowGrid,
+    DynamicFlowGridProps,
     SortToggle,
     ViewToggle,
 } from "@/components/common/table";
@@ -133,7 +131,7 @@ function AlbumsHeader({ sx, ...props }: BoxProps) {
 }
 
 function View({ sx, ...props }: BoxProps) {
-    const [overscanStopIndex, setOverScanStopIndex] = useState(0);
+    const [renderStopIndex, setRenderStopIndex] = useState(0);
     const [search, setSearch] = useState("");
     const debouncedQuery = useDebounce(search, 500);
 
@@ -159,14 +157,14 @@ function View({ sx, ...props }: BoxProps) {
     // Fetch new pages on scroll
     useEffect(() => {
         if (
-            overscanStopIndex >= numLoaded - 10 &&
+            renderStopIndex >= numLoaded - 10 &&
             !isFetching &&
             !isError &&
             hasNextPage
         ) {
             void fetchNextPage();
         }
-    }, [overscanStopIndex, numLoaded, fetchNextPage, isFetching, isError, hasNextPage]);
+    }, [renderStopIndex, numLoaded, fetchNextPage, isFetching, isError, hasNextPage]);
 
     return (
         <Box
@@ -278,15 +276,15 @@ function View({ sx, ...props }: BoxProps) {
                 {view === "grid" ? (
                     <AlbumsCoverGrid
                         data={data}
-                        onItemsRendered={({ overscanStopIndex }) => {
-                            setOverScanStopIndex(overscanStopIndex);
+                        onCellsRendered={({ stopIndex }) => {
+                            setRenderStopIndex(stopIndex);
                         }}
                     />
                 ) : (
                     <AlbumsList
                         data={data}
-                        onItemsRendered={({ overscanStopIndex }) => {
-                            setOverScanStopIndex(overscanStopIndex);
+                        onRowsRendered={({ stopIndex }) => {
+                            setRenderStopIndex(stopIndex);
                         }}
                     />
                 )}
@@ -317,119 +315,89 @@ function AlbumsCoverGrid({
     data,
     ...props
 }: {
+    onCellsRendered?: DynamicFlowGridProps["onCellsRendered"];
+} & {
     data?: {
         albums: AlbumResponseMinimal[];
         total: number;
     };
-} & Omit<
-    FixedGridProps<AlbumResponseMinimal>,
-    "data" | "itemCount" | "itemHeight" | "children" | "itemWidth"
->) {
+}) {
     return (
-        <FixedGrid
-            data={data?.albums || []}
-            itemCount={data?.total || 0}
-            itemHeight={150}
-            itemWidth={150}
+        <DynamicFlowGrid
+            cellProps={{ albums: data?.albums || [] }}
+            cellCount={data?.total || 0}
+            cellHeight={150}
+            cellWidth={150}
+            cellComponent={CoverGridCell}
             overscanCount={10}
             {...props}
-        >
-            {CoverGridRow}
-        </FixedGrid>
+        />
     );
 }
 
-function CoverGridRow({
-    rowData,
+function CoverGridCell({
+    index,
+    albums,
     style,
-    startIndex,
-    endIndex,
-    maxNColumns,
-}: FixedGridChildrenProps<AlbumResponseMinimal>) {
+}: CellComponentProps<{ albums: AlbumResponseMinimal[] }>) {
     // number of items to display in the grid
     // may not be the same length as rowData
     // to allow dynamic loading of items
-    const nTarget = endIndex - startIndex;
-    const nItems = rowData.length;
+    const album = albums.at(index);
+
+    // loading state (if albums is none)
+    if (!album) {
+        return (
+            <Box
+                sx={{
+                    ...style,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 1,
+                }}
+            >
+                <Skeleton variant="rectangular" width="100%" height="100%" />
+            </Box>
+        );
+    }
 
     return (
-        <Box
-            height={GRIDCELLSIZE}
-            sx={{
-                ...style,
-                display: "flex",
-                flexWrap: "wrap",
-                width: "100%",
-                alignItems: "center",
-                justifyContent: "center",
-            }}
+        <Link
+            style={style}
+            to={`/library/album/$albumId`}
+            key={album.id}
+            params={{ albumId: album.id }}
         >
-            {/* Render the albums in the grid */}
-            {rowData.map((album) => (
-                <Link
-                    to={`/library/album/$albumId`}
-                    key={album.id}
-                    params={{ albumId: album.id }}
-                >
-                    <Box
-                        width={GRIDCELLSIZE}
-                        sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            height: GRIDCELLSIZE,
-                            padding: 1,
-                            textAlign: "center",
-                            ":hover": {
-                                backgroundColor: "primary.muted",
-                                color: "primary.contrastText",
-                            },
-                        }}
-                    >
-                        <CoverArt
-                            type="album"
-                            beetsId={album.id}
-                            sx={{
-                                maxWidth: "100%",
-                                maxHeight: "100%",
-                                width: "200px",
-                                height: "200px",
-                                m: 0,
-                            }}
-                        />
-                    </Box>
-                </Link>
-            ))}
-            {/* Show loading state if there are no albums or not enough items */}
-            {Array.from({ length: Math.max(0, nTarget - nItems) }, (_, i) => (
-                <Box
-                    key={i + "loading"}
-                    width={GRIDCELLSIZE}
+            <Box
+                width={GRIDCELLSIZE}
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: GRIDCELLSIZE,
+                    padding: 1,
+                    textAlign: "center",
+                    ":hover": {
+                        backgroundColor: "primary.muted",
+                        color: "primary.contrastText",
+                    },
+                }}
+            >
+                <CoverArt
+                    type="album"
+                    beetsId={album.id}
                     sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        padding: 1,
-                    }}
-                >
-                    <Skeleton variant="rectangular" width="100%" height="100%" />
-                </Box>
-            ))}
-            {/* Fill the rest of the grid with empty boxes if needed to align items */}
-            {Array.from({ length: Math.max(0, maxNColumns - nItems) }, (_, i) => (
-                <Box
-                    key={i + "empty"}
-                    width={GRIDCELLSIZE}
-                    sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        padding: 1,
+                        maxWidth: "100%",
+                        maxHeight: "100%",
+                        width: "200px",
+                        height: "200px",
+                        m: 0,
                     }}
                 />
-            ))}
-        </Box>
+            </Box>
+        </Link>
     );
 }
 
@@ -437,6 +405,10 @@ function CoverGridRow({
 
 const LISTROWHEIGHT = 50; // height of each row in the list
 const SHOWARTINLIST = false;
+
+interface RowProps {
+    albums: AlbumResponseMinimal[];
+}
 
 export function AlbumsList({
     data,
@@ -446,21 +418,16 @@ export function AlbumsList({
         albums: AlbumResponseMinimal[];
         total: number;
     };
-} & Omit<
-    FixedListProps<AlbumResponseMinimal>,
-    "data" | "itemCount" | "itemHeight" | "children"
->) {
+} & Omit<ListProps<RowProps>, "rowProps" | "rowCount" | "rowHeight" | "rowComponent">) {
     return (
-        <FixedList
-            data={data?.albums || []}
-            itemCount={data?.total || 0}
-            itemHeight={LISTROWHEIGHT}
+        <List
+            rowProps={{ albums: data?.albums || [] }}
+            rowCount={data?.total || 0}
+            rowHeight={LISTROWHEIGHT}
             overscanCount={50}
-            useIsScrolling
+            rowComponent={AlbumListRow}
             {...props}
-        >
-            {AlbumListRow}
-        </FixedList>
+        />
     );
 }
 
@@ -491,14 +458,11 @@ export const LoadingRow = memo(({ style }: { style: React.CSSProperties }) => {
  * Click on it to navigate to the album page.
  * Implements a loading state
  */
-export function AlbumListRow({
-    data: album,
-    style,
-    isScrolling,
-}: FixedListChildrenProps<AlbumResponseMinimal>) {
+export function AlbumListRow({ albums, index, style }: RowComponentProps<RowProps>) {
     const theme = useTheme();
+    const album = albums.at(index);
     // loading state (if albums is none)
-    if (!album || isScrolling) {
+    if (!album) {
         return <LoadingRow style={style} />;
     }
 

@@ -1,10 +1,6 @@
 import { ComponentType } from "react";
 import AutoSizer from "react-virtualized-auto-sizer";
-import {
-    FixedSizeList,
-    FixedSizeListProps,
-    ListChildComponentProps,
-} from "react-window";
+import { List, type ListProps, type RowComponentProps } from "react-window";
 
 /**
  * Props for the children component of FixedList.
@@ -12,7 +8,7 @@ import {
  * Data might be none if the list is not populated or the index is out of bounds.
  * @template D - Type of the data items in the list
  */
-export type FixedListChildrenProps<D> = Omit<ListChildComponentProps<D>, "data"> & {
+export type FixedListChildrenProps<D> = Omit<RowComponentProps<D>, "data"> & {
     data?: D; // Single data item for the current index
 };
 
@@ -23,13 +19,13 @@ export type FixedListChildrenProps<D> = Omit<ListChildComponentProps<D>, "data">
  */
 export interface FixedListProps<D>
     extends Omit<
-        FixedSizeListProps,
+        ListProps<D>,
         "children" | "itemCount" | "height" | "width" | "itemSize"
     > {
     itemHeight: number; // Height of each list item
     itemCount?: number; // Optional total item count (defaults to data.length)
     data: D[]; // Array of data items to display
-    children: ComponentType<FixedListChildrenProps<D>>; // Component to render each item
+    children: ComponentType<RowComponentProps<D>>; // Component to render each item
 }
 
 /**
@@ -49,26 +45,13 @@ export function FixedList<D>({
     return (
         <AutoSizer>
             {({ height, width }) => (
-                <FixedSizeList
+                <List
                     itemSize={itemHeight}
-                    height={height}
-                    width={width}
                     itemCount={itemCount ?? data.length}
                     itemData={data}
+                    rowComponent={Comp}
                     {...props}
-                >
-                    {({ index, style }) => {
-                        const itemData = data.at(index);
-                        return (
-                            <Comp
-                                key={index}
-                                index={index}
-                                style={style}
-                                data={itemData}
-                            />
-                        );
-                    }}
-                </FixedSizeList>
+                />
             )}
         </AutoSizer>
     );

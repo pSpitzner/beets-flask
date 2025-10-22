@@ -1,106 +1,155 @@
 import { ComponentType } from "react";
 import AutoSizer from "react-virtualized-auto-sizer";
-import {
-    FixedSizeList,
-    FixedSizeListProps,
-    ListChildComponentProps,
-} from "react-window";
+import { List, ListProps, type RowComponentProps } from "react-window";
 
-/**
- * Props for the children component of FixedGrid.
- * Extends ListChildComponentProps while omitting "data" and "index".
- * @template D - Type of the data items in the grid
- */
-export type FixedGridChildrenProps<D> = Omit<
-    ListChildComponentProps,
-    "data" | "index"
-> & {
-    rowData: D[];
-    startIndex: number;
-    endIndex: number;
-    maxNColumns: number; // Optional maximum number of columns in the grid
+export type CellComponentProps<D extends object> = RowComponentProps<D> & {
+    rowIndex: number;
+    colIndex: number;
 };
-
 /**
  * Props for the FixedGrid component.
  * Extends FixedSizeListProps while customizing certain properties.
  * @template D - Type of the data items in the grid
  */
-export interface FixedGridProps<D>
+export interface DynamicFlowGridProps<D extends object = object>
     extends Omit<
-        FixedSizeListProps,
-        "children" | "itemCount" | "height" | "width" | "itemSize"
+        ListProps<D>,
+        "children" | "rowCount" | "rowHeight" | "rowProps" | "rowComponent"
     > {
-    itemHeight: number;
-    itemWidth: number;
-    data: D[];
-    itemCount?: number;
-    children: ComponentType<FixedGridChildrenProps<D>>;
+    cellHeight: number; // Height of each grid cell
+    cellWidth: number; // Width of each grid cell
+    cellCount: number; // Total number of cells in the grid
+    cellProps: ListProps<D>["rowProps"]; // Data to be passed to each cell
+    cellComponent: ComponentType<CellComponentProps<D>>; // Component to render each cell
+    onCellsRendered?:
+        | ((
+              visibleCells: { startIndex: number; stopIndex: number },
+              allCells: { startIndex: number; stopIndex: number }
+          ) => void)
+        | undefined;
 }
 
 /**
- * A virtualized grid component that efficiently renders items in a fixed-size grid layout.
- * Uses react-window's FixedSizeList internally but converts it to a grid layout.
+ * A virtualized grid component that efficiently renders items in a fixed-size list layout.
+ * We allow the cells to flow dynamically based on the available width.
+ *
  * @template D - Type of the data items in the grid
  * @param {FixedGridProps<D>} props - Component props
  * @returns {JSX.Element} A virtualized grid component
  */
-export function FixedGrid<D>({
-    itemHeight,
-    itemWidth,
-    children: Comp,
-    itemCount,
-    data,
-    onItemsRendered,
+export function DynamicFlowGrid<D extends object>({
+    cellHeight,
+    cellWidth,
+    cellCount,
+    cellProps,
+    cellComponent: CellComponent,
+    onCellsRendered,
+    onRowsRendered,
     ...props
-}: FixedGridProps<D>) {
-    const nItems = itemCount ?? data.length;
-
+}: DynamicFlowGridProps<D>) {
     return (
-        <AutoSizer>
+        <AutoSizer id="dynamic-flow-grid-autosizer">
             {({ height, width }) => {
                 // Split all album covers by row to fit width
-                const nColumns = Math.floor(width / itemWidth);
-                const nRows = Math.ceil(nItems / nColumns);
+                const colCount = Math.floor(width / cellWidth);
+                const rowCount = Math.ceil(cellCount / colCount);
 
                 return (
-                    <FixedSizeList
-                        itemSize={itemHeight}
-                        height={height}
-                        width={width}
-                        itemCount={nRows}
-                        onItemsRendered={({
-                            visibleStartIndex,
-                            visibleStopIndex,
-                            overscanStartIndex,
-                            overscanStopIndex,
-                        }) => {
-                            onItemsRendered?.({
-                                visibleStartIndex: visibleStartIndex * nColumns,
-                                visibleStopIndex: visibleStopIndex * nColumns,
-                                overscanStartIndex: overscanStartIndex * nColumns,
-                                overscanStopIndex: overscanStopIndex * nColumns,
-                            });
-                        }}
-                        {...props}
-                    >
-                        {({ index, ...props }) => {
-                            // Calculate the start and end index for the current row
-                            const startIndex = index * nColumns;
-                            const endIndex = Math.min(startIndex + nColumns, nItems);
-                            const dataSlice = data.slice(startIndex, endIndex);
-                            return (
-                                <Comp
-                                    key={index}
-                                    rowData={dataSlice}
-                                    startIndex={startIndex}
-                                    endIndex={endIndex}
-                                    maxNColumns={nColumns}
-                                    {...props}
-                                />
-                            );
-                        }}
-                    </FixedSizeList>
+                    <div style={{ width, height }}>
+                        <List
+                            rowHeight={cellHeight}
+                            rowCount={rowCount}
+                            onRowsRendered={(visibleRows, allRows) => {
+                                onCellsRendered?.(
+                                    {
+                                        startIndex: visibleRows.startIndex * colCount,
+                                        stopIndex: Math.min(
+                                            (visibleRows.stopIndex + 1) * colCount - 1,
+                                            cellCount - 1
+                                        ),
+                                    },
+                                    {
+                                        startIndex: allRows.startIndex * colCount,
+                                        stopIndex: Math.min(
+                                            (allRows.stopIndex + 1) * colCount - 1,
+                                            cellCount - 1
+                                        ),
+                                    }
+                                );
+                                onRowsRendered?.(visibleRows, allRows);
+                            }}
+                            rowProps={cellProps}
+                            rowComponent={function CellRowWrapper({
+                                index,
+                                style,
+                                ...props
+                            }) {
+                                // Calculate start and end indices for the current row
+                                const startIndex = index * colCount;
+                                const endIndex = Math.min(
+                                    startIndex + colCount,
+                                    cellCount
+                                );
+                                return (
+                                    <div
+                                        style={{
+                                            ...style,
+                                            overflow: "hidden",
+                                            display: "flex",
+                                            width: "100%",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                        }}
+                                    >
+                                        {Array.from(
+                                            { length: endIndex - startIndex },
+                                            (_, colIndex) => {
+                                                const cellIndex = startIndex + colIndex;
+                                                return (
+                                                    <CellComponent
+                                                        {...(props as RowComponentProps<D>)}
+                                                        key={cellIndex}
+                                                        index={cellIndex}
+                                                        rowIndex={index}
+                                                        colIndex={colIndex}
+                                                        style={{
+                                                            width: cellWidth,
+                                                            height: cellHeight,
+                                                            boxSizing: "border-box",
+                                                            display: "inline-block",
+                                                        }}
+                                                    />
+                                                );
+                                            }
+                                        )}
+                                        {
+                                            // Fill with empty cells if needed to maintain layout
+                                            endIndex - startIndex < colCount &&
+                                                Array.from(
+                                                    {
+                                                        length:
+                                                            colCount -
+                                                            (endIndex - startIndex),
+                                                    },
+                                                    (_, emptyIndex) => (
+                                                        <div
+                                                            key={`empty-${emptyIndex}`}
+                                                            style={{
+                                                                width: cellWidth,
+                                                                height: cellHeight,
+                                                                boxSizing: "border-box",
+                                                                display: "inline-block",
+                                                            }}
+                                                        />
+                                                    )
+                                                )
+                                        }
+                                    </div>
+                                );
+                            }}
+                            {...props}
+                        />
+                    </div>
                 );
             }}
         </AutoSizer>
