@@ -18,6 +18,7 @@ def preview_autotag(tmpdir_factory):
     config = get_config()
     config["gui"]["inbox"]["folders"] = {
         "inbox1": {
+            "name": "inbox1",
             "path": tmpdir_factory.mktemp("inbox").strpath,
             "autotag": "preview",
         },
