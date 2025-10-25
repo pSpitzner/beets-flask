@@ -1,34 +1,44 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, Literal
+from typing import Any, Dict, Literal
 
 from eyconf import validation
 
 from beets_flask.logger import log
 
+from .type_shenanigans import mixed_dataclass
 
-@dataclass
+
+@mixed_dataclass
 class BeetsSchema:
-    gui: BeetsFlaskSchema
+    gui: BeetsFlaskSchema = field(default_factory=lambda: BeetsFlaskSchema())
 
 
-@dataclass
+@mixed_dataclass
 class BeetsFlaskSchema:
-    inbox: InboxSection
-    library: LibrarySection
-    terminal: TerminalSection
+    inbox: InboxSection = field(default_factory=lambda: InboxSection())
+    library: LibrarySection = field(default_factory=lambda: LibrarySection())
+    terminal: TerminalSection = field(default_factory=lambda: TerminalSection())
     num_preview_workers: int = 4
 
 
-@dataclass
+@mixed_dataclass
 class InboxSection:
     ignore: list[str] | Literal["_use_beets_ignore"] = "_use_beets_ignore"
     debounce_before_autotag: int = 30
-    folders: Dict[str, InboxFolder] = field(default_factory=dict)
+    folders: Dict[str, InboxFolder] = field(
+        default_factory=lambda: {
+            "placeholder": InboxFolder(
+                name="Please check your config!",
+                path="/music/inbox",
+                autotag=False,
+            )
+        }
+    )
 
 
-@dataclass
+@mixed_dataclass
 class InboxFolder:
     name: str
     path: str
@@ -37,13 +47,13 @@ class InboxFolder:
     # the `no` -> False option will need tweaking
 
 
-@dataclass
+@mixed_dataclass
 class LibrarySection:
     readonly: bool = False
     artist_separators: list[str] = field(default_factory=lambda: [",", ";", "&"])
 
 
-@dataclass
+@mixed_dataclass
 class TerminalSection:
     start_path: str = "/repo"
 
@@ -80,3 +90,11 @@ def validate(config: dict) -> None:
             log.warning(
                 f"Inbox path '{folder['path']}' should not end with a trailing slash!"
             )
+
+
+# flow
+# 1. define dataclasses as schema here, including beets stuff we need
+# 2. create confuse config, set our as lowest prio
+# 3. load beets config int confuse
+# 4. validate confuse config against our schema here, and create custom instance,
+# 5. ... which we use everywhere py2ts!
