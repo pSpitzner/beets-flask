@@ -2,7 +2,7 @@ export {
     DynamicFlowGrid,
     type CellComponentProps,
     type DynamicFlowGridProps,
-} from "./FixedGrid";
+} from "./Grid";
 export { ViewToggle, type ViewToggleProps } from "./ViewToggle";
 export {
     SortToggle,

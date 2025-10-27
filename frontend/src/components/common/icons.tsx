@@ -44,6 +44,20 @@ import { GrowingRipple } from "./loading";
 
 import { PairChanges } from "../import/candidates/diff";
 
+/* ------------------------------- Base icons ------------------------------- */
+
+export function AlbumIcon(props: LucideProps) {
+    return <Disc3Icon {...props} />;
+}
+export function ArtistIcon(props: LucideProps) {
+    return <UserRoundIcon {...props} />;
+}
+export function TrackIcon(props: LucideProps) {
+    return <AudioLinesIcon {...props} />;
+}
+
+/* -------------------------------------------------------------------------- */
+
 /** Icon to show a folder, shows a disc icon if the folder is an album.
  *
  * isAlbum: if the folder is an album
@@ -61,7 +75,7 @@ export function FolderTypeIcon({
 
     if (isAlbum) {
         return (
-            <Disc3Icon
+            <AlbumIcon
                 style={{
                     transform: isOpen ? "rotate(90deg)" : "",
                     transition: "transform 0.15s ease-in-out",
@@ -102,13 +116,13 @@ export function FileTypeIcon({
 export function PenaltyTypeIcon({ type, ...props }: { type: string } & LucideProps) {
     switch (type) {
         case "artist":
-            return <UserRoundIcon {...props} />;
+            return <ArtistIcon {...props} />;
         case "album":
-            return <Disc3Icon {...props} />;
+            return <AlbumIcon {...props} />;
         case "tracks":
         case "track":
         case "track_changes":
-            return <AudioLinesIcon {...props} />;
+            return <TrackIcon {...props} />;
         case "extra_tracks":
         case "extra_track":
             return <ExtraTrack {...props} />;

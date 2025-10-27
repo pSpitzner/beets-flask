@@ -1,12 +1,12 @@
-import { User2Icon } from "lucide-react";
 import { useMemo, useState } from "react";
-import AutoSizer from "react-virtualized-auto-sizer";
-import { FixedSizeList } from "react-window";
+import { List, ListProps } from "react-window";
 import { Box, BoxProps, Divider, Typography, useTheme } from "@mui/material";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 
 import { Artist, artistsQueryOptions } from "@/api/library";
+import { ArtistBrowserProps, ArtistListRow } from "@/components/common/browser/artists";
+import { ArtistIcon } from "@/components/common/icons";
 import { Search } from "@/components/common/inputs/search";
 
 export const Route = createFileRoute("/library/browse/artists/")({
@@ -62,7 +62,7 @@ function ArtistsHeader({ nArtists, sx, ...props }: { nArtists: number } & BoxPro
             {...props}
         >
             <Box sx={{ display: "flex", alignItems: "center", height: "100%" }}>
-                <User2Icon size={40} color={theme.palette.primary.main} />
+                <ArtistIcon size={40} color={theme.palette.primary.main} />
             </Box>
             <Box>
                 <Typography variant="h5" fontWeight="bold" lineHeight={1}>
@@ -142,61 +142,32 @@ function ArtistsListWrapper({
                     minHeight: 0,
                 }}
             >
-                <ArtistsList artists={filteredData} />
+                <ArtistsList data={{ artists: filteredData, total: artists.length }} />
             </Box>
         </Box>
     );
 }
 
-function ArtistsList({ artists }: { artists: Array<Artist> }) {
-    const theme = useTheme();
-
+function ArtistsList({
+    data,
+    ...props
+}: {
+    data?: {
+        artists: Array<Artist>;
+        total: number;
+    };
+} & Omit<
+    ListProps<ArtistBrowserProps>,
+    "rowProps" | "rowCount" | "rowHeight" | "rowComponent"
+>) {
     return (
-        <AutoSizer>
-            {({ height, width }) => (
-                <FixedSizeList
-                    itemSize={35}
-                    height={height}
-                    width={width}
-                    itemCount={artists.length}
-                >
-                    {({ index, style }) => {
-                        const artist = artists[index];
-                        return (
-                            <Link
-                                to="/library/browse/artists/$artist"
-                                params={{ artist: artist.artist }}
-                                style={style}
-                            >
-                                <Box
-                                    sx={(theme) => ({
-                                        height: "35px",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "space-between",
-                                        padding: 1,
-                                        gap: 2,
-                                        ":hover": {
-                                            background: `linear-gradient(to left, transparent 0%, ${theme.palette.primary.muted} 100%)`,
-                                            color: "primary.contrastText",
-                                        },
-                                    })}
-                                >
-                                    <Typography variant="body1">
-                                        {artist.artist || "Unknown Artist"}
-                                    </Typography>
-                                    <User2Icon
-                                        color={theme.palette.background.paper}
-                                        style={{
-                                            marginRight: "2rem",
-                                        }}
-                                    />
-                                </Box>
-                            </Link>
-                        );
-                    }}
-                </FixedSizeList>
-            )}
-        </AutoSizer>
+        <List
+            rowProps={{ artists: data?.artists || [] }}
+            rowCount={data?.total || 0}
+            rowHeight={50}
+            overscanCount={50}
+            rowComponent={ArtistListRow}
+            {...props}
+        />
     );
 }

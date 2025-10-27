@@ -338,7 +338,7 @@ function GenericMetaChip({
 }: {
     meta: FileMetadata;
     keys: string[];
-    icon?: JSX.Element;
+    icon?: React.ReactNode;
     label?: string;
 } & ChipProps) {
     const filtered = Object.fromEntries(
