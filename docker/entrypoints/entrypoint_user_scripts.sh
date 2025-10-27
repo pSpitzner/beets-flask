@@ -7,7 +7,7 @@ if [ -f /config/startup.sh ]; then
 fi
 if [ -f /config/beets-flask/startup.sh ]; then
     echo "Running user startup script from /config/beets-flask/startup.sh"
-    /config/startup.sh
+    /config/beets-flask/startup.sh
 fi
 
 

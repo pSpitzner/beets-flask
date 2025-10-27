@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - If no candidates are found during an import, we now show a message instead of an empty screen. [#190](https://github.com/pSpitzner/beets-flask/issues/190)
 - Archive files can now be deleted [#217](https://github.com/pSpitzner/beets-flask/issues/217)
 - Import Bootleg Button now works as expected [#218](https://github.com/pSpitzner/beets-flask/issues/218)
+- Startup script was not executed correctly if placed in `/config/beets-flask/startup.sh` [#227](https://github.com/pSpitzner/beets-flask/pull/227)
 
 ### Added
 
