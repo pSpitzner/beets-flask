@@ -1,5 +1,3 @@
-
-
 class TestErrorHandling:
     """Tests our exception handling capabilities."""
 

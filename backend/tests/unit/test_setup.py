@@ -14,8 +14,6 @@ def test_log():
     assert log.name == "beets-flask"
 
 
-
-
 def test_config():
     """Test that config is correctly set up for testing."""
     import tempfile

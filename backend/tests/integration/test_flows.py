@@ -20,14 +20,13 @@ from beets_flask.database.models.states import (
     SessionStateInDb,
 )
 from beets_flask.disk import Folder
-from beets_flask.importer.progress import FolderStatus
+from beets_flask.importer.progress import FolderStatus, Progress
 from beets_flask.importer.session import (
     CandidateChoice,
     TaskIdMappingArg,
 )
 from beets_flask.importer.types import DuplicateAction
 from beets_flask.invoker.enqueue import (
-    Progress,
     run_import_auto,
     run_import_bootleg,
     run_import_candidate,
