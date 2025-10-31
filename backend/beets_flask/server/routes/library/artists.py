@@ -24,17 +24,26 @@ if TYPE_CHECKING:
 
 # Note: I wanted to use polars first but it does not support alpine images yet, so we use pandas instead.
 
+ARTIST_SEPARATORS: list[str] | None = None
+SPLIT_PATTERN_ARTISTS: str | None = None
 
-ARTIST_SEPARATORS: list[str] = get_config()["gui"]["library"][
-    "artist_separators"
-].as_str_seq()
+
+def get_artists_separators() -> list[str]:
+    global ARTIST_SEPARATORS
+    if ARTIST_SEPARATORS is None:
+        ARTIST_SEPARATORS = get_config().data.gui.library.artist_separators
+    return ARTIST_SEPARATORS
+
+
+def get_split_pattern_artists() -> str:
+    global SPLIT_PATTERN_ARTISTS
+    if SPLIT_PATTERN_ARTISTS is None:
+        SPLIT_PATTERN_ARTISTS = _split_pattern(get_artists_separators())
+    return SPLIT_PATTERN_ARTISTS
 
 
 def _split_pattern(separators: list[str]) -> str:
     return "|".join(map(re.escape, separators))
-
-
-split_pattern_artists = _split_pattern(ARTIST_SEPARATORS)
 
 
 def get_artists_pandas(table: str, artist: str | None = None) -> pd.DataFrame:
@@ -66,8 +75,8 @@ def get_artists_pandas(table: str, artist: str | None = None) -> pd.DataFrame:
 
     # Split the artist string by the specified separators
     artists: list[str] | None
-    if len(ARTIST_SEPARATORS) > 0 and artist is not None:
-        artists = [a.strip() for a in re.split(split_pattern_artists, artist)]
+    if len(get_artists_separators()) > 0 and artist is not None:
+        artists = [a.strip() for a in re.split(get_split_pattern_artists(), artist)]
     elif artist is not None:
         artists = [artist.strip()]
     else:
@@ -88,8 +97,8 @@ def get_artists_pandas(table: str, artist: str | None = None) -> pd.DataFrame:
     df = pd.DataFrame(rows, columns=["artist", "added"])
 
     # Split artist strings into lists and explode into separate rows
-    if len(ARTIST_SEPARATORS) > 0:
-        df["artist"] = df["artist"].str.split(split_pattern_artists)
+    if len(get_artists_separators()) > 0:
+        df["artist"] = df["artist"].str.split(get_split_pattern_artists())
         df = df.explode("artist")
 
     # Strip whitespace
