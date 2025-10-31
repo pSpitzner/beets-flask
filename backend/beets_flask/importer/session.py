@@ -194,8 +194,7 @@ class BaseSession(importer.ImportSession, ABC):
     pipeline: AsyncPipeline[importer.ImportTask, Any] | None = None
     config_overlay: dict
 
-    # FIXME: only for typehint until we update beets
-    lib: BeetsLibrary  # type: ignore
+    lib: BeetsLibrary
 
     def __init__(
         self,
@@ -359,6 +358,10 @@ class BaseSession(importer.ImportSession, ABC):
 
     def finalize(self, task: importer.ImportTask):
         """Last stage called and customizable any session."""
+        if len(self.config_overlay) > 0:
+            # make sure we dont leave overlays in beets
+            # but for multi-task sessions, this might break overlays for remaining tasks
+            get_config().commit_to_beets()
         self.logger.debug(f"Finalized {self} {task}")
 
     # ---------------------------------- Run --------------------------------- #
@@ -632,7 +635,7 @@ class AddCandidatesSession(PreviewSession):
                 + "Cannot restore previous progress."
             )
 
-        self.logger.debug(f"Finalized {self} {task}")
+        super().finalize(task)
 
 
 class ImportSession(BaseSession):
