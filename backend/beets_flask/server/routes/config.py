@@ -16,7 +16,7 @@ config_bp = Blueprint("config", __name__, url_prefix="/config")
 async def get_all():
     """Get nested dict representing the full (but redacted) beets config."""
     config = get_config()
-    return jsonify(_serializable(config.to_confuse().flatten(redact=True)))
+    return jsonify(_serializable(config.beets_config.flatten(redact=True)))
 
 
 @config_bp.route("/", methods=["GET"])
@@ -77,7 +77,7 @@ async def refresh():
     from beets_flask.config import get_config
 
     config = get_config()
-    config.refresh()
+    config.reload()
     return jsonify({"status": "ok"})
 
 

@@ -87,7 +87,7 @@ def beets_lib() -> Generator[BeetsLibrary, None, None]:
 
     lib = beets.library.Library(path=os.environ["BEETSDIR"] + "/library.db")
 
-    get_config().refresh()
+    get_config().reload()
 
     # Copy test audio data
     source = Path(__file__).parent / "data" / "audio"

@@ -27,7 +27,7 @@ class InteractiveBeetsConfig(EYConfExtraFields[BeetsSchema]):
         # Initialize the dataclass fields first
 
         super().__init__(schema=BeetsSchema, data=BeetsSchema())
-        self.reset()
+        self.reload()
 
     @classmethod
     def get_beets_flask_config_path(cls) -> Path:
@@ -43,12 +43,7 @@ class InteractiveBeetsConfig(EYConfExtraFields[BeetsSchema]):
         beets_folder = os.getenv("BEETSDIR", os.path.expanduser("~/.config/beets"))
         return Path(beets_folder) / "config.yaml"
 
-    def refresh(self) -> Self:
-        """Refresh the config from the user config files."""
-        self.reset()
-        return self
-
-    def reset(self):
+    def reload(self) -> Self:
         """Reset the config to default values.
 
         This loads the user config from yaml files after resetting to defaults.
@@ -58,13 +53,26 @@ class InteractiveBeetsConfig(EYConfExtraFields[BeetsSchema]):
         # load user config from yaml.
         # EYConfs update method also validates against the schema
         with open(self.get_beets_config_path(), "r") as f:
-            self.update(yaml.safe_load(f))
+            loaded = yaml.safe_load(f)
+            if not isinstance(loaded, dict):
+                raise ValueError("Beets config is not a valid YAML dictionary.")
+            self.update(loaded)
 
         with open(self.get_beets_flask_config_path(), "r") as f:
-            self.update(data=yaml.safe_load(f))
+            loaded = yaml.safe_load(f)
+            if not isinstance(loaded, dict):
+                raise ValueError("Beets flask config is not a valid YAML dictionary.")
+            self.update(loaded)
 
-    def refresh_confuse(self) -> None:
-        """Dump the current state of self into beets."""
+        return self
+
+    def commit_to_beets(self) -> None:
+        """
+        Insert the current state of self into the native beets config.
+
+        Only call manually when needed, i.e. after modifying the config object.
+        This is somewhat slow.
+        """
 
         beets.config.clear()
         beets.config.read()
@@ -103,14 +111,14 @@ class InteractiveBeetsConfig(EYConfExtraFields[BeetsSchema]):
                     log.debug(f"Could not check {module_name}.{attr_name}", exc_info=e)
                     continue
 
-    def to_confuse(self) -> beets.IncludeLazyConfig:
-        """Dump the current state of self into beets config."""
-        self.refresh_confuse()
+    @property
+    def beets_config(self) -> beets.IncludeLazyConfig:
+        """Convenience property to get the native beets config."""
+        # Aavoid calling refresh_confuse here. We often access the beets config,
+        # and updating it every time makes things very slow.
         return beets.config
 
     def validate(self):
-        # beets does not create a config file automatically for the user.
-        # Customizations are added as extra layers on the config.
         super().validate()
 
         # make sure to remove trailing slashes from user configured inbox paths
@@ -122,7 +130,11 @@ class InteractiveBeetsConfig(EYConfExtraFields[BeetsSchema]):
 
     @classmethod
     def write_examples_as_user_defaults(cls):
-        """Write example config files if they do not exist yet."""
+        """Write example config files if they do not exist yet.
+
+        Note that we also place an opinionated example for beets,
+        because it does not do that itself.
+        """
         # Load config from default location (set via env var)
         # if it is set otherwise use the default location
         bf_config_path = cls.get_beets_flask_config_path()
@@ -132,8 +144,8 @@ class InteractiveBeetsConfig(EYConfExtraFields[BeetsSchema]):
         if not os.path.exists(bf_config_path):
             os.makedirs(os.path.dirname(bf_config_path), exist_ok=True)
             # Copy the default config to the user config location
-            log.debug(f"Beets-flask config not found at {bf_config_path}")
-            log.debug(f"Copying default config to {bf_config_path}")
+            log.info(f"Beets-flask config not found at {bf_config_path}")
+            log.info(f"Copying default config to {bf_config_path}")
             bf_example_path = os.path.join(
                 os.path.dirname(__file__), "config_bf_example.yaml"
             )
@@ -144,8 +156,8 @@ class InteractiveBeetsConfig(EYConfExtraFields[BeetsSchema]):
         beets_config_path = cls.get_beets_config_path()
         if not os.path.exists(beets_config_path):
             os.makedirs(os.path.dirname(beets_config_path), exist_ok=True)
-            log.debug(f"Beets config not found at {beets_config_path}")
-            log.debug(f"Copying default config to {beets_config_path}")
+            log.info(f"Beets config not found at {beets_config_path}")
+            log.info(f"Copying default config to {beets_config_path}")
             beets_example_path = os.path.join(
                 os.path.dirname(__file__), "config_b_example.yaml"
             )
@@ -191,5 +203,5 @@ def get_config(force_refresh=False) -> InteractiveBeetsConfig:
         return config
     if force_refresh:
         config.reset()
-        config.refresh_confuse()
+        config.commit_to_beets()
     return config
