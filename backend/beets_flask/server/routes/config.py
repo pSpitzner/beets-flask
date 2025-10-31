@@ -4,7 +4,6 @@ we need some of our settings in the frontend. proposed solution:
 fetch settings once from the backend on first page-load.
 """
 
-from beets import __version__ as beets_version
 from quart import Blueprint, jsonify
 
 from beets_flask.config import get_config
@@ -23,22 +22,17 @@ async def get_all():
 async def get_basic():
     """Get the config settings needed for the gui."""
     config = get_config()
-    plugins = config.data.plugins
-    from beets.metadata_plugins import find_metadata_source_plugins
-
-    data_sources: list[str] = [
-        p.__class__.data_source for p in find_metadata_source_plugins()
-    ]
 
     return jsonify(
         {
             **config.to_dict(include_additional=False),
+            # workaround for reserved keyword `import`, until we update eyconf
             "import": {
                 "duplicate_action": getattr(config.data, "import")["duplicate_action"]
             },
-            "plugins": plugins,
-            "data_sources": data_sources,
-            "beets_version": beets_version,
+            # utility getters, could become part of the schema
+            "beets_meta_sources": config.beets_meta_sources,
+            "beets_version": config.beets_version,
         }
     )
 

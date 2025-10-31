@@ -9,7 +9,7 @@ from watchdog.observers.polling import PollingObserver
 
 from beets_flask import invoker
 from beets_flask.config import get_config
-from beets_flask.config.schema import InboxFolder
+from beets_flask.config.schema import InboxFolderSchema
 from beets_flask.database.models.states import SessionStateInDb
 from beets_flask.disk import (
     album_folders_from_track_paths,
@@ -87,7 +87,7 @@ def register_inboxes(timeout: float = 2.5, debounce: float = 30) -> AIOWatchdog 
         await asyncio.sleep(10)
         await auto_tag(f)
 
-    auto_inboxes = [i for i in _inboxes if i.autotag is not False]
+    auto_inboxes = [i for i in _inboxes if i.autotag not in (False, "off")]
 
     for inbox in auto_inboxes:
         album_folders = all_album_folders(inbox.path)
@@ -147,7 +147,7 @@ class InboxHandler(AIOEventHandler):
 
 async def auto_tag(
     folder_path: Path,
-    inbox_kind: Literal["auto", "preview", "bootleg", False] | None = None,
+    inbox_kind: Literal["auto", "preview", "bootleg", "off"] | None = None,
 ):
     """Retag a (taggable) folder.
 
@@ -177,7 +177,7 @@ async def auto_tag(
             enq_kwargs["import_threshold"] = inbox.auto_threshold
         case "bootleg":
             enq_kind = invoker.EnqueueKind.IMPORT_BOOTLEG
-        case False | None:
+        case "off" | False | None:
             log.debug(f"Autotagging disabled for {folder_path}, skipping.")
             return
         case _:
@@ -233,5 +233,5 @@ def is_inbox_folder(path: str) -> bool:
     return path in get_inbox_folders()
 
 
-def get_inboxes() -> list[InboxFolder]:
+def get_inboxes() -> list[InboxFolderSchema]:
     return list(get_config().data.gui.inbox.folders.values())
