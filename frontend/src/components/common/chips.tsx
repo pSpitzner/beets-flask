@@ -230,6 +230,8 @@ export function FolderStatusChip({
             status_name = "Failed";
             if (folderStatus.exc?.type === "NoCandidatesFoundException") {
                 status_name = "No Match";
+            } else if (folderStatus.exc?.type === "NotImportedException") {
+                status_name = "Threshold";
             }
             break;
         default:

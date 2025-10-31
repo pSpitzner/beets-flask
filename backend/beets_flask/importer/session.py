@@ -62,6 +62,7 @@ from beets_flask.utility import capture_stdout_stderr
 from .pipeline import AsyncPipeline
 from .stages import (
     StageOrder,
+    finalize,
     group_albums,
     identify_duplicates,
     lookup_candidates,
@@ -355,6 +356,10 @@ class BaseSession(importer.ImportSession, ABC):
             f"This session should not reach this stage. {self.__class__.__name__}"
         )
 
+    def finalize(self, task: importer.ImportTask):
+        """Last stage called and customizable any session."""
+        self.logger.debug(f"Finalized {self} {task}")
+
     # ---------------------------------- Run --------------------------------- #
 
     def run_sync(self) -> SessionState:
@@ -457,6 +462,7 @@ class PreviewSession(BaseSession):
             stages.append(lookup_candidates(self))
 
         stages.append(identify_duplicates(self))
+        stages.append(finalize(self))
 
         return stages
 
@@ -502,6 +508,7 @@ class AddCandidatesSession(PreviewSession):
     """
 
     search: TaskIdMapping[Search | Literal["skip"]]
+    initial_task_states: dict[str, ProgressState]
 
     def __init__(
         self,
@@ -512,16 +519,17 @@ class AddCandidatesSession(PreviewSession):
     ):
         super().__init__(state, config_overlay, **kwargs)
 
-        if state.progress != Progress.PREVIEW_COMPLETED:
-            raise ValueError("Cannot run AddCandidatesSession on non-preview state.")
-
         # None means skip search for this task
         self.search = parse_task_id_mapping(search, "skip")
+        self.initial_task_states = {}
 
-        # Reset task progress only for tasks that have search values
-        # other tasks are skipped
         for task in self.state.task_states:
+            self.initial_task_states[task.id] = deepcopy(task.progress)
             if task.progress >= Progress.PREVIEW_COMPLETED:
+                # Reset task progress only for tasks that have search values
+                # other tasks are skipped
+                # This should only be relevant for searches on multiple tasks
+                # (i.e. folders)
                 s = self.search[task.id]
                 if s != "skip":
                     task.set_progress(Progress.LOOKING_UP_CANDIDATES - 1)
@@ -537,6 +545,8 @@ class AddCandidatesSession(PreviewSession):
             log.debug(f"Skipping search for {task_state.id=}")
             return
 
+        # Beets treats empty strings like real strings, which is not what we want here.
+        # TODO: revisit once PR merged upstream: https://github.com/beetbox/beets/pull/6117
         if (
             search["search_artist"] is not None
             and search["search_artist"].strip() == ""
@@ -544,6 +554,9 @@ class AddCandidatesSession(PreviewSession):
             search["search_artist"] = None
         if search["search_album"] is not None and search["search_album"].strip() == "":
             search["search_album"] = None
+        search["search_ids"] = list(
+            filter(lambda x: x.strip() != "", search["search_ids"])
+        )
 
         log.debug(f"Using {search=} for {task_state.id=}, {task_state.paths=}")
 
@@ -605,6 +618,20 @@ class AddCandidatesSession(PreviewSession):
                 "Clearing previous NoCandidatesFoundException after finding candidates via search."
             )
             self.state.exc = None
+
+    def finalize(self, task: importer.ImportTask):
+        """Restore initial taks and session states."""
+
+        task_state = self.state.get_task_state_for_task_raise(task)
+        if task_state.id in self.initial_task_states:
+            task_state.set_progress(self.initial_task_states[task_state.id])
+        else:
+            log.warning(
+                f"Task {task_state.id} not in initial task states. "
+                + "Cannot restore previous progress."
+            )
+
+        self.logger.debug(f"Finalized {self} {task}")
 
 
 class ImportSession(BaseSession):
@@ -730,6 +757,7 @@ class ImportSession(BaseSession):
 
         # finally, move files
         stages.append(manipulate_files(self))
+        stages.append(finalize(self))
 
         return stages
 
@@ -1062,6 +1090,7 @@ class UndoSession(BaseSession):
 
     @property
     def stages(self):
+        # This tweaked session skips the pipeline
         return StageOrder()
 
 

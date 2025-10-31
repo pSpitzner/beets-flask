@@ -38,6 +38,7 @@ from beets.util import pipeline as beets_pipeline
 from beets_flask import log
 from beets_flask.server.exceptions import (
     NoCandidatesFoundException,
+    NotImportedException,
 )
 
 from .progress import Progress, ProgressState
@@ -549,7 +550,10 @@ def plugin_stage(
 
 @mutator_stage
 @skip_until(Progress.MATCH_THRESHOLD)
-@set_progress(Progress.MATCH_THRESHOLD)
+@set_progress(
+    Progress.MATCH_THRESHOLD,
+    on_error={NotImportedException: Progress.PREVIEW_COMPLETED},
+)
 def match_threshold(
     session: AutoImportSession,
     task: ImportTask,
@@ -627,6 +631,16 @@ def manipulate_files(
         # to the session's folder path.
         task.toppath = bytestring_path(session.state.folder_path)
 
+    return task
+
+
+@stage
+def finalize(
+    session: BaseSession,
+    task: ImportTask,
+) -> ImportTask:
+    """Give our custom sessions a way to do something at the very end."""
+    session.finalize(task)
     return task
 
 

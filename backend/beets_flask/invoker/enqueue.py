@@ -36,7 +36,6 @@ from beets_flask.importer.session import (
     UndoSession,
     delete_from_beets,
 )
-from beets_flask.importer.states import Progress
 from beets_flask.importer.types import DuplicateAction
 from beets_flask.logger import log
 from beets_flask.redis import import_queue, preview_queue
@@ -490,12 +489,6 @@ async def run_preview_add_candidates(
 
     with db_session_factory() as db_session:
         s_state_live = _get_live_state_by_folder(hash, path, db_session)
-
-        if s_state_live.progress != Progress.PREVIEW_COMPLETED:
-            raise InvalidUsageException(
-                f"Session state not in preview completed state for {hash=} "
-                + f"Found state: {s_state_live.progress}"
-            )
 
         a_session = AddCandidatesSession(
             s_state_live,
