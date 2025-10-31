@@ -675,7 +675,7 @@ class CandidateState(BaseState):
         # FIXME: Tracks are not checked for duplicates. Tbh noone cares about tracks anyways
         """
         if lib is None:
-            lib = _open_library(get_config())
+            lib = _open_library(get_config().to_confuse())
 
         info = self.match.info.copy()
         info["albumartist"] = info["artist"]
@@ -689,7 +689,7 @@ class CandidateState(BaseState):
         tmp_album = BeetsAlbum(lib, **info)
         keys: list[str] = cast(
             list[str],
-            get_config()["import"]["duplicate_keys"]["album"].as_str_seq() or [],
+            getattr(get_config().data, "import").duplicate_keys.album or [],
         )
         dup_query = tmp_album.duplicates_query(keys)
 

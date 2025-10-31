@@ -61,6 +61,7 @@ typed = [
     "types-Deprecated",
     "types-aiofiles",
     "types-pytz",
+    "types-pyyaml",
     "pandas-stubs",
 ]
 all = ["beets_flask[dev,test]"]
@@ -152,5 +153,7 @@ module = [
     "mediafile.*",
     "nest_asyncio",
     "beetsplug.*",
+    "eyconf.*",
 ]
 ignore_missing_imports = true
+follow_untyped_imports = true
