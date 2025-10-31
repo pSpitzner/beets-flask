@@ -130,7 +130,7 @@ class TestArtistsEndpoint(IsolatedBeetsLibraryMixin):
         # Validate that the logic works if no separators are defined
 
         config = get_config()
-        config.refresh()
+        config.reload()
         config.data.gui.library.artist_separators = []
 
         # Mock artist_seperators

@@ -110,7 +110,7 @@ match:
         # albumdisambig: 0.5
         # album_id: 5.0
         # tracks: 2.0
-        data_source: 0.0
+        data_source: 0.0    # do not apply penalty to any data source plugin
         missing_tracks: 0.2 # If your prefer not being so picky about missing tracks. default 0.9
         # unmatched_tracks: 0.6
         # track_title: 3.0
