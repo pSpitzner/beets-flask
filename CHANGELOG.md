@@ -37,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated `uvicorn`  to `0.36.0`.
 - Updated `beets`  from `2.3.1` over [`2.4.0`](https://github.com/beetbox/beets/releases/tag/v2.4.0) to [`2.5.0`](https://github.com/beetbox/beets/releases/tag/v2.5.0). See the two changelogs!
-- Updated a number of frontend dependencies, including `react-query`, `react-router`, `vite`, `typescript`, `eslint`, `prettier` and others.
+- Updated a number of frontend dependencies, including `react-query`, `react-router`, `vite`, `typescript`, `eslint`, `prettier` and others. This partially required code changes due to breaking changes in these libraries. Should not affect normal usage tho.
 
 ## [1.1.3] - 25-09-18
 

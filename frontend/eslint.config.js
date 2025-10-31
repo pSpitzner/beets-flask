@@ -1,3 +1,4 @@
+import { defineConfig } from 'eslint/config';
 import prettierConfig from "eslint-config-prettier";
 import react from "eslint-plugin-react";
 import reactHooks from 'eslint-plugin-react-hooks';
@@ -45,7 +46,41 @@ const tslint = {
     },
 };
 
-export default ts.config(
+
+/** Custom plugin to warn using icons outside the icon component */
+const IconUsagePlugin = {
+    meta: {
+        name: "no-lucide-outside-icon",
+        version: "1.0.0",
+    },
+    rules: {
+        "no-lucide-outside-icon": {
+            create(context) {
+                return {
+                    ImportDeclaration(node) {
+                        const filePath = context.getFilename();
+                        const isIconsFile =
+                            filePath.endsWith("icons.ts") ||
+                            filePath.endsWith("icons.tsx"); // in case you use TSX
+
+                        if (
+                            !isIconsFile &&
+                            node.source.value === "lucide-react"
+                        ) {
+                            context.report({
+                                node,
+                                message:
+                                    "Importing lucide icons outside 'icons.ts' is not allowed.",
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+};
+
+export default defineConfig(
     // global ignores
     {
         ignores: ["dist/", "node_modules/", "src/pythonTypes.d.ts", "dev-dist/"],
@@ -136,6 +171,15 @@ export default ts.config(
         files: ["**/*context.ts*"],
         rules: {
             "react-refresh/only-export-components": "off",
+        },
+    },
+    {
+        plugins: {
+            "icon-usage": IconUsagePlugin,
+        },
+        rules: {
+            // We should on working to enable this rule
+            "icon-usage/no-lucide-outside-icon": "off",
         },
     }
 );

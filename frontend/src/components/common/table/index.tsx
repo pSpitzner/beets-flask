@@ -1,13 +1,8 @@
 export {
-    FixedGrid,
-    type FixedGridChildrenProps,
-    type FixedGridProps,
-} from "./FixedGrid";
-export {
-    FixedList,
-    type FixedListChildrenProps,
-    type FixedListProps,
-} from "./FixedList";
+    DynamicFlowGrid,
+    type CellComponentProps,
+    type DynamicFlowGridProps,
+} from "./Grid";
 export { ViewToggle, type ViewToggleProps } from "./ViewToggle";
 export {
     SortToggle,

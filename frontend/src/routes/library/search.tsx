@@ -1,34 +1,23 @@
-import { AudioLinesIcon, Disc3Icon, DotIcon, OctagonX, X } from "lucide-react";
+import { OctagonX, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import {
-    IconButton,
-    InputAdornment,
-    Tooltip,
-    Typography,
-    useTheme,
-} from "@mui/material";
+import { List } from "react-window";
+import { IconButton, InputAdornment, Tooltip, useTheme } from "@mui/material";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import TextField from "@mui/material/TextField";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 
-import { Item } from "@/api/library";
+import { AlbumListRow } from "@/components/common/browser/albums";
+import { ItemListRow } from "@/components/common/browser/items";
 import { JSONPretty } from "@/components/common/debugging/json";
+import { AlbumIcon, TrackIcon } from "@/components/common/icons";
 import { PageWrapper } from "@/components/common/page";
-import {
-    FixedList,
-    FixedListChildrenProps,
-    FixedListProps,
-} from "@/components/common/table";
 import {
     SearchContextProvider,
     useSearchContext,
 } from "@/components/library/search/context";
-import { AlbumResponseMinimal } from "@/pythonTypes";
-
-import { AlbumsList, LoadingRow } from "./browse/albums";
 
 import styles from "@/components/library/library.module.scss";
 
@@ -133,10 +122,10 @@ function SearchBar() {
                 aria-label="Filter type"
             >
                 <ToggleButton value="item">
-                    <AudioLinesIcon size={theme.iconSize.xl} />
+                    <TrackIcon size={theme.iconSize.xl} />
                 </ToggleButton>
                 <ToggleButton value="album">
-                    <Disc3Icon size={theme.iconSize.xl} />
+                    <AlbumIcon size={theme.iconSize.xl} />
                 </ToggleButton>
             </ToggleButtonGroup>
         </Box>
@@ -146,7 +135,7 @@ function SearchBar() {
 function CancelSearchButton({
     searchFieldRef,
 }: {
-    searchFieldRef: React.RefObject<HTMLInputElement>;
+    searchFieldRef: React.RefObject<HTMLInputElement | null>;
 }) {
     const { cancelSearch, resetSearch, queryAlbums, queryItems, query } =
         useSearchContext();
@@ -242,15 +231,10 @@ function SearchResults() {
     );
 }
 
-const LISTROWHEIGHT = 50;
+const OVERSCANCOUNT = 10;
 
-function ItemsListAutoFetchData({
-    ...props
-}: Omit<
-    FixedListProps<AlbumResponseMinimal>,
-    "data" | "itemCount" | "itemHeight" | "children"
->) {
-    const [overScanStopIndex, setOverScanStopIndex] = useState(0);
+function ItemsListAutoFetchData() {
+    const [visibleContentStopIndex, setVisibleContentStopIndex] = useState(0);
     const { queryItems } = useSearchContext();
 
     const data = queryItems?.data || {
@@ -266,37 +250,38 @@ function ItemsListAutoFetchData({
     // Fetch new pages on scroll
     useEffect(() => {
         if (
-            overScanStopIndex >= numLoaded - 10 &&
+            visibleContentStopIndex >= numLoaded - OVERSCANCOUNT &&
             !isFetching &&
             !isError &&
             hasNextPage
         ) {
             void fetchNextPage?.();
         }
-    }, [overScanStopIndex, numLoaded, fetchNextPage, isFetching, isError, hasNextPage]);
+    }, [
+        visibleContentStopIndex,
+        numLoaded,
+        fetchNextPage,
+        isFetching,
+        isError,
+        hasNextPage,
+    ]);
 
     return (
-        <FixedList
-            data={data.items}
-            itemCount={data.total}
-            itemHeight={LISTROWHEIGHT}
-            onItemsRendered={({ overscanStopIndex }) => {
-                setOverScanStopIndex(overscanStopIndex);
+        <List
+            rowCount={data.total}
+            rowHeight={50}
+            rowProps={{ items: data.items }}
+            overscanCount={OVERSCANCOUNT}
+            onRowsRendered={({ stopIndex }) => {
+                setVisibleContentStopIndex((prev) => Math.max(prev, stopIndex));
             }}
-            {...props}
-        >
-            {ItemsListRow}
-        </FixedList>
+            rowComponent={ItemListRow}
+        />
     );
 }
 
-function AlbumsListAutoFetchData({
-    ...props
-}: Omit<
-    FixedListProps<AlbumResponseMinimal>,
-    "data" | "itemCount" | "itemHeight" | "children"
->) {
-    const [overScanStopIndex, setOverScanStopIndex] = useState(0);
+function AlbumsListAutoFetchData() {
+    const [visibleContentStopIndex, setVisibleContentStopIndex] = useState(0);
     const { queryAlbums } = useSearchContext();
 
     const data = queryAlbums?.data || {
@@ -312,7 +297,7 @@ function AlbumsListAutoFetchData({
     // Fetch new pages on scroll
     useEffect(() => {
         if (
-            overScanStopIndex >= numLoaded - 10 &&
+            visibleContentStopIndex >= numLoaded - OVERSCANCOUNT &&
             !isFetching &&
             !isError &&
             hasNextPage
@@ -320,69 +305,26 @@ function AlbumsListAutoFetchData({
             console.log("Fetching next page of albums");
             void fetchNextPage?.();
         }
-    }, [overScanStopIndex, numLoaded, fetchNextPage, isFetching, isError, hasNextPage]);
+    }, [
+        visibleContentStopIndex,
+        numLoaded,
+        fetchNextPage,
+        isFetching,
+        isError,
+        hasNextPage,
+    ]);
 
     return (
-        <AlbumsList
-            data={data}
-            onItemsRendered={({ overscanStopIndex }) => {
-                setOverScanStopIndex(overscanStopIndex);
+        <List
+            rowCount={data.total}
+            rowHeight={50}
+            rowProps={{ albums: data.albums }}
+            overscanCount={OVERSCANCOUNT}
+            onRowsRendered={({ stopIndex }) => {
+                setVisibleContentStopIndex((prev) => Math.max(prev, stopIndex));
             }}
-            {...props}
+            rowComponent={AlbumListRow}
         />
-    );
-}
-
-function ItemsListRow({ data: item, style }: FixedListChildrenProps<Item<true>>) {
-    const theme = useTheme();
-    if (!item) {
-        return <LoadingRow style={style} />;
-    }
-    return (
-        <Link
-            to={`/library/item/$itemId`}
-            key={item.id}
-            params={{ itemId: item.id }}
-            preloadDelay={2000}
-            style={style}
-        >
-            <Box
-                height={LISTROWHEIGHT}
-                sx={(theme) => ({
-                    display: "flex",
-                    alignItems: "center",
-                    paddingInline: 1,
-                    justifyContent: "space-between",
-                    ":hover": {
-                        background: `linear-gradient(to left, transparent 0%, ${theme.palette.primary.muted} 100%)`,
-                        color: "primary.contrastText",
-                    },
-                })}
-            >
-                <Box sx={{ display: "flex", flexDirection: "column", mr: "auto" }}>
-                    <Typography variant="body1" fontWeight="bold" color="text.primary">
-                        {item.name || "Unknown Title"}
-                    </Typography>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: "row",
-                            color: "text.secondary",
-                            alignItems: "center",
-                        }}
-                    >
-                        <Typography variant="body2" className={styles.ItemResultArtist}>
-                            {item.artist || "Unknown Artist"}
-                        </Typography>
-                        <DotIcon style={{ marginLeft: "-4px", marginRight: "-4px" }} />
-                        <Typography variant="body2" className={styles.ItemResultArtist}>
-                            {item.album || "Unknown Album"}
-                        </Typography>
-                    </Box>
-                </Box>
-                <AudioLinesIcon color={theme.palette.background.paper} />
-            </Box>
-        </Link>
     );
 }
 

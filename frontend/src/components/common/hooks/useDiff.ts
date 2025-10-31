@@ -64,11 +64,28 @@ export function useDiff(
                 break;
             case "full":
                 if (from === to) {
-                    diff = [{ value: from, count: from.length }];
+                    diff = [
+                        {
+                            value: from,
+                            count: from.length,
+                            added: false,
+                            removed: false,
+                        },
+                    ];
                 } else {
                     diff = [
-                        { value: from, count: from.length, removed: true },
-                        { value: to, count: to.length, added: true },
+                        {
+                            value: from,
+                            count: from.length,
+                            removed: true,
+                            added: false,
+                        },
+                        {
+                            value: to,
+                            count: to.length,
+                            added: true,
+                            removed: false,
+                        },
                     ];
                 }
                 break;
