@@ -757,6 +757,64 @@ class TestImportAuto(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
         assert len(self.beets_lib.albums()) == 1
 
 
+class TestImportAutoFails(
+    SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
+):
+    @pytest.fixture()
+    def path(self) -> Path:
+        path = album_path_absolute(VALID_PATHS[0])
+        use_mock_tag_album(str(path))
+        return path
+
+    async def test_import_auto_fails(self, db_session: Session, path: Path):
+        stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
+        assert db_session.execute(stmt).scalar() is None, (
+            "Database should be empty before the test"
+        )
+
+        self.statuses = []
+
+        await run_preview(
+            "obsolete_hash_preview",
+            str(path),
+            group_albums=None,
+            autotag=None,
+        )
+
+        exc = await run_import_auto(
+            "obsolete_hash_import_auto",
+            str(path),
+            import_threshold=-1.0,
+            duplicate_actions={"*": "remove"},
+        )
+        assert exc is not None, f"Should return an error {exc}"
+
+        assert len(self.statuses) == 4
+        assert self.statuses[2].status == FolderStatus.IMPORTING
+        assert self.statuses[3].status == FolderStatus.FAILED
+        assert len(self.beets_lib.albums()) == 0  # one from the previous test
+
+        stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
+        s_state_indb = db_session.execute(stmt).scalar()
+        assert s_state_indb is not None
+        assert s_state_indb.exception is not None
+
+        # After a failed import, we should be able to import again manually
+        exc = await run_import_candidate(
+            "obsolete_hash_import",
+            str(path),
+            candidate_ids=None,  # None uses best match
+            duplicate_actions={"*": "remove"},
+        )
+        assert exc is None, "Should not return an error"
+
+        # The database session state should not contain an exception anymore
+        stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
+        s_state_indb = db_session.execute(stmt).scalar()
+        assert s_state_indb is not None
+        assert s_state_indb.exception is None, "Exception should have been cleared"
+
+
 class TestChooseCandidatesSingleTask(
     SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin
 ):

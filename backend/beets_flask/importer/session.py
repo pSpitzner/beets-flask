@@ -761,6 +761,27 @@ class ImportSession(BaseSession):
 
         return stages
 
+    def finalize(self, task: importer.ImportTask):
+        """
+        Reset previous match threshold exceptions.
+
+        Needed because we might run a normal ImportSession manually after
+        the AutoImportSession. The AutoImportSession needs to keep an Exception in its
+        status to inform the frontend, which we need to clear here.
+        (No need to override `finalize` in AutoImportSession, despite it inherriting
+        from here, because it raises when below threshold).
+        """
+        if (
+            self.state.exc is not None
+            and self.state.exc["type"] == "NotImportedException"
+            and self.state.exc["message"].startswith("Match below threshold")
+        ):
+            log.debug(
+                "Clearing previous MatchThresholdException after successful import."
+            )
+            self.state.exc = None
+        super().finalize(task)
+
     # --------------------------- Stage Definitions -------------------------- #
 
     def choose_match(self, task: importer.ImportTask):
