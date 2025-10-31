@@ -16,14 +16,14 @@ config_bp = Blueprint("config", __name__, url_prefix="/config")
 async def get_all():
     """Get nested dict representing the full (but redacted) beets config."""
     config = get_config()
-    return jsonify(_serializable(config.flatten(redact=True)))
+    return jsonify(_serializable(config.to_confuse().flatten(redact=True)))
 
 
 @config_bp.route("/", methods=["GET"])
 async def get_basic():
     """Get the config settings needed for the gui."""
     config = get_config()
-    plugins = config["plugins"].as_str_seq()
+    plugins = config.data.plugins
     from beets.metadata_plugins import find_metadata_source_plugins
 
     data_sources: list[str] = [
@@ -32,28 +32,11 @@ async def get_basic():
 
     return jsonify(
         {
-            "gui": _serializable(config["gui"].flatten(redact=True)),
+            **config.to_dict(include_additional=False),
             "import": {
-                k: config["import"][k].get()
-                for k in [
-                    "duplicate_action",
-                ]
+                "duplicate_action": getattr(config.data, "import")["duplicate_action"]
             },
-            "match": {
-                k: config["match"][k].get()
-                for k in [
-                    "strong_rec_thresh",
-                    "medium_rec_thresh",
-                ]
-            }
-            | {
-                k: config["match"][k].as_str_seq()
-                for k in [
-                    "album_disambig_fields",
-                    "singleton_disambig_fields",
-                ]
-            },
-            "plugins": config["plugins"].as_str_seq(),
+            "plugins": plugins,
             "data_sources": data_sources,
             "beets_version": beets_version,
         }
@@ -91,9 +74,10 @@ async def refresh():
     curl -X POST http://localhost:5001/api_v1/config/refresh
     ```
     """
-    from beets_flask.config.beets_config import refresh_config
+    from beets_flask.config import get_config
 
-    refresh_config()
+    config = get_config()
+    config.refresh()
     return jsonify({"status": "ok"})
 
 
