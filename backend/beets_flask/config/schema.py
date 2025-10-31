@@ -13,15 +13,17 @@ from typing import Dict, Literal
 @dataclass
 class BeetsSchema:
     gui: BeetsFlaskSchema = field(default_factory=lambda: BeetsFlaskSchema())
-    directory: str = field(default="/music/imported")
 
-    # used in frontend
+    # Besides the beets-flask specific config, we want to ensure type safety
+    # for those fields of the native beets config that we use ourself.
+    directory: str = field(default="/music/imported")
     ignore: list[str] = field(default_factory=lambda: [])
     plugins: list[str] = field(default_factory=lambda: [])
 
-    # this is a problem
+    # We would like to provide a schema for the `import` section,
+    # but `import` is a reserved keyword in Python. We might add a workaround in eyconf.
     # import: ImportSection
-    match: MatchSection = field(default_factory=lambda: MatchSection())
+    match: MatchSectionSchema = field(default_factory=lambda: MatchSectionSchema())
 
 
 # ---------------------------------------------------------------------------- #
@@ -30,7 +32,7 @@ class BeetsSchema:
 
 
 @dataclass
-class MatchSection:
+class MatchSectionSchema:
     strong_rec_thresh: float = field(default=0.04)
     medium_rec_thresh: float = field(default=0.10)
     album_disambig_fields: list[str] = field(
@@ -50,9 +52,13 @@ class MatchSection:
 class BeetsFlaskSchema:
     """Beets-flask specific configuration schema."""
 
-    inbox: InboxSection = field(default_factory=lambda: InboxSection())
-    library: LibrarySection = field(default_factory=lambda: LibrarySection())
-    terminal: TerminalSection = field(default_factory=lambda: TerminalSection())
+    inbox: InboxSectionSchema = field(default_factory=lambda: InboxSectionSchema())
+    library: LibrarySectionSchema = field(
+        default_factory=lambda: LibrarySectionSchema()
+    )
+    terminal: TerminalSectionSchema = field(
+        default_factory=lambda: TerminalSectionSchema()
+    )
     num_preview_workers: int = field(default=4)
 
 
@@ -60,37 +66,37 @@ class BeetsFlaskSchema:
 
 
 @dataclass
-class InboxSection:
+class InboxSectionSchema:
     ignore: list[str] | Literal["_use_beets_ignore"] = "_use_beets_ignore"
     # File patterns to ignore when scanning the inbox folders.
     # Useful to exclude temporary files from being shown in the inbox.
     # To show all files (independent of which files beets will copy) set to []
     debounce_before_autotag: int = 30
-    folders: Dict[str, InboxFolder] = field(
+    folders: Dict[str, InboxFolderSchema] = field(
         default_factory=lambda: {
-            "placeholder": InboxFolder(
+            "placeholder": InboxFolderSchema(
                 name="Please check your config!",
                 path="/music/inbox",
-                autotag=False,
+                autotag="off",
             )
         }
     )
 
 
 @dataclass
-class InboxFolder:
+class InboxFolderSchema:
     name: str
     path: str
     auto_threshold: float | None = None
-    autotag: Literal["auto", "preview", "bootleg", False] = False
-    # the `no` -> False option will need tweaking
+    autotag: Literal["auto", "preview", "bootleg", "off", False] = "off"
+    # Let's keep the boolean option until v2.0.0 for backward compatibility. But consistent types are better.
 
 
 # ---------------------------------- Library --------------------------------- #
 
 
 @dataclass
-class LibrarySection:
+class LibrarySectionSchema:
     readonly: bool = False
     artist_separators: list[str] = field(default_factory=lambda: [",", ";", "&"])
 
@@ -99,5 +105,5 @@ class LibrarySection:
 
 
 @dataclass
-class TerminalSection:
+class TerminalSectionSchema:
     start_path: str = "/repo"

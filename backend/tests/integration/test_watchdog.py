@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from beets_flask.config import get_config
-from beets_flask.config.schema import InboxFolder
+from beets_flask.config.schema import InboxFolderSchema
 from beets_flask.watchdog.inbox import InboxHandler, register_inboxes
 
 
@@ -17,7 +17,7 @@ def preview_autotag(tmpdir_factory):
     """
     config = get_config()
     config.data.gui.inbox.folders = {
-        "inbox1": InboxFolder(
+        "inbox1": InboxFolderSchema(
             name="inbox1",
             path=tmpdir_factory.mktemp("inbox").strpath,
             autotag="preview",

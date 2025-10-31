@@ -19,7 +19,7 @@ from beets_flask.logger import log
 from .schema import BeetsSchema
 
 
-class InteractiveBeetsConfig(EYConfExtraFields[BeetsSchema]):
+class BeetsFlaskConfig(EYConfExtraFields[BeetsSchema]):
     """Base config class with extra fields support."""
 
     def __init__(self):
@@ -49,7 +49,7 @@ class InteractiveBeetsConfig(EYConfExtraFields[BeetsSchema]):
         This loads the user config from yaml files after resetting to defaults.
         """
         super().reset()
-        InteractiveBeetsConfig.write_examples_as_user_defaults()
+        BeetsFlaskConfig.write_examples_as_user_defaults()
         # load user config from yaml.
         # EYConfs update method also validates against the schema
         with open(self.get_beets_config_path(), "r") as f:
@@ -111,13 +111,6 @@ class InteractiveBeetsConfig(EYConfExtraFields[BeetsSchema]):
                     log.debug(f"Could not check {module_name}.{attr_name}", exc_info=e)
                     continue
 
-    @property
-    def beets_config(self) -> beets.IncludeLazyConfig:
-        """Convenience property to get the native beets config."""
-        # Aavoid calling refresh_confuse here. We often access the beets config,
-        # and updating it every time makes things very slow.
-        return beets.config
-
     def validate(self):
         super().validate()
 
@@ -126,7 +119,15 @@ class InteractiveBeetsConfig(EYConfExtraFields[BeetsSchema]):
         for folder in self.data.gui.inbox.folders.values():
             if folder.path.endswith("/"):
                 folder.path = folder.path.rstrip("/")
-                log.debug(f"Removed trailing slash from inbox path: {folder.path}")
+                log.warning(f"Removed trailing slash from inbox path: {folder.path}")
+
+            # Since we changed the autotag type from False to "off" with v1.2.0,
+            # Let's fix old configs and warn
+            if folder.autotag is False:
+                folder.autotag = "off"
+                log.warning(
+                    f"Updated inbox autotag setting from False to 'off' for inbox: {folder.name}"
+                )
 
     @classmethod
     def write_examples_as_user_defaults(cls):
@@ -166,6 +167,25 @@ class InteractiveBeetsConfig(EYConfExtraFields[BeetsSchema]):
     # ------------------------------ Utility getters ----------------------------- #
 
     @property
+    def beets_config(self) -> beets.IncludeLazyConfig:
+        """Convenience property to get the native beets config."""
+        # Aavoid calling refresh_confuse here. We often access the beets config,
+        # and updating it every time makes things very slow.
+        return beets.config
+
+    @property
+    def beets_version(self) -> str:
+        """Get the current beets version."""
+        return beets.__version__
+
+    @property
+    def beets_meta_sources(self) -> list[str]:
+        """Get the list of enabled metadata source plugins."""
+        from beets.metadata_plugins import find_metadata_source_plugins
+
+        return [p.__class__.data_source for p in find_metadata_source_plugins()]
+
+    @property
     def ignore_globs(self) -> list[str]:
         """
         Get the list of ignore globs from the config.
@@ -180,10 +200,10 @@ class InteractiveBeetsConfig(EYConfExtraFields[BeetsSchema]):
         return gui_globs
 
 
-config: InteractiveBeetsConfig | None = None
+config: BeetsFlaskConfig | None = None
 
 
-def get_config(force_refresh=False) -> InteractiveBeetsConfig:
+def get_config(force_refresh=False) -> BeetsFlaskConfig:
     """Get the config object.
 
     This is useful if you want to access the config from another module.
@@ -199,7 +219,7 @@ def get_config(force_refresh=False) -> InteractiveBeetsConfig:
     global config
 
     if config is None:
-        config = InteractiveBeetsConfig()
+        config = BeetsFlaskConfig()
         return config
     if force_refresh:
         config.reset()

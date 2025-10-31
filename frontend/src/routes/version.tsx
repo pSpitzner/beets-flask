@@ -122,11 +122,11 @@ function DataSources() {
             >
                 Data Sources
             </Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                {config.data_sources.map((source) => (
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+                {config.beets_meta_sources.map((source) => (
                     <Box
                         key={source}
-                        sx={{ display: 'flex', gap: 1, alignItems: 'center' }}
+                        sx={{ display: "flex", gap: 1, alignItems: "center" }}
                     >
                         <Typography
                             variant="body1"
@@ -135,10 +135,7 @@ function DataSources() {
                         >
                             {source.toLowerCase()}
                         </Typography>
-                        <SourceTypeIcon
-                            type={source}
-                            size={theme.iconSize.sm}
-                        />
+                        <SourceTypeIcon type={source} size={theme.iconSize.sm} />
                     </Box>
                 ))}
             </Box>
