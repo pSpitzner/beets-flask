@@ -24,7 +24,7 @@ def preview_autotag(tmpdir_factory):
         ),
     }
     yield
-    config.refresh()
+    config.reload()
 
 
 from unittest import mock

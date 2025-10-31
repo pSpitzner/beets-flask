@@ -84,8 +84,9 @@ class IsolatedBeetsLibraryMixin(ABC):
             path=os.environ["BEETSDIR"] + "/library.db",
             directory=os.environ["BEETSDIR"] + "/imported",
         )
-        config = get_config().refresh()
+        config = get_config().reload()
         config.data.directory = os.environ["BEETSDIR"] + "/imported"
+        config.commit_to_beets()
         # Reset the beets library to a clean state
         yield
         print("Resetting beets library to a clean state...")
@@ -104,7 +105,9 @@ class IsolatedBeetsLibraryMixin(ABC):
             path=os.environ["BEETSDIR"] + "/library.db",
             directory=os.environ["BEETSDIR"] + "/imported",
         )
-        get_config().refresh()
+        config = get_config().reload()
+        config.data.directory = os.environ["BEETSDIR"] + "/imported"
+        config.commit_to_beets()
 
         # mock needed for the library to be available in the resources endpoints
         with mock.patch(

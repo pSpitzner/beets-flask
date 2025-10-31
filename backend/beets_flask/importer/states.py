@@ -675,7 +675,7 @@ class CandidateState(BaseState):
         # FIXME: Tracks are not checked for duplicates. Tbh noone cares about tracks anyways
         """
         if lib is None:
-            lib = _open_library(get_config().to_confuse())
+            lib = _open_library(get_config().beets_config)
 
         info = self.match.info.copy()
         info["albumartist"] = info["artist"]

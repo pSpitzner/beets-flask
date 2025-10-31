@@ -41,7 +41,7 @@ dependencies = [
     "aiofiles",
     "numpy",
     "pandas",
-    "typing_extensions"
+    "typing_extensions",
 ]
 
 [project.optional-dependencies]
@@ -64,7 +64,7 @@ typed = [
     "types-pyyaml",
     "pandas-stubs",
 ]
-all = ["beets_flask[dev,test]"]
+all = ["beets_flask[dev,test,typed]"]
 docs = [
     "sphinx>=8.0.2",
     "furo>=2024.8.6",
