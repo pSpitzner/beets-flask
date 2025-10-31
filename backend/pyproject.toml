@@ -32,6 +32,7 @@ dependencies = [
     # beets plugin dependencies
     "pylast>=5.2.0",
     "python2ts>=0.6.1",
+    "eyconf>=0.3.3",
     #"scantree>=0.0.4",
     "natsort",
     "tinytag",
@@ -40,8 +41,7 @@ dependencies = [
     "aiofiles",
     "numpy",
     "typing_extensions",
-    "polars>=1.36.1",
-    "eyconf @ git+https://github.com/semohr/eyconf.git@allow_additional",
+    "polars>=1.36.1"
 ]
 
 [project.optional-dependencies]
