@@ -15,6 +15,7 @@ from eyconf import EYConfExtraFields
 from typing_extensions import Literal
 
 from beets_flask.logger import log
+from beets_flask.utility import deprecation_warning
 
 from .schema import BeetsSchema
 
@@ -125,8 +126,9 @@ class BeetsFlaskConfig(EYConfExtraFields[BeetsSchema]):
             # Let's fix old configs and warn
             if folder.autotag is False:
                 folder.autotag = "off"
-                log.warning(
-                    f"Updated inbox autotag setting from False to 'off' for inbox: {folder.name}"
+                deprecation_warning(
+                    "The inbox autotag setting 'False'",
+                    alt_text="Update your configuration and use 'off' instead.",
                 )
 
     @classmethod
