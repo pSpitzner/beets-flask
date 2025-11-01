@@ -1,23 +1,19 @@
 services:
-  beets-flask:
-    # image: pspitzner/beets-flask:stable
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-      target: prod
-    restart: unless-stopped
-    ports:
-      - "5002:5001"
-    environment:
-      # Change to your timezone
-      TZ: "Europe/Berlin"
-      # 502 is default on macos, 1000 on linux
-      USER_ID: 1000
-      GROUP_ID: 1000
-    # volumes:
-    # - /wherever/config/:/config
-    # for music folders, match paths inside and out of container!
-    # - /music_path/inbox/:/music_path/inbox/
-    # - /music_path/clean/:/music_path/clean/
-    # If you want to persist the logs, you can mount a logs directory
-    # - /wherever/logs/:/logs
+    beets-flask:
+        image: pspitzner/beets-flask:stable
+        restart: unless-stopped
+        ports:
+            - "5001:5001"
+        environment:
+            # Change to your timezone
+            TZ: "Europe/Berlin"
+            # 502 is default on macos, 1000 on linux
+            USER_ID: 1000
+            GROUP_ID: 1000
+        volumes:
+            - /wherever/config/:/config
+            # for music folders, match paths inside and out of container!
+            - /music_path/inbox/:/music_path/inbox/
+            - /music_path/clean/:/music_path/clean/
+            # If you want to persist the logs, you can mount a logs directory
+            # - /wherever/logs/:/logs
