@@ -1,173 +1,191 @@
-"""Overload for beets configuration.
-
-We support setting config values either via your beets config file, under the `gui` section, or via environment variables in the Docker compose.
-
-Use double underscore to separate nested values:
-https://confuse.readthedocs.io/en/latest/usage.html#environment-variables
-
-We prefix all environment variables with `IB` to avoid conflicts with other services.
-
-To set a custom file path to a yaml that gets inserted into (and overwrites) the
-beets config, set the `IB_GUI_CONFIGPATH` environment variable.
-Note that this does not remove list keys from the lower priority default config
-(e.g. if you configure different inbox folders in your beets config, and the ib config,
-all of them will be added).
-
-# Example:
-
-```bash
-export IB_GUI__TAGS=first
-```
-
-```python
-from beets_flask.beets_config.config import config
-print(config["gui"]["tags"].get(default="default_value"))
-```
-"""
+from __future__ import annotations
 
 import os
+import shutil
 import sys
-from typing import cast
+from dataclasses import asdict
+from pathlib import Path
+from typing import Self
 
-from beets import IncludeLazyConfig as BeetsConfig
+import beets
+import yaml
 from beets.plugins import _instances as plugin_instances
 from beets.plugins import get_plugin_names, load_plugins
-from confuse import YamlSource
+from eyconf import EYConfExtraFields
+from typing_extensions import Literal
 
 from beets_flask.logger import log
+from beets_flask.utility import deprecation_warning
+
+from .schema import BeetsSchema
 
 
-def _copy_file(src, dest):
-    with open(src, "r") as src_file, open(dest, "w") as dest_file:
-        dest_file.write(src_file.read())
-
-
-class Singleton(type):
-    _instances: dict = {}
-
-    def __call__(cls, *args, **kwargs):
-        """Singleton pattern implementation."""
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
-
-
-class InteractiveBeetsConfig(BeetsConfig, metaclass=Singleton):
-    """Singleton class to handle the beets config.
-
-    This class is a subclass of the beets config and adds some
-    interactive beets specific functionality.
-    """
+class BeetsFlaskConfig(EYConfExtraFields[BeetsSchema]):
+    """Base config class with extra fields support."""
 
     def __init__(self):
-        """Initialize the config object with the default values.
+        """Initialize the config object with the default values."""
+        # Initialize the dataclass fields first
 
-        Loads config and some interactive beets specific tweaks.
-        """
-        super().__init__("beets", "beets")
-        self.reset()
+        super().__init__(schema=BeetsSchema, data=BeetsSchema())
+        self.reload()
 
-    @staticmethod
-    def get_beets_flask_config_path() -> str:
+    @classmethod
+    def get_beets_flask_config_path(cls) -> Path:
         """Get the path to the beets-flask config file."""
-
-        ib_folder = os.getenv("BEETSFLASKDIR")
-        if ib_folder is None:
-            ib_folder = os.path.expanduser("~/.config/beets-flask")
-        os.makedirs(ib_folder, exist_ok=True)
-        ib_config_path = os.path.join(ib_folder, "config.yaml")
-        return ib_config_path
-
-    @staticmethod
-    def get_beets_config_path() -> str:
-        """Get the path to the beets config file."""
-        # TODO: maybe there is a beets function to get the path
-        beets_folder = os.getenv("BEETSDIR")
-        if beets_folder is None:
-            beets_folder = os.path.expanduser("~/.config/beets")
-        beets_config_path = os.path.join(beets_folder, "config.yaml")
-        return beets_config_path
-
-    def reset(self):
-        """Recreate the config object.
-
-        As if the app was just started.
-        """
-        # vanilla beets reset
-        log.debug(f"Reading beets config from default location")
-        self.clear()
-        self.read()
-
-        # read the default config just in case the user config is missing
-        # or malformed
-        ib_defaults_path = os.path.join(
-            os.path.dirname(__file__), "config_bf_default.yaml"
+        bf_folder = os.getenv(
+            "BEETSFLASKDIR", os.path.expanduser("~/.config/beets-flask")
         )
-        log.debug(f"Reading IB config defaults from {ib_defaults_path}")
-        default_source = YamlSource(ib_defaults_path, default=True)
-        self.add(default_source)  # .add inserts with lowest priority
+        return Path(bf_folder) / "config.yaml"
 
-        # then apply our needed tweaks
-        # enable env variables
-        self.set_env(prefix="IB")
+    @classmethod
+    def get_beets_config_path(cls) -> Path:
+        """Get the path to the beets config file."""
+        beets_folder = os.getenv("BEETSDIR", os.path.expanduser("~/.config/beets"))
+        return Path(beets_folder) / "config.yaml"
 
+    def reload(self) -> Self:
+        """Reset the config to default values.
+
+        This loads the user config from yaml files after resetting to defaults.
+        """
+        super().reset()
+        BeetsFlaskConfig.write_examples_as_user_defaults()
+        # load user config from yaml.
+        # EYConfs update method also validates against the schema
+        with open(self.get_beets_config_path(), "r") as f:
+            loaded = yaml.safe_load(f)
+            if not isinstance(loaded, dict):
+                raise ValueError("Beets config is not a valid YAML dictionary.")
+            self.update(loaded)
+
+        with open(self.get_beets_flask_config_path(), "r") as f:
+            loaded = yaml.safe_load(f)
+            if not isinstance(loaded, dict):
+                raise ValueError("Beets flask config is not a valid YAML dictionary.")
+            self.update(loaded)
+
+        return self
+
+    def commit_to_beets(self) -> None:
+        """
+        Insert the current state of self into the native beets config.
+
+        Only call manually when needed, i.e. after modifying the config object.
+        This is somewhat slow.
+        """
+
+        beets.config.clear()
+        beets.config.read()
+
+        # Put our defaults that come from schema at lowest priority
+        beets.config.add(asdict(BeetsSchema()))
+
+        # Inserts user config into confuse
+        beets.config.set(self.to_dict(True))
+
+        # Hack: We have to manually load the plugins as this
+        # is normally done by beets. Clear the list to force
+        # actual reload.
+        plugin_instances.clear()
+        load_plugins()
+        log.debug(f"Loading plugins: {get_plugin_names()}")
+
+        # Beets config "Singleton" is not a real singleton, there might be copies
+        # in different submodules - we need to update all of them.
+        # TODO: I think we can remove this
+        for module_name, mod in list(sys.modules.items()):
+            if mod is None:
+                continue
+
+            if not (
+                module_name.startswith("beets")  # includes beets and beetsplug
+            ):
+                continue
+
+            for attr_name in dir(mod):
+                try:
+                    if getattr(mod, attr_name) is beets.config:
+                        setattr(mod, attr_name, beets.config)
+                        log.debug(f"Updated config in {module_name}.{attr_name}")
+                except Exception as e:
+                    log.debug(f"Could not check {module_name}.{attr_name}", exc_info=e)
+                    continue
+
+    def validate(self):
+        super().validate()
+
+        # make sure to remove trailing slashes from user configured inbox paths
+        # we could also fix this in the frontend, but this was easier.
+        for folder in self.data.gui.inbox.folders.values():
+            if folder.path.endswith("/"):
+                folder.path = folder.path.rstrip("/")
+                log.warning(f"Removed trailing slash from inbox path: {folder.path}")
+
+            # Since we changed the autotag type from False to "off" with v1.2.0,
+            # Let's fix old configs and warn
+            if folder.autotag is False:
+                folder.autotag = "off"
+                deprecation_warning(
+                    "The inbox autotag setting 'False'",
+                    alt_text="Update your configuration and use 'off' instead.",
+                )
+
+    @classmethod
+    def write_examples_as_user_defaults(cls):
+        """Write example config files if they do not exist yet.
+
+        Note that we also place an opinionated example for beets,
+        because it does not do that itself.
+        """
         # Load config from default location (set via env var)
         # if it is set otherwise use the default location
-        ib_config_path = self.get_beets_flask_config_path()
+        bf_config_path = cls.get_beets_flask_config_path()
 
         # Check if the user config exists
         # if not, copy the example config to the user config location
-        if not os.path.exists(ib_config_path):
+        if not os.path.exists(bf_config_path):
+            os.makedirs(os.path.dirname(bf_config_path), exist_ok=True)
             # Copy the default config to the user config location
-            log.debug(f"Beets-flask config not found at {ib_config_path}")
-            log.debug(f"Copying default config to {ib_config_path}")
-            ib_example_path = os.path.join(
+            log.info(f"Beets-flask config not found at {bf_config_path}")
+            log.info(f"Copying default config to {bf_config_path}")
+            bf_example_path = os.path.join(
                 os.path.dirname(__file__), "config_bf_example.yaml"
             )
-            _copy_file(ib_example_path, ib_config_path)
+            shutil.copy2(bf_example_path, bf_config_path)
 
         # Same check for beets config and copy our default
         # if it does not exist
-        beets_config_path = self.get_beets_config_path()
+        beets_config_path = cls.get_beets_config_path()
         if not os.path.exists(beets_config_path):
-            log.debug(f"Beets config not found at {beets_config_path}")
-            log.debug(f"Copying default config to {beets_config_path}")
+            os.makedirs(os.path.dirname(beets_config_path), exist_ok=True)
+            log.info(f"Beets config not found at {beets_config_path}")
+            log.info(f"Copying default config to {beets_config_path}")
             beets_example_path = os.path.join(
                 os.path.dirname(__file__), "config_b_example.yaml"
             )
-            _copy_file(beets_example_path, beets_config_path)
+            shutil.copy2(beets_example_path, beets_config_path)
 
-        # Inserts user config at highest priority
-        log.debug(f"Reading beets-flask config from {ib_config_path}")
-        self.set(YamlSource(ib_config_path, default=False))
+    # ------------------------------ Utility getters ----------------------------- #
 
-        # add placeholders for required keys if they are not configured,
-        # so the docker container starts and can show some help.
+    @property
+    def beets_config(self) -> beets.IncludeLazyConfig:
+        """Convenience property to get the native beets config."""
+        # Aavoid calling refresh_confuse here. We often access the beets config,
+        # and updating it every time makes things very slow.
+        return beets.config
 
-        # beets does not create a config file automatically for the user. Customizations are added as extra layers on the config.
-        sources = [s for s in beets.config["directory"].resolve()]
-        if len(sources) == 1:
-            log.debug(
-                "Beets is not using a user config. Overwriting the default `directory`."
-            )
-            self["directory"] = "/music/imported"
+    @property
+    def beets_version(self) -> str:
+        """Get the current beets version."""
+        return beets.__version__
 
-        # TODO: would be nice to have this in the default config,
-        # and simply remove it here if other inbox folders have been configured.
-        # but: I do not know how to remove (some) elements from a confuse config.
-        if len(self["gui"]["inbox"]["folders"].keys()) == 0:
-            self["gui"]["inbox"]["folders"]["Placeholder"] = {
-                "name": "Please check your config!",
-                "path": "/music/inbox",
-                "autotag": False,
-            }
+    @property
+    def beets_meta_sources(self) -> list[str]:
+        """Get the list of enabled metadata source plugins."""
+        from beets.metadata_plugins import find_metadata_source_plugins
 
-        # make sure to remove trailing slashes from user configured inbox paths
-        for folder in self["gui"]["inbox"]["folders"].values():
-            fp: str = folder["path"].as_str()  # type: ignore
-            if fp.endswith("/"):
-                folder["path"] = fp.rstrip("/")
-                log.debug(f"Removed trailing slash from inbox path: {folder['path']}")
+        return [p.__class__.data_source for p in find_metadata_source_plugins()]
 
     @property
     def ignore_globs(self) -> list[str]:
@@ -177,69 +195,17 @@ class InteractiveBeetsConfig(BeetsConfig, metaclass=Singleton):
         If user does not set this in their beets flask config, we use whats in beets.
         (We do this via a placeholder string "_use_beets_ignore")
         If the user sets an empty list [], that means no files are ignored.
-
         """
-        gui_globs: list[str] | str = get_config()["gui"]["inbox"]["ignore"].get()  # type: ignore
+        gui_globs: list[str] | Literal["_use_beets_ignore"] = self.data.gui.inbox.ignore
         if gui_globs is None or gui_globs == "_use_beets_ignore":
-            gui_globs: list[str] = self["ignore"].as_str_seq()  # type: ignore
-        elif isinstance(gui_globs, str):
-            gui_globs = [gui_globs]
-        elif isinstance(gui_globs, list):
-            gui_globs = gui_globs
-        return cast(list[str], gui_globs)
+            gui_globs = self.data.ignore
+        return gui_globs
 
 
-# Monkey patch the beets config
-import beets
-
-config: InteractiveBeetsConfig | None = None
+config: BeetsFlaskConfig | None = None
 
 
-def refresh_config():
-    """Refresh the config object.
-
-    This is useful if you want to reload the config after it has been changed.
-    """
-    global config
-
-    # Keep reference to old config
-    old_config = getattr(beets, "config", None)
-
-    config = InteractiveBeetsConfig()
-
-    beets.config = config
-    sys.modules["beets"].config = config  # type: ignore
-
-    # Hack: We have to manually load the plugins as this
-    # is normally done by beets. Clear the list to force
-    # actual reload.
-    plugin_instances.clear()
-    load_plugins()
-    log.debug(f"Loading plugins: {get_plugin_names()}")
-
-    # Update any existing references in other modules
-    for module_name, mod in list(sys.modules.items()):
-        if mod is None:
-            continue
-
-        if not (
-            module_name.startswith("beets")  # includes beets and beetsplug
-        ):
-            continue
-
-        for attr_name in dir(mod):
-            try:
-                if getattr(mod, attr_name) is old_config:
-                    setattr(mod, attr_name, config)
-                    log.debug(f"Updated config in {module_name}.{attr_name}")
-            except Exception as e:
-                log.debug(f"Could not check {module_name}.{attr_name}", exc_info=e)
-                continue
-
-    return config
-
-
-def get_config(force_refresh=False) -> InteractiveBeetsConfig:
+def get_config(force_refresh=False) -> BeetsFlaskConfig:
     """Get the config object.
 
     This is useful if you want to access the config from another module.
@@ -249,17 +215,15 @@ def get_config(force_refresh=False) -> InteractiveBeetsConfig:
     Parameters
     ----------
     force_refresh : bool
-        Force a refresh of the config object.
-        This is useful if you want to be sure that the config is up to date,
-        should normally only be called if the config was changed in another process.
+        Force a refresh of the config object, including the global beets config.
+
     """
     global config
 
-    if config is None or force_refresh:
-        return refresh_config()
+    if config is None:
+        config = BeetsFlaskConfig()
+        return config
+    if force_refresh:
+        config.reset()
+        config.commit_to_beets()
     return config
-
-
-__all__ = ["refresh_config", "get_config"]
-
-# raise NotImplementedError("This module should not be imported.")
