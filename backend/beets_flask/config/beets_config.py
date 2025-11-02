@@ -12,6 +12,7 @@ import yaml
 from beets.plugins import _instances as plugin_instances
 from beets.plugins import get_plugin_names, load_plugins
 from eyconf import EYConfExtraFields
+from eyconf.validation import ConfigurationError, MultiConfigurationError
 from typing_extensions import Literal
 
 from beets_flask.logger import log
@@ -115,10 +116,15 @@ class BeetsFlaskConfig(EYConfExtraFields[BeetsSchema]):
                     continue
 
     def validate(self):
+        """Validate and sanitize the config data.
+
+        We apply some light transformations to make things more convenient.
+        """
         super().validate()
 
         # make sure to remove trailing slashes from user configured inbox paths
         # we could also fix this in the frontend, but this was easier.
+        missing_folder_errors = []
         for folder in self.data.gui.inbox.folders.values():
             if folder.path.endswith("/"):
                 folder.path = folder.path.rstrip("/")
@@ -132,6 +138,22 @@ class BeetsFlaskConfig(EYConfExtraFields[BeetsSchema]):
                     "The inbox autotag setting 'False'",
                     alt_text="Update your configuration and use 'off' instead.",
                 )
+
+            if (
+                not folder.name != "Please check your config!"
+                and Path(folder.path).exists()
+            ):
+                missing_folder_errors.append(
+                    ConfigurationError(
+                        f"Inbox folder path does not exist: {folder.path}",
+                        section="gui.inbox.folders",
+                    )
+                )
+
+        if len(missing_folder_errors) > 1:
+            raise MultiConfigurationError(missing_folder_errors)
+        elif len(missing_folder_errors) == 1:
+            raise missing_folder_errors[0]
 
     @classmethod
     def write_examples_as_user_defaults(cls):
