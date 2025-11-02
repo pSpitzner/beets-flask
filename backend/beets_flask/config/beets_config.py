@@ -25,8 +25,6 @@ class BeetsFlaskConfig(EYConfExtraFields[BeetsSchema]):
 
     def __init__(self):
         """Initialize the config object with the default values."""
-        # Initialize the dataclass fields first
-
         super().__init__(schema=BeetsSchema, data=BeetsSchema())
         self.reload()
 
@@ -65,13 +63,16 @@ class BeetsFlaskConfig(EYConfExtraFields[BeetsSchema]):
                 raise ValueError("Beets flask config is not a valid YAML dictionary.")
             self.update(loaded)
 
+        self.validate()
         return self
 
     def commit_to_beets(self) -> None:
         """
         Insert the current state of self into the native beets config.
 
-        Only call manually when needed, i.e. after modifying the config object.
+        Resets the beets config before inserting the new values.
+
+        Only call manually when needed, i.e. after modifying the bf config.
         This is somewhat slow.
         """
 
@@ -93,7 +94,8 @@ class BeetsFlaskConfig(EYConfExtraFields[BeetsSchema]):
 
         # Beets config "Singleton" is not a real singleton, there might be copies
         # in different submodules - we need to update all of them.
-        # TODO: I think we can remove this
+        # TODO: Can we remove this? PS 2025-11-02: I dont think so, because we still do
+        # not know if plugins make a copy of the beets config when they are initialized.
         for module_name, mod in list(sys.modules.items()):
             if mod is None:
                 continue
@@ -205,7 +207,7 @@ class BeetsFlaskConfig(EYConfExtraFields[BeetsSchema]):
 config: BeetsFlaskConfig | None = None
 
 
-def get_config(force_refresh=False) -> BeetsFlaskConfig:
+def get_config(force_reload=False) -> BeetsFlaskConfig:
     """Get the config object.
 
     This is useful if you want to access the config from another module.
@@ -214,7 +216,7 @@ def get_config(force_refresh=False) -> BeetsFlaskConfig:
 
     Parameters
     ----------
-    force_refresh : bool
+    force_reload : bool
         Force a refresh of the config object, including the global beets config.
 
     """
@@ -223,7 +225,7 @@ def get_config(force_refresh=False) -> BeetsFlaskConfig:
     if config is None:
         config = BeetsFlaskConfig()
         return config
-    if force_refresh:
-        config.reset()
+    if force_reload:
+        config.reload()
         config.commit_to_beets()
     return config
