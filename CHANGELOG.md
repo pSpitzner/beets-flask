@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### ⚠️ Important ⚠️
 
 - You need to update your beets config, and add `musicbrainz` to the list of enabled plugins. This is required because we updated the beets backend [see here](https://github.com/beetbox/beets/releases/tag/v2.4.0)
+- While at it, if you have inboxes with `autotag=no` please also replace with `autotag='off'` (we changed the type and this will raise an error from version 2.0.0 onwards).
 
 ### Fixed
 
@@ -27,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The inbox info button now has a description of all actions [#145](https://github.com/pSpitzner/beets-flask/issues/145)
 - Subpage for version information and configs. You can access it via the version number in the navbar. [#205](https://github.com/pSpitzner/beets-flask/issues/205)
 - New config option `gui.inbox.debounce_before_autotag` to configure how many seconds to wait after the last filesystem event before starting autotagging. Same debounce applies to all inboxes. [#222](https://github.com/pSpitzner/beets-flask/issues/222)
+- Config validation. When loading config files we now check that specified options will work. If not, the frontend will show an error message with details on what's wrong. This applies to `gui` settings (i.e. our own ones, `beets-flask/config.yaml`) and very select ones from native beets (only those which we use directly). Hopefully, this will eventually cover all config options of beets native, but this is more of an upsream task. [#224](https://github.com/pSpitzner/beets-flask/pull/224).
+
 
 ### Other (dev)
 

@@ -193,8 +193,7 @@ class BaseSession(importer.ImportSession, ABC):
     pipeline: AsyncPipeline[importer.ImportTask, Any] | None = None
     config_overlay: dict
 
-    # FIXME: only for typehint until we update beets
-    lib: BeetsLibrary  # type: ignore
+    lib: BeetsLibrary
 
     def __init__(
         self,
@@ -213,7 +212,7 @@ class BaseSession(importer.ImportSession, ABC):
         # We do not want to pollute a global config object every time a session runs.
         # This is fine for the cli tool, where each run creates only one session
         # but not for our long-running webserver.
-        config = get_config()
+        config = get_config().beets_config
         if isinstance(config_overlay, dict):
             config.set_args(config_overlay)
 
@@ -270,7 +269,7 @@ class BaseSession(importer.ImportSession, ABC):
         # get settings from user settings, this is not a dict, but confuse config
         # the confuse config views do not throw key errors, and their .get() is not
         # the same as dict.get(), but rather resolves the value.
-        default = get_config()
+        default = get_config().beets_config
         for p in path:
             default = default[p]
         default = default.get(type_func) if type_func else default.get()
@@ -358,6 +357,10 @@ class BaseSession(importer.ImportSession, ABC):
 
     def finalize(self, task: importer.ImportTask):
         """Last stage called and customizable any session."""
+        if len(self.config_overlay) > 0:
+            # make sure we dont leave overlays in beets
+            # but for multi-task sessions, this might break overlays for remaining tasks
+            get_config().commit_to_beets()
         self.logger.debug(f"Finalized {self} {task}")
 
     # ---------------------------------- Run --------------------------------- #
@@ -375,7 +378,7 @@ class BaseSession(importer.ImportSession, ABC):
         # For now, until we improve the upstream beets config logic,
         # adhere to importer.ImportSession convention and create a local copy
         # of the config.
-        config = get_config()
+        config = get_config().beets_config
         self.set_config(config["import"])
 
         # TODO: check some config values. that are not compatible with our code.
@@ -631,7 +634,7 @@ class AddCandidatesSession(PreviewSession):
                 + "Cannot restore previous progress."
             )
 
-        self.logger.debug(f"Finalized {self} {task}")
+        super().finalize(task)
 
 
 class ImportSession(BaseSession):
