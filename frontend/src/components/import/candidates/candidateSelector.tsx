@@ -29,10 +29,10 @@ import {
     useTheme,
 } from "@mui/material";
 import Box, { BoxProps } from "@mui/material/Box";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQueries, useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
-import { FileMetadata, fileMetaQueryOptions } from "@/api/inbox";
+import { FileMetadata, fileMetadataQueryOptions } from "@/api/library";
 import { Dialog } from "@/components/common/dialogs";
 import { PropertyValueTable } from "@/components/common/propertyValueTable";
 import {
@@ -598,11 +598,9 @@ function AsisCandidateDetails({
     const theme = useTheme();
 
     const expanded = isExpanded(candidate.id);
-    const { data: filesMetaData } = useSuspenseQuery(
-        fileMetaQueryOptions(
-            items.map((item) => item.path).filter((i) => i != undefined)
-        )
-    );
+    const filesMetaDataQueries = useSuspenseQueries({
+        queries: items.map((item) => fileMetadataQueryOptions(item.path!)),
+    });
 
     useEffect(() => {
         // Set css data-expanded attribute to the ref element
@@ -623,9 +621,10 @@ function AsisCandidateDetails({
                     display: "flex",
                     flexDirection: "column",
                     gap: 1,
+                    border: "1px solid red",
                 }}
             >
-                {filesMetaData.map((meta, idx) => {
+                {filesMetaDataQueries.map((meta, idx) => {
                     return (
                         <Box
                             sx={{
@@ -636,7 +635,7 @@ function AsisCandidateDetails({
                                 // borderBottom: "1px solid #515151",
                             }}
                         >
-                            <MetaRow meta={meta} />
+                            <MetaRow meta={meta.data} />
                         </Box>
                     );
                 })}

@@ -1,5 +1,6 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 
+import { toHex } from "@/components/common/strings";
 import {
     AlbumResponse,
     AlbumResponseExpanded,
@@ -326,6 +327,15 @@ export const itemsByArtistQueryOptions = <Minimal extends boolean>(
 
 export type ArtSize = "small" | "medium" | "large" | "original";
 
+const ART_QUERY_OPTIONS = {
+    retry: false,
+    gcTime: 1000 * 60 * 60 * 24, // 1 day
+    staleTime: 1000 * 60 * 60 * 24, // 1 day
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false, // Prevent refetch on network reconnect
+};
+
 // Art for a library item or album
 export const artUrl = (
     type: "item" | "album",
@@ -365,13 +375,8 @@ export const artQueryOptions = ({
             const objectUrl = URL.createObjectURL(blob);
             return objectUrl;
         },
-        retry: false,
-        gcTime: 1000 * 60 * 60 * 24, // 1 day
-        staleTime: 1000 * 60 * 60 * 24, // 1 day
-        refetchOnMount: false,
-        refetchOnWindowFocus: false,
-        refetchOnReconnect: false, // Prevent refetch on network reconnect
         retryOnMount: false,
+        ...ART_QUERY_OPTIONS,
     });
 
 // Number of artworks for an item -> back, front, etc.
@@ -390,12 +395,45 @@ export const numArtQueryOptions = (itemId?: number) =>
             });
             return (await response.json()) as { count: number };
         },
+        ...ART_QUERY_OPTIONS,
         retry: 1,
-        gcTime: 1000 * 60 * 60 * 24, // 1 day
-        staleTime: 1000 * 60 * 60 * 24, // 1 day
-        refetchOnMount: false,
-        refetchOnWindowFocus: false,
-        refetchOnReconnect: false, // Prevent refetch on network reconnect
+    });
+
+export const fileArtQueryOptions = (filePath: string, size?: ArtSize, index?: number) =>
+    queryOptions({
+        queryKey: ["fileArt", filePath, size, index],
+        queryFn: async () => {
+            const encodedPath = toHex(filePath);
+            const params = new URLSearchParams();
+            if (size) params.set("size", size);
+            if (index !== undefined) params.set("idx", index.toString());
+
+            const base = `/library/file/${encodedPath}/art`;
+            const url = params.toString() ? `${base}?${params}` : base;
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            return objectUrl;
+        },
+        retryOnMount: false,
+        ...ART_QUERY_OPTIONS,
+    });
+
+export const numFileArtQueryOptions = (filePath: string) =>
+    queryOptions({
+        queryKey: ["fileArt", "num", filePath],
+        queryFn: async () => {
+            const encodedPath = toHex(filePath);
+            const response = await fetch(`/library/file/${encodedPath}/nArtworks`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
+            return (await response.json()) as { count: number };
+        },
+        ...ART_QUERY_OPTIONS,
+        retry: 1,
     });
 
 /* ---------------------------- Waveforms / Peaks --------------------------- */
@@ -588,3 +626,24 @@ export function prefetchItemAudioData(id: number) {
         ...commonAudioQueryOptions,
     });
 }
+
+/* -------------------------------- Metadata -------------------------------- */
+
+// fetch metadata for files, directly from id3
+export type FileMetadata = {
+    [key: string]: string | number | boolean | string[];
+};
+
+export const fileMetadataQueryOptions = (path: string) => ({
+    queryKey: ["file", path, "metadata"],
+    queryFn: async () => {
+        const encodedPath = toHex(path);
+        const response = await fetch(`/library/file/${encodedPath}/metadata`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+        return (await response.json()) as FileMetadata;
+    },
+});

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import asdict, is_dataclass
-from datetime import datetime
+from datetime import date, datetime
 from typing import TYPE_CHECKING, Any
 
 from quart import Quart
@@ -72,7 +72,7 @@ class Encoder(json.JSONEncoder):
             # Might yield strange results for other byte objects
             return o.decode("utf-8")
 
-        if isinstance(o, datetime):
+        if isinstance(o, (datetime, date)):
             return o.isoformat()
 
         # Dataclasses are not serializable by default

@@ -1,9 +1,10 @@
 """Get metadata for a library item.
 
-TODO: Or modify metadata for a library item.
+TODO: Allow to modify metadata or let ppl apply beets changes for a library item.
 """
 
 import os
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from beets import util as beets_util
@@ -34,13 +35,35 @@ async def item_metadata(item_id: int):
             f"Item with beets_id:'{item_id}' not found in beets db."
         )
 
-    # File
+    # File path
     item_path = beets_util.syspath(item.path)
     if not os.path.exists(item_path):
         raise IntegrityException(
             f"Item file '{item_path}' does not exist for item beets_id:'{item_id}'."
         )
 
-    # Get metadata
-    tag = TinyTag.get(item_path)
-    return tag.as_dict()
+    return _get_metadata(item_path)
+
+
+@metadata_bp.route("/file/<string:filepath>/metadata", methods=["GET"])
+async def file_metadata(filepath: str):
+    """Get metadata for a file given its path.
+
+    It is hard to encode file paths with special characters in URLs so we use
+    hex here and decode it back.
+    """
+    filepath = bytes.fromhex(filepath).decode("utf-8")
+
+    if not os.path.exists(filepath):
+        raise NotFoundException(f"File '{filepath}' does not exist.")
+
+    return _get_metadata(filepath)
+
+
+def _get_metadata(file: str | Path):
+    """Get the file metadata for a given audio file."""
+    tags = TinyTag.get(file).as_dict()
+
+    # Only include name in filename
+    tags["filename"] = os.path.basename(file)
+    return tags
