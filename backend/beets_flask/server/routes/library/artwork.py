@@ -1,7 +1,6 @@
 import os
 from io import BytesIO
 from typing import TYPE_CHECKING, cast
-from urllib.parse import unquote_plus
 
 from beets import util as beets_util
 from mediafile import Image, MediaFile  # comes with the beets install
@@ -177,13 +176,30 @@ async def album_art(album_id: int):
     )
 
 
+@artwork_pb.route("/files/<string:filepath>/nArtworks", methods=["GET"])
+async def file_art_idx(filepath: str):
+    """Get the number of images for a file.
+
+    This is a HEAD request to check the number of images available for an item.
+    """
+    filepath = bytes.fromhex(filepath).decode("utf-8")
+
+    # Get image with mediafile library (comes with beets)
+    mediafile = MediaFile(filepath)
+    images = mediafile.images
+    if not images or len(images) < 1:
+        return jsonify({"count": 0}), 200
+
+    return jsonify({"count": len(images)}), 200
+
+
 @artwork_pb.route("/file/<string:filepath>/art", methods=["GET"])
 async def file_art(filepath: str):
-    # Decode url encoded filepath
-    filepath = unquote_plus(filepath)
-    filepath = beets_util.syspath(filepath)
+    # Decode url from hex
+    filepath = bytes.fromhex(filepath).decode("utf-8")
 
     # Allow selecting image index and size via query params
+    # TODO: we should be able to simplify and unify this with item_art above
     idx = int(request.args.get("index", 0))
     size_key = request.args.get("size", "small")
     try:
