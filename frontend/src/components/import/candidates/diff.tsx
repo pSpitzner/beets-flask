@@ -488,9 +488,8 @@ export function GenericDetailsItem({
             sx={[
                 {
                     display: "flex",
-                    alignItems: "center",
+                    alignItems: "flex-start",
                     gap: 0.5,
-                    height: "20px",
                 },
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                 ...(Array.isArray(sx) ? sx : [sx]),
@@ -499,12 +498,12 @@ export function GenericDetailsItem({
         >
             {/*Heading/content row*/}
             <ToolTipComp>
-                <Box display="flex" gap={1} alignItems="center">
+                <Box display="flex" gap={1} alignItems="flex-start">
                     <Box
                         sx={(theme) => ({
                             display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
+                            justifyContent: "flex-start",
+                            alignItems: "flex-start",
 
                             width: theme.iconSize.sm,
                             height: theme.iconSize.sm,
