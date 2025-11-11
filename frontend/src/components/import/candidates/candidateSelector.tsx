@@ -564,17 +564,27 @@ export function CandidateDetails({
                             sx={(theme) => ({
                                 display: "flex",
                                 alignItems: "center",
-                                width: "72px",
-                                height: "72px",
+                                width: "125px",
+                                height: "125px",
 
                                 [theme.breakpoints.down("tablet")]: {
+                                    padding: 0.5,
+                                    //maxHeight: "500px",
                                     width: "100%",
                                     height: "auto",
-                                    maxHeight: "200px",
+                                    justifyContent: "center",
                                 },
                             })}
                         >
-                            <ExternalCoverArt data_url={candidate.info.data_url} />
+                            <ExternalCoverArt
+                                sx={{
+                                    height: "auto",
+                                    width: "100%",
+                                    objectFit: "contain",
+                                    aspectRatio: "1 / 1",
+                                }}
+                                data_url={candidate.info.data_url}
+                            />
                         </Box>
                     </Box>
                 </Box>
@@ -764,6 +774,7 @@ function OverviewChanges({
                 width: "100%",
                 flexGrow: 1,
                 columnGap: 2,
+                rowGap: 0.5,
 
                 [theme.breakpoints.down("tablet")]: {
                     display: "flex",
