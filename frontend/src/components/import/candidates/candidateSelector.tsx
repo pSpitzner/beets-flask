@@ -621,7 +621,6 @@ function AsisCandidateDetails({
                     display: "flex",
                     flexDirection: "column",
                     gap: 1,
-                    border: "1px solid red",
                 }}
             >
                 {filesMetaDataQueries.map((meta, idx) => {
