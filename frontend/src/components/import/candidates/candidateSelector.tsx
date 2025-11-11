@@ -35,6 +35,7 @@ import { Link } from "@tanstack/react-router";
 import { FileMetadata, fileMetadataQueryOptions } from "@/api/library";
 import { Dialog } from "@/components/common/dialogs";
 import { PropertyValueTable } from "@/components/common/propertyValueTable";
+import { ExternalCoverArt, FileCoverArt } from "@/components/library/coverArt";
 import {
     AlbumInfo,
     SerializedCandidateState,
@@ -1026,60 +1027,3 @@ function TrackChangesDetailItem({
     );
 }
 
-function ExternalCoverArt({
-    data_url,
-    sx,
-    ...props
-}: {
-    data_url?: string | null;
-} & BoxProps) {
-    const [error, setError] = useState(false);
-    const [loaded, setLoaded] = useState(false);
-
-    if (!data_url || error) {
-        return null;
-    }
-
-    const common_style: SxProps<Theme> = (theme) => ({
-        width: "72px",
-        height: "72px",
-        border: `2px solid ${theme.palette.divider}`,
-        borderRadius: 1,
-        objectFit: "contain",
-        marginRight: 1,
-        color: "text.secondary",
-        alignItems: "center",
-        fontSize: theme.typography.body2.fontSize,
-        textAlign: "center",
-    });
-
-    return (
-        <>
-            <Skeleton
-                variant="rounded"
-                sx={[
-                    common_style,
-                    {
-                        display: loaded ? "none" : "flex",
-                        margin: 0,
-                    },
-                ]}
-            />
-            <Box
-                component="img"
-                src={`/api_v1/art?url=${encodeURIComponent(data_url)}`}
-                sx={[
-                    common_style,
-                    {
-                        display: !loaded ? "none" : "flex",
-                    },
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                    ...(Array.isArray(sx) ? sx : [sx]),
-                ]}
-                onError={() => setError(true)}
-                onLoad={() => setLoaded(true)}
-                {...props}
-            />
-        </>
-    );
-}
