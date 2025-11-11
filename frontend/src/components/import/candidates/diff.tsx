@@ -438,7 +438,7 @@ export function TrackChangesExtended() {
 interface GenericDetailsItemProps extends BoxProps {
     icon: ReactElement;
     children?: ReactNode;
-    tooltip?: string;
+    tooltip?: string | ReactNode;
     label?: ReactNode;
     sx?: SxProps<Theme>;
     iconColor?: string;
