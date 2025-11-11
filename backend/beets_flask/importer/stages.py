@@ -6,16 +6,14 @@ This allows us to keep track of the import state and communicate it to the front
 from __future__ import annotations
 
 import itertools
+from collections.abc import Callable, Generator
 from datetime import datetime
 from functools import wraps
 from inspect import isgenerator
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    Generator,
     Literal,
-    Optional,
     TypeVar,
     TypeVarTuple,
     cast,
@@ -272,7 +270,7 @@ def stage(
         *args: *Arg,
     ) -> Generator[Ret | Task | None, Task, None]:
         # in some edge-cases we get no task. thus, we have to include the generic R
-        task: Optional[Task | Ret | Generator[Task]] = None
+        task: Task | Ret | Generator[Task] | None = None
         while True:
             if isgenerator(task):
                 for t in task:

@@ -1,5 +1,6 @@
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Generic, Sequence, TypeVar
+from typing import Generic, TypeVar
 
 from quart import Blueprint, request
 from sqlalchemy import select
@@ -97,7 +98,7 @@ class ModelAPIBlueprint(Generic[T]):
 def _cursor_to_string(cursor: tuple[datetime, str] | None) -> str | None:
     if cursor is None:
         return None
-    return f"{cursor[0].isoformat()},{cursor[1]}".encode("utf-8").hex()
+    return f"{cursor[0].isoformat()},{cursor[1]}".encode().hex()
 
 
 def _cursor_from_string(cursor: str | None) -> tuple[datetime, str] | None:

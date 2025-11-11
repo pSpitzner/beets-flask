@@ -65,7 +65,7 @@ async def get_raw_beets():
     """Get the raw config yaml file."""
     config = get_config()
     path = config.get_beets_config_path()
-    with open(path, "r") as f:
+    with open(path) as f:
         content = f.read()
     return jsonify({"path": path, "content": content})
 
@@ -75,7 +75,7 @@ async def get_raw():
     """Get the raw config yaml file for beets-flask."""
     config = get_config()
     path = config.get_beets_flask_config_path()
-    with open(path, "r") as f:
+    with open(path) as f:
         content = f.read()
     return jsonify({"path": path, "content": content})
 

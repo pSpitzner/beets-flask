@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from abc import ABC
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Literal, NotRequired, Sequence, TypedDict, Union, cast
+from typing import Literal, NotRequired, TypedDict, cast
 from uuid import uuid4 as uuid
 
 import beets.ui.commands as uicommands
@@ -291,7 +292,7 @@ class TaskState(BaseState):
 
     def add_candidates(
         self,
-        candidates: Sequence[Union[BeetsAlbumMatch, BeetsTrackMatch]],
+        candidates: Sequence[BeetsAlbumMatch | BeetsTrackMatch],
         insert_at: int = 0,
     ) -> list[CandidateState]:
         """Add new candidates to the selection state."""
@@ -434,7 +435,7 @@ class CandidateState(BaseState):
 
     id: str
     duplicate_ids: list[str]  # Beets ids of duplicates in the library (album)
-    match: Union[BeetsAlbumMatch, BeetsTrackMatch]
+    match: BeetsAlbumMatch | BeetsTrackMatch
     # Reference upwards
     task_state: TaskState
 
@@ -442,7 +443,7 @@ class CandidateState(BaseState):
 
     def __init__(
         self,
-        match: Union[BeetsAlbumMatch, BeetsTrackMatch],
+        match: BeetsAlbumMatch | BeetsTrackMatch,
         task_state: TaskState,
         mapping: dict[int, int] | None = None,
     ) -> None:

@@ -2,15 +2,14 @@ import os
 from hashlib import md5
 from pathlib import Path
 from re import Pattern
-from typing import Optional
 
 from cachetools import Cache
 
 
 def dirhash_c(
     dirname: str | Path,
-    cache: Optional[Cache[str, bytes]],
-    filter_regex: Optional[Pattern[str]] = None,
+    cache: Cache[str, bytes] | None,
+    filter_regex: Pattern[str] | None = None,
 ) -> bytes:
     """Compute a hash for a directory.
 
@@ -67,7 +66,7 @@ def dirhash_c(
 
 def archive_hash(
     f_path: str | Path,
-    cache: Optional[Cache[str, bytes]] = None,
+    cache: Cache[str, bytes] | None = None,
 ) -> bytes:
     """Compute a hash for an archive file."""
 

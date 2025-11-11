@@ -29,10 +29,11 @@ import asyncio
 import logging
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from collections.abc import Callable
 from copy import deepcopy
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Literal, TypedDict, TypeGuard, TypeVar
+from typing import Any, Literal, TypedDict, TypeGuard, TypeVar
 
 import nest_asyncio
 from beets import autotag, importer, plugins

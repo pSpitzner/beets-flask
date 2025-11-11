@@ -38,7 +38,7 @@ from beets_flask.logger import log
 
 
 def _copy_file(src, dest):
-    with open(src, "r") as src_file, open(dest, "w") as dest_file:
+    with open(src) as src_file, open(dest, "w") as dest_file:
         dest_file.write(src_file.read())
 
 
@@ -48,7 +48,7 @@ class Singleton(type):
     def __call__(cls, *args, **kwargs):
         """Singleton pattern implementation."""
         if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+            cls._instances[cls] = super().__call__(*args, **kwargs)
         return cls._instances[cls]
 
 

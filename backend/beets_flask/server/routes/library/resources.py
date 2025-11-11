@@ -8,16 +8,15 @@ from __future__ import annotations
 import base64
 import datetime
 import os
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from functools import wraps
 from typing import (
     TYPE_CHECKING,
     Any,
-    Awaitable,
-    Callable,
     Literal,
+    NotRequired,
     ParamSpec,
-    Sequence,
     TypedDict,
     TypeVar,
     cast,
@@ -28,7 +27,6 @@ from beets.dbcore import Model, Query, Results
 from beets.dbcore.query import Sort
 from beets.library import Album, Item, Library, parse_query_string
 from quart import Blueprint, Response, abort, g, json, jsonify, request
-from typing_extensions import NotRequired
 
 from beets_flask.config import get_config
 from beets_flask.logger import log

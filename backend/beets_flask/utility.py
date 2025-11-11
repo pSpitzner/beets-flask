@@ -1,5 +1,4 @@
 import io
-import re
 import sys
 
 from deprecated import deprecated
@@ -41,38 +40,6 @@ def capture_stdout_stderr(func, *args, **kwargs):
     sys.stdout = original_stdout
     sys.stderr = original_stderr
     return buf_stdout.getvalue(), buf_stderr.getvalue(), res
-
-
-# ------------------------------------------------------------------------------------ #
-#                                      Formatting                                      #
-# ------------------------------------------------------------------------------------ #
-
-
-@deprecated
-def strip_ansi(text: str):
-    return re.sub(r"\x1b[^m]*m", "", text)
-
-
-@deprecated
-def heading(heading: str):
-    return f"\n+{'-' * 90}+\n| {heading}\n+{'-' * 90}+\n"
-
-
-@deprecated
-def selector_safe(s: str):
-    replacements = {
-        " ": "_",
-        "/": "-slash-",
-        "\\": "-backslash-",
-        "(": "-openparen-",
-        ")": "-closeparen-",
-        "[": "-opensquare-",
-        "]": "-closesquare-",
-        ",": "-comma-",
-    }
-    regex = re.compile("(%s)" % "|".join(map(re.escape, replacements.keys())))
-
-    return regex.sub(lambda mo: replacements[mo.string[mo.start() : mo.end()]], s)
 
 
 # ------------------------------------------------------------------------------------ #

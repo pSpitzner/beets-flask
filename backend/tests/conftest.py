@@ -1,9 +1,9 @@
 import logging
 import os
 import shutil
+from collections.abc import Callable, Generator
 from contextlib import _GeneratorContextManager
 from pathlib import Path
-from typing import Callable, Generator
 
 import pytest
 from quart import Quart

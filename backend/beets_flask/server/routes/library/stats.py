@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, TypedDict, cast
+from typing import TYPE_CHECKING, TypedDict, cast
 
 from quart import Blueprint, g, jsonify
 
@@ -24,8 +24,8 @@ class LibraryStats(TypedDict):
     labels: int  # Num Labels
 
     size: int  # bytes of the library folder
-    lastItemAdded: Optional[int]  # UTC timestamp
-    lastItemModified: Optional[int]  # UTC timestamp
+    lastItemAdded: int | None  # UTC timestamp
+    lastItemModified: int | None  # UTC timestamp
     runtime: int  # seconds
 
 
