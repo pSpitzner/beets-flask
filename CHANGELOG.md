@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The default beets config now includes a `musicbrainz` section that enables fetching of external ids (like tidal).
 - Fixed typing issues in `./tests` folder and enabled mypy check for it.
 - Ruff now has the F401 (imported but unused) check enabled.
+- Ruff now had the UP checks enabled to enforce modern python syntax.
 
 ### Dependencies
 
