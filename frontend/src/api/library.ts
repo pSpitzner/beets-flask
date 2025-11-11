@@ -399,11 +399,19 @@ export const numArtQueryOptions = (itemId?: number) =>
         retry: 1,
     });
 
-export const fileArtQueryOptions = (filePath: string, size?: ArtSize, index?: number) =>
+export const fileArtQueryOptions = ({
+    path,
+    size,
+    index,
+}: {
+    path: string;
+    size?: ArtSize;
+    index?: number;
+}) =>
     queryOptions({
-        queryKey: ["fileArt", filePath, size, index],
+        queryKey: ["fileArt", path, size, index],
         queryFn: async () => {
-            const encodedPath = toHex(filePath);
+            const encodedPath = toHex(path);
             const params = new URLSearchParams();
             if (size) params.set("size", size);
             if (index !== undefined) params.set("idx", index.toString());
@@ -434,6 +442,23 @@ export const numFileArtQueryOptions = (filePath: string) =>
         },
         ...ART_QUERY_OPTIONS,
         retry: 1,
+    });
+
+export const externalArtQueryOptions = (data_url: string) =>
+    queryOptions({
+        queryKey: ["externalArt", data_url],
+        queryFn: async () => {
+            const blob = await fetch(`/art?url=${encodeURIComponent(data_url)}`).then(
+                (r) => r.blob()
+            );
+
+            const dataUrl: string = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+            });
+            return dataUrl;
+        },
     });
 
 /* ---------------------------- Waveforms / Peaks --------------------------- */
