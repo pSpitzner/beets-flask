@@ -646,11 +646,13 @@ function VolumeControls(props: BoxProps) {
 
 function Cover(props: Omit<CoverArtProps, "type">) {
     const { currentItem } = useAudioContext();
-    return <CoverArt type="item" beetsId={currentItem?.id} {...props} />;
+    if (!currentItem) return null;
+    return <CoverArt type="item" beetsId={currentItem.id} {...props} />;
 }
 
 function MultiCover(props: Omit<CoverArtProps, "type">) {
     const { currentItem } = useAudioContext();
+    if (!currentItem) return null;
     return <MultiCoverArt beetsId={currentItem?.id} {...props} />;
 }
 
