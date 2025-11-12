@@ -97,42 +97,45 @@ function RouteComponent() {
                     flexDirection: "column",
                     height: "100%",
                     flex: "1 1 auto",
-                    overflow: "hidden",
+                    overflow: "auto",
                     [theme.breakpoints.up("laptop")]: {
                         backgroundColor: "background.paper",
                         borderRadius: 2,
                     },
                 })}
             >
-                <AlbumHeader
-                    album={album}
-                    sx={(theme) => ({
-                        // Background gradient from bottom to top
-                        background: `linear-gradient(to bottom, transparent 0%, ${theme.palette.background.paper} 100%)`,
-                        position: "relative",
-                        zIndex: 1,
-                    })}
-                />
-                <NavigationTabs
-                    items={[
-                        {
-                            to: `/library/album/$albumId`,
-                            params,
-                            label: "Tracks",
-                            icon: <AudioLinesIcon />,
-                        },
-                        {
-                            to: `/library/album/$albumId/identifier`,
-                            params,
-                            label: "Identifiers",
-                        },
-                        {
-                            to: `/library/album/$albumId/beetsdata`,
-                            params,
-                            label: "Details",
-                        },
-                    ]}
-                />
+                <Box>
+                    <AlbumHeader
+                        album={album}
+                        sx={(theme) => ({
+                            // Background gradient from bottom to top
+                            background: `linear-gradient(to bottom, transparent 0%, ${theme.palette.background.paper} 100%)`,
+                            position: "relative",
+                            zIndex: 1,
+                        })}
+                    />
+                    <NavigationTabs
+                        items={[
+                            {
+                                to: `/library/album/$albumId`,
+                                params,
+                                label: "Tracks",
+                                icon: <AudioLinesIcon />,
+                            },
+                            {
+                                to: `/library/album/$albumId/identifier`,
+                                params,
+                                label: "Identifiers",
+                            },
+                            {
+                                to: `/library/album/$albumId/beetsdata`,
+                                params,
+                                label: "Details",
+                            },
+                        ]}
+                    />
+                </Box>
+
                 <Box
                     sx={(theme) => ({
                         flex: "1 1 auto",
