@@ -453,6 +453,7 @@ export function GenericDetailsItem({
     sx,
     iconColor,
     labelColor,
+    onClick = undefined,
     ...props
 }: GenericDetailsItemProps) {
     // Show tooltip on hover of label row
@@ -470,8 +471,7 @@ export function GenericDetailsItem({
                 component="span"
                 sx={{
                     color: labelColor || "inherit",
-                    // TODO: include icon in click, and make this more generic
-                    cursor: "pointer",
+                    cursor: onClick !== undefined ? "pointer" : "inherit",
                 }}
             >
                 {label}
@@ -494,6 +494,7 @@ export function GenericDetailsItem({
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                 ...(Array.isArray(sx) ? sx : [sx]),
             ]}
+            onClick={onClick}
             {...props}
         >
             {/*Heading/content row*/}
@@ -506,7 +507,6 @@ export function GenericDetailsItem({
                             alignItems: "flex-start",
 
                             width: theme.iconSize.sm,
-                            height: theme.iconSize.sm,
                             color: iconColor || "inherit",
                         })}
                     >
