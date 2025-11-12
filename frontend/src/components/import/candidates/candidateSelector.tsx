@@ -956,8 +956,8 @@ function OverviewMetadata({ metadata }: { metadata: FileMetadata }) {
                 onClose={() => {
                     setShow(false);
                 }}
-                fullScreen
-                sx={{ height: "100%" }}
+                maxWidth="laptop"
+                fullWidth={true}
             >
                 <DialogContent sx={{ pt: 0 }}>
                     <PropertyValueTable data={metadata} allowFullscreen={false} />
