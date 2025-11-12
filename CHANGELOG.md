@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The inbox info button now has a description of all actions [#145](https://github.com/pSpitzner/beets-flask/issues/145)
 - Subpage for version information and configs. You can access it via the version number in the navbar. [#205](https://github.com/pSpitzner/beets-flask/issues/205)
 - New config option `gui.inbox.debounce_before_autotag` to configure how many seconds to wait after the last filesystem event before starting autotagging. Same debounce applies to all inboxes. [#222](https://github.com/pSpitzner/beets-flask/issues/222)
+- The library view on mobile now has a button to collapse the overview (above the tabs). This allows for more space when browsing the library on small screens. 
 
 ### Other (dev)
 
