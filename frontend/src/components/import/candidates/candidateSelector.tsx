@@ -379,7 +379,8 @@ function TopBar({ task }: { task: SerializedTaskState }) {
             <ButtonGroup size="small" color="secondary">
                 <IconButton
                     color="secondary"
-                    disabled={expandedCandidates.size === task.candidates.length}
+                    // +1 for asis candidate
+                    disabled={expandedCandidates.size === task.candidates.length + 1}
                     onClick={expandAll}
                     title="Expand all"
                 >
