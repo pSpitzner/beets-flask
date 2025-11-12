@@ -20,7 +20,6 @@ import { useSwipeUp } from "../common/hooks/useSwipe";
 import { capitalizeFirstLetter } from "../common/strings";
 import { humanizeDuration } from "../common/units/time";
 
-// Container component that handles the animation
 export function AlbumHeader({
     album,
     sx,
@@ -82,10 +81,7 @@ export function AlbumHeaderExpanded({
                 sx={{
                     height: "100%",
                     width: "100%",
-                    margin: 0,
-                    borderRadius: 2,
                     display: "grid",
-
                     gridTemplateColumns: "1fr auto 1fr",
                 }}
             >
