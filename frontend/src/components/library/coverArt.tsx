@@ -7,18 +7,23 @@ import { SxProps } from "@mui/material/styles";
 import { useQuery } from "@tanstack/react-query";
 
 import { APIError } from "@/api/common";
-import { artQueryOptions, ArtSize, numArtQueryOptions } from "@/api/library";
+import {
+    artQueryOptions,
+    ArtSize,
+    externalArtQueryOptions,
+    fileArtQueryOptions,
+    numArtQueryOptions,
+} from "@/api/library";
 
 export interface CoverArtProps extends BoxProps {
-    type: "item" | "album";
-    beetsId?: number;
     size?: ArtSize;
     index?: number;
+    showPlaceholder?: boolean;
 }
 
-/** Cover art
+/** Cover art for an item or album
  *
- * Shows the cover art for an item or album.
+ * Shows the cover art for an item or album in the beets library.
  */
 export function CoverArt({
     type,
@@ -27,126 +32,47 @@ export function CoverArt({
     sx,
     index,
     ...props
-}: CoverArtProps) {
-    const {
-        data: art,
-        isPending,
-        isError,
-        error,
-    } = useQuery(artQueryOptions({ type, id: beetsId, size, index: index }));
-
-    const coverSx = [
-        {
-            height: 100,
-            width: 100,
-            aspectRatio: "1 / 1",
-            overflow: "hidden",
-        },
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        ...(Array.isArray(sx) ? sx : [sx]),
-    ] as SxProps;
-
-    if (isPending) {
-        return <CoverArtPlaceholder sx={coverSx} animation="wave" {...props} />;
-    }
-
-    if (isError) {
-        if (error instanceof APIError) {
-            // Depending on the error we show a placeholder or an error message
-            if (error.statusCode === 404) {
-                // 404 means no cover art found, so we show a placeholder
-                return (
-                    <CoverArtPlaceholder sx={coverSx} animation={false} {...props} />
-                );
-            }
-            return <CoverArtError sx={coverSx} error={error} size={size} {...props} />;
-        } else {
-            throw error;
-        }
-    }
-
-    if (art) {
-        return <CoverArtContent sx={coverSx} src={art} {...props} />;
-    } else {
-        return <CoverArtPlaceholder sx={coverSx} animation={false} {...props} />;
-    }
+}: CoverArtProps & { type: "item" | "album"; beetsId: number }) {
+    const query = useQuery(artQueryOptions({ type, id: beetsId, size, index: index }));
+    return <CoverArtFromQuery query={query} size={size} sx={sx} {...props} />;
 }
 
-function CoverArtPlaceholder({
-    animation,
+/** Cover art for a file path
+ *
+ * Shows the cover art for a specific file.
+ */
+export function FileCoverArt({
+    path,
+    size = "medium",
+    sx,
+    index,
     ...props
-}: {
-    animation: false | "pulse" | "wave" | undefined;
-} & Partial<BoxProps>) {
-    return (
-        <Box {...props}>
-            <Skeleton
-                variant="rectangular"
-                animation={animation}
-                height="100%"
-                width="100%"
-            />
-        </Box>
-    );
+}: CoverArtProps & { path: string }) {
+    const query = useQuery(fileArtQueryOptions({ path, size, index }));
+    return <CoverArtFromQuery query={query} size={size} sx={sx} {...props} />;
 }
 
-function CoverArtContent({ src, ...props }: { src: string } & Partial<BoxProps>) {
-    return <Box component="img" src={src} {...props} />;
-}
-
-function CoverArtError({
-    error,
-    size,
+/** Cover art from an external data URL
+ */
+export function ExternalCoverArt({
+    data_url,
+    sx,
     ...props
-}: { error: APIError; size: ArtSize } & Partial<BoxProps>) {
-    console.log("CoverArtError", error);
-    return (
-        <Box {...props}>
-            <Box
-                sx={{
-                    width: "100%",
-                    height: "100%",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    fontSize: "2rem",
-                    border: "1px solid",
-                    color: "error.main",
-                    flexDirection: "column",
-                    gap: 1,
-                    p: 0.5,
-                }}
-            >
-                <FileWarning size={50} strokeWidth={2} />
-                {size === "large" && (
-                    <Box
-                        sx={{
-                            width: "100%",
-                            alignItems: "center",
-                            fontSize: "0.8rem",
-                            color: "error.main",
-                            p: 1,
-                        }}
-                    >
-                        <b>{error.name}</b> - {error.message}
-                    </Box>
-                )}
-            </Box>
-        </Box>
-    );
+}: CoverArtProps & { data_url: string }) {
+    const query = useQuery(externalArtQueryOptions(data_url));
+    return <CoverArtFromQuery query={query} sx={sx} size="medium" {...props} />;
 }
 
 /** A bit more complex version of the normal cover.
  *
- * Specific for items and allows to show all artworks of
- * a given item.
+ * Allows to show all artworks of a given item by cycling through them.
  */
 export function MultiCoverArt({
     beetsId,
     size,
     coverArtSx,
     ...props
-}: Omit<CoverArtProps, "type"> & BoxProps & { coverArtSx?: BoxProps["sx"] }) {
+}: CoverArtProps & { beetsId: number; coverArtSx?: BoxProps["sx"] }) {
     const [currentIdx, setCurrentIdx] = useState(0);
 
     const { data: numArtworks } = useQuery(numArtQueryOptions(beetsId));
@@ -208,6 +134,146 @@ export function MultiCoverArt({
                     ...(Array.isArray(coverArtSx) ? coverArtSx : [coverArtSx]),
                 ]}
             />
+        </Box>
+    );
+}
+
+/* -------------------------------- Helpers --------------------------------- */
+
+function CoverArtFromQuery({
+    query,
+    size = "medium",
+    sx,
+    showPlaceholder = true,
+    ...props
+}: {
+    query: ReturnType<typeof useQuery<string | null>>;
+    size: ArtSize;
+    showPlaceholder?: boolean;
+} & Partial<BoxProps>) {
+    const coverSx = [
+        {
+            height: 100,
+            width: 100,
+            aspectRatio: "1 / 1",
+            overflow: "hidden",
+        },
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        ...(Array.isArray(sx) ? sx : [sx]),
+    ] as SxProps;
+
+    const { data: art, isPending, isError, error } = query;
+
+    if (isPending) {
+        return (
+            <CoverArtPlaceholder
+                sx={coverSx}
+                animation="wave"
+                showPlaceholder={showPlaceholder}
+                {...props}
+            />
+        );
+    }
+
+    if (isError) {
+        if (error instanceof APIError) {
+            // Depending on the error we show a placeholder or an error message
+            if (error.statusCode === 404) {
+                // 404 means no cover art found, so we show a placeholder
+                return (
+                    <CoverArtPlaceholder
+                        sx={coverSx}
+                        animation={false}
+                        showPlaceholder={showPlaceholder}
+                        {...props}
+                    />
+                );
+            }
+            return <CoverArtError sx={coverSx} error={error} size={size} {...props} />;
+        } else {
+            throw error;
+        }
+    }
+
+    if (art) {
+        return <CoverArtContent sx={coverSx} src={art} {...props} />;
+    } else {
+        return (
+            <CoverArtPlaceholder
+                sx={coverSx}
+                animation={false}
+                showPlaceholder={showPlaceholder}
+                {...props}
+            />
+        );
+    }
+}
+
+function CoverArtPlaceholder({
+    animation,
+    showPlaceholder = true,
+    ...props
+}: {
+    animation: false | "pulse" | "wave" | undefined;
+    showPlaceholder?: boolean;
+} & Partial<BoxProps>) {
+    return (
+        <Box {...props}>
+            <Skeleton
+                variant="rectangular"
+                animation={animation}
+                height="100%"
+                width="100%"
+                sx={{
+                    display: showPlaceholder ? "block" : "none",
+                }}
+            />
+        </Box>
+    );
+}
+
+function CoverArtContent({ src, ...props }: { src: string } & Partial<BoxProps>) {
+    return <Box component="img" src={src} {...props} />;
+}
+
+function CoverArtError({
+    error,
+    size,
+    ...props
+}: { error: APIError; size: ArtSize } & Partial<BoxProps>) {
+    console.log("CoverArtError", error);
+    return (
+        <Box {...props}>
+            <Box
+                sx={{
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    fontSize: "2rem",
+                    border: "1px solid",
+                    color: "error.main",
+                    flexDirection: "column",
+                    gap: 1,
+                    p: 0.5,
+                }}
+            >
+                <FileWarning size={50} strokeWidth={2} />
+                {size === "large" && (
+                    <Box
+                        sx={{
+                            width: "100%",
+                            alignItems: "center",
+                            fontSize: "0.8rem",
+                            color: "error.main",
+                            p: 1,
+                        }}
+                    >
+                        <b>{error.name}</b> - {error.message}
+                    </Box>
+                )}
+            </Box>
         </Box>
     );
 }
