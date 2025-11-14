@@ -76,28 +76,6 @@ export const inboxStatsQueryOptions = () => ({
     },
 });
 
-// fetch metadata for files, directly from id3
-// TODO: this should ne be a inbox endpoint (also needs to be moved in the backend)
-export type FileMetadata = {
-    [key: string]: string | number | boolean | string[];
-};
-
-export const fileMetaQueryOptions = (paths: string[]) => ({
-    queryKey: ["filemeta", paths],
-    queryFn: async () => {
-        const response = await fetch(`/inbox/metadata`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                file_paths: paths,
-            }),
-        });
-        return (await response.json()) as Array<FileMetadata>;
-    },
-});
-
 /* -------------------------------- Mutations ------------------------------- */
 // Here for reference, not used yet but we might need it in the future
 

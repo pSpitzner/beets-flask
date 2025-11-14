@@ -66,34 +66,36 @@ function RouteComponent() {
                     },
                 })}
             >
-                <ItemHeader
-                    item={item}
-                    sx={(theme) => ({
-                        // Background gradient from bottom to top
-                        background: `linear-gradient(to bottom, transparent 0%, ${theme.palette.background.paper} 100%)`,
-                        position: "relative",
-                        zIndex: 1,
-                    })}
-                />
-                <NavigationTabs
-                    items={[
-                        {
-                            to: "/library/item/$itemId",
-                            label: "Overview",
-                            params,
-                        },
-                        {
-                            to: "/library/item/$itemId/identifier",
-                            label: "Identifiers",
-                            params,
-                        },
-                        {
-                            to: "/library/item/$itemId/beetsdata",
-                            label: "Details",
-                            params,
-                        },
-                    ]}
-                />
+                <Box>
+                    <ItemHeader
+                        item={item}
+                        sx={(theme) => ({
+                            // Background gradient from bottom to top
+                            background: `linear-gradient(to bottom, transparent 0%, ${theme.palette.background.paper} 100%)`,
+                            position: "relative",
+                            zIndex: 1,
+                        })}
+                    />
+                    <NavigationTabs
+                        items={[
+                            {
+                                to: "/library/item/$itemId",
+                                label: "Overview",
+                                params,
+                            },
+                            {
+                                to: "/library/item/$itemId/identifier",
+                                label: "Identifiers",
+                                params,
+                            },
+                            {
+                                to: "/library/item/$itemId/beetsdata",
+                                label: "Details",
+                                params,
+                            },
+                        ]}
+                    />
+                </Box>
                 <Box
                     sx={(theme) => ({
                         flex: "1 1 auto",

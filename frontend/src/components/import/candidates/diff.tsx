@@ -438,7 +438,7 @@ export function TrackChangesExtended() {
 interface GenericDetailsItemProps extends BoxProps {
     icon: ReactElement;
     children?: ReactNode;
-    tooltip?: string;
+    tooltip?: string | ReactNode;
     label?: ReactNode;
     sx?: SxProps<Theme>;
     iconColor?: string;
@@ -453,6 +453,7 @@ export function GenericDetailsItem({
     sx,
     iconColor,
     labelColor,
+    onClick = undefined,
     ...props
 }: GenericDetailsItemProps) {
     // Show tooltip on hover of label row
@@ -470,8 +471,7 @@ export function GenericDetailsItem({
                 component="span"
                 sx={{
                     color: labelColor || "inherit",
-                    // TODO: include icon in click, and make this more generic
-                    cursor: "pointer",
+                    cursor: onClick !== undefined ? "pointer" : "inherit",
                 }}
             >
                 {label}
@@ -488,26 +488,25 @@ export function GenericDetailsItem({
             sx={[
                 {
                     display: "flex",
-                    alignItems: "center",
+                    alignItems: "flex-start",
                     gap: 0.5,
-                    height: "20px",
                 },
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                 ...(Array.isArray(sx) ? sx : [sx]),
             ]}
+            onClick={onClick}
             {...props}
         >
             {/*Heading/content row*/}
             <ToolTipComp>
-                <Box display="flex" gap={1} alignItems="center">
+                <Box display="flex" gap={1} alignItems="flex-start">
                     <Box
                         sx={(theme) => ({
                             display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
+                            justifyContent: "flex-start",
+                            alignItems: "flex-start",
 
                             width: theme.iconSize.sm,
-                            height: theme.iconSize.sm,
                             color: iconColor || "inherit",
                         })}
                     >

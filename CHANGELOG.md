@@ -21,12 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Import Bootleg Button now works as expected [#218](https://github.com/pSpitzner/beets-flask/issues/218)
 - Startup script was not executed correctly if placed in `/config/beets-flask/startup.sh` [#227](https://github.com/pSpitzner/beets-flask/pull/227)
 - Another state-related bug around Searching for Candidates [#225](https://github.com/pSpitzner/beets-flask/issues/225). We now no longer require a certaint type of state before allowing to add candidates.
+- Asis candidates have been restyled to be more consistent with other candidate types. They now also include a cover art preview if available.
 
 ### Added
 
 - The inbox info button now has a description of all actions [#145](https://github.com/pSpitzner/beets-flask/issues/145)
 - Subpage for version information and configs. You can access it via the version number in the navbar. [#205](https://github.com/pSpitzner/beets-flask/issues/205)
 - New config option `gui.inbox.debounce_before_autotag` to configure how many seconds to wait after the last filesystem event before starting autotagging. Same debounce applies to all inboxes. [#222](https://github.com/pSpitzner/beets-flask/issues/222)
+- The library view on mobile now has a button to collapse the overview (above the tabs). This allows for more space when browsing the library on small screens. 
 
 ### Other (dev)
 
@@ -34,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed typing issues in `./tests` folder and enabled mypy check for it.
 - Ruff now has the F401 (imported but unused) check enabled.
 - Ruff now had the UP checks enabled to enforce modern python syntax.
+- Unified coverart components in the frontend, we now use common styling for external and internal coverart.
+- Moved inbox metadata fetching into the library api routes.
 
 ### Dependencies
 
