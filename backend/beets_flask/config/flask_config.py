@@ -11,7 +11,7 @@ function in the `__init__.py` file.
 from __future__ import annotations
 
 import os
-from typing import Mapping
+from collections.abc import Mapping
 
 from ..logger import log
 

@@ -1,5 +1,6 @@
 import os
-from typing import Callable, cast
+from collections.abc import Callable
+from typing import cast
 
 import socketio
 

@@ -6,8 +6,9 @@ MIT License
 """
 
 import asyncio
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, cast
+from typing import cast
 
 from watchdog.events import (
     DirCreatedEvent,
@@ -84,7 +85,7 @@ class AIOEventHandler:
         self._loop.call_soon_threadsafe(self._ensure_future, handler(event))
 
 
-class AIOWatchdog(object):
+class AIOWatchdog:
     def __init__(
         self,
         paths: list[Path],

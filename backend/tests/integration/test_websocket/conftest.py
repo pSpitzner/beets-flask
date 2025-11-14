@@ -1,5 +1,4 @@
 import asyncio
-from typing import Optional
 
 import pytest
 import socketio
@@ -18,7 +17,7 @@ class UvicornTestServer(uvicorn.Server):
         port: int = PORT,
     ):
         self._startup_done = asyncio.Event()
-        self._serve_task: Optional[asyncio.Task] = None
+        self._serve_task: asyncio.Task | None = None
         super().__init__(config=uvicorn.Config(app, host=host, port=port))
 
     async def startup(self, sockets=None) -> None:

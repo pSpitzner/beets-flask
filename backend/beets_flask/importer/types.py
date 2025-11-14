@@ -6,14 +6,12 @@ Also includes and our own derivatives.
 from __future__ import annotations
 
 from abc import ABC
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import (
     Any,
-    Callable,
-    Dict,
     Literal,
     NamedTuple,
-    Union,
     cast,
 )
 
@@ -93,8 +91,8 @@ class MusicInfo(ABC):
     @classmethod
     def _from_instance(
         cls,
-        info: Union[autotag.TrackInfo, autotag.Item, autotag.AlbumInfo],
-        remap: Dict[str, str] = dict(),
+        info: autotag.TrackInfo | autotag.Item | autotag.AlbumInfo,
+        remap: dict[str, str] = dict(),
     ):
         """Convert from beets TrackInfo, Item or AlbumInfo to our MusicInfo.
 
@@ -124,8 +122,8 @@ def class_attributes_to_kwargs(
     cls,
     obj,
     keys=None,
-    remap: Dict[str, str] = dict(),
-) -> Dict[str, Any]:
+    remap: dict[str, str] = dict(),
+) -> dict[str, Any]:
     """Convert the attributes of an object to a dictionary of keyword arguments.
 
     May be used for any class. If `keys` is provided, only those keys are used.

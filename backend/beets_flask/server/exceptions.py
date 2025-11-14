@@ -1,6 +1,7 @@
 import traceback
+from collections.abc import Awaitable, Callable
 from functools import wraps
-from typing import Awaitable, Callable, NotRequired, ParamSpec, TypedDict, TypeVar
+from typing import NotRequired, ParamSpec, TypedDict, TypeVar
 
 from beets_flask.logger import log
 

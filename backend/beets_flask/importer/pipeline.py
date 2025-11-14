@@ -9,16 +9,18 @@ used Generators, and we still rely on parts of it.
 """
 
 import asyncio
-from collections.abc import AsyncGenerator, AsyncIterable
-from typing import (
-    Any,
+from collections.abc import (
+    AsyncGenerator,
+    AsyncIterable,
     Coroutine,
     Generator,
-    Generic,
     Iterable,
-    Literal,
-    Optional,
     Sequence,
+)
+from typing import (
+    Any,
+    Generic,
+    Literal,
     TypeVar,
 )
 
@@ -35,7 +37,7 @@ R = TypeVar("R")  # return
 Task = TypeVar("Task", bound=Any)
 Stage = (
     Generator[Task | MultiMessage | Literal["__PIPELINE_BUBBLE__"] | None, Task, R]
-    | AsyncGenerator[Optional[Task], Task]
+    | AsyncGenerator[Task | None, Task]
 )
 
 

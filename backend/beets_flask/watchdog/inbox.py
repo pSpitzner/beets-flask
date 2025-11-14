@@ -1,8 +1,8 @@
 import asyncio
 import os
 import signal
+from collections import OrderedDict
 from pathlib import Path
-from typing import OrderedDict
 
 from watchdog.events import FileMovedEvent, FileSystemEvent
 from watchdog.observers.polling import PollingObserver

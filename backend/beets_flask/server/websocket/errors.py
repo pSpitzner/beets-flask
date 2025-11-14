@@ -6,9 +6,8 @@ We parse all exceptions to a common format and return them to the client for han
 from __future__ import annotations
 
 import functools
+from collections.abc import Awaitable, Callable
 from typing import (
-    Awaitable,
-    Callable,
     NotRequired,
     ParamSpec,
     TypedDict,

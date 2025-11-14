@@ -1,7 +1,6 @@
 import logging
 import shutil
 from pathlib import Path
-from typing import Optional
 
 import pytest
 
@@ -93,8 +92,8 @@ def use_mock_tag_album(a_dir: str):
 
 def tag_album(
     items,
-    search_artist: Optional[str] = None,
-    search_album: Optional[str] = None,
+    search_artist: str | None = None,
+    search_album: str | None = None,
     search_ids: list[str] = [],
 ):
     global album_path

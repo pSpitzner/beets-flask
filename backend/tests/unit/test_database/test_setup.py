@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from contextlib import _GeneratorContextManager
-from typing import Callable
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session

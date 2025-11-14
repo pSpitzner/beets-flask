@@ -6,9 +6,10 @@ a preview is finished.
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from functools import wraps
-from typing import Awaitable, Callable, Concatenate, Literal, ParamSpec, TypeVar
+from typing import Concatenate, Literal, ParamSpec, TypeVar
 
 import socketio
 from quart import json

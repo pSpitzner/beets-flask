@@ -1,6 +1,5 @@
 from contextlib import contextmanager
 from functools import wraps
-from typing import Optional
 
 from quart import Quart
 from sqlalchemy import Engine, create_engine
@@ -15,7 +14,7 @@ engine: Engine | None = None
 session_factory: scoped_session[Session]
 
 
-def setup_database(app: Optional[Quart] = None) -> None:
+def setup_database(app: Quart | None = None) -> None:
     """Set up the database connection and session factory for the FLask application.
 
     This function initializes the global `engine` and `session_factory` variables

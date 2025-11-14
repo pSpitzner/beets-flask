@@ -4,14 +4,12 @@ import os
 import re
 import subprocess
 from abc import ABC, abstractmethod
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from fnmatch import fnmatch
 from pathlib import Path
 from typing import (
-    Iterator,
     Literal,
-    Sequence,
-    Set,
 )
 
 from beets.importer import (
@@ -294,8 +292,8 @@ def album_folders_from_track_paths(
         list[str]: album folders
     """
 
-    folders_to_check: Set[Path] = set()
-    album_folders: Set[Path] = set()
+    folders_to_check: set[Path] = set()
+    album_folders: set[Path] = set()
     for path in track_paths:
         # FIXME: For backwards compatibility, we allow a string as input
         if isinstance(path, str):
@@ -315,8 +313,8 @@ def album_folders_from_track_paths(
             album_folders.add(af)
 
     if use_parent_for_multidisc:
-        parents: Set[Path] = set()
-        children: Set[Path] = set()
+        parents: set[Path] = set()
+        children: set[Path] = set()
         for folder in album_folders:
             if is_within_multi_dir(folder):
                 parents.add(folder.parent)

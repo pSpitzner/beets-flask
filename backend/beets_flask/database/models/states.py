@@ -16,7 +16,7 @@ from __future__ import annotations
 import io
 import pickle
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from beets.autotag import AlbumMatch
 from beets.autotag.distance import Distance
@@ -63,9 +63,9 @@ class FolderInDb(Base):
     full_path: Mapped[str] = mapped_column(index=True, primary_key=True)
 
     # checked -> yes | no or didnt check -> None
-    is_album: Mapped[Optional[bool]]
+    is_album: Mapped[bool | None]
 
-    def __init__(self, path: Path | str, hash: str, is_album: Optional[bool] = None):
+    def __init__(self, path: Path | str, hash: str, is_album: bool | None = None):
         """
         Create a FolderInDb object from a path.
 
@@ -285,7 +285,7 @@ class SessionStateInDb(Base):
         cls,
         hash: str | None,
         path: Path | str | None,
-        db_session: Optional[Session] = None,
+        db_session: Session | None = None,
     ) -> SessionStateInDb | None:
         """
         Get a session by its hash and if this fails, try its path.
