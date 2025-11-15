@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### ⚠️ Important ⚠️
 
 - You need to update your beets config, and add `musicbrainz` to the list of enabled plugins. This is required because we updated the beets backend [see here](https://github.com/beetbox/beets/releases/tag/v2.4.0)
+- The base image is now `python:3.12-slim` (was `python:3.11-alpine`), if you use custom `startup.sh` please check for compatibility!
 
 ### Fixed
 
