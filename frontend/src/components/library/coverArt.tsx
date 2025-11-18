@@ -6,7 +6,7 @@ import Skeleton from "@mui/material/Skeleton";
 import { SxProps } from "@mui/material/styles";
 import { useQuery } from "@tanstack/react-query";
 
-import { APIError } from "@/api/common";
+import { HTTPError } from "@/api/common";
 import {
     artQueryOptions,
     ArtSize,
@@ -176,7 +176,7 @@ function CoverArtFromQuery({
     }
 
     if (isError) {
-        if (error instanceof APIError) {
+        if (error instanceof HTTPError) {
             // Depending on the error we show a placeholder or an error message
             if (error.statusCode === 404) {
                 // 404 means no cover art found, so we show a placeholder
@@ -240,8 +240,8 @@ function CoverArtError({
     error,
     size,
     ...props
-}: { error: APIError; size: ArtSize } & Partial<BoxProps>) {
-    console.log("CoverArtError", error);
+}: { error: HTTPError; size: ArtSize } & Partial<BoxProps>) {
+    console.warn("CoverArtError", error);
     return (
         <Box {...props}>
             <Box

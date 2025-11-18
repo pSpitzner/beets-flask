@@ -368,7 +368,6 @@ export const artQueryOptions = ({
             if (id == null || !type) {
                 return null;
             }
-            console.log("artQueryOptions", type, id);
             const url = artUrl(type, id, size, index);
             const response = await fetch(url);
             const blob = await response.blob();

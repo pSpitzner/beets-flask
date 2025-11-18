@@ -17,7 +17,7 @@ import { Link as MuiLink } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { createLink, useParams, useRouter } from "@tanstack/react-router";
 
-import { APIError } from "@/api/common";
+import { BeetsFlaskError } from "@/api/common";
 import { walkFolder } from "@/api/inbox";
 import { sessionQueryOptions } from "@/api/session";
 import { Archive, Folder } from "@/pythonTypes";
@@ -58,9 +58,9 @@ export function FolderCard({ folder }: { folder: Folder | Archive }) {
 
     // we need to sidestep useQuery a bit here to maintain the error state
     // while refetching, seems hacky but it works
-    const [prevError, setPrevError] = useState<APIError | null>(null);
+    const [prevError, setPrevError] = useState<BeetsFlaskError | null>(null);
     useEffect(() => {
-        if (error instanceof APIError) {
+        if (error instanceof BeetsFlaskError) {
             setPrevError(error);
         }
         if (session) {
@@ -80,7 +80,7 @@ export function FolderCard({ folder }: { folder: Folder | Archive }) {
     );
     const showHashWarning = hashes.size > 1;
     const showNoSessionWarning =
-        prevError instanceof APIError && prevError.name == "NotFoundException";
+        prevError instanceof BeetsFlaskError && prevError.name == "NotFoundException";
 
     const isArchive = folder.type === "archive";
     const isAlbum = !isArchive && folder.is_album;
