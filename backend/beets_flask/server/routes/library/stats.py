@@ -59,7 +59,7 @@ async def stats():
         "lastItemModified": (
             round(items_stats[0][2] * 1000) if items_stats[0][2] is not None else None
         ),
-        "runtime": items_stats[0][3],
+        "runtime": items_stats[0][3] or 0,
     }
 
     return jsonify(ret)

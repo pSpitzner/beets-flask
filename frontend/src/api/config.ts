@@ -3,8 +3,6 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 import { useLocalStorage } from "@/components/common/hooks/useLocalStorage";
 
-import { APIError } from "./common";
-
 export interface MinimalConfig {
     gui: {
         inbox: {
@@ -63,7 +61,7 @@ export const useConfig = () => {
 /* ---------------------------- Raw config files ---------------------------- */
 
 export const configYamlQueryOptions = (type: "beets" | "beetsflask") =>
-    queryOptions<{ path: string; content: string }, APIError>({
+    queryOptions({
         queryKey: ["config_yaml", type],
         queryFn: async () => {
             const url = type === "beets" ? `/config/yaml/beets` : `/config/yaml`;

@@ -14,7 +14,7 @@ import {
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
-import { APIError } from "@/api/common";
+import { HTTPError } from "@/api/common";
 import { albumImportedOptions } from "@/api/library";
 import { enqueueMutationOptions, sessionQueryOptions } from "@/api/session";
 import { relativeTime } from "@/components/common/units/time";
@@ -119,7 +119,7 @@ function ImportedTaskInfo({ task }: { task: SerializedTaskState }) {
         (c) => c.id === task.chosen_candidate_id
     );
 
-    if (error && error instanceof APIError && error.statusCode === 404) {
+    if (error && error instanceof HTTPError && error.statusCode === 404) {
         return (
             <Box>
                 <NotFoundWarning chosenCandidate={chosenCandidate} />

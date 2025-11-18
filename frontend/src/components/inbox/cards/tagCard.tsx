@@ -66,6 +66,7 @@ export function TagCard({
     }
 
     if (
+        // TODO: move this error handling into the session query?
         session.exc != null &&
         ![
             "DuplicateException",
