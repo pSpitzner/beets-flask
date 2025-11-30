@@ -254,6 +254,9 @@ class BaseSession(importer.ImportSession, ABC):
     def get_config_value(self, key: str, type_func: Callable | None = None) -> Any:
         """Get a config value from the overlay or default.
 
+        TODO: remove or rework, this is finicky, and we should be able to come up
+        with something better now that we have our own config class.
+
         Use dots to separate levels.
         """
 
