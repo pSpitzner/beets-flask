@@ -109,3 +109,24 @@ class TestConfig:
         # Revert changes
         config.data.directory = old_directory
         config.commit_to_beets()
+
+    def test_commit_to_beets_alias(self):
+        """
+        For reserved keywords, we use eyconfs aliasing.
+        """
+        import beets
+
+        config = get_config()
+
+        # we dont know if keep might be the old action
+        config.data.import_.duplicate_action = "keep"
+        config.commit_to_beets()
+        assert beets.config["import"]["duplicate_action"].get() == "keep"
+
+        config.data.import_.duplicate_action = "skip"
+        config.commit_to_beets()
+        assert beets.config["import"]["duplicate_action"].get() == "skip"
+
+        config.data["import"].duplicate_action = "remove"
+        config.commit_to_beets()
+        assert beets.config["import"]["duplicate_action"].get() == "remove"

@@ -5,14 +5,15 @@ import shutil
 import sys
 from dataclasses import asdict
 from pathlib import Path
-from typing import Self
+from typing import Self, cast
 
 import beets
 import yaml
 from beets.plugins import _instances as plugin_instances
 from beets.plugins import get_plugin_names, load_plugins
-from eyconf import EYConfExtraFields
+from eyconf import ConfigExtra
 from eyconf.validation import ConfigurationError, MultiConfigurationError
+from eyconf.asdict import asdict_with_aliases
 from typing_extensions import Literal
 
 from beets_flask.logger import log
@@ -21,7 +22,7 @@ from beets_flask.utility import deprecation_warning
 from .schema import BeetsSchema
 
 
-class BeetsFlaskConfig(EYConfExtraFields[BeetsSchema]):
+class BeetsFlaskConfig(ConfigExtra[BeetsSchema]):
     """Base config class with extra fields support."""
 
     def __init__(self):
@@ -48,6 +49,7 @@ class BeetsFlaskConfig(EYConfExtraFields[BeetsSchema]):
 
         This loads the user config from yaml files after resetting to defaults.
         """
+        log.debug("Resetting/Reloading config")
         super().reset()
         BeetsFlaskConfig.write_examples_as_user_defaults()
         # load user config from yaml.
@@ -81,10 +83,10 @@ class BeetsFlaskConfig(EYConfExtraFields[BeetsSchema]):
         beets.config.read()
 
         # Put our defaults that come from schema at lowest priority
-        beets.config.add(asdict(BeetsSchema()))
+        beets.config.add(asdict_with_aliases(BeetsSchema()))
 
         # Inserts user config into confuse
-        beets.config.set(self.to_dict(True))
+        beets.config.set(self.to_dict(extra_fields=True))
 
         # Hack: We have to manually load the plugins as this
         # is normally done by beets. Clear the list to force
@@ -209,7 +211,7 @@ class BeetsFlaskConfig(EYConfExtraFields[BeetsSchema]):
         """Get the list of enabled metadata source plugins."""
         from beets.metadata_plugins import find_metadata_source_plugins
 
-        return [p.__class__.data_source for p in find_metadata_source_plugins()]
+        return [p.data_source for p in find_metadata_source_plugins()]
 
     @property
     def ignore_globs(self) -> list[str]:
@@ -223,7 +225,7 @@ class BeetsFlaskConfig(EYConfExtraFields[BeetsSchema]):
         gui_globs: list[str] | Literal["_use_beets_ignore"] = self.data.gui.inbox.ignore
         if gui_globs is None or gui_globs == "_use_beets_ignore":
             gui_globs = self.data.ignore
-        return gui_globs
+        return cast(list[str], gui_globs)
 
 
 config: BeetsFlaskConfig | None = None
