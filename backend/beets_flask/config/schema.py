@@ -20,15 +20,24 @@ class BeetsSchema:
     ignore: list[str] = field(default_factory=lambda: [])
     plugins: list[str] = field(default_factory=lambda: [])
 
-    # We would like to provide a schema for the `import` section,
-    # but `import` is a reserved keyword in Python. We might add a workaround in eyconf.
-    # import: ImportSection
+    # `import` is a reserved keyword in Python. Eyconf's workaround is an alias.
+    import_: ImportSection = field(
+        default_factory=lambda: ImportSection(),
+        metadata={"alias": "import"},  # the alias is used in yaml and dict-style access
+    )
     match: MatchSectionSchema = field(default_factory=lambda: MatchSectionSchema())
 
 
 # ---------------------------------------------------------------------------- #
 #                                     Beets                                    #
 # ---------------------------------------------------------------------------- #
+
+
+@dataclass
+class ImportSection:
+    duplicate_action: Literal["ask", "skip", "merge", "keep", "remove"] = "remove"
+    move: Literal[False] = False  # beets-flask does not support the move option
+    copy: Literal[True] = True  # let's shape expectations via config
 
 
 @dataclass

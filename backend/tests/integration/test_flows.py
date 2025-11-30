@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Literal
 from unittest import mock
 
+from beets_flask.config.beets_config import get_config
 import pytest
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
@@ -894,6 +895,13 @@ class TestMultipleTasks(
         path_multiple_tasks: Path,
     ):
         """Test the import of the tagged folder."""
+
+        # avoid duplicate errors when re-importing.
+        # TODO: fix beets lib mixin, this should not be necessary,
+        # if library is cleared correctly.
+        config = get_config()
+        config.data["import"].duplicate_action = "remove"
+        config.commit_to_beets()
 
         exc = await run_preview(
             "obsolete_hash_preview",

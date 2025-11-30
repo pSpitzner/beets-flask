@@ -83,11 +83,7 @@ def db_session(db_session_factory):
 def beets_lib() -> Generator[BeetsLibrary, None, None]:
     import beets.library
 
-    from beets_flask.config import get_config
-
     lib = beets.library.Library(path=os.environ["BEETSDIR"] + "/library.db")
-
-    get_config().reload()
 
     # Copy test audio data
     source = Path(__file__).parent / "data" / "audio"

@@ -25,7 +25,7 @@ async def get_basic():
 
     return jsonify(
         {
-            **config.to_dict(include_additional=False),
+            **config.to_dict(extra_fields=False),
             # workaround for reserved keyword `import`, until we update eyconf
             "import": {
                 "duplicate_action": getattr(config.data, "import")["duplicate_action"]
