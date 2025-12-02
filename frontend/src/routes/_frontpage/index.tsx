@@ -11,7 +11,7 @@ import { InboxStatsCard, LibraryStatsCard } from "@/components/frontpage/statsCa
 
 /* ------------------------------ Route layout ------------------------------ */
 
-export const Route = createFileRoute("/_frontpage/")({
+export const Route = createFileRoute("/_frontpage/")({ 
     component: Index,
     loader: async ({ context }) => {
         return await Promise.all([

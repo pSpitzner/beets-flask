@@ -41,6 +41,8 @@ dependencies = [
     "numpy",
     "pandas",
     "typing_extensions",
+    "bandcampsync",
+    "curl_cffi",  # For browser-like TLS fingerprint (avoids 403 on Alpine/musl)
 ]
 
 [project.optional-dependencies]

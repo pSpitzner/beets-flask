@@ -54,6 +54,17 @@ class FileSystemUpdate:
     event: Literal["file_system_update"] = "file_system_update"
 
 
+@dataclass
+class BandcampSyncUpdate:
+    """Status update for bandcamp sync operations."""
+    status: Literal["pending", "running", "complete", "error", "aborted", "idle"]
+    message: str | None = None
+    logs: list[str] | None = None
+    error: str | None = None
+    exc: SerializedException | None = None
+    event: Literal["bandcamp_sync_update"] = "bandcamp_sync_update"
+
+
 namespace = "/status"
 
 
@@ -89,6 +100,13 @@ async def fs_update(sid, data):
     await sio.emit("file_system_update", data, namespace=namespace)
 
 
+@sio.on("bandcamp_sync_update", namespace=namespace)
+@sio_catch_exception
+async def bandcamp_update(sid, data):
+    log.debug(f"bandcamp_sync_update: {data}")
+    await sio.emit("bandcamp_sync_update", data, namespace=namespace)
+
+
 # ------------------------------------- * ------------------------------------ #
 
 
@@ -100,7 +118,7 @@ async def any_event(event, sid, data):
 
 
 async def send_status_update(
-    status: FolderStatusUpdate | JobStatusUpdate | FileSystemUpdate,
+    status: FolderStatusUpdate | JobStatusUpdate | FileSystemUpdate | BandcampSyncUpdate,
 ):
     """Send a status update to propagate to all clients.
 
@@ -218,5 +236,6 @@ def emit_folder_status(
 
 
 def register_status():
-    # we need this to at least allow loading the module at the right time
+    # Placeholder for any status socket initialization
+    # Bandcamp sync will use Redis pub/sub directly
     pass

@@ -1,18 +1,21 @@
-import { FolderClockIcon, InfoIcon, SettingsIcon, TagIcon } from "lucide-react";
+import { CloudDownloadIcon, FolderClockIcon, InfoIcon, Loader2Icon, SettingsIcon, TagIcon } from "lucide-react";
 import { useState } from "react";
 import {
     Box,
     BoxProps,
     DialogContent,
     IconButton,
+    Tooltip,
     Typography,
     useTheme,
 } from "@mui/material";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { Action } from "@/api/config";
+import { bandcampStatusQueryOptions } from "@/api/bandcamp";
+import { Action, useConfig } from "@/api/config";
 import { inboxQueryOptions } from "@/api/inbox";
+import { BandcampSyncModal } from "@/components/bandcamp";
 import { MatchChip, StyledChip } from "@/components/common/chips";
 import { Dialog } from "@/components/common/dialogs";
 import {
@@ -129,6 +132,7 @@ function PageHeader({ inboxes, ...props }: { inboxes: Folder[] } & BoxProps) {
                     justifySelf: "flex-end",
                 }}
             >
+                <BandcampSyncButton />
                 <InfoDescription />
             </Box>
             <Box
@@ -147,6 +151,53 @@ function PageHeader({ inboxes, ...props }: { inboxes: Folder[] } & BoxProps) {
                 <RefreshAllFoldersButton />
             </Box>
         </Box>
+    );
+}
+
+/** Bandcamp sync button - only shown when bandcampsync is enabled */
+function BandcampSyncButton() {
+    const config = useConfig();
+    const { data: syncStatus } = useQuery({
+        ...bandcampStatusQueryOptions(),
+        refetchInterval: 5000, // Poll every 5 seconds to check status
+        enabled: config.gui.bandcampsync.enabled,
+    });
+    const [open, setOpen] = useState(false);
+
+    console.log(config);
+
+    if (!syncStatus) {
+        return null;
+    }
+
+    const isRunning = syncStatus?.status && ["pending", "running"].includes(syncStatus.status);
+
+    return (
+        <>
+            <Tooltip title={isRunning ? "Sync in progress (click to view)" : "Sync Bandcamp purchases"}>
+                <IconButton
+                    sx={{
+                        m: 0,
+                        p: 0,
+                        color: isRunning ? "primary.main" : "inherit",
+                        animation: isRunning ? "spin 1s linear infinite" : "none",
+                        "@keyframes spin": {
+                            from: { transform: "rotate(0deg)" },
+                            to: { transform: "rotate(360deg)" },
+                        },
+                    }}
+                    size="small"
+                    onClick={() => setOpen(true)}
+                >
+                    {isRunning ? (
+                        <Loader2Icon />
+                    ) : (
+                        <CloudDownloadIcon />
+                    )}
+                </IconButton>
+            </Tooltip>
+            <BandcampSyncModal open={open} onClose={() => setOpen(false)} />
+        </>
     );
 }
 

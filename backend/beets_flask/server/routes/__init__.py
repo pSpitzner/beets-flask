@@ -1,6 +1,7 @@
 from quart import Blueprint, Quart
 
 from .art_preview import art_blueprint
+from .bandcamp import bandcamp_bp
 from .config import config_bp
 from .db_models import register_state_models
 from .exception import error_bp
@@ -13,6 +14,7 @@ backend_bp = Blueprint("backend", __name__, url_prefix="/api_v1")
 
 # Register all backend blueprints
 backend_bp.register_blueprint(art_blueprint)
+backend_bp.register_blueprint(bandcamp_bp)
 backend_bp.register_blueprint(config_bp)
 backend_bp.register_blueprint(error_bp)
 backend_bp.register_blueprint(frontend_bp)

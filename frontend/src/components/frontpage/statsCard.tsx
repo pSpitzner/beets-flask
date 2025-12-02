@@ -63,7 +63,7 @@ export function LibraryStatsCard({ libraryStats }: { libraryStats: LibraryStats 
                     <StatItem
                         title="Total Runtime"
                         icon={<TimerIcon />}
-                        value={humanizeDuration(libraryStats.runtime)}
+                        value={humanizeDuration(libraryStats.runtime ?? 0)}
                     />
                     <StatItem
                         title="Size"

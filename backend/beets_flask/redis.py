@@ -12,9 +12,10 @@ redis_conn = Redis()
 # Init our different queues
 preview_queue = Queue("preview", connection=redis_conn, default_timeout=600)
 import_queue = Queue("import", connection=redis_conn, default_timeout=600)
+bandcamp_queue = Queue("bandcamp", connection=redis_conn, default_timeout=3600)
 
 
-queues = [preview_queue, import_queue]
+queues = [preview_queue, import_queue, bandcamp_queue]
 
 
 async def wait_for_job_results(
@@ -65,6 +66,7 @@ __all__ = [
     "queues",
     "import_queue",
     "preview_queue",
+    "bandcamp_queue",
     "redis_conn",
     "wait_for_job_results",
 ]

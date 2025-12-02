@@ -2,12 +2,21 @@ import { FileSystemUpdate, FolderStatusUpdate, JobStatusUpdate } from "@/pythonT
 
 import type { Socket } from "socket.io-client";
 
+export interface BandcampSyncUpdate {
+    status: "pending" | "running" | "complete" | "error" | "aborted" | "idle";
+    message?: string;
+    logs?: string[];
+    error?: string;
+    event: "bandcamp_sync_update";
+}
+
 interface Status_ServerToClientEvents {
     // This types our socket events, i.e. we can only use
     // the events defined here should help with type safety :)
     folder_status_update: (data: FolderStatusUpdate) => void;
     job_status_update: (data: JobStatusUpdate) => void;
     file_system_update: (data: FileSystemUpdate) => void;
+    bandcamp_sync_update: (data: BandcampSyncUpdate) => void;
 }
 
 interface Status_ClientToServerEvents {

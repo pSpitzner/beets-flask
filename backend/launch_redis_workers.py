@@ -21,3 +21,9 @@ num_import_workers = 1
 log.info(f"Starting {num_import_workers} redis workers for import")
 for i in range(num_import_workers):
     os.system(f'rq worker import --log-format "Import worker $i: %(message)s" &')
+
+# bandcamp sync worker - one worker for bandcamp downloads
+num_bandcamp_workers = 1
+log.info(f"Starting {num_bandcamp_workers} redis workers for bandcamp sync")
+for i in range(num_bandcamp_workers):
+    os.system(f'rq worker bandcamp --log-format "Bandcamp worker $i: %(message)s" &')

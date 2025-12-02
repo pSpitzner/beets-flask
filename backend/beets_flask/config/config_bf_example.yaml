@@ -43,3 +43,9 @@ gui:
                 path: "/music/inbox_preview"
                 autotag: "preview"
                 # trigger tag but do not import, recommended for most control
+
+        # Optional bandcampsync integration for downloading Bandcamp purchases
+        # Set enabled to true and provide your Bandcamp cookies to use this feature
+        # bandcampsync:
+        #     enabled: true
+        #     path: "/music/bandcamp_inbox"  # directory for Bandcamp downloads

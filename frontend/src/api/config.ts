@@ -31,6 +31,10 @@ export interface MinimalConfig {
             order_by: string;
             show_unchanged_tracks: boolean;
         };
+        bandcampsync: {
+            enabled: boolean;
+            path: string;
+        }
     };
     import: {
         duplicate_action: string;
