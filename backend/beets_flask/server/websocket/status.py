@@ -57,6 +57,7 @@ class FileSystemUpdate:
 @dataclass
 class BandcampSyncUpdate:
     """Status update for bandcamp sync operations."""
+
     status: Literal["pending", "running", "complete", "error", "aborted", "idle"]
     message: str | None = None
     logs: list[str] | None = None

@@ -23,19 +23,6 @@ export interface SyncStatus {
 }
 
 /**
- * Query options for fetching bandcamp config
- */
-export const bandcampConfigQueryOptions = () =>
-    queryOptions({
-        queryKey: ["bandcamp", "config"],
-        queryFn: async () => {
-            const response = await fetch(`/bandcamp/config`);
-            return (await response.json()) as BandcampConfig;
-        },
-        staleTime: Infinity, // Config rarely changes
-    });
-
-/**
  * Query options for fetching current sync status
  */
 export const bandcampStatusQueryOptions = () =>

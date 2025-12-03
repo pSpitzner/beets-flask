@@ -124,7 +124,8 @@ class BandcampSyncManager:
         Args:
             cookies: Raw cookie string from Bandcamp
 
-        Returns:
+        Returns
+        -------
             True if sync was started, False if one is already running
         """
         from beets_flask.redis import bandcamp_queue

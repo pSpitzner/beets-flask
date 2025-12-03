@@ -27,7 +27,7 @@ We recommend using a virtual environment to manage the dependencies.
 
 ```bash
 cd backend
-pip install -e .[dev]
+pip install -e ".[dev]"
 ```
 
 2.2 **Install the dependencies (frontend):**

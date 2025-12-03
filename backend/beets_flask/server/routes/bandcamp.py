@@ -36,7 +36,8 @@ async def get_config_endpoint():
 async def get_status():
     """Get current sync status.
     
-    Returns:
+    Returns
+    -------
         {
             "status": "idle" | "pending" | "running" | "complete" | "error" | "aborted",
             "error": "string"  // Only present if status is "error"
@@ -58,7 +59,8 @@ async def start_sync():
             "cookies": "string"  // Raw cookie string from Bandcamp
         }
 
-    Returns:
+    Returns
+    -------
         {
             "started": true  // If sync was started
         }
