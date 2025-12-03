@@ -1,6 +1,13 @@
-import { DotIcon } from "lucide-react";
+import { ChevronUpIcon, DotIcon } from "lucide-react";
 import { Fragment, ReactNode } from "react";
-import { Box, BoxProps, Typography, useMediaQuery, useTheme } from "@mui/material";
+import {
+    Box,
+    BoxProps,
+    IconButton,
+    Typography,
+    useMediaQuery,
+    useTheme,
+} from "@mui/material";
 import { Link } from "@tanstack/react-router";
 
 import { AlbumResponseExpanded, ItemResponse } from "@/pythonTypes";
@@ -9,6 +16,8 @@ import { PlayOrAddItemToQueueButton } from "./audio/utils";
 import { CoverArt } from "./coverArt";
 import { ArtistLink } from "./links";
 
+import { useLocalStorage } from "../common/hooks/useLocalStorage";
+import { useSwipeUp } from "../common/hooks/useSwipe";
 import { capitalizeFirstLetter } from "../common/strings";
 import { humanizeDuration } from "../common/units/time";
 
@@ -19,7 +28,38 @@ export function AlbumHeader({
 }: {
     album: AlbumResponseExpanded;
 } & BoxProps) {
+    const [expanded, setExpanded] = useLocalStorage("mobile_header_is_expanded", true);
+    // TODO: A bit of animation would be nice here grow + shrink
+    return (
+        <Box
+            sx={[
+                {
+                    overflow: "hidden",
+                    display: "block",
+                },
+            ]}
+            {...props}
+        >
+            {!expanded ? (
+                <AlbumHeaderMinimal album={album} sx={sx} setExpanded={setExpanded} />
+            ) : (
+                <AlbumHeaderExpanded album={album} sx={sx} setExpanded={setExpanded} />
+            )}
+        </Box>
+    );
+}
+
+export function AlbumHeaderExpanded({
+    album,
+    sx,
+    setExpanded,
+    ...props
+}: {
+    album: AlbumResponseExpanded;
+    setExpanded: (expanded: boolean) => void;
+} & BoxProps) {
     const isMobile = useMediaQuery((theme) => theme.breakpoints.down("tablet"));
+    const ref = useSwipeUp(() => setExpanded(false), 100);
 
     return (
         <Box
@@ -35,23 +75,43 @@ export function AlbumHeader({
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                 ...(Array.isArray(sx) ? sx : [sx]),
             ]}
+            ref={ref}
             {...props}
         >
-            <CoverArt
-                type="album"
-                beetsId={album.id}
+            <Box
                 sx={{
-                    maxWidth: "200px",
                     height: "100%",
                     width: "100%",
-                    margin: 0,
-                    borderRadius: 2,
-                    alignSelf: "center",
-                    justifySelf: "center",
-                    boxShadow: 3,
-                    overflow: "hidden",
+                    display: "grid",
+                    gridTemplateColumns: "1fr auto 1fr",
                 }}
-            />
+            >
+                <CoverArt
+                    type="album"
+                    beetsId={album.id}
+                    sx={{
+                        maxWidth: "200px",
+                        height: "100%",
+                        width: "100%",
+                        margin: 0,
+                        borderRadius: 2,
+                        alignSelf: "center",
+                        justifySelf: "center",
+                        boxShadow: 3,
+                        overflow: "hidden",
+                        objectFit: "contain",
+                        ml: "auto",
+                        gridColumn: "2",
+                    }}
+                />
+                {isMobile && (
+                    <Box sx={{ gridColumn: "3", justifySelf: "end" }}>
+                        <IconButton onClick={() => setExpanded(false)}>
+                            <ChevronUpIcon color={"gray"} />
+                        </IconButton>
+                    </Box>
+                )}
+            </Box>
             <Box
                 sx={(theme) => ({
                     display: "flex",
@@ -151,6 +211,66 @@ export function AlbumHeader({
                     )}
                 </Box>
             </Box>
+        </Box>
+    );
+}
+
+// Minimal header for collapsed state
+export function AlbumHeaderMinimal({
+    album,
+    sx,
+    setExpanded,
+    ...props
+}: {
+    setExpanded: (expanded: boolean) => void;
+    album: AlbumResponseExpanded;
+} & BoxProps) {
+    return (
+        <Box
+            sx={[
+                {
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 2,
+                    padding: 1,
+                    minHeight: "60px",
+                    justifyContent: "space-around",
+                },
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                ...(Array.isArray(sx) ? sx : [sx]),
+            ]}
+            onClick={() => setExpanded(true)}
+            {...props}
+        >
+            <Typography
+                variant="h6"
+                fontWeight="bold"
+                sx={{
+                    flex: 1,
+                    // Remove noWrap to allow text wrapping
+                    whiteSpace: "normal",
+                    lineHeight: 1.2,
+                    textAlign: "right",
+                    // add elipsis after two lines
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                }}
+            >
+                {album.name}
+            </Typography>
+            <CoverArt
+                type="album"
+                beetsId={album.id}
+                sx={{
+                    width: "45px",
+                    height: "45px",
+                    borderRadius: 1,
+                    flexShrink: 0,
+                    boxShadow: 1,
+                }}
+            />
         </Box>
     );
 }

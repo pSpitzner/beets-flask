@@ -11,12 +11,10 @@ export function Loading({ noteColor, shadowColor }: LoadingProps) {
     return (
         <Box
             className={styles.notes}
-            sx={
-                {
-                    "--note-color": noteColor,
-                    "--shadow-color": shadowColor,
-                } as React.CSSProperties
-            }
+            sx={{
+                "--note-color": noteColor || "currentColor",
+                "--shadow-color": shadowColor || "currentColor",
+            }}
         >
             <Note />
             <Note />
@@ -29,12 +27,10 @@ export function LoadingSmall({ noteColor, shadowColor }: LoadingProps) {
     return (
         <Box
             className={styles.notes}
-            sx={
-                {
-                    "--note-color": noteColor,
-                    "--shadow-color": shadowColor,
-                } as React.CSSProperties
-            }
+            sx={{
+                "--note-color": noteColor || "currentColor",
+                "--shadow-color": shadowColor || "currentColor",
+            }}
         >
             <Note size="small" />
         </Box>
@@ -163,7 +159,7 @@ export function LoadingWithFeedback({
 
 const NeonSignText = styled(Typography)<{ colorPalette: PaletteColor }>(
     ({ colorPalette }) => ({
-        textShadow: `0 0 5px #fff, 0 0 10px #fff, 0 0 15px #fff, 
+        textShadow: `0 0 5px #fff, 0 0 10px #fff, 0 0 15px #fff,
         0 0 20px ${colorPalette.main},
         0 0 30px ${colorPalette.main},
         0 0 40px ${colorPalette.main},
