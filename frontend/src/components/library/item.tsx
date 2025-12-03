@@ -1,5 +1,4 @@
 import { ChevronUpIcon, Disc3Icon, UserRoundIcon } from "lucide-react";
-import { useState } from "react";
 import {
     Box,
     BoxProps,
@@ -15,6 +14,7 @@ import { DotSeparatedList } from "./album";
 import { CoverArt, MultiCoverArt } from "./coverArt";
 import { AlbumLink, ArtistLink } from "./links";
 
+import { useLocalStorage } from "../common/hooks/useLocalStorage";
 import { useSwipeUp } from "../common/hooks/useSwipe";
 import { Link } from "../common/link";
 import { humanizeBytes } from "../common/units/bytes";
@@ -26,7 +26,7 @@ export function ItemHeader({
 }: {
     item: ItemResponse;
 } & BoxProps) {
-    const [expanded, setExpanded] = useState(true);
+    const [expanded, setExpanded] = useLocalStorage("mobile_header_is_expanded", true);
     // TODO: A bit of animation would be nice here grow + shrink
     return (
         <Box

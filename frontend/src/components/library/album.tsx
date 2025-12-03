@@ -1,5 +1,5 @@
 import { ChevronUpIcon, DotIcon } from "lucide-react";
-import { Fragment, ReactNode, useState } from "react";
+import { Fragment, ReactNode } from "react";
 import {
     Box,
     BoxProps,
@@ -16,6 +16,7 @@ import { PlayOrAddItemToQueueButton } from "./audio/utils";
 import { CoverArt } from "./coverArt";
 import { ArtistLink } from "./links";
 
+import { useLocalStorage } from "../common/hooks/useLocalStorage";
 import { useSwipeUp } from "../common/hooks/useSwipe";
 import { capitalizeFirstLetter } from "../common/strings";
 import { humanizeDuration } from "../common/units/time";
@@ -27,7 +28,7 @@ export function AlbumHeader({
 }: {
     album: AlbumResponseExpanded;
 } & BoxProps) {
-    const [expanded, setExpanded] = useState(true);
+    const [expanded, setExpanded] = useLocalStorage("mobile_header_is_expanded", true);
     // TODO: A bit of animation would be nice here grow + shrink
     return (
         <Box
