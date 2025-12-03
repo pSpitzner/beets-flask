@@ -164,8 +164,6 @@ function BandcampSyncButton() {
     });
     const [open, setOpen] = useState(false);
 
-    console.log(config);
-
     if (!syncStatus) {
         return null;
     }

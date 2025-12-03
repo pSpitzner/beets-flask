@@ -4,10 +4,7 @@ import type { Socket } from "socket.io-client";
 
 export interface BandcampSyncUpdate {
     status: "pending" | "running" | "complete" | "error" | "aborted" | "idle";
-    message?: string;
     logs?: string[];
-    error?: string;
-    event: "bandcamp_sync_update";
 }
 
 interface Status_ServerToClientEvents {

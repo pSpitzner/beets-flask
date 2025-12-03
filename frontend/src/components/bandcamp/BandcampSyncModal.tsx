@@ -21,11 +21,10 @@ import {
     TextField,
     Typography,
 } from "@mui/material";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 
 import {
     abortBandcampSync,
-    bandcampStatusQueryOptions,
     startBandcampSync,
 } from "@/api/bandcamp";
 import { BandcampSyncUpdate } from "@/api/websocket";
@@ -38,7 +37,9 @@ interface BandcampSyncModalProps {
     onClose: () => void;
 }
 
-type SyncState = "idle" | "pending" | "syncing" | "complete" | "error" | "aborted";
+type SyncState = "idle" | "pending" | "running" | "complete" | "error" | "aborted";
+const runningStates: SyncState[] = ["pending", "running"];
+const terminalStates: SyncState[] = ["complete", "error", "aborted"];
 
 export function BandcampSyncModal({ open, onClose }: BandcampSyncModalProps) {
     const queryClient = useQueryClient();
@@ -52,9 +53,6 @@ export function BandcampSyncModal({ open, onClose }: BandcampSyncModalProps) {
     const [logs, setLogs] = useState<string[]>([]);
 
     const logsEndRef = useRef<HTMLDivElement>(null);
-
-    // Fetch initial status
-    const { data: initialStatus } = useQuery(bandcampStatusQueryOptions());
 
     // Auto-scroll logs to bottom
     useEffect(() => {
@@ -73,34 +71,17 @@ export function BandcampSyncModal({ open, onClose }: BandcampSyncModalProps) {
             // Update state based on status
             switch (data.status) {
                 case "complete":
-                    setSyncState("complete");
-                    void queryClient.invalidateQueries({ queryKey: ["bandcamp", "status"] });
-                    break;
                 case "error":
-                    setSyncState("error");
-                    void queryClient.invalidateQueries({ queryKey: ["bandcamp", "status"] });
-                    break;
                 case "aborted":
-                    setSyncState("aborted");
                     void queryClient.invalidateQueries({ queryKey: ["bandcamp", "status"] });
-                    break;
-                case "running":
-                    setSyncState("syncing");
-                    break;
-                case "pending":
-                    setSyncState("pending");
-                    break;
-                case "idle":
-                    setSyncState("idle");
                     break;
             }
 
-            // Add message to logs if present
-            if (data.message && !["running", "pending"].includes(data.status)) {
-                setLogs((prev) => [...prev, `[${data.status.toUpperCase()}] ${data.message}`]);
+            if (data.status !== syncState) {
+                setSyncState(data.status);
             }
         },
-        [queryClient]
+        [queryClient, syncState]
     );
 
     // Subscribe to WebSocket updates
@@ -113,18 +94,6 @@ export function BandcampSyncModal({ open, onClose }: BandcampSyncModalProps) {
             socket.off("bandcamp_sync_update", handleSyncUpdate);
         };
     }, [socket, handleSyncUpdate]);
-
-    // Sync local state with server status when modal opens
-    useEffect(() => {
-        if (open && initialStatus?.status) {
-            if (["pending", "running"].includes(initialStatus.status)) {
-                setSyncState(initialStatus.status === "pending" ? "pending" : "syncing");
-                if (logs.length === 0) {
-                    setLogs(["Waiting for sync progress..."]);
-                }
-            }
-        }
-    }, [open, initialStatus?.status, logs.length]);
 
     const startSync = async () => {
         // Reset state
@@ -146,8 +115,8 @@ export function BandcampSyncModal({ open, onClose }: BandcampSyncModalProps) {
         }
     };
 
-    const isRunning = ["pending", "syncing"].includes(syncState);
-    const isTerminalState = ["complete", "error", "aborted"].includes(syncState);
+    const isRunning = runningStates.includes(syncState);
+    const isTerminalState = terminalStates.includes(syncState);
 
     return (
         <Dialog open={open} onClose={onClose} title="Bandcamp Sync">

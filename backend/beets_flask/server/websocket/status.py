@@ -228,6 +228,7 @@ def emit_folder_status(
                     )
                 )
 
+
             return ret
 
         return wrapper
@@ -236,6 +237,9 @@ def emit_folder_status(
 
 
 def register_status():
-    # Placeholder for any status socket initialization
-    # Bandcamp sync will use Redis pub/sub directly
-    pass
+    """Initialize status socket and start pub/sub subscriber."""
+    from .pubsub import subscriber_task
+    
+    log.info("Registering status socket and starting pub/sub subscriber...")
+    # Start background task to subscribe to Redis pub/sub and forward to clients
+    sio.start_background_task(subscriber_task, sio, namespace)
