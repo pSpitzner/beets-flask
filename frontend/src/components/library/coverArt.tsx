@@ -1,4 +1,4 @@
-import { FileWarning } from "lucide-react";
+import { FileWarningIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@mui/material";
 import Box, { BoxProps } from "@mui/material/Box";
@@ -14,6 +14,8 @@ import {
     fileArtQueryOptions,
     numArtQueryOptions,
 } from "@/api/library";
+
+import missingCoverImage from "@/assets/missing_cover.webp";
 
 export interface CoverArtProps extends BoxProps {
     size?: ArtSize;
@@ -177,18 +179,6 @@ function CoverArtFromQuery({
 
     if (isError) {
         if (error instanceof HTTPError) {
-            // Depending on the error we show a placeholder or an error message
-            if (error.statusCode === 404) {
-                // 404 means no cover art found, so we show a placeholder
-                return (
-                    <CoverArtPlaceholder
-                        sx={coverSx}
-                        animation={false}
-                        showPlaceholder={showPlaceholder}
-                        {...props}
-                    />
-                );
-            }
             return <CoverArtError sx={coverSx} error={error} size={size} {...props} />;
         } else {
             throw error;
@@ -242,6 +232,38 @@ function CoverArtError({
     ...props
 }: { error: HTTPError; size: ArtSize } & Partial<BoxProps>) {
     console.warn("CoverArtError", error);
+
+    if (error.statusCode === 404) {
+        return (
+            <Box
+                {...props}
+                sx={[
+                    (theme) => ({
+                        backgroundColor: theme.vars
+                            ? theme.vars.palette.Skeleton.bg
+                            : theme.alpha(
+                                  theme.palette.text.primary,
+                                  theme.palette.mode === "light" ? 0.11 : 0.13
+                              ),
+                    }),
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                    ...(Array.isArray(props.sx) ? props.sx : [props.sx]),
+                ]}
+            >
+                <Box
+                    component="img"
+                    src={missingCoverImage}
+                    sx={{
+                        width: "100%",
+                        height: "100%",
+                        opacity: 0.5,
+                        padding: 1,
+                    }}
+                />
+            </Box>
+        );
+    }
+
     return (
         <Box {...props}>
             <Box
@@ -259,7 +281,7 @@ function CoverArtError({
                     p: 0.5,
                 }}
             >
-                <FileWarning size={50} strokeWidth={2} />
+                <FileWarningIcon size={50} strokeWidth={2} />
                 {size === "large" && (
                     <Box
                         sx={{

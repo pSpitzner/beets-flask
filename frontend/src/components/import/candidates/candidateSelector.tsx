@@ -645,47 +645,46 @@ function AsisCandidateDetails({
             >
                 {filesMetaDataQueries.map((query, idx) => {
                     return (
-                        <Box>
+                        <Box
+                            sx={(theme) => ({
+                                display: "flex",
+                                alignItems: "flex-start",
+                                gap: 1,
+
+                                [theme.breakpoints.down("tablet")]: {
+                                    flexDirection: "column-reverse",
+                                    alignItems: "flex-start",
+                                    paddingLeft: 1,
+                                },
+                            })}
+                            key={idx}
+                        >
+                            <OverviewMetadata metadata={query.data} />
                             <Box
                                 sx={(theme) => ({
                                     display: "flex",
-                                    alignItems: "flex-start",
-                                    gap: 1,
+                                    alignItems: "center",
+                                    width: "125px",
+                                    height: "125px",
 
                                     [theme.breakpoints.down("tablet")]: {
-                                        flexDirection: "column-reverse",
-                                        alignItems: "flex-start",
-                                        paddingLeft: 1,
+                                        padding: 0.5,
+                                        width: "100%",
+                                        marginRight: "auto",
+                                        height: "auto",
+                                        justifyContent: "center",
                                     },
                                 })}
                             >
-                                <OverviewMetadata metadata={query.data} />
-                                <Box
-                                    sx={(theme) => ({
-                                        display: "flex",
-                                        alignItems: "center",
-                                        width: "125px",
-                                        height: "125px",
-
-                                        [theme.breakpoints.down("tablet")]: {
-                                            padding: 0.5,
-                                            //maxHeight: "500px",
-                                            width: "100%",
-                                            height: "auto",
-                                            justifyContent: "center",
-                                        },
-                                    })}
-                                >
-                                    <FileCoverArt
-                                        sx={{
-                                            height: "auto",
-                                            width: "100%",
-                                            objectFit: "contain",
-                                            aspectRatio: "1 / 1",
-                                        }}
-                                        path={items[idx].path!}
-                                    />
-                                </Box>
+                                <FileCoverArt
+                                    sx={{
+                                        height: "auto",
+                                        width: "100%",
+                                        objectFit: "contain",
+                                        aspectRatio: "1 / 1",
+                                    }}
+                                    path={items[idx].path!}
+                                />
                             </Box>
                         </Box>
                     );
