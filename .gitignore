@@ -5,6 +5,7 @@ tinker/*
 static/bootstrap/*
 static/bootstrap-icons/*
 docker-compose-custom.yaml
+docker/docker-compose.dev-local.yaml
 local
 
 **/package-lock.json
