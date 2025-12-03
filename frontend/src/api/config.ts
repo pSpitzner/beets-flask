@@ -7,11 +7,7 @@ import { BeetsSchema } from "@/pythonTypes";
 import { APIError } from "./common";
 
 export interface MinimalConfig extends BeetsSchema {
-    // workaround for reserved keyword `import`, until we update eyconf
-    import: {
-        duplicate_action: string;
-    };
-    // utility getters, which are not in the schema
+    // extra fields that are not in the schema:
     beets_meta_sources: Array<string>;
     beets_version: string;
 }
