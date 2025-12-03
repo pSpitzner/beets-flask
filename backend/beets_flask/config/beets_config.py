@@ -207,7 +207,7 @@ class BeetsFlaskConfig(ConfigExtra[BeetsSchema]):
         return beets.__version__
 
     @property
-    def beets_meta_sources(self) -> list[str]:
+    def beets_metadata_sources(self) -> list[str]:
         """Get the list of enabled metadata source plugins."""
         from beets.metadata_plugins import find_metadata_source_plugins
 
