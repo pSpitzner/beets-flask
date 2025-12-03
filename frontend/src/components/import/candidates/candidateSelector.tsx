@@ -2,8 +2,7 @@ import {
     ChevronDownIcon,
     ChevronsDownUpIcon,
     ChevronsUpDownIcon,
-    EyeIcon,
-    EyeOffIcon,
+    EllipsisIcon,
 } from "lucide-react";
 import {
     createContext,
@@ -22,19 +21,20 @@ import {
     Divider,
     IconButton,
     Radio,
-    Skeleton,
     styled,
-    SxProps,
-    Theme,
+    Typography,
     useTheme,
 } from "@mui/material";
 import Box, { BoxProps } from "@mui/material/Box";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQueries } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
-import { FileMetadata, fileMetaQueryOptions } from "@/api/inbox";
+import { FileMetadata, fileMetadataQueryOptions } from "@/api/library";
 import { Dialog } from "@/components/common/dialogs";
 import { PropertyValueTable } from "@/components/common/propertyValueTable";
+import { humanizeBytes } from "@/components/common/units/bytes";
+import { trackLengthRep } from "@/components/common/units/time";
+import { ExternalCoverArt, FileCoverArt } from "@/components/library/coverArt";
 import {
     AlbumInfo,
     SerializedCandidateState,
@@ -53,10 +53,18 @@ import {
     TrackDiffsAfterImport,
     useTrackDiffContext,
 } from "./diff";
-import { MetaChip } from "./metaChips";
 
 import { MatchChip } from "../../common/chips";
-import { PenaltyTypeIcon, SourceTypeIcon } from "../../common/icons";
+import {
+    AlbumIcon,
+    ArtistIcon,
+    AudioFileIcon,
+    DurationIcon,
+    GenreIcon,
+    PenaltyTypeIcon,
+    SourceTypeIcon,
+    TrackIcon,
+} from "../../common/icons";
 import { PenaltyIconRow } from "../icons";
 
 /**
@@ -88,18 +96,14 @@ export function CandidateSelector({
             >
                 <TopBar task={task} />
                 <GridWrapper>
-                    <Fragment key={task.asis_candidate.id}>
-                        <CandidateInfo
-                            key={task.asis_candidate.id}
-                            candidate={task.asis_candidate}
-                        />
-                        <AsisCandidateDetails
-                            candidate={task.asis_candidate}
-                            items={task.items}
-                            metadata={task.current_metadata}
-                        />
-                    </Fragment>
-
+                    {/* As-is candidate */}
+                    <CandidateInfo candidate={task.asis_candidate} />
+                    <AsisCandidateDetails
+                        candidate_id={task.asis_candidate.id}
+                        items={task.items}
+                        metadata={task.current_metadata}
+                    />
+                    {/* Other candidates */}
                     {task.candidates.map((candidate) => (
                         <Fragment key={candidate.id}>
                             <CandidateInfo key={candidate.id} candidate={candidate} />
@@ -116,7 +120,6 @@ export function CandidateSelector({
     );
 }
 
-//
 export function ImportedCandidate({
     task,
     ...props
@@ -162,8 +165,8 @@ export function ImportedCandidate({
                 <Box
                     sx={(theme) => ({
                         display: "flex",
-                        width: "80px",
-                        height: "80px",
+                        width: "125px",
+                        height: "125px",
                         alignSelf: "center",
 
                         [theme.breakpoints.down("tablet")]: {
@@ -174,10 +177,17 @@ export function ImportedCandidate({
                         },
                     })}
                 >
-                    <ExternalCoverArt
-                        data_url={candidate.info.data_url}
-                        sx={{ width: "80px", height: "80px" }}
-                    />
+                    {candidate.info.data_url !== null && (
+                        <ExternalCoverArt
+                            sx={{
+                                height: "auto",
+                                width: "100%",
+                                aspectRatio: "1 / 1",
+                                objectFit: "contain",
+                            }}
+                            data_url={candidate.info.data_url}
+                        />
+                    )}
                 </Box>
             </Box>
             <Box sx={{ pt: 2 }}>
@@ -369,7 +379,8 @@ function TopBar({ task }: { task: SerializedTaskState }) {
             <ButtonGroup size="small" color="secondary">
                 <IconButton
                     color="secondary"
-                    disabled={expandedCandidates.size === task.candidates.length}
+                    // +1 for asis candidate
+                    disabled={expandedCandidates.size === task.candidates.length + 1}
                     onClick={expandAll}
                     title="Expand all"
                 >
@@ -564,45 +575,52 @@ export function CandidateDetails({
                             sx={(theme) => ({
                                 display: "flex",
                                 alignItems: "center",
-                                width: "72px",
-                                height: "72px",
+                                width: "125px",
+                                height: "125px",
 
                                 [theme.breakpoints.down("tablet")]: {
+                                    padding: 0.5,
+                                    //maxHeight: "500px",
                                     width: "100%",
                                     height: "auto",
-                                    maxHeight: "200px",
+                                    justifyContent: "center",
                                 },
                             })}
                         >
-                            <ExternalCoverArt data_url={candidate.info.data_url} />
+                            {candidate.info.data_url !== null && (
+                                <ExternalCoverArt
+                                    sx={{
+                                        height: "auto",
+                                        width: "100%",
+                                        aspectRatio: "1 / 1",
+                                        objectFit: "contain",
+                                    }}
+                                    data_url={candidate.info.data_url}
+                                />
+                            )}
                         </Box>
                     </Box>
                 </Box>
-
-                {/* Tracks */}
             </CandidateDetailsRow>
         );
     }, [candidate, items, metadata]);
 }
 
 function AsisCandidateDetails({
-    candidate,
+    candidate_id,
     items,
 }: {
-    candidate: SerializedCandidateState;
+    candidate_id: SerializedCandidateState["id"];
     items: SerializedTaskState["items"];
     metadata: SerializedTaskState["current_metadata"];
 }) {
     const ref = useRef<HTMLDivElement>(null);
     const { isExpanded, selected } = useCandidateSelection();
-    const theme = useTheme();
 
-    const expanded = isExpanded(candidate.id);
-    const { data: filesMetaData } = useSuspenseQuery(
-        fileMetaQueryOptions(
-            items.map((item) => item.path).filter((i) => i != undefined)
-        )
-    );
+    const expanded = isExpanded(candidate_id);
+    const filesMetaDataQueries = useSuspenseQueries({
+        queries: items.map((item) => fileMetadataQueryOptions(item.path!)),
+    });
 
     useEffect(() => {
         // Set css data-expanded attribute to the ref element
@@ -611,10 +629,10 @@ function AsisCandidateDetails({
             ref.current.setAttribute("data-expanded", String(expanded));
             ref.current.setAttribute(
                 "data-selected",
-                String(selected === candidate.id)
+                String(selected === candidate_id)
             );
         }
-    }, [candidate.id, expanded, selected]);
+    }, [candidate_id, expanded, selected]);
 
     return (
         <CandidateDetailsRow ref={ref}>
@@ -622,122 +640,57 @@ function AsisCandidateDetails({
                 sx={{
                     display: "flex",
                     flexDirection: "column",
-                    gap: 1,
+                    gap: 2,
                 }}
             >
-                {filesMetaData.map((meta, idx) => {
+                {filesMetaDataQueries.map((query, idx) => {
                     return (
                         <Box
-                            sx={{
-                                padding: theme.spacing(1),
-                                borderRadius: theme.spacing(0.5),
-                                backgroundColor:
-                                    idx % 2 === 0 ? "#00000011" : "#00000044",
-                                // borderBottom: "1px solid #515151",
-                            }}
+                            sx={(theme) => ({
+                                display: "flex",
+                                alignItems: "flex-start",
+                                gap: 1,
+
+                                [theme.breakpoints.down("tablet")]: {
+                                    flexDirection: "column-reverse",
+                                    alignItems: "flex-start",
+                                    paddingLeft: 1,
+                                },
+                            })}
+                            key={idx}
                         >
-                            <MetaRow meta={meta} />
+                            <OverviewMetadata metadata={query.data} />
+                            <Box
+                                sx={(theme) => ({
+                                    display: "flex",
+                                    alignItems: "center",
+                                    width: "125px",
+                                    height: "125px",
+
+                                    [theme.breakpoints.down("tablet")]: {
+                                        padding: 0.5,
+                                        width: "100%",
+                                        marginRight: "auto",
+                                        height: "auto",
+                                        justifyContent: "center",
+                                    },
+                                })}
+                            >
+                                <FileCoverArt
+                                    sx={{
+                                        height: "auto",
+                                        width: "100%",
+                                        objectFit: "contain",
+                                        aspectRatio: "1 / 1",
+                                    }}
+                                    path={items[idx].path!}
+                                />
+                            </Box>
                         </Box>
                     );
                 })}
             </Box>
         </CandidateDetailsRow>
-    );
-}
-
-function MetaRow({ meta }: { meta: FileMetadata }) {
-    const [advanced, setAdvanced] = useState(false);
-    return (
-        <>
-            <MetaChips meta={meta} advanced={advanced} setAdvanced={setAdvanced} />
-            {advanced ? <PropertyValueTable data={meta} /> : null}
-        </>
-    );
-}
-
-/** Meta chips for the candidate.
- *
- * Shows the most important metadata of the tracks.
- * Can be toggled to show more advanced metadata.
- */
-function MetaChips({
-    meta,
-    advanced,
-    setAdvanced,
-}: {
-    meta: FileMetadata;
-    advanced: boolean;
-    setAdvanced: (advanced: boolean) => void;
-}) {
-    const theme = useTheme();
-
-    return (
-        <Box
-            sx={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 1,
-            }}
-        >
-            <Box
-                sx={{
-                    display: "flex",
-                    flexDirection: "row",
-                    gap: 1,
-                    flexWrap: "wrap",
-                    justifyContent: "flex-start",
-                    alignItems: "flex-start",
-                    columnGap: 0.5,
-                    rowGap: 1,
-                }}
-            >
-                <MetaChip meta={meta} type={"track"} />
-                <MetaChip meta={meta} type={"title"} />
-                <MetaChip meta={meta} type={"artist"} />
-                <MetaChip meta={meta} type={"album"} />
-                <MetaChip meta={meta} type={"filepath"} />
-                <IconButton
-                    sx={{ p: 0, color: "inherit" }}
-                    onClick={() => {
-                        setAdvanced(!advanced);
-                    }}
-                    size="small"
-                >
-                    {!advanced ? (
-                        <EyeIcon size={theme.iconSize.sm} />
-                    ) : (
-                        <EyeOffIcon size={theme.iconSize.sm} />
-                    )}
-                </IconButton>
-            </Box>
-
-            {advanced ? null : (
-                <Box
-                    sx={{
-                        display: "flex",
-                        flexDirection: "row",
-                        gap: 1,
-                        flexWrap: "wrap",
-                        justifyContent: "flex-start",
-                        alignItems: "flex-start",
-                        columnGap: 0.5,
-                        rowGap: 1,
-                    }}
-                >
-                    <MetaChip meta={meta} type={"label"} />
-                    <MetaChip meta={meta} type={"genre"} />
-                    <MetaChip meta={meta} type={"year"} />
-                    <MetaChip meta={meta} type={"duration"} />
-                    <MetaChip meta={meta} type={"filesize"} />
-                    <MetaChip meta={meta} type={"bitrate"} />
-                    <MetaChip meta={meta} type={"bpm"} />
-                    <MetaChip meta={meta} type={"identifiers"} />
-                    <MetaChip meta={meta} type={"compilation"} />
-                    <MetaChip meta={meta} type={"lyrics"} />
-                    <MetaChip meta={meta} type={"remaining"} />
-                </Box>
-            )}
-        </Box>
     );
 }
 
@@ -776,7 +729,7 @@ function OverviewChanges({
                 },
             })}
         >
-            {/* first column, important */}
+            {/* first column, important stuff */}
             <GenericDetailsItemWithDiff
                 icon={<PenaltyTypeIcon type="artist" />}
                 from={metadata.artist}
@@ -884,6 +837,132 @@ function OverviewChanges({
                     }}
                 />
             </TrackDiffContextProvider>
+        </Box>
+    );
+}
+
+function OverviewMetadata({ metadata }: { metadata: FileMetadata }) {
+    const [show, setShow] = useState<boolean>(false);
+    return (
+        <Box
+            sx={(theme) => ({
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                color: "text.secondary",
+                flexDirection: "column",
+                gridAutoFlow: "dense",
+                width: "100%",
+                flexGrow: 1,
+                columnGap: 2,
+
+                [theme.breakpoints.down("tablet")]: {
+                    display: "flex",
+                    gridAutoFlow: "row",
+                    "*": {
+                        textWrap: "unset",
+                    },
+                },
+            })}
+        >
+            {/* first column, important stuff */}
+            <MetadataDetailsItem
+                type="track"
+                metadata={metadata}
+                sx={{
+                    gridColumn: "1",
+                    gridRow: "1",
+                }}
+            />
+
+            <MetadataDetailsItem
+                type="title"
+                metadata={metadata}
+                sx={{
+                    gridColumn: "1",
+                    gridRow: "2",
+                }}
+            />
+
+            <MetadataDetailsItem
+                type="artist"
+                metadata={metadata}
+                sx={{
+                    gridColumn: "1",
+                    gridRow: "3",
+                }}
+            />
+            <MetadataDetailsItem
+                type="album"
+                metadata={metadata}
+                sx={{
+                    gridColumn: "1",
+                    gridRow: "4",
+                }}
+            />
+            <MetadataDetailsItem
+                type="filepath"
+                metadata={metadata}
+                sx={{
+                    gridColumn: "1",
+                    gridRow: "5",
+                }}
+            />
+            <MetadataDetailsItem
+                type="year"
+                metadata={metadata}
+                sx={{
+                    gridColumn: "2",
+                    gridRow: "1",
+                }}
+            />
+
+            {/* second column, extra info */}
+            <MetadataDetailsItem
+                type="label"
+                metadata={metadata}
+                sx={{
+                    gridColumn: "2",
+                    gridRow: "2",
+                }}
+            />
+            <MetadataDetailsItem
+                type="genre"
+                metadata={metadata}
+                sx={{
+                    gridColumn: "2",
+                    gridRow: "3",
+                }}
+            />
+            <MetadataDetailsItem
+                type="duration"
+                metadata={metadata}
+                sx={{
+                    gridColumn: "2",
+                    gridRow: "4",
+                }}
+            />
+            <GenericDetailsItem
+                icon={<EllipsisIcon />}
+                label="Full Metadata"
+                onClick={() => setShow(true)}
+                sx={{
+                    gridColumn: "2",
+                    gridRow: "5",
+                }}
+            />
+            <Dialog
+                title="Full Metadata"
+                open={show}
+                onClose={() => {
+                    setShow(false);
+                }}
+                maxWidth="laptop"
+                fullWidth={true}
+            >
+                <DialogContent sx={{ pt: 0 }}>
+                    <PropertyValueTable data={metadata} allowFullscreen={false} />
+                </DialogContent>
+            </Dialog>
         </Box>
     );
 }
@@ -1017,60 +1096,112 @@ function TrackChangesDetailItem({
     );
 }
 
-function ExternalCoverArt({
-    data_url,
-    sx,
+// Associations of meta keys to groupings
+// allows to show only one item per grouping
+const metaGroupings = {
+    filepath: ["filename"],
+    artist: [
+        "artist",
+        "composer",
+        "album_artist",
+        "albumartist",
+        "albumartistsort",
+        "artist_credit",
+        "artistsort",
+    ],
+    album: ["album"],
+    track: ["track", "index", "catalognum"],
+    title: ["title"],
+    label: ["label", "publisher"],
+    genre: ["genre", "genres"],
+    year: ["year", "originaldate", "_year"],
+    duration: ["duration"],
+    filesize: ["filesize"],
+    bitrate: ["bitrate"],
+    bpm: ["bpm"],
+    compilation: ["compilation"],
+    identifiers: [
+        "isrc",
+        "catalognum",
+        "catalog_number",
+        "musicbrainz_trackid",
+        "musicbrainz_releasetrackid",
+    ],
+    lyrics: ["lyrics"],
+} as const;
+
+function MetadataDetailsItemIcon({ type }: { type: keyof typeof metaGroupings }) {
+    switch (type) {
+        case "filepath":
+            return <AudioFileIcon />;
+        case "artist":
+            return <ArtistIcon />;
+        case "album":
+            return <AlbumIcon />;
+        case "track":
+            return <PenaltyTypeIcon type="catalognum" />;
+        case "title":
+            return <TrackIcon />;
+        case "label":
+            return <PenaltyTypeIcon type="label" />;
+        case "genre":
+            return <GenreIcon />;
+        case "year":
+            return <PenaltyTypeIcon type="year" />;
+        case "duration":
+            return <DurationIcon />;
+        default:
+            return <></>;
+    }
+}
+
+export function MetadataDetailsItem({
+    type,
+    metadata,
     ...props
 }: {
-    data_url?: string | null;
+    type: keyof typeof metaGroupings;
+    metadata: FileMetadata;
 } & BoxProps) {
-    const [error, setError] = useState(false);
-    const [loaded, setLoaded] = useState(false);
+    const keys = metaGroupings[type];
+    const values = keys.map((key) => metadata[key]).filter(Boolean);
 
-    if (!data_url || error) {
-        return null;
+    // Parse values
+    let value = values.at(0) ?? "";
+    if (type === "duration" && typeof value === "number") {
+        value = trackLengthRep(value, false);
+    } else if (type === "filesize" && typeof value === "number") {
+        value = humanizeBytes(value);
     }
 
-    const common_style: SxProps<Theme> = (theme) => ({
-        width: "72px",
-        height: "72px",
-        border: `2px solid ${theme.palette.divider}`,
-        borderRadius: 1,
-        objectFit: "contain",
-        marginRight: 1,
-        color: "text.secondary",
-        alignItems: "center",
-        fontSize: theme.typography.body2.fontSize,
-        textAlign: "center",
-    });
-
     return (
-        <>
-            <Skeleton
-                variant="rounded"
-                sx={[
-                    common_style,
-                    {
-                        display: loaded ? "none" : "flex",
-                        margin: 0,
-                    },
-                ]}
-            />
-            <Box
-                component="img"
-                src={`/api_v1/art?url=${encodeURIComponent(data_url)}`}
-                sx={[
-                    common_style,
-                    {
-                        display: !loaded ? "none" : "flex",
-                    },
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-                    ...(Array.isArray(sx) ? sx : [sx]),
-                ]}
-                onError={() => setError(true)}
-                onLoad={() => setLoaded(true)}
-                {...props}
-            />
-        </>
+        <GenericDetailsItem
+            icon={<MetadataDetailsItemIcon type={type} />}
+            tooltip={
+                <Box>
+                    <Typography variant="caption" fontWeight="bold" gutterBottom>
+                        {type.toLocaleUpperCase()}
+                    </Typography>
+                    <Box
+                        sx={{
+                            display: "grid",
+                            gridTemplateColumns: "1fr auto",
+                            gap: 0.5,
+                        }}
+                    >
+                        {keys
+                            .filter((k) => metadata[k] !== undefined)
+                            .map((k) => (
+                                <>
+                                    <Box sx={{ textAlign: "left" }}>{k}:</Box>
+                                    <Box sx={{ textAlign: "left" }}>{metadata[k]}</Box>
+                                </>
+                            ))}
+                    </Box>
+                </Box>
+            }
+            label={value}
+            {...props}
+        />
     );
 }

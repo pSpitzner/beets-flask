@@ -1,7 +1,6 @@
 import os
 from io import BytesIO
 from typing import TYPE_CHECKING, cast
-from urllib.parse import unquote_plus
 
 from beets import util as beets_util
 from mediafile import Image, MediaFile  # comes with the beets install
@@ -54,6 +53,42 @@ def parse_size(size_key: str) -> tuple[int, int] | None:
     return preset
 
 
+def parse_art_params() -> tuple[int, tuple[int, int] | None]:
+    """Parse common artwork parameters from request."""
+    idx = int(request.args.get("index", 0))
+    size_key = request.args.get("size", "small")
+    try:
+        size = parse_size(size_key)
+    except KeyError:
+        raise InvalidUsageException(
+            f"Invalid size key '{size_key}' provided. Supported keys: {', '.join(SIZE_PRESETS.keys())}"
+        )
+    return idx, size
+
+
+def get_image_data_from_file(filepath: str, index: int = 0) -> BytesIO:
+    """Get image data from a file path."""
+    if not os.path.exists(filepath):
+        raise IntegrityException(f"File '{filepath}' does not exist.")
+
+    mediafile = MediaFile(filepath)
+    images = mediafile.images
+    if not images or len(images) <= index:
+        raise NotFoundException(
+            f"File has no cover art at index {index}: '{filepath}'."
+        )
+
+    im: Image = cast(Image, images[index])
+    return BytesIO(im.data)
+
+
+def get_image_count_from_file(filepath: str) -> int:
+    """Get number of images from a file path."""
+    mediafile = MediaFile(filepath)
+    images = mediafile.images
+    return len(images) if images else 0
+
+
 async def send_image(img_data: BytesIO, size: tuple[int, int] | None = None):
     # Resize if preset provided
     if size:
@@ -63,90 +98,51 @@ async def send_image(img_data: BytesIO, size: tuple[int, int] | None = None):
     return response
 
 
+# -------------------------------- Item Routes ------------------------------- #
+
+
 @artwork_pb.route("/item/<int:item_id>/nArtworks", methods=["GET"])
 async def item_art_idx(item_id: int):
-    """Get the number of images for an item.
-
-    This is a HEAD request to check the number of images available for an item.
-    """
+    """Get the number of images for an item."""
     log.debug(f"Item art index query for id:'{item_id}'")
 
-    # Item from beets library
     item = g.lib.get_item(item_id)
     if not item:
         raise NotFoundException(
             f"Item with beets_id:'{item_id}' not found in beets db."
         )
 
-    # File
     item_path = beets_util.syspath(item.path)
-    if not os.path.exists(item_path):
-        raise IntegrityException(
-            f"Item file '{item_path}' does not exist for item beets_id:'{item_id}'."
-        )
-
-    # Get image with mediafile library (comes with beets)
-    mediafile = MediaFile(item_path)
-    images = mediafile.images
-    if not images or len(images) < 1:
-        return jsonify({"count": 0}), 200
-
-    return jsonify({"count": len(images)}), 200
+    count = get_image_count_from_file(item_path)
+    return jsonify({"count": count}), 200
 
 
 @artwork_pb.route("/item/<int:item_id>/art", methods=["GET"])
 async def item_art(item_id: int):
     log.debug(f"Item art query for id:'{item_id}'")
 
-    # Allow selecting image index and size via query params
-    idx = int(request.args.get("index", 0))
-    size_key = request.args.get("size", "small")
-    try:
-        size = parse_size(size_key)
-    except KeyError:
-        raise InvalidUsageException(
-            f"Invalid size key '{size_key}' provided. Supported keys: {', '.join(SIZE_PRESETS.keys())}"
-        )
+    idx, size = parse_art_params()
 
-    # Item from beets library
     item = g.lib.get_item(item_id)
     if not item:
         raise NotFoundException(
             f"Item with beets_id:'{item_id}' not found in beets db."
         )
 
-    # File
     item_path = beets_util.syspath(item.path)
-    if not os.path.exists(item_path):
-        raise IntegrityException(
-            f"Item file '{item_path}' does not exist for item beets_id:'{item_id}'."
-        )
+    img_data = get_image_data_from_file(item_path, idx)
+    return await send_image(img_data, size)
 
-    # Get image with mediafile library (comes with beets)
-    mediafile = MediaFile(item_path)
-    images = mediafile.images
-    if not images or len(images) < 1:
-        raise NotFoundException(f"Item has no cover art: '{item_id}'.")
 
-    im: Image = cast(Image, images[idx])
-    return await send_image(BytesIO(im.data), size)
+# ------------------------------- Album Routes ------------------------------- #
 
 
 @artwork_pb.route("/album/<int:album_id>/art", methods=["GET"])
 async def album_art(album_id: int):
     log.debug(f"Album art query for id:'{album_id}'")
 
-    # Allow selecting image index and size via query params
-    idx = int(request.args.get("index", 0))
-    size_key = request.args.get("size", "small")
-    try:
-        size = parse_size(size_key)
-    except KeyError:
-        raise InvalidUsageException(
-            f"Invalid size key '{size_key}' provided. Supported keys: {', '.join(SIZE_PRESETS.keys())}"
-        )
+    idx, size = parse_art_params()
 
-    # Album from beets library
     album = g.lib.get_album(album_id)
     if not album:
         raise NotFoundException(
@@ -172,37 +168,28 @@ async def album_art(album_id: int):
             ".item_art",
             item_id=items[0].id,
             index=idx,
-            size=size_key,
+            size=request.args.get("size", "small"),
         )
     )
 
 
+# -------------------------------- File Routes ------------------------------- #
+
+
+@artwork_pb.route("/files/<string:filepath>/nArtworks", methods=["GET"])
+async def file_art_idx(filepath: str):
+    """Get the number of images for a file."""
+    filepath = bytes.fromhex(filepath).decode("utf-8")
+    count = get_image_count_from_file(filepath)
+    return jsonify({"count": count}), 200
+
+
 @artwork_pb.route("/file/<string:filepath>/art", methods=["GET"])
 async def file_art(filepath: str):
-    # Decode url encoded filepath
-    filepath = unquote_plus(filepath)
-    filepath = beets_util.syspath(filepath)
-
-    # Allow selecting image index and size via query params
-    idx = int(request.args.get("index", 0))
-    size_key = request.args.get("size", "small")
-    try:
-        size = parse_size(size_key)
-    except KeyError:
-        raise InvalidUsageException(
-            f"Invalid size key '{size_key}' provided. Supported keys: {', '.join(SIZE_PRESETS.keys())}"
-        )
-
-    if not os.path.exists(filepath):
-        raise IntegrityException(f"File '{filepath}' does not exist.")
-
-    mediafile = MediaFile(filepath)
-    images = mediafile.images
-    if not images or len(images) <= idx:
-        raise NotFoundException(f"File has no cover art at index {idx}: '{filepath}'.")
-
-    im: Image = cast(Image, images[idx])
-    return await send_image(BytesIO(im.data), size)
+    filepath = bytes.fromhex(filepath).decode("utf-8")
+    idx, size = parse_art_params()
+    img_data = get_image_data_from_file(filepath, idx)
+    return await send_image(img_data, size)
 
 
 # ---------------------------------- Utils ----------------------------------- #

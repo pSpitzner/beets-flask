@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Import Bootleg Button now works as expected [#218](https://github.com/pSpitzner/beets-flask/issues/218)
 - Startup script was not executed correctly if placed in `/config/beets-flask/startup.sh` [#227](https://github.com/pSpitzner/beets-flask/pull/227)
 - Another state-related bug around Searching for Candidates [#225](https://github.com/pSpitzner/beets-flask/issues/225). We now no longer require a certaint type of state before allowing to add candidates.
+- Asis candidates have been restyled to be more consistent with other candidate types. They now also include a cover art preview if available.
 - Fixed a typo in our opiniated beets config [#235](https://github.com/pSpitzner/beets-flask/issues/235)
 
 ### Added
@@ -35,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed typing issues in `./tests` folder and enabled mypy check for it.
 - Ruff now has the F401 (imported but unused) check enabled.
 - Ruff now had the UP checks enabled to enforce modern python syntax.
+- Unified coverart components in the frontend, we now use common styling for external and internal coverart.
+- Moved inbox metadata fetching into the library api routes.
 
 ### Dependencies
 

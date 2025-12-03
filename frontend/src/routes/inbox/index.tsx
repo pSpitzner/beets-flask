@@ -70,8 +70,8 @@ function RouteComponent() {
                     }}
                 >
                     {inboxes.map((folder) => (
-                        <FolderSelectionProvider>
-                            <InboxCard key={folder.full_path} folder={folder} />
+                        <FolderSelectionProvider key={folder.full_path}>
+                            <InboxCard folder={folder} />
                         </FolderSelectionProvider>
                     ))}
                 </Box>

@@ -28,8 +28,10 @@ export type Serializable = string | number | boolean | null | undefined;
 export function PropertyValueTable({
     data,
     sx,
+    allowFullscreen = true,
     ...props
 }: {
+    allowFullscreen?: boolean;
     data: Record<string, Serializable | Serializable[]>;
 } & TableProps) {
     const theme = useTheme();
@@ -85,6 +87,7 @@ export function PropertyValueTable({
                                 borderBottomStyle: "solid",
                                 borderBottomColor: "#515151",
                             },
+                            backgroundColor: "background.paper",
                         },
                     },
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -103,21 +106,23 @@ export function PropertyValueTable({
                     >
                         <TableCell colSpan={3}>
                             <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-                                <IconButton
-                                    size="medium"
-                                    sx={{
-                                        color: "gray",
-                                    }}
-                                    onClick={() => {
-                                        setFullscreen((prev) => !prev);
-                                    }}
-                                >
-                                    {fullscreen ? (
-                                        <Minimize2 size={theme.iconSize.lg} />
-                                    ) : (
-                                        <Maximize2 size={theme.iconSize.lg} />
-                                    )}
-                                </IconButton>
+                                {allowFullscreen && (
+                                    <IconButton
+                                        size="medium"
+                                        sx={{
+                                            color: "gray",
+                                        }}
+                                        onClick={() => {
+                                            setFullscreen((prev) => !prev);
+                                        }}
+                                    >
+                                        {fullscreen ? (
+                                            <Minimize2 size={theme.iconSize.lg} />
+                                        ) : (
+                                            <Maximize2 size={theme.iconSize.lg} />
+                                        )}
+                                    </IconButton>
+                                )}
                                 <Search
                                     size="small"
                                     value={filter}
@@ -214,15 +219,26 @@ export function PropertyValueTable({
                 </TableBody>
             </Table>
         ),
-        [filter, filteredData, fullscreen, nExcluded, props, sx, theme.iconSize.lg]
+        [
+            allowFullscreen,
+            filter,
+            filteredData,
+            fullscreen,
+            nExcluded,
+            props,
+            sx,
+            theme.iconSize.lg,
+        ]
     );
 
     return (
         <>
             {table}
-            <Slide direction="up" in={fullscreen} mountOnEnter unmountOnExit>
-                <FullScreenOntop sx={{ overflow: "auto" }}>{table}</FullScreenOntop>
-            </Slide>
+            {allowFullscreen && (
+                <Slide direction="up" in={fullscreen} mountOnEnter unmountOnExit>
+                    <FullScreenOntop sx={{ overflow: "auto" }}>{table}</FullScreenOntop>
+                </Slide>
+            )}
         </>
     );
 }

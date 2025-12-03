@@ -9,6 +9,7 @@ import {
     ChevronsUpDownIcon,
     CircleCheckBigIcon,
     CircleHelpIcon,
+    ClockIcon,
     CopyIcon,
     Disc3Icon,
     FileIcon,
@@ -16,6 +17,7 @@ import {
     FlagIcon,
     FolderIcon,
     FolderOpen,
+    GuitarIcon,
     HashIcon,
     HistoryIcon,
     HourglassIcon,
@@ -54,6 +56,15 @@ export function ArtistIcon(props: LucideProps) {
 }
 export function TrackIcon(props: LucideProps) {
     return <AudioLinesIcon {...props} />;
+}
+export function AudioFileIcon(props: LucideProps) {
+    return <FileMusicIcon {...props} />;
+}
+export function GenreIcon(props: LucideProps) {
+    return <GuitarIcon {...props} />;
+}
+export function DurationIcon(props: LucideProps) {
+    return <ClockIcon {...props} />;
 }
 
 /* -------------------------------------------------------------------------- */
