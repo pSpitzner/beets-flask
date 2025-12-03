@@ -27,7 +27,7 @@ async def get_basic():
         {
             **config.to_dict(extra_fields=False),
             # the following ones are not part of the schema
-            "beets_meta_sources": config.beets_meta_sources,
+            "beets_metadata_sources": config.beets_metadata_sources,
             "beets_version": config.beets_version,
         }
     )
