@@ -26,11 +26,7 @@ async def get_basic():
     return jsonify(
         {
             **config.to_dict(extra_fields=False),
-            # workaround for reserved keyword `import`, until we update eyconf
-            "import": {
-                "duplicate_action": getattr(config.data, "import")["duplicate_action"]
-            },
-            # utility getters, could become part of the schema
+            # the following ones are not part of the schema
             "beets_meta_sources": config.beets_meta_sources,
             "beets_version": config.beets_version,
         }
