@@ -35,6 +35,18 @@ if [ ! -z "$EXTRA_GROUPS" ]; then
             continue
         fi
         
+        # Validate that gid is a positive integer
+        case "$gid" in
+            *[!0-9]*)
+                echo "[Entrypoint] Warning: GID '$gid' is not a valid positive integer in '$group_spec', skipping"
+                continue
+                ;;
+        esac
+        if [ "$gid" -le 0 ] 2>/dev/null; then
+            echo "[Entrypoint] Warning: GID '$gid' must be a positive integer in '$group_spec', skipping"
+            continue
+        fi
+        
         # Check if the group already exists
         if getent group "$group_name" > /dev/null 2>&1; then
             echo "[Entrypoint] Group '$group_name' already exists, skipping creation"
