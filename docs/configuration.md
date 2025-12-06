@@ -154,3 +154,43 @@ You can use multiple workers to fetch candidates before importing (previewing).
 However, the import itself is always done sequentially.
 This is to ensure that the import process is not interrupted by other operations.
 ```
+
+## Docker Environment Variables
+
+These environment variables are set in the `docker-compose.yaml` file and control the container's behavior.
+
+### `USER_ID` and `GROUP_ID`
+
+The `USER_ID` and `GROUP_ID` environment variables are used to set the UID and GID of the `beetle` user inside the container. This is useful to match the user and group IDs of the host system. The default value is `1000` for both.
+
+```yaml
+environment:
+    USER_ID: 1000
+    GROUP_ID: 1000
+```
+
+### `EXTRA_GROUPS`
+
+The `EXTRA_GROUPS` environment variable allows you to add additional groups to the `beetle` user. This is useful when you need the container to have access to files owned by different groups on the host system.
+
+The format is a comma-separated list of `group_name:gid` pairs:
+
+```yaml
+environment:
+    EXTRA_GROUPS: "nas_shares:1001,media:1002"
+```
+
+This is particularly useful in scenarios where:
+- Files in the inbox are created by external services running as different users/groups
+- You're using ACL-based permissions with specific group access
+- You're running in environments like LXC/Proxmox with mapped group IDs
+- You need the container to manage files from network shares with specific group ownership
+
+Example: If your download client (e.g., slskd, transmission) creates files with group ownership `nas_shares` (gid 1001), you can add that group to the beetle user:
+
+```yaml
+environment:
+    EXTRA_GROUPS: "nas_shares:1001"
+```
+
+This will allow the beets-flask container to delete and manage those files via the web UI.
