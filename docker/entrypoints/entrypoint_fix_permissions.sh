@@ -74,13 +74,17 @@ if [ ! -z "$EXTRA_GROUPS" ]; then
             fi
         fi
         
-        # Add beetle user to the group
-        error_output=$(adduser beetle "$group_name" 2>&1)
-        add_result=$?
-        if [ $add_result -eq 0 ]; then
-            echo "[Entrypoint] Added beetle user to group '$group_name'"
+        # Add beetle user to the group if not already a member
+        if id -nG beetle | grep -qw "$group_name"; then
+            echo "[Entrypoint] User beetle is already a member of group '$group_name'"
         else
-            echo "[Entrypoint] Warning: Failed to add beetle user to group '$group_name': $error_output"
+            error_output=$(adduser beetle "$group_name" 2>&1)
+            add_result=$?
+            if [ $add_result -eq 0 ]; then
+                echo "[Entrypoint] Added beetle user to group '$group_name'"
+            else
+                echo "[Entrypoint] Warning: Failed to add beetle user to group '$group_name': $error_output"
+            fi
         fi
     done
     IFS="$OLD_IFS"
