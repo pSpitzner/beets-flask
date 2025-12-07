@@ -57,6 +57,10 @@ if [ ! -z "$EXTRA_GROUPS" ]; then
         
         # Check if the group already exists
         if getent group "$group_name" > /dev/null 2>&1; then
+            existing_gid=$(getent group "$group_name" | cut -d: -f3)
+            if [ "$existing_gid" != "$gid" ]; then
+                echo "[Entrypoint] Warning: Group '$group_name' exists with GID $existing_gid (expected $gid). Using existing group."
+            fi
             echo "[Entrypoint] Group '$group_name' already exists, skipping creation"
         else
             # Create the group with the specified gid
