@@ -13,7 +13,6 @@ services:
             # Optional: Add extra groups to the beetle user for file permissions
             # Format: "group_name1:gid1,group_name2:gid2"
             # Example: EXTRA_GROUPS: "nas_shares:1001,media:1002"
-            # EXTRA_GROUPS: ""
         volumes:
             - /wherever/config/:/config
             # for music folders, match paths inside and out of container!
