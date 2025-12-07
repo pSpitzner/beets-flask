@@ -50,8 +50,8 @@ if [ ! -z "$EXTRA_GROUPS" ]; then
                 continue
                 ;;
         esac
-        if [ "$gid" -le 0 ] 2>/dev/null; then
-            echo "[Entrypoint] Warning: GID '$gid' must be a positive integer in '$group_spec', skipping"
+        if [ "$gid" -lt 0 ] 2>/dev/null; then
+            echo "[Entrypoint] Warning: GID '$gid' must be a non-negative integer in '$group_spec', skipping"
             continue
         fi
         
