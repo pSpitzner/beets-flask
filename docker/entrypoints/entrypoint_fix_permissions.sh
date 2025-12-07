@@ -35,6 +35,14 @@ if [ ! -z "$EXTRA_GROUPS" ]; then
             continue
         fi
         
+        # Validate group_name against Linux group naming conventions
+        case "$group_name" in
+            [a-z]*([a-z0-9_-]) ) ;; # valid: starts with a lowercase letter, only allowed chars
+            [0-9]*|*[^a-z0-9_-]*)
+                echo "[Entrypoint] Warning: Invalid group name '$group_name' in '$group_spec', skipping. Group names should start with a lowercase letter and contain only lowercase letters, digits, underscores, and hyphens"
+                continue
+                ;;
+        esac
         # Validate that gid is a positive integer
         case "$gid" in
             *[!0-9]*)
