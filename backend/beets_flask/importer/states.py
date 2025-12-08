@@ -689,7 +689,7 @@ class CandidateState(BaseState):
         tmp_album = BeetsAlbum(lib, **info)
         keys: list[str] = cast(
             list[str],
-            getattr(get_config().data, "import").duplicate_keys.album or [],
+            get_config().data.import_.duplicate_keys.album or [],
         )
         dup_query = tmp_album.duplicates_query(keys)
 
