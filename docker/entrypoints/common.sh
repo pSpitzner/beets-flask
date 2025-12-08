@@ -8,6 +8,10 @@ log_error() {
     echo -e "\033[0;31m[Entrypoint] $1\033[0m"
 }
 
+log_warning() {
+    echo -e "\033[0;33m[Entrypoint] $1\033[0m"
+}
+
 log_current_user() {
     log "Running as '$(whoami)' with UID $(id -u) and GID $(id -g)"
     log "Current working directory: $(pwd)"
@@ -26,7 +30,7 @@ get_version_info() {
     else
         export BACKEND_VERSION="unk"
     fi
-
+    
     if [ -f /version/frontend.txt ]; then
         export FRONTEND_VERSION=$(cat /version/frontend.txt)
     else
