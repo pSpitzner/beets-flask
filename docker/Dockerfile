@@ -103,22 +103,9 @@ WORKDIR /repo
 USER root
 ENTRYPOINT [ \
     "/bin/sh", "-c", \
-    "./docker/entrypoints/entrypoint_fix_permissions.sh && \ 
+    "./docker/entrypoints/entrypoint_fix_permissions.sh && \
     su beetle -c ./docker/entrypoints/entrypoint_dev.sh" \
     ]
-
-# ------------------------------------------------------------------------------------ #
-#                                        Testing                                       #
-# ------------------------------------------------------------------------------------ #
-
-FROM deps AS test
-
-WORKDIR /repo
-COPY --from=deps --chown=beetle:beetle /repo /repo
-COPY entrypoint_test.sh .
-ENV IB_SERVER_CONFIG="test"
-USER root
-ENTRYPOINT ["./entrypoint_test.sh"]
 
 # ------------------------------------------------------------------------------------ #
 #                                         Build                                        #
@@ -163,10 +150,7 @@ ENV IB_SERVER_CONFIG="prod"
 WORKDIR /repo
 COPY --from=build /repo/frontend/dist /repo/frontend/dist
 COPY --from=build /version /version
-COPY docker/entrypoints/entrypoint.sh .
-COPY docker/entrypoints/entrypoint_user_scripts.sh .
-COPY docker/entrypoints/entrypoint_fix_permissions.sh .
-COPY docker/entrypoints/common.sh .
+COPY docker/entrypoints .
 RUN chown -R beetle:beetle /repo
 
 USER root
