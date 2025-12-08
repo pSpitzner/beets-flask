@@ -3,18 +3,16 @@ from __future__ import annotations
 import os
 import shutil
 import sys
-from dataclasses import asdict
 from pathlib import Path
-from typing import Self, cast
+from typing import Literal, Self, cast
 
 import beets
 import yaml
 from beets.plugins import _instances as plugin_instances
 from beets.plugins import get_plugin_names, load_plugins
 from eyconf import ConfigExtra
-from eyconf.validation import ConfigurationError, MultiConfigurationError
 from eyconf.asdict import asdict_with_aliases
-from typing_extensions import Literal
+from eyconf.validation import ConfigurationError, MultiConfigurationError
 
 from beets_flask.logger import log
 from beets_flask.utility import deprecation_warning
@@ -52,15 +50,26 @@ class BeetsFlaskConfig(ConfigExtra[BeetsSchema]):
         log.debug("Resetting/Reloading config")
         super().reset()
         BeetsFlaskConfig.write_examples_as_user_defaults()
-        # load user config from yaml.
-        # EYConfs update method also validates against the schema
-        with open(self.get_beets_config_path(), "r") as f:
+
+        # There are 3 potential sources
+
+        # 1. beets defaults
+        # We do not load them into _out_ config.
+        # They are still available in the beets_config property.
+        # But: we want to encourage user to add fields that are accessed
+        # from _our_ config into the schema.
+        # Thus only porting requirement: copy the relevant beets default into the schema
+
+        # 2. beets user config
+        with open(self.get_beets_config_path()) as f:
             loaded = yaml.safe_load(f)
             if not isinstance(loaded, dict):
                 raise ValueError("Beets config is not a valid YAML dictionary.")
+            # EYConfs update method also validates against the schema
             self.update(loaded)
 
-        with open(self.get_beets_flask_config_path(), "r") as f:
+        # 3. beets-flask user config
+        with open(self.get_beets_flask_config_path()) as f:
             loaded = yaml.safe_load(f)
             if not isinstance(loaded, dict):
                 raise ValueError("Beets flask config is not a valid YAML dictionary.")
