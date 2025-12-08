@@ -83,11 +83,18 @@ export interface MatchSectionSchema {
     singleton_disambig_fields: Array<string>;
 }
 
+export interface ImportSection {
+    duplicate_action: "ask" | "keep" | "merge" | "remove" | "skip";
+    move: "False";
+    copy: "True";
+}
+
 export interface BeetsSchema {
     gui: BeetsFlaskSchema;
     directory: string;
     ignore: Array<string>;
     plugins: Array<string>;
+    import_: ImportSection;
     match: MatchSectionSchema;
 }
 
