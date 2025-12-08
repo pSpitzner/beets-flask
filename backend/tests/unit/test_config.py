@@ -49,6 +49,9 @@ class TestConfig:
     def test_reload(self):
         """Test that config reload works as expected."""
 
+        config = get_config()
+        config.data.gui.num_preview_workers = "not an int"  # type: ignore
+
         # previous set should have modified global singleton
         config = get_config()
         assert config.data.gui.num_preview_workers == "not an int"
@@ -69,7 +72,7 @@ class TestConfig:
 
         # test reloading from file modifications that occur during runtime
         beets_flask_path = config.get_beets_flask_config_path()
-        with open(beets_flask_path, "r") as f:
+        with open(beets_flask_path) as f:
             content = f.read()
         modified_content = content.replace(
             "num_preview_workers: 4", "num_preview_workers: 7"
@@ -127,6 +130,6 @@ class TestConfig:
         config.commit_to_beets()
         assert beets.config["import"]["duplicate_action"].get() == "skip"
 
-        config.data["import"].duplicate_action = "remove"
+        config.data.import_.duplicate_action = "remove"
         config.commit_to_beets()
         assert beets.config["import"]["duplicate_action"].get() == "remove"

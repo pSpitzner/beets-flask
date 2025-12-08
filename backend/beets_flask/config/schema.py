@@ -7,7 +7,7 @@ beets-flask.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, Literal
+from typing import Literal
 
 
 @dataclass
@@ -38,18 +38,25 @@ class ImportSection:
     duplicate_action: Literal["ask", "skip", "merge", "keep", "remove"] = "remove"
     move: Literal[False] = False  # beets-flask does not support the move option
     copy: Literal[True] = True  # let's shape expectations via config
+    duplicate_keys: ImportDuplicateKeys = field(
+        default_factory=lambda: ImportDuplicateKeys()
+    )
+
+
+@dataclass
+class ImportDuplicateKeys:
+    # legacy compatibility, beets uses a space-delimited str sequence
+    # we could make a PR in beets to change the defaults
+    # in confuse, when using .str_seq both syntaxes in yaml work
+    # but `.get` will give different results
+    album: str | list[str] = field(default_factory=lambda: ["albumartist", "album"])
+    item: str | list[str] = field(default_factory=lambda: ["artist", "title"])
 
 
 @dataclass
 class MatchSectionSchema:
     strong_rec_thresh: float = field(default=0.04)
     medium_rec_thresh: float = field(default=0.10)
-    album_disambig_fields: list[str] = field(
-        default_factory=lambda: ["year", "albumtype"]
-    )
-    singleton_disambig_fields: list[str] = field(
-        default_factory=lambda: ["artist", "year"]
-    )
 
 
 # ---------------------------------------------------------------------------- #
@@ -81,7 +88,7 @@ class InboxSectionSchema:
     # Useful to exclude temporary files from being shown in the inbox.
     # To show all files (independent of which files beets will copy) set to []
     debounce_before_autotag: int = 30
-    folders: Dict[str, InboxFolderSchema] = field(
+    folders: dict[str, InboxFolderSchema] = field(
         default_factory=lambda: {
             "placeholder": InboxFolderSchema(
                 name="Please check your config!",
