@@ -129,8 +129,8 @@ const TabLabel = styled(Typography)(({ theme }) => ({
 }));
 
 function NavItem({ label, ...props }: StyledTabProps) {
-    // @ts-expect-error: WTF is happening here. MUI-Update broke typing!
     return (
+        // @ts-expect-error: WTF is happening here. MUI-Update broke typing!
         <StyledTab
             label={<TabLabel>{label}</TabLabel>}
             disableRipple
