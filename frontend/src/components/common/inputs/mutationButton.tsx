@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-import { Button, ButtonProps, DialogContent } from "@mui/material";
-import { useMutation, UseMutationOptions } from "@tanstack/react-query";
+import { useEffect, useState } from 'react';
+import { Button, ButtonProps, DialogContent } from '@mui/material';
+import { useMutation, UseMutationOptions } from '@tanstack/react-query';
 
-import { JSONPretty } from "../debugging/json";
-import { Dialog } from "../dialogs";
+import { JSONPretty } from '../debugging/json';
+import { Dialog } from '../dialogs';
 
 // data, error, variables
 interface MutationActionProps<D, E, V, C> {

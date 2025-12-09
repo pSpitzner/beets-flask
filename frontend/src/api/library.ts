@@ -1,6 +1,6 @@
-import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 
-import { toHex } from "@/components/common/strings";
+import { toHex } from '@/components/common/strings';
 import {
     AlbumResponse,
     AlbumResponseExpanded,
@@ -9,11 +9,14 @@ import {
     ItemResponse,
     ItemResponseMinimal,
     LibraryStats as _LibraryStats,
-} from "@/pythonTypes";
+} from '@/pythonTypes';
 
-import { queryClient } from "./common";
+import { queryClient } from './common';
 
-export type LibraryStats = Omit<_LibraryStats, "lastItemAdded" | "lastItemModified"> & {
+export type LibraryStats = Omit<
+    _LibraryStats,
+    'lastItemAdded' | 'lastItemModified'
+> & {
     lastItemAdded?: Date;
     lastItemModified?: Date;
 };
@@ -21,7 +24,7 @@ export type LibraryStats = Omit<_LibraryStats, "lastItemAdded" | "lastItemModifi
 // Some stats about the library
 export const libraryStatsQueryOptions = () => {
     return queryOptions({
-        queryKey: ["libraryStats"],
+        queryKey: ['libraryStats'],
         queryFn: async () => {
             const response = await fetch(`/library/stats`);
             const dat = (await response.json()) as _LibraryStats;
@@ -69,12 +72,12 @@ function _url_parse_minimal_expand(
 ) {
     const params = [];
     if (minimal) {
-        params.push("minimal");
+        params.push('minimal');
     }
     if (expand) {
-        params.push("expand");
+        params.push('expand');
     }
-    return params.length ? `${url}?${params.join("&")}` : url;
+    return params.length ? `${url}?${params.join('&')}` : url;
 }
 
 // An item by its ID
@@ -82,7 +85,7 @@ export const itemQueryOptions = <Minimal extends boolean>(
     id: number,
     minimal: Minimal = true as Minimal
 ) => ({
-    queryKey: ["item", id, minimal],
+    queryKey: ['item', id, minimal],
     queryFn: async (): Promise<Item<typeof minimal>> => {
         const url = _url_parse_minimal_expand(`/library/item/${id}`, minimal);
         const response = await fetch(url);
@@ -99,16 +102,16 @@ interface ItemsPageResponse {
 export const itemsInfiniteQueryOptions = ({
     query,
     orderBy,
-    orderDirection = "ASC",
+    orderDirection = 'ASC',
 }: {
     query: string;
-    orderBy?: "title";
-    orderDirection?: "ASC" | "DESC";
+    orderBy?: 'title';
+    orderDirection?: 'ASC' | 'DESC';
 }) => {
     const params = new URLSearchParams();
-    params.set("n_items", "100"); // Number of items per page
-    if (orderBy) params.set("order_by", orderBy);
-    if (orderDirection) params.set("order_dir", orderDirection);
+    params.set('n_items', '100'); // Number of items per page
+    if (orderBy) params.set('order_by', orderBy);
+    if (orderDirection) params.set('order_dir', orderDirection);
     const paramsStr = params.toString();
 
     let initUrl = `/api_v1/library/items`;
@@ -120,9 +123,9 @@ export const itemsInfiniteQueryOptions = ({
     }
 
     return infiniteQueryOptions({
-        queryKey: ["items", query, orderBy, orderDirection],
+        queryKey: ['items', query, orderBy, orderDirection],
         queryFn: async ({ pageParam }) => {
-            const response = await fetch(pageParam.replace("/api_v1", ""));
+            const response = await fetch(pageParam.replace('/api_v1', ''));
             return (await response.json()) as ItemsPageResponse;
         },
         initialPageParam: initUrl,
@@ -141,12 +144,15 @@ export const itemsInfiniteQueryOptions = ({
 /* --------------------------------- Albums --------------------------------- */
 
 // An album imported by us
-export const albumImportedOptions = <Expand extends boolean, Minimal extends boolean>(
+export const albumImportedOptions = <
+    Expand extends boolean,
+    Minimal extends boolean,
+>(
     task_id: string,
     expand: Expand = true as Expand,
     minimal: Minimal = true as Minimal
 ) => ({
-    queryKey: ["album", task_id, expand, minimal],
+    queryKey: ['album', task_id, expand, minimal],
     queryFn: async (): Promise<Album<typeof expand, typeof minimal>> => {
         const url = _url_parse_minimal_expand(
             `/library/album/bf_id/${task_id}`,
@@ -160,17 +166,24 @@ export const albumImportedOptions = <Expand extends boolean, Minimal extends boo
 });
 
 // An album by its ID
-export const albumQueryOptions = <Expand extends boolean, Minimal extends boolean>(
+export const albumQueryOptions = <
+    Expand extends boolean,
+    Minimal extends boolean,
+>(
     id: number,
     expand: Expand = true as Expand,
     minimal: Minimal = true as Minimal
 ) => ({
-    queryKey: ["album", id, expand, minimal],
+    queryKey: ['album', id, expand, minimal],
     queryFn: async (): Promise<Album<typeof expand, typeof minimal>> => {
-        console.log("albumQueryOptions", id, expand, minimal);
-        const url = _url_parse_minimal_expand(`/library/album/${id}`, minimal, expand);
+        console.log('albumQueryOptions', id, expand, minimal);
+        const url = _url_parse_minimal_expand(
+            `/library/album/${id}`,
+            minimal,
+            expand
+        );
         const response = await fetch(url);
-        console.log("albumQueryOptions response", response);
+        console.log('albumQueryOptions response', response);
         return (await response.json()) as Album<typeof expand, typeof minimal>;
     },
 });
@@ -185,16 +198,16 @@ interface AlbumsPageResponse {
 export const albumsInfiniteQueryOptions = ({
     query,
     orderBy,
-    orderDirection = "ASC",
+    orderDirection = 'ASC',
 }: {
     query: string;
-    orderBy?: "album" | "albumartist" | "year";
-    orderDirection?: "ASC" | "DESC";
+    orderBy?: 'album' | 'albumartist' | 'year';
+    orderDirection?: 'ASC' | 'DESC';
 }) => {
     const params = new URLSearchParams();
-    params.set("n_items", "50"); // Number of items per page
-    if (orderBy) params.set("order_by", orderBy);
-    if (orderDirection) params.set("order_dir", orderDirection);
+    params.set('n_items', '50'); // Number of items per page
+    if (orderBy) params.set('order_by', orderBy);
+    if (orderDirection) params.set('order_dir', orderDirection);
     const paramsStr = params.toString();
 
     let initUrl = `/api_v1/library/albums`;
@@ -206,9 +219,9 @@ export const albumsInfiniteQueryOptions = ({
     }
 
     return infiniteQueryOptions({
-        queryKey: ["albums", query, orderBy, orderDirection],
+        queryKey: ['albums', query, orderBy, orderDirection],
         queryFn: async ({ pageParam }) => {
-            const response = await fetch(pageParam.replace("/api_v1", ""));
+            const response = await fetch(pageParam.replace('/api_v1', ''));
             return (await response.json()) as AlbumsPageResponse;
         },
         initialPageParam: initUrl,
@@ -225,7 +238,7 @@ export const albumsInfiniteQueryOptions = ({
 };
 
 export const recentAlbumsQueryOptions = {
-    queryKey: ["recentAlbums"],
+    queryKey: ['recentAlbums'],
     queryFn: async () => {
         const response = await fetch(
             `/library/albums?order_by=added&order_dir=DESC&n_items=25`
@@ -252,7 +265,7 @@ export interface Artist {
 
 // List of all artists
 export const artistsQueryOptions = () => ({
-    queryKey: ["artists"],
+    queryKey: ['artists'],
     queryFn: async () => {
         const response = await fetch(`/library/artists/`);
         const artists = (await response.json()) as Artist[];
@@ -276,17 +289,17 @@ export const artistsQueryOptions = () => ({
         return artists;
         // TODO: fill cache data for single artists queries
     },
-    refetchOnWindowFocus: "always" as const,
+    refetchOnWindowFocus: 'always' as const,
 });
 
 // An artist by its name
 export const artistQueryOptions = (name: string) => ({
-    queryKey: ["artist", name],
+    queryKey: ['artist', name],
     queryFn: async () => {
         const response = await fetch(`/library/artists/${name}`);
         return (await response.json()) as Artist;
     },
-    refetchOnWindowFocus: "always" as const,
+    refetchOnWindowFocus: 'always' as const,
 });
 
 // All albums for a specific artist
@@ -298,7 +311,7 @@ export const albumsByArtistQueryOptions = <
     expand: Expand = true as Expand,
     minimal: Minimal = true as Minimal
 ) => ({
-    queryKey: ["artist", name, expand, minimal],
+    queryKey: ['artist', name, expand, minimal],
     queryFn: async (): Promise<Album<typeof expand, typeof minimal>[]> => {
         const url = _url_parse_minimal_expand(
             `/library/artist/${name}/albums`,
@@ -306,7 +319,10 @@ export const albumsByArtistQueryOptions = <
             expand
         );
         const response = await fetch(url);
-        return (await response.json()) as Album<typeof expand, typeof minimal>[];
+        return (await response.json()) as Album<
+            typeof expand,
+            typeof minimal
+        >[];
     },
 });
 
@@ -315,9 +331,12 @@ export const itemsByArtistQueryOptions = <Minimal extends boolean>(
     name: string,
     minimal: Minimal = true as Minimal
 ) => ({
-    queryKey: ["artist", name, "items", minimal],
+    queryKey: ['artist', name, 'items', minimal],
     queryFn: async (): Promise<Item<typeof minimal>[]> => {
-        const url = _url_parse_minimal_expand(`/library/artist/${name}/items`, minimal);
+        const url = _url_parse_minimal_expand(
+            `/library/artist/${name}/items`,
+            minimal
+        );
         const response = await fetch(url);
         return (await response.json()) as Item<typeof minimal>[];
     },
@@ -325,7 +344,7 @@ export const itemsByArtistQueryOptions = <Minimal extends boolean>(
 
 /* --------------------------------- Artwork -------------------------------- */
 
-export type ArtSize = "small" | "medium" | "large" | "original";
+export type ArtSize = 'small' | 'medium' | 'large' | 'original';
 
 const ART_QUERY_OPTIONS = {
     retry: false,
@@ -338,14 +357,14 @@ const ART_QUERY_OPTIONS = {
 
 // Art for a library item or album
 export const artUrl = (
-    type: "item" | "album",
+    type: 'item' | 'album',
     id: number,
     size?: ArtSize,
     idx?: number
 ) => {
     const params = new URLSearchParams();
-    if (size) params.set("size", size);
-    if (idx !== undefined) params.set("idx", idx.toString());
+    if (size) params.set('size', size);
+    if (idx !== undefined) params.set('idx', idx.toString());
 
     const base = `/library/${type}/${id}/art`;
     return params.toString() ? `${base}?${params}` : base;
@@ -357,13 +376,13 @@ export const artQueryOptions = ({
     size,
     index,
 }: {
-    type?: "item" | "album";
+    type?: 'item' | 'album';
     id?: number;
     size?: ArtSize;
     index?: number;
 }) =>
     queryOptions({
-        queryKey: ["art", type, id, size, index],
+        queryKey: ['art', type, id, size, index],
         queryFn: async () => {
             if (id == null || !type) {
                 return null;
@@ -381,15 +400,15 @@ export const artQueryOptions = ({
 // Number of artworks for an item -> back, front, etc.
 export const numArtQueryOptions = (itemId?: number) =>
     queryOptions({
-        queryKey: ["art", "num", itemId],
+        queryKey: ['art', 'num', itemId],
         queryFn: async () => {
             if (itemId == null) {
                 return null;
             }
             const response = await fetch(`/library/item/${itemId}/nArtworks`, {
-                method: "GET",
+                method: 'GET',
                 headers: {
-                    "Content-Type": "application/json",
+                    'Content-Type': 'application/json',
                 },
             });
             return (await response.json()) as { count: number };
@@ -408,12 +427,12 @@ export const fileArtQueryOptions = ({
     index?: number;
 }) =>
     queryOptions({
-        queryKey: ["fileArt", path, size, index],
+        queryKey: ['fileArt', path, size, index],
         queryFn: async () => {
             const encodedPath = toHex(path);
             const params = new URLSearchParams();
-            if (size) params.set("size", size);
-            if (index !== undefined) params.set("idx", index.toString());
+            if (size) params.set('size', size);
+            if (index !== undefined) params.set('idx', index.toString());
 
             const base = `/library/file/${encodedPath}/art`;
             const url = params.toString() ? `${base}?${params}` : base;
@@ -428,15 +447,18 @@ export const fileArtQueryOptions = ({
 
 export const numFileArtQueryOptions = (filePath: string) =>
     queryOptions({
-        queryKey: ["fileArt", "num", filePath],
+        queryKey: ['fileArt', 'num', filePath],
         queryFn: async () => {
             const encodedPath = toHex(filePath);
-            const response = await fetch(`/library/file/${encodedPath}/nArtworks`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            });
+            const response = await fetch(
+                `/library/file/${encodedPath}/nArtworks`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
             return (await response.json()) as { count: number };
         },
         ...ART_QUERY_OPTIONS,
@@ -445,11 +467,11 @@ export const numFileArtQueryOptions = (filePath: string) =>
 
 export const externalArtQueryOptions = (data_url: string) =>
     queryOptions({
-        queryKey: ["externalArt", data_url],
+        queryKey: ['externalArt', data_url],
         queryFn: async () => {
-            const blob = await fetch(`/art?url=${encodeURIComponent(data_url)}`).then(
-                (r) => r.blob()
-            );
+            const blob = await fetch(
+                `/art?url=${encodeURIComponent(data_url)}`
+            ).then((r) => r.blob());
 
             const dataUrl: string = await new Promise((resolve) => {
                 const reader = new FileReader();
@@ -481,12 +503,15 @@ async function fetchWaveform(url: string, signal: AbortSignal) {
 }
 export function waveformQueryOptions(id?: number) {
     return queryOptions({
-        queryKey: ["item", "audio", "waveform", id],
+        queryKey: ['item', 'audio', 'waveform', id],
         queryFn: async ({ signal }) => {
             if (!id) {
                 return null;
             }
-            return await fetchWaveform(`/library/item/${id}/audio/peaks`, signal);
+            return await fetchWaveform(
+                `/library/item/${id}/audio/peaks`,
+                signal
+            );
         },
         retry: false,
         ...commonAudioQueryOptions,
@@ -495,9 +520,12 @@ export function waveformQueryOptions(id?: number) {
 
 export function prefetchWaveform(id: number) {
     return queryClient.prefetchQuery({
-        queryKey: ["item", "audio", "waveform", id],
+        queryKey: ['item', 'audio', 'waveform', id],
         queryFn: async ({ signal }) => {
-            return await fetchWaveform(`/library/item/${id}/audio/peaks`, signal);
+            return await fetchWaveform(
+                `/library/item/${id}/audio/peaks`,
+                signal
+            );
         },
         ...commonAudioQueryOptions,
     });
@@ -507,12 +535,15 @@ export function prefetchWaveform(id: number) {
 // We add progress to the cache to allow inflight merging
 // or prefetched and new queries
 
-async function fetchAudio(id: number, signal: AbortSignal): Promise<HTMLAudioElement> {
-    const mimeCodecs = "audio/webm; codecs=opus";
+async function fetchAudio(
+    id: number,
+    signal: AbortSignal
+): Promise<HTMLAudioElement> {
+    const mimeCodecs = 'audio/webm; codecs=opus';
     const audio = new Audio();
 
     if (!MediaSource.isTypeSupported(mimeCodecs)) {
-        console.warn("Audio streaming not supported, using fallback");
+        console.warn('Audio streaming not supported, using fallback');
         const res = await fetch(`/library/item/${id}/audio`, { signal });
         audio.src = URL.createObjectURL(await res.blob());
         return audio;
@@ -528,14 +559,15 @@ async function fetchAudio(id: number, signal: AbortSignal): Promise<HTMLAudioEle
 
     // Start fetch outside sourceopen
     const response = await fetch(`/library/item/${id}/audio`, { signal });
-    if (!response.body) throw new Error(`Fetch error: ${response.status} no body!`);
+    if (!response.body)
+        throw new Error(`Fetch error: ${response.status} no body!`);
 
     // Set up sourceopen handler (queues data until ready)
     mediaSource.addEventListener(
-        "sourceopen",
+        'sourceopen',
         () => {
             const sourceBuffer = mediaSource.addSourceBuffer(mimeCodecs);
-            sourceBuffer.mode = "sequence";
+            sourceBuffer.mode = 'sequence';
             resolveSourceBuffer(sourceBuffer);
         },
         { once: true }
@@ -551,8 +583,10 @@ async function fetchAudio(id: number, signal: AbortSignal): Promise<HTMLAudioEle
          */
         audio.src = URL.createObjectURL(mediaSource);
         const sourceBuffer = await sourceBufferReady; // wait for sourceBuffer to be ready
-        const contentLengthHeader = response.headers.get("Content-Length");
-        const _total = contentLengthHeader ? parseInt(contentLengthHeader, 10) : null;
+        const contentLengthHeader = response.headers.get('Content-Length');
+        const _total = contentLengthHeader
+            ? parseInt(contentLengthHeader, 10)
+            : null;
         const reader = response.body!.getReader();
 
         // Process the stream
@@ -578,7 +612,7 @@ async function fetchAudio(id: number, signal: AbortSignal): Promise<HTMLAudioEle
             }
         }
 
-        sourceBuffer.addEventListener("updateend", () => {
+        sourceBuffer.addEventListener('updateend', () => {
             isAppending = false;
             if (isEndOfStream && appendQueue.length === 0) {
                 mediaSource.endOfStream();
@@ -630,7 +664,7 @@ async function fetchAudio(id: number, signal: AbortSignal): Promise<HTMLAudioEle
 
 export function itemAudioDataQueryOptions(id?: number) {
     return queryOptions({
-        queryKey: ["item", "audio", id],
+        queryKey: ['item', 'audio', id],
         queryFn: async ({ signal }) => {
             if (!id) {
                 return null;
@@ -643,7 +677,7 @@ export function itemAudioDataQueryOptions(id?: number) {
 
 export function prefetchItemAudioData(id: number) {
     return queryClient.prefetchQuery({
-        queryKey: ["item", "audio", id],
+        queryKey: ['item', 'audio', id],
         queryFn: async ({ signal }) => {
             return await fetchAudio(id, signal);
         },
@@ -659,13 +693,13 @@ export type FileMetadata = {
 };
 
 export const fileMetadataQueryOptions = (path: string) => ({
-    queryKey: ["file", path, "metadata"],
+    queryKey: ['file', path, 'metadata'],
     queryFn: async () => {
         const encodedPath = toHex(path);
         const response = await fetch(`/library/file/${encodedPath}/metadata`, {
-            method: "GET",
+            method: 'GET',
             headers: {
-                "Content-Type": "application/json",
+                'Content-Type': 'application/json',
             },
         });
         return (await response.json()) as FileMetadata;

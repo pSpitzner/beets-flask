@@ -1,5 +1,5 @@
-import { Change } from "diff";
-import { ArrowRightIcon } from "lucide-react";
+import { Change } from 'diff';
+import { ArrowRightIcon } from 'lucide-react';
 import React, {
     createContext,
     ReactElement,
@@ -8,19 +8,26 @@ import React, {
     useEffect,
     useMemo,
     useState,
-} from "react";
-import { styled, SxProps, Theme, Tooltip, Typography, useTheme } from "@mui/material";
-import Box, { BoxProps } from "@mui/material/Box";
+} from 'react';
+import {
+    styled,
+    SxProps,
+    Theme,
+    Tooltip,
+    Typography,
+    useTheme,
+} from '@mui/material';
+import Box, { BoxProps } from '@mui/material/Box';
 
-import { useDiff } from "@/components/common/hooks/useDiff";
-import { ChangeIcon } from "@/components/common/icons";
-import { trackLengthRep } from "@/components/common/units/time";
+import { useDiff } from '@/components/common/hooks/useDiff';
+import { ChangeIcon } from '@/components/common/icons';
+import { trackLengthRep } from '@/components/common/units/time';
 import {
     ItemInfo,
     SerializedCandidateState,
     SerializedTaskState,
     TrackInfo,
-} from "@/pythonTypes";
+} from '@/pythonTypes';
 
 /* ------------------------------- Track Diff ------------------------------- */
 // Basically a grid layout showing the changes to all tracks
@@ -28,17 +35,17 @@ import {
 // the asis candidate
 
 const TrackChangesGrid = styled(Box)(({ theme }) => ({
-    display: "grid",
-    width: "min-content",
+    display: 'grid',
+    width: 'min-content',
     gridTemplateColumns: `repeat(8, max-content)`,
 
     //Column gap
-    "> * > *": {
+    '> * > *': {
         paddingInline: theme.spacing(0.75),
     },
 
     // On mobile the full layout stretches over 2 lines
-    [theme.breakpoints.down("tablet")]: {
+    [theme.breakpoints.down('tablet')]: {
         gridTemplateColumns: `
             repeat(4, max-content)
         `,
@@ -46,10 +53,10 @@ const TrackChangesGrid = styled(Box)(({ theme }) => ({
         // Apply Margin to 2nd row in full layout,
         // this seperates the different items
         // we select the first 4 items i.e. [1] t1 ->
-        "[data-full=true] > *:nth-of-type(-n+4)": {
+        '[data-full=true] > *:nth-of-type(-n+4)': {
             marginTop: theme.spacing(0.75),
         },
-        "[data-full=true]:first-of-type > *": {
+        '[data-full=true]:first-of-type > *': {
             marginTop: 0,
         },
     },
@@ -61,11 +68,11 @@ export type PairChanges = {
     indexHasChanged: boolean;
     numChanges: number; // how many of the above components changed
     changeType?:
-        | "no_change"
-        | "change_minor"
-        | "change_major"
-        | "extra_track"
-        | "extra_item";
+        | 'no_change'
+        | 'change_minor'
+        | 'change_major'
+        | 'extra_track'
+        | 'extra_item';
 };
 
 function didPairChange(
@@ -90,9 +97,11 @@ const TrackDiffContext = createContext<{
     extra_items: ItemInfo[];
     extra_tracks: TrackInfo[];
     pairs: Array<[ItemInfo, TrackInfo, PairChanges]>;
-    pairs_extended: Array<[ItemInfo | undefined, TrackInfo | undefined, PairChanges]>;
+    pairs_extended: Array<
+        [ItemInfo | undefined, TrackInfo | undefined, PairChanges]
+    >;
     candidate: SerializedCandidateState;
-    items: SerializedTaskState["items"];
+    items: SerializedTaskState['items'];
     nChanges: number;
 } | null>(null);
 
@@ -107,7 +116,7 @@ export function TrackDiffContextProvider({
 }: {
     children: React.ReactNode;
     candidate: SerializedCandidateState;
-    items: SerializedTaskState["items"];
+    items: SerializedTaskState['items'];
 }) {
     // Create Venn diagram
     // items ∩ tracks = pairs
@@ -172,7 +181,7 @@ export function TrackDiffContextProvider({
                 // changes of title, time etc - this helps with lower-level code,
                 // where we do string comparisons.
                 const change = didPairChange(track, track);
-                change.changeType = "extra_track";
+                change.changeType = 'extra_track';
                 pairs_extended.push([undefined, track, change]);
             });
 
@@ -188,8 +197,12 @@ export function TrackDiffContextProvider({
 
             extra_items.forEach((item) => {
                 const change = didPairChange(item, item);
-                change.changeType = "extra_item";
-                pairs_extended.push([item, undefined, didPairChange(item, item)]);
+                change.changeType = 'extra_item';
+                pairs_extended.push([
+                    item,
+                    undefined,
+                    didPairChange(item, item),
+                ]);
             });
 
             return {
@@ -222,7 +235,7 @@ export function useTrackDiffContext() {
     const context = useContext(TrackDiffContext);
     if (!context) {
         throw new Error(
-            "useTrackDiffContext must be used within a TrackDiffContextProvider"
+            'useTrackDiffContext must be used within a TrackDiffContextProvider'
         );
     }
     return context;
@@ -238,7 +251,7 @@ export function TrackDiffsAfterImport({
     items,
     candidate,
 }: {
-    items: SerializedTaskState["items"];
+    items: SerializedTaskState['items'];
     candidate: SerializedCandidateState;
 }) {
     const theme = useTheme();
@@ -248,9 +261,9 @@ export function TrackDiffsAfterImport({
         <TrackDiffContextProvider candidate={candidate} items={items}>
             <Box
                 sx={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
                     fontSize: theme.typography.body1.fontSize,
                     lineHeight: 1.25,
                 }}
@@ -268,10 +281,16 @@ export function ExtraTracks() {
         return null;
     }
     return (
-        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <Box
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+            }}
+        >
             <Typography variant="body1" color="text.secondary" pb={1}>
-                The following tracks are included in the candidate (found online) but
-                could not be found on disk.
+                The following tracks are included in the candidate (found
+                online) but could not be found on disk.
             </Typography>
             <TrackChangesGrid
                 sx={{
@@ -293,10 +312,16 @@ export function ExtraItems() {
         return null;
     }
     return (
-        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <Box
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+            }}
+        >
             <Typography variant="body1" color="text.secondary" pb={1}>
-                The following tracks are included in the folder (on disk) but could not
-                be found in the candidates (online).
+                The following tracks are included in the folder (on disk) but
+                could not be found in the candidates (online).
             </Typography>
             <TrackChangesGrid
                 sx={{
@@ -329,9 +354,9 @@ export function TrackChanges() {
     return (
         <Box
             sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
             }}
         >
             {/*Changes grid*/}
@@ -354,30 +379,34 @@ export function TrackChanges() {
 export function NoChanges({
     type,
 }: {
-    type: "track_changes" | "extra_tracks" | "extra_items";
+    type: 'track_changes' | 'extra_tracks' | 'extra_items';
 }) {
-    let text = "No changes detected.";
+    let text = 'No changes detected.';
     switch (type) {
-        case "track_changes":
-            text = "No track changes detected.";
+        case 'track_changes':
+            text = 'No track changes detected.';
             break;
-        case "extra_tracks":
-            text = "All tracks online present on disk.";
+        case 'extra_tracks':
+            text = 'All tracks online present on disk.';
             break;
-        case "extra_items":
-            text = "All tracks on disk found online.";
+        case 'extra_items':
+            text = 'All tracks on disk found online.';
             break;
     }
     return (
         <Box
             sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                textAlign: "center",
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
             }}
         >
-            <Typography variant="body1" color="text.secondary" fontSize={"1.1rem"}>
+            <Typography
+                variant="body1"
+                color="text.secondary"
+                fontSize={'1.1rem'}
+            >
                 {text}
                 <br />
                 Perfectly balanced, as all things should be.
@@ -403,9 +432,9 @@ export function TrackChangesExtended() {
     return (
         <Box
             sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
             }}
         >
             {/*Changes grid*/}
@@ -457,7 +486,9 @@ export function GenericDetailsItem({
     ...props
 }: GenericDetailsItemProps) {
     // Show tooltip on hover of label row
-    let ToolTipComp = ({ children }: { children: ReactElement }) => <>{children}</>;
+    let ToolTipComp = ({ children }: { children: ReactElement }) => (
+        <>{children}</>
+    );
     if (tooltip) {
         ToolTipComp = ({ children }: { children: ReactElement }) => (
             <Tooltip title={tooltip}>{children}</Tooltip>
@@ -465,13 +496,13 @@ export function GenericDetailsItem({
     }
 
     // label is string or number
-    if ((label && typeof label === "string") || typeof label === "number") {
+    if ((label && typeof label === 'string') || typeof label === 'number') {
         label = (
             <Box
                 component="span"
                 sx={{
-                    color: labelColor || "inherit",
-                    cursor: onClick !== undefined ? "pointer" : "inherit",
+                    color: labelColor || 'inherit',
+                    cursor: onClick !== undefined ? 'pointer' : 'inherit',
                 }}
             >
                 {label}
@@ -487,8 +518,8 @@ export function GenericDetailsItem({
         <Box
             sx={[
                 {
-                    display: "flex",
-                    alignItems: "flex-start",
+                    display: 'flex',
+                    alignItems: 'flex-start',
                     gap: 0.5,
                 },
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -502,12 +533,12 @@ export function GenericDetailsItem({
                 <Box display="flex" gap={1} alignItems="flex-start">
                     <Box
                         sx={(theme) => ({
-                            display: "flex",
-                            justifyContent: "flex-start",
-                            alignItems: "flex-start",
+                            display: 'flex',
+                            justifyContent: 'flex-start',
+                            alignItems: 'flex-start',
 
                             width: theme.iconSize.sm,
-                            color: iconColor || "inherit",
+                            color: iconColor || 'inherit',
                         })}
                     >
                         {icon}
@@ -595,25 +626,25 @@ function TrackRow({
     if (!from) {
         fixedTo = to as TrackInfo;
         fixedFrom = to as ItemInfo;
-        missingKind = "item";
+        missingKind = 'item';
     } else {
         fixedTo = from;
         fixedFrom = from;
-        missingKind = "track";
+        missingKind = 'track';
     }
 
     if (!pairChanges) {
         pairChanges = didPairChange(fixedFrom, fixedTo);
-        if (missingKind === "item") {
-            pairChanges.changeType = "extra_track";
-        } else if (missingKind === "track") {
-            pairChanges.changeType = "extra_item";
+        if (missingKind === 'item') {
+            pairChanges.changeType = 'extra_track';
+        } else if (missingKind === 'track') {
+            pairChanges.changeType = 'extra_item';
         }
     }
 
     color =
         color ||
-        (missingKind === "item"
+        (missingKind === 'item'
             ? theme.palette.diffs.extraTrackLight
             : theme.palette.diffs.extraItemLight);
 
@@ -654,19 +685,22 @@ function TrackChangesRow({
     // FIXME: the backend types seem wrong, why optional?
     const theme = useTheme();
 
-    const { fromParts, toParts, diff } = useDiffParts(from.title || "", to.title || "");
+    const { fromParts, toParts, diff } = useDiffParts(
+        from.title || '',
+        to.title || ''
+    );
 
     const fromD = {
         time: trackLengthRep(from.length),
         idx: from.index ?? 0,
         data: fromParts,
-        type: "from",
+        type: 'from',
     };
     const toD = {
         time: trackLengthRep(to.length),
         idx: to.index ?? 0,
         data: toParts,
-        type: "to",
+        type: 'to',
     };
 
     pairChanges = pairChanges || didPairChange(from, to);
@@ -680,9 +714,9 @@ function TrackChangesRow({
     // TODO: think about how and where to differentiate major/minor on
     // higher-level components or context.
     if (hasChanges) {
-        pairChanges.changeType = "change_minor";
+        pairChanges.changeType = 'change_minor';
     } else {
-        pairChanges.changeType = pairChanges.changeType || "no_change";
+        pairChanges.changeType = pairChanges.changeType || 'no_change';
     }
 
     /* ---------------------------- Major changes --------------------------- */
@@ -714,55 +748,55 @@ function TrackChangesRow({
     }, [pairChanges.titleHasChanged, diff, setForceMajorChange]);
 
     const sx_clr_classes = {
-        ".diffclr_added": {
+        '.diffclr_added': {
             color: colorizeChanges
                 ? hasChanges
                     ? theme.palette.diffs.added
                     : theme.palette.diffs.light
-                : "inherit",
+                : 'inherit',
         },
-        ".diffclr_removed": {
+        '.diffclr_removed': {
             color: colorizeChanges
                 ? hasChanges
                     ? theme.palette.diffs.removed
                     : theme.palette.diffs.light
-                : "inherit",
+                : 'inherit',
         },
-        ".diffclr_changed": {
+        '.diffclr_changed': {
             color: colorizeChanges
                 ? hasChanges
                     ? theme.palette.diffs.changed
                     : theme.palette.diffs.light
-                : "inherit",
+                : 'inherit',
         },
-        ".diffclr_light": {
+        '.diffclr_light': {
             color: colorizeChanges
                 ? hasChanges
                     ? theme.palette.diffs.light
                     : theme.palette.diffs.light
-                : "inherit",
+                : 'inherit',
         },
-        ".diffclr_inherit": {
-            color: "inherit",
+        '.diffclr_inherit': {
+            color: 'inherit',
         },
     };
 
     if (forceMajorChange) {
         return (
             <Box
-                sx={{ ...sx, ...sx_clr_classes, display: "contents" }}
+                sx={{ ...sx, ...sx_clr_classes, display: 'contents' }}
                 data-full={true}
             >
                 {/* index */}
                 <Box
                     sx={{
-                        justifyContent: "flex-end",
-                        textAlign: "right",
+                        justifyContent: 'flex-end',
+                        textAlign: 'right',
                     }}
                     className={
                         pairChanges.titleHasChanged
-                            ? "diffclr_removed"
-                            : "diffclr_light"
+                            ? 'diffclr_removed'
+                            : 'diffclr_light'
                     }
                 >
                     {fromD.idx}
@@ -772,19 +806,21 @@ function TrackChangesRow({
                 <Box
                     className={
                         pairChanges.titleHasChanged
-                            ? "diffclr_removed"
-                            : "diffclr_light"
+                            ? 'diffclr_removed'
+                            : 'diffclr_light'
                     }
                 >
                     {fromD.data}
                 </Box>
                 <Box
                     sx={{
-                        display: "flex",
-                        justifyContent: "flex-begin",
+                        display: 'flex',
+                        justifyContent: 'flex-begin',
                     }}
                     className={
-                        pairChanges.timeHasChanged ? "diffclr_removed" : "diffclr_light"
+                        pairChanges.timeHasChanged
+                            ? 'diffclr_removed'
+                            : 'diffclr_light'
                     }
                 >
                     {fromD.time}
@@ -794,9 +830,9 @@ function TrackChangesRow({
                 <Box
                     sx={{
                         paddingInline: 1,
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
                     }}
                 >
                     <ArrowRightIcon
@@ -808,10 +844,12 @@ function TrackChangesRow({
                 {/* index */}
                 <Box
                     sx={{
-                        textAlign: "right",
+                        textAlign: 'right',
                     }}
                     className={
-                        pairChanges.titleHasChanged ? "diffclr_added" : "diffclr_light"
+                        pairChanges.titleHasChanged
+                            ? 'diffclr_added'
+                            : 'diffclr_light'
                     }
                 >
                     {toD.idx}
@@ -820,25 +858,29 @@ function TrackChangesRow({
                 {/* title and time */}
                 <Box
                     className={
-                        pairChanges.titleHasChanged ? "diffclr_added" : "diffclr_light"
+                        pairChanges.titleHasChanged
+                            ? 'diffclr_added'
+                            : 'diffclr_light'
                     }
                 >
                     {toD.data}
                 </Box>
                 <Box
                     sx={{
-                        justifyContent: "flex-end",
-                        display: "flex",
+                        justifyContent: 'flex-end',
+                        display: 'flex',
                     }}
                     className={
-                        pairChanges.timeHasChanged ? "diffclr_added" : "diffclr_light"
+                        pairChanges.timeHasChanged
+                            ? 'diffclr_added'
+                            : 'diffclr_light'
                     }
                 >
                     {toD.time}
                 </Box>
                 {/* Icon indicating which type of change (extra item...) */}
                 <Box
-                    sx={{ display: "flex", alignItems: "center" }}
+                    sx={{ display: 'flex', alignItems: 'center' }}
                     className="diffclr_light"
                 >
                     <ChangeIcon type={pairChanges.changeType} />
@@ -858,33 +900,33 @@ function TrackChangesRow({
             sx={{
                 ...sx,
                 ...sx_clr_classes,
-                display: "grid",
-                gridColumn: "1 / -1",
-                gridTemplateColumns: "subgrid",
+                display: 'grid',
+                gridColumn: '1 / -1',
+                gridTemplateColumns: 'subgrid',
             }}
         >
             {/* index */}
             <Box
                 sx={{
-                    textAlign: "right",
-                    display: "grid",
+                    textAlign: 'right',
+                    display: 'grid',
                     gap: 0.5,
-                    justifyContent: "flex-end",
+                    justifyContent: 'flex-end',
                     // Dynamically set the subgrid if there is a index change
                     // this aligns the indexs
                     //        [2]
                     // [2] -> [3]
                     gridTemplateColumns: pairChanges.indexHasChanged
-                        ? "1fr auto 1fr"
-                        : "auto",
-                    alignItems: "center",
+                        ? '1fr auto 1fr'
+                        : 'auto',
+                    alignItems: 'center',
                 }}
             >
                 {pairChanges.indexHasChanged && (
                     <>
                         <Box
                             sx={{
-                                textAlign: "right",
+                                textAlign: 'right',
                             }}
                             className="diffclr_removed"
                         >
@@ -898,7 +940,9 @@ function TrackChangesRow({
                 )}
                 <Box
                     className={
-                        pairChanges.indexHasChanged ? "diffclr_added" : "diffclr_light"
+                        pairChanges.indexHasChanged
+                            ? 'diffclr_added'
+                            : 'diffclr_light'
                     }
                 >
                     {toD.idx}
@@ -908,25 +952,29 @@ function TrackChangesRow({
             {/*Title has no changes in minimal*/}
             <Box
                 sx={{
-                    textAlign: "right",
-                    display: "flex",
+                    textAlign: 'right',
+                    display: 'flex',
                 }}
                 className={
-                    pairChanges.titleHasChanged ? "diffclr_inherit" : "diffclr_light"
+                    pairChanges.titleHasChanged
+                        ? 'diffclr_inherit'
+                        : 'diffclr_light'
                 }
             >
                 {diff.map((part, index) => (
                     <Box
                         key={index}
                         sx={{
-                            textDecoration: part.removed ? "line-through" : "none",
+                            textDecoration: part.removed
+                                ? 'line-through'
+                                : 'none',
                         }}
                         className={
                             part.added
-                                ? "diffclr_added"
+                                ? 'diffclr_added'
                                 : part.removed
-                                  ? "diffclr_removed"
-                                  : "diffclr_inherit"
+                                  ? 'diffclr_removed'
+                                  : 'diffclr_inherit'
                         }
                         component="span"
                     >
@@ -938,21 +986,21 @@ function TrackChangesRow({
             {/* Length might have changed */}
             <Box
                 sx={{
-                    textAlign: "right",
-                    display: "grid",
+                    textAlign: 'right',
+                    display: 'grid',
                     gap: 0.5,
-                    justifyContent: "flex-end",
+                    justifyContent: 'flex-end',
                     gridTemplateColumns: pairChanges.timeHasChanged
-                        ? "1fr auto 1fr"
-                        : "auto",
-                    alignItems: "center",
+                        ? '1fr auto 1fr'
+                        : 'auto',
+                    alignItems: 'center',
                 }}
             >
                 {pairChanges.timeHasChanged && (
                     <>
                         <Box
                             sx={{
-                                textAlign: "right",
+                                textAlign: 'right',
                             }}
                             className="diffclr_removed"
                         >
@@ -966,10 +1014,12 @@ function TrackChangesRow({
                 )}
                 <Box
                     sx={{
-                        textAlign: "right",
+                        textAlign: 'right',
                     }}
                     className={
-                        pairChanges.timeHasChanged ? "diffclr_added" : "diffclr_light"
+                        pairChanges.timeHasChanged
+                            ? 'diffclr_added'
+                            : 'diffclr_light'
                     }
                 >
                     {toD.time}
@@ -978,7 +1028,7 @@ function TrackChangesRow({
 
             {/* Icon indicating which type of change (extra item...) */}
             <Box
-                sx={{ display: "flex", alignItems: "center" }}
+                sx={{ display: 'flex', alignItems: 'center' }}
                 className="diffclr_light"
             >
                 <ChangeIcon type={pairChanges.changeType} />
@@ -992,7 +1042,7 @@ function TrackChangesRow({
 function useDiffParts(
     from?: string | null,
     to?: string | null,
-    method?: "chars" | "words" | "wordsWithSpace" | "full" | "auto"
+    method?: 'chars' | 'words' | 'wordsWithSpace' | 'full' | 'auto'
 ) {
     const diff = useDiff(from, to, method);
 
@@ -1033,11 +1083,11 @@ export function GenericDiff({
 }: {
     from?: string | null;
     to: string;
-    method?: "chars" | "words" | "wordsWithSpace" | "full" | "auto";
+    method?: 'chars' | 'words' | 'wordsWithSpace' | 'full' | 'auto';
     icon?: React.ReactNode;
 }) {
     if (!from) {
-        from = "";
+        from = '';
     }
 
     const { fromParts, toParts, hasAdded, hasRemoved, diff } = useDiffParts(
@@ -1049,10 +1099,10 @@ export function GenericDiff({
     return (
         <Box
             sx={{
-                display: "flex",
-                flexDirection: "row",
+                display: 'flex',
+                flexDirection: 'row',
                 gap: 0.5,
-                alignItems: "center",
+                alignItems: 'center',
             }}
         >
             <Box
@@ -1061,12 +1111,12 @@ export function GenericDiff({
                         hasAdded || hasRemoved
                             ? theme.palette.diffs.changed
                             : theme.palette.text.primary,
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
 
                     // Define the size of the icon
-                    " > *": {
+                    ' > *': {
                         width: theme.iconSize.sm,
                         height: theme.iconSize.sm,
                     },
@@ -1136,8 +1186,8 @@ export function StyledDiff({
         <Box
             sx={{
                 lineHeight: 1.25,
-                display: "flex",
-                alignItems: "center",
+                display: 'flex',
+                alignItems: 'center',
                 gap: 0.5,
             }}
             {...props}
@@ -1147,7 +1197,7 @@ export function StyledDiff({
                     <Box
                         sx={(theme) => ({
                             color: theme.palette.diffs.removed,
-                            textDecoration: "line-through",
+                            textDecoration: 'line-through',
                         })}
                         component="span"
                     >
@@ -1175,9 +1225,11 @@ export function StyledDiff({
                                 ? theme.palette.diffs.added
                                 : part.removed
                                   ? theme.palette.diffs.removed
-                                  : "inherit",
+                                  : 'inherit',
 
-                            textDecoration: part.removed ? "line-through" : "none",
+                            textDecoration: part.removed
+                                ? 'line-through'
+                                : 'none',
                         })}
                         component="span"
                     >

@@ -1,6 +1,6 @@
-import { ComponentType } from "react";
-import AutoSizer from "react-virtualized-auto-sizer";
-import { List, ListProps, type RowComponentProps } from "react-window";
+import { ComponentType } from 'react';
+import AutoSizer from 'react-virtualized-auto-sizer';
+import { List, ListProps, type RowComponentProps } from 'react-window';
 
 export type CellComponentProps<D extends object> = RowComponentProps<D> & {
     rowIndex: number;
@@ -11,15 +11,14 @@ export type CellComponentProps<D extends object> = RowComponentProps<D> & {
  * Extends FixedSizeListProps while customizing certain properties.
  * @template D - Type of the data items in the grid
  */
-export interface DynamicFlowGridProps<D extends object = object>
-    extends Omit<
-        ListProps<D>,
-        "children" | "rowCount" | "rowHeight" | "rowProps" | "rowComponent"
-    > {
+export interface DynamicFlowGridProps<D extends object = object> extends Omit<
+    ListProps<D>,
+    'children' | 'rowCount' | 'rowHeight' | 'rowProps' | 'rowComponent'
+> {
     cellHeight: number; // Height of each grid cell
     cellWidth: number; // Width of each grid cell
     cellCount: number; // Total number of cells in the grid
-    cellProps: ListProps<D>["rowProps"]; // Data to be passed to each cell
+    cellProps: ListProps<D>['rowProps']; // Data to be passed to each cell
     cellComponent: ComponentType<CellComponentProps<D>>; // Component to render each cell
     onCellsRendered?:
         | ((
@@ -62,16 +61,21 @@ export function DynamicFlowGrid<D extends object>({
                             onRowsRendered={(visibleRows, allRows) => {
                                 onCellsRendered?.(
                                     {
-                                        startIndex: visibleRows.startIndex * colCount,
+                                        startIndex:
+                                            visibleRows.startIndex * colCount,
                                         stopIndex: Math.min(
-                                            (visibleRows.stopIndex + 1) * colCount - 1,
+                                            (visibleRows.stopIndex + 1) *
+                                                colCount -
+                                                1,
                                             cellCount - 1
                                         ),
                                     },
                                     {
-                                        startIndex: allRows.startIndex * colCount,
+                                        startIndex:
+                                            allRows.startIndex * colCount,
                                         stopIndex: Math.min(
-                                            (allRows.stopIndex + 1) * colCount - 1,
+                                            (allRows.stopIndex + 1) * colCount -
+                                                1,
                                             cellCount - 1
                                         ),
                                     }
@@ -94,17 +98,18 @@ export function DynamicFlowGrid<D extends object>({
                                     <div
                                         style={{
                                             ...style,
-                                            overflow: "hidden",
-                                            display: "flex",
-                                            width: "100%",
-                                            alignItems: "center",
-                                            justifyContent: "center",
+                                            overflow: 'hidden',
+                                            display: 'flex',
+                                            width: '100%',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
                                         }}
                                     >
                                         {Array.from(
                                             { length: endIndex - startIndex },
                                             (_, colIndex) => {
-                                                const cellIndex = startIndex + colIndex;
+                                                const cellIndex =
+                                                    startIndex + colIndex;
                                                 return (
                                                     <CellComponent
                                                         {...(props as RowComponentProps<D>)}
@@ -115,8 +120,10 @@ export function DynamicFlowGrid<D extends object>({
                                                         style={{
                                                             width: cellWidth,
                                                             height: cellHeight,
-                                                            boxSizing: "border-box",
-                                                            display: "inline-block",
+                                                            boxSizing:
+                                                                'border-box',
+                                                            display:
+                                                                'inline-block',
                                                         }}
                                                     />
                                                 );
@@ -129,7 +136,8 @@ export function DynamicFlowGrid<D extends object>({
                                                     {
                                                         length:
                                                             colCount -
-                                                            (endIndex - startIndex),
+                                                            (endIndex -
+                                                                startIndex),
                                                     },
                                                     (_, emptyIndex) => (
                                                         <div
@@ -137,8 +145,10 @@ export function DynamicFlowGrid<D extends object>({
                                                             style={{
                                                                 width: cellWidth,
                                                                 height: cellHeight,
-                                                                boxSizing: "border-box",
-                                                                display: "inline-block",
+                                                                boxSizing:
+                                                                    'border-box',
+                                                                display:
+                                                                    'inline-block',
                                                             }}
                                                         />
                                                     )

@@ -1,15 +1,17 @@
-import { useMemo } from "react";
-import { Box } from "@mui/material";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { useMemo } from 'react';
+import { Box } from '@mui/material';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
 
-import { albumQueryOptions } from "@/api/library";
+import { albumQueryOptions } from '@/api/library';
 import {
     PropertyValueTable,
     Serializable,
-} from "@/components/common/propertyValueTable";
+} from '@/components/common/propertyValueTable';
 
-export const Route = createFileRoute("/library/(resources)/album/$albumId/beetsdata")({
+export const Route = createFileRoute(
+    '/library/(resources)/album/$albumId/beetsdata'
+)({
     component: RouteComponent,
 });
 
@@ -21,7 +23,10 @@ function RouteComponent() {
 
     // Create a flat list of all the properties without sources
     const albumNoSource = useMemo(() => {
-        const n = structuredClone(album) as unknown as Record<string, Serializable>;
+        const n = structuredClone(album) as unknown as Record<
+            string,
+            Serializable
+        >;
         delete n.sources;
         delete n.items;
         return n;
@@ -30,17 +35,17 @@ function RouteComponent() {
     return (
         <Box
             sx={{
-                overflow: "auto",
-                height: "100%",
+                overflow: 'auto',
+                height: '100%',
             }}
         >
             <PropertyValueTable
                 data={albumNoSource}
                 sx={{
-                    overflow: "hidden",
+                    overflow: 'hidden',
                     thead: {
                         th: {
-                            backgroundColor: "background.paper",
+                            backgroundColor: 'background.paper',
                         },
                     },
                 }}

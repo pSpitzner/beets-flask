@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from 'react';
 
 /**
  * A custom React hook that manages a list of items with a "current" state,
@@ -74,7 +74,7 @@ export function useNavigableList<T>(initialState: T[] | (() => T[]) = []) {
             if (index !== -1) {
                 setCurrentIndex(index);
             } else {
-                console.warn("Item not found in the list");
+                console.warn('Item not found in the list');
             }
         },
         [items]

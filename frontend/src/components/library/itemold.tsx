@@ -1,5 +1,5 @@
-import { ClockIcon, Disc3Icon, StickyNoteIcon } from "lucide-react";
-import { Fragment, useMemo, useState } from "react";
+import { ClockIcon, Disc3Icon, StickyNoteIcon } from 'lucide-react';
+import { Fragment, useMemo, useState } from 'react';
 import {
     BoxProps,
     Chip,
@@ -15,20 +15,20 @@ import {
     Tabs,
     Typography,
     useTheme,
-} from "@mui/material";
-import Box from "@mui/material/Box";
-import { useSuspenseQuery } from "@tanstack/react-query";
+} from '@mui/material';
+import Box from '@mui/material/Box';
+import { useSuspenseQuery } from '@tanstack/react-query';
 
-import { Item as ItemT, itemQueryOptions } from "@/api/library";
-import { ItemSource as ItemSourceT } from "@/pythonTypes";
+import { Item as ItemT, itemQueryOptions } from '@/api/library';
+import { ItemSource as ItemSourceT } from '@/pythonTypes';
 
-import { CoverArt } from "./coverArt";
-import { sourceHref, sourceName } from "./sources";
+import { CoverArt } from './coverArt';
+import { sourceHref, sourceName } from './sources';
 
-import { SourceTypeIcon } from "../common/icons";
-import { ClipboardCopyButton } from "../common/inputs/copy";
-import { Search } from "../common/inputs/search";
-import { trackLengthRep } from "../common/units/time";
+import { SourceTypeIcon } from '../common/icons';
+import { ClipboardCopyButton } from '../common/inputs/copy';
+import { Search } from '../common/inputs/search';
+import { trackLengthRep } from '../common/units/time';
 
 export function ItemById({ itemId }: { itemId: number }) {
     const { data: item } = useSuspenseQuery(
@@ -44,38 +44,38 @@ export function Item({ item }: { item: ItemT<false> }) {
     return (
         <Box
             sx={(theme) => ({
-                mx: "auto",
+                mx: 'auto',
                 maxWidth: theme.breakpoints.values.laptop,
-                width: "100%",
-                height: "100%",
+                width: '100%',
+                height: '100%',
             })}
         >
             <ItemGrid>
                 <ArtSection
                     item={item}
                     sx={{
-                        gridColumn: "cover",
-                        alignSelf: "center",
-                        justifySelf: "center",
+                        gridColumn: 'cover',
+                        alignSelf: 'center',
+                        justifySelf: 'center',
                     }}
                 />
                 <SongInfo
                     item={item}
                     sx={{
-                        gridColumn: "info",
-                        width: "100%",
+                        gridColumn: 'info',
+                        width: '100%',
                     }}
                 />
                 <DetailsTabs
                     item={item}
                     sx={{
-                        gridRow: "details",
-                        gridColumn: "1 / -1",
-                        width: "100%",
-                        height: "100%",
-                        overflow: "auto",
-                        display: "flex",
-                        flexDirection: "column",
+                        gridRow: 'details',
+                        gridColumn: '1 / -1',
+                        width: '100%',
+                        height: '100%',
+                        overflow: 'auto',
+                        display: 'flex',
+                        flexDirection: 'column',
                         flexGrow: 1,
                     }}
                 />
@@ -91,10 +91,10 @@ function ArtSection({ item, ...props }: { item: ItemT<false> } & BoxProps) {
                 type="item"
                 beetsId={item.id}
                 sx={{
-                    width: "200px",
-                    height: "200px",
-                    aspectRatio: "1 / 1",
-                    objectFit: "cover",
+                    width: '200px',
+                    height: '200px',
+                    aspectRatio: '1 / 1',
+                    objectFit: 'cover',
                     borderRadius: 0,
                 }}
             />
@@ -107,7 +107,7 @@ function SongInfo({ item, ...props }: { item: ItemT<false> } & BoxProps) {
 
     return (
         <Box {...props}>
-            <Box sx={{ display: "flex", flexDirection: "column" }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                 <Typography variant="h4" fontWeight="bold">
                     {item.name}
                 </Typography>
@@ -142,8 +142,8 @@ function SongInfo({ item, ...props }: { item: ItemT<false> } & BoxProps) {
                 {/* Playback*/}
                 <Box
                     sx={(theme) => ({
-                        display: "flex",
-                        flexDirection: "column",
+                        display: 'flex',
+                        flexDirection: 'column',
                         gap: theme.spacing(1),
                         maxWidth: theme.breakpoints.values.laptop - 200,
                     })}
@@ -157,10 +157,10 @@ function SongInfo({ item, ...props }: { item: ItemT<false> } & BoxProps) {
                         />
                         <Box
                             sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                justifyContent: "space-between",
-                                width: "100%",
+                                display: 'flex',
+                                flexDirection: 'row',
+                                justifyContent: 'space-between',
+                                width: '100%',
                             }}
                         >
                             <Typography variant="body2" color="text.secondary">
@@ -201,15 +201,27 @@ function DetailsTabs({ item, ...props }: { item: ItemT<false> } & BoxProps) {
                 </Tabs>
             </Box>
             <TabPanel value={tab} index={0}>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 1 }}
+                >
                     All identifier and data source information for this item.
                 </Typography>
                 <Identifier item={item} />
             </TabPanel>
-            <TabPanel value={tab} index={1} sx={{ overflow: "auto", height: "100%" }}>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                    Breakdown of all details from stored by beets for this item. Only
-                    includes non-empty entries!
+            <TabPanel
+                value={tab}
+                index={1}
+                sx={{ overflow: 'auto', height: '100%' }}
+            >
+                <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 1 }}
+                >
+                    Breakdown of all details from stored by beets for this item.
+                    Only includes non-empty entries!
                 </Typography>
                 <BasicInfo item={item} />
             </TabPanel>
@@ -281,15 +293,15 @@ function BasicInfo({ item }: { item: ItemT<false> }) {
 function OptionalRow({
     label,
     value,
-    suffix = "",
-    prefix = "",
+    suffix = '',
+    prefix = '',
 }: {
     label: string;
     value?: number | string | null | Date;
     suffix?: string;
     prefix?: string;
 }) {
-    if (value === undefined || value === null || value === 0 || value === "") {
+    if (value === undefined || value === null || value === 0 || value === '') {
         return null;
     }
 
@@ -316,49 +328,49 @@ export function Identifier({ item }: { item: ItemT<false> }) {
     return (
         <Box
             sx={{
-                display: "flex",
-                flexDirection: "column",
+                display: 'flex',
+                flexDirection: 'column',
                 gap: 1,
                 // A bit of general styling for the labels
                 label: {
-                    color: "text.secondary",
-                    fontSize: "0.8rem",
+                    color: 'text.secondary',
+                    fontSize: '0.8rem',
                 },
-                "a, span": {
-                    fontFamily: "monospace",
+                'a, span': {
+                    fontFamily: 'monospace',
                     marginLeft: 1,
                 },
             }}
         >
             <Box
                 sx={{
-                    display: "flex",
-                    flexDirection: "column",
+                    display: 'flex',
+                    flexDirection: 'column',
                     gap: 0.5,
                 }}
             >
                 <Box
                     sx={{
-                        display: "flex",
-                        flexDirection: "row",
+                        display: 'flex',
+                        flexDirection: 'row',
                         gap: 1,
-                        alignItems: "center",
-                        fontWeight: "bold",
+                        alignItems: 'center',
+                        fontWeight: 'bold',
                     }}
                 >
                     <StickyNoteIcon size={20} />
                     Common
                 </Box>
-                <Box sx={{ display: "flex", flexDirection: "column", px: 1 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', px: 1 }}>
                     <label>path</label>
                     <Box
                         sx={{
-                            display: "flex",
-                            flexDirection: "row",
+                            display: 'flex',
+                            flexDirection: 'row',
                             gap: 1,
-                            alignItems: "center",
-                            fontFamily: "monospace",
-                            fontSize: "0.8rem",
+                            alignItems: 'center',
+                            fontFamily: 'monospace',
+                            fontSize: '0.8rem',
                             marginLeft: 1,
                         }}
                     >
@@ -369,27 +381,29 @@ export function Identifier({ item }: { item: ItemT<false> }) {
                             icon_props={{ size: 18 }}
                         />
                     </Box>
-                    <label>beets id (of this item in your beets database)</label>
+                    <label>
+                        beets id (of this item in your beets database)
+                    </label>
                     <span>{item.id}</span>
                 </Box>
             </Box>
             <Box
                 sx={{
-                    display: "flex",
-                    flexDirection: "row",
+                    display: 'flex',
+                    flexDirection: 'row',
                     gap: 0.5,
-                    flexWrap: "wrap",
+                    flexWrap: 'wrap',
                 }}
             >
                 {item.sources.map((source) => (
                     <Box>
                         <Box
                             sx={{
-                                display: "flex",
-                                flexDirection: "row",
+                                display: 'flex',
+                                flexDirection: 'row',
                                 gap: 1,
-                                alignItems: "center",
-                                fontWeight: "bold",
+                                alignItems: 'center',
+                                fontWeight: 'bold',
                             }}
                         >
                             <SourceTypeIcon type={source.source} size={20} />
@@ -397,10 +411,10 @@ export function Identifier({ item }: { item: ItemT<false> }) {
                         </Box>
                         <Box
                             sx={{
-                                display: "flex",
-                                flexDirection: "row",
+                                display: 'flex',
+                                flexDirection: 'row',
                                 gap: 0.5,
-                                alignItems: "flex-start",
+                                alignItems: 'flex-start',
                                 px: 1,
                             }}
                         >
@@ -422,21 +436,25 @@ function ItemSource({ source }: { source: ItemSourceT }) {
     return (
         <Box
             sx={{
-                display: "flex",
-                flexDirection: "column",
-                position: "relative",
-                alignItems: "flex-start",
+                display: 'flex',
+                flexDirection: 'column',
+                position: 'relative',
+                alignItems: 'flex-start',
             }}
         >
             <label>track_id</label>
-            <Link href={sourceHref(source.source, source.track_id, "track")}>
+            <Link href={sourceHref(source.source, source.track_id, 'track')}>
                 {source.track_id}
             </Link>
             {source.artist_id && (
                 <>
                     <label>artist_id</label>
                     <Link
-                        href={sourceHref(source.source, source.artist_id, "artist")}
+                        href={sourceHref(
+                            source.source,
+                            source.artist_id,
+                            'artist'
+                        )}
                         target="_blank"
                     >
                         {source.artist_id}
@@ -447,7 +465,11 @@ function ItemSource({ source }: { source: ItemSourceT }) {
                 <>
                     <label>album_id</label>
                     <Link
-                        href={sourceHref(source.source, source.album_id, "album")}
+                        href={sourceHref(
+                            source.source,
+                            source.album_id,
+                            'album'
+                        )}
                         target="_blank"
                     >
                         {source.album_id}
@@ -465,7 +487,7 @@ function ItemSource({ source }: { source: ItemSourceT }) {
                                     href={sourceHref(
                                         source.source,
                                         v,
-                                        key.replace(/_ids?/, "")
+                                        key.replace(/_ids?/, '')
                                     )}
                                     target="_blank"
                                 >
@@ -477,7 +499,7 @@ function ItemSource({ source }: { source: ItemSourceT }) {
                                 href={sourceHref(
                                     source.source,
                                     value,
-                                    key.replace(/_ids?/, "")
+                                    key.replace(/_ids?/, '')
                                 )}
                                 target="_blank"
                             >
@@ -494,17 +516,18 @@ function ItemSource({ source }: { source: ItemSourceT }) {
 
 // Todo this needs migration with the other list components (fixed top)
 export function AdvancedTab({ item }: { item: ItemT<false> }) {
-    const [filter, setFilter] = useState<string>("");
+    const [filter, setFilter] = useState<string>('');
 
     // Create a flat list of all the properties
     const items = Object.entries(item).filter(([key]) => {
-        if (key == "sources") return false;
+        if (key == 'sources') return false;
         return true;
     });
 
     const filteredItems = useMemo(() => {
         return items.filter(
-            ([key, value]) => key.includes(filter) || String(value).includes(filter)
+            ([key, value]) =>
+                key.includes(filter) || String(value).includes(filter)
         );
     }, [items, filter]);
 
@@ -520,32 +543,32 @@ export function AdvancedTab({ item }: { item: ItemT<false> }) {
         <>
             <Box
                 sx={{
-                    display: "flex",
-                    flexDirection: "row",
+                    display: 'flex',
+                    flexDirection: 'row',
                     gap: 1,
-                    alignItems: "flex-end",
-                    justifyContent: "flex-end",
+                    alignItems: 'flex-end',
+                    justifyContent: 'flex-end',
                     flexGrow: 1,
-                    flexWrap: "wrap",
+                    flexWrap: 'wrap',
                 }}
             >
                 <Typography
                     variant="body2"
                     color="text.secondary"
                     sx={{
-                        alignSelf: "flex-start",
-                        marginRight: "auto",
+                        alignSelf: 'flex-start',
+                        marginRight: 'auto',
                     }}
                 >
-                    All properties of this item. This includes all values stored by
-                    beets, omitting empty entries.
+                    All properties of this item. This includes all values stored
+                    by beets, omitting empty entries.
                 </Typography>
                 <Box
                     sx={{
-                        display: "flex",
-                        flexDirection: "column",
+                        display: 'flex',
+                        flexDirection: 'column',
                         gap: 1,
-                        alignItems: "flex-end",
+                        alignItems: 'flex-end',
                     }}
                 >
                     {filter.length > 0 && (
@@ -553,12 +576,13 @@ export function AdvancedTab({ item }: { item: ItemT<false> }) {
                             variant="body2"
                             color="text.secondary"
                             sx={{
-                                fontSize: "0.8rem",
-                                marginLeft: "auto",
-                                minWidth: "max-content !important",
+                                fontSize: '0.8rem',
+                                marginLeft: 'auto',
+                                minWidth: 'max-content !important',
                             }}
                         >
-                            Excluded {items.length - filteredItems.length} properties
+                            Excluded {items.length - filteredItems.length}{' '}
+                            properties
                         </Typography>
                     )}
                     <Search value={filter} setValue={setFilter} size="small" />
@@ -568,29 +592,29 @@ export function AdvancedTab({ item }: { item: ItemT<false> }) {
                 size="small"
                 sx={{
                     //display: "grid",
-                    width: "100%",
-                    borderCollapse: "separate",
-                    maxHeight: "400px",
-                    height: "100%",
+                    width: '100%',
+                    borderCollapse: 'separate',
+                    maxHeight: '400px',
+                    height: '100%',
                     //tableLayout: "fixed",
                     td: {
                         //overflowWrap: "break-word",
-                        maxHeight: "200px",
-                        maxWidth: "100%",
+                        maxHeight: '200px',
+                        maxWidth: '100%',
                     },
-                    position: "relative",
+                    position: 'relative',
                     //thicker border bottom for head
                     thead: {
-                        fontWeight: "bold",
-                        fontSize: "0.95rem",
-                        verticalAlign: "bottom",
+                        fontWeight: 'bold',
+                        fontSize: '0.95rem',
+                        verticalAlign: 'bottom',
                         top: 0,
-                        position: "sticky",
-                        th: { border: "unset" },
-                        "> *:last-child > th": {
+                        position: 'sticky',
+                        th: { border: 'unset' },
+                        '> *:last-child > th': {
                             borderBottomWidth: 2,
-                            borderBottomStyle: "solid",
-                            borderBottomColor: "#515151",
+                            borderBottomStyle: 'solid',
+                            borderBottomColor: '#515151',
                         },
                     },
                 }}
@@ -617,21 +641,21 @@ export function AdvancedTab({ item }: { item: ItemT<false> }) {
 /* ---------------------------------- Utils --------------------------------- */
 
 const ItemGrid = styled(Box)(({ theme }) => ({
-    display: "grid",
-    gridTemplateColumns: "[cover] 200px [info] 1fr",
-    gridTemplateRows: "[title] min-content [details] auto",
+    display: 'grid',
+    gridTemplateColumns: '[cover] 200px [info] 1fr',
+    gridTemplateRows: '[title] min-content [details] auto',
     columnGap: theme.spacing(2),
     rowGap: theme.spacing(1),
 
     padding: theme.spacing(1),
-    overflow: "hidden",
-    width: "100%",
-    height: "100%",
+    overflow: 'hidden',
+    width: '100%',
+    height: '100%',
     minHeight: 0,
 
-    [theme.breakpoints.down("tablet")]: {
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
+    [theme.breakpoints.down('tablet')]: {
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
     },
 }));

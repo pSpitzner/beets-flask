@@ -3,15 +3,15 @@
  *
  */
 
-import { ArrowLeftIcon, LucideProps } from "lucide-react";
-import { useMemo } from "react";
-import { Fab, Zoom } from "@mui/material";
-import Button from "@mui/material/Button";
-import { useTheme } from "@mui/material/styles";
-import { useRouter } from "@tanstack/react-router";
+import { ArrowLeftIcon, LucideProps } from 'lucide-react';
+import { useMemo } from 'react';
+import { Fab, Zoom } from '@mui/material';
+import Button from '@mui/material/Button';
+import { useTheme } from '@mui/material/styles';
+import { useRouter } from '@tanstack/react-router';
 
 export function BackButton({
-    label = "Go Back",
+    label = 'Go Back',
     icon_props,
     ...props
 }: {
@@ -23,12 +23,14 @@ export function BackButton({
 
     return (
         <Button
-            startIcon={<ArrowLeftIcon size={theme.iconSize.sm} {...icon_props} />}
+            startIcon={
+                <ArrowLeftIcon size={theme.iconSize.sm} {...icon_props} />
+            }
             onClick={async () => {
                 if (router.history.canGoBack()) {
                     router.history.back();
                 } else {
-                    await router.navigate({ to: "/" });
+                    await router.navigate({ to: '/' });
                 }
             }}
             size="small"
@@ -48,7 +50,10 @@ export function BackIconButton({
     const theme = useTheme();
     const router = useRouter();
 
-    const canGoBack = useMemo(() => router.history.canGoBack(), [router.history]);
+    const canGoBack = useMemo(
+        () => router.history.canGoBack(),
+        [router.history]
+    );
 
     return (
         <Zoom
@@ -64,7 +69,7 @@ export function BackIconButton({
                     if (router.history.canGoBack()) {
                         router.history.back();
                     } else {
-                        await router.navigate({ to: "/" });
+                        await router.navigate({ to: '/' });
                     }
                 }}
                 aria-label="Go Back"

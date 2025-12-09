@@ -1,6 +1,6 @@
-import { ChevronDownIcon } from "lucide-react";
-import { Box, Typography, useTheme } from "@mui/material";
-import { createFileRoute } from "@tanstack/react-router";
+import { ChevronDownIcon } from 'lucide-react';
+import { Box, Typography, useTheme } from '@mui/material';
+import { createFileRoute } from '@tanstack/react-router';
 
 import {
     ChangeIcon,
@@ -14,11 +14,11 @@ import {
     PenaltyTypeIcon,
     SelectAllIcon,
     SourceTypeIcon,
-} from "@/components/common/icons";
-import { PageWrapper } from "@/components/common/page";
-import { FolderStatus } from "@/pythonTypes";
+} from '@/components/common/icons';
+import { PageWrapper } from '@/components/common/page';
+import { FolderStatus } from '@/pythonTypes';
 
-export const Route = createFileRoute("/debug/design/icons")({
+export const Route = createFileRoute('/debug/design/icons')({
     component: RouteComponent,
 });
 
@@ -26,43 +26,49 @@ function RouteComponent() {
     const theme = useTheme();
 
     return (
-        <PageWrapper sx={{ gap: "1rem", display: "flex", flexDirection: "column" }}>
+        <PageWrapper
+            sx={{ gap: '1rem', display: 'flex', flexDirection: 'column' }}
+        >
             <Box>
                 <Typography
                     variant="h1"
                     gutterBottom
-                    sx={{ textAlign: "center", fontSize: "2rem", fontWeight: "bold" }}
+                    sx={{
+                        textAlign: 'center',
+                        fontSize: '2rem',
+                        fontWeight: 'bold',
+                    }}
                 >
                     Icons
                 </Typography>
                 <Typography variant="body1">
-                    This page may be used to get an explanation of the icons and their
-                    meaning. Additionally, this page is for debugging the icons that are
-                    currently available in the frontend. This is useful to check if the
-                    icons are correctly displayed and if they are coherent with the
-                    design.
+                    This page may be used to get an explanation of the icons and
+                    their meaning. Additionally, this page is for debugging the
+                    icons that are currently available in the frontend. This is
+                    useful to check if the icons are correctly displayed and if
+                    they are coherent with the design.
                 </Typography>
             </Box>
             <Box>
                 <Typography
                     variant="h2"
                     gutterBottom
-                    sx={{ fontSize: "1.5rem", fontWeight: "bold" }}
+                    sx={{ fontSize: '1.5rem', fontWeight: 'bold' }}
                 >
                     Status icons
                 </Typography>
                 <Typography variant="body1">
-                    Status icons are used to indicate the status of a running beets job.
-                    Normally status icons are attached to a folder and are visible in
-                    the inbox view.
+                    Status icons are used to indicate the status of a running
+                    beets job. Normally status icons are attached to a folder
+                    and are visible in the inbox view.
                 </Typography>
                 <Box
                     sx={{
-                        display: "grid",
-                        gridTemplateColumns: "auto auto",
+                        display: 'grid',
+                        gridTemplateColumns: 'auto auto',
                         columnGap: 2,
-                        justifyContent: "flex-start",
-                        alignItems: "center",
+                        justifyContent: 'flex-start',
+                        alignItems: 'center',
                         paddingX: 2,
                         paddingY: 1,
                     }}
@@ -72,21 +78,39 @@ function RouteComponent() {
                     Failed
                     <FolderStatusIcon status={FolderStatus.FAILED} size={20} />
                     Not started
-                    <FolderStatusIcon status={FolderStatus.NOT_STARTED} size={20} />
+                    <FolderStatusIcon
+                        status={FolderStatus.NOT_STARTED}
+                        size={20}
+                    />
                     Pending
                     <FolderStatusIcon status={FolderStatus.PENDING} size={20} />
                     Importing
-                    <FolderStatusIcon status={FolderStatus.IMPORTING} size={20} />
+                    <FolderStatusIcon
+                        status={FolderStatus.IMPORTING}
+                        size={20}
+                    />
                     Previewing
-                    <FolderStatusIcon status={FolderStatus.PREVIEWING} size={20} />
+                    <FolderStatusIcon
+                        status={FolderStatus.PREVIEWING}
+                        size={20}
+                    />
                     Previewed
-                    <FolderStatusIcon status={FolderStatus.PREVIEWED} size={20} />
+                    <FolderStatusIcon
+                        status={FolderStatus.PREVIEWED}
+                        size={20}
+                    />
                     Imported
-                    <FolderStatusIcon status={FolderStatus.IMPORTED} size={20} />
+                    <FolderStatusIcon
+                        status={FolderStatus.IMPORTED}
+                        size={20}
+                    />
                     Undone
                     <FolderStatusIcon status={FolderStatus.DELETED} size={20} />
                     Undoing
-                    <FolderStatusIcon status={FolderStatus.DELETING} size={20} />
+                    <FolderStatusIcon
+                        status={FolderStatus.DELETING}
+                        size={20}
+                    />
                 </Box>
             </Box>
 
@@ -94,22 +118,22 @@ function RouteComponent() {
                 <Typography
                     variant="h2"
                     gutterBottom
-                    sx={{ fontSize: "1.5rem", fontWeight: "bold" }}
+                    sx={{ fontSize: '1.5rem', fontWeight: 'bold' }}
                 >
                     Source Type Icons
                 </Typography>
                 <Typography variant="body1">
-                    Source type icons are used to indicate the data source of a match.
-                    Normally they have an associated quality percentage and are shown in
-                    a chip.
+                    Source type icons are used to indicate the data source of a
+                    match. Normally they have an associated quality percentage
+                    and are shown in a chip.
                 </Typography>
                 <Box
                     sx={{
-                        display: "grid",
-                        gridTemplateColumns: "auto auto",
+                        display: 'grid',
+                        gridTemplateColumns: 'auto auto',
                         columnGap: 2,
-                        justifyContent: "flex-start",
-                        alignItems: "center",
+                        justifyContent: 'flex-start',
+                        alignItems: 'center',
                         paddingX: 2,
                         paddingY: 1,
                     }}
@@ -128,23 +152,23 @@ function RouteComponent() {
                 <Typography
                     variant="h2"
                     gutterBottom
-                    sx={{ fontSize: "1.5rem", fontWeight: "bold" }}
+                    sx={{ fontSize: '1.5rem', fontWeight: 'bold' }}
                 >
                     Penalty Icons
                 </Typography>
                 <Typography variant="body1">
-                    Penalty icons are used to indicate the reason a match was penalized.
-                    Normally penalty icons are attached to a match and are visible in
-                    the todo view. Usually the icons are colored by the severity of the
-                    penalty.
+                    Penalty icons are used to indicate the reason a match was
+                    penalized. Normally penalty icons are attached to a match
+                    and are visible in the todo view. Usually the icons are
+                    colored by the severity of the penalty.
                 </Typography>
                 <Box
                     sx={{
-                        display: "grid",
-                        gridTemplateColumns: "auto auto",
+                        display: 'grid',
+                        gridTemplateColumns: 'auto auto',
                         columnGap: 2,
-                        justifyContent: "flex-start",
-                        alignItems: "center",
+                        justifyContent: 'flex-start',
+                        alignItems: 'center',
                         paddingX: 2,
                         paddingY: 1,
                     }}
@@ -395,22 +419,23 @@ function RouteComponent() {
                 <Typography
                     variant="h2"
                     gutterBottom
-                    sx={{ fontSize: "1.5rem", fontWeight: "bold" }}
+                    sx={{ fontSize: '1.5rem', fontWeight: 'bold' }}
                 >
                     File & Folder Types
                 </Typography>
                 <Typography variant="body1">
-                    File and folder type icons are used to indicate the type of a file
-                    or folder. Normally file and folder type icons are attached to a
-                    file or folder and are visible in the inbox view.
+                    File and folder type icons are used to indicate the type of
+                    a file or folder. Normally file and folder type icons are
+                    attached to a file or folder and are visible in the inbox
+                    view.
                 </Typography>
                 <Box
                     sx={{
-                        display: "grid",
-                        gridTemplateColumns: "auto auto",
+                        display: 'grid',
+                        gridTemplateColumns: 'auto auto',
                         columnGap: 2,
-                        justifyContent: "flex-start",
-                        alignItems: "center",
+                        justifyContent: 'flex-start',
+                        alignItems: 'center',
                         paddingX: 2,
                         paddingY: 1,
                     }}
@@ -421,13 +446,29 @@ function RouteComponent() {
                     <FileTypeIcon type="txt" size={20} />
                     Directory
                     <Box display="flex" gap={1}>
-                        <FolderTypeIcon isAlbum={false} isOpen={false} size={20} />
-                        <FolderTypeIcon isAlbum={false} isOpen={true} size={20} />
+                        <FolderTypeIcon
+                            isAlbum={false}
+                            isOpen={false}
+                            size={20}
+                        />
+                        <FolderTypeIcon
+                            isAlbum={false}
+                            isOpen={true}
+                            size={20}
+                        />
                     </Box>
                     Album Folder
                     <Box display="flex" gap={1}>
-                        <FolderTypeIcon isAlbum={true} isOpen={false} size={20} />
-                        <FolderTypeIcon isAlbum={true} isOpen={true} size={20} />
+                        <FolderTypeIcon
+                            isAlbum={true}
+                            isOpen={false}
+                            size={20}
+                        />
+                        <FolderTypeIcon
+                            isAlbum={true}
+                            isOpen={true}
+                            size={20}
+                        />
                     </Box>
                 </Box>
             </Box>
@@ -435,22 +476,22 @@ function RouteComponent() {
                 <Typography
                     variant="h2"
                     gutterBottom
-                    sx={{ fontSize: "1.5rem", fontWeight: "bold" }}
+                    sx={{ fontSize: '1.5rem', fontWeight: 'bold' }}
                 >
                     Selection and utils
                 </Typography>
                 <Typography variant="body1">
-                    Selection and utils icons are used to indicate the state of a
-                    checkbox selection or a radio button. Normally these are used in
-                    combination with a button and label.
+                    Selection and utils icons are used to indicate the state of
+                    a checkbox selection or a radio button. Normally these are
+                    used in combination with a button and label.
                 </Typography>
                 <Box
                     sx={{
-                        display: "grid",
-                        gridTemplateColumns: "auto auto",
+                        display: 'grid',
+                        gridTemplateColumns: 'auto auto',
                         columnGap: 2,
-                        justifyContent: "flex-start",
-                        alignItems: "center",
+                        justifyContent: 'flex-start',
+                        alignItems: 'center',
                         paddingX: 2,
                         paddingY: 1,
                     }}
@@ -471,31 +512,31 @@ function RouteComponent() {
                 <Typography
                     variant="h2"
                     gutterBottom
-                    sx={{ fontSize: "1.5rem", fontWeight: "bold" }}
+                    sx={{ fontSize: '1.5rem', fontWeight: 'bold' }}
                 >
                     Inbox Types
                 </Typography>
                 <Typography variant="body1">
-                    Inbox types show the configured type of the inbox. This is user
-                    configurable and shows how the inbox behavior.
+                    Inbox types show the configured type of the inbox. This is
+                    user configurable and shows how the inbox behavior.
                 </Typography>
                 <Box
                     sx={{
-                        display: "grid",
-                        gridTemplateColumns: "auto auto",
+                        display: 'grid',
+                        gridTemplateColumns: 'auto auto',
                         columnGap: 2,
-                        justifyContent: "flex-start",
-                        alignItems: "center",
+                        justifyContent: 'flex-start',
+                        alignItems: 'center',
                         paddingX: 2,
                         paddingY: 1,
                     }}
                 >
                     Auto tagging (preview + import)
-                    <InboxTypeIcon size={20} type={"auto"} />
+                    <InboxTypeIcon size={20} type={'auto'} />
                     Preview only
-                    <InboxTypeIcon size={20} type={"preview"} />
+                    <InboxTypeIcon size={20} type={'preview'} />
                     Bootleg
-                    <InboxTypeIcon size={20} type={"bootleg"} />
+                    <InboxTypeIcon size={20} type={'bootleg'} />
                     Off (default)
                     <InboxTypeIcon size={20} />
                 </Box>
@@ -504,33 +545,33 @@ function RouteComponent() {
                 <Typography
                     variant="h2"
                     gutterBottom
-                    sx={{ fontSize: "1.5rem", fontWeight: "bold" }}
+                    sx={{ fontSize: '1.5rem', fontWeight: 'bold' }}
                 >
                     Change Types
                 </Typography>
                 <Typography variant="body1">
-                    Change types are show for track diffs, to indicate the type of
-                    change that was made to the track.
+                    Change types are show for track diffs, to indicate the type
+                    of change that was made to the track.
                 </Typography>
                 <Box
                     sx={{
-                        display: "grid",
-                        gridTemplateColumns: "auto auto",
+                        display: 'grid',
+                        gridTemplateColumns: 'auto auto',
                         columnGap: 2,
-                        justifyContent: "flex-start",
-                        alignItems: "center",
+                        justifyContent: 'flex-start',
+                        alignItems: 'center',
                         paddingX: 2,
                         paddingY: 1,
                     }}
                 >
                     Extra Item
-                    <ChangeIcon size={20} type={"extra_item"} />
+                    <ChangeIcon size={20} type={'extra_item'} />
                     Extra Track
-                    <ChangeIcon size={20} type={"extra_track"} />
+                    <ChangeIcon size={20} type={'extra_track'} />
                     Change minor
-                    <ChangeIcon size={20} type={"change_minor"} />
+                    <ChangeIcon size={20} type={'change_minor'} />
                     Change major
-                    <ChangeIcon size={20} type={"change_major"} />
+                    <ChangeIcon size={20} type={'change_major'} />
                     No change
                     <ChangeIcon size={20} />
                 </Box>

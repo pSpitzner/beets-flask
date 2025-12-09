@@ -1,13 +1,15 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { folderByTaskId } from "@/api/dbfolder";
-import { LoadingWithFeedback } from "@/components/common/loading";
-import { PageWrapper } from "@/components/common/page";
+import { folderByTaskId } from '@/api/dbfolder';
+import { LoadingWithFeedback } from '@/components/common/loading';
+import { PageWrapper } from '@/components/common/page';
 
-export const Route = createFileRoute("/inbox/task/$taskId")({
+export const Route = createFileRoute('/inbox/task/$taskId')({
     loader: async ({ context: { queryClient }, params }) => {
         // Redirect to the hash route
-        const data = await queryClient.ensureQueryData(folderByTaskId(params.taskId));
+        const data = await queryClient.ensureQueryData(
+            folderByTaskId(params.taskId)
+        );
 
         redirect({
             to: `/inbox/folder/$path/$hash`,
@@ -21,11 +23,11 @@ export const Route = createFileRoute("/inbox/task/$taskId")({
     pendingComponent: () => (
         <PageWrapper
             sx={{
-                display: "flex",
-                alignItems: "center",
-                height: "100%",
-                justifyContent: "center",
-                flexDirection: "column",
+                display: 'flex',
+                alignItems: 'center',
+                height: '100%',
+                justifyContent: 'center',
+                flexDirection: 'column',
             }}
         >
             <LoadingWithFeedback

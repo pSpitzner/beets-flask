@@ -1,16 +1,16 @@
-import { lazy, Suspense, useEffect, useState } from "react";
-import Box, { BoxProps } from "@mui/material/Box";
-import { QueryClient } from "@tanstack/react-query";
-import { HeadContent } from "@tanstack/react-router";
-import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
+import { lazy, Suspense, useEffect, useState } from 'react';
+import Box, { BoxProps } from '@mui/material/Box';
+import { QueryClient } from '@tanstack/react-query';
+import { HeadContent } from '@tanstack/react-router';
+import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
 
-import { PageWrapper } from "@/components/common/page";
-import NavBar, { NAVBAR_HEIGHT } from "@/components/frontpage/navbar";
-import { TerminalContextProvider } from "@/components/frontpage/terminal";
+import { PageWrapper } from '@/components/common/page';
+import NavBar, { NAVBAR_HEIGHT } from '@/components/frontpage/navbar';
+import { TerminalContextProvider } from '@/components/frontpage/terminal';
 import {
     AudioContextProvider,
     useAudioContext,
-} from "@/components/library/audio/context";
+} from '@/components/library/audio/context';
 
 export const Route = createRootRouteWithContext<{
     queryClient: QueryClient;
@@ -19,18 +19,19 @@ export const Route = createRootRouteWithContext<{
     head: () => ({
         meta: [
             {
-                name: "description",
-                content: "Opinionated web-interface around the music organizer beets.",
+                name: 'description',
+                content:
+                    'Opinionated web-interface around the music organizer beets.',
             },
             {
-                title: "Beets",
+                title: 'Beets',
             },
         ],
         links: [
             {
-                rel: "icon",
-                type: "image/png",
-                href: "/logo_beets.png",
+                rel: 'icon',
+                type: 'image/png',
+                href: '/logo_beets.png',
             },
         ],
     }),
@@ -60,34 +61,34 @@ function RootComponent() {
                 <HeadContent />
                 <main
                     style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        height: "100dvh",
-                        overflow: "hidden",
+                        display: 'flex',
+                        flexDirection: 'column',
+                        height: '100dvh',
+                        overflow: 'hidden',
                     }}
                 >
                     <NavBar id="navbar" />
                     <Box
                         id="main-content"
                         sx={(theme) => ({
-                            [theme.breakpoints.down("laptop")]: {
-                                position: "fixed",
-                                height: "100dvh",
+                            [theme.breakpoints.down('laptop')]: {
+                                position: 'fixed',
+                                height: '100dvh',
                             },
-                            width: "100%",
-                            height: "100%",
-                            overflow: "visible",
+                            width: '100%',
+                            height: '100%',
+                            overflow: 'visible',
                         })}
                     >
                         <Box
                             sx={(theme) => ({
-                                height: "100%",
-                                overflow: "auto",
+                                height: '100%',
+                                overflow: 'auto',
 
                                 // includes padding for the navbar at bottom if
                                 // on mobile
                                 paddingBottom: `${audioHeight || 0}px`,
-                                [theme.breakpoints.up("laptop")]: {
+                                [theme.breakpoints.up('laptop')]: {
                                     paddingTop: NAVBAR_HEIGHT.desktop,
                                 },
                             })}
@@ -108,9 +109,12 @@ function RootComponent() {
  * The following allow us to lazy load the audio
  * player components.
  */
-const AudioPlayer = lazy(() => import("@/components/library/audio/player"));
+const AudioPlayer = lazy(() => import('@/components/library/audio/player'));
 
-function LazyAudioPlayer(props: BoxProps, ref: React.Ref<HTMLDivElement> = null) {
+function LazyAudioPlayer(
+    props: BoxProps,
+    ref: React.Ref<HTMLDivElement> = null
+) {
     const { showGlobalPlayer } = useAudioContext();
 
     return (
@@ -118,14 +122,14 @@ function LazyAudioPlayer(props: BoxProps, ref: React.Ref<HTMLDivElement> = null)
             <Box
                 ref={ref}
                 sx={(theme) => ({
-                    position: "absolute",
+                    position: 'absolute',
                     bottom: 0,
-                    width: "100%",
+                    width: '100%',
                     zIndex: 1,
-                    [theme.breakpoints.down("laptop")]: {
+                    [theme.breakpoints.down('laptop')]: {
                         paddingBottom: NAVBAR_HEIGHT.mobile,
                     },
-                    [theme.breakpoints.up("laptop")]: {
+                    [theme.breakpoints.up('laptop')]: {
                         paddingBottom: 1,
                     },
                 })}

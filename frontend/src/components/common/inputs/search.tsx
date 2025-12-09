@@ -1,11 +1,11 @@
-import { SearchIcon, XIcon } from "lucide-react";
+import { SearchIcon, XIcon } from 'lucide-react';
 import {
     CircularProgress,
     IconButton,
     InputAdornment,
     TextField,
     useTheme,
-} from "@mui/material";
+} from '@mui/material';
 
 /** Relative minimal search box */
 export function Search({
@@ -26,9 +26,13 @@ export function Search({
                 <CircularProgress size={theme.iconSize.md} />
             ) : (
                 <IconButton
-                    sx={{ padding: 0, color: "grey.500", minWidth: theme.iconSize.md }}
+                    sx={{
+                        padding: 0,
+                        color: 'grey.500',
+                        minWidth: theme.iconSize.md,
+                    }}
                     disableRipple
-                    onClick={() => setValue("")}
+                    onClick={() => setValue('')}
                 >
                     {value && value.length > 0 ? (
                         <XIcon size={theme.iconSize.md} />
@@ -45,7 +49,11 @@ export function Search({
                 input: {
                     startAdornment: (
                         <InputAdornment position="start">
-                            <SearchIcon color="gray" strokeWidth={1.5} size={20} />
+                            <SearchIcon
+                                color="gray"
+                                strokeWidth={1.5}
+                                size={20}
+                            />
                         </InputAdornment>
                     ),
                     endAdornment: endAdornment,

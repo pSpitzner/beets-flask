@@ -1,17 +1,20 @@
-import { BookOpenIcon, BugIcon, GithubIcon } from "lucide-react";
-import { Box, Link, Typography, useTheme } from "@mui/material";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { BookOpenIcon, BugIcon, GithubIcon } from 'lucide-react';
+import { Box, Link, Typography, useTheme } from '@mui/material';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
 
-import { inboxStatsQueryOptions } from "@/api/inbox";
-import { libraryStatsQueryOptions } from "@/api/library";
-import { Link as InternalLink } from "@/components/common/link";
-import { PageWrapper } from "@/components/common/page";
-import { InboxStatsCard, LibraryStatsCard } from "@/components/frontpage/statsCard";
+import { inboxStatsQueryOptions } from '@/api/inbox';
+import { libraryStatsQueryOptions } from '@/api/library';
+import { Link as InternalLink } from '@/components/common/link';
+import { PageWrapper } from '@/components/common/page';
+import {
+    InboxStatsCard,
+    LibraryStatsCard,
+} from '@/components/frontpage/statsCard';
 
 /* ------------------------------ Route layout ------------------------------ */
 
-export const Route = createFileRoute("/_frontpage/")({
+export const Route = createFileRoute('/_frontpage/')({
     component: Index,
     loader: async ({ context }) => {
         return await Promise.all([
@@ -38,9 +41,9 @@ function Index() {
         <PageWrapper
             sx={(theme) => ({
                 paddingTop: 2,
-                minHeight: "100%",
-                display: "flex",
-                flexDirection: "column",
+                minHeight: '100%',
+                display: 'flex',
+                flexDirection: 'column',
                 gap: 6,
                 maxWidth: `${theme.breakpoints.values.laptop}px !important`,
             })}
@@ -48,9 +51,9 @@ function Index() {
             <Hero />
             <Box
                 sx={{
-                    display: "flex",
+                    display: 'flex',
                     gap: 5,
-                    flexDirection: "column",
+                    flexDirection: 'column',
                     paddingInline: 1,
                 }}
             >
@@ -71,18 +74,18 @@ function Hero() {
     // and size of the logo. Using the set breakpoints for
     // different devices will not work as expected here
     return (
-        <Box sx={{ margin: "0 auto" }}>
+        <Box sx={{ margin: '0 auto' }}>
             <Box
                 sx={{
-                    display: "grid",
-                    gridTemplateColumns: "min-content auto",
+                    display: 'grid',
+                    gridTemplateColumns: 'min-content auto',
                     columnGap: 2,
-                    justifyContent: "center",
+                    justifyContent: 'center',
 
-                    "@media (max-width: 500px)": {
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
+                    '@media (max-width: 500px)': {
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
                     },
                 }}
             >
@@ -91,13 +94,13 @@ function Hero() {
                     src="/logo_flask.png"
                     alt="Logo"
                     sx={{
-                        width: "150px",
-                        height: "150px",
-                        gridRow: "span 2",
-                        gridColumn: "1",
-                        "@media (max-width: 890px)": {
-                            gridRow: "1",
-                            gridColumn: "1",
+                        width: '150px',
+                        height: '150px',
+                        gridRow: 'span 2',
+                        gridColumn: '1',
+                        '@media (max-width: 890px)': {
+                            gridRow: '1',
+                            gridColumn: '1',
                         },
                     }}
                 />
@@ -106,9 +109,9 @@ function Hero() {
                     variant="h2"
                     sx={{
                         fontSize: 64,
-                        alignSelf: "flex-end",
-                        "@media (max-width: 500px)": {
-                            alignSelf: "center",
+                        alignSelf: 'flex-end',
+                        '@media (max-width: 500px)': {
+                            alignSelf: 'center',
                         },
                     }}
                     fontWeight={600}
@@ -117,31 +120,31 @@ function Hero() {
                 </Typography>
                 <Box
                     sx={{
-                        gridRow: "2",
-                        gridColumn: "2",
-                        "@media (max-width: 890px)": {
-                            gridRow: "2",
-                            gridColumn: "span 2",
+                        gridRow: '2',
+                        gridColumn: '2',
+                        '@media (max-width: 890px)': {
+                            gridRow: '2',
+                            gridColumn: 'span 2',
                             paddingTop: 1,
                             paddingLeft: 2,
                             paddingRight: 1,
                         },
-                        width: "100%",
+                        width: '100%',
                     }}
                 >
                     <Typography
                         component="h2"
                         variant="h6"
                         sx={{
-                            color: "grey.500",
-                            "@media (max-width: 890px)": {
-                                textAlign: "center",
-                                width: "100%",
+                            color: 'grey.500',
+                            '@media (max-width: 890px)': {
+                                textAlign: 'center',
+                                width: '100%',
                             },
                         }}
                     >
-                        Web interface around your favorite music tagger and music
-                        library.
+                        Web interface around your favorite music tagger and
+                        music library.
                     </Typography>
                 </Box>
             </Box>
@@ -153,7 +156,7 @@ function Hero() {
 
 export function VersionString() {
     let versionString = `v${__FRONTEND_VERSION__}`;
-    if (__MODE__ !== "production") {
+    if (__MODE__ !== 'production') {
         // Append the mode to the version string if not in production
         versionString += ` (${__MODE__})`;
     }
@@ -169,27 +172,30 @@ function Footer() {
                 paddingTop: 3,
                 paddingBottom: 1,
                 paddingInline: 1,
-                display: "flex",
+                display: 'flex',
                 gap: 2,
-                marginTop: "auto",
-                justifyContent: "flex-end",
-                alignItems: "flex-end",
+                marginTop: 'auto',
+                justifyContent: 'flex-end',
+                alignItems: 'flex-end',
                 // do not show spans with text on mobile
-                [theme.breakpoints.down("tablet")]: {
-                    ">*>span": {
-                        display: "none",
+                [theme.breakpoints.down('tablet')]: {
+                    '>*>span': {
+                        display: 'none',
                     },
                 },
                 a: {
-                    display: "flex",
-                    alignItems: "flex-end",
+                    display: 'flex',
+                    alignItems: 'flex-end',
                 },
             })}
         >
-            <InternalLink to="/version" sx={{ textDecoration: "none", mr: "auto" }}>
+            <InternalLink
+                to="/version"
+                sx={{ textDecoration: 'none', mr: 'auto' }}
+            >
                 <Typography
                     variant="caption"
-                    sx={{ color: "grey.700", alignSelf: "flex-end" }}
+                    sx={{ color: 'grey.700', alignSelf: 'flex-end' }}
                 >
                     <VersionString /> &copy; 2025 P. Spitzner &amp; S. Mohr
                 </Typography>

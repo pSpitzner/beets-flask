@@ -1,4 +1,4 @@
-import { ChevronUpIcon, Disc3Icon, UserRoundIcon } from "lucide-react";
+import { ChevronUpIcon, Disc3Icon, UserRoundIcon } from 'lucide-react';
 import {
     Box,
     BoxProps,
@@ -6,18 +6,18 @@ import {
     Typography,
     useMediaQuery,
     useTheme,
-} from "@mui/material";
+} from '@mui/material';
 
-import { ItemResponse } from "@/pythonTypes";
+import { ItemResponse } from '@/pythonTypes';
 
-import { DotSeparatedList } from "./album";
-import { CoverArt, MultiCoverArt } from "./coverArt";
-import { AlbumLink, ArtistLink } from "./links";
+import { DotSeparatedList } from './album';
+import { CoverArt, MultiCoverArt } from './coverArt';
+import { AlbumLink, ArtistLink } from './links';
 
-import { useLocalStorage } from "../common/hooks/useLocalStorage";
-import { useSwipeUp } from "../common/hooks/useSwipe";
-import { Link } from "../common/link";
-import { humanizeBytes } from "../common/units/bytes";
+import { useLocalStorage } from '../common/hooks/useLocalStorage';
+import { useSwipeUp } from '../common/hooks/useSwipe';
+import { Link } from '../common/link';
+import { humanizeBytes } from '../common/units/bytes';
 
 export function ItemHeader({
     item,
@@ -26,22 +26,33 @@ export function ItemHeader({
 }: {
     item: ItemResponse;
 } & BoxProps) {
-    const [expanded, setExpanded] = useLocalStorage("mobile_header_is_expanded", true);
+    const [expanded, setExpanded] = useLocalStorage(
+        'mobile_header_is_expanded',
+        true
+    );
     // TODO: A bit of animation would be nice here grow + shrink
     return (
         <Box
             sx={[
                 {
-                    overflow: "hidden",
-                    display: "block",
+                    overflow: 'hidden',
+                    display: 'block',
                 },
             ]}
             {...props}
         >
             {!expanded ? (
-                <ItemHeaderMinimal item={item} sx={sx} setExpanded={setExpanded} />
+                <ItemHeaderMinimal
+                    item={item}
+                    sx={sx}
+                    setExpanded={setExpanded}
+                />
             ) : (
-                <ItemHeaderExpanded item={item} sx={sx} setExpanded={setExpanded} />
+                <ItemHeaderExpanded
+                    item={item}
+                    sx={sx}
+                    setExpanded={setExpanded}
+                />
             )}
         </Box>
     );
@@ -56,18 +67,18 @@ export function ItemHeaderExpanded({
     item: ItemResponse;
 } & BoxProps) {
     const theme = useTheme();
-    const isMobile = useMediaQuery((theme) => theme.breakpoints.down("tablet"));
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('tablet'));
     const ref = useSwipeUp(() => setExpanded(false), 100);
 
     return (
         <Box
             sx={[
                 (theme) => ({
-                    display: "grid",
+                    display: 'grid',
                     gap: 2,
                     padding: 2,
-                    [theme.breakpoints.up("tablet")]: {
-                        gridTemplateColumns: "[art] 200px [content] 1fr",
+                    [theme.breakpoints.up('tablet')]: {
+                        gridTemplateColumns: '[art] 200px [content] 1fr',
                     },
                 }),
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -78,54 +89,54 @@ export function ItemHeaderExpanded({
         >
             <Box
                 sx={{
-                    width: "100%",
-                    height: "100%",
-                    display: "grid",
-                    gridTemplateColumns: "1fr auto 1fr",
+                    width: '100%',
+                    height: '100%',
+                    display: 'grid',
+                    gridTemplateColumns: '1fr auto 1fr',
                 }}
             >
                 <MultiCoverArt
                     beetsId={item.id}
                     sx={{
-                        maxWidth: "200px",
-                        height: "100%",
-                        width: "100%",
+                        maxWidth: '200px',
+                        height: '100%',
+                        width: '100%',
                         margin: 0,
                         borderRadius: 2,
-                        alignSelf: "center",
-                        justifySelf: "center",
+                        alignSelf: 'center',
+                        justifySelf: 'center',
                         boxShadow: 3,
-                        aspectRatio: "1 / 1",
-                        overflow: "hidden",
-                        gridColumn: "2",
+                        aspectRatio: '1 / 1',
+                        overflow: 'hidden',
+                        gridColumn: '2',
                     }}
                     coverArtSx={{
-                        maxWidth: "200px",
-                        height: "100%",
-                        width: "100%",
+                        maxWidth: '200px',
+                        height: '100%',
+                        width: '100%',
                         margin: 0,
                         borderRadius: 2,
-                        alignSelf: "center",
-                        justifySelf: "center",
+                        alignSelf: 'center',
+                        justifySelf: 'center',
                         boxShadow: 3,
-                        overflow: "hidden",
+                        overflow: 'hidden',
                     }}
                 />
                 {isMobile && (
-                    <Box sx={{ gridColumn: "3", justifySelf: "end" }}>
+                    <Box sx={{ gridColumn: '3', justifySelf: 'end' }}>
                         <IconButton onClick={() => setExpanded(false)}>
-                            <ChevronUpIcon color={"gray"} />
+                            <ChevronUpIcon color={'gray'} />
                         </IconButton>
                     </Box>
                 )}
             </Box>
             <Box
                 sx={(theme) => ({
-                    display: "flex",
-                    flexDirection: "column",
-                    alignSelf: "flex-end",
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignSelf: 'flex-end',
                     gap: 2,
-                    [theme.breakpoints.down("tablet")]: {
+                    [theme.breakpoints.down('tablet')]: {
                         gap: 0,
                     },
                 })}
@@ -140,7 +151,7 @@ export function ItemHeaderExpanded({
                         variant="h3"
                         fontWeight="bold"
                         sx={(theme) => ({
-                            [theme.breakpoints.up("laptop")]: {
+                            [theme.breakpoints.up('laptop')]: {
                                 fontSize: 60,
                             },
                         })}
@@ -150,10 +161,10 @@ export function ItemHeaderExpanded({
                     {isMobile && (
                         <Box
                             sx={{
-                                display: "flex",
-                                alignItems: "center",
+                                display: 'flex',
+                                alignItems: 'center',
                                 gap: 1,
-                                flexWrap: "wrap",
+                                flexWrap: 'wrap',
                             }}
                         >
                             <Link
@@ -162,13 +173,16 @@ export function ItemHeaderExpanded({
                                 params={{ albumId: item.album_id }}
                                 sx={{
                                     gap: 0.5,
-                                    textDecoration: "none",
-                                    color: "text.primary",
-                                    display: "flex",
-                                    alignItems: "center",
+                                    textDecoration: 'none',
+                                    color: 'text.primary',
+                                    display: 'flex',
+                                    alignItems: 'center',
                                 }}
                             >
-                                <UserRoundIcon size={theme.iconSize.sm} color="gray" />
+                                <UserRoundIcon
+                                    size={theme.iconSize.sm}
+                                    color="gray"
+                                />
                                 <Typography variant="body1" fontWeight="bold">
                                     {item.artist}
                                 </Typography>
@@ -180,13 +194,16 @@ export function ItemHeaderExpanded({
                                 params={{ albumId: item.album_id }}
                                 sx={{
                                     gap: 0.5,
-                                    textDecoration: "none",
-                                    color: "text.primary",
-                                    display: "flex",
-                                    alignItems: "center",
+                                    textDecoration: 'none',
+                                    color: 'text.primary',
+                                    display: 'flex',
+                                    alignItems: 'center',
                                 }}
                             >
-                                <Disc3Icon size={theme.iconSize.sm} color="gray" />
+                                <Disc3Icon
+                                    size={theme.iconSize.sm}
+                                    color="gray"
+                                />
                                 <Typography variant="body1" fontWeight="bold">
                                     {item.album}
                                 </Typography>
@@ -198,15 +215,18 @@ export function ItemHeaderExpanded({
                 {/* Album ref*/}
                 <Box
                     sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        flexWrap: "wrap",
+                        display: 'flex',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
                     }}
                 >
                     {!isMobile && (
                         <DotSeparatedList>
                             <ArtistLink artist={item.artist} />
-                            <AlbumLink title={item.album} albumId={item.album_id} />
+                            <AlbumLink
+                                title={item.album}
+                                albumId={item.album_id}
+                            />
                             <Typography
                                 variant="body1"
                                 color="text.secondary"
@@ -274,12 +294,12 @@ export function ItemHeaderMinimal({
         <Box
             sx={[
                 {
-                    display: "flex",
-                    alignItems: "center",
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: 2,
                     padding: 1,
-                    minHeight: "60px",
-                    justifyContent: "space-around",
+                    minHeight: '60px',
+                    justifyContent: 'space-around',
                 },
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                 ...(Array.isArray(sx) ? sx : [sx]),
@@ -293,14 +313,14 @@ export function ItemHeaderMinimal({
                 sx={{
                     flex: 1,
                     // Remove noWrap to allow text wrapping
-                    whiteSpace: "normal",
+                    whiteSpace: 'normal',
                     lineHeight: 1.2,
-                    textAlign: "right",
+                    textAlign: 'right',
                     // add elipsis after two lines
-                    display: "-webkit-box",
+                    display: '-webkit-box',
                     WebkitLineClamp: 2,
-                    WebkitBoxOrient: "vertical",
-                    overflow: "hidden",
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
                 }}
             >
                 {item.name}
@@ -309,8 +329,8 @@ export function ItemHeaderMinimal({
                 type="item"
                 beetsId={item.id}
                 sx={{
-                    width: "45px",
-                    height: "45px",
+                    width: '45px',
+                    height: '45px',
                     borderRadius: 1,
                     flexShrink: 0,
                     boxShadow: 1,

@@ -1,5 +1,5 @@
 export const relativeTime = (date?: Date | null) => {
-    if (!date) return "never";
+    if (!date) return 'never';
 
     const now = new Date();
     const diff = now.getTime() - date.getTime();
@@ -11,17 +11,17 @@ export const relativeTime = (date?: Date | null) => {
     const years = Math.floor(months / 12);
 
     if (seconds < 60) {
-        return `${seconds} second${seconds > 1 ? "s" : ""} ago`;
+        return `${seconds} second${seconds > 1 ? 's' : ''} ago`;
     } else if (minutes < 60) {
-        return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+        return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
     } else if (hours < 24) {
-        return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+        return `${hours} hour${hours > 1 ? 's' : ''} ago`;
     } else if (days < 30) {
-        return `${days} day${days > 1 ? "s" : ""} ago`;
+        return `${days} day${days > 1 ? 's' : ''} ago`;
     } else if (months < 12) {
-        return `${months} month${months > 1 ? "s" : ""} ago`;
+        return `${months} month${months > 1 ? 's' : ''} ago`;
     } else {
-        return `${years} year${years > 1 ? "s" : ""} ago`;
+        return `${years} year${years > 1 ? 's' : ''} ago`;
     }
 };
 
@@ -41,7 +41,7 @@ export const humanizeDuration = (duration: number) => {
     if (seconds > 0) parts.push(`${seconds}s`);
     if (parts.length === 0) return `${duration.toFixed(2)}s`;
 
-    return parts.join(" ");
+    return parts.join(' ');
 };
 
 /**
@@ -51,55 +51,55 @@ export const humanizeDuration = (duration: number) => {
  * @returns Formatted date string
  */
 export const formatDate = (date: Date, formatStr: string) => {
-    const pad = (num: number) => num.toString().padStart(2, "0");
+    const pad = (num: number) => num.toString().padStart(2, '0');
 
     const replacements: Record<string, string> = {
-        "%Y": date.getFullYear().toString(), // Year (4 digits)
-        "%y": date.getFullYear().toString().slice(-2), // Year (2 digits)
-        "%m": pad(date.getMonth() + 1), // Month (01-12)
-        "%d": pad(date.getDate()), // Day (01-31)
-        "%H": pad(date.getHours()), // Hour (00-23)
-        "%M": pad(date.getMinutes()), // Minute (00-59)
-        "%S": pad(date.getSeconds()), // Second (00-59)
-        "%A": [
-            "Sunday",
-            "Monday",
-            "Tuesday",
-            "Wednesday", // Full weekday name
-            "Thursday",
-            "Friday",
-            "Saturday",
+        '%Y': date.getFullYear().toString(), // Year (4 digits)
+        '%y': date.getFullYear().toString().slice(-2), // Year (2 digits)
+        '%m': pad(date.getMonth() + 1), // Month (01-12)
+        '%d': pad(date.getDate()), // Day (01-31)
+        '%H': pad(date.getHours()), // Hour (00-23)
+        '%M': pad(date.getMinutes()), // Minute (00-59)
+        '%S': pad(date.getSeconds()), // Second (00-59)
+        '%A': [
+            'Sunday',
+            'Monday',
+            'Tuesday',
+            'Wednesday', // Full weekday name
+            'Thursday',
+            'Friday',
+            'Saturday',
         ][date.getDay()],
-        "%a": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][date.getDay()], // Short weekday
-        "%B": [
-            "January",
-            "February",
-            "March",
-            "April",
-            "May", // Full month name
-            "June",
-            "July",
-            "August",
-            "September",
-            "October",
-            "November",
-            "December",
+        '%a': ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()], // Short weekday
+        '%B': [
+            'January',
+            'February',
+            'March',
+            'April',
+            'May', // Full month name
+            'June',
+            'July',
+            'August',
+            'September',
+            'October',
+            'November',
+            'December',
         ][date.getMonth()],
-        "%b": [
-            "Jan",
-            "Feb",
-            "Mar",
-            "Apr",
-            "May",
-            "Jun", // Short month name
-            "Jul",
-            "Aug",
-            "Sep",
-            "Oct",
-            "Nov",
-            "Dec",
+        '%b': [
+            'Jan',
+            'Feb',
+            'Mar',
+            'Apr',
+            'May',
+            'Jun', // Short month name
+            'Jul',
+            'Aug',
+            'Sep',
+            'Oct',
+            'Nov',
+            'Dec',
         ][date.getMonth()],
-        "%p": date.getHours() < 12 ? "AM" : "PM", // AM/PM
+        '%p': date.getHours() < 12 ? 'AM' : 'PM', // AM/PM
     };
 
     return formatStr.replace(
@@ -130,9 +130,9 @@ export function trackLength(length: number): {
  */
 export const trackLengthRep = (length?: number | null, brackets = true) => {
     if (length === undefined || length === null) {
-        return brackets ? "(?:??)" : "?:??";
+        return brackets ? '(?:??)' : '?:??';
     }
     const { hours, minutes, seconds } = trackLength(length);
-    const s = `${hours ? `${hours}h ` : ""}${minutes}:${seconds.toString().padStart(2, "0")}`;
+    const s = `${hours ? `${hours}h ` : ''}${minutes}:${seconds.toString().padStart(2, '0')}`;
     return brackets ? `(${s})` : s;
 };

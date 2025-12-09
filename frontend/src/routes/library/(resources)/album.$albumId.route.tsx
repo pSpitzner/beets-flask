@@ -1,16 +1,16 @@
-import { AudioLinesIcon } from "lucide-react";
-import { Box, useTheme } from "@mui/material";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { AudioLinesIcon } from 'lucide-react';
+import { Box, useTheme } from '@mui/material';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute, Outlet } from '@tanstack/react-router';
 
-import { albumQueryOptions } from "@/api/library";
-import { BackIconButton } from "@/components/common/inputs/back";
-import { Loading } from "@/components/common/loading";
-import { NavigationTabs } from "@/components/common/navigation";
-import { PageWrapper } from "@/components/common/page";
-import { AlbumHeader } from "@/components/library/album";
+import { albumQueryOptions } from '@/api/library';
+import { BackIconButton } from '@/components/common/inputs/back';
+import { Loading } from '@/components/common/loading';
+import { NavigationTabs } from '@/components/common/navigation';
+import { PageWrapper } from '@/components/common/page';
+import { AlbumHeader } from '@/components/library/album';
 
-export const Route = createFileRoute("/library/(resources)/album/$albumId")({
+export const Route = createFileRoute('/library/(resources)/album/$albumId')({
     parseParams: (params) => {
         const albumId = parseInt(params.albumId);
         if (isNaN(albumId)) {
@@ -42,17 +42,17 @@ function PendingComponent() {
     return (
         <Box
             sx={{
-                display: "flex",
-                flexDirection: "column",
-                height: "100%",
-                margin: "auto",
-                maxWidth: "120px",
-                justifyContent: "center",
-                alignItems: "center",
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                margin: 'auto',
+                maxWidth: '120px',
+                justifyContent: 'center',
+                alignItems: 'center',
             }}
         >
             <Loading noteColor={theme.palette.primary.main} />
-            <Box component="span" style={{ marginTop: "1rem" }}>
+            <Box component="span" style={{ marginTop: '1rem' }}>
                 Loading...
             </Box>
         </Box>
@@ -68,13 +68,13 @@ function RouteComponent() {
     return (
         <PageWrapper
             sx={(theme) => ({
-                display: "flex",
-                flexDirection: "column",
-                minHeight: "100%",
-                height: "100%",
-                position: "relative",
-                overflow: "hidden",
-                [theme.breakpoints.up("laptop")]: {
+                display: 'flex',
+                flexDirection: 'column',
+                minHeight: '100%',
+                height: '100%',
+                position: 'relative',
+                overflow: 'hidden',
+                [theme.breakpoints.up('laptop')]: {
                     padding: 2,
                 },
             })}
@@ -82,7 +82,7 @@ function RouteComponent() {
             <BackIconButton
                 sx={{
                     // TODO: styling for mobile
-                    position: "absolute",
+                    position: 'absolute',
                     top: 0,
                     left: 0,
                     zIndex: 2,
@@ -93,13 +93,13 @@ function RouteComponent() {
             />
             <Box
                 sx={(theme) => ({
-                    display: "flex",
-                    flexDirection: "column",
-                    height: "100%",
-                    flex: "1 1 auto",
-                    overflow: "auto",
-                    [theme.breakpoints.up("laptop")]: {
-                        backgroundColor: "background.paper",
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: '100%',
+                    flex: '1 1 auto',
+                    overflow: 'auto',
+                    [theme.breakpoints.up('laptop')]: {
+                        backgroundColor: 'background.paper',
                         borderRadius: 2,
                     },
                 })}
@@ -110,7 +110,7 @@ function RouteComponent() {
                         sx={(theme) => ({
                             // Background gradient from bottom to top
                             background: `linear-gradient(to bottom, transparent 0%, ${theme.palette.background.paper} 100%)`,
-                            position: "relative",
+                            position: 'relative',
                             zIndex: 1,
                         })}
                     />
@@ -119,18 +119,18 @@ function RouteComponent() {
                             {
                                 to: `/library/album/$albumId`,
                                 params,
-                                label: "Tracks",
+                                label: 'Tracks',
                                 icon: <AudioLinesIcon />,
                             },
                             {
                                 to: `/library/album/$albumId/identifier`,
                                 params,
-                                label: "Identifiers",
+                                label: 'Identifiers',
                             },
                             {
                                 to: `/library/album/$albumId/beetsdata`,
                                 params,
-                                label: "Details",
+                                label: 'Details',
                             },
                         ]}
                     />
@@ -138,12 +138,12 @@ function RouteComponent() {
 
                 <Box
                     sx={(theme) => ({
-                        flex: "1 1 auto",
+                        flex: '1 1 auto',
                         paddingInline: 2,
                         paddingBlock: 1,
-                        height: "100%",
+                        height: '100%',
                         minHeight: 0,
-                        overflow: "auto",
+                        overflow: 'auto',
                         //background: theme.palette.background.paper,
                         background: `linear-gradient(to bottom, ${theme.palette.background.paper} 0%, transparent 100%)`,
                     })}

@@ -1,19 +1,19 @@
-import { Library } from "lucide-react";
-import { Box, Divider } from "@mui/material";
-import { useQuery } from "@tanstack/react-query";
+import { Library } from 'lucide-react';
+import { Box, Divider } from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
 
-import { libraryStatsQueryOptions } from "@/api/library";
-import { JSONPretty } from "@/components/common/debugging/json";
-import { relativeTime } from "@/components/common/units/time";
+import { libraryStatsQueryOptions } from '@/api/library';
+import { JSONPretty } from '@/components/common/debugging/json';
+import { relativeTime } from '@/components/common/units/time';
 import {
     Card,
     CardActions,
     CardAvatar,
     CardContent,
     CardTopInfo,
-} from "@/components/frontpage/card";
+} from '@/components/frontpage/card';
 
-import { humanizeBytes } from "../common/units/bytes";
+import { humanizeBytes } from '../common/units/bytes';
 
 export function LibraryStats() {
     const { data } = useQuery(libraryStatsQueryOptions());
@@ -27,11 +27,11 @@ export function LibraryStats() {
                         component="code"
                         sx={{
                             fontSize: 14,
-                            color: "grey.500",
-                            marginBottom: "0.875em",
+                            color: 'grey.500',
+                            marginBottom: '0.875em',
                         }}
                     >
-                        {data?.libraryPath ?? "Loading..."}
+                        {data?.libraryPath ?? 'Loading...'}
                     </Box>
                 </CardAvatar>
                 <div className="h-full flex flex-col justify-end ">
@@ -108,5 +108,9 @@ function LastAddedInfo() {
         return null;
     }
 
-    return <CardTopInfo>Last added: {relativeTime(data.lastItemAdded)}</CardTopInfo>;
+    return (
+        <CardTopInfo>
+            Last added: {relativeTime(data.lastItemAdded)}
+        </CardTopInfo>
+    );
 }

@@ -1,15 +1,18 @@
-import { useMemo, useState } from "react";
-import { List, ListProps } from "react-window";
-import { Box, BoxProps, Divider, Typography, useTheme } from "@mui/material";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useState } from 'react';
+import { List, ListProps } from 'react-window';
+import { Box, BoxProps, Divider, Typography, useTheme } from '@mui/material';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
 
-import { Artist, artistsQueryOptions } from "@/api/library";
-import { ArtistBrowserProps, ArtistListRow } from "@/components/common/browser/artists";
-import { ArtistIcon } from "@/components/common/icons";
-import { Search } from "@/components/common/inputs/search";
+import { Artist, artistsQueryOptions } from '@/api/library';
+import {
+    ArtistBrowserProps,
+    ArtistListRow,
+} from '@/components/common/browser/artists';
+import { ArtistIcon } from '@/components/common/icons';
+import { Search } from '@/components/common/inputs/search';
 
-export const Route = createFileRoute("/library/browse/artists/")({
+export const Route = createFileRoute('/library/browse/artists/')({
     loader: async (opts) => {
         await opts.context.queryClient.ensureQueryData(artistsQueryOptions());
     },
@@ -23,20 +26,20 @@ function RouteComponent() {
             <ArtistsHeader
                 nArtists={artists.length}
                 sx={(theme) => ({
-                    [theme.breakpoints.down("laptop")]: {
+                    [theme.breakpoints.down('laptop')]: {
                         background: `linear-gradient(to bottom, transparent 0%, ${theme.palette.background.paper} 100%)`,
                     },
                 })}
             />
-            <Divider sx={{ backgroundColor: "primary.muted" }} />
+            <Divider sx={{ backgroundColor: 'primary.muted' }} />
             <ArtistsListWrapper
                 artists={artists}
                 sx={(theme) => ({
-                    display: "flex",
-                    flexDirection: "column",
-                    height: "100%",
-                    overflow: "hidden",
-                    [theme.breakpoints.down("laptop")]: {
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: '100%',
+                    overflow: 'hidden',
+                    [theme.breakpoints.down('laptop')]: {
                         background: `linear-gradient(to bottom, ${theme.palette.background.paper} 0%, transparent 100%)`,
                     },
                 })}
@@ -45,15 +48,19 @@ function RouteComponent() {
     );
 }
 
-function ArtistsHeader({ nArtists, sx, ...props }: { nArtists: number } & BoxProps) {
+function ArtistsHeader({
+    nArtists,
+    sx,
+    ...props
+}: { nArtists: number } & BoxProps) {
     const theme = useTheme();
     return (
         <Box
             sx={[
                 {
-                    display: "flex",
+                    display: 'flex',
                     gap: 2,
-                    alignItems: "center",
+                    alignItems: 'center',
                     padding: 2,
                 },
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -61,7 +68,7 @@ function ArtistsHeader({ nArtists, sx, ...props }: { nArtists: number } & BoxPro
             ]}
             {...props}
         >
-            <Box sx={{ display: "flex", alignItems: "center", height: "100%" }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
                 <ArtistIcon size={40} color={theme.palette.primary.main} />
             </Box>
             <Box>
@@ -80,7 +87,7 @@ function ArtistsListWrapper({
     artists,
     ...props
 }: { artists: Array<Artist> } & BoxProps) {
-    const [filter, setFilter] = useState<string>("");
+    const [filter, setFilter] = useState<string>('');
 
     const filteredData = useMemo(() => {
         if (!filter) {
@@ -98,20 +105,20 @@ function ArtistsListWrapper({
         <Box {...props}>
             <Box
                 sx={{
-                    width: "100%",
+                    width: '100%',
                     marginBottom: -1,
                     padding: 2,
-                    height: "min-content",
-                    overflow: "hidden",
+                    height: 'min-content',
+                    overflow: 'hidden',
                 }}
             >
                 <Box
                     sx={{
-                        display: "flex",
+                        display: 'flex',
                         gap: 2,
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        flexWrap: "wrap",
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
                     }}
                 >
                     <Search
@@ -119,7 +126,7 @@ function ArtistsListWrapper({
                         setValue={setFilter}
                         size="small"
                         sx={{
-                            flex: "1 1 auto",
+                            flex: '1 1 auto',
                             maxWidth: 300,
                         }}
                     />
@@ -127,22 +134,24 @@ function ArtistsListWrapper({
                 <Typography
                     variant="caption"
                     color="text.secondary"
-                    visibility={nRemovedByFilter > 0 ? "visible" : "hidden"}
+                    visibility={nRemovedByFilter > 0 ? 'visible' : 'hidden'}
                 >
                     {nRemovedByFilter}
-                    {" artist"}
-                    {nRemovedByFilter > 1 && "s"} hidden by filter
+                    {' artist'}
+                    {nRemovedByFilter > 1 && 's'} hidden by filter
                 </Typography>
             </Box>
             <Box
                 sx={{
-                    overflow: "visible",
-                    flex: "1 1 auto",
+                    overflow: 'visible',
+                    flex: '1 1 auto',
                     paddingInline: 2,
                     minHeight: 0,
                 }}
             >
-                <ArtistsList data={{ artists: filteredData, total: artists.length }} />
+                <ArtistsList
+                    data={{ artists: filteredData, total: artists.length }}
+                />
             </Box>
         </Box>
     );
@@ -158,7 +167,7 @@ function ArtistsList({
     };
 } & Omit<
     ListProps<ArtistBrowserProps>,
-    "rowProps" | "rowCount" | "rowHeight" | "rowComponent"
+    'rowProps' | 'rowCount' | 'rowHeight' | 'rowComponent'
 >) {
     return (
         <List

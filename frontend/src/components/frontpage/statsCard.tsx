@@ -4,8 +4,8 @@ import {
     InboxIcon,
     LibraryIcon,
     TimerIcon,
-} from "lucide-react";
-import { ReactNode } from "react";
+} from 'lucide-react';
+import { ReactNode } from 'react';
 import {
     Avatar,
     Box,
@@ -15,17 +15,21 @@ import {
     CardContent,
     Divider,
     Typography,
-} from "@mui/material";
-import { Link } from "@tanstack/react-router";
+} from '@mui/material';
+import { Link } from '@tanstack/react-router';
 
-import { LibraryStats } from "@/api/library";
-import { FolderStatus, InboxStats } from "@/pythonTypes";
+import { LibraryStats } from '@/api/library';
+import { FolderStatus, InboxStats } from '@/pythonTypes';
 
-import { FolderStatusIcon, PenaltyTypeIcon } from "../common/icons";
-import { humanizeBytes } from "../common/units/bytes";
-import { humanizeDuration, relativeTime } from "../common/units/time";
+import { FolderStatusIcon, PenaltyTypeIcon } from '../common/icons';
+import { humanizeBytes } from '../common/units/bytes';
+import { humanizeDuration, relativeTime } from '../common/units/time';
 
-export function LibraryStatsCard({ libraryStats }: { libraryStats: LibraryStats }) {
+export function LibraryStatsCard({
+    libraryStats,
+}: {
+    libraryStats: LibraryStats;
+}) {
     return (
         <Card sx={{ padding: 2 }}>
             {/* Top bar with accent */}
@@ -33,9 +37,9 @@ export function LibraryStatsCard({ libraryStats }: { libraryStats: LibraryStats 
                 <Typography
                     sx={{
                         fontSize: 14,
-                        color: "grey.600",
-                        whiteSpace: "nowrap",
-                        letterSpacing: "1px",
+                        color: 'grey.600',
+                        whiteSpace: 'nowrap',
+                        letterSpacing: '1px',
                     }}
                 >
                     last import: {relativeTime(libraryStats.lastItemAdded)}
@@ -46,18 +50,21 @@ export function LibraryStatsCard({ libraryStats }: { libraryStats: LibraryStats 
                     paddingInline: 1,
                     paddingTop: 2,
                     m: 0,
-                    paddingBottom: "0 !important",
+                    paddingBottom: '0 !important',
                 }}
             >
-                <ContentHeader title="Library" subtitle={libraryStats.libraryPath} />
+                <ContentHeader
+                    title="Library"
+                    subtitle={libraryStats.libraryPath}
+                />
                 <Box
                     sx={{
-                        display: "flex",
+                        display: 'flex',
                         gap: 2,
                         paddingTop: 2.5,
-                        flexWrap: "wrap",
+                        flexWrap: 'wrap',
                         // color for boarders
-                        color: "primary.muted",
+                        color: 'primary.muted',
                     }}
                 >
                     <StatItem
@@ -94,14 +101,14 @@ export function LibraryStatsCard({ libraryStats }: { libraryStats: LibraryStats 
                 <Box
                     sx={(theme) => ({
                         paddingTop: 3,
-                        display: "flex",
+                        display: 'flex',
                         gap: 2,
                         fontWeight: 600,
-                        justifyContent: "flex-end",
-                        minWidth: "200px",
-                        [theme.breakpoints.down("tablet")]: {
-                            ">*": {
-                                width: "100%",
+                        justifyContent: 'flex-end',
+                        minWidth: '200px',
+                        [theme.breakpoints.down('tablet')]: {
+                            '>*': {
+                                width: '100%',
                             },
                         },
                     })}
@@ -136,9 +143,9 @@ export function InboxStatsCard({ inboxStats }: { inboxStats: InboxStats }) {
                 <Typography
                     sx={{
                         fontSize: 14,
-                        color: "grey.600",
-                        whiteSpace: "nowrap",
-                        letterSpacing: "1px",
+                        color: 'grey.600',
+                        whiteSpace: 'nowrap',
+                        letterSpacing: '1px',
                     }}
                 >
                     last action: {relativeTime(inboxStats.last_created)}
@@ -149,17 +156,20 @@ export function InboxStatsCard({ inboxStats }: { inboxStats: InboxStats }) {
                     paddingInline: 1,
                     paddingTop: 2,
                     m: 0,
-                    paddingBottom: "0 !important",
+                    paddingBottom: '0 !important',
                 }}
             >
-                <ContentHeader title={inboxStats.name} subtitle={inboxStats.path} />
+                <ContentHeader
+                    title={inboxStats.name}
+                    subtitle={inboxStats.path}
+                />
                 <Box
                     sx={{
-                        display: "flex",
+                        display: 'flex',
                         gap: 2,
                         paddingTop: 2.5,
-                        flexWrap: "wrap",
-                        color: "secondary.muted",
+                        flexWrap: 'wrap',
+                        color: 'secondary.muted',
                     }}
                 >
                     <StatItem
@@ -174,25 +184,29 @@ export function InboxStatsCard({ inboxStats }: { inboxStats: InboxStats }) {
                     />
                     <StatItem
                         title="Tagged"
-                        icon={<FolderStatusIcon status={FolderStatus.PREVIEWED} />}
+                        icon={
+                            <FolderStatusIcon status={FolderStatus.PREVIEWED} />
+                        }
                         value={inboxStats.tagged_via_gui}
                     />
                     <StatItem
                         title="Imported"
-                        icon={<FolderStatusIcon status={FolderStatus.IMPORTED} />}
+                        icon={
+                            <FolderStatusIcon status={FolderStatus.IMPORTED} />
+                        }
                         value={inboxStats.imported_via_gui}
                     />
                 </Box>
                 <Box
                     sx={(theme) => ({
                         paddingTop: 3,
-                        display: "flex",
+                        display: 'flex',
                         gap: 2,
                         fontWeight: 600,
-                        justifyContent: "flex-end",
-                        [theme.breakpoints.down("tablet")]: {
-                            ">*": {
-                                width: "100%",
+                        justifyContent: 'flex-end',
+                        [theme.breakpoints.down('tablet')]: {
+                            '>*': {
+                                width: '100%',
                             },
                         },
                     })}
@@ -225,11 +239,11 @@ export function InboxStatsCard({ inboxStats }: { inboxStats: InboxStats }) {
 export function CardHeader({
     icon,
     children,
-    color = "primary.main",
+    color = 'primary.main',
     reverse = false,
     sx,
-    dividerPos = "50%",
-    size = "medium",
+    dividerPos = '50%',
+    size = 'medium',
     ...props
 }: {
     icon: ReactNode;
@@ -237,12 +251,12 @@ export function CardHeader({
     color?: string;
     reverse?: boolean;
     dividerPos?: string;
-    size?: "small" | "medium" | "large";
+    size?: 'small' | 'medium' | 'large';
 } & BoxProps) {
     let wh = 40;
-    if (size === "small") {
+    if (size === 'small') {
         wh = 32;
-    } else if (size === "large") {
+    } else if (size === 'large') {
         wh = 52;
     }
 
@@ -250,7 +264,7 @@ export function CardHeader({
         <Box
             sx={[
                 {
-                    position: "relative",
+                    position: 'relative',
                     flexGrow: 1,
                 },
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -260,9 +274,9 @@ export function CardHeader({
         >
             <Divider
                 sx={{
-                    position: "absolute",
+                    position: 'absolute',
                     top: `calc(${dividerPos} -  1px)`,
-                    width: "100%",
+                    width: '100%',
                     backgroundColor: color,
                     borderBottomWidth: 2,
                 }}
@@ -271,11 +285,11 @@ export function CardHeader({
                 sx={{
                     paddingLeft: reverse ? 1 : 4,
                     paddingRight: reverse ? 4 : 1,
-                    display: "flex",
-                    alignItems: "flex-end",
-                    justifyContent: "space-between",
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    justifyContent: 'space-between',
                     zIndex: 1,
-                    flexDirection: reverse ? "row-reverse" : "row",
+                    flexDirection: reverse ? 'row-reverse' : 'row',
                 }}
             >
                 <Avatar
@@ -284,7 +298,7 @@ export function CardHeader({
                         width: wh,
                         height: wh,
                         backgroundColor: color,
-                        "& > img": {
+                        '& > img': {
                             margin: 0,
                         },
                     }}
@@ -297,7 +311,13 @@ export function CardHeader({
     );
 }
 
-function ContentHeader({ title, subtitle }: { title: string; subtitle: string }) {
+function ContentHeader({
+    title,
+    subtitle,
+}: {
+    title: string;
+    subtitle: string;
+}) {
     return (
         <>
             <Typography
@@ -335,7 +355,7 @@ function StatItem({
                 border: `2px solid`,
                 borderRadius: 1,
                 padding: 0.5,
-                minWidth: "100px",
+                minWidth: '100px',
             }}
         >
             <Typography
@@ -343,19 +363,19 @@ function StatItem({
                 sx={{
                     fontSize: 16,
                     fontWeight: 600,
-                    letterSpacing: "0.5px",
-                    display: "flex",
-                    alignItems: "center",
+                    letterSpacing: '0.5px',
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: 0.5,
-                    color: "grey.800",
+                    color: 'grey.800',
                 }}
             >
                 <Box
                     sx={(theme) => ({
                         width: theme.iconSize.sm,
                         height: theme.iconSize.sm,
-                        display: "flex",
-                        alignItems: "center",
+                        display: 'flex',
+                        alignItems: 'center',
                     })}
                 >
                     {icon}
@@ -366,7 +386,7 @@ function StatItem({
                 variant="h6"
                 fontWeight={600}
                 fontFamily="monospace"
-                sx={{ paddingLeft: 1, textAlign: "right", width: "100%" }}
+                sx={{ paddingLeft: 1, textAlign: 'right', width: '100%' }}
             >
                 {value}
             </Typography>

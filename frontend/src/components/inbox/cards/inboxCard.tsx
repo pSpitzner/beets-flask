@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useMemo } from 'react';
 import {
     Box,
     Card,
@@ -6,24 +6,27 @@ import {
     CardContent,
     Tooltip,
     Typography,
-} from "@mui/material";
-import { useQueries } from "@tanstack/react-query";
+} from '@mui/material';
+import { useQueries } from '@tanstack/react-query';
 
-import { useInboxFolderConfig, useInboxFolderFrontendConfig } from "@/api/config";
-import { walkFolder } from "@/api/inbox";
-import { sessionQueryOptions } from "@/api/session";
-import { InboxTypeIcon } from "@/components/common/icons";
-import { CardHeader } from "@/components/frontpage/statsCard";
+import {
+    useInboxFolderConfig,
+    useInboxFolderFrontendConfig,
+} from '@/api/config';
+import { walkFolder } from '@/api/inbox';
+import { sessionQueryOptions } from '@/api/session';
+import { InboxTypeIcon } from '@/components/common/icons';
+import { CardHeader } from '@/components/frontpage/statsCard';
 import {
     ArchiveComponent,
     FileComponent,
     FolderComponent,
     GridWrapper,
     InboxGridHeader,
-} from "@/components/inbox/fileTree";
-import { Archive, Folder, Progress } from "@/pythonTypes";
+} from '@/components/inbox/fileTree';
+import { Archive, Folder, Progress } from '@/pythonTypes';
 
-import { InboxActions } from "../actions/buttons";
+import { InboxActions } from '../actions/buttons';
 
 /** Context for easier use of inbox card related variables child
  * components.
@@ -36,8 +39,10 @@ export interface InboxCardContext {
     folderConfig: ReturnType<typeof useInboxFolderConfig>;
     gridTemplateColumns: ReturnType<
         typeof useInboxFolderFrontendConfig
-    >["gridTemplateColumns"];
-    actionButtons: ReturnType<typeof useInboxFolderFrontendConfig>["actionButtons"];
+    >['gridTemplateColumns'];
+    actionButtons: ReturnType<
+        typeof useInboxFolderFrontendConfig
+    >['actionButtons'];
 }
 
 const InboxCardContext = createContext<InboxCardContext | null>(null);
@@ -45,7 +50,9 @@ const InboxCardContext = createContext<InboxCardContext | null>(null);
 export const useInboxCardContext = () => {
     const context = useContext(InboxCardContext);
     if (!context) {
-        throw new Error("useInboxCardContext must be used within an InboxCardProvider");
+        throw new Error(
+            'useInboxCardContext must be used within an InboxCardProvider'
+        );
     }
     return context;
 };
@@ -57,7 +64,7 @@ function useImportedFolders(folder: Folder) {
     const folders = useMemo(() => {
         const fs = [];
         for (const f of walkFolder(folder)) {
-            if (f.type === "file") continue; // skip files
+            if (f.type === 'file') continue; // skip files
             if (f.full_path === folder.full_path) continue; // skip the root folder
             fs.push(f);
         }
@@ -114,10 +121,10 @@ export function InboxCard({ folder }: { folder: Folder }) {
         <InboxCardProvider folder={folder}>
             <Card
                 sx={(theme) => ({
-                    width: "100%",
+                    width: '100%',
                     padding: 2,
                     // Content (file tree)
-                    ".MuiCardContent-root": {
+                    '.MuiCardContent-root': {
                         margin: 0,
                         marginTop: 1,
                         paddingInline: 1,
@@ -125,20 +132,20 @@ export function InboxCard({ folder }: { folder: Folder }) {
                     },
 
                     // Actions (buttons)
-                    ".MuiCardActions-root": {
-                        display: "flex",
-                        flexDirection: "column",
+                    '.MuiCardActions-root': {
+                        display: 'flex',
+                        flexDirection: 'column',
                         gap: 1,
                     },
 
                     // Remove some padding on very small screens
-                    [theme.breakpoints.down("tablet")]: {
+                    [theme.breakpoints.down('tablet')]: {
                         padding: 1,
                         paddingInline: 0,
-                        ".MuiCardContent-root": {
+                        '.MuiCardContent-root': {
                             paddingInline: 0.5,
                         },
-                        ".MuiCardActions-root": {},
+                        '.MuiCardActions-root': {},
                     },
                 })}
             >
@@ -157,20 +164,20 @@ function InboxCardHeader() {
 
     let tooltip: string;
     switch (folderConfig.autotag) {
-        case "auto":
+        case 'auto':
             tooltip =
-                "Automatic tagging and import enabled. " +
+                'Automatic tagging and import enabled. ' +
                 (1 - threshold) * 100 +
-                "% threshold.";
+                '% threshold.';
             break;
-        case "preview":
-            tooltip = "Automatic tagging enabled, but no import.";
+        case 'preview':
+            tooltip = 'Automatic tagging enabled, but no import.';
             break;
-        case "bootleg":
-            tooltip = "Import as-is, and split albums by meta-data.";
+        case 'bootleg':
+            tooltip = 'Import as-is, and split albums by meta-data.';
             break;
         default:
-            tooltip = "No automatic tagging or import enabled.";
+            tooltip = 'No automatic tagging or import enabled.';
             break;
     }
 
@@ -179,7 +186,10 @@ function InboxCardHeader() {
             key={folder.full_path}
             icon={
                 <Tooltip title={tooltip}>
-                    <InboxTypeIcon size={24} type={folderConfig.autotag || undefined} />
+                    <InboxTypeIcon
+                        size={24}
+                        type={folderConfig.autotag || undefined}
+                    />
                 </Tooltip>
             }
             dividerPos="70%"
@@ -187,11 +197,11 @@ function InboxCardHeader() {
         >
             <Box
                 sx={{
-                    display: "flex",
-                    alignItems: "flex-end",
-                    width: "100%",
-                    justifyContent: "space-between",
-                    position: "relative",
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    width: '100%',
+                    justifyContent: 'space-between',
+                    position: 'relative',
                     paddingBottom: 2.5,
                     paddingLeft: 1,
                 }}
@@ -199,18 +209,18 @@ function InboxCardHeader() {
                 {/* file path */}
                 <Box
                     sx={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        flexDirection: "row",
-                        alignItems: "flex-end",
-                        width: "100%",
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        flexDirection: 'row',
+                        alignItems: 'flex-end',
+                        width: '100%',
 
                         columnGap: 0.5,
                         rowGap: 0.1,
                     }}
                 >
                     {folderConfig.path
-                        .split("/")
+                        .split('/')
                         .filter(Boolean)
                         .map((segment, idx, arr) => (
                             <Typography
@@ -218,11 +228,11 @@ function InboxCardHeader() {
                                 key={idx}
                                 component="span"
                                 sx={{
-                                    display: "inline-flex",
-                                    whiteSpace: "nowrap",
+                                    display: 'inline-flex',
+                                    whiteSpace: 'nowrap',
                                 }}
                             >
-                                {`/ ${segment}${idx === arr.length - 1 && folderConfig.path.endsWith("/") ? " /" : ""}`}
+                                {`/ ${segment}${idx === arr.length - 1 && folderConfig.path.endsWith('/') ? ' /' : ''}`}
                             </Typography>
                         ))}
                 </Box>
@@ -231,7 +241,7 @@ function InboxCardHeader() {
                 <Typography
                     variant="body1"
                     sx={{
-                        fontWeight: "bold",
+                        fontWeight: 'bold',
                         flexShrink: 0,
                         m: 0,
                         p: 0,
@@ -245,7 +255,11 @@ function InboxCardHeader() {
 }
 
 function InboxCardContent() {
-    const { folder: inbox, folderConfig, gridTemplateColumns } = useInboxCardContext();
+    const {
+        folder: inbox,
+        folderConfig,
+        gridTemplateColumns,
+    } = useInboxCardContext();
 
     return (
         <CardContent>
@@ -253,7 +267,7 @@ function InboxCardContent() {
                 {/* Only show inner folders */}
                 <InboxGridHeader inboxFolderConfig={folderConfig} />
                 {inbox.children.map((child) => {
-                    if (child.type === "directory") {
+                    if (child.type === 'directory') {
                         return (
                             <FolderComponent
                                 key={child.hash}
@@ -261,15 +275,22 @@ function InboxCardContent() {
                             />
                         );
                     }
-                    if (child.type === "archive") {
-                        return <ArchiveComponent key={child.hash} archive={child} />;
+                    if (child.type === 'archive') {
+                        return (
+                            <ArchiveComponent
+                                key={child.hash}
+                                archive={child}
+                            />
+                        );
                     }
                 })}
 
                 {/* files at bottom */}
                 {inbox.children.map((child) => {
-                    if (child.type === "file") {
-                        return <FileComponent key={child.full_path} file={child} />;
+                    if (child.type === 'file') {
+                        return (
+                            <FileComponent key={child.full_path} file={child} />
+                        );
                     }
                 })}
 
@@ -277,9 +298,9 @@ function InboxCardContent() {
                 {inbox.children.length === 0 && (
                     <Box
                         sx={{
-                            gridColumn: "1 / -1",
-                            textAlign: "center",
-                            color: "secondary.muted",
+                            gridColumn: '1 / -1',
+                            textAlign: 'center',
+                            color: 'secondary.muted',
                         }}
                     >
                         No folders in this inbox.

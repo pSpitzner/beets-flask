@@ -4,15 +4,15 @@
  * /api_v1/inbox
  */
 
-import { UseMutationOptions } from "@tanstack/react-query";
+import { UseMutationOptions } from '@tanstack/react-query';
 
-import type { FileSystemItem, Folder, InboxStats } from "@/pythonTypes";
+import type { FileSystemItem, Folder, InboxStats } from '@/pythonTypes';
 
-import { APIError, queryClient } from "./common";
+import { APIError, queryClient } from './common';
 
 // Tree of inbox folders
 export const inboxQueryOptions = () => ({
-    queryKey: ["inbox"],
+    queryKey: ['inbox'],
     queryFn: async () => {
         const response = await fetch(`/inbox/tree`);
         return (await response.json()) as Folder[];
@@ -22,9 +22,9 @@ export const inboxQueryOptions = () => ({
 /** Reset cache of the tree
  * needed for manual refresh.
  */
-queryClient.setMutationDefaults(["refreshInboxTree"], {
+queryClient.setMutationDefaults(['refreshInboxTree'], {
     mutationFn: async () => {
-        await fetch(`/inbox/tree/refresh`, { method: "POST" });
+        await fetch(`/inbox/tree/refresh`, { method: 'POST' });
     },
     onSuccess: async () => {
         // Invalidate the query after the cache has been reset
@@ -32,7 +32,9 @@ queryClient.setMutationDefaults(["refreshInboxTree"], {
 
         // At least 0.5 second delay for loading indicator
         const ps = [
-            queryClient.cancelQueries(q).then(() => queryClient.invalidateQueries(q)),
+            queryClient
+                .cancelQueries(q)
+                .then(() => queryClient.invalidateQueries(q)),
             new Promise((resolve) => setTimeout(resolve, 500)),
         ];
         await Promise.all(ps);
@@ -42,7 +44,7 @@ queryClient.setMutationDefaults(["refreshInboxTree"], {
 // A specific folder
 export const inboxFolderQueryOptions = (path: string, hash?: string) => ({
     queryKey: [
-        "inbox",
+        'inbox',
         {
             path,
             hash,
@@ -50,9 +52,9 @@ export const inboxFolderQueryOptions = (path: string, hash?: string) => ({
     ],
     queryFn: async () => {
         const response = await fetch(`/inbox/folder`, {
-            method: "POST",
+            method: 'POST',
             headers: {
-                "Content-Type": "application/json",
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify({
                 folder_paths: [path],
@@ -65,7 +67,7 @@ export const inboxFolderQueryOptions = (path: string, hash?: string) => ({
 
 // Some stats about the inbox(es)
 export const inboxStatsQueryOptions = () => ({
-    queryKey: ["inbox", "stats"],
+    queryKey: ['inbox', 'stats'],
     queryFn: async () => {
         const response = await fetch(`/inbox/stats`);
         const dat = (await response.json()) as InboxStats[];
@@ -92,9 +94,9 @@ export const deleteFoldersMutationOptions: UseMutationOptions<
 > = {
     mutationFn: async ({ folderPaths, folderHashes }) => {
         return await fetch(`/inbox/delete`, {
-            method: "DELETE",
+            method: 'DELETE',
             headers: {
-                "Content-Type": "application/json",
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify({
                 folder_paths: folderPaths,
@@ -106,11 +108,11 @@ export const deleteFoldersMutationOptions: UseMutationOptions<
     // Optimistic update
     onMutate: async ({ folderPaths, folderHashes }) => {
         // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
-        await queryClient.cancelQueries({ queryKey: ["inbox"] });
+        await queryClient.cancelQueries({ queryKey: ['inbox'] });
         // Snapshot the previous value
-        const previousInbox = queryClient.getQueryData<Folder[]>(["inbox"]);
+        const previousInbox = queryClient.getQueryData<Folder[]>(['inbox']);
         // Optimistically update to the new value
-        queryClient.setQueryData<Folder[]>(["inbox"], (old) => {
+        queryClient.setQueryData<Folder[]>(['inbox'], (old) => {
             if (!old) return old;
             // needs structured clone to trigger the rerender and avoid setstate issues
             const new_folders = structuredClone(old);
@@ -122,12 +124,12 @@ export const deleteFoldersMutationOptions: UseMutationOptions<
     },
     onError: (_err, _variables, context) => {
         // If the mutation fails, use the context returned from onMutate
-        queryClient.setQueryData(["inbox"], context?.previousInbox);
+        queryClient.setQueryData(['inbox'], context?.previousInbox);
     },
 
     // If the mutation is successful, invalidate the query, this should trigger a refetch
     onSettled: async () => {
-        await queryClient.invalidateQueries({ queryKey: ["inbox"] });
+        await queryClient.invalidateQueries({ queryKey: ['inbox'] });
     },
 };
 
@@ -145,12 +147,12 @@ function deleteFromFolder(
     for (let i = 0; i < folders.length; i++) {
         const f = folders[i];
         if (
-            f.type === "directory" &&
+            f.type === 'directory' &&
             (hashes.includes(f.hash) || paths.includes(f.full_path))
         ) {
             folders.splice(i, 1);
             i--;
-        } else if (f.type === "directory") {
+        } else if (f.type === 'directory') {
             deleteFromFolder(hashes, paths, (f as Folder).children);
         }
     }
@@ -159,7 +161,7 @@ function deleteFromFolder(
 export function* walkFolder(folder: Folder): Generator<FileSystemItem> {
     yield folder;
     for (const child of folder.children) {
-        if (child.type === "directory") {
+        if (child.type === 'directory') {
             yield* walkFolder(child as Folder);
         } else {
             yield child;

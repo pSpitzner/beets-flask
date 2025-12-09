@@ -1,21 +1,21 @@
-import { FileWarningIcon } from "lucide-react";
-import { useState } from "react";
-import { Button } from "@mui/material";
-import Box, { BoxProps } from "@mui/material/Box";
-import Skeleton from "@mui/material/Skeleton";
-import { SxProps } from "@mui/material/styles";
-import { useQuery } from "@tanstack/react-query";
+import { FileWarningIcon } from 'lucide-react';
+import { useState } from 'react';
+import { Button } from '@mui/material';
+import Box, { BoxProps } from '@mui/material/Box';
+import Skeleton from '@mui/material/Skeleton';
+import { SxProps } from '@mui/material/styles';
+import { useQuery } from '@tanstack/react-query';
 
-import { HTTPError } from "@/api/common";
+import { HTTPError } from '@/api/common';
 import {
     artQueryOptions,
     ArtSize,
     externalArtQueryOptions,
     fileArtQueryOptions,
     numArtQueryOptions,
-} from "@/api/library";
+} from '@/api/library';
 
-import missingCoverImage from "@/assets/missing_cover.webp";
+import missingCoverImage from '@/assets/missing_cover.webp';
 
 export interface CoverArtProps extends BoxProps {
     size?: ArtSize;
@@ -30,12 +30,14 @@ export interface CoverArtProps extends BoxProps {
 export function CoverArt({
     type,
     beetsId,
-    size = "medium",
+    size = 'medium',
     sx,
     index,
     ...props
-}: CoverArtProps & { type: "item" | "album"; beetsId: number }) {
-    const query = useQuery(artQueryOptions({ type, id: beetsId, size, index: index }));
+}: CoverArtProps & { type: 'item' | 'album'; beetsId: number }) {
+    const query = useQuery(
+        artQueryOptions({ type, id: beetsId, size, index: index })
+    );
     return <CoverArtFromQuery query={query} size={size} sx={sx} {...props} />;
 }
 
@@ -45,7 +47,7 @@ export function CoverArt({
  */
 export function FileCoverArt({
     path,
-    size = "medium",
+    size = 'medium',
     sx,
     index,
     ...props
@@ -74,7 +76,7 @@ export function MultiCoverArt({
     size,
     coverArtSx,
     ...props
-}: CoverArtProps & { beetsId: number; coverArtSx?: BoxProps["sx"] }) {
+}: CoverArtProps & { beetsId: number; coverArtSx?: BoxProps['sx'] }) {
     const [currentIdx, setCurrentIdx] = useState(0);
 
     const { data: numArtworks } = useQuery(numArtQueryOptions(beetsId));
@@ -85,7 +87,7 @@ export function MultiCoverArt({
                 <Button
                     variant="text"
                     sx={{
-                        position: "absolute",
+                        position: 'absolute',
                         top: 0,
                         right: 0,
                         m: 0,
@@ -98,21 +100,23 @@ export function MultiCoverArt({
                 >
                     {
                         //Dot for each artwork
-                        Array.from({ length: numArtworks.count }).map((_, idx) => (
-                            <Box
-                                key={idx}
-                                sx={{
-                                    width: 8,
-                                    height: 8,
-                                    borderRadius: "50%",
-                                    backgroundColor:
-                                        currentIdx === idx
-                                            ? "primary.main"
-                                            : "text.secondary",
-                                    marginLeft: 0.5,
-                                }}
-                            />
-                        ))
+                        Array.from({ length: numArtworks.count }).map(
+                            (_, idx) => (
+                                <Box
+                                    key={idx}
+                                    sx={{
+                                        width: 8,
+                                        height: 8,
+                                        borderRadius: '50%',
+                                        backgroundColor:
+                                            currentIdx === idx
+                                                ? 'primary.main'
+                                                : 'text.secondary',
+                                        marginLeft: 0.5,
+                                    }}
+                                />
+                            )
+                        )
                     }
                 </Button>
             )}
@@ -123,14 +127,14 @@ export function MultiCoverArt({
                 index={currentIdx}
                 sx={[
                     {
-                        maxWidth: "100%",
-                        maxHeight: "100%",
-                        width: "auto",
-                        height: "100%",
-                        aspectRatio: "1 / 1",
+                        maxWidth: '100%',
+                        maxHeight: '100%',
+                        width: 'auto',
+                        height: '100%',
+                        aspectRatio: '1 / 1',
                         m: 0,
                         borderRadius: 2,
-                        objectFit: "contain",
+                        objectFit: 'contain',
                     },
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                     ...(Array.isArray(coverArtSx) ? coverArtSx : [coverArtSx]),
@@ -144,7 +148,7 @@ export function MultiCoverArt({
 
 function CoverArtFromQuery({
     query,
-    size = "medium",
+    size = 'medium',
     sx,
     showPlaceholder = true,
     ...props
@@ -157,8 +161,8 @@ function CoverArtFromQuery({
         {
             height: 100,
             width: 100,
-            aspectRatio: "1 / 1",
-            overflow: "hidden",
+            aspectRatio: '1 / 1',
+            overflow: 'hidden',
         },
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         ...(Array.isArray(sx) ? sx : [sx]),
@@ -179,7 +183,14 @@ function CoverArtFromQuery({
 
     if (isError) {
         if (error instanceof HTTPError) {
-            return <CoverArtError sx={coverSx} error={error} size={size} {...props} />;
+            return (
+                <CoverArtError
+                    sx={coverSx}
+                    error={error}
+                    size={size}
+                    {...props}
+                />
+            );
         } else {
             throw error;
         }
@@ -204,7 +215,7 @@ function CoverArtPlaceholder({
     showPlaceholder = true,
     ...props
 }: {
-    animation: false | "pulse" | "wave" | undefined;
+    animation: false | 'pulse' | 'wave' | undefined;
     showPlaceholder?: boolean;
 } & Partial<BoxProps>) {
     return (
@@ -215,14 +226,17 @@ function CoverArtPlaceholder({
                 height="100%"
                 width="100%"
                 sx={{
-                    display: showPlaceholder ? "block" : "none",
+                    display: showPlaceholder ? 'block' : 'none',
                 }}
             />
         </Box>
     );
 }
 
-function CoverArtContent({ src, ...props }: { src: string } & Partial<BoxProps>) {
+function CoverArtContent({
+    src,
+    ...props
+}: { src: string } & Partial<BoxProps>) {
     return <Box component="img" src={src} {...props} />;
 }
 
@@ -231,7 +245,7 @@ function CoverArtError({
     size,
     ...props
 }: { error: HTTPError; size: ArtSize } & Partial<BoxProps>) {
-    console.warn("CoverArtError", error);
+    console.warn('CoverArtError', error);
 
     if (error.statusCode === 404) {
         return (
@@ -243,7 +257,7 @@ function CoverArtError({
                             ? theme.vars.palette.Skeleton.bg
                             : theme.alpha(
                                   theme.palette.text.primary,
-                                  theme.palette.mode === "light" ? 0.11 : 0.13
+                                  theme.palette.mode === 'light' ? 0.11 : 0.13
                               ),
                     }),
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -254,8 +268,8 @@ function CoverArtError({
                     component="img"
                     src={missingCoverImage}
                     sx={{
-                        width: "100%",
-                        height: "100%",
+                        width: '100%',
+                        height: '100%',
                         opacity: 0.5,
                         padding: 1,
                     }}
@@ -268,27 +282,27 @@ function CoverArtError({
         <Box {...props}>
             <Box
                 sx={{
-                    width: "100%",
-                    height: "100%",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    fontSize: "2rem",
-                    border: "1px solid",
-                    color: "error.main",
-                    flexDirection: "column",
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    fontSize: '2rem',
+                    border: '1px solid',
+                    color: 'error.main',
+                    flexDirection: 'column',
                     gap: 1,
                     p: 0.5,
                 }}
             >
                 <FileWarningIcon size={50} strokeWidth={2} />
-                {size === "large" && (
+                {size === 'large' && (
                     <Box
                         sx={{
-                            width: "100%",
-                            alignItems: "center",
-                            fontSize: "0.8rem",
-                            color: "error.main",
+                            width: '100%',
+                            alignItems: 'center',
+                            fontSize: '0.8rem',
+                            color: 'error.main',
                             p: 1,
                         }}
                     >

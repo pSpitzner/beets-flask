@@ -1,12 +1,12 @@
-import { RowComponentProps } from "react-window";
-import { Box, Typography, useTheme } from "@mui/material";
-import { Link } from "@tanstack/react-router";
+import { RowComponentProps } from 'react-window';
+import { Box, Typography, useTheme } from '@mui/material';
+import { Link } from '@tanstack/react-router';
 
-import { Artist } from "@/api/library";
+import { Artist } from '@/api/library';
 
-import { LoadingRow } from "./loading";
+import { LoadingRow } from './loading';
 
-import { ArtistIcon } from "../icons";
+import { ArtistIcon } from '../icons';
 
 export interface ArtistBrowserProps {
     artists: Array<Artist>;
@@ -31,25 +31,25 @@ export function ArtistListRow({
         >
             <Box
                 sx={(theme) => ({
-                    height: "35px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
+                    height: '35px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                     padding: 1,
                     gap: 2,
-                    ":hover": {
+                    ':hover': {
                         background: `linear-gradient(to left, transparent 0%, ${theme.palette.primary.muted} 100%)`,
-                        color: "primary.contrastText",
+                        color: 'primary.contrastText',
                     },
                 })}
             >
                 <Typography variant="body1">
-                    {artist.artist || "Unknown Artist"}
+                    {artist.artist || 'Unknown Artist'}
                 </Typography>
                 <ArtistIcon
                     color={theme.palette.background.paper}
                     style={{
-                        marginRight: "2rem",
+                        marginRight: '2rem',
                     }}
                 />
             </Box>

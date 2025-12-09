@@ -1,12 +1,12 @@
-import { RowComponentProps } from "react-window";
-import { Box, Typography, useTheme } from "@mui/material";
-import { Link } from "@tanstack/react-router";
+import { RowComponentProps } from 'react-window';
+import { Box, Typography, useTheme } from '@mui/material';
+import { Link } from '@tanstack/react-router';
 
-import { ItemResponseMinimal } from "@/pythonTypes";
+import { ItemResponseMinimal } from '@/pythonTypes';
 
-import { LoadingRow } from "./loading";
+import { LoadingRow } from './loading';
 
-import { TrackIcon } from "../icons";
+import { TrackIcon } from '../icons';
 
 export interface ItemListRowProps {
     items: Array<ItemResponseMinimal>;
@@ -38,45 +38,49 @@ export function ItemListRow({
             <Box
                 sx={(theme) => ({
                     height: style.height,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                     paddingInline: 1,
-                    ":hover": {
+                    ':hover': {
                         background: `linear-gradient(to left, transparent 0%, ${theme.palette.primary.muted} 100%)`,
-                        color: "primary.contrastText",
+                        color: 'primary.contrastText',
                     },
                 })}
             >
                 <Box
                     sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        mr: "auto",
+                        display: 'flex',
+                        flexDirection: 'column',
+                        mr: 'auto',
                     }}
                 >
-                    <Typography variant="body1" fontWeight="bold" color="text.primary">
-                        {item.name || "Unknown Title"}
+                    <Typography
+                        variant="body1"
+                        fontWeight="bold"
+                        color="text.primary"
+                    >
+                        {item.name || 'Unknown Title'}
                     </Typography>
                     <Box
                         sx={{
-                            display: "flex",
-                            flexDirection: "row",
-                            color: "text.secondary",
-                            alignItems: "center",
+                            display: 'flex',
+                            flexDirection: 'row',
+                            color: 'text.secondary',
+                            alignItems: 'center',
                         }}
                     >
                         {showArtist && (
                             <Typography variant="body2">
-                                {item.artist || "Unknown Artist"}
+                                {item.artist || 'Unknown Artist'}
                             </Typography>
                         )}
                         {showAlbum && showArtist && (
-                            <span style={{ margin: "0 4px" }}>•</span>
+                            <span style={{ margin: '0 4px' }}>•</span>
                         )}
                         {showAlbum && (
                             <Typography variant="body2">
-                                {item.album || "Unknown Album"}
+                                {item.album || 'Unknown Album'}
                             </Typography>
                         )}
                     </Box>

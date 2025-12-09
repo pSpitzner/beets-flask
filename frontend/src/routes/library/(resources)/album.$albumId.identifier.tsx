@@ -1,13 +1,15 @@
-import { ImportIcon } from "lucide-react";
-import { Box, Typography } from "@mui/material";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { ImportIcon } from 'lucide-react';
+import { Box, Typography } from '@mui/material';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
 
-import { albumQueryOptions } from "@/api/library";
-import { Link } from "@/components/common/link";
-import { Identifiers } from "@/components/library/identifier";
+import { albumQueryOptions } from '@/api/library';
+import { Link } from '@/components/common/link';
+import { Identifiers } from '@/components/library/identifier';
 
-export const Route = createFileRoute("/library/(resources)/album/$albumId/identifier")({
+export const Route = createFileRoute(
+    '/library/(resources)/album/$albumId/identifier'
+)({
     component: RouteComponent,
 });
 
@@ -29,21 +31,21 @@ function RouteComponent() {
                         <Box>
                             <Box
                                 sx={{
-                                    display: "flex",
-                                    flexDirection: "row",
+                                    display: 'flex',
+                                    flexDirection: 'row',
                                     gap: 1,
-                                    alignItems: "center",
-                                    fontWeight: "bold",
+                                    alignItems: 'center',
+                                    fontWeight: 'bold',
                                 }}
                             >
                                 <ImportIcon size={20} /> BeetsFlask
                             </Box>
                             <Box
                                 sx={{
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    position: "relative",
-                                    alignItems: "flex-start",
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    position: 'relative',
+                                    alignItems: 'flex-start',
                                     paddingLeft: 1,
                                 }}
                             >

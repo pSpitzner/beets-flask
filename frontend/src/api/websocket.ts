@@ -1,6 +1,10 @@
-import { FileSystemUpdate, FolderStatusUpdate, JobStatusUpdate } from "@/pythonTypes";
+import {
+    FileSystemUpdate,
+    FolderStatusUpdate,
+    JobStatusUpdate,
+} from '@/pythonTypes';
 
-import type { Socket } from "socket.io-client";
+import type { Socket } from 'socket.io-client';
 
 interface Status_ServerToClientEvents {
     // This types our socket events, i.e. we can only use

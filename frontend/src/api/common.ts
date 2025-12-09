@@ -1,6 +1,6 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient } from '@tanstack/react-query';
 
-import { SerializedException } from "@/pythonTypes";
+import { SerializedException } from '@/pythonTypes';
 
 // Global query client instance
 export const queryClient = new QueryClient({});
@@ -8,7 +8,7 @@ export const queryClient = new QueryClient({});
 // thin wrapper around fetch so that we can use the vite dev server with our backend
 export function customizeFetch() {
     const originalFetch = window.fetch;
-    const apiPrefix = "/api_v1";
+    const apiPrefix = '/api_v1';
 
     window.fetch = async (
         input: RequestInfo | URL,
@@ -16,12 +16,12 @@ export function customizeFetch() {
     ): Promise<Response> => {
         if (input instanceof URL) {
             input = input.pathname;
-        } else if (!(typeof input === "string")) {
+        } else if (!(typeof input === 'string')) {
             input = input.url;
         }
 
         // Local requests get a prefix
-        if (!input.startsWith("/")) {
+        if (!input.startsWith('/')) {
             return originalFetch(input, init);
         }
 
@@ -41,23 +41,23 @@ export function customizeFetch() {
                         );
                 });
             const statusCode = response.status;
-            if (typeof data === "string") {
+            if (typeof data === 'string') {
                 throw new HTTPError(data, statusCode);
             } else {
                 throw new APIError(data, statusCode);
             }
         }
 
-        if (response.headers.get("Content-Type") == "application/json") {
+        if (response.headers.get('Content-Type') == 'application/json') {
             try {
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                 const data = await response.json();
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/require-await
                 response.json = async () => data;
             } catch (e) {
-                console.error("Failed to parse response as JSON in fetch()", e);
+                console.error('Failed to parse response as JSON in fetch()', e);
                 throw new HTTPError(
-                    "Failed to parse response as JSON",
+                    'Failed to parse response as JSON',
                     response.status
                 );
             }
@@ -79,7 +79,7 @@ export class HTTPError extends BeetsFlaskError {
 
     constructor(message: string, statusCode?: number) {
         super(message);
-        this.name = "HTTPError";
+        this.name = 'HTTPError';
         this.statusCode = statusCode;
     }
 }
@@ -99,7 +99,7 @@ export class APIError extends HTTPError {
 }
 
 /* ------------ Override DefaultError type ------------ */
-declare module "@tanstack/react-query" {
+declare module '@tanstack/react-query' {
     interface Register {
         defaultError: BeetsFlaskError;
     }

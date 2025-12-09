@@ -1,5 +1,5 @@
-import { Maximize2, Minimize2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Maximize2, Minimize2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import {
     Box,
     IconButton,
@@ -12,11 +12,11 @@ import {
     TableRow,
     Typography,
     useTheme,
-} from "@mui/material";
+} from '@mui/material';
 
-import { Search } from "./inputs/search";
+import { Search } from './inputs/search';
 
-import { FullScreenOntop } from "../library/audio/player";
+import { FullScreenOntop } from '../library/audio/player';
 
 export type Serializable = string | number | boolean | null | undefined;
 
@@ -36,12 +36,13 @@ export function PropertyValueTable({
 } & TableProps) {
     const theme = useTheme();
     const [fullscreen, setFullscreen] = useState(false);
-    const [filter, setFilter] = useState<string>("");
+    const [filter, setFilter] = useState<string>('');
 
     const filteredData = useMemo(() => {
         return Object.entries(data)
             .filter(
-                ([key, value]) => key.includes(filter) || String(value).includes(filter)
+                ([key, value]) =>
+                    key.includes(filter) || String(value).includes(filter)
             )
             .sort((a, b) => {
                 // Sort by string comparison, ignoring case
@@ -62,32 +63,32 @@ export function PropertyValueTable({
                 sx={[
                     {
                         //display: "grid",
-                        width: "100%",
-                        borderCollapse: "separate",
-                        maxHeight: "400px",
+                        width: '100%',
+                        borderCollapse: 'separate',
+                        maxHeight: '400px',
                         //tableLayout: "fixed",
                         td: {
                             //overflowWrap: "break-word",
-                            maxHeight: "200px",
-                            maxWidth: "100%",
+                            maxHeight: '200px',
+                            maxWidth: '100%',
                         },
-                        position: "relative",
+                        position: 'relative',
                         //thicker border bottom for head
                         thead: {
-                            fontWeight: "bold",
-                            fontSize: "0.95rem",
-                            verticalAlign: "bottom",
+                            fontWeight: 'bold',
+                            fontSize: '0.95rem',
+                            verticalAlign: 'bottom',
                             top: 0,
-                            position: "sticky",
+                            position: 'sticky',
                             th: {
-                                border: "unset",
+                                border: 'unset',
                             },
-                            "> *:last-child > th": {
+                            '> *:last-child > th': {
                                 borderBottomWidth: 2,
-                                borderBottomStyle: "solid",
-                                borderBottomColor: "#515151",
+                                borderBottomStyle: 'solid',
+                                borderBottomColor: '#515151',
                             },
-                            backgroundColor: "background.paper",
+                            backgroundColor: 'background.paper',
                         },
                     },
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -98,28 +99,38 @@ export function PropertyValueTable({
                 <TableHead>
                     <TableRow
                         sx={(theme) => ({
-                            display: "none",
-                            [theme.breakpoints.down("tablet")]: {
-                                display: "table-row",
+                            display: 'none',
+                            [theme.breakpoints.down('tablet')]: {
+                                display: 'table-row',
                             },
                         })}
                     >
                         <TableCell colSpan={3}>
-                            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    gap: 1,
+                                    alignItems: 'center',
+                                }}
+                            >
                                 {allowFullscreen && (
                                     <IconButton
                                         size="medium"
                                         sx={{
-                                            color: "gray",
+                                            color: 'gray',
                                         }}
                                         onClick={() => {
                                             setFullscreen((prev) => !prev);
                                         }}
                                     >
                                         {fullscreen ? (
-                                            <Minimize2 size={theme.iconSize.lg} />
+                                            <Minimize2
+                                                size={theme.iconSize.lg}
+                                            />
                                         ) : (
-                                            <Maximize2 size={theme.iconSize.lg} />
+                                            <Maximize2
+                                                size={theme.iconSize.lg}
+                                            />
                                         )}
                                     </IconButton>
                                 )}
@@ -129,8 +140,8 @@ export function PropertyValueTable({
                                     setValue={setFilter}
                                     sx={{
                                         p: 0,
-                                        height: "100%",
-                                        width: "100%",
+                                        height: '100%',
+                                        width: '100%',
                                     }}
                                     color="secondary"
                                 />
@@ -138,12 +149,12 @@ export function PropertyValueTable({
                         </TableCell>
                     </TableRow>
                     <TableRow>
-                        <TableCell sx={{ width: "auto" }}>Property</TableCell>
+                        <TableCell sx={{ width: 'auto' }}>Property</TableCell>
                         <TableCell
                             sx={(theme) => ({
-                                width: "50%",
-                                [theme.breakpoints.down("tablet")]: {
-                                    width: "100%",
+                                width: '50%',
+                                [theme.breakpoints.down('tablet')]: {
+                                    width: '100%',
                                 },
                             })}
                         >
@@ -151,9 +162,9 @@ export function PropertyValueTable({
                         </TableCell>
                         <TableCell
                             sx={(theme) => ({
-                                textAlign: "right",
-                                [theme.breakpoints.down("tablet")]: {
-                                    display: "none",
+                                textAlign: 'right',
+                                [theme.breakpoints.down('tablet')]: {
+                                    display: 'none',
                                 },
                             })}
                         >
@@ -163,8 +174,8 @@ export function PropertyValueTable({
                                 setValue={setFilter}
                                 sx={{
                                     p: 0,
-                                    height: "100%",
-                                    maxWidth: "300px",
+                                    height: '100%',
+                                    maxWidth: '300px',
                                     input: {
                                         paddingBlock: 0.5,
                                     },
@@ -179,8 +190,8 @@ export function PropertyValueTable({
                         <TableRow key={key}>
                             <TableCell
                                 sx={{
-                                    width: "max-content",
-                                    verticalAlign: "top",
+                                    width: 'max-content',
+                                    verticalAlign: 'top',
                                 }}
                             >
                                 {key}
@@ -188,11 +199,11 @@ export function PropertyValueTable({
                             <TableCell colSpan={2}>
                                 <Box
                                     sx={{
-                                        width: "100%",
-                                        overflow: "auto",
-                                        maxHeight: "200px",
-                                        overflowWrap: "anywhere",
-                                        maxWidth: "100%",
+                                        width: '100%',
+                                        overflow: 'auto',
+                                        maxHeight: '200px',
+                                        overflowWrap: 'anywhere',
+                                        maxWidth: '100%',
                                     }}
                                 >
                                     {String(value)}
@@ -207,11 +218,12 @@ export function PropertyValueTable({
                                     variant="caption"
                                     color="text.secondary"
                                     sx={{
-                                        textAlign: "center",
-                                        fontStyle: "italic",
+                                        textAlign: 'center',
+                                        fontStyle: 'italic',
                                     }}
                                 >
-                                    Excluded {nExcluded} more properties via filter
+                                    Excluded {nExcluded} more properties via
+                                    filter
                                 </Typography>
                             </TableCell>
                         </TableRow>
@@ -235,8 +247,15 @@ export function PropertyValueTable({
         <>
             {table}
             {allowFullscreen && (
-                <Slide direction="up" in={fullscreen} mountOnEnter unmountOnExit>
-                    <FullScreenOntop sx={{ overflow: "auto" }}>{table}</FullScreenOntop>
+                <Slide
+                    direction="up"
+                    in={fullscreen}
+                    mountOnEnter
+                    unmountOnExit
+                >
+                    <FullScreenOntop sx={{ overflow: 'auto' }}>
+                        {table}
+                    </FullScreenOntop>
                 </Slide>
             )}
         </>

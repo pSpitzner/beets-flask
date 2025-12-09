@@ -1,4 +1,4 @@
-import { ChevronDownIcon } from "lucide-react";
+import { ChevronDownIcon } from 'lucide-react';
 import {
     AccordionDetails,
     AccordionSummary,
@@ -7,18 +7,18 @@ import {
     Paper,
     Typography,
     useTheme,
-} from "@mui/material";
-import { Accordion } from "@mui/material";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+} from '@mui/material';
+import { Accordion } from '@mui/material';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
 
-import { configYamlQueryOptions, useConfig } from "@/api/config";
-import { SourceTypeIcon } from "@/components/common/icons";
-import { PageWrapper } from "@/components/common/page";
+import { configYamlQueryOptions, useConfig } from '@/api/config';
+import { SourceTypeIcon } from '@/components/common/icons';
+import { PageWrapper } from '@/components/common/page';
 
-import { VersionString } from "./_frontpage";
+import { VersionString } from './_frontpage';
 
-export const Route = createFileRoute("/version")({
+export const Route = createFileRoute('/version')({
     component: RouteComponent,
 });
 
@@ -31,10 +31,10 @@ function RouteComponent() {
                 sx={{
                     padding: 2,
                     margin: 2,
-                    display: "flex",
-                    flexDirection: "column",
+                    display: 'flex',
+                    flexDirection: 'column',
                     gap: 2,
-                    justifyContent: "center",
+                    justifyContent: 'center',
                 }}
             >
                 <Box sx={{ marginBottom: 2 }}>
@@ -45,23 +45,23 @@ function RouteComponent() {
                         variant="body1"
                         gutterBottom
                         sx={{
-                            display: "flex",
+                            display: 'flex',
                             gap: 1,
-                            maxWidth: "600px",
+                            maxWidth: '600px',
                         }}
                     >
-                        Looks like your found our debug page. You can find some relevant
-                        information about the current installation here. This may be
-                        useful when reporting bugs or issues.
+                        Looks like your found our debug page. You can find some
+                        relevant information about the current installation
+                        here. This may be useful when reporting bugs or issues.
                     </Typography>
                 </Box>
                 <Divider />
                 <Box
                     sx={{
-                        display: "grid",
+                        display: 'grid',
                         gap: 1,
                         columnGap: 2,
-                        gridTemplateColumns: "auto 1fr",
+                        gridTemplateColumns: 'auto 1fr',
                     }}
                 >
                     <Version />
@@ -88,14 +88,18 @@ function Version() {
                 Version
             </Typography>
             <Box display="flex" flexDirection="column">
-                <Typography component="span" fontFamily="monospace" variant="body1">
+                <Typography
+                    component="span"
+                    fontFamily="monospace"
+                    variant="body1"
+                >
                     beets-flask: <VersionString />
                 </Typography>
                 <Typography
                     component="span"
                     fontFamily="monospace"
                     variant="body1"
-                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
                 >
                     beets: {config.beets_version}
                 </Typography>
@@ -118,11 +122,11 @@ function DataSources() {
             >
                 Data Sources
             </Typography>
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                 {config.data_sources.map((source) => (
                     <Box
                         key={source}
-                        sx={{ display: "flex", gap: 1, alignItems: "center" }}
+                        sx={{ display: 'flex', gap: 1, alignItems: 'center' }}
                     >
                         <Typography
                             variant="body1"
@@ -131,7 +135,10 @@ function DataSources() {
                         >
                             {source.toLowerCase()}
                         </Typography>
-                        <SourceTypeIcon type={source} size={theme.iconSize.sm} />
+                        <SourceTypeIcon
+                            type={source}
+                            size={theme.iconSize.sm}
+                        />
                     </Box>
                 ))}
             </Box>
@@ -152,11 +159,11 @@ function Plugins() {
             >
                 Plugins
             </Typography>
-            <Box sx={{ display: "flex", flexDirection: "column" }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                 {config.plugins.map((plugin) => (
                     <Box
                         key={plugin}
-                        sx={{ display: "flex", gap: 1, alignItems: "center" }}
+                        sx={{ display: 'flex', gap: 1, alignItems: 'center' }}
                     >
                         <Typography
                             variant="body1"
@@ -175,9 +182,11 @@ function Plugins() {
 function Config() {
     const theme = useTheme();
 
-    const { data: beetsConfigYaml } = useSuspenseQuery(configYamlQueryOptions("beets"));
+    const { data: beetsConfigYaml } = useSuspenseQuery(
+        configYamlQueryOptions('beets')
+    );
     const { data: beetsflaskConfigYaml } = useSuspenseQuery(
-        configYamlQueryOptions("beetsflask")
+        configYamlQueryOptions('beetsflask')
     );
     return (
         <>
@@ -191,30 +200,30 @@ function Config() {
             </Typography>
             <Box
                 sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    maxWidth: "100%",
-                    overflow: "hidden",
+                    display: 'flex',
+                    flexDirection: 'column',
+                    maxWidth: '100%',
+                    overflow: 'hidden',
                     gap: 1,
                 }}
             >
                 <Accordion
                     disableGutters
                     sx={{
-                        boxShadow: "none",
-                        border: "none",
-                        outline: "none",
-                        "::before": { backgroundColor: "unset" },
-                        ".MuiAccordionSummary-content": {
+                        boxShadow: 'none',
+                        border: 'none',
+                        outline: 'none',
+                        '::before': { backgroundColor: 'unset' },
+                        '.MuiAccordionSummary-content': {
                             padding: 0,
                             margin: 0,
                         },
                         button: {
-                            height: "auto",
+                            height: 'auto',
                             padding: 0,
-                            display: "flex",
-                            alignItems: "flex-start",
-                            minHeight: "auto",
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            minHeight: 'auto',
                         },
                     }}
                 >
@@ -229,11 +238,11 @@ function Config() {
                             sx={{
                                 backgroundColor: theme.palette.background.paper,
                                 borderRadius: 1,
-                                overflowX: "auto",
-                                fontFamily: "monospace",
-                                fontSize: "0.875rem",
-                                whiteSpace: "pre-wrap",
-                                wordBreak: "break-all",
+                                overflowX: 'auto',
+                                fontFamily: 'monospace',
+                                fontSize: '0.875rem',
+                                whiteSpace: 'pre-wrap',
+                                wordBreak: 'break-all',
                             }}
                         >
                             <pre>{beetsConfigYaml.content}</pre>
@@ -243,20 +252,20 @@ function Config() {
                 <Accordion
                     disableGutters
                     sx={{
-                        boxShadow: "none",
-                        border: "none",
-                        outline: "none",
-                        "::before": { backgroundColor: "unset" },
-                        ".MuiAccordionSummary-content": {
+                        boxShadow: 'none',
+                        border: 'none',
+                        outline: 'none',
+                        '::before': { backgroundColor: 'unset' },
+                        '.MuiAccordionSummary-content': {
                             padding: 0,
                             margin: 0,
                         },
                         button: {
-                            height: "auto",
+                            height: 'auto',
                             padding: 0,
-                            display: "flex",
-                            alignItems: "flex-start",
-                            minHeight: "auto",
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            minHeight: 'auto',
                         },
                     }}
                 >
@@ -271,11 +280,11 @@ function Config() {
                             sx={{
                                 backgroundColor: theme.palette.background.paper,
                                 borderRadius: 1,
-                                overflowX: "auto",
-                                fontFamily: "monospace",
-                                fontSize: "0.875rem",
-                                whiteSpace: "pre-wrap",
-                                wordBreak: "break-all",
+                                overflowX: 'auto',
+                                fontFamily: 'monospace',
+                                fontSize: '0.875rem',
+                                whiteSpace: 'pre-wrap',
+                                wordBreak: 'break-all',
                             }}
                         >
                             <pre>{beetsflaskConfigYaml.content}</pre>

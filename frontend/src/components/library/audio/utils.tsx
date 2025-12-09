@@ -1,16 +1,17 @@
-import { PauseIcon, PlayIcon } from "lucide-react";
-import { Badge, IconButton, useTheme } from "@mui/material";
+import { PauseIcon, PlayIcon } from 'lucide-react';
+import { Badge, IconButton, useTheme } from '@mui/material';
 
-import { ItemResponse } from "@/pythonTypes";
+import { ItemResponse } from '@/pythonTypes';
 
-import { useAudioContext } from "./context";
+import { useAudioContext } from './context';
 
 /** Button to add an item to the audio queue or play it if
  * nothing is currently playing.
  */
 export function PlayOrAddItemToQueueButton({ item }: { item: ItemResponse }) {
     const theme = useTheme();
-    const { addToQueue, currentItem, togglePlaying, playing } = useAudioContext();
+    const { addToQueue, currentItem, togglePlaying, playing } =
+        useAudioContext();
 
     const isCurrentItem = currentItem?.id === item.id;
 
@@ -18,7 +19,7 @@ export function PlayOrAddItemToQueueButton({ item }: { item: ItemResponse }) {
         <IconButton
             sx={{
                 marginRight: 1,
-                color: isCurrentItem ? theme.palette.primary.main : "inherit",
+                color: isCurrentItem ? theme.palette.primary.main : 'inherit',
             }}
             onClick={() => {
                 if (isCurrentItem) {
@@ -34,9 +35,9 @@ export function PlayOrAddItemToQueueButton({ item }: { item: ItemResponse }) {
                 color="primary"
                 overlap="circular"
                 sx={{
-                    "& .MuiBadge-badge": {
-                        backgroundColor: "transparent",
-                        color: "inherit",
+                    '& .MuiBadge-badge': {
+                        backgroundColor: 'transparent',
+                        color: 'inherit',
                     },
                 }}
                 invisible={!currentItem || isCurrentItem}

@@ -1,6 +1,6 @@
 /** Common page components */
 
-import { Box, styled } from "@mui/material";
+import { Box, styled } from '@mui/material';
 
 /** Common wrapper for typical a typical page layout
  * adds a bit of css styling to allow for
@@ -11,12 +11,12 @@ import { Box, styled } from "@mui/material";
  */
 export const PageWrapper = styled(Box)(({ theme }) => ({
     //On mobile devices, the page is full width
-    width: "100%",
-    maxWidth: "100%",
-    [theme.breakpoints.up("laptop")]: {
+    width: '100%',
+    maxWidth: '100%',
+    [theme.breakpoints.up('laptop')]: {
         minWidth: theme.breakpoints.values.laptop,
         maxWidth: theme.breakpoints.values.desktop,
     },
     // centered
-    margin: "0 auto",
+    margin: '0 auto',
 }));

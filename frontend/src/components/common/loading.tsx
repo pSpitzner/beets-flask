@@ -1,6 +1,6 @@
-import { Box, PaletteColor, styled, Typography, useTheme } from "@mui/material";
+import { Box, PaletteColor, styled, Typography, useTheme } from '@mui/material';
 
-import styles from "./loading.module.scss";
+import styles from './loading.module.scss';
 
 interface LoadingProps {
     noteColor?: string;
@@ -12,8 +12,8 @@ export function Loading({ noteColor, shadowColor }: LoadingProps) {
         <Box
             className={styles.notes}
             sx={{
-                "--note-color": noteColor || "currentColor",
-                "--shadow-color": shadowColor || "currentColor",
+                '--note-color': noteColor || 'currentColor',
+                '--shadow-color': shadowColor || 'currentColor',
             }}
         >
             <Note />
@@ -28,8 +28,8 @@ export function LoadingSmall({ noteColor, shadowColor }: LoadingProps) {
         <Box
             className={styles.notes}
             sx={{
-                "--note-color": noteColor || "currentColor",
-                "--shadow-color": shadowColor || "currentColor",
+                '--note-color': noteColor || 'currentColor',
+                '--shadow-color': shadowColor || 'currentColor',
             }}
         >
             <Note size="small" />
@@ -37,7 +37,7 @@ export function LoadingSmall({ noteColor, shadowColor }: LoadingProps) {
     );
 }
 
-function Note({ size = "normal" }: { size?: "normal" | "small" }) {
+function Note({ size = 'normal' }: { size?: 'normal' | 'small' }) {
     return (
         <div className={styles.note} data-size={size}>
             <div className={styles.noteIcon}>
@@ -71,44 +71,45 @@ export function GrowingRipple({
     return (
         <Box
             sx={{
-                color: color || "inherit",
-                display: "inline-block",
-                position: "relative",
+                color: color || 'inherit',
+                display: 'inline-block',
+                position: 'relative',
                 width: size,
                 height: size,
 
                 div: {
-                    position: "absolute",
-                    border: "2px solid currentColor",
-                    borderRadius: "50%",
-                    animation: "ripple 3s cubic-bezier(0, 0.2, 0.8, 1) infinite",
+                    position: 'absolute',
+                    border: '2px solid currentColor',
+                    borderRadius: '50%',
+                    animation:
+                        'ripple 3s cubic-bezier(0, 0.2, 0.8, 1) infinite',
                 },
 
-                "div:nth-of-type(2)": {
-                    animationDelay: "-1s",
+                'div:nth-of-type(2)': {
+                    animationDelay: '-1s',
                 },
 
-                "@keyframes ripple": {
-                    "0%, 50%": {
-                        top: "50%",
-                        left: "50%",
+                '@keyframes ripple': {
+                    '0%, 50%': {
+                        top: '50%',
+                        left: '50%',
                         width: 0,
                         height: 0,
                         opacity: 0,
                     },
-                    "90%": {
+                    '90%': {
                         top: 0,
                         left: 0,
-                        width: "100%",
-                        height: "100%",
+                        width: '100%',
+                        height: '100%',
                         opacity: 0.7,
                     },
 
-                    "100%": {
+                    '100%': {
                         top: 0,
                         left: 0,
-                        width: "100%",
-                        height: "100%",
+                        width: '100%',
+                        height: '100%',
                         opacity: 0,
                     },
                 },
@@ -120,7 +121,7 @@ export function GrowingRipple({
     );
 }
 
-import { Palette } from "@mui/material/styles";
+import { Palette } from '@mui/material/styles';
 
 export function LoadingWithFeedback({
     feedback,
@@ -131,7 +132,7 @@ export function LoadingWithFeedback({
 }) {
     const theme = useTheme();
 
-    if (typeof color === "string") {
+    if (typeof color === 'string') {
         color = theme.palette[color] as PaletteColor;
     }
 
@@ -139,11 +140,11 @@ export function LoadingWithFeedback({
         <>
             <Box
                 sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    maxWidth: "120px",
-                    justifyContent: "center",
-                    alignItems: "center",
+                    display: 'flex',
+                    flexDirection: 'column',
+                    maxWidth: '120px',
+                    justifyContent: 'center',
+                    alignItems: 'center',
                 }}
             >
                 <Loading noteColor={color.muted} />
@@ -165,14 +166,14 @@ const NeonSignText = styled(Typography)<{ colorPalette: PaletteColor }>(
         0 0 40px ${colorPalette.main},
         0 0 50px ${colorPalette.main},
         0 0 75px ${colorPalette.main}`,
-        letterSpacing: "5px",
+        letterSpacing: '5px',
         // Add a bit of flicker
-        animation: "flicker 2s infinite",
-        "@keyframes flicker": {
-            "0%, 18%, 22%, 25%, 53%, 57%, 100%": {
+        animation: 'flicker 2s infinite',
+        '@keyframes flicker': {
+            '0%, 18%, 22%, 25%, 53%, 57%, 100%': {
                 opacity: 1,
             },
-            "20%, 24%, 55%": {
+            '20%, 24%, 55%': {
                 opacity: 0.5,
             },
         },

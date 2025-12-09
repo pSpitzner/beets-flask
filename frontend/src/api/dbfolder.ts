@@ -7,7 +7,7 @@ interface DBFolder {
 }
 
 export const folderByTaskId = (taskId: string) => ({
-    queryKey: ["dbfolder", taskId],
+    queryKey: ['dbfolder', taskId],
     queryFn: async () => {
         const response = await fetch(`/dbfolder/by_task/${taskId}`);
         const res = (await response.json()) as DBFolder;

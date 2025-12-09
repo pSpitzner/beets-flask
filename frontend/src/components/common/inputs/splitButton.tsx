@@ -1,5 +1,5 @@
-import { ChevronDownIcon } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { ChevronDownIcon } from 'lucide-react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
     Button,
     ButtonGroup,
@@ -11,7 +11,7 @@ import {
     MenuList,
     Paper,
     Popper,
-} from "@mui/material";
+} from '@mui/material';
 
 interface Option {
     label: string; // Display text for the option
@@ -19,7 +19,10 @@ interface Option {
     buttonProps?: ButtonProps; // Optional props for the button, allowing customization like icons, styles, etc.
 }
 
-export interface SplitButtonOptionProps extends Omit<ButtonGroupProps, "onClick"> {
+export interface SplitButtonOptionProps extends Omit<
+    ButtonGroupProps,
+    'onClick'
+> {
     options: Option[]; // Array of options for the dropdown
     onClick?: (
         option: Option,
@@ -59,7 +62,10 @@ export function SplitButtonOptions({
     const [selectedIdx, setSelectedIdx] = useState(defaultSelectedIndex);
 
     // Memoize selected option to prevent unnecessary re-renders
-    const selectedOption = useMemo(() => options[selectedIdx], [options, selectedIdx]);
+    const selectedOption = useMemo(
+        () => options[selectedIdx],
+        [options, selectedIdx]
+    );
 
     /**
      * Handle menu item selection
@@ -136,7 +142,7 @@ export function SplitButtonOptions({
                     zIndex: 1,
                     width: `calc(${anchorRef.current?.clientWidth}px - ${theme.spacing(1)})`, // Adjust width to fit within the button group
                     maxWidth: `calc(${anchorRef.current?.clientWidth}px - ${theme.spacing(1)})`, // Ensure max width matches the button group
-                    overflow: "hidden",
+                    overflow: 'hidden',
                     boxShadow: 8,
                 })}
                 ref={ref}
@@ -150,7 +156,9 @@ export function SplitButtonOptions({
                         {...TransitionProps}
                         style={{
                             transformOrigin:
-                                placement === "bottom" ? "center top" : "center bottom",
+                                placement === 'bottom'
+                                    ? 'center top'
+                                    : 'center bottom',
                         }}
                     >
                         <Paper
@@ -166,18 +174,21 @@ export function SplitButtonOptions({
                                             key={option.key}
                                             selected={index === selectedIdx}
                                             onClick={(event) =>
-                                                handleMenuItemClick(event, index)
+                                                handleMenuItemClick(
+                                                    event,
+                                                    index
+                                                )
                                             }
                                             sx={{
-                                                display: "flex",
-                                                alignItems: "center",
+                                                display: 'flex',
+                                                alignItems: 'center',
                                                 gap: 1,
                                             }}
                                         >
                                             <span
                                                 style={{
-                                                    display: "flex",
-                                                    alignItems: "center",
+                                                    display: 'flex',
+                                                    alignItems: 'center',
                                                 }}
                                             >
                                                 {option.buttonProps?.startIcon}

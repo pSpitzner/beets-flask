@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { List } from "react-window";
+import { useMemo, useState } from 'react';
+import { List } from 'react-window';
 import {
     Box,
     BoxProps,
@@ -8,23 +8,26 @@ import {
     ToggleButtonGroup,
     Typography,
     useTheme,
-} from "@mui/material";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+} from '@mui/material';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute, Link } from '@tanstack/react-router';
 
 import {
     albumsByArtistQueryOptions,
     artistQueryOptions,
     itemsByArtistQueryOptions,
-} from "@/api/library";
-import { AlbumGridCell, AlbumListRow } from "@/components/common/browser/albums";
-import { ItemListRow } from "@/components/common/browser/items";
-import { AlbumIcon, ArtistIcon, TrackIcon } from "@/components/common/icons";
-import { Search } from "@/components/common/inputs/search";
-import { DynamicFlowGrid, ViewToggle } from "@/components/common/table";
-import { AlbumResponseMinimal, ItemResponseMinimal } from "@/pythonTypes";
+} from '@/api/library';
+import {
+    AlbumGridCell,
+    AlbumListRow,
+} from '@/components/common/browser/albums';
+import { ItemListRow } from '@/components/common/browser/items';
+import { AlbumIcon, ArtistIcon, TrackIcon } from '@/components/common/icons';
+import { Search } from '@/components/common/inputs/search';
+import { DynamicFlowGrid, ViewToggle } from '@/components/common/table';
+import { AlbumResponseMinimal, ItemResponseMinimal } from '@/pythonTypes';
 
-export const Route = createFileRoute("/library/browse/artists/$artist")({
+export const Route = createFileRoute('/library/browse/artists/$artist')({
     loader: async (opts) => {
         const p1 = opts.context.queryClient.ensureQueryData(
             albumsByArtistQueryOptions(
@@ -59,21 +62,21 @@ function RouteComponent() {
             {/* Header */}
             <ArtistHeader
                 sx={(theme) => ({
-                    [theme.breakpoints.down("laptop")]: {
+                    [theme.breakpoints.down('laptop')]: {
                         background: `linear-gradient(to bottom, transparent 0%, ${theme.palette.background.paper} 100%)`,
                     },
                 })}
             />
-            <Divider sx={{ backgroundColor: "primary.muted" }} />
+            <Divider sx={{ backgroundColor: 'primary.muted' }} />
             <Viewer
                 albums={albums}
                 items={items}
                 sx={(theme) => ({
-                    display: "flex",
-                    flexDirection: "column",
-                    height: "100%",
-                    overflow: "hidden",
-                    [theme.breakpoints.down("laptop")]: {
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: '100%',
+                    overflow: 'hidden',
+                    [theme.breakpoints.down('laptop')]: {
                         background: `linear-gradient(to bottom, ${theme.palette.background.paper} 0%, transparent 100%)`,
                     },
                 })}
@@ -85,7 +88,9 @@ function RouteComponent() {
 function ArtistHeader({ sx, ...props }: BoxProps) {
     const params = Route.useParams();
     // Fetch artist data
-    const { data: artist } = useSuspenseQuery(artistQueryOptions(params.artist));
+    const { data: artist } = useSuspenseQuery(
+        artistQueryOptions(params.artist)
+    );
 
     const theme = useTheme();
 
@@ -96,9 +101,9 @@ function ArtistHeader({ sx, ...props }: BoxProps) {
         <Box
             sx={[
                 {
-                    display: "flex",
+                    display: 'flex',
                     gap: 2,
-                    alignItems: "center",
+                    alignItems: 'center',
                     padding: 2,
                 },
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -107,7 +112,13 @@ function ArtistHeader({ sx, ...props }: BoxProps) {
             {...props}
         >
             <Link to="/library/browse/artists">
-                <Box sx={{ display: "flex", alignItems: "center", height: "100%" }}>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        height: '100%',
+                    }}
+                >
                     <ArtistIcon size={40} color={theme.palette.primary.main} />
                 </Box>
             </Link>
@@ -115,17 +126,28 @@ function ArtistHeader({ sx, ...props }: BoxProps) {
                 <Typography variant="h5" fontWeight="bold" lineHeight={1}>
                     {artist.artist}
                 </Typography>
-                <Box sx={{ display: "flex", gap: 2, p: 0.5, color: "text.secondary" }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        gap: 2,
+                        p: 0.5,
+                        color: 'text.secondary',
+                    }}
+                >
+                    <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                    >
                         <AlbumIcon size={theme.iconSize.md} />
                         <Typography variant="body2">
-                            {nAlbums} Album{nAlbums !== 1 ? "s" : ""}
+                            {nAlbums} Album{nAlbums !== 1 ? 's' : ''}
                         </Typography>
                     </Box>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                    >
                         <TrackIcon size={theme.iconSize.md} />
                         <Typography variant="body2">
-                            {nTracks} Track{nTracks !== 1 ? "s" : ""}
+                            {nTracks} Track{nTracks !== 1 ? 's' : ''}
                         </Typography>
                     </Box>
                 </Box>
@@ -138,13 +160,16 @@ function Viewer({
     albums,
     items,
     ...props
-}: { albums: AlbumResponseMinimal[]; items: ItemResponseMinimal[] } & BoxProps) {
+}: {
+    albums: AlbumResponseMinimal[];
+    items: ItemResponseMinimal[];
+} & BoxProps) {
     const theme = useTheme();
-    const [selected, setSelected] = useState<"albums" | "items">(() =>
-        albums.length > 0 ? "albums" : "items"
+    const [selected, setSelected] = useState<'albums' | 'items'>(() =>
+        albums.length > 0 ? 'albums' : 'items'
     );
-    const [view, setView] = useState<"list" | "grid">("list");
-    const [filter, setFilter] = useState("");
+    const [view, setView] = useState<'list' | 'grid'>('list');
+    const [filter, setFilter] = useState('');
 
     const filteredAlbums = useMemo(() => {
         if (!filter) {
@@ -168,26 +193,26 @@ function Viewer({
     const nItemsRemovedByFilter = items.length - filteredItems.length;
 
     const nRemovedByFilter =
-        selected === "albums" ? nAlbumsRemovedByFilter : nItemsRemovedByFilter;
+        selected === 'albums' ? nAlbumsRemovedByFilter : nItemsRemovedByFilter;
 
     return (
         <Box {...props}>
             <Box
                 sx={{
-                    width: "100%",
+                    width: '100%',
                     marginBottom: -1,
                     padding: 2,
-                    height: "min-content",
-                    overflow: "hidden",
+                    height: 'min-content',
+                    overflow: 'hidden',
                 }}
             >
                 <Box
                     sx={{
-                        display: "flex",
+                        display: 'flex',
                         gap: 2,
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        flexWrap: "wrap",
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
                     }}
                 >
                     <Search
@@ -195,13 +220,13 @@ function Viewer({
                         setValue={setFilter}
                         size="small"
                         sx={{
-                            flex: "1 1 auto",
+                            flex: '1 1 auto',
                             maxWidth: 300,
                         }}
                     />
                     <Box
                         sx={{
-                            display: "flex",
+                            display: 'flex',
                             gap: 2,
                         }}
                     >
@@ -209,7 +234,7 @@ function Viewer({
                             value={selected}
                             onChange={(
                                 _e: React.MouseEvent<HTMLElement>,
-                                v: "albums" | "items" | null
+                                v: 'albums' | 'items' | null
                             ) => {
                                 if (v) setSelected(v);
                             }}
@@ -227,30 +252,32 @@ function Viewer({
                         <ViewToggle
                             view={view}
                             setView={setView}
-                            sx={{ marginLeft: "auto" }}
+                            sx={{ marginLeft: 'auto' }}
                         />
                     </Box>
                 </Box>
                 <Typography
                     variant="caption"
                     color="text.secondary"
-                    visibility={nRemovedByFilter > 0 ? "visible" : "hidden"}
+                    visibility={nRemovedByFilter > 0 ? 'visible' : 'hidden'}
                 >
-                    {nRemovedByFilter}{" "}
-                    {nRemovedByFilter > 1 ? selected : selected.replace("s", "")} hidden
-                    by filter
+                    {nRemovedByFilter}{' '}
+                    {nRemovedByFilter > 1
+                        ? selected
+                        : selected.replace('s', '')}{' '}
+                    hidden by filter
                 </Typography>
             </Box>
             <Box
                 sx={{
-                    overflow: "hidden",
-                    flex: "1 1 auto",
+                    overflow: 'hidden',
+                    flex: '1 1 auto',
                     paddingInline: 2,
                     minHeight: 0,
                 }}
             >
-                {selected === "items" && <ItemsViewer items={filteredItems} />}
-                {selected === "albums" && (
+                {selected === 'items' && <ItemsViewer items={filteredItems} />}
+                {selected === 'albums' && (
                     <AlbumsViewer albums={filteredAlbums} view={view} />
                 )}
             </Box>
@@ -263,16 +290,16 @@ function AlbumsViewer({
     view,
 }: {
     albums: AlbumResponseMinimal[];
-    view: "list" | "grid";
+    view: 'list' | 'grid';
 }) {
     if (albums.length === 0) {
         return (
             <Box
                 sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    height: "100%",
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '100%',
                 }}
             >
                 <Typography variant="body1" color="text.secondary">
@@ -282,7 +309,7 @@ function AlbumsViewer({
         );
     }
 
-    if (view === "grid") {
+    if (view === 'grid') {
         return (
             <DynamicFlowGrid
                 cellProps={{ albums: albums }}
@@ -310,10 +337,10 @@ function ItemsViewer({ items }: { items: ItemResponseMinimal[] }) {
         return (
             <Box
                 sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    height: "100%",
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '100%',
                 }}
             >
                 <Typography variant="body1" color="text.secondary">

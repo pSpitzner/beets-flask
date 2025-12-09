@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState } from 'react';
 import {
     closestCenter,
     DndContext,
@@ -11,31 +11,33 @@ import {
     useDroppable,
     useSensor,
     useSensors,
-} from "@dnd-kit/core";
+} from '@dnd-kit/core';
 import {
     arrayMove,
     SortableContext,
     sortableKeyboardCoordinates,
     useSortable,
     verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { Box, BoxProps, Typography } from "@mui/material";
-import { createFileRoute } from "@tanstack/react-router";
+} from '@dnd-kit/sortable';
+import { Box, BoxProps, Typography } from '@mui/material';
+import { createFileRoute } from '@tanstack/react-router';
 
-import { PageWrapper } from "@/components/common/page";
+import { PageWrapper } from '@/components/common/page';
 
-export const Route = createFileRoute("/debug/sortable_multi")({
+export const Route = createFileRoute('/debug/sortable_multi')({
     component: RouteComponent,
 });
 
 function RouteComponent() {
     const [items, setItems] = useState<Record<string, UniqueIdentifier[]>>({
-        all: ["foo"],
-        primary: ["item-1", "item-2", "item-3", "item-4"],
-        secondary: ["item-5", "item-6", "item-7"],
+        all: ['foo'],
+        primary: ['item-1', 'item-2', 'item-3', 'item-4'],
+        secondary: ['item-5', 'item-6', 'item-7'],
     });
     // Keep track of items after move to a new container
-    const itemsBeforeDrag = useRef<null | Record<string, UniqueIdentifier[]>>(null);
+    const itemsBeforeDrag = useRef<null | Record<string, UniqueIdentifier[]>>(
+        null
+    );
     // State to keep track of currently active (being dragged) item
     const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
 
@@ -97,7 +99,9 @@ function RouteComponent() {
                     const modifier = isBelowOverItem ? 1 : 0;
 
                     const newIndex =
-                        overIndex >= 0 ? overIndex + modifier : overItems.length + 1;
+                        overIndex >= 0
+                            ? overIndex + modifier
+                            : overItems.length + 1;
 
                     //recentlyMovedToNewContainer.current = true;
 
@@ -192,7 +196,7 @@ function RouteComponent() {
                         key={containerId}
                         id={containerId}
                         sx={{
-                            borderColor: "red",
+                            borderColor: 'red',
                         }}
                     >
                         <SortableContext
@@ -214,9 +218,10 @@ function RouteComponent() {
 }
 
 function SortableItem({ id }: { id: UniqueIdentifier }) {
-    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
-        id,
-    });
+    const { attributes, listeners, setNodeRef, transform, transition } =
+        useSortable({
+            id,
+        });
 
     const style = transform
         ? {
@@ -232,7 +237,11 @@ function SortableItem({ id }: { id: UniqueIdentifier }) {
     );
 }
 
-function DroppableContainer({ id, children, sx }: BoxProps & { id: UniqueIdentifier }) {
+function DroppableContainer({
+    id,
+    children,
+    sx,
+}: BoxProps & { id: UniqueIdentifier }) {
     const { setNodeRef } = useDroppable({
         id,
     });
@@ -242,14 +251,14 @@ function DroppableContainer({ id, children, sx }: BoxProps & { id: UniqueIdentif
             ref={setNodeRef}
             sx={[
                 {
-                    display: "flex",
-                    flexDirection: "column",
+                    display: 'flex',
+                    flexDirection: 'column',
                     gap: 2,
                     padding: 2,
-                    border: "1px solid black",
+                    border: '1px solid black',
                 },
                 // @ts-expect-error asd
-                ...(Array.isArray(sx) ? sx : ([sx] as BoxProps["sx"])),
+                ...(Array.isArray(sx) ? sx : ([sx] as BoxProps['sx'])),
             ]}
         >
             {children}
