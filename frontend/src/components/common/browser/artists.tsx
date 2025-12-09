@@ -43,7 +43,15 @@ export function ArtistListRow({
                     },
                 })}
             >
-                <Typography variant="body1">
+                <Typography
+                    variant="body1"
+                    sx={{
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        flex: 1,
+                    }}
+                >
                     {artist.artist || 'Unknown Artist'}
                 </Typography>
                 <ArtistIcon

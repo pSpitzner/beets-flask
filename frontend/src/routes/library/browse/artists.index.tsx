@@ -104,33 +104,28 @@ function ArtistsListWrapper({
     return (
         <Box {...props}>
             <Box
-                sx={{
+                sx={(theme) => ({
+                    display: 'flex',
+                    gap: 4,
                     width: '100%',
-                    marginBottom: -1,
                     padding: 2,
-                    height: 'min-content',
-                    overflow: 'hidden',
-                }}
-            >
-                <Box
-                    sx={{
-                        display: 'flex',
+                    [theme.breakpoints.down(500)]: {
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
                         gap: 2,
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        flexWrap: 'wrap',
+                    },
+                })}
+            >
+                <Search
+                    value={filter}
+                    setValue={setFilter}
+                    size="small"
+                    sx={{
+                        flex: '1 1 auto',
+                        maxWidth: 300,
+                        flexGrow: 1,
                     }}
-                >
-                    <Search
-                        value={filter}
-                        setValue={setFilter}
-                        size="small"
-                        sx={{
-                            flex: '1 1 auto',
-                            maxWidth: 300,
-                        }}
-                    />
-                </Box>
+                />
                 <Typography
                     variant="caption"
                     color="text.secondary"
