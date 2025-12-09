@@ -101,11 +101,12 @@ class InboxSectionSchema:
 
 @dataclass
 class InboxFolderSchema:
-    name: str
     path: str
+    name: str = "_use_heading"
     auto_threshold: float | None = None
     autotag: Literal["auto", "preview", "bootleg", "off", False] = "off"
-    # Let's keep the boolean option until v2.0.0 for backward compatibility. But consistent types are better.
+    # Let's keep the boolean option until v2.0.0 for backward compatibility.
+    # But consistent types are better.
 
 
 # ---------------------------------- Library --------------------------------- #

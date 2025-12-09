@@ -1,6 +1,9 @@
 import os
+from pathlib import Path
+import tempfile
 
 import pytest
+import yaml
 from eyconf.validation import MultiConfigurationError
 
 from beets_flask.config import get_config
@@ -133,3 +136,29 @@ class TestConfig:
         config.data.import_.duplicate_action = "remove"
         config.commit_to_beets()
         assert beets.config["import"]["duplicate_action"].get() == "remove"
+
+
+class TestValidationFixes:
+    def test_inbox_folder_name_from_heading(self):
+        """Inbox names are optional, check order and defaults."""
+
+        config = get_config()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = {
+                "gui": {
+                    "inbox": {
+                        "folders": {
+                            "inbox_1": {"path": temp_dir},
+                            "inbox_2": {"path": temp_dir, "name": "a"},
+                        }
+                    }
+                }
+            }
+            temp_path = Path(temp_dir) / "temp1.yaml"
+            with open(temp_path, "w") as f:
+                yaml.dump(temp, f)
+
+            config = config.reload(extra_yaml_path=temp_path)
+            assert config.data.gui.inbox.folders["inbox_1"].name == "inbox_1"
+            assert config.data.gui.inbox.folders["inbox_2"].name == "a"

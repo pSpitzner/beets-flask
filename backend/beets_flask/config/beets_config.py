@@ -136,10 +136,15 @@ class BeetsFlaskConfig(ConfigExtra[BeetsSchema]):
         # make sure to remove trailing slashes from user configured inbox paths
         # we could also fix this in the frontend, but this was easier.
         missing_folder_errors = []
-        for folder in self.data.gui.inbox.folders.values():
+        for key in self.data.gui.inbox.folders.keys():
+            folder = self.data.gui.inbox.folders[key]
             if folder.path.endswith("/"):
                 folder.path = folder.path.rstrip("/")
                 log.warning(f"Removed trailing slash from inbox path: {folder.path}")
+
+            # Allow more convenient yaml, so users can use the heading instead of name
+            if folder.name == "_use_heading":
+                folder.name = key
 
             # Since we changed the autotag type from False to "off" with v1.2.0,
             # Let's fix old configs and warn
