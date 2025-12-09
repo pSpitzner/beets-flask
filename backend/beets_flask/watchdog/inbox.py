@@ -213,7 +213,7 @@ async def auto_tag(
 # ------------------------------------------------------------------------------------ #
 
 
-def get_inbox_for_path(path: str | Path):
+def get_inbox_for_path(path: str | Path) -> InboxFolderSchema | None:
     if isinstance(path, str):
         path = Path(path)
     inbox = None
