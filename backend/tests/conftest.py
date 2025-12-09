@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from beets_flask.importer.types import BeetsLibrary
 from beets_flask.server.app import create_app
+import yaml
 
 log = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ def setup_and_teardown(tmpdir_factory):
     os.environ["BEETSFLASKDIR"] = str(tmp_dir / "beets-flask")
     os.makedirs(name=tmp_dir / "beets-flask", exist_ok=True)
     os.environ["IB_SERVER_CONFIG"] = "test"
+    os.environ["BF_WRITE_EXAMPLE_CONFIGS"] = "false"
 
     yield
 
@@ -169,6 +171,32 @@ def beets_lib_album(**kwargs):
 
 
 # ---------------------------------- Mocking --------------------------------- #
+
+
+@pytest.fixture(autouse=True)
+def fix_default_configs(monkeypatch, tmpdir_factory):
+    """Let's not create default configs that wouldnt pass our tests"""
+
+    beets_path = tmpdir_factory.mktemp("beets") / "beets_example.yaml"
+    beets_conf = {"plugins": ["musicbrainz"]}
+
+    bf_path = Path(tmpdir_factory.mktemp("beets_flask")) / "bf_example.yaml"
+    # we have one test that does replacements on this file
+    bf_conf = {"gui": {"num_preview_workers": 4}}
+
+    with open(bf_path, "w") as f:
+        yaml.dump(bf_conf, f)
+
+    with open(beets_path, "w") as f:
+        yaml.dump(beets_conf, f)
+
+    monkeypatch.setattr(
+        "beets_flask.config.beets_config._BEETS_EXAMPLE_PATH", beets_path
+    )
+
+    # beets examples are fine for now, but bf creates problems
+    # because we have non-sensical inbox paths.
+    monkeypatch.setattr("beets_flask.config.beets_config._BF_EXAMPLE_PATH", bf_path)
 
 
 @pytest.fixture(autouse=True)

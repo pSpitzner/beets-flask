@@ -19,6 +19,9 @@ from beets_flask.utility import deprecation_warning
 
 from .schema import BeetsSchema
 
+_BEETS_EXAMPLE_PATH = Path(os.path.dirname(__file__)) / "config_b_example.yaml"
+_BF_EXAMPLE_PATH = Path(os.path.dirname(__file__)) / "config_bf_example.yaml"
+
 
 class BeetsFlaskConfig(ConfigExtra[BeetsSchema]):
     """Base config class with extra fields support."""
@@ -42,14 +45,26 @@ class BeetsFlaskConfig(ConfigExtra[BeetsSchema]):
         beets_folder = os.getenv("BEETSDIR", os.path.expanduser("~/.config/beets"))
         return Path(beets_folder) / "config.yaml"
 
-    def reload(self) -> Self:
+    def reload(self, extra_yaml_path: str | Path | None = None) -> Self:
         """Reset the config to default values.
 
         This loads the user config from yaml files after resetting to defaults.
+
+        The `extra_yaml_path` argument is mainly for testing puproses, to add a last
+        yaml layer with high priority.
         """
         log.debug("Resetting/Reloading config")
         super().reset()
-        BeetsFlaskConfig.write_examples_as_user_defaults()
+
+        # We need a convenient way to avoid this for our test suite.
+        # Not sure why a user would not want it, but does not hurt to have the option.
+        if os.getenv("BF_WRITE_EXAMPLE_CONFIGS", "1").lower() in [
+            "1",
+            "true",
+            "yes",
+            "on",
+        ]:
+            BeetsFlaskConfig.write_examples_as_user_defaults()
 
         # There are 3 potential sources
 
@@ -61,19 +76,31 @@ class BeetsFlaskConfig(ConfigExtra[BeetsSchema]):
         # Thus only porting requirement: copy the relevant beets default into the schema
 
         # 2. beets user config
-        with open(self.get_beets_config_path()) as f:
-            loaded = yaml.safe_load(f)
-            if not isinstance(loaded, dict):
-                raise ValueError("Beets config is not a valid YAML dictionary.")
-            # EYConfs update method also validates against the schema
-            self.update(loaded)
+        if self.get_beets_config_path().exists():
+            with open(self.get_beets_config_path()) as f:
+                loaded = yaml.safe_load(f)
+                if not isinstance(loaded, dict):
+                    raise ValueError("Beets config is not a valid YAML dictionary.")
+                # EYConfs update method also validates against the schema
+                self.update(loaded)
 
         # 3. beets-flask user config
-        with open(self.get_beets_flask_config_path()) as f:
-            loaded = yaml.safe_load(f)
-            if not isinstance(loaded, dict):
-                raise ValueError("Beets flask config is not a valid YAML dictionary.")
-            self.update(loaded)
+        if self.get_beets_flask_config_path().exists():
+            with open(self.get_beets_flask_config_path()) as f:
+                loaded = yaml.safe_load(f)
+                if not isinstance(loaded, dict):
+                    raise ValueError(
+                        "Beets flask config is not a valid YAML dictionary."
+                    )
+                self.update(loaded)
+
+        # extra
+        if extra_yaml_path is not None:
+            with open(extra_yaml_path) as f:
+                loaded = yaml.safe_load(f)
+                if not isinstance(loaded, dict):
+                    raise ValueError("Extra config is not a valid YAML dictionary.")
+                self.update(loaded)
 
         self.validate()
         return self
@@ -156,8 +183,8 @@ class BeetsFlaskConfig(ConfigExtra[BeetsSchema]):
                 )
 
             if (
-                not folder.name != "Please check your config!"
-                and Path(folder.path).exists()
+                folder.name != "Please check your config!"
+                and not Path(folder.path).exists()
             ):
                 missing_folder_errors.append(
                     ConfigurationError(
@@ -189,10 +216,7 @@ class BeetsFlaskConfig(ConfigExtra[BeetsSchema]):
             # Copy the default config to the user config location
             log.info(f"Beets-flask config not found at {bf_config_path}")
             log.info(f"Copying default config to {bf_config_path}")
-            bf_example_path = os.path.join(
-                os.path.dirname(__file__), "config_bf_example.yaml"
-            )
-            shutil.copy2(bf_example_path, bf_config_path)
+            shutil.copy2(_BF_EXAMPLE_PATH, bf_config_path)
 
         # Same check for beets config and copy our default
         # if it does not exist
@@ -201,10 +225,7 @@ class BeetsFlaskConfig(ConfigExtra[BeetsSchema]):
             os.makedirs(os.path.dirname(beets_config_path), exist_ok=True)
             log.info(f"Beets config not found at {beets_config_path}")
             log.info(f"Copying default config to {beets_config_path}")
-            beets_example_path = os.path.join(
-                os.path.dirname(__file__), "config_b_example.yaml"
-            )
-            shutil.copy2(beets_example_path, beets_config_path)
+            shutil.copy2(_BEETS_EXAMPLE_PATH, beets_config_path)
 
     # ------------------------------ Utility getters ----------------------------- #
 

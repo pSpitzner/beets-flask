@@ -26,9 +26,12 @@ class TestConfig:
         beets_path = config.get_beets_config_path()
         beets_flask_path = config.get_beets_flask_config_path()
 
-        # remove config files
-        os.remove(beets_path)
-        os.remove(beets_flask_path)
+        try:
+            # remove config files, if they exist
+            os.remove(beets_path)
+            os.remove(beets_flask_path)
+        except:
+            pass
 
         config.write_examples_as_user_defaults()
 
@@ -162,3 +165,26 @@ class TestValidationFixes:
             config = config.reload(extra_yaml_path=temp_path)
             assert config.data.gui.inbox.folders["inbox_1"].name == "inbox_1"
             assert config.data.gui.inbox.folders["inbox_2"].name == "a"
+
+    def test_inbox_folder_does_not_exist(self):
+        config = get_config()
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = {
+                "gui": {
+                    "inbox": {
+                        "folders": {
+                            "inbox_1": {"path": Path(temp_dir) / "foo"},
+                        }
+                    }
+                }
+            }
+            temp_path = Path(temp_dir) / "temp1.yaml"
+            with open(temp_path, "w") as f:
+                yaml.dump(temp, f)
+
+            with pytest.raises(Exception):
+                config = config.reload(extra_yaml_path=temp_path)
+
+    def test_slash_removal(self):
+        pass
