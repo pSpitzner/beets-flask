@@ -4,12 +4,12 @@
         "target": "ES2020",
         "useDefineForClassFields": true,
         "lib": [
-            "ES2023",
-            "DOM",
-            "DOM.Iterable"
+            "es2024",
+            "dom",
+            "dom.Iterable"
         ],
-        "module": "ESNext",
-        "skipLibCheck": true,
+        "module": "ES2022",
+        "skipLibCheck": false,
         /* Bundler mode */
         "moduleResolution": "bundler",
         "allowImportingTsExtensions": true,
@@ -17,6 +17,7 @@
         "isolatedModules": true,
         "noEmit": true,
         "jsx": "react-jsx",
+        "strictNullChecks": true, // Recommended for better type inference
         /* Linting */
         "strict": true,
         "baseUrl": ".",
@@ -24,7 +25,8 @@
             "@/*": [
                 "src/*"
             ]
-        }
+        },
+        //"diagnostics": true
     },
     "include": [
         "src"

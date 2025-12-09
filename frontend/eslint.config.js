@@ -1,5 +1,5 @@
 import { defineConfig } from 'eslint/config';
-import prettierConfig from "eslint-config-prettier";
+import eslintConfigPrettier from "eslint-config-prettier/flat";
 import react from "eslint-plugin-react";
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from "eslint-plugin-react-refresh";
@@ -8,17 +8,20 @@ import globals from "globals";
 import ts from "typescript-eslint";
 import js from "@eslint/js";
 
-const tslint = {
+const tslint = defineConfig({
     name: "tseslint",
     files: ["src/**/*.ts", "src/**/*.tsx"],
-    extends: [...ts.configs.recommendedTypeChecked],
+    extends: [
+            js.configs.recommended,
+            ts.configs.recommendedTypeChecked
+    ],
     plugins: {
         "@typescript-eslint": ts.plugin,
     },
     languageOptions: {
-        parser: ts.parser,
         parserOptions: {
-            project: true,
+            projectService: true,
+            tsconfigRootDir: import.meta.dirname,
         },
     },
     rules: {
@@ -44,7 +47,7 @@ const tslint = {
         ],
         "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
     },
-};
+});
 
 
 /** Custom plugin to warn using icons outside the icon component */
@@ -86,12 +89,6 @@ export default defineConfig(
         ignores: ["dist/", "node_modules/", "src/pythonTypes.d.ts", "dev-dist/"],
     },
 
-    // apply eslint to js files
-    js.configs.recommended,
-
-    // apply tslint to ts files
-    tslint,
-
     // global variables, applies to everything
     {
         languageOptions: {
@@ -100,6 +97,11 @@ export default defineConfig(
             },
         },
     },
+
+
+    // apply tslint to ts files
+    tslint,
+
 
     // Adding simple-import-sort to the eslint config
     {
@@ -139,14 +141,10 @@ export default defineConfig(
             'react-hooks/rules-of-hooks': 'error',
             'react-hooks/exhaustive-deps': 'warn',
         },
-        languageOptions: {
-            ...react.configs.flat.recommended.languageOptions,
-            ecmaVersion: "latest",
-        },
     },
 
     // apply prettier
-    prettierConfig,
+    eslintConfigPrettier,
 
     // apply react-refresh
     {
