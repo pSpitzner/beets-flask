@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ruff now had the UP checks enabled to enforce modern python syntax.
 - Unified coverart components in the frontend, we now use common styling for external and internal coverart.
 - Moved inbox metadata fetching into the library api routes.
-- Prettier style is now enforced in the frontend via an eslint plugin.
+- Frontend formatter prettier is now enforced via a CI/CD workflow step 
 
 ### Dependencies
 
