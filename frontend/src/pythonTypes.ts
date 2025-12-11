@@ -230,7 +230,7 @@ export interface SerializedException {
 
 export interface InboxFolderSchema {
     path: string;
-    name: "_use_heading" | string;
+    name: string;
     auto_threshold: null | number;
     autotag: "auto" | "bootleg" | "off" | "preview";
 }
