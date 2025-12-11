@@ -31,6 +31,7 @@ class BeetsFlaskConfig(ConfigExtra[BeetsSchema]):
         super().__init__(schema=BeetsSchema, data=BeetsSchema())
         BeetsFlaskConfig.write_examples_as_user_defaults()
         self.reload()
+        self.commit_to_beets()
 
     @classmethod
     def get_beets_flask_config_path(cls) -> Path:
@@ -257,7 +258,7 @@ class BeetsFlaskConfig(ConfigExtra[BeetsSchema]):
 config: BeetsFlaskConfig | None = None
 
 
-def get_config(force_reload=False) -> BeetsFlaskConfig:
+def get_config(force_reload=False, commit_to_beets=False) -> BeetsFlaskConfig:
     """Get the config object.
 
     This is useful if you want to access the config from another module.
@@ -277,5 +278,6 @@ def get_config(force_reload=False) -> BeetsFlaskConfig:
         return config
     if force_reload:
         config.reload()
+    if commit_to_beets:
         config.commit_to_beets()
     return config
