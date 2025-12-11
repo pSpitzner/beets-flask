@@ -29,6 +29,7 @@ class BeetsFlaskConfig(ConfigExtra[BeetsSchema]):
     def __init__(self):
         """Initialize the config object with the default values."""
         super().__init__(schema=BeetsSchema, data=BeetsSchema())
+        BeetsFlaskConfig.write_examples_as_user_defaults()
         self.reload()
 
     @classmethod
@@ -55,16 +56,6 @@ class BeetsFlaskConfig(ConfigExtra[BeetsSchema]):
         """
         log.debug("Resetting/Reloading config")
         super().reset()
-
-        # We need a convenient way to avoid this for our test suite.
-        # Not sure why a user would not want it, but does not hurt to have the option.
-        if os.getenv("BF_WRITE_EXAMPLE_CONFIGS", "1").lower() in [
-            "1",
-            "true",
-            "yes",
-            "on",
-        ]:
-            BeetsFlaskConfig.write_examples_as_user_defaults()
 
         # There are 3 potential sources
 

@@ -796,7 +796,6 @@ def _index_mapping(
         tdxs.append(found_tdx)
 
     if None in idxs or None in tdxs:
-        # breakpoint()
         raise ValueError(
             f"Index mapping failed: {idxs=} {tdxs=} {len(items)=} {len(tracks)=}"
         )

@@ -1,12 +1,32 @@
 import os
-from pathlib import Path
+import shutil
 import tempfile
+from pathlib import Path
 
 import pytest
 import yaml
 from eyconf.validation import MultiConfigurationError
 
 from beets_flask.config import get_config
+
+
+@pytest.fixture()
+def hide_config():
+    """We have to be carful to not delete our defaults"""
+    config = get_config()
+    paths = [config.get_beets_config_path(), config.get_beets_flask_config_path()]
+
+    for p in paths:
+        shutil.move(p, str(p) + "_bak")
+
+    yield
+
+    for p in paths:
+        try:
+            os.unlink(p)
+        except:
+            pass
+        shutil.move(str(p) + "_bak", p)
 
 
 class TestConfig:
@@ -19,19 +39,12 @@ class TestConfig:
         assert beets_path.is_relative_to(os.environ["BEETSDIR"])
         assert beets_flask_path.is_relative_to(os.environ["BEETSFLASKDIR"])
 
-    def test_write_examples(self):
+    def test_write_examples(self, hide_config):
         """Test that example config files are written as user defaults."""
 
         config = get_config()
         beets_path = config.get_beets_config_path()
         beets_flask_path = config.get_beets_flask_config_path()
-
-        try:
-            # remove config files, if they exist
-            os.remove(beets_path)
-            os.remove(beets_flask_path)
-        except:
-            pass
 
         config.write_examples_as_user_defaults()
 
