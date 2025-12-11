@@ -1,14 +1,13 @@
 # Table components to create a table with multiple views
 
 We often need to display data in a tabular format, and this component provides a flexible way to do so:
+
 - list & grid views
 - infinite query support
 - dynamic columns
 - only fixed heights and widths!
 
-
 ## Example Usage
-
 
 ```tsx
 // Define functions for viewing a row
@@ -50,6 +49,3 @@ export MyTable({data}: {data: string[]}) {
 }
 
 ```
-
-
-

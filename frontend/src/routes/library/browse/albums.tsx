@@ -1,36 +1,39 @@
-import { useEffect, useState } from "react";
-import { List, ListProps } from "react-window";
-import { Box, BoxProps, Divider, Typography, useTheme } from "@mui/material";
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from 'react';
+import { List, ListProps } from 'react-window';
+import { Box, BoxProps, Divider, Typography, useTheme } from '@mui/material';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
 
-import { albumsInfiniteQueryOptions } from "@/api/library";
-import { AlbumGridCell, AlbumListRow } from "@/components/common/browser/albums";
-import { useDebounce } from "@/components/common/hooks/useDebounce";
+import { albumsInfiniteQueryOptions } from '@/api/library';
+import {
+    AlbumGridCell,
+    AlbumListRow,
+} from '@/components/common/browser/albums';
+import { useDebounce } from '@/components/common/hooks/useDebounce';
 import {
     getStorageValue,
     useLocalStorage,
-} from "@/components/common/hooks/useLocalStorage";
-import { AlbumIcon } from "@/components/common/icons";
-import { BackIconButton } from "@/components/common/inputs/back";
-import { Search } from "@/components/common/inputs/search";
-import { PageWrapper } from "@/components/common/page";
+} from '@/components/common/hooks/useLocalStorage';
+import { AlbumIcon } from '@/components/common/icons';
+import { BackIconButton } from '@/components/common/inputs/back';
+import { Search } from '@/components/common/inputs/search';
+import { PageWrapper } from '@/components/common/page';
 import {
     CurrentSort,
     DynamicFlowGrid,
     DynamicFlowGridProps,
     SortToggle,
     ViewToggle,
-} from "@/components/common/table";
-import { AlbumResponseMinimal } from "@/pythonTypes";
+} from '@/components/common/table';
+import { AlbumResponseMinimal } from '@/pythonTypes';
 
-const STORAGE_KEY = "library.browse.albums";
+const STORAGE_KEY = 'library.browse.albums';
 const DEFAULT_STORAGE_VALUE = {
-    orderBy: "album" as const,
-    orderDirection: "ASC" as const,
+    orderBy: 'album' as const,
+    orderDirection: 'ASC' as const,
 };
 
-export const Route = createFileRoute("/library/browse/albums")({
+export const Route = createFileRoute('/library/browse/albums')({
     component: RouteComponent,
     loader: async ({ context }) => {
         const val = getStorageValue(STORAGE_KEY, DEFAULT_STORAGE_VALUE);
@@ -38,7 +41,7 @@ export const Route = createFileRoute("/library/browse/albums")({
         await context.queryClient.ensureInfiniteQueryData(
             albumsInfiniteQueryOptions({
                 ...val,
-                query: "",
+                query: '',
             })
         );
     },
@@ -49,12 +52,12 @@ function RouteComponent() {
         <PageWrapper
             title="Albums"
             sx={(theme) => ({
-                display: "flex",
-                flexDirection: "column",
-                minHeight: "100%",
-                height: "100%",
-                position: "relative",
-                [theme.breakpoints.up("laptop")]: {
+                display: 'flex',
+                flexDirection: 'column',
+                minHeight: '100%',
+                height: '100%',
+                position: 'relative',
+                [theme.breakpoints.up('laptop')]: {
                     padding: 2,
                 },
             })}
@@ -62,7 +65,7 @@ function RouteComponent() {
             <BackIconButton
                 sx={{
                     // TODO: styling for mobile
-                    position: "absolute",
+                    position: 'absolute',
                     top: 0,
                     left: 0,
                     zIndex: 2,
@@ -73,25 +76,25 @@ function RouteComponent() {
             />
             <Box
                 sx={(theme) => ({
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    overflow: "hidden",
-                    [theme.breakpoints.up("laptop")]: {
-                        backgroundColor: "background.paper",
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
+                    [theme.breakpoints.up('laptop')]: {
+                        backgroundColor: 'background.paper',
                         borderRadius: 2,
                     },
                 })}
             >
                 <AlbumsHeader />
-                <Divider sx={{ backgroundColor: "primary.muted" }} />
+                <Divider sx={{ backgroundColor: 'primary.muted' }} />
                 <View
                     sx={(theme) => ({
-                        display: "flex",
-                        flexDirection: "column",
-                        height: "100%",
-                        overflow: "hidden",
-                        [theme.breakpoints.down("laptop")]: {
+                        display: 'flex',
+                        flexDirection: 'column',
+                        height: '100%',
+                        overflow: 'hidden',
+                        [theme.breakpoints.down('laptop')]: {
                             background: `linear-gradient(to bottom, ${theme.palette.background.paper} 0%, transparent 100%)`,
                         },
                     })}
@@ -107,9 +110,9 @@ function AlbumsHeader({ sx, ...props }: BoxProps) {
         <Box
             sx={[
                 {
-                    display: "flex",
+                    display: 'flex',
                     gap: 2,
-                    alignItems: "center",
+                    alignItems: 'center',
                     padding: 2,
                 },
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -117,7 +120,7 @@ function AlbumsHeader({ sx, ...props }: BoxProps) {
             ]}
             {...props}
         >
-            <Box sx={{ display: "flex", alignItems: "center", height: "100%" }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', height: '100%' }}>
                 <AlbumIcon size={40} color={theme.palette.primary.main} />
             </Box>
             <Box>
@@ -131,17 +134,17 @@ function AlbumsHeader({ sx, ...props }: BoxProps) {
 
 function View({ sx, ...props }: BoxProps) {
     const [renderStopIndex, setRenderStopIndex] = useState(0);
-    const [search, setSearch] = useState("");
+    const [search, setSearch] = useState('');
     const debouncedQuery = useDebounce(search, 500);
 
-    const [view, setView] = useLocalStorage<"list" | "grid">(
-        STORAGE_KEY + ".view",
-        "list"
+    const [view, setView] = useLocalStorage<'list' | 'grid'>(
+        STORAGE_KEY + '.view',
+        'list'
     );
     const [queryState, setQueryState] = useLocalStorage<{
-        orderBy: "album" | "albumartist" | "year";
-        orderDirection: "ASC" | "DESC";
-    }>(STORAGE_KEY + ".query", DEFAULT_STORAGE_VALUE);
+        orderBy: 'album' | 'albumartist' | 'year';
+        orderDirection: 'ASC' | 'DESC';
+    }>(STORAGE_KEY + '.query', DEFAULT_STORAGE_VALUE);
 
     const { data, fetchNextPage, isError, isPending, isFetching, hasNextPage } =
         useInfiniteQuery(
@@ -163,15 +166,22 @@ function View({ sx, ...props }: BoxProps) {
         ) {
             void fetchNextPage();
         }
-    }, [renderStopIndex, numLoaded, fetchNextPage, isFetching, isError, hasNextPage]);
+    }, [
+        renderStopIndex,
+        numLoaded,
+        fetchNextPage,
+        isFetching,
+        isError,
+        hasNextPage,
+    ]);
 
     return (
         <Box
             sx={[
                 {
-                    display: "flex",
-                    height: "100%",
-                    flexDirection: "column",
+                    display: 'flex',
+                    height: '100%',
+                    flexDirection: 'column',
                 },
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                 ...(Array.isArray(sx) ? sx : [sx]),
@@ -181,13 +191,13 @@ function View({ sx, ...props }: BoxProps) {
             {/* Header with some controls */}
             <Box
                 sx={(theme) => ({
-                    display: "flex",
+                    display: 'flex',
                     gap: 4,
-                    width: "100%",
+                    width: '100%',
                     padding: 2,
                     [theme.breakpoints.down(500)]: {
-                        flexDirection: "column",
-                        alignItems: "flex-start",
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
                         gap: 2,
                     },
                 })}
@@ -195,17 +205,17 @@ function View({ sx, ...props }: BoxProps) {
                 <Search
                     loading={isPending}
                     sx={(theme) => ({
-                        mr: "auto",
-                        minHeight: "unset",
-                        height: "100%",
+                        mr: 'auto',
+                        minHeight: 'unset',
+                        height: '100%',
 
-                        input: { height: "100%", p: 0 },
-                        ".MuiInputBase-root": {
-                            height: "100%",
+                        input: { height: '100%', p: 0 },
+                        '.MuiInputBase-root': {
+                            height: '100%',
                         },
                         [theme.breakpoints.down(500)]: {
-                            width: "100%",
-                            minHeight: "44px",
+                            width: '100%',
+                            minHeight: '44px',
                         },
                     })}
                     value={search}
@@ -215,17 +225,17 @@ function View({ sx, ...props }: BoxProps) {
                 />
                 <Box
                     sx={(theme) => ({
-                        display: "flex",
+                        display: 'flex',
                         columnGap: 4,
-                        height: "100%",
-                        justifyContent: "flex-end",
+                        height: '100%',
+                        justifyContent: 'flex-end',
                         [theme.breakpoints.down(325)]: {
-                            flexDirection: "column",
-                            alignItems: "flex-end",
+                            flexDirection: 'column',
+                            alignItems: 'flex-end',
                             rowGap: 2,
-                            width: "100%",
-                            "> *": {
-                                height: "44px",
+                            width: '100%',
+                            '> *': {
+                                height: '44px',
                             },
                         },
                     })}
@@ -239,24 +249,24 @@ function View({ sx, ...props }: BoxProps) {
                             setQueryState({
                                 ...queryState,
                                 orderBy: newSort.value as
-                                    | "album"
-                                    | "albumartist"
-                                    | "year",
+                                    | 'album'
+                                    | 'albumartist'
+                                    | 'year',
                                 orderDirection: newSort.direction,
                             });
                         }}
                         items={[
                             {
-                                label: "Title",
-                                value: "album",
+                                label: 'Title',
+                                value: 'album',
                             },
                             {
-                                label: "Artist",
-                                value: "albumartist",
+                                label: 'Artist',
+                                value: 'albumartist',
                             },
                             {
-                                label: "Year",
-                                value: "year",
+                                label: 'Year',
+                                value: 'year',
                             },
                         ]}
                     />
@@ -266,13 +276,13 @@ function View({ sx, ...props }: BoxProps) {
             {/* table */}
             <Box
                 sx={{
-                    display: "flex",
-                    flexDirection: "column",
+                    display: 'flex',
+                    flexDirection: 'column',
                     gap: 2,
-                    height: "100%",
+                    height: '100%',
                 }}
             >
-                {view === "grid" ? (
+                {view === 'grid' ? (
                     <AlbumsCoverGrid
                         data={data}
                         onCellsRendered={({ stopIndex }) => {
@@ -290,10 +300,10 @@ function View({ sx, ...props }: BoxProps) {
                 {data && data.total === 0 && !isPending && !isFetching && (
                     <Box
                         sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            height: "100%",
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '100%',
                         }}
                     >
                         <Typography variant="body1" color="text.secondary">
@@ -312,7 +322,7 @@ function AlbumsCoverGrid({
     data,
     ...props
 }: {
-    onCellsRendered?: DynamicFlowGridProps["onCellsRendered"];
+    onCellsRendered?: DynamicFlowGridProps['onCellsRendered'];
 } & {
     data?: {
         albums: AlbumResponseMinimal[];
@@ -346,7 +356,10 @@ export function AlbumsList({
         albums: AlbumResponseMinimal[];
         total: number;
     };
-} & Omit<ListProps<RowProps>, "rowProps" | "rowCount" | "rowHeight" | "rowComponent">) {
+} & Omit<
+    ListProps<RowProps>,
+    'rowProps' | 'rowCount' | 'rowHeight' | 'rowComponent'
+>) {
     return (
         <List
             rowProps={{ albums: data?.albums || [] }}

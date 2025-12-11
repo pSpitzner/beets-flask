@@ -8,15 +8,15 @@
  *
  */
 
-import { createContext, useContext, useEffect } from "react";
-import { type QueryClient } from "@tanstack/react-query";
+import { createContext, useContext, useEffect } from 'react';
+import { type QueryClient } from '@tanstack/react-query';
 
-import { queryClient } from "@/api/common";
-import { invalidateSession, statusQueryOptions } from "@/api/session";
-import { StatusSocket } from "@/api/websocket";
-import { FileSystemUpdate, FolderStatusUpdate } from "@/pythonTypes";
+import { queryClient } from '@/api/common';
+import { invalidateSession, statusQueryOptions } from '@/api/session';
+import { StatusSocket } from '@/api/websocket';
+import { FileSystemUpdate, FolderStatusUpdate } from '@/pythonTypes';
 
-import useSocket from "./useSocket";
+import useSocket from './useSocket';
 interface StatusContextI {
     isConnected: boolean;
     socket: StatusSocket | null;
@@ -31,13 +31,13 @@ export function StatusContextProvider({
     children: React.ReactNode;
     client: QueryClient;
 }) {
-    const { socket, isConnected } = useSocket("status");
+    const { socket, isConnected } = useSocket('status');
 
     useEffect(() => {
         if (!socket) return;
 
         function handleFolderStatusUpdate(updateData: FolderStatusUpdate) {
-            console.log("FolderStatusUpdate", updateData);
+            console.log('FolderStatusUpdate', updateData);
             // update folder status
             queryClient.setQueryData<FolderStatusUpdate[]>(
                 statusQueryOptions.queryKey,
@@ -71,18 +71,18 @@ export function StatusContextProvider({
         }
 
         async function handleFileSystemUpdate(updateData: FileSystemUpdate) {
-            console.log("FileSystemUpdate", updateData);
+            console.log('FileSystemUpdate', updateData);
             await queryClient.invalidateQueries({
-                queryKey: ["inbox"],
+                queryKey: ['inbox'],
             });
         }
 
-        socket.on("folder_status_update", handleFolderStatusUpdate);
-        socket.on("file_system_update", handleFileSystemUpdate);
+        socket.on('folder_status_update', handleFolderStatusUpdate);
+        socket.on('file_system_update', handleFileSystemUpdate);
 
         return () => {
-            socket.off("folder_status_update", handleFolderStatusUpdate);
-            socket.off("file_system_update", handleFileSystemUpdate);
+            socket.off('folder_status_update', handleFolderStatusUpdate);
+            socket.off('file_system_update', handleFileSystemUpdate);
         };
     }, [socket, client]);
 
@@ -97,7 +97,7 @@ export const useStatusSocket = () => {
     const context = useContext(StatusContext);
     if (!context) {
         throw new Error(
-            "useStatusSocket must be used within a StatusSocketContextProvider"
+            'useStatusSocket must be used within a StatusSocketContextProvider'
         );
     }
     return context;

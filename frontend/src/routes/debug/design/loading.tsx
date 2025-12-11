@@ -1,14 +1,14 @@
-import { Box, Button, Typography, useTheme } from "@mui/material";
-import { createFileRoute } from "@tanstack/react-router";
+import { Box, Button, Typography, useTheme } from '@mui/material';
+import { createFileRoute } from '@tanstack/react-router';
 
 import {
     Loading,
     LoadingSmall,
     LoadingWithFeedback,
-} from "@/components/common/loading";
-import { PageWrapper } from "@/components/common/page";
+} from '@/components/common/loading';
+import { PageWrapper } from '@/components/common/page';
 
-export const Route = createFileRoute("/debug/design/loading")({
+export const Route = createFileRoute('/debug/design/loading')({
     component: RouteComponent,
 });
 
@@ -17,20 +17,20 @@ function RouteComponent() {
     return (
         <PageWrapper
             sx={{
-                gap: "1rem",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                marginTop: "2rem",
+                gap: '1rem',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                marginTop: '2rem',
             }}
         >
             <Box
                 sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "1rem",
-                    justifyContent: "center",
-                    alignItems: "center",
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1rem',
+                    justifyContent: 'center',
+                    alignItems: 'center',
                 }}
             >
                 <Typography variant="body1" component="div" gutterBottom>
@@ -38,11 +38,11 @@ function RouteComponent() {
                 </Typography>
                 <Box
                     sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        maxWidth: "120px",
-                        justifyContent: "center",
-                        alignItems: "center",
+                        display: 'flex',
+                        flexDirection: 'column',
+                        maxWidth: '120px',
+                        justifyContent: 'center',
+                        alignItems: 'center',
                     }}
                 >
                     <Loading noteColor={theme.palette.primary.main} />
@@ -50,10 +50,10 @@ function RouteComponent() {
             </Box>
             <Box
                 sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "1rem",
-                    alignItems: "center",
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1rem',
+                    alignItems: 'center',
                 }}
             >
                 <Typography variant="body1" component="div" gutterBottom>
@@ -63,16 +63,16 @@ function RouteComponent() {
             </Box>
             <Box>
                 <Typography variant="body1" component="div" gutterBottom>
-                    Loading buttons with different sizes (wip needs some work and
-                    integration as standard mui loading button)
+                    Loading buttons with different sizes (wip needs some work
+                    and integration as standard mui loading button)
                 </Typography>
                 <Box
                     sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "1rem",
-                        justifyContent: "center",
-                        alignItems: "center",
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '1rem',
+                        justifyContent: 'center',
+                        alignItems: 'center',
                     }}
                 >
                     <Button variant="contained" size="large">

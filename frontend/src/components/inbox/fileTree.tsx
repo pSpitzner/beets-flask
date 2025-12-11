@@ -1,5 +1,9 @@
-import { LucideChevronRight, Settings, SquareChartGanttIcon } from "lucide-react";
-import { useState } from "react";
+import {
+    LucideChevronRight,
+    Settings,
+    SquareChartGanttIcon,
+} from 'lucide-react';
+import { useState } from 'react';
 import {
     Alert,
     AlertTitle,
@@ -11,71 +15,75 @@ import {
     styled,
     Typography,
     useTheme,
-} from "@mui/material";
-import { Link } from "@tanstack/react-router";
+} from '@mui/material';
+import { Link } from '@tanstack/react-router';
 
 import {
     InboxFolderFrontendConfig,
     useInboxFolderConfig,
     useInboxFolderFrontendConfig,
-} from "@/api/config";
+} from '@/api/config';
 import {
     BestCandidateChip,
     DuplicateChip,
     FolderStatusChip,
     HashMismatchChip,
-} from "@/components/common/chips";
-import { FileTypeIcon, FolderTypeIcon } from "@/components/common/icons";
-import { Archive, File, Folder } from "@/pythonTypes";
+} from '@/components/common/chips';
+import { FileTypeIcon, FolderTypeIcon } from '@/components/common/icons';
+import { Archive, File, Folder } from '@/pythonTypes';
 
-import { useFolderSelectionContext } from "./folderSelectionContext";
-import { ActionButtonSettings } from "./settings/actionButtonSettings";
-import { GridTemplateSettings } from "./settings/gridTemplateSettings";
+import { useFolderSelectionContext } from './folderSelectionContext';
+import { ActionButtonSettings } from './settings/actionButtonSettings';
+import { GridTemplateSettings } from './settings/gridTemplateSettings';
 
-import { Dialog } from "../common/dialogs";
+import { Dialog } from '../common/dialogs';
 
 /* ------------------------------ Grid wrapper ------------------------------ */
 
 type GridWrapperProps = {
-    config: InboxFolderFrontendConfig["gridTemplateColumns"];
+    config: InboxFolderFrontendConfig['gridTemplateColumns'];
 };
 
-export const GridWrapper = styled(Box)<GridWrapperProps>(({ theme, config }) => ({
-    display: "grid",
-    // Construct order of columns from config
-    // Default should be "[selector] auto [tree] 1fr [chip] auto [actions] auto",
-    gridTemplateColumns: config.map((col) => `[${col.name}] ${col.size}`).join(" "),
-    width: "100%",
-    columnGap: theme.spacing(1.5),
-    // Fill columns even if content is given in other order
-    gridAutoFlow: "column dense",
-    // Add zebra striping
-    "> div:nth-of-type(odd)": {
-        background: `linear-gradient(
+export const GridWrapper = styled(Box)<GridWrapperProps>(
+    ({ theme, config }) => ({
+        display: 'grid',
+        // Construct order of columns from config
+        // Default should be "[selector] auto [tree] 1fr [chip] auto [actions] auto",
+        gridTemplateColumns: config
+            .map((col) => `[${col.name}] ${col.size}`)
+            .join(' '),
+        width: '100%',
+        columnGap: theme.spacing(1.5),
+        // Fill columns even if content is given in other order
+        gridAutoFlow: 'column dense',
+        // Add zebra striping
+        '> div:nth-of-type(odd)': {
+            background: `linear-gradient(
             90deg,
             rgba(0, 0, 0, 0.01) 0%,
             rgba(0, 0, 0, 0.2) 50%,
             rgba(0, 0, 0, 0.01) 100%
         )`,
-    },
+        },
 
-    ...Object.fromEntries(
-        config.map((col) => [
-            `.${col.name}`,
-            {
-                display: col.hidden ? "none" : undefined,
-                gridColumn: col.name,
-            },
-        ])
-    ),
-}));
+        ...Object.fromEntries(
+            config.map((col) => [
+                `.${col.name}`,
+                {
+                    display: col.hidden ? 'none' : undefined,
+                    gridColumn: col.name,
+                },
+            ])
+        ),
+    })
+);
 
 const GridRow = styled(Box)(({ theme }) => ({
-    display: "grid",
-    gridColumn: "1 / -1",
-    gridTemplateColumns: "subgrid",
-    gridAutoFlow: "column dense",
-    alignItems: "center",
+    display: 'grid',
+    gridColumn: '1 / -1',
+    gridTemplateColumns: 'subgrid',
+    gridAutoFlow: 'column dense',
+    alignItems: 'center',
     paddingInline: theme.spacing(0.5),
 }));
 
@@ -97,7 +105,7 @@ export function FolderComponent({
     const [isOpen, setIsOpen] = useState(() => {
         // Open if folder does contain other folders
         // else closed (i.e. only file)
-        if (folder.children.some((child) => child.type === "directory")) {
+        if (folder.children.some((child) => child.type === 'directory')) {
             return true;
         }
         return false;
@@ -105,29 +113,35 @@ export function FolderComponent({
     const { isSelected, toggleSelect } = useFolderSelectionContext();
 
     // Create children elements from tree (recursive)
-    const childElements = Object.entries(folder.children).map(([_key, values]) => {
-        if (values.type === "file") {
-            return (
-                <FileComponent file={values} key={values.full_path} level={level + 1} />
-            );
-        } else if (values.type === "directory") {
-            return (
-                <FolderComponent
-                    folder={values as Folder}
-                    key={values.hash}
-                    level={level + 1}
-                />
-            );
-        } else if (values.type === "archive") {
-            return (
-                <ArchiveComponent
-                    archive={values}
-                    key={values.hash}
-                    level={level + 1}
-                />
-            );
+    const childElements = Object.entries(folder.children).map(
+        ([_key, values]) => {
+            if (values.type === 'file') {
+                return (
+                    <FileComponent
+                        file={values}
+                        key={values.full_path}
+                        level={level + 1}
+                    />
+                );
+            } else if (values.type === 'directory') {
+                return (
+                    <FolderComponent
+                        folder={values as Folder}
+                        key={values.hash}
+                        level={level + 1}
+                    />
+                );
+            } else if (values.type === 'archive') {
+                return (
+                    <ArchiveComponent
+                        archive={values}
+                        key={values.hash}
+                        level={level + 1}
+                    />
+                );
+            }
         }
-    });
+    );
 
     return (
         <>
@@ -135,7 +149,7 @@ export function FolderComponent({
             <GridRow
                 sx={(theme) => ({
                     borderRadius: 1,
-                    position: "relative",
+                    position: 'relative',
                     "&:hover, &[data-contextmenu='true']": {
                         background: `linear-gradient(
                             to right,
@@ -144,7 +158,8 @@ export function FolderComponent({
                         ) !important`,
                     },
                     "&[data-selected='true']": {
-                        backgroundColor: theme.palette.action.selected + " !important",
+                        backgroundColor:
+                            theme.palette.action.selected + ' !important',
                     },
                 })}
                 data-selected={isSelected(folder)}
@@ -178,10 +193,10 @@ export function FolderComponent({
                     className="actions"
                     preload="intent"
                     style={{
-                        textDecoration: "none",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "flex-end",
+                        textDecoration: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'flex-end',
                     }}
                     onClick={(e) => {
                         e.stopPropagation();
@@ -215,7 +230,7 @@ export function ArchiveComponent({
         <GridRow
             sx={(theme) => ({
                 borderRadius: 1,
-                position: "relative",
+                position: 'relative',
                 "&:hover, &[data-contextmenu='true']": {
                     background: `linear-gradient(
                             to right,
@@ -224,7 +239,8 @@ export function ArchiveComponent({
                         ) !important`,
                 },
                 "&[data-selected='true']": {
-                    backgroundColor: theme.palette.action.selected + " !important",
+                    backgroundColor:
+                        theme.palette.action.selected + ' !important',
                 },
             })}
             data-selected={isSelected(archive)}
@@ -255,10 +271,10 @@ export function ArchiveComponent({
                 className="actions"
                 preload="intent"
                 style={{
-                    textDecoration: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
+                    textDecoration: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
                 }}
                 onClick={(e) => {
                     e.stopPropagation();
@@ -272,7 +288,13 @@ export function ArchiveComponent({
     );
 }
 
-export function FileComponent({ file, level = 0 }: { file: File; level?: number }) {
+export function FileComponent({
+    file,
+    level = 0,
+}: {
+    file: File;
+    level?: number;
+}) {
     return (
         <GridRow>
             <FileName file={file} level={level} />
@@ -293,13 +315,13 @@ export function FolderTreeRow({
     level?: number;
 } & BoxProps) {
     // either, archive, album or normal folder
-    const isArchive = folder.type === "archive";
+    const isArchive = folder.type === 'archive';
     const isAlbum = !isArchive && folder.is_album;
 
     return (
         <LevelIndentWrapper level={level} className="tree" {...props}>
             {/* Collapse/Expand button*/}
-            {folder.type === "directory" && (
+            {folder.type === 'directory' && (
                 <IconButton
                     onClick={(e) => {
                         setIsOpen?.(!isOpen);
@@ -308,10 +330,10 @@ export function FolderTreeRow({
                     }}
                     size="small"
                     sx={{
-                        padding: "0px",
-                        margin: "0px",
-                        marginRight: "-2px",
-                        color: "inherit",
+                        padding: '0px',
+                        margin: '0px',
+                        marginRight: '-2px',
+                        color: 'inherit',
                     }}
                     disableRipple
                     disabled={isArchive} // Disable for archives
@@ -319,8 +341,8 @@ export function FolderTreeRow({
                     <LucideChevronRight
                         size={ICON_SIZE}
                         style={{
-                            transform: isOpen ? "rotate(90deg)" : "",
-                            transition: "transform 0.15s ease-in-out",
+                            transform: isOpen ? 'rotate(90deg)' : '',
+                            transition: 'transform 0.15s ease-in-out',
                         }}
                     />
                 </IconButton>
@@ -336,7 +358,7 @@ export function FolderTreeRow({
             />
 
             <Typography variant="body1" sx={{ paddingBlock: 0.25 }}>
-                {folder.full_path.split("/").pop()}
+                {folder.full_path.split('/').pop()}
             </Typography>
         </LevelIndentWrapper>
     );
@@ -344,7 +366,7 @@ export function FolderTreeRow({
 
 function FileName({ file, level = 0 }: { file: File; level?: number }) {
     // Infer type from file ending
-    const type = file.full_path.split(".").pop();
+    const type = file.full_path.split('.').pop();
     const theme = useTheme();
 
     return (
@@ -352,37 +374,41 @@ function FileName({ file, level = 0 }: { file: File; level?: number }) {
             level={level}
             className="tree"
             sx={{
-                fontSize: "0.7rem",
-                fontFamily: "monospace",
-                color: "#999",
-                gridColumnStart: "tree",
-                gridColumnEnd: "-1 !important", // Allow full size
-                minWidth: "0",
+                fontSize: '0.7rem',
+                fontFamily: 'monospace',
+                color: '#999',
+                gridColumnStart: 'tree',
+                gridColumnEnd: '-1 !important', // Allow full size
+                minWidth: '0',
             }}
         >
             {level > 0 && (
                 <Box
                     sx={{
                         // for horizontal lines on desktop
-                        position: "absolute",
-                        left: ICON_SIZE / 2 - 0.5 + ICON_SIZE * (level - 1) + "px",
-                        width: ICON_SIZE + "px",
-                        height: "1px",
-                        backgroundColor: "#495057",
+                        position: 'absolute',
+                        left:
+                            ICON_SIZE / 2 -
+                            0.5 +
+                            ICON_SIZE * (level - 1) +
+                            'px',
+                        width: ICON_SIZE + 'px',
+                        height: '1px',
+                        backgroundColor: '#495057',
                         flexShrink: 0,
-                        [theme.breakpoints.down("laptop")]: {
-                            visibility: "hidden",
+                        [theme.breakpoints.down('laptop')]: {
+                            visibility: 'hidden',
                         },
                     }}
                 />
             )}
             <Box
                 sx={{
-                    display: "flex",
-                    alignItems: "center",
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: theme.spacing(1),
-                    overflow: "hidden",
-                    [theme.breakpoints.down("laptop")]: {
+                    overflow: 'hidden',
+                    [theme.breakpoints.down('laptop')]: {
                         color: `hsl(210deg, 8.75%, 30%)`,
                     },
                 }}
@@ -392,26 +418,26 @@ function FileName({ file, level = 0 }: { file: File; level?: number }) {
                     size={ICON_SIZE * 0.7}
                     style={{
                         //3px aligns the icon with the other icons
-                        marginLeft: level > 0 ? ICON_SIZE * 0.7 + "px" : "3px",
+                        marginLeft: level > 0 ? ICON_SIZE * 0.7 + 'px' : '3px',
                         flexShrink: 0,
                     }}
                 />
                 <Box
                     sx={{
-                        overflow: "hidden",
+                        overflow: 'hidden',
                     }}
                 >
                     <Typography
                         variant="body1"
                         sx={{
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            position: "relative",
-                            maxWidth: "100%",
-                            overflow: "hidden",
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            position: 'relative',
+                            maxWidth: '100%',
+                            overflow: 'hidden',
                         }}
                     >
-                        {file.full_path.split("/").pop()}
+                        {file.full_path.split('/').pop()}
                     </Typography>
                 </Box>
             </Box>
@@ -434,17 +460,17 @@ function LevelIndentWrapper({
         <Box
             sx={[
                 {
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    paddingBlock: "1px",
-                    position: "relative",
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingBlock: '1px',
+                    position: 'relative',
                     flexShrink: 0,
-                    gap: "0.4rem",
-                    paddingLeft: level * ICON_SIZE + "px",
+                    gap: '0.4rem',
+                    paddingLeft: level * ICON_SIZE + 'px',
 
                     // Mobile styling
-                    [theme.breakpoints.down("laptop")]: {
+                    [theme.breakpoints.down('laptop')]: {
                         paddingLeft: `calc(${level} * ${theme.spacing(0.5)})`,
                     },
                 },
@@ -458,18 +484,18 @@ function LevelIndentWrapper({
                     key={i}
                     sx={{
                         //  Indentation blocks (same width as icons)
-                        position: "absolute",
-                        left: (i - 0.5) * ICON_SIZE - 0.5 + "px",
-                        display: "flex",
-                        width: ICON_SIZE + "px",
-                        height: "100%",
+                        position: 'absolute',
+                        left: (i - 0.5) * ICON_SIZE - 0.5 + 'px',
+                        display: 'flex',
+                        width: ICON_SIZE + 'px',
+                        height: '100%',
 
-                        borderRight: "1px solid #495057",
+                        borderRight: '1px solid #495057',
 
                         // Mobile styling show stacked lines
-                        [theme.breakpoints.down("laptop")]: {
+                        [theme.breakpoints.down('laptop')]: {
                             //left: -ICON_SIZE + 2 * i + "px",
-                            left: -ICON_SIZE + "px",
+                            left: -ICON_SIZE + 'px',
                             borderRight: `2px solid hsl(210deg, 8.75%,
                                 ${Math.max(100 - (MAX_LEVEL - level) * 15, 30)}%)`,
                             // height: "200%",
@@ -486,7 +512,7 @@ function LevelIndentWrapper({
 
 /**Shows the percentage of the best match and its source */
 function Chips({ folder }: { folder: Folder | Archive }) {
-    if (!(folder.type == "archive") && !folder.is_album) {
+    if (!(folder.type == 'archive') && !folder.is_album) {
         return <Box />;
     }
 
@@ -496,20 +522,20 @@ function Chips({ folder }: { folder: Folder | Archive }) {
             alignItems="center"
             className="chip"
             sx={(theme) => ({
-                position: "relative",
+                position: 'relative',
                 gap: 0.5,
-                [theme.breakpoints.down("tablet")]: {
+                [theme.breakpoints.down('tablet')]: {
                     gap: 1,
                 },
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "flex-end",
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
 
-                [theme.breakpoints.up("tablet")]: {
-                    "> div": {
+                [theme.breakpoints.up('tablet')]: {
+                    '> div': {
                         // Feels a bit hacky, but is the only way how to do align
                         // the chips without adding more grid columns
-                        minWidth: "4.2rem",
+                        minWidth: '4.2rem',
                     },
                 },
             })}
@@ -557,28 +583,31 @@ export function InboxGridHeader({
                 }}
                 disabled={nSelected === 0}
             />
-            <Box className="tree" sx={{ display: "flex", alignItems: "center" }}>
+            <Box
+                className="tree"
+                sx={{ display: 'flex', alignItems: 'center' }}
+            >
                 <Typography
                     fontSize={12}
                     variant="body2"
-                    sx={{ color: "text.secondary" }}
+                    sx={{ color: 'text.secondary' }}
                 >
-                    {nSelected} folder{nSelected > 1 ? "s" : null} selected
+                    {nSelected} folder{nSelected > 1 ? 's' : null} selected
                 </Typography>
             </Box>
 
             <Box
                 className="actions"
                 sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
                 }}
             >
                 <IconButton
                     onClick={() => setOpen(true)}
                     sx={{
-                        color: "text.secondary",
+                        color: 'text.secondary',
                     }}
                 >
                     <Settings size={16} />
@@ -591,20 +620,25 @@ export function InboxGridHeader({
                     color="secondary"
                 >
                     <DialogContent
-                        sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+                        sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 2,
+                        }}
                     >
                         <Alert
                             severity="info"
                             sx={{
-                                width: "min-content",
-                                minWidth: "100%",
+                                width: 'min-content',
+                                minWidth: '100%',
                             }}
                         >
                             <AlertTitle>Settings are not persistent</AlertTitle>
-                            <Box sx={{ minWidth: "100%" }}>
-                                At the moment, all settings are only applied to the
-                                current browser and are saved in local storage. We might
-                                add persistent settings in the future.
+                            <Box sx={{ minWidth: '100%' }}>
+                                At the moment, all settings are only applied to
+                                the current browser and are saved in local
+                                storage. We might add persistent settings in the
+                                future.
                             </Box>
                         </Alert>
                         <GridTemplateSettings

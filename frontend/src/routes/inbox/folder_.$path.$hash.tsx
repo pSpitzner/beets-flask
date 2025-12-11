@@ -1,18 +1,18 @@
-import { Box } from "@mui/material";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { Box } from '@mui/material';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
 
-import { inboxFolderQueryOptions } from "@/api/inbox";
-import { sessionQueryOptions } from "@/api/session";
-import { BackIconButton } from "@/components/common/inputs/back";
-import { LoadingWithFeedback } from "@/components/common/loading";
-import { PageWrapper } from "@/components/common/page";
-import { FolderCard } from "@/components/inbox/cards/folderCard";
-import { ImportedCard } from "@/components/inbox/cards/importedCard";
-import { TagCard } from "@/components/inbox/cards/tagCard";
-import { GenericErrorCard } from "@/errors";
+import { inboxFolderQueryOptions } from '@/api/inbox';
+import { sessionQueryOptions } from '@/api/session';
+import { BackIconButton } from '@/components/common/inputs/back';
+import { LoadingWithFeedback } from '@/components/common/loading';
+import { PageWrapper } from '@/components/common/page';
+import { FolderCard } from '@/components/inbox/cards/folderCard';
+import { ImportedCard } from '@/components/inbox/cards/importedCard';
+import { TagCard } from '@/components/inbox/cards/tagCard';
+import { GenericErrorCard } from '@/errors';
 
-export const Route = createFileRoute("/inbox/folder_/$path/$hash")({
+export const Route = createFileRoute('/inbox/folder_/$path/$hash')({
     component: RouteComponent,
     loader: async ({ context: { queryClient }, params }) => {
         // we prefetch all data here but do not handle errors
@@ -25,17 +25,19 @@ export const Route = createFileRoute("/inbox/folder_/$path/$hash")({
         );
 
         // try to get up do date folder information
-        const p2 = queryClient.prefetchQuery(inboxFolderQueryOptions(params.path));
+        const p2 = queryClient.prefetchQuery(
+            inboxFolderQueryOptions(params.path)
+        );
         await Promise.all([p1, p2]);
     },
     pendingComponent: () => (
         <PageWrapper
             sx={{
-                display: "flex",
-                alignItems: "center",
-                height: "100%",
-                justifyContent: "center",
-                flexDirection: "column",
+                display: 'flex',
+                alignItems: 'center',
+                height: '100%',
+                justifyContent: 'center',
+                flexDirection: 'column',
             }}
         >
             <LoadingWithFeedback
@@ -47,16 +49,16 @@ export const Route = createFileRoute("/inbox/folder_/$path/$hash")({
     errorComponent: ({ error }) => (
         <PageWrapper
             sx={{
-                height: "100%",
+                height: '100%',
             }}
         >
             <Box
                 sx={{
-                    display: "flex",
-                    marginTop: "5rem",
-                    height: "100%",
-                    justifyContent: "center",
-                    alignItems: "center",
+                    display: 'flex',
+                    marginTop: '5rem',
+                    height: '100%',
+                    justifyContent: 'center',
+                    alignItems: 'center',
                 }}
             >
                 <GenericErrorCard
@@ -83,12 +85,12 @@ function RouteComponent() {
     return (
         <PageWrapper
             sx={(theme) => ({
-                display: "flex",
-                flexDirection: "column",
-                minHeight: "100%",
-                position: "relative",
+                display: 'flex',
+                flexDirection: 'column',
+                minHeight: '100%',
+                position: 'relative',
                 gap: 1,
-                [theme.breakpoints.up("laptop")]: {
+                [theme.breakpoints.up('laptop')]: {
                     padding: 2,
                 },
             })}
@@ -96,7 +98,7 @@ function RouteComponent() {
             <BackIconButton
                 sx={{
                     // TODO: styling for mobile
-                    position: "absolute",
+                    position: 'absolute',
                     top: 0,
                     left: 0,
                     zIndex: 2,

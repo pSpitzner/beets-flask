@@ -1,27 +1,27 @@
-import { OctagonX, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { List } from "react-window";
-import { IconButton, InputAdornment, Tooltip, useTheme } from "@mui/material";
-import Box from "@mui/material/Box";
-import CircularProgress from "@mui/material/CircularProgress";
-import TextField from "@mui/material/TextField";
-import ToggleButton from "@mui/material/ToggleButton";
-import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
-import { createFileRoute } from "@tanstack/react-router";
+import { OctagonX, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { List } from 'react-window';
+import { IconButton, InputAdornment, Tooltip, useTheme } from '@mui/material';
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
+import TextField from '@mui/material/TextField';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import { createFileRoute } from '@tanstack/react-router';
 
-import { AlbumListRow } from "@/components/common/browser/albums";
-import { ItemListRow } from "@/components/common/browser/items";
-import { JSONPretty } from "@/components/common/debugging/json";
-import { AlbumIcon, TrackIcon } from "@/components/common/icons";
-import { PageWrapper } from "@/components/common/page";
+import { AlbumListRow } from '@/components/common/browser/albums';
+import { ItemListRow } from '@/components/common/browser/items';
+import { JSONPretty } from '@/components/common/debugging/json';
+import { AlbumIcon, TrackIcon } from '@/components/common/icons';
+import { PageWrapper } from '@/components/common/page';
 import {
     SearchContextProvider,
     useSearchContext,
-} from "@/components/library/search/context";
+} from '@/components/library/search/context';
 
-import styles from "@/components/library/library.module.scss";
+import styles from '@/components/library/library.module.scss';
 
-export const Route = createFileRoute("/library/search")({
+export const Route = createFileRoute('/library/search')({
     component: SearchPage,
 });
 
@@ -30,35 +30,35 @@ function SearchPage() {
         <SearchContextProvider>
             <PageWrapper
                 sx={(theme) => ({
-                    display: "flex",
-                    flexDirection: "column",
+                    display: 'flex',
+                    flexDirection: 'column',
                     gap: theme.spacing(1),
                     paddingTop: theme.spacing(1.5),
                     paddingInline: theme.spacing(1),
                     // styling for code blocks
                     code: {
-                        backgroundColor: "#212529",
-                        padding: "2px 4px",
-                        borderRadius: "4px",
-                        fontFamily: "Courier New, Courier, monospace",
-                        fontSize: "0.9em",
-                        whiteSpace: "nowrap",
+                        backgroundColor: '#212529',
+                        padding: '2px 4px',
+                        borderRadius: '4px',
+                        fontFamily: 'Courier New, Courier, monospace',
+                        fontSize: '0.9em',
+                        whiteSpace: 'nowrap',
                     },
-                    height: "100%",
+                    height: '100%',
                 })}
             >
                 <SearchBar />
                 <Box
                     sx={(theme) => ({
-                        display: "flex",
-                        flexDirection: "row",
+                        display: 'flex',
+                        flexDirection: 'row',
                         gap: 1,
-                        width: "100%",
-                        height: "100%",
-                        overflow: "auto",
+                        width: '100%',
+                        height: '100%',
+                        overflow: 'auto',
 
-                        [theme.breakpoints.down("laptop")]: {
-                            flexDirection: "column",
+                        [theme.breakpoints.down('laptop')]: {
+                            flexDirection: 'column',
                         },
                     })}
                 >
@@ -85,7 +85,7 @@ function SearchBar() {
             component="form"
             noValidate
             autoComplete="off"
-            sx={{ display: "flex", flexDirection: "row" }}
+            sx={{ display: 'flex', flexDirection: 'row' }}
             onSubmit={(e) => {
                 e.preventDefault();
             }}
@@ -102,7 +102,9 @@ function SearchBar() {
                 slotProps={{
                     input: {
                         endAdornment: (
-                            <CancelSearchButton searchFieldRef={searchFieldRef} />
+                            <CancelSearchButton
+                                searchFieldRef={searchFieldRef}
+                            />
                         ),
                     },
                 }}
@@ -113,7 +115,7 @@ function SearchBar() {
                 value={type}
                 onChange={(
                     _e: React.MouseEvent<HTMLElement>,
-                    v: "album" | "item" | null
+                    v: 'album' | 'item' | null
                 ) => {
                     if (v) setType(v);
                 }}
@@ -144,7 +146,7 @@ function CancelSearchButton({
 
     return (
         <InputAdornment position="end">
-            <Tooltip title={isFetching ? "Cancel search" : "Clear search"}>
+            <Tooltip title={isFetching ? 'Cancel search' : 'Clear search'}>
                 <IconButton
                     edge="end"
                     onClick={(e: React.MouseEvent) => {
@@ -173,14 +175,16 @@ function CancelSearchButton({
 }
 
 function SearchResults() {
-    const { queryAlbums, queryItems, type, debouncedQuery } = useSearchContext();
+    const { queryAlbums, queryItems, type, debouncedQuery } =
+        useSearchContext();
 
-    const isError = type === "item" ? queryItems?.isError : queryAlbums?.isError;
-    const error = type === "item" ? queryItems?.error : queryAlbums?.error;
+    const isError =
+        type === 'item' ? queryItems?.isError : queryAlbums?.isError;
+    const error = type === 'item' ? queryItems?.error : queryAlbums?.error;
     const isFetching =
-        type === "item" ? queryItems?.isFetching : queryAlbums?.isFetching;
+        type === 'item' ? queryItems?.isFetching : queryAlbums?.isFetching;
     const results =
-        type === "item" ? queryItems?.data?.items : queryAlbums?.data?.albums;
+        type === 'item' ? queryItems?.data?.items : queryAlbums?.data?.albums;
 
     if (isError) {
         return (
@@ -219,14 +223,14 @@ function SearchResults() {
     return (
         <Box
             sx={{
-                overflow: "hidden",
-                flex: "1 1 auto",
+                overflow: 'hidden',
+                flex: '1 1 auto',
                 paddingInline: 2,
                 minHeight: 0,
             }}
         >
-            {type === "item" && <ItemsListAutoFetchData />}
-            {type === "album" && <AlbumsListAutoFetchData />}
+            {type === 'item' && <ItemsListAutoFetchData />}
+            {type === 'album' && <AlbumsListAutoFetchData />}
         </Box>
     );
 }
@@ -302,7 +306,7 @@ function AlbumsListAutoFetchData() {
             !isError &&
             hasNextPage
         ) {
-            console.log("Fetching next page of albums");
+            console.log('Fetching next page of albums');
             void fetchNextPage?.();
         }
     }, [
@@ -335,22 +339,22 @@ function BeetsSearchHelp() {
                 <h1>Search uses beets&apos; query syntax</h1>
                 <ul>
                     <li>
-                        combine keywords with a space (AND):{" "}
+                        combine keywords with a space (AND):{' '}
                         <code>magnetic tomorrow</code>
                     </li>
                     <li>
-                        combine keywords with a comma (OR):{" "}
+                        combine keywords with a comma (OR):{' '}
                         <code>magnetic tomorrow , beatles yesterday</code>
                     </li>
                     <li>
                         search specific fields: <code>artist:dream</code>
                     </li>
                     <li>
-                        escape phrases: <code>&quot;the rebel&quot;</code> or{" "}
+                        escape phrases: <code>&quot;the rebel&quot;</code> or{' '}
                         <code>the\ rebel</code>
                     </li>
                     <li>
-                        use <code>-</code> or <code>^</code> to exclude a term:{" "}
+                        use <code>-</code> or <code>^</code> to exclude a term:{' '}
                         <code>^difficult</code>
                     </li>
                 </ul>
@@ -367,10 +371,12 @@ function BeetsSearchHelp() {
                         <code>artist:=AIR</code> exact match, case sensitive
                     </li>
                     <li>
-                        work on phrases: <code>artist:=~&quot;dave matthews&quot;</code>
+                        work on phrases:{' '}
+                        <code>artist:=~&quot;dave matthews&quot;</code>
                     </li>
                     <li>
-                        can be used across <em>all</em> fields: <code>=~crash</code>
+                        can be used across <em>all</em> fields:{' '}
+                        <code>=~crash</code>
                     </li>
                 </ul>
 
@@ -379,33 +385,35 @@ function BeetsSearchHelp() {
                 </h1>
                 <ul>
                     <li>
-                        <code>&quot;artist::Ann(a|ie)&quot;</code> finds artists Anna
-                        Calvi and Annie but not Annuals
+                        <code>&quot;artist::Ann(a|ie)&quot;</code> finds artists
+                        Anna Calvi and Annie but not Annuals
                     </li>
                     <li>
-                        <code>&quot;:Ho[pm]eless&quot;</code> to search all fields
+                        <code>&quot;:Ho[pm]eless&quot;</code> to search all
+                        fields
                     </li>
                 </ul>
 
                 <h1>Common fields</h1>
                 <ul>
                     <li>
-                        <code>title</code> <code>album</code> <code>genre</code>{" "}
+                        <code>title</code> <code>album</code> <code>genre</code>{' '}
                         <code>label</code> <code>isrc</code>
                     </li>
                     <li>
                         <code>artist</code> (only for items, not albums)
                     </li>
                     <li>
-                        <code>albumartist</code> <code>albumartist_sort</code>{" "}
+                        <code>albumartist</code> <code>albumartist_sort</code>{' '}
                         <code>albumtype</code>
                     </li>
                     <li>
-                        <code>year</code> <code>added</code> <code>comment</code>{" "}
-                        <code>data_source</code>
+                        <code>year</code> <code>added</code>{' '}
+                        <code>comment</code> <code>data_source</code>
                     </li>
                     <li>
-                        <code>path</code> (searches recursively in sub directories)
+                        <code>path</code> (searches recursively in sub
+                        directories)
                     </li>
                 </ul>
             </Box>

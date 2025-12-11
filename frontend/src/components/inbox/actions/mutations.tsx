@@ -1,22 +1,25 @@
-import { useMutation, UseMutationOptions } from "@tanstack/react-query";
-import { useNavigate, UseNavigateResult } from "@tanstack/react-router";
+import { useMutation, UseMutationOptions } from '@tanstack/react-query';
+import { useNavigate, UseNavigateResult } from '@tanstack/react-router';
 
-import { APIError } from "@/api/common";
-import { Action } from "@/api/config";
-import { deleteFoldersMutationOptions } from "@/api/inbox";
-import { enqueueMutationOptions } from "@/api/session";
-import { StatusSocket } from "@/api/websocket";
-import { assertUnreachable } from "@/components/common/debugging/typing";
-import { formatDate } from "@/components/common/units/time";
-import { useStatusSocket } from "@/components/common/websocket/status";
-import { TerminalContextI, useTerminalContext } from "@/components/frontpage/terminal";
-import { EnqueueKind } from "@/pythonTypes";
+import { APIError } from '@/api/common';
+import { Action } from '@/api/config';
+import { deleteFoldersMutationOptions } from '@/api/inbox';
+import { enqueueMutationOptions } from '@/api/session';
+import { StatusSocket } from '@/api/websocket';
+import { assertUnreachable } from '@/components/common/debugging/typing';
+import { formatDate } from '@/components/common/units/time';
+import { useStatusSocket } from '@/components/common/websocket/status';
+import {
+    TerminalContextI,
+    useTerminalContext,
+} from '@/components/frontpage/terminal';
+import { EnqueueKind } from '@/pythonTypes';
 
-import { InboxCardContext, useInboxCardContext } from "../cards/inboxCard";
+import { InboxCardContext, useInboxCardContext } from '../cards/inboxCard';
 import {
     FolderSelectionContext,
     useFolderSelectionContext,
-} from "../folderSelectionContext";
+} from '../folderSelectionContext';
 
 export function useActionMutation(action: Action) {
     const { socket } = useStatusSocket();
@@ -58,9 +61,13 @@ function actionMutationOptionsAndArgs<T = unknown>(
 ): [UseMutationOptions<unknown, APIError, T>, T] {
     const { name, options } = action;
     switch (name) {
-        case "retag":
+        case 'retag':
             return [
-                enqueueMutationOptions as UseMutationOptions<unknown, APIError, T>,
+                enqueueMutationOptions as UseMutationOptions<
+                    unknown,
+                    APIError,
+                    T
+                >,
                 {
                     socket,
                     kind: EnqueueKind.PREVIEW,
@@ -69,9 +76,13 @@ function actionMutationOptionsAndArgs<T = unknown>(
                     selected: selectionContext.selected,
                 } as T,
             ];
-        case "undo":
+        case 'undo':
             return [
-                enqueueMutationOptions as UseMutationOptions<unknown, APIError, T>,
+                enqueueMutationOptions as UseMutationOptions<
+                    unknown,
+                    APIError,
+                    T
+                >,
                 {
                     socket,
                     kind: EnqueueKind.IMPORT_UNDO,
@@ -79,25 +90,33 @@ function actionMutationOptionsAndArgs<T = unknown>(
                     selected: selectionContext.selected,
                 } as T,
             ];
-        case "import_best":
+        case 'import_best':
             return [
-                enqueueMutationOptions as UseMutationOptions<unknown, APIError, T>,
+                enqueueMutationOptions as UseMutationOptions<
+                    unknown,
+                    APIError,
+                    T
+                >,
                 {
                     socket,
                     kind: EnqueueKind.IMPORT_CANDIDATE,
                     selected: selectionContext.selected,
                 } as T,
             ];
-        case "import_bootleg":
+        case 'import_bootleg':
             return [
-                enqueueMutationOptions as UseMutationOptions<unknown, APIError, T>,
+                enqueueMutationOptions as UseMutationOptions<
+                    unknown,
+                    APIError,
+                    T
+                >,
                 {
                     socket,
                     kind: EnqueueKind.IMPORT_BOOTLEG,
                     selected: selectionContext.selected,
                 } as T,
             ];
-        case "delete":
+        case 'delete':
             return [
                 deleteFoldersMutationOptions as UseMutationOptions<
                     unknown,
@@ -110,7 +129,7 @@ function actionMutationOptionsAndArgs<T = unknown>(
                     folderHashes: selectionContext.selected.hashes,
                 } as T,
             ];
-        case "delete_imported_folders":
+        case 'delete_imported_folders':
             return [
                 deleteFoldersMutationOptions as UseMutationOptions<
                     unknown,
@@ -118,19 +137,27 @@ function actionMutationOptionsAndArgs<T = unknown>(
                     T
                 >,
                 {
-                    folderPaths: inboxContext.importedFolders.map((f) => f.full_path),
-                    folderHashes: inboxContext.importedFolders.map((f) => f.hash),
+                    folderPaths: inboxContext.importedFolders.map(
+                        (f) => f.full_path
+                    ),
+                    folderHashes: inboxContext.importedFolders.map(
+                        (f) => f.hash
+                    ),
                 } as T,
             ];
-        case "copy_path":
+        case 'copy_path':
             return [
-                copyPathMutationOptions as UseMutationOptions<unknown, APIError, T>,
+                copyPathMutationOptions as UseMutationOptions<
+                    unknown,
+                    APIError,
+                    T
+                >,
                 {
                     selected: selectionContext.selected,
                     escape: options?.escape ?? true, // default to escaping paths
                 } as T,
             ];
-        case "import_terminal":
+        case 'import_terminal':
             return [
                 importTerminalMutationOptions as UseMutationOptions<
                     unknown,
@@ -151,16 +178,16 @@ function actionMutationOptionsAndArgs<T = unknown>(
 const copyPathMutationOptions: UseMutationOptions<
     unknown,
     APIError,
-    { selected: FolderSelectionContext["selected"]; escape: boolean }
+    { selected: FolderSelectionContext['selected']; escape: boolean }
 > = {
     mutationFn: async ({ selected, escape }) => {
         if (selected.paths.length === 0) {
-            throw new Error("No folders selected");
+            throw new Error('No folders selected');
         }
 
         // If clipboard API is not supported, throw an error
         if (!navigator.clipboard) {
-            throw new Error("Clipboard API not supported");
+            throw new Error('Clipboard API not supported');
         }
 
         let selectedPaths: string[];
@@ -171,16 +198,16 @@ const copyPathMutationOptions: UseMutationOptions<
             selectedPaths = selected.paths;
         }
         if (selectedPaths.length > 1) {
-            text = selectedPaths.join("\\n");
+            text = selectedPaths.join('\\n');
         } else {
-            text = selectedPaths.join(" ");
+            text = selectedPaths.join(' ');
         }
 
         await navigator.clipboard.writeText(text);
     },
     onSuccess: () => {
         // Optionally, you can show a success message or perform other actions
-        console.log("Paths copied to clipboard successfully.");
+        console.log('Paths copied to clipboard successfully.');
     },
 };
 
@@ -194,33 +221,33 @@ const importTerminalMutationOptions: UseMutationOptions<
     unknown,
     APIError,
     {
-        selected: FolderSelectionContext["selected"];
+        selected: FolderSelectionContext['selected'];
         terminalContext: TerminalContextI;
         navigate: UseNavigateResult<string>;
     }
 > = {
     mutationFn: async ({ selected, terminalContext, navigate }) => {
         if (selected.paths.length === 0) {
-            throw new Error("No folders selected");
+            throw new Error('No folders selected');
         }
 
         terminalContext.clearInput();
-        let text = "";
-        const importId = "cli-" + Math.random().toString(36).slice(2, 16);
-        const importDate = formatDate(new Date(), "%Y%m%d_%H%M%S");
+        let text = '';
+        const importId = 'cli-' + Math.random().toString(36).slice(2, 16);
+        const importDate = formatDate(new Date(), '%Y%m%d_%H%M%S');
         const selectedPaths = selected.paths.map(_escapePathForBash);
 
-        text = "\\\n  " + selectedPaths.join(" \\\n  ");
+        text = '\\\n  ' + selectedPaths.join(' \\\n  ');
         text += ` \\\n  --set gui_import_id='${importId}'`;
         text += ` \\\n  --set gui_import_date='${importDate}'`;
 
         terminalContext.inputText(`beet import -t ${text}`);
         await navigate({
-            to: "/terminal",
+            to: '/terminal',
         });
     },
     onSuccess: () => {
         // Optionally, you can show a success message or perform other actions
-        console.log("Import command sent to terminal successfully.");
+        console.log('Import command sent to terminal successfully.');
     },
 };

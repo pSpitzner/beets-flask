@@ -1,10 +1,10 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
 
-import { albumQueryOptions } from "@/api/library";
-import { Tracklist } from "@/components/library/album";
+import { albumQueryOptions } from '@/api/library';
+import { Tracklist } from '@/components/library/album';
 
-export const Route = createFileRoute("/library/(resources)/album/$albumId/")({
+export const Route = createFileRoute('/library/(resources)/album/$albumId/')({
     component: RouteComponent,
 });
 
@@ -22,7 +22,7 @@ function RouteComponent() {
         <Tracklist
             items={album.items}
             sx={{
-                flex: "1 1 auto",
+                flex: '1 1 auto',
             }}
         />
     );

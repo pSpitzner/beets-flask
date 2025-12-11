@@ -1,4 +1,4 @@
-import { Trash2Icon } from "lucide-react";
+import { Trash2Icon } from 'lucide-react';
 import {
     Box,
     Button,
@@ -6,29 +6,29 @@ import {
     Divider,
     Typography,
     useTheme,
-} from "@mui/material";
+} from '@mui/material';
 
-import { Action, ActionButtonConfig } from "@/api/config";
-import { FolderStatusChip } from "@/components/common/chips";
-import { Dialog } from "@/components/common/dialogs";
-import { FolderTypeIcon } from "@/components/common/icons";
+import { Action, ActionButtonConfig } from '@/api/config';
+import { FolderStatusChip } from '@/components/common/chips';
+import { Dialog } from '@/components/common/dialogs';
+import { FolderTypeIcon } from '@/components/common/icons';
 
-import { useActionMutation } from "./mutations";
+import { useActionMutation } from './mutations';
 
-import { useInboxCardContext } from "../cards/inboxCard";
+import { useInboxCardContext } from '../cards/inboxCard';
 
 export function ActionDialog({
     action,
     open,
     setOpen,
 }: {
-    action: ActionButtonConfig["actions"][0];
+    action: ActionButtonConfig['actions'][0];
     open: boolean;
     setOpen: (open: boolean) => void;
 }) {
     const name = action.name;
     switch (name) {
-        case "delete_imported_folders":
+        case 'delete_imported_folders':
             return (
                 <DeleteImportedFoldersDialog
                     action={action}
@@ -64,16 +64,16 @@ const DeleteImportedFoldersDialog = ({
         >
             <DialogContent>
                 <Typography variant="body2" color="text.secondary">
-                    Are you sure you want to delete all imported folders? This will
-                    delete the following folders:
+                    Are you sure you want to delete all imported folders? This
+                    will delete the following folders:
                 </Typography>
                 <Box
                     sx={{
-                        overflowY: "auto",
+                        overflowY: 'auto',
                         marginTop: 2,
                         marginBottom: 2,
-                        display: "flex",
-                        flexDirection: "column",
+                        display: 'flex',
+                        flexDirection: 'column',
                         gap: 1,
                     }}
                 >
@@ -81,27 +81,27 @@ const DeleteImportedFoldersDialog = ({
                         <Box
                             key={i}
                             sx={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
                                 pl: 1,
                                 gap: 1,
                             }}
                         >
                             <Box
                                 sx={{
-                                    display: "flex",
-                                    alignItems: "center",
+                                    display: 'flex',
+                                    alignItems: 'center',
                                     gap: 1,
                                 }}
                             >
                                 <FolderTypeIcon
                                     isAlbum={f.is_album}
-                                    isArchive={f.type === "archive"}
+                                    isArchive={f.type === 'archive'}
                                     isOpen={false}
                                     size={theme.iconSize.md}
                                 />
-                                <Typography variant="body1" fontWeight={"bold"}>
+                                <Typography variant="body1" fontWeight={'bold'}>
                                     {f.full_path}
                                 </Typography>
                             </Box>
@@ -115,14 +115,14 @@ const DeleteImportedFoldersDialog = ({
                     )}
                 </Box>
                 <Typography variant="body2" color="text.secondary">
-                    This action cannot be undone! All files inside the folders will be
-                    permanently deleted.
+                    This action cannot be undone! All files inside the folders
+                    will be permanently deleted.
                 </Typography>
                 <Divider sx={{ marginY: 2 }} />
                 <Box
                     sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
+                        display: 'flex',
+                        justifyContent: 'space-between',
                         gap: 1,
                     }}
                 >
@@ -138,7 +138,7 @@ const DeleteImportedFoldersDialog = ({
                         color="secondary"
                         onClick={() => {
                             deleteFolders().catch((err) => {
-                                console.error("Failed to delete folders:", err);
+                                console.error('Failed to delete folders:', err);
                             });
                             setOpen(false);
                         }}

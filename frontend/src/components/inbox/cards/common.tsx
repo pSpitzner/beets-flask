@@ -1,4 +1,4 @@
-import { Avatar, Box, Typography } from "@mui/material";
+import { Avatar, Box, Typography } from '@mui/material';
 
 export function CardHeader({
     icon,
@@ -14,15 +14,15 @@ export function CardHeader({
     return (
         <Box
             sx={{
-                display: "flex",
+                display: 'flex',
                 gap: 2,
-                alignItems: "center",
+                alignItems: 'center',
             }}
         >
             <Avatar
                 sx={{
-                    color: "black",
-                    bgcolor: "secondary.main",
+                    color: 'black',
+                    bgcolor: 'secondary.main',
                 }}
             >
                 {icon}

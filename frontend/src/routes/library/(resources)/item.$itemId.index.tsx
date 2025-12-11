@@ -1,21 +1,23 @@
-import { PauseIcon, PlayIcon, PlusIcon } from "lucide-react";
-import React from "react";
-import { Box, Button, Typography, useTheme } from "@mui/material";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { PauseIcon, PlayIcon, PlusIcon } from 'lucide-react';
+import React from 'react';
+import { Box, Button, Typography, useTheme } from '@mui/material';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
 
-import { itemQueryOptions, ItemResponseFull } from "@/api/library";
-import { formatDate, humanizeDuration } from "@/components/common/units/time";
-import { useAudioContext } from "@/components/library/audio/context";
+import { itemQueryOptions, ItemResponseFull } from '@/api/library';
+import { formatDate, humanizeDuration } from '@/components/common/units/time';
+import { useAudioContext } from '@/components/library/audio/context';
 
-export const Route = createFileRoute("/library/(resources)/item/$itemId/")({
+export const Route = createFileRoute('/library/(resources)/item/$itemId/')({
     component: RouteComponent,
 });
 
 function RouteComponent() {
     const params = Route.useParams();
 
-    const { data: item } = useSuspenseQuery(itemQueryOptions(params.itemId, false));
+    const { data: item } = useSuspenseQuery(
+        itemQueryOptions(params.itemId, false)
+    );
 
     return (
         <Box
@@ -26,8 +28,8 @@ function RouteComponent() {
             <AudioControls item={item} />
             <Box
                 sx={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
                     gap: 2,
                     marginTop: 2,
                 }}
@@ -40,7 +42,7 @@ function RouteComponent() {
                     label="Added"
                     description={formatDate(
                         new Date(item.added * 1000),
-                        "%d. %B %Y %H:%M"
+                        '%d. %B %Y %H:%M'
                     )}
                 />
                 <GridItem
@@ -89,7 +91,8 @@ function _GridItem({
 
 function AudioControls({ item }: { item: ItemResponseFull }) {
     const theme = useTheme();
-    const { togglePlaying, currentItem, addToQueue, playing } = useAudioContext();
+    const { togglePlaying, currentItem, addToQueue, playing } =
+        useAudioContext();
 
     const isCurrentItem = currentItem?.id === item.id;
     const isCurrentlyPlaying = isCurrentItem && playing;
@@ -97,16 +100,22 @@ function AudioControls({ item }: { item: ItemResponseFull }) {
     return (
         <Box
             sx={{
-                display: "flex",
+                display: 'flex',
                 gap: 2,
             }}
         >
             <Button
                 startIcon={
                     isCurrentlyPlaying ? (
-                        <PauseIcon size={theme.iconSize.lg} fill="currentColor" />
+                        <PauseIcon
+                            size={theme.iconSize.lg}
+                            fill="currentColor"
+                        />
                     ) : (
-                        <PlayIcon size={theme.iconSize.lg} fill="currentColor" />
+                        <PlayIcon
+                            size={theme.iconSize.lg}
+                            fill="currentColor"
+                        />
                     )
                 }
                 variant="contained"
@@ -120,7 +129,7 @@ function AudioControls({ item }: { item: ItemResponseFull }) {
                     addToQueue(item, true, true);
                 }}
             >
-                {isCurrentlyPlaying ? "Pause" : "Play"}
+                {isCurrentlyPlaying ? 'Pause' : 'Play'}
             </Button>
             <Button
                 startIcon={<PlusIcon size={theme.iconSize.lg} />}

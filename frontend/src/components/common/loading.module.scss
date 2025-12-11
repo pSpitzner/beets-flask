@@ -20,7 +20,7 @@
 
     // Shadow effect
     &::after {
-        content: "";
+        content: '';
         position: absolute;
         width: 45%;
         height: 5%;
@@ -93,7 +93,7 @@
 /* ------------------------------- Small notes ------------------------------ */
 
 .note {
-    &[data-size="small"] {
+    &[data-size='small'] {
         font-size: 20px;
         height: 20px;
         padding: 0;
@@ -111,7 +111,8 @@
             bottom: -4px;
             left: calc(50% - 10px + 3px);
 
-            animation: shadowSmall 0.85s infinite cubic-bezier(0.25, 0.1, 0.25, 1);
+            animation: shadowSmall 0.85s infinite
+                cubic-bezier(0.25, 0.1, 0.25, 1);
             filter: blur(2px) opacity(0.5);
         }
         margin-inline: 10px;

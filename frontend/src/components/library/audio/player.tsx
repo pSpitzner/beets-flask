@@ -11,9 +11,9 @@ import {
     VolumeIcon,
     VolumeOffIcon,
     XIcon,
-} from "lucide-react";
-import { useMemo, useState } from "react";
-import { createPortal } from "react-dom";
+} from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
     Box,
     BoxProps,
@@ -27,20 +27,20 @@ import {
     TypographyProps,
     useMediaQuery,
     useTheme,
-} from "@mui/material";
-import Popper from "@mui/material/Popper";
+} from '@mui/material';
+import Popper from '@mui/material/Popper';
 
-import { useDebounce } from "@/components/common/hooks/useDebounce";
-import { trackLengthRep } from "@/components/common/units/time";
+import { useDebounce } from '@/components/common/hooks/useDebounce';
+import { trackLengthRep } from '@/components/common/units/time';
 
-import { useAudioContext } from "./context";
-import { ProgressBar, Waveform } from "./waveform";
+import { useAudioContext } from './context';
+import { ProgressBar, Waveform } from './waveform';
 
-import { CoverArt, CoverArtProps, MultiCoverArt } from "../coverArt";
+import { CoverArt, CoverArtProps, MultiCoverArt } from '../coverArt';
 
 export function Player() {
     const { items } = useAudioContext();
-    const isMobile = useMediaQuery((theme) => theme.breakpoints.down("tablet"));
+    const isMobile = useMediaQuery((theme) => theme.breakpoints.down('tablet'));
 
     const nItems = useMemo(() => items.length, [items]);
 
@@ -69,16 +69,16 @@ function DesktopPlayer() {
     return (
         <Box
             sx={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "flex-start",
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
                 height: 100,
                 padding: 1,
                 borderRadius: 2,
                 gap: 1,
-                position: "relative",
-                backgroundColor: "background.paper",
+                position: 'relative',
+                backgroundColor: 'background.paper',
                 // a bit of shadow to better distinguish the player
                 // if the background is the same color
                 boxShadow: `0 0 4px ${theme.palette.background.default}`,
@@ -88,60 +88,64 @@ function DesktopPlayer() {
             <Cover
                 sx={{
                     borderRadius: 1,
-                    aspectRatio: "1 / 1",
-                    height: "100%",
-                    width: "unset",
+                    aspectRatio: '1 / 1',
+                    height: '100%',
+                    width: 'unset',
                     m: 0,
-                    flex: "0 0 auto", // prevent shrink
+                    flex: '0 0 auto', // prevent shrink
                 }}
             />
             <Box
                 sx={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr auto",
-                    gridTemplateRows: "auto 1fr",
-                    flexDirection: "column",
-                    width: "100%",
-                    height: "100%",
+                    display: 'grid',
+                    gridTemplateColumns: '1fr auto',
+                    gridTemplateRows: 'auto 1fr',
+                    flexDirection: 'column',
+                    width: '100%',
+                    height: '100%',
                 }}
             >
                 {/* Track info*/}
                 <Box
                     sx={{
-                        gridColumn: "1 / 2",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
+                        gridColumn: '1 / 2',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
                         gap: 1,
-                        width: "100%",
+                        width: '100%',
                         minWidth: 0, // prevent overflow
-                        overflow: "hidden",
-                        ">*": {
-                            alignItems: "flex-end",
+                        overflow: 'hidden',
+                        '>*': {
+                            alignItems: 'flex-end',
                         },
                     }}
                 >
                     <Box
                         sx={{
-                            display: "flex",
+                            display: 'flex',
                             gap: 0.5,
-                            justifyContent: "center",
-                            color: "text.secondary",
-                            justifySelf: "flex-start",
-                            flexWrap: "nowrap",
-                            width: "min-content",
+                            justifyContent: 'center',
+                            color: 'text.secondary',
+                            justifySelf: 'flex-start',
+                            flexWrap: 'nowrap',
+                            width: 'min-content',
                         }}
                     >
                         <ClockIcon size={theme.iconSize.sm} />
-                        <CurrentDuration variant="body2" lineHeight={1} noWrap />
+                        <CurrentDuration
+                            variant="body2"
+                            lineHeight={1}
+                            noWrap
+                        />
                     </Box>
 
                     <Box
                         gap={1}
                         sx={{
-                            display: "flex",
-                            textOverflow: "ellipsis",
-                            overflow: "hidden",
+                            display: 'flex',
+                            textOverflow: 'ellipsis',
+                            overflow: 'hidden',
                         }}
                     >
                         <CurrentTitle variant="body1" lineHeight={1} noWrap />
@@ -155,14 +159,14 @@ function DesktopPlayer() {
 
                     <Box
                         sx={{
-                            display: "flex",
+                            display: 'flex',
                             gap: 0.5,
-                            justifyContent: "center",
-                            color: "text.secondary",
-                            gridColumn: "1",
-                            gridRow: "1",
-                            justifySelf: "flex-end",
-                            flexWrap: "nowrap",
+                            justifyContent: 'center',
+                            color: 'text.secondary',
+                            gridColumn: '1',
+                            gridRow: '1',
+                            justifySelf: 'flex-end',
+                            flexWrap: 'nowrap',
                         }}
                     >
                         <TrackNum variant="body2" lineHeight={1} noWrap />
@@ -172,12 +176,12 @@ function DesktopPlayer() {
                 {/* Progress bar*/}
                 <Box
                     sx={{
-                        gridColumn: "1 / 2",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
+                        gridColumn: '1 / 2',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                         marginBlock: 1,
-                        height: "48px", // size of large iconbutton
+                        height: '48px', // size of large iconbutton
                     }}
                 >
                     <Waveform height={48} />
@@ -186,10 +190,10 @@ function DesktopPlayer() {
                 {/* actions*/}
                 <Box
                     sx={{
-                        gridColumn: "2 / 3",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
+                        gridColumn: '2 / 3',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                         gap: 1,
                         paddingLeft: 1,
                     }}
@@ -201,11 +205,11 @@ function DesktopPlayer() {
 
                 <Box
                     sx={{
-                        gridColumn: "2",
-                        gridRow: "1",
-                        display: "flex",
-                        alignItems: "flex-start",
-                        justifyContent: "flex-end",
+                        gridColumn: '2',
+                        gridRow: '1',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        justifyContent: 'flex-end',
                         marginTop: -0.5,
                         marginRight: -0.5,
                     }}
@@ -243,19 +247,19 @@ function MobilePlayer() {
         <>
             <Box
                 sx={{
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
 
-                    overflow: "hidden",
+                    overflow: 'hidden',
                     height: 60,
                     padding: 1,
                     borderRadius: 2,
                     gap: 1,
-                    position: "relative",
+                    position: 'relative',
 
-                    backgroundColor: "background.paper",
+                    backgroundColor: 'background.paper',
                     // a bit of shadow to better distinguish the player
                     // if the background is the same color
                     boxShadow: `0 0 3px ${theme.palette.background.default}`,
@@ -268,9 +272,9 @@ function MobilePlayer() {
                 <Cover
                     sx={{
                         borderRadius: 1,
-                        aspectRatio: "1 / 1",
-                        height: "100%",
-                        width: "auto",
+                        aspectRatio: '1 / 1',
+                        height: '100%',
+                        width: 'auto',
                         m: 0,
                     }}
                 />
@@ -278,28 +282,32 @@ function MobilePlayer() {
                 {/* Track info*/}
                 <Box
                     sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        overflow: "hidden",
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
                         flex: 1,
                     }}
                 >
                     <CurrentTitle variant="body1" noWrap />
-                    <CurrentArtist variant="caption" color="text.secondary" noWrap />
+                    <CurrentArtist
+                        variant="caption"
+                        color="text.secondary"
+                        noWrap
+                    />
                 </Box>
 
                 {/* Progress bar*/}
                 <ProgressBar
                     sx={{
-                        position: "absolute",
+                        position: 'absolute',
                         bottom: 0,
                         left: theme.spacing(1),
-                        height: "3px",
+                        height: '3px',
                     }}
                 />
 
                 {/* actions*/}
-                <Box sx={{ ml: "auto", display: "flex", gap: 1 }}>
+                <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
                     <IconButton
                         onClick={(e) => {
                             e.stopPropagation();
@@ -340,12 +348,12 @@ function FullScreenPlayer({
         <FullScreenOntop
             ref={ref}
             sx={{
-                display: "flex",
-                flexDirection: "column",
+                display: 'flex',
+                flexDirection: 'column',
             }}
         >
             {/*Top bar*/}
-            <Box sx={{ width: "100%", flex: "0 1 auto" }}>
+            <Box sx={{ width: '100%', flex: '0 1 auto' }}>
                 <IconButton size="large" onClick={onClose}>
                     <ChevronDownIcon size={theme.iconSize.xl} />
                 </IconButton>
@@ -354,39 +362,39 @@ function FullScreenPlayer({
             {/*Art/current track*/}
             <Box
                 sx={{
-                    width: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "flex-end",
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'flex-end',
                     padding: 2,
                     borderRadius: 2,
                     gap: 2,
-                    flex: "1 1 auto",
-                    overflow: "hidden",
+                    flex: '1 1 auto',
+                    overflow: 'hidden',
                 }}
             >
                 <MultiCover
                     sx={{
-                        overflow: "hidden",
-                        flex: "0 1 auto",
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "flex-end",
-                        width: "100%",
-                        maxHeight: "50vh",
+                        overflow: 'hidden',
+                        flex: '0 1 auto',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'flex-end',
+                        width: '100%',
+                        maxHeight: '50vh',
                     }}
                     size="large"
                 />
 
                 <Box
                     sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        width: "100%",
-                        flex: "0 1 auto",
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        width: '100%',
+                        flex: '0 1 auto',
                     }}
                 >
                     <CurrentTitle variant="h2" fontWeight="bold" />
@@ -398,45 +406,45 @@ function FullScreenPlayer({
 
             <Box
                 sx={{
-                    width: "100%",
+                    width: '100%',
                     padding: 2,
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
                     gap: 2,
-                    flex: "1 0 auto",
-                    overflow: "hidden",
+                    flex: '1 0 auto',
+                    overflow: 'hidden',
                 }}
             >
                 <Box
                     sx={{
                         padding: 2,
-                        width: "100%",
+                        width: '100%',
                     }}
                 >
                     <Waveform height={80} />
                 </Box>
                 <Box
                     sx={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr",
-                        gridTemplateRows: "1fr",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: "100%",
+                        display: 'grid',
+                        gridTemplateColumns: '1fr',
+                        gridTemplateRows: '1fr',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '100%',
                         paddingBottom: 1,
                     }}
                 >
                     <Box
                         sx={{
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            width: "100%",
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            width: '100%',
                             gap: 3,
-                            gridColumn: "1",
-                            gridRow: "1",
+                            gridColumn: '1',
+                            gridRow: '1',
                         }}
                     >
                         <PrevButton />
@@ -445,9 +453,9 @@ function FullScreenPlayer({
                     </Box>
                     <VolumeControls
                         sx={{
-                            ml: "auto",
-                            gridColumn: "1",
-                            gridRow: "1",
+                            ml: 'auto',
+                            gridColumn: '1',
+                            gridRow: '1',
                         }}
                     />
                 </Box>
@@ -465,12 +473,12 @@ export function FullScreenOntop({ sx, ...props }: BoxProps) {
             sx={[
                 {
                     zIndex: 999,
-                    position: "absolute",
+                    position: 'absolute',
                     top: 0,
                     left: 0,
-                    width: "100%",
-                    height: "100%",
-                    bgcolor: "background.paper",
+                    width: '100%',
+                    height: '100%',
+                    bgcolor: 'background.paper',
                 },
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                 ...(Array.isArray(sx) ? sx : [sx]),
@@ -495,7 +503,7 @@ function PlayPauseButton(props: ButtonProps) {
                 togglePlaying();
             }}
             sx={{
-                backgroundColor: "primary.muted",
+                backgroundColor: 'primary.muted',
             }}
             size="medium"
             loading={!canPlay}
@@ -565,20 +573,20 @@ function VolumeControls(props: BoxProps) {
 
     // Ios devices cant control volume, thanks apple...
     const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const isMobile = useMediaQuery(theme.breakpoints.down("tablet"));
+    const isMobile = useMediaQuery(theme.breakpoints.down('tablet'));
 
     return (
         <Box {...props}>
             <Popper
                 open={open}
                 anchorEl={anchorEl}
-                placement={"top"}
+                placement={'top'}
                 sx={{
                     zIndex: 1,
                 }}
                 modifiers={[
                     {
-                        name: "offset",
+                        name: 'offset',
                         options: {
                             offset: [0, theme.spacing(0.5).slice(0, -2)],
                         },
@@ -604,9 +612,9 @@ function VolumeControls(props: BoxProps) {
                         valueLabelDisplay="auto"
                         valueLabelFormat={(value) => `${Math.round(value)}%`}
                         sx={{
-                            ".MuiSlider-valueLabel": {
-                                backgroundColor: "background.paper",
-                                color: "text.primary",
+                            '.MuiSlider-valueLabel': {
+                                backgroundColor: 'background.paper',
+                                color: 'text.primary',
                             },
                         }}
                     />
@@ -633,24 +641,28 @@ function VolumeControls(props: BoxProps) {
                 disabled={!currentAudio}
             >
                 {/* Icon depends on current volume */}
-                {between(volume, 2 / 3, 1) && <Volume2Icon size={theme.iconSize.md} />}
+                {between(volume, 2 / 3, 1) && (
+                    <Volume2Icon size={theme.iconSize.md} />
+                )}
                 {between(volume, 1 / 3, 2 / 3) && (
                     <Volume1Icon size={theme.iconSize.md} />
                 )}
-                {between(volume, 0, 1 / 3) && <VolumeIcon size={theme.iconSize.md} />}
+                {between(volume, 0, 1 / 3) && (
+                    <VolumeIcon size={theme.iconSize.md} />
+                )}
                 {volume === 0 && <VolumeOffIcon size={theme.iconSize.md} />}
             </IconButton>
         </Box>
     );
 }
 
-function Cover(props: Omit<CoverArtProps, "type">) {
+function Cover(props: Omit<CoverArtProps, 'type'>) {
     const { currentItem } = useAudioContext();
     if (!currentItem) return null;
     return <CoverArt type="item" beetsId={currentItem.id} {...props} />;
 }
 
-function MultiCover(props: Omit<CoverArtProps, "type">) {
+function MultiCover(props: Omit<CoverArtProps, 'type'>) {
     const { currentItem } = useAudioContext();
     if (!currentItem) return null;
     return <MultiCoverArt beetsId={currentItem?.id} {...props} />;
@@ -658,19 +670,21 @@ function MultiCover(props: Omit<CoverArtProps, "type">) {
 
 function CurrentArtist(props: TypographyProps) {
     const { currentItem } = useAudioContext();
-    return <Typography {...props}>{currentItem?.artist || "Unknown"}</Typography>;
+    return (
+        <Typography {...props}>{currentItem?.artist || 'Unknown'}</Typography>
+    );
 }
 
 function CurrentTitle(props: TypographyProps) {
     const { currentItem } = useAudioContext();
-    return <Typography {...props}>{currentItem?.name || "Unknown"}</Typography>;
+    return <Typography {...props}>{currentItem?.name || 'Unknown'}</Typography>;
 }
 
 function CurrentDuration(props: TypographyProps) {
     const { currentItem, currentTime } = useAudioContext();
     return (
         <Typography {...props}>
-            {trackLengthRep(currentTime, false)} /{" "}
+            {trackLengthRep(currentTime, false)} /{' '}
             {trackLengthRep(currentItem?.length || 0, false)}
         </Typography>
     );

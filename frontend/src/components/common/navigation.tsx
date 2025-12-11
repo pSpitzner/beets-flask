@@ -1,4 +1,4 @@
-import { ComponentProps, ReactNode } from "react";
+import { ComponentProps, ReactNode } from 'react';
 import {
     Box,
     styled,
@@ -6,8 +6,8 @@ import {
     Tabs as MuiTabs,
     Typography,
     useTheme,
-} from "@mui/material";
-import { createLink, LinkProps, useMatches } from "@tanstack/react-router";
+} from '@mui/material';
+import { createLink, LinkProps, useMatches } from '@tanstack/react-router';
 
 type NavItem = {
     label: ReactNode;
@@ -33,11 +33,11 @@ export function NavigationTabs({ items }: { items: NavItem[] }) {
             value={currentIdx === -1 ? false : currentIdx}
             role="navigation"
             sx={{
-                width: "100%",
+                width: '100%',
                 background: theme.palette.background.paper,
-                display: "flex",
-                position: "relative",
-                boxSing: "border-box",
+                display: 'flex',
+                position: 'relative',
+                boxSing: 'border-box',
                 borderBottom: `1px solid ${theme.palette.primary.muted}`,
             }}
             centered
@@ -45,12 +45,12 @@ export function NavigationTabs({ items }: { items: NavItem[] }) {
             {items.map(({ label, icon, ...props }, index) => (
                 <TabA
                     key={index}
-                    sx={{ maxWidth: "unset", flex: "1 1 auto" }}
+                    sx={{ maxWidth: 'unset', flex: '1 1 auto' }}
                     label={
                         <Box
                             sx={{
-                                display: "flex",
-                                alignItems: "center",
+                                display: 'flex',
+                                alignItems: 'center',
                                 gap: 1,
                             }}
                         >
@@ -69,24 +69,24 @@ export function NavigationTabs({ items }: { items: NavItem[] }) {
 
 const TabA = createLink(
     styled(MuiTab)(({ theme }) => ({
-        display: "flex",
-        alignItems: "center",
+        display: 'flex',
+        alignItems: 'center',
         gap: theme.spacing(1),
-        width: "100%",
+        width: '100%',
         padding: theme.spacing(1),
-        justifyContent: "center",
-        position: "relative",
+        justifyContent: 'center',
+        position: 'relative',
 
         "&[data-status='active']": {
             color: theme.palette.primary.main,
 
-            ":after": {
+            ':after': {
                 content: '""',
-                position: "absolute",
+                position: 'absolute',
                 bottom: 0,
                 left: 0,
-                height: "100%",
-                width: "100%",
+                height: '100%',
+                width: '100%',
                 background: `radial-gradient(ellipse farthest-side at bottom, #ffffff15 0%, transparent 100%)`,
             },
         },

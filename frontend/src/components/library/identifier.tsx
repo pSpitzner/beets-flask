@@ -1,12 +1,12 @@
-import { useMemo } from "react";
-import { Fragment } from "react/jsx-runtime";
-import { Box, BoxProps, Link } from "@mui/material";
+import { useMemo } from 'react';
+import { Fragment } from 'react/jsx-runtime';
+import { Box, BoxProps, Link } from '@mui/material';
 
-import { AlbumSource, ItemSource } from "@/pythonTypes";
+import { AlbumSource, ItemSource } from '@/pythonTypes';
 
-import { isItemSource, sourceHref, sourceName } from "./sources";
+import { isItemSource, sourceHref, sourceName } from './sources';
 
-import { SourceTypeIcon } from "../common/icons";
+import { SourceTypeIcon } from '../common/icons';
 
 /** Component that shows the identifier/sources of an album or item
  * * @param {source} sources
@@ -25,11 +25,11 @@ export function Identifiers({
                     <Box>
                         <Box
                             sx={{
-                                display: "flex",
-                                flexDirection: "row",
+                                display: 'flex',
+                                flexDirection: 'row',
                                 gap: 1,
-                                alignItems: "center",
-                                fontWeight: "bold",
+                                alignItems: 'center',
+                                fontWeight: 'bold',
                             }}
                         >
                             <SourceTypeIcon type={source.source} size={20} />
@@ -55,24 +55,24 @@ function Identifier({ source }: { source: ItemSource | AlbumSource }) {
         const idents: Array<Idents> = [];
         if (isItemSource(source)) {
             idents.push({
-                label: "track_id",
+                label: 'track_id',
                 id: source.track_id,
-                href: sourceHref(source.source, source.track_id, "track"),
+                href: sourceHref(source.source, source.track_id, 'track'),
             });
         }
 
         if (source.album_id) {
             idents.push({
-                label: "album_id",
+                label: 'album_id',
                 id: source.album_id,
-                href: sourceHref(source.source, source.album_id, "album"),
+                href: sourceHref(source.source, source.album_id, 'album'),
             });
         }
         if (source.artist_id) {
             idents.push({
-                label: "artist_id",
+                label: 'artist_id',
                 id: source.artist_id,
-                href: sourceHref(source.source, source.artist_id, "artist"),
+                href: sourceHref(source.source, source.artist_id, 'artist'),
             });
         }
         if (source.extra) {
@@ -80,7 +80,11 @@ function Identifier({ source }: { source: ItemSource | AlbumSource }) {
                 idents.push({
                     label: key,
                     id: value,
-                    href: sourceHref(source.source, value, key.replace(/_ids?/, "")),
+                    href: sourceHref(
+                        source.source,
+                        value,
+                        key.replace(/_ids?/, '')
+                    ),
                 });
             }
         }
@@ -90,10 +94,10 @@ function Identifier({ source }: { source: ItemSource | AlbumSource }) {
     return (
         <Box
             sx={{
-                display: "flex",
-                flexDirection: "column",
-                position: "relative",
-                alignItems: "flex-start",
+                display: 'flex',
+                flexDirection: 'column',
+                position: 'relative',
+                alignItems: 'flex-start',
                 paddingLeft: 1,
             }}
         >
@@ -101,14 +105,18 @@ function Identifier({ source }: { source: ItemSource | AlbumSource }) {
                 return (
                     <Fragment key={ident.label}>
                         <label>{ident.label}</label>
-                        {Array.isArray(ident.href) && Array.isArray(ident.id) ? (
+                        {Array.isArray(ident.href) &&
+                        Array.isArray(ident.id) ? (
                             ident.href.map((href, i) => (
                                 <Link key={href} href={href} target="_blank">
                                     {ident.id[i]}
                                 </Link>
                             ))
                         ) : (
-                            <Link href={(ident.href as string) || ""} target="_blank">
+                            <Link
+                                href={(ident.href as string) || ''}
+                                target="_blank"
+                            >
                                 {ident.id as string}
                             </Link>
                         )}

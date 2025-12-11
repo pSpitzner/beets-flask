@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
-import { SocketEvents, StatusSocket, TerminalSocket } from "@/api/websocket";
+import { SocketEvents, StatusSocket, TerminalSocket } from '@/api/websocket';
 
-import { io, ManagerOptions, Socket, SocketOptions } from "socket.io-client";
+import { io, ManagerOptions, Socket, SocketOptions } from 'socket.io-client';
 
 type SocketMapping = {
     status: StatusSocket;
@@ -33,8 +33,8 @@ export default function useSocket<N extends keyof SocketEvents>(
     const url: string = `/${namespace}`;
 
     const [socket, setSocket] = useState<Socket<
-        SocketEvents[N]["ServerToClientEvents"],
-        SocketEvents[N]["ClientToServerEvents"]
+        SocketEvents[N]['ServerToClientEvents'],
+        SocketEvents[N]['ClientToServerEvents']
     > | null>(null);
     const [isConnected, setIsConnected] = useState(false);
 
@@ -42,8 +42,8 @@ export default function useSocket<N extends keyof SocketEvents>(
     useEffect(() => {
         const socket = io(url, {
             autoConnect: false,
-            transports: ["websocket"],
-            path: "/socket.io",
+            transports: ['websocket'],
+            path: '/socket.io',
             ...options,
         }) as SocketMapping[N];
         setSocket(socket);
@@ -54,26 +54,26 @@ export default function useSocket<N extends keyof SocketEvents>(
         if (!socket) return;
 
         function handleConnect() {
-            console.debug("useSocket", `${namespace}-socket connected`);
+            console.debug('useSocket', `${namespace}-socket connected`);
             setIsConnected(true);
         }
         function handleDisconnect() {
-            console.debug("useSocket", `${namespace}-socket disconnected`);
+            console.debug('useSocket', `${namespace}-socket disconnected`);
             setIsConnected(false);
         }
         function handleError(e: unknown) {
             console.error(e);
         }
 
-        socket.on("connect", handleConnect);
-        socket.on("disconnect", handleDisconnect);
-        socket.on("connect_error", handleError);
+        socket.on('connect', handleConnect);
+        socket.on('disconnect', handleDisconnect);
+        socket.on('connect_error', handleError);
         socket.connect();
 
         return () => {
-            socket.off("connect", handleConnect);
-            socket.off("disconnect", handleDisconnect);
-            socket.off("connect_error", handleError);
+            socket.off('connect', handleConnect);
+            socket.off('disconnect', handleDisconnect);
+            socket.off('connect_error', handleError);
             socket.disconnect();
         };
     }, [socket, namespace]);

@@ -20,7 +20,7 @@ jobs:
             actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
         strategy:
             matrix:
-                node-version: [21]
+                node-version: ["22.20.0"]
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
@@ -44,13 +44,19 @@ jobs:
               run: |
                   cd ./frontend
                   pnpm run lint
+            - name: Run prettier
+              id: prettier
+              continue-on-error: true
+              run: |
+                  cd ./frontend
+                  pnpm run format-check
             - name: Run TypeScript type check
               id: check-types
               run: |
                   cd ./frontend
                   pnpm run check-types
             - name: Check for failures
-              if: steps.eslint.outcome == 'failure' || steps.check-types.outcome == 'failure'
+              if: steps.eslint.outcome == 'failure' || steps.check-types.outcome == 'failure' || steps.prettier.outcome == 'failure'
               run: |
                   echo "One or more checks failed"
                   exit 1

@@ -4,8 +4,8 @@ import {
     InfoIcon,
     RotateCcwIcon,
     SquareChartGanttIcon,
-} from "lucide-react";
-import { useCallback, useState } from "react";
+} from 'lucide-react';
+import { useCallback, useState } from 'react';
 import {
     closestCenter,
     DndContext,
@@ -18,14 +18,14 @@ import {
     UniqueIdentifier,
     useSensor,
     useSensors,
-} from "@dnd-kit/core";
+} from '@dnd-kit/core';
 import {
     arrayMove,
     horizontalListSortingStrategy,
     SortableContext,
     sortableKeyboardCoordinates,
     useSortable,
-} from "@dnd-kit/sortable";
+} from '@dnd-kit/sortable';
 import {
     Box,
     BoxProps,
@@ -33,17 +33,17 @@ import {
     IconButton,
     Typography,
     useTheme,
-} from "@mui/material";
+} from '@mui/material';
 
 import {
     DEFAULT_INBOX_FOLDER_FRONTEND_CONFIG,
     GridColumn,
     type InboxFolderFrontendConfig,
-} from "@/api/config";
-import { File, Folder } from "@/pythonTypes";
+} from '@/api/config';
+import { File, Folder } from '@/pythonTypes';
 
-import { StyledChip } from "../../common/chips";
-import { FileComponent, FolderTreeRow } from "../fileTree";
+import { StyledChip } from '../../common/chips';
+import { FileComponent, FolderTreeRow } from '../fileTree';
 
 /** Use drag and drop to
  * sort the columns in the grid template.
@@ -55,9 +55,9 @@ export function GridTemplateSettings({
     gridTemplateColumns,
     setGridTemplateColumns,
 }: {
-    gridTemplateColumns: InboxFolderFrontendConfig["gridTemplateColumns"];
+    gridTemplateColumns: InboxFolderFrontendConfig['gridTemplateColumns'];
     setGridTemplateColumns: (
-        cols: InboxFolderFrontendConfig["gridTemplateColumns"]
+        cols: InboxFolderFrontendConfig['gridTemplateColumns']
     ) => void;
 }) {
     const items = gridTemplateColumns.map((col) => col.name) as string[];
@@ -100,22 +100,22 @@ export function GridTemplateSettings({
     }, []);
     const handleDragCancel = useCallback((e: DragCancelEvent) => {
         setActive(null);
-        console.debug("Drag cancelled", e);
+        console.debug('Drag cancelled', e);
     }, []);
 
     return (
         <Box
             sx={{
-                width: "100%",
-                display: "flex",
-                flexDirection: "column",
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
             }}
         >
             <Typography
                 variant="h6"
                 sx={{
-                    display: "flex",
-                    alignItems: "center",
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: 1,
                 }}
                 gutterBottom
@@ -133,8 +133,8 @@ export function GridTemplateSettings({
                 </IconButton>
             </Typography>
             <Typography variant="body2" color="text.secondary">
-                Change the order of the columns in the grid. The first column is always
-                the selector, the last one is the actions.
+                Change the order of the columns in the grid. The first column is
+                always the selector, the last one is the actions.
             </Typography>
 
             <Box
@@ -143,8 +143,8 @@ export function GridTemplateSettings({
                 width="100%"
                 sx={(theme) => ({
                     paddingBlock: 1,
-                    [theme.breakpoints.down("tablet")]: {
-                        flexWrap: "wrap",
+                    [theme.breakpoints.down('tablet')]: {
+                        flexWrap: 'wrap',
                     },
                 })}
             >
@@ -164,24 +164,27 @@ export function GridTemplateSettings({
                                 id={col.name}
                                 key={col.name}
                                 sx={{
-                                    display: "flex",
+                                    display: 'flex',
                                     paddingBlock: 1,
                                     paddingInline: 1,
-                                    border: "2px dashed gray",
-                                    flexDirection: "row",
-                                    flexGrow: col.name === "tree" ? 1 : 0,
-                                    justifyContent: "center",
-                                    alignItems: "center",
+                                    border: '2px dashed gray',
+                                    flexDirection: 'row',
+                                    flexGrow: col.name === 'tree' ? 1 : 0,
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
                                     gap: 1,
                                 }}
                             >
                                 <Box sx={{ flexGrow: 1 }} color="gray">
-                                    <ExampleCol key={col.name} name={col.name} />
+                                    <ExampleCol
+                                        key={col.name}
+                                        name={col.name}
+                                    />
                                 </Box>
                                 <IconButton
                                     size="small"
                                     sx={{
-                                        color: "default",
+                                        color: 'default',
                                         m: 0,
                                         p: 0,
                                     }}
@@ -212,18 +215,20 @@ export function GridTemplateSettings({
                         {active && (
                             <Box
                                 sx={{
-                                    border: "2px dashed",
-                                    borderColor: "secondary.muted",
+                                    border: '2px dashed',
+                                    borderColor: 'secondary.muted',
                                     padding: 1,
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    alignItems: "center",
-                                    justifyContent: "center",
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
                                     minHeight: 52, // A bit of a hack to ensure the overlay has the same height as the items
-                                    position: "relative",
+                                    position: 'relative',
                                 }}
                             >
-                                <ExampleCol name={active as GridColumn["name"]} />
+                                <ExampleCol
+                                    name={active as GridColumn['name']}
+                                />
                             </Box>
                         )}
                     </DragOverlay>
@@ -239,10 +244,16 @@ function SortableItem({
     sx,
     ...props
 }: { id: UniqueIdentifier } & BoxProps) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-        useSortable({
-            id,
-        });
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({
+        id,
+    });
 
     const style = transform
         ? {
@@ -270,25 +281,25 @@ function SortableItem({
 }
 
 const dummyFolder = {
-    full_path: "Folder",
-    hash: "",
+    full_path: 'Folder',
+    hash: '',
     is_album: false,
     children: [
         {
-            type: "file",
-            full_path: "legally acquired bootleg.mp3",
+            type: 'file',
+            full_path: 'legally acquired bootleg.mp3',
         } as File,
     ],
-    type: "directory",
+    type: 'directory',
 } as Folder;
 
 // This shows an example of how to render a column in the grid template.
-function ExampleCol({ name }: { name: GridColumn["name"] }) {
+function ExampleCol({ name }: { name: GridColumn['name'] }) {
     const theme = useTheme();
     const [expanded, setExpanded] = useState(false);
 
     switch (name) {
-        case "selector":
+        case 'selector':
             return (
                 <Checkbox
                     size="medium"
@@ -298,7 +309,7 @@ function ExampleCol({ name }: { name: GridColumn["name"] }) {
                     disabled
                 />
             );
-        case "tree":
+        case 'tree':
             return (
                 <>
                     <FolderTreeRow
@@ -306,9 +317,9 @@ function ExampleCol({ name }: { name: GridColumn["name"] }) {
                         isOpen={expanded}
                         setIsOpen={setExpanded}
                         sx={{
-                            width: "100%",
-                            display: "flex",
-                            alignItems: "center",
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
                         }}
                     />
                     {expanded && (
@@ -319,7 +330,7 @@ function ExampleCol({ name }: { name: GridColumn["name"] }) {
                     )}
                 </>
             );
-        case "chip":
+        case 'chip':
             return (
                 <StyledChip
                     icon={<InfoIcon size={theme.iconSize.sm} />}
@@ -329,11 +340,11 @@ function ExampleCol({ name }: { name: GridColumn["name"] }) {
                     color="info"
                 />
             );
-        case "actions":
+        case 'actions':
             return (
                 <IconButton
                     sx={{
-                        color: "text.secondary",
+                        color: 'text.secondary',
                     }}
                 >
                     <SquareChartGanttIcon size={16} />

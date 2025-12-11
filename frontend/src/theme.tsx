@@ -1,9 +1,12 @@
-import CssBaseline from "@mui/material/CssBaseline";
-import { StyledEngineProvider } from "@mui/material/styles";
-import { createTheme, ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
+import CssBaseline from '@mui/material/CssBaseline';
+import { StyledEngineProvider } from '@mui/material/styles';
+import {
+    createTheme,
+    ThemeProvider as MuiThemeProvider,
+} from '@mui/material/styles';
 
 // Global styles
-import "./main.css";
+import './main.css';
 
 type DiffColors = {
     added: string;
@@ -18,7 +21,7 @@ type DiffColors = {
 };
 
 // TS Augmentation to add custom breakpoints (see below)
-declare module "@mui/material/styles" {
+declare module '@mui/material/styles' {
     interface BreakpointOverrides {
         xs: false; // removes the `xs` breakpoint
         sm: false;
@@ -83,66 +86,66 @@ const darkTheme = createTheme({
     },
 
     palette: {
-        mode: "dark",
+        mode: 'dark',
         tonalOffset: 0.4,
         secondary: {
-            main: "#20F5F1",
-            light: "#6FF5F2",
-            muted: "#348F8D",
-            contrastText: "#000000",
+            main: '#20F5F1',
+            light: '#6FF5F2',
+            muted: '#348F8D',
+            contrastText: '#000000',
         },
         primary: {
             // Complementary pink for secondary as compared to primary
-            main: "#ED41C3",
-            light: "#F5A0D5",
-            muted: "#A43F8C",
-            contrastText: "#000000",
+            main: '#ED41C3',
+            light: '#F5A0D5',
+            muted: '#A43F8C',
+            contrastText: '#000000',
         },
         text: {
-            primary: "#ffffff",
+            primary: '#ffffff',
             // overwriting secondary fixes the transparency (bad on icons)
-            secondary: "#ACB3B9",
+            secondary: '#ACB3B9',
         },
         action: {
             // hover: "#212529",
-            hover: "#3A3C3E",
-            selected: "#7C848E22",
+            hover: '#3A3C3E',
+            selected: '#7C848E22',
         },
         background: {
-            default: "#000000",
-            paper: "#181A1C",
+            default: '#000000',
+            paper: '#181A1C',
         },
         diffs: {
             // added: "#a4bf8c",
-            added: "#A0D582",
+            added: '#A0D582',
             // removed: "#c0626b",
-            removed: "#74454B",
-            changed: "#ebcb8c",
-            changedLight: "#403b31",
-            light: "#ACB3B9",
-            extraTrack: "#ebcb8c",
-            extraItem: "#4C98CB",
-            extraTrackLight: "#403b31",
-            extraItemLight: "#32455C",
+            removed: '#74454B',
+            changed: '#ebcb8c',
+            changedLight: '#403b31',
+            light: '#ACB3B9',
+            extraTrack: '#ebcb8c',
+            extraItem: '#4C98CB',
+            extraTrackLight: '#403b31',
+            extraItemLight: '#32455C',
         },
     },
     components: {
         MuiTooltip: {
             styleOverrides: {
                 tooltip: {
-                    backgroundColor: "#21252933",
-                    borderRadius: "0.3rem",
-                    backdropFilter: "blur(10px)",
+                    backgroundColor: '#21252933',
+                    borderRadius: '0.3rem',
+                    backdropFilter: 'blur(10px)',
                 },
             },
         },
         MuiMenu: {
             styleOverrides: {
                 paper: {
-                    backgroundColor: "#21252933",
-                    borderRadius: "0.3rem",
-                    backdropFilter: "blur(10px)",
-                    backgroundImage: "none",
+                    backgroundColor: '#21252933',
+                    borderRadius: '0.3rem',
+                    backdropFilter: 'blur(10px)',
+                    backgroundImage: 'none',
                 },
             },
         },
@@ -150,7 +153,7 @@ const darkTheme = createTheme({
             styleOverrides: {
                 root: {
                     // Ensuring consistent dark mode color independent of paper elevation
-                    backgroundImage: "none",
+                    backgroundImage: 'none',
                 },
             },
         },
@@ -171,7 +174,11 @@ const darkTheme = createTheme({
     },
 });
 
-export default function ThemeProvider({ children }: { children: React.ReactNode }) {
+export default function ThemeProvider({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
     return (
         <StyledEngineProvider injectFirst>
             <MuiThemeProvider theme={darkTheme}>

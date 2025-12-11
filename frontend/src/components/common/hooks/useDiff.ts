@@ -1,5 +1,5 @@
-import { type Change, diffChars, diffWords, diffWordsWithSpace } from "diff";
-import { useMemo } from "react";
+import { type Change, diffChars, diffWords, diffWordsWithSpace } from 'diff';
+import { useMemo } from 'react';
 
 /**
  * Custom hook that calculates the difference between two strings using the `diff` library.
@@ -24,15 +24,15 @@ import { useMemo } from "react";
  * @see https://www.npmjs.com/package/diff for underlying library documentation
  */
 export function useDiff(
-    from: string | null = "",
-    to: string | null = "",
-    method: "chars" | "words" | "wordsWithSpace" | "full" | "auto" = "auto"
+    from: string | null = '',
+    to: string | null = '',
+    method: 'chars' | 'words' | 'wordsWithSpace' | 'full' | 'auto' = 'auto'
 ) {
     if (from === null) {
-        from = "";
+        from = '';
     }
     if (to === null) {
-        to = "";
+        to = '';
     }
 
     return useMemo(() => {
@@ -43,7 +43,7 @@ export function useDiff(
         }
 
         switch (method) {
-            case "auto":
+            case 'auto':
                 diff = diffChars(from, to);
                 // simple heuristics: if we have a lot to replaceme, maybe a word diff is better
                 if (diff.length > from.length / 2) {
@@ -53,16 +53,16 @@ export function useDiff(
                     }
                 }
                 break;
-            case "words":
+            case 'words':
                 diff = diffWords(from, to);
                 break;
-            case "wordsWithSpace":
+            case 'wordsWithSpace':
                 diff = diffWordsWithSpace(from, to);
                 break;
-            case "chars":
+            case 'chars':
                 diff = diffChars(from, to);
                 break;
-            case "full":
+            case 'full':
                 if (from === to) {
                     diff = [
                         {

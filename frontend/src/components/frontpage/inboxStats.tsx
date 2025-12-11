@@ -1,10 +1,10 @@
-import { Inbox } from "lucide-react";
-import { Box, Divider, Grid } from "@mui/material";
-import { useQuery } from "@tanstack/react-query";
+import { Inbox } from 'lucide-react';
+import { Box, Divider, Grid } from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
 
-import { inboxStatsQueryOptions } from "@/api/inbox";
-import { Card, CardAvatar, CardContent } from "@/components/frontpage/card";
-import { InboxStats } from "@/pythonTypes";
+import { inboxStatsQueryOptions } from '@/api/inbox';
+import { Card, CardAvatar, CardContent } from '@/components/frontpage/card';
+import { InboxStats } from '@/pythonTypes';
 
 export function InboxStatsGridItems() {
     const { data, isLoading, isPending, isError, error } = useQuery(
@@ -54,8 +54,8 @@ function InboxCardView({ stats }: { stats: InboxStats }) {
                         component="code"
                         sx={{
                             fontSize: 14,
-                            color: "grey.500",
-                            marginBottom: "0.875em",
+                            color: 'grey.500',
+                            marginBottom: '0.875em',
                         }}
                     >
                         {stats.path}

@@ -1,5 +1,10 @@
-import { FolderIcon, InfoIcon, RefreshCwIcon, TriangleAlert } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+    FolderIcon,
+    InfoIcon,
+    RefreshCwIcon,
+    TriangleAlert,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
 import {
     Alert,
     AlertProps,
@@ -12,19 +17,19 @@ import {
     Tooltip,
     Typography,
     useTheme,
-} from "@mui/material";
-import { Link as MuiLink } from "@mui/material";
-import { useQuery } from "@tanstack/react-query";
-import { createLink, useParams, useRouter } from "@tanstack/react-router";
+} from '@mui/material';
+import { Link as MuiLink } from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
+import { createLink, useParams, useRouter } from '@tanstack/react-router';
 
-import { BeetsFlaskError } from "@/api/common";
-import { walkFolder } from "@/api/inbox";
-import { sessionQueryOptions } from "@/api/session";
-import { Archive, Folder } from "@/pythonTypes";
+import { BeetsFlaskError } from '@/api/common';
+import { walkFolder } from '@/api/inbox';
+import { sessionQueryOptions } from '@/api/session';
+import { Archive, Folder } from '@/pythonTypes';
 
-import { CardHeader } from "./common";
+import { CardHeader } from './common';
 
-import { RetagButtonGroup } from "../actions/buttons";
+import { RetagButtonGroup } from '../actions/buttons';
 
 /** Shows the general folder information!
  *
@@ -80,20 +85,21 @@ export function FolderCard({ folder }: { folder: Folder | Archive }) {
     );
     const showHashWarning = hashes.size > 1;
     const showNoSessionWarning =
-        prevError instanceof BeetsFlaskError && prevError.name == "NotFoundException";
+        prevError instanceof BeetsFlaskError &&
+        prevError.name == 'NotFoundException';
 
-    const isArchive = folder.type === "archive";
+    const isArchive = folder.type === 'archive';
     const isAlbum = !isArchive && folder.is_album;
     const counts = !isArchive && countFilesFolders(folder as Folder);
 
     return (
         <Card
             sx={{
-                display: "flex",
+                display: 'flex',
                 gap: 2,
-                flexDirection: "column",
+                flexDirection: 'column',
                 padding: 2,
-                bgcolor: "background.paper",
+                bgcolor: 'background.paper',
             }}
         >
             <CardHeader
@@ -101,14 +107,22 @@ export function FolderCard({ folder }: { folder: Folder | Archive }) {
                 title={folder.full_path}
                 subtitle={urlParams.hash ?? folder.hash}
             >
-                <Box sx={{ ml: "auto", alignSelf: "flex-start" }}>
+                <Box sx={{ ml: 'auto', alignSelf: 'flex-start' }}>
                     {counts != false ? (
-                        <Typography variant="caption" component="div" textAlign="right">
-                            Includes {counts.nFiles} files <br /> in {counts.nFolders}{" "}
-                            folders
+                        <Typography
+                            variant="caption"
+                            component="div"
+                            textAlign="right"
+                        >
+                            Includes {counts.nFiles} files <br /> in{' '}
+                            {counts.nFolders} folders
                         </Typography>
                     ) : (
-                        <Typography variant="caption" component="div" textAlign="right">
+                        <Typography
+                            variant="caption"
+                            component="div"
+                            textAlign="right"
+                        >
                             Archive
                         </Typography>
                     )}
@@ -153,28 +167,29 @@ function HashWarning({
             severity="warning"
             icon={<TriangleAlert />}
             sx={{
-                ".MuiAlert-message": { width: "100%" },
+                '.MuiAlert-message': { width: '100%' },
             }}
             {...props}
         >
             <AlertTitle>Integrity Warning</AlertTitle>
             <Box>
-                The contents of this folder don't match what we expected. This could
-                happen because:
-                <Box component={"ul"} sx={{ marginTop: 1, marginBottom: 1 }}>
+                The contents of this folder don't match what we expected. This
+                could happen because:
+                <Box component={'ul'} sx={{ marginTop: 1, marginBottom: 1 }}>
                     <li>
-                        The files were modified since the last session, <b>or</b>
+                        The files were modified since the last session,{' '}
+                        <b>or</b>
                     </li>
                     <li>The link you're using is no longer up to date.</li>
                 </Box>
-                <b>Proceed with caution!</b> Verify the changes or update the link to
-                ensure you're working with the correct files.
+                <b>Proceed with caution!</b> Verify the changes or update the
+                link to ensure you're working with the correct files.
             </Box>
             <Divider orientation="vertical" flexItem />
             <Box
                 sx={{
-                    display: "flex",
-                    flexDirection: "column",
+                    display: 'flex',
+                    flexDirection: 'column',
                     gap: 0.25,
                     paddingBlock: 1,
                     paddingInline: 2,
@@ -192,8 +207,8 @@ function HashWarning({
                             underline="none"
                             activeProps={{
                                 sx: {
-                                    color: "inherit",
-                                    pointerEvents: "none",
+                                    color: 'inherit',
+                                    pointerEvents: 'none',
                                 },
                             }}
                             activeOptions={{ exact: true }}
@@ -213,8 +228,8 @@ function HashWarning({
                             }}
                             activeProps={{
                                 sx: {
-                                    color: "inherit",
-                                    pointerEvents: "none",
+                                    color: 'inherit',
+                                    pointerEvents: 'none',
                                 },
                             }}
                             underline="none"
@@ -235,8 +250,8 @@ function HashWarning({
                             }}
                             activeProps={{
                                 sx: {
-                                    color: "inherit",
-                                    pointerEvents: "none",
+                                    color: 'inherit',
+                                    pointerEvents: 'none',
                                 },
                             }}
                             underline="none"
@@ -251,12 +266,12 @@ function HashWarning({
     );
 }
 
-export const Code = styled("code")(({ theme }) => ({
+export const Code = styled('code')(({ theme }) => ({
     paddingInline: theme.spacing(0.5),
     paddingBlock: theme.spacing(0.1),
-    fontFamily: "monospace",
+    fontFamily: 'monospace',
     backgroundColor: theme.palette.background.default,
-    width: "fit-content",
+    width: 'fit-content',
 }));
 
 function NoAlbumWarning() {
@@ -265,22 +280,25 @@ function NoAlbumWarning() {
             severity="warning"
             icon={<TriangleAlert />}
             sx={{
-                ".MuiAlert-message": { width: "100%" },
+                '.MuiAlert-message': { width: '100%' },
             }}
         >
             <AlertTitle>Folder not recognized as an album</AlertTitle>
-            This folder doesn't seem to follow a typical album layout, which could lead
-            to:
-            <Box component={"ul"} sx={{ marginTop: 1, marginBottom: 1 }}>
+            This folder doesn't seem to follow a typical album layout, which
+            could lead to:
+            <Box component={'ul'} sx={{ marginTop: 1, marginBottom: 1 }}>
                 <li>
-                    <b>Tagging issues</b>, such as incomplete metadata or skipped files
+                    <b>Tagging issues</b>, such as incomplete metadata or
+                    skipped files
                 </li>
                 <li>
-                    Disorganized files may lead to <b>incorrect import behavior</b>
+                    Disorganized files may lead to{' '}
+                    <b>incorrect import behavior</b>
                 </li>
                 <li>Complex multi task sessions</li>
             </Box>
-            To ensure accurate processing, organize each album into its own folder.
+            To ensure accurate processing, organize each album into its own
+            folder.
         </Alert>
     );
 }
@@ -306,36 +324,37 @@ function NoSessionFound({
                 severity="info"
                 icon={<InfoIcon />}
                 sx={{
-                    ".MuiAlert-message": {
-                        width: "100%",
-                        display: "flex",
-                        flexDirection: "column",
+                    '.MuiAlert-message': {
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
                     },
                 }}
                 {...props}
             >
                 <AlertTitle>No active session found</AlertTitle>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Typography variant="body2">
-                        Seems like you haven't started an import on this folder yet. If
-                        you want to start a new import, choose one of the options below.
+                        Seems like you haven't started an import on this folder
+                        yet. If you want to start a new import, choose one of
+                        the options below.
                     </Typography>
                     <Tooltip title="Retry to fetch the session.">
                         <IconButton
                             color="secondary"
                             size="medium"
                             sx={{
-                                ml: "auto",
+                                ml: 'auto',
                                 //animation on refetching
                                 animation: refetchPending
-                                    ? "spin 1s linear infinite normal forwards"
-                                    : "none",
-                                "@keyframes spin": {
-                                    "0%": {
-                                        transform: "rotate(0deg)",
+                                    ? 'spin 1s linear infinite normal forwards'
+                                    : 'none',
+                                '@keyframes spin': {
+                                    '0%': {
+                                        transform: 'rotate(0deg)',
                                     },
-                                    "100%": {
-                                        transform: "rotate(360deg)",
+                                    '100%': {
+                                        transform: 'rotate(360deg)',
                                     },
                                 },
                             }}
@@ -350,15 +369,15 @@ function NoSessionFound({
             </Alert>
             <Box
                 sx={{
-                    display: "flex",
+                    display: 'flex',
                     gap: 2,
-                    alignItems: "center",
-                    width: "100%",
+                    alignItems: 'center',
+                    width: '100%',
                     paddingInline: 1,
                 }}
             >
                 <RetagButtonGroup
-                    sx={{ ml: "auto" }}
+                    sx={{ ml: 'auto' }}
                     selected={{
                         paths: [folderPath],
                         hashes: [folderHash],
@@ -368,7 +387,7 @@ function NoSessionFound({
                         // one a retag is triggered
                         const newHash = r[0].job_metas[0].folder_hash;
                         await router.navigate({
-                            to: "/inbox/folder/$path/$hash",
+                            to: '/inbox/folder/$path/$hash',
                             params: {
                                 path: folderPath,
                                 hash: newHash,
@@ -391,11 +410,11 @@ function countFilesFolders(folder: Folder) {
     };
 
     for (const child of walkFolder(folder)) {
-        if (child.type === "directory") {
+        if (child.type === 'directory') {
             counts.nFolders += 1;
-        } else if (child.type === "file") {
+        } else if (child.type === 'file') {
             counts.nFiles += 1;
-        } else if (child.type === "archive") {
+        } else if (child.type === 'archive') {
             counts.nArchives += 1;
         }
     }

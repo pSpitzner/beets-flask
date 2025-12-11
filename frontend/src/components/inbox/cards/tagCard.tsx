@@ -5,8 +5,8 @@ import {
     HistoryIcon,
     SearchXIcon,
     TagIcon,
-} from "lucide-react";
-import React, { useEffect, useMemo, useState, useTransition } from "react";
+} from 'lucide-react';
+import React, { useEffect, useMemo, useState, useTransition } from 'react';
 import {
     Alert,
     AlertProps,
@@ -18,30 +18,30 @@ import {
     Divider,
     Typography,
     useTheme,
-} from "@mui/material";
-import { useQuery } from "@tanstack/react-query";
+} from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
 
-import { APIError } from "@/api/common";
-import { sessionQueryOptions, useImportMutation } from "@/api/session";
-import { PenaltyTypeIcon, SourceTypeIcon } from "@/components/common/icons";
+import { APIError } from '@/api/common';
+import { sessionQueryOptions, useImportMutation } from '@/api/session';
+import { PenaltyTypeIcon, SourceTypeIcon } from '@/components/common/icons';
 import {
     DuplicateAction,
     DuplicateActions,
     ImportCandidateLabel,
-} from "@/components/import/candidates/actions";
+} from '@/components/import/candidates/actions';
 import {
     CandidateSelector,
     ImportedCandidate,
-} from "@/components/import/candidates/candidateSelector";
+} from '@/components/import/candidates/candidateSelector';
 import {
     Progress,
     SerializedCandidateState,
     SerializedException,
     SerializedSessionState,
     SerializedTaskState,
-} from "@/pythonTypes";
+} from '@/pythonTypes';
 
-import { CardHeader } from "./common";
+import { CardHeader } from './common';
 
 /** Everything preview/tag related, there are 2 different preview states
  * 1. SelectingCandidate: Session found, candidates fetched, waiting for user to select
@@ -69,9 +69,9 @@ export function TagCard({
         // TODO: move this error handling into the session query?
         session.exc != null &&
         ![
-            "DuplicateException",
-            "NotImportedException",
-            "NoCandidatesFoundException",
+            'DuplicateException',
+            'NotImportedException',
+            'NoCandidatesFoundException',
         ].includes(session.exc.type)
     ) {
         throw new APIError(session.exc);
@@ -80,9 +80,9 @@ export function TagCard({
     return (
         <Card
             sx={{
-                display: "flex",
+                display: 'flex',
                 gap: 2,
-                flexDirection: "column",
+                flexDirection: 'column',
                 padding: 2,
             }}
         >
@@ -117,46 +117,63 @@ function UserSelection({ session }: { session: SerializedSessionState }) {
     const [duplicateActions, setDuplicateActions] = useState<
         Map<string, DuplicateAction>
     >(new Map());
-    const [selectCandidates, setSelectCandidates] = useState<Map<string, string>>(
-        () => {
-            // Initial candidates are always sorted after fetch (see api/session.ts)
-            // starting with asis than sorted by distance/penalty
-            const m = new Map<string, string>();
-            session.tasks.forEach((task) => {
-                const candidates = [...task.candidates, task.asis_candidate];
-                if (candidates.length >= 1) {
-                    m.set(task.id, candidates[0].id);
-                }
-            });
-            return m;
-        }
-    );
+    const [selectCandidates, setSelectCandidates] = useState<
+        Map<string, string>
+    >(() => {
+        // Initial candidates are always sorted after fetch (see api/session.ts)
+        // starting with asis than sorted by distance/penalty
+        const m = new Map<string, string>();
+        session.tasks.forEach((task) => {
+            const candidates = [...task.candidates, task.asis_candidate];
+            if (candidates.length >= 1) {
+                m.set(task.id, candidates[0].id);
+            }
+        });
+        return m;
+    });
 
     const selectedCandidate = useMemo(() => {
-        const candidate = [currentTask.asis_candidate, ...currentTask.candidates].find(
-            (cand) => cand.id === selectCandidates.get(currentTask.id)
-        );
+        const candidate = [
+            currentTask.asis_candidate,
+            ...currentTask.candidates,
+        ].find((cand) => cand.id === selectCandidates.get(currentTask.id));
         return candidate;
     }, [currentTask, selectCandidates]);
 
     // FIXME: Prop drillig sucks here especially, maybe a context would be better
-    const mutation = useImportMutation(session, selectCandidates, duplicateActions);
+    const mutation = useImportMutation(
+        session,
+        selectCandidates,
+        duplicateActions
+    );
 
     return (
-        <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 2 }}>
-            <SelectionHeader session={session} currentTaskIdx={currentTaskIdx} />
+        <Box
+            sx={{
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+            }}
+        >
+            <SelectionHeader
+                session={session}
+                currentTaskIdx={currentTaskIdx}
+            />
             <Divider />
             {/* warnings */}
-            {session.exc?.type === "DuplicateException" && (
+            {session.exc?.type === 'DuplicateException' && (
                 <DuplicateWarning exc={session.exc} />
             )}
-            {session.exc?.type === "NotImportedException" && (
+            {session.exc?.type === 'NotImportedException' && (
                 <AutoImportFailedWarning
                     exc={session.exc}
-                    source_type={selectedCandidate?.info.data_source || "unknown"}
+                    source_type={
+                        selectedCandidate?.info.data_source || 'unknown'
+                    }
                 />
             )}
-            {session.exc?.type === "NoCandidatesFoundException" && (
+            {session.exc?.type === 'NoCandidatesFoundException' && (
                 <NoCandidatesFoundWarning exc={session.exc} />
             )}
             {session.status.progress == Progress.DELETION_COMPLETED && (
@@ -180,7 +197,9 @@ function UserSelection({ session }: { session: SerializedSessionState }) {
                 session={session}
                 isPending={isPending}
                 selectedCandidate={selectedCandidate}
-                selectedDuplicateAction={duplicateActions.get(currentTask.id) ?? null}
+                selectedDuplicateAction={
+                    duplicateActions.get(currentTask.id) ?? null
+                }
                 currentTaskIdx={currentTaskIdx}
                 onDuplicateActionChange={(action, taskIdx) => {
                     const task = session.tasks[taskIdx];
@@ -210,13 +229,13 @@ function UserSelection({ session }: { session: SerializedSessionState }) {
 function SizeFixedWithLoading({
     isLoading,
     children,
-    color = "secondary",
+    color = 'secondary',
     loadingComponent = undefined,
 }: {
     isLoading: boolean;
     children: React.ReactNode;
     loadingComponent?: React.ReactNode;
-    color?: "primary" | "secondary";
+    color?: 'primary' | 'secondary';
 }) {
     const ref = React.useRef<HTMLDivElement>(null);
     const [height, setHeight] = useState<number>(0);
@@ -240,13 +259,15 @@ function SizeFixedWithLoading({
         return (
             <Box
                 sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    height: height + "px",
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    height: height + 'px',
                 }}
             >
-                {loadingComponent != null ? <CircularProgress color={color} /> : null}
+                {loadingComponent != null ? (
+                    <CircularProgress color={color} />
+                ) : null}
             </Box>
         );
     }
@@ -265,11 +286,11 @@ function SelectionHeader({
     return (
         <CardHeader
             icon={<TagIcon />}
-            title={`Select candidate${session.tasks.length > 1 ? "s" : ""}`}
+            title={`Select candidate${session.tasks.length > 1 ? 's' : ''}`}
             subtitle="Choose one of the following candidates to import. The selected candidate will be used to update the metadata of the files."
         >
             {session.tasks.length > 1 && (
-                <Box sx={{ ml: "auto", alignSelf: "flex-start" }}>
+                <Box sx={{ ml: 'auto', alignSelf: 'flex-start' }}>
                     <Typography
                         variant="caption"
                         component="div"
@@ -293,7 +314,7 @@ function CandidateSelectionArea({
 }: {
     isPending: boolean;
     currentTask: SerializedTaskState;
-    selectedCandidateId?: SerializedCandidateState["id"];
+    selectedCandidateId?: SerializedCandidateState['id'];
     onCandidateChange: (id: string) => void;
 }) {
     return (
@@ -324,13 +345,17 @@ function SelectionFooter({
     currentTaskIdx: number;
     selectedCandidate: SerializedCandidateState | undefined;
     selectedDuplicateAction: DuplicateAction | null;
-    onDuplicateActionChange: (action: DuplicateAction | null, taskIdx: number) => void;
+    onDuplicateActionChange: (
+        action: DuplicateAction | null,
+        taskIdx: number
+    ) => void;
     onTaskChange: (newIdx: number) => void;
     importMutation: ReturnType<typeof useImportMutation>;
 }) {
     // Check if their are duplicates
     const hasDuplicates =
-        selectedCandidate != undefined && selectedCandidate.duplicate_ids.length > 0;
+        selectedCandidate != undefined &&
+        selectedCandidate.duplicate_ids.length > 0;
 
     let errorMsg: string | undefined;
     if (hasDuplicates && !selectedDuplicateAction) {
@@ -345,10 +370,10 @@ function SelectionFooter({
     return (
         <Box
             sx={{
-                width: "100%",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "flex-end",
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'flex-end',
                 gap: 0.5,
             }}
         >
@@ -357,7 +382,10 @@ function SelectionFooter({
                 color="secondary"
                 loadingComponent={null}
             >
-                <StatusBar errorMsg={errorMsg} selectedCandidate={selectedCandidate} />
+                <StatusBar
+                    errorMsg={errorMsg}
+                    selectedCandidate={selectedCandidate}
+                />
             </SizeFixedWithLoading>
             <ActionButtons
                 session={session}
@@ -385,10 +413,10 @@ function StatusBar({
     return (
         <Box
             sx={{
-                width: "100%",
-                display: "flex",
+                width: '100%',
+                display: 'flex',
                 gap: 1,
-                justifyContent: "flex-end",
+                justifyContent: 'flex-end',
             }}
         >
             {errorMsg ? (
@@ -398,7 +426,7 @@ function StatusBar({
             ) : (
                 <ImportCandidateLabel
                     candidate={selectedCandidate!}
-                    sx={{ textAlign: "right" }}
+                    sx={{ textAlign: 'right' }}
                 />
             )}
         </Box>
@@ -422,7 +450,10 @@ function ActionButtons({
     session: SerializedSessionState;
     selectedCandidate: SerializedCandidateState | undefined;
     selectedDuplicateAction: DuplicateAction | null;
-    onDuplicateActionChange: (action: DuplicateAction | null, taskIdx: number) => void;
+    onDuplicateActionChange: (
+        action: DuplicateAction | null,
+        taskIdx: number
+    ) => void;
     onTaskChange: (newIdx: number) => void;
     nextDisabled?: boolean;
     importMutation: ReturnType<typeof useImportMutation>;
@@ -435,10 +466,10 @@ function ActionButtons({
     return (
         <Box
             sx={{
-                display: "flex",
+                display: 'flex',
                 gap: 2,
-                width: "100%",
-                justifyContent: "flex-end",
+                width: '100%',
+                justifyContent: 'flex-end',
             }}
         >
             {!isFirstTask && (
@@ -447,7 +478,7 @@ function ActionButtons({
                     loading={isPending}
                     variant="outlined"
                     color="secondary"
-                    sx={{ mr: "auto" }}
+                    sx={{ mr: 'auto' }}
                     startIcon={<ArrowLeftIcon size={theme.iconSize.sm} />}
                 >
                     Previous
@@ -499,38 +530,53 @@ function ActionButtons({
  * as the session is imported.
  *
  */
-function ChosenCandidatesOverview({ session }: { session: SerializedSessionState }) {
-    const nItems = session.tasks.reduce((acc, task) => acc + task.items.length, 0);
+function ChosenCandidatesOverview({
+    session,
+}: {
+    session: SerializedSessionState;
+}) {
+    const nItems = session.tasks.reduce(
+        (acc, task) => acc + task.items.length,
+        0
+    );
 
     return (
         <>
             <CardHeader
                 icon={<TagIcon />}
-                title={`Selected candidate${session.tasks.length > 1 ? "s" : ""}`}
+                title={`Selected candidate${session.tasks.length > 1 ? 's' : ''}`}
                 subtitle={`The following candidates were selected for import and imported into your library.`}
             >
-                <Box sx={{ ml: "auto", alignSelf: "flex-start" }}>
+                <Box sx={{ ml: 'auto', alignSelf: 'flex-start' }}>
                     {session.tasks.length > 1 && (
-                        <Typography variant="caption" component="div" textAlign="right">
+                        <Typography
+                            variant="caption"
+                            component="div"
+                            textAlign="right"
+                        >
                             {session.tasks.length} tasks
                         </Typography>
                     )}
-                    <Typography variant="caption" component="div" textAlign="right">
-                        {nItems} item{nItems > 1 ? "s" : ""}
+                    <Typography
+                        variant="caption"
+                        component="div"
+                        textAlign="right"
+                    >
+                        {nItems} item{nItems > 1 ? 's' : ''}
                     </Typography>
                 </Box>
             </CardHeader>
             <Divider />
             <Box
                 sx={{
-                    display: "flex",
-                    flexDirection: "column",
+                    display: 'flex',
+                    flexDirection: 'column',
                     gap: 1,
                 }}
             >
                 <Box
                     sx={{
-                        "> div:not(:first-of-type)": {
+                        '> div:not(:first-of-type)': {
                             marginTop: 2,
                         },
                     }}
@@ -555,7 +601,7 @@ function DuplicateWarning({
             severity="warning"
             icon={<PenaltyTypeIcon type="duplicate" />}
             sx={{
-                ".MuiAlert-message": { width: "100%" },
+                '.MuiAlert-message': { width: '100%' },
             }}
             {...props}
         >
@@ -575,14 +621,14 @@ function UndoneWarning({ ...props }: AlertProps) {
             severity="info"
             icon={<HistoryIcon />}
             sx={{
-                ".MuiAlert-message": { width: "100%" },
+                '.MuiAlert-message': { width: '100%' },
             }}
             {...props}
         >
             <AlertTitle>Session was undone</AlertTitle>
             <Box>
-                You had previously imported this session, but undid the import. All
-                imported files have been removed from your library.
+                You had previously imported this session, but undid the import.
+                All imported files have been removed from your library.
             </Box>
         </Alert>
     );
@@ -601,7 +647,7 @@ function AutoImportFailedWarning({
             severity="warning"
             icon={<SourceTypeIcon type={source_type} />}
             sx={{
-                ".MuiAlert-message": { width: "100%" },
+                '.MuiAlert-message': { width: '100%' },
             }}
             {...props}
         >
@@ -626,7 +672,7 @@ function NoCandidatesFoundWarning({
             severity="warning"
             icon={<SearchXIcon />}
             sx={{
-                ".MuiAlert-message": { width: "100%" },
+                '.MuiAlert-message': { width: '100%' },
             }}
             {...props}
         >

@@ -1,5 +1,5 @@
-import { ArrowDownAZIcon, ArrowDownZAIcon } from "lucide-react";
-import { useMemo } from "react";
+import { ArrowDownAZIcon, ArrowDownZAIcon } from 'lucide-react';
+import { useMemo } from 'react';
 import {
     Box,
     BoxProps,
@@ -9,7 +9,7 @@ import {
     MenuItem,
     Select,
     useTheme,
-} from "@mui/material";
+} from '@mui/material';
 
 export interface SortItem {
     label: string;
@@ -18,7 +18,7 @@ export interface SortItem {
 
 export interface CurrentSort {
     value: string;
-    direction: "ASC" | "DESC";
+    direction: 'ASC' | 'DESC';
 }
 
 export interface SortToggleProps extends BoxProps {
@@ -31,7 +31,13 @@ export interface SortToggleProps extends BoxProps {
  * SortToggle component allows users to select a sorting option
  * allows to select a key and toggle the sorting direction.
  */
-export function SortToggle({ value, setValue, items, sx, ...props }: SortToggleProps) {
+export function SortToggle({
+    value,
+    setValue,
+    items,
+    sx,
+    ...props
+}: SortToggleProps) {
     const theme = useTheme();
 
     const currentSort = useMemo(() => {
@@ -42,24 +48,24 @@ export function SortToggle({ value, setValue, items, sx, ...props }: SortToggleP
         <Box
             sx={[
                 {
-                    display: "flex",
-                    alignItems: "center",
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: 1,
-                    width: "100%",
-                    minWidth: "180px",
-                    maxWidth: "200px",
+                    width: '100%',
+                    minWidth: '180px',
+                    maxWidth: '200px',
                 },
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                 ...(Array.isArray(sx) ? sx : [sx]),
             ]}
             {...props}
         >
-            <FormControl size="small" fullWidth sx={{ height: "100%" }}>
+            <FormControl size="small" fullWidth sx={{ height: '100%' }}>
                 <InputLabel id="demo-simple-select-label">Sort by</InputLabel>
                 <Select
                     labelId="demo-simple-select-label"
                     id="demo-simple-select"
-                    value={currentSort?.value || ""}
+                    value={currentSort?.value || ''}
                     label="Sort by"
                     onChange={(event) => {
                         const selectedValue = event.target.value;
@@ -68,19 +74,19 @@ export function SortToggle({ value, setValue, items, sx, ...props }: SortToggleP
                         );
                         if (selectedItem) {
                             setValue({
-                                direction: value?.direction || "ASC",
+                                direction: value?.direction || 'ASC',
                                 value: selectedItem.value,
                             });
                         }
                     }}
-                    sx={{ height: "100%" }}
+                    sx={{ height: '100%' }}
                 >
                     {items.map((item) => (
                         <MenuItem
                             key={item.value}
                             value={item.value}
                             sx={{
-                                fontSize: "1rem",
+                                fontSize: '1rem',
                             }}
                         >
                             {item.label}
@@ -91,23 +97,23 @@ export function SortToggle({ value, setValue, items, sx, ...props }: SortToggleP
             <Button
                 variant="outlined"
                 sx={{
-                    minWidth: "unset",
-                    aspectRatio: "1/1",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
+                    minWidth: 'unset',
+                    aspectRatio: '1/1',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     p: 0,
                     m: 0,
-                    height: "100%",
+                    height: '100%',
                 }}
                 onClick={() => {
                     setValue({
                         value: value?.value || items[0].value,
-                        direction: value?.direction === "ASC" ? "DESC" : "ASC",
+                        direction: value?.direction === 'ASC' ? 'DESC' : 'ASC',
                     });
                 }}
             >
-                {value?.direction === "ASC" ? (
+                {value?.direction === 'ASC' ? (
                     <ArrowDownAZIcon size={theme.iconSize.md} />
                 ) : (
                     <ArrowDownZAIcon size={theme.iconSize.md} />

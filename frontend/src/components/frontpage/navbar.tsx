@@ -1,41 +1,41 @@
-import { Home, Inbox, Library, Search, Terminal } from "lucide-react";
-import { MouseEvent, ReactElement, useRef } from "react";
-import { Box, BoxProps, darken, Typography, useTheme } from "@mui/material";
-import { styled } from "@mui/material/styles";
-import Tab, { tabClasses, TabProps } from "@mui/material/Tab";
-import Tabs, { tabsClasses } from "@mui/material/Tabs";
-import { createLink, LinkProps, useRouterState } from "@tanstack/react-router";
+import { Home, Inbox, Library, Search, Terminal } from 'lucide-react';
+import { MouseEvent, ReactElement, useRef } from 'react';
+import { Box, BoxProps, darken, Typography, useTheme } from '@mui/material';
+import { styled } from '@mui/material/styles';
+import Tab, { tabClasses, TabProps } from '@mui/material/Tab';
+import Tabs, { tabsClasses } from '@mui/material/Tabs';
+import { createLink, LinkProps, useRouterState } from '@tanstack/react-router';
 
 export const NAVBAR_HEIGHT = {
-    desktop: "48px",
-    mobile: "74px",
+    desktop: '48px',
+    mobile: '74px',
 };
 
 const StyledTabs = styled(Tabs)(({ theme }) => ({
-    color: "inherit",
-    overflow: "hidden",
-    display: "flex",
-    width: "100%",
-    justifyContent: "center",
+    color: 'inherit',
+    overflow: 'hidden',
+    display: 'flex',
+    width: '100%',
+    justifyContent: 'center',
     [`& .${tabsClasses.indicator}`]: {
-        position: "absolute",
+        position: 'absolute',
         top: `calc(50% - 8px)`,
-        height: "16px",
-        filter: "blur(50px)",
+        height: '16px',
+        filter: 'blur(50px)',
         backgroundColor: theme.palette.secondary.main,
         zIndex: -1,
     },
     [`& .MuiTabs-scroller`]: {
-        width: "100%",
-        overflow: "visible",
+        width: '100%',
+        overflow: 'visible',
     },
     // Spacing of tabs for different breakpoints
     [`& .MuiTabs-flexContainer`]: {
-        width: "100%",
-        gap: "4px",
-        justifyContent: "center",
-        [theme.breakpoints.up("laptop")]: {
-            gap: "30px",
+        width: '100%',
+        gap: '4px',
+        justifyContent: 'center',
+        [theme.breakpoints.up('laptop')]: {
+            gap: '30px',
         },
     },
     [`&:hover .mouse-trail`]: {
@@ -43,41 +43,42 @@ const StyledTabs = styled(Tabs)(({ theme }) => ({
     },
 
     // Mobile grid for equal spacing
-    [theme.breakpoints.down("laptop")]: {
-        "& .MuiTabs-list": {
-            width: "auto",
-            display: "grid",
-            gridTemplateColumns: "repeat(5, 1fr)",
-            gridTemplateRows: "1fr",
-            alignItems: "center",
-            justifyItems: "center",
+    [theme.breakpoints.down('laptop')]: {
+        '& .MuiTabs-list': {
+            width: 'auto',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            gridTemplateRows: '1fr',
+            alignItems: 'center',
+            justifyItems: 'center',
         },
-        "& .MuiTabs-scroller": {
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
+        '& .MuiTabs-scroller': {
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
         },
-        background: "linear-gradient(to bottom, transparent, black)",
+        background: 'linear-gradient(to bottom, transparent, black)',
     },
 }));
 
-interface StyledTabProps extends Omit<LinkProps, "children">, Omit<TabProps, "ref"> {
+interface StyledTabProps
+    extends Omit<LinkProps, 'children'>, Omit<TabProps, 'ref'> {
     label: string | ReactElement;
 }
 
 const StyledTab = styled(createLink(Tab))<StyledTabProps>(({ theme }) => ({
-    lineHeight: "inherit",
+    lineHeight: 'inherit',
     marginTop: 7,
     minHeight: 32,
     minWidth: 0,
-    flexDirection: "row",
-    letterSpacing: "1px",
-    justifyContent: "center",
-    gap: "0.5rem",
-    textTransform: "uppercase",
-    overflow: "visible",
-    transition: "color 0.3s linear",
-    "& svg": {
+    flexDirection: 'row',
+    letterSpacing: '1px',
+    justifyContent: 'center',
+    gap: '0.5rem',
+    textTransform: 'uppercase',
+    overflow: 'visible',
+    transition: 'color 0.3s linear',
+    '& svg': {
         fontSize: 16,
         width: 16,
         height: 16,
@@ -93,7 +94,7 @@ const StyledTab = styled(createLink(Tab))<StyledTabProps>(({ theme }) => ({
     },
     [`&:hover`]: {
         color: darken(theme.palette.secondary.main, 0.2),
-        transition: "color 1s linear, text-shadow 5s ease-in",
+        transition: 'color 1s linear, text-shadow 5s ease-in',
         textShadow: `0 0 50px ${theme.palette.secondary.main}`,
     },
     [`&[data-status="active"]`]: {
@@ -101,13 +102,13 @@ const StyledTab = styled(createLink(Tab))<StyledTabProps>(({ theme }) => ({
     },
 
     //Mobile styles
-    [theme.breakpoints.down("laptop")]: {
+    [theme.breakpoints.down('laptop')]: {
         marginTop: 0,
         height: NAVBAR_HEIGHT.mobile,
-        display: "flex",
-        flexDirection: "column",
+        display: 'flex',
+        flexDirection: 'column',
 
-        "& svg": {
+        '& svg': {
             fontSize: 16,
             width: theme.iconSize.lg,
             height: theme.iconSize.lg,
@@ -117,50 +118,56 @@ const StyledTab = styled(createLink(Tab))<StyledTabProps>(({ theme }) => ({
 
 const TabLabel = styled(Typography)(({ theme }) => ({
     marginLeft: 8,
-    lineHeight: "12px",
-    [theme.breakpoints.down("laptop")]: {
+    lineHeight: '12px',
+    [theme.breakpoints.down('laptop')]: {
         marginLeft: 0,
         fontSize: theme.typography.caption.fontSize,
-        lineHeight: "inherit",
-        textAlign: "center",
-        width: "100%",
+        lineHeight: 'inherit',
+        textAlign: 'center',
+        width: '100%',
     },
 }));
 
 function NavItem({ label, ...props }: StyledTabProps) {
-    // @ts-expect-error: WTF is happening here. MUI-Update broke typing!
-    return <StyledTab label={<TabLabel>{label}</TabLabel>} disableRipple {...props} />;
+    return (
+        // @ts-expect-error: WTF is happening here. MUI-Update broke typing!
+        <StyledTab
+            label={<TabLabel>{label}</TabLabel>}
+            disableRipple
+            {...props}
+        />
+    );
 }
 
 function NavTabs() {
     const theme = useTheme();
     const location = useRouterState({ select: (s) => s.location });
-    let basePath = location.pathname.split("/")[1];
+    let basePath = location.pathname.split('/')[1];
 
     // only needed temporarily until search gets an icon in the toolbar!
-    if (basePath === "library") {
-        basePath += "/" + location.pathname.split("/")[2];
+    if (basePath === 'library') {
+        basePath += '/' + location.pathname.split('/')[2];
     }
 
     const navItems = [
-        { label: "Home", icon: <Home />, to: "/" as const },
-        { label: "Inbox", icon: <Inbox />, to: "/inbox" as const },
+        { label: 'Home', icon: <Home />, to: '/' as const },
+        { label: 'Inbox', icon: <Inbox />, to: '/inbox' as const },
         //{ label: "Session", icon: <Inbox />, to: "/sessiondraft" as const },
-        { label: "Library", icon: <Library />, to: "/library/browse" as const },
-        { label: "Search", icon: <Search />, to: "/library/search" as const },
+        { label: 'Library', icon: <Library />, to: '/library/browse' as const },
+        { label: 'Search', icon: <Search />, to: '/library/search' as const },
         {
-            label: "",
+            label: '',
             icon: <Terminal stroke={theme.palette.primary.main} />,
-            to: "/terminal" as const,
+            to: '/terminal' as const,
         },
     ];
 
-    const currentIdx = navItems.findIndex((item) => item.to === "/" + basePath);
+    const currentIdx = navItems.findIndex((item) => item.to === '/' + basePath);
     const ref = useRef<HTMLDivElement>(null);
 
     const handleMouseMove = (e: MouseEvent) => {
-        ref.current?.style.setProperty("--mouse-x", `${e.clientX}px`);
-        ref.current?.style.setProperty("--mouse-y", `${e.clientY}px`);
+        ref.current?.style.setProperty('--mouse-x', `${e.clientX}px`);
+        ref.current?.style.setProperty('--mouse-y', `${e.clientY}px`);
     };
 
     return (
@@ -187,21 +194,21 @@ export default function NavBar(props: BoxProps) {
     return (
         <Box
             sx={(theme) => ({
-                position: "fixed",
+                position: 'fixed',
                 bottom: 0,
                 zIndex: 10,
-                width: "100dvw",
+                width: '100dvw',
                 height: NAVBAR_HEIGHT.mobile,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "flex-start",
-                backdropFilter: "blur(25px)",
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'flex-start',
+                backdropFilter: 'blur(25px)',
                 //backgroundColor: "#21252933",
 
-                [theme.breakpoints.up("laptop")]: {
+                [theme.breakpoints.up('laptop')]: {
                     top: 0,
-                    borderBottom: "1px solid",
-                    borderColor: "divider",
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
                     height: NAVBAR_HEIGHT.desktop,
                 },
             })}
@@ -218,16 +225,16 @@ const MouseTrail = () => {
         <Box
             className="mouse-trail"
             sx={(theme) => ({
-                top: "var(--mouse-y)",
-                left: "var(--mouse-x)",
-                width: "10px",
-                height: "10px",
+                top: 'var(--mouse-y)',
+                left: 'var(--mouse-x)',
+                width: '10px',
+                height: '10px',
                 backgroundColor: theme.palette.secondary.main,
-                filter: "blur(25px)",
-                pointerEvents: "none",
-                transition: "opacity 0.3s ease-in-out",
-                transform: "translate(-50%, -50%)",
-                position: "absolute",
+                filter: 'blur(25px)',
+                pointerEvents: 'none',
+                transition: 'opacity 0.3s ease-in-out',
+                transform: 'translate(-50%, -50%)',
+                position: 'absolute',
                 opacity: 0,
                 zIndex: -1,
             })}

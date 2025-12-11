@@ -1,8 +1,8 @@
-import { Query, useMutation, UseMutationOptions } from "@tanstack/react-query";
+import { Query, useMutation, UseMutationOptions } from '@tanstack/react-query';
 
-import { useStatusSocket } from "@/components/common/websocket/status";
-import { DuplicateAction } from "@/components/import/candidates/actions";
-import { FolderSelectionContext } from "@/components/inbox/folderSelectionContext";
+import { useStatusSocket } from '@/components/common/websocket/status';
+import { DuplicateAction } from '@/components/import/candidates/actions';
+import { FolderSelectionContext } from '@/components/inbox/folderSelectionContext';
 import {
     CandidateChoiceFallback,
     EnqueueKind,
@@ -14,10 +14,10 @@ import {
     SerializedException,
     SerializedSessionState,
     SerializedTaskState,
-} from "@/pythonTypes";
+} from '@/pythonTypes';
 
-import { APIError, queryClient } from "./common";
-import { StatusSocket } from "./websocket";
+import { APIError, queryClient } from './common';
+import { StatusSocket } from './websocket';
 
 export const sessionQueryOptions = ({
     folderHash,
@@ -26,12 +26,12 @@ export const sessionQueryOptions = ({
     folderHash?: string;
     folderPath?: string;
 }) => ({
-    queryKey: ["session", { folderHash, folderPath }],
+    queryKey: ['session', { folderHash, folderPath }],
     queryFn: async () => {
         const response = await fetch(`/session/by_folder`, {
-            method: "POST",
+            method: 'POST',
             headers: {
-                "Content-Type": "application/json",
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify({
                 folder_hashes: [folderHash],
@@ -43,7 +43,7 @@ export const sessionQueryOptions = ({
             | SerializedSessionState
             | SerializedException;
         // check if we have error as a key in res
-        if ("type" in res) {
+        if ('type' in res) {
             // if we have an error, throw it
             throw new APIError(res);
         }
@@ -62,14 +62,17 @@ export const sessionQueryOptions = ({
 
             // Sort candidates by score
             task.candidates = task.candidates.sort((a, b) => {
-                if (a.info.data_source === "asis") return -1;
-                if (b.info.data_source === "asis") return 1;
+                if (a.info.data_source === 'asis') return -1;
+                if (b.info.data_source === 'asis') return 1;
                 return a.distance - b.distance;
             });
         }
 
         queryClient.setQueryData<SerializedSessionState>(
-            ["session", { folderHash: res.folder_hash, folderPath: res.folder_path }],
+            [
+                'session',
+                { folderHash: res.folder_hash, folderPath: res.folder_path },
+            ],
             res
         );
 
@@ -91,11 +94,12 @@ export async function invalidateSession(
     folderPath?: string,
     strict = false
 ): Promise<void> {
-    console.debug("Invalidate session", folderHash, folderPath);
+    console.debug('Invalidate session', folderHash, folderPath);
     await queryClient.invalidateQueries({
         predicate: (query) => {
-            if (query.queryKey[0] !== "session") return false;
-            const { folderHash: qHash, folderPath: qPath } = query.queryKey[1] as {
+            if (query.queryKey[0] !== 'session') return false;
+            const { folderHash: qHash, folderPath: qPath } = query
+                .queryKey[1] as {
                 folderHash?: string;
                 folderPath?: string;
             };
@@ -115,7 +119,7 @@ export async function invalidateSession(
 // this does not automatically come from py2ts, but we want certain
 // parameters that are allowed depending on the kind
 type TaskIdMap<T> = {
-    [key: SerializedTaskState["id"]]: T;
+    [key: SerializedTaskState['id']]: T;
 };
 
 interface EnqueuePreviewAddCandidate {
@@ -162,7 +166,7 @@ export const enqueueMutationOptions: UseMutationOptions<
     Error,
     {
         socket: StatusSocket | null;
-        selected: FolderSelectionContext["selected"];
+        selected: FolderSelectionContext['selected'];
     } & EnqueueParams
 > = {
     mutationFn: async ({ socket, selected, kind, ...extra }) => {
@@ -181,10 +185,10 @@ export const enqueueMutationOptions: UseMutationOptions<
             jobRef: jobRefs,
         });
 
-        const res = await fetch("/session/enqueue", {
-            method: "POST",
+        const res = await fetch('/session/enqueue', {
+            method: 'POST',
             headers: {
-                "Content-Type": "application/json",
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify({
                 kind: kind.toString(),
@@ -225,7 +229,7 @@ export const enqueueMutationOptions: UseMutationOptions<
                         hash: hash,
                         status: FolderStatus.PENDING,
                         exc: null,
-                        event: "folder_status_update",
+                        event: 'folder_status_update',
                     });
                 }
             }
@@ -235,11 +239,12 @@ export const enqueueMutationOptions: UseMutationOptions<
     // Fetch new session on success
     onSuccess: async (_data, { selected }) => {
         const predicate = (query: Query) => {
-            if (query.queryKey[0] == "artists") return true;
-            if (query.queryKey[0] !== "session") return false;
+            if (query.queryKey[0] == 'artists') return true;
+            if (query.queryKey[0] !== 'session') return false;
             if (!query.queryKey[1]) return false;
             // Lets just invalidate all session with this path or hash
-            const { folderHash: qHash, folderPath: qPath } = query.queryKey[1] as {
+            const { folderHash: qHash, folderPath: qPath } = query
+                .queryKey[1] as {
                 folderHash?: string;
                 folderPath?: string;
             };
@@ -271,20 +276,22 @@ export const enqueueMutationOptions: UseMutationOptions<
         await Promise.all(ps);
     },
     onError: (_error, _variables, _context) => {
-        console.error("Enqueue mutation failed", _error);
+        console.error('Enqueue mutation failed', _error);
     },
 };
 
 export const useImportMutation = (
     session: SerializedSessionState,
     selectedCandidateIds: Map<
-        SerializedTaskState["id"],
-        SerializedCandidateState["id"]
+        SerializedTaskState['id'],
+        SerializedCandidateState['id']
     >,
-    duplicateActions: Map<SerializedTaskState["id"], DuplicateAction>
+    duplicateActions: Map<SerializedTaskState['id'], DuplicateAction>
 ) => {
     const { socket } = useStatusSocket();
-    const { mutate, mutateAsync, ...props } = useMutation(enqueueMutationOptions);
+    const { mutate, mutateAsync, ...props } = useMutation(
+        enqueueMutationOptions
+    );
 
     return {
         ...props,
@@ -350,7 +357,7 @@ export const addCandidateMutationOptions: UseMutationOptions<
     {
         socket: StatusSocket | null;
         task_id: string;
-    } & Omit<EnqueuePreviewAddCandidate, "kind">
+    } & Omit<EnqueuePreviewAddCandidate, 'kind'>
 > = {
     mutationFn: async ({ socket, task_id, ...extra }) => {
         // Generate a unique job reference for each folder
@@ -362,10 +369,10 @@ export const addCandidateMutationOptions: UseMutationOptions<
             jobRef: jobRefs,
         });
 
-        const res = await fetch("/session/add_candidates", {
-            method: "POST",
+        const res = await fetch('/session/add_candidates', {
+            method: 'POST',
             headers: {
-                "Content-Type": "application/json",
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify({
                 task_id: task_id,
@@ -436,10 +443,10 @@ async function waitForJobUpdate({
 
     const promiseTimeout = new Promise<never>((_, reject) => {
         setTimeout(() => {
-            socket.off("job_status_update", handleUpdate);
+            socket.off('job_status_update', handleUpdate);
             reject(
                 new Error(
-                    "Timeout: Waiting for a job update took longer than 30 seconds"
+                    'Timeout: Waiting for a job update took longer than 30 seconds'
                 )
             );
         }, timeout);
@@ -447,7 +454,7 @@ async function waitForJobUpdate({
 
     const promiseSuccess = new Promise<JobStatusUpdate[]>((resolve) => {
         handleUpdate = (data: JobStatusUpdate) => {
-            console.log("Socket Job update", data);
+            console.log('Socket Job update', data);
             data.job_metas.forEach((meta) => {
                 if (!meta.job_frontend_ref) {
                     return;
@@ -458,13 +465,13 @@ async function waitForJobUpdate({
 
                     // Resolve only when all jobRefs are matched
                     if (matchedRefs.size === jobRefs.length) {
-                        socket.off("job_status_update", handleUpdate);
+                        socket.off('job_status_update', handleUpdate);
                         resolve(matches);
                     }
                 }
             });
         };
-        socket.on("job_status_update", handleUpdate);
+        socket.on('job_status_update', handleUpdate);
     });
 
     return Promise.race([promiseSuccess, promiseTimeout]);
@@ -472,11 +479,11 @@ async function waitForJobUpdate({
 
 /* ----------------------------- Session status ----------------------------- */
 export const statusQueryOptions = {
-    queryKey: ["status", "all"],
+    queryKey: ['status', 'all'],
     queryFn: async () => {
         // fetch initial status
         // further updates will be handled by the socket
-        const response = await fetch("/session/status");
+        const response = await fetch('/session/status');
         return (await response.json()) as FolderStatusUpdate[];
     },
 };

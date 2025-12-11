@@ -1,4 +1,4 @@
-import { ImportIcon, LibraryIcon, UndoIcon } from "lucide-react";
+import { ImportIcon, LibraryIcon, UndoIcon } from 'lucide-react';
 import {
     Alert,
     AlertProps,
@@ -10,24 +10,24 @@ import {
     Skeleton,
     Typography,
     useTheme,
-} from "@mui/material";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+} from '@mui/material';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 
-import { HTTPError } from "@/api/common";
-import { albumImportedOptions } from "@/api/library";
-import { enqueueMutationOptions, sessionQueryOptions } from "@/api/session";
-import { relativeTime } from "@/components/common/units/time";
-import { useStatusSocket } from "@/components/common/websocket/status";
+import { HTTPError } from '@/api/common';
+import { albumImportedOptions } from '@/api/library';
+import { enqueueMutationOptions, sessionQueryOptions } from '@/api/session';
+import { relativeTime } from '@/components/common/units/time';
+import { useStatusSocket } from '@/components/common/websocket/status';
 import {
     EnqueueKind,
     Progress,
     SerializedCandidateState,
     SerializedTaskState,
-} from "@/pythonTypes";
+} from '@/pythonTypes';
 
-import { CardHeader } from "./common";
-import { Code } from "./folderCard";
+import { CardHeader } from './common';
+import { Code } from './folderCard';
 
 export function ImportedCard({
     folderHash,
@@ -54,9 +54,9 @@ export function ImportedCard({
     return (
         <Card
             sx={{
-                display: "flex",
+                display: 'flex',
                 gap: 2,
-                flexDirection: "column",
+                flexDirection: 'column',
                 padding: 2,
             }}
         >
@@ -64,18 +64,22 @@ export function ImportedCard({
                 icon={<ImportIcon />}
                 title="Imported into beets library"
                 // FIXME: Timezones seem broken, at least for me it is 2 hours off
-                subtitle={"Imported " + relativeTime(session.updated_at)}
+                subtitle={'Imported ' + relativeTime(session.updated_at)}
             >
-                <Box sx={{ ml: "auto", alignSelf: "flex-start" }}>
+                <Box sx={{ ml: 'auto', alignSelf: 'flex-start' }}>
                     {session.tasks.length > 1 && (
-                        <Typography variant="caption" component="div" textAlign="right">
+                        <Typography
+                            variant="caption"
+                            component="div"
+                            textAlign="right"
+                        >
                             {session.tasks.length} tasks completed
                         </Typography>
                     )}
                 </Box>
             </CardHeader>
             <Divider />
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {session.tasks.map((task) => (
                     <ImportedTaskInfo key={task.id} task={task} />
                 ))}
@@ -147,31 +151,31 @@ function ImportedTaskInfo({ task }: { task: SerializedTaskState }) {
     return (
         <Box
             sx={(theme) => ({
-                display: "flex",
+                display: 'flex',
                 gap: 2,
-                width: "100%",
-                [theme.breakpoints.down("tablet")]: {
-                    flexDirection: "column",
+                width: '100%',
+                [theme.breakpoints.down('tablet')]: {
+                    flexDirection: 'column',
                 },
             })}
         >
             <Box
                 sx={(theme) => ({
-                    display: "grid",
-                    gridTemplateColumns: "1fr",
-                    width: "100%",
-                    [theme.breakpoints.up("tablet")]: {
-                        gridTemplateColumns: "1fr 1fr auto",
-                        "> div:first-of-type": {
-                            gridColumn: "span 3",
+                    display: 'grid',
+                    gridTemplateColumns: '1fr',
+                    width: '100%',
+                    [theme.breakpoints.up('tablet')]: {
+                        gridTemplateColumns: '1fr 1fr auto',
+                        '> div:first-of-type': {
+                            gridColumn: 'span 3',
                         },
                     },
                     label: {
-                        color: "text.secondary",
+                        color: 'text.secondary',
                     },
                 })}
             >
-                <Typography variant="h6" component="div" sx={{ width: "100%" }}>
+                <Typography variant="h6" component="div" sx={{ width: '100%' }}>
                     {album.albumartist} - {album.name}
                 </Typography>
                 <Box>
@@ -179,7 +183,7 @@ function ImportedTaskInfo({ task }: { task: SerializedTaskState }) {
                         Source:
                     </Typography>
                     <Typography variant="body1" component="div" ml={1}>
-                        {task.toppath || task.paths.join(", ")}
+                        {task.toppath || task.paths.join(', ')}
                     </Typography>
                 </Box>
                 <Box>
@@ -187,7 +191,11 @@ function ImportedTaskInfo({ task }: { task: SerializedTaskState }) {
                         Destination:
                     </Typography>
                     <Typography variant="body1" component="div" ml={1}>
-                        {album.items.at(0)?.path.split("/").slice(0, -1).join("/")}
+                        {album.items
+                            .at(0)
+                            ?.path.split('/')
+                            .slice(0, -1)
+                            .join('/')}
                     </Typography>
                 </Box>
                 <Box>
@@ -200,11 +208,18 @@ function ImportedTaskInfo({ task }: { task: SerializedTaskState }) {
                     </Typography>
                 </Box>
             </Box>
-            <Box sx={{ ml: "auto", mt: "auto", width: "130px", minWidth: "130px" }}>
+            <Box
+                sx={{
+                    ml: 'auto',
+                    mt: 'auto',
+                    width: '130px',
+                    minWidth: '130px',
+                }}
+            >
                 <Link
                     to="/library/album/$albumId"
                     params={{ albumId: album.id }}
-                    style={{ textDecoration: "none", height: "100%" }}
+                    style={{ textDecoration: 'none', height: '100%' }}
                 >
                     <Button
                         variant="contained"
@@ -229,20 +244,20 @@ function NotFoundWarning({
         <Alert
             severity="warning"
             sx={{
-                ".MuiAlert-message": { width: "100%" },
+                '.MuiAlert-message': { width: '100%' },
             }}
             {...props}
         >
             <AlertTitle>Album not found in beets library</AlertTitle>
             <Box>
-                Seems like the imported album{" "}
+                Seems like the imported album{' '}
                 <Code>
-                    {chosenCandidate?.info.artist || "?"} -{" "}
-                    {chosenCandidate?.info.album || "?"}
-                </Code>{" "}
-                is not found in your beets library. This may indicate that the album was
-                not imported correctly or that it was removed from your library after
-                importing!
+                    {chosenCandidate?.info.artist || '?'} -{' '}
+                    {chosenCandidate?.info.album || '?'}
+                </Code>{' '}
+                is not found in your beets library. This may indicate that the
+                album was not imported correctly or that it was removed from
+                your library after importing!
             </Box>
         </Alert>
     );

@@ -1,4 +1,4 @@
-import { XIcon } from "lucide-react";
+import { XIcon } from 'lucide-react';
 import {
     Divider,
     IconButton,
@@ -6,9 +6,9 @@ import {
     styled,
     Typography,
     Zoom,
-} from "@mui/material";
-import MuiDialog, { DialogProps } from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
+} from '@mui/material';
+import MuiDialog, { DialogProps } from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
 
 /** Styled dialog that auto expands
  * to full screen on mobile devices.
@@ -19,37 +19,37 @@ export function Dialog({
     title,
     title_icon,
     children,
-    color = "primary",
+    color = 'primary',
     ...props
 }: DialogProps & {
     onClose: (
         event: object,
-        reason: "backdropClick" | "escapeKeyDown" | "xIconClick"
+        reason: 'backdropClick' | 'escapeKeyDown' | 'xIconClick'
     ) => void;
     title: React.ReactNode;
     title_icon?: React.ReactNode;
-    color?: IconButtonOwnProps["color"];
+    color?: IconButtonOwnProps['color'];
 }) {
     return (
         <MuiDialog
             sx={(theme) => ({
                 padding: 0,
                 margin: 0,
-                ".MuiDialog-paper": {
+                '.MuiDialog-paper': {
                     // Auto expand to full screen on mobile devices
-                    minWidth: theme.breakpoints.values.tablet + "px",
-                    maxWidth: theme.breakpoints.values.laptop + "px",
-                    [theme.breakpoints.down("tablet")]: {
-                        width: "100%",
-                        height: "100%",
-                        maxHeight: "100%",
-                        maxWidth: "100%",
-                        minWidth: "100%",
+                    minWidth: theme.breakpoints.values.tablet + 'px',
+                    maxWidth: theme.breakpoints.values.laptop + 'px',
+                    [theme.breakpoints.down('tablet')]: {
+                        width: '100%',
+                        height: '100%',
+                        maxHeight: '100%',
+                        maxWidth: '100%',
+                        minWidth: '100%',
                         margin: 0,
                         borderRadius: 0,
                     },
                 },
-                ".MuiDialogTitle-root": {
+                '.MuiDialogTitle-root': {
                     paddingInline: theme.spacing(2),
                     paddingBlock: theme.spacing(1),
                 },
@@ -62,11 +62,11 @@ export function Dialog({
         >
             <DialogTitle
                 sx={{
-                    display: "flex",
-                    width: "100%",
+                    display: 'flex',
+                    width: '100%',
                     gap: 1,
-                    alignItems: "center",
-                    justifyContent: "space-between",
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                 }}
             >
                 <Typography
@@ -74,17 +74,17 @@ export function Dialog({
                     component="div"
                     fontWeight="bold"
                     sx={{
-                        display: "flex",
+                        display: 'flex',
                         paddingBlock: 0.75,
                         gap: 1,
-                        alignItems: "center",
+                        alignItems: 'center',
                     }}
                 >
                     {title_icon}
                     {title}
                 </Typography>
                 <IconButton
-                    onClick={() => props.onClose({}, "xIconClick")}
+                    onClick={() => props.onClose({}, 'xIconClick')}
                     sx={{
                         margin: 0,
                         padding: 0.5,
@@ -102,13 +102,13 @@ export function Dialog({
     );
 }
 
-import MuiBackdrop from "@mui/material/Backdrop";
+import MuiBackdrop from '@mui/material/Backdrop';
 
 const Backdrop = styled(MuiBackdrop)(() => ({
-    position: "fixed",
+    position: 'fixed',
     inset: 0,
-    backgroundColor: "#00000033",
-    backdropFilter: "blur(5px)",
+    backgroundColor: '#00000033',
+    backdropFilter: 'blur(5px)',
     zIndex: -1,
-    WebkitTapHighlightColor: "transparent",
+    WebkitTapHighlightColor: 'transparent',
 }));

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react';
 
 /**
  * A custom React hook that detects swipe-up gestures on a DOM element.
@@ -38,12 +38,14 @@ export function useSwipeUp(onSwipe: () => void, threshold = 50) {
         const target = ref.current;
         if (!target) return;
 
-        target.addEventListener("touchstart", handleTouchStart, { passive: true });
-        target.addEventListener("touchend", handleTouchEnd, { passive: true });
+        target.addEventListener('touchstart', handleTouchStart, {
+            passive: true,
+        });
+        target.addEventListener('touchend', handleTouchEnd, { passive: true });
 
         return () => {
-            target.removeEventListener("touchstart", handleTouchStart);
-            target.removeEventListener("touchend", handleTouchEnd);
+            target.removeEventListener('touchstart', handleTouchStart);
+            target.removeEventListener('touchend', handleTouchEnd);
         };
     }, [onSwipe, threshold]);
 

@@ -1,5 +1,5 @@
-import { ChevronDownIcon, PlusIcon, RotateCcwIcon, XIcon } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { ChevronDownIcon, PlusIcon, RotateCcwIcon, XIcon } from 'lucide-react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
     DndContext,
     DragEndEvent,
@@ -11,7 +11,7 @@ import {
     useDroppable,
     useSensor,
     useSensors,
-} from "@dnd-kit/core";
+} from '@dnd-kit/core';
 import {
     arrayMove,
     horizontalListSortingStrategy,
@@ -19,7 +19,7 @@ import {
     sortableKeyboardCoordinates,
     useSortable,
     verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
+} from '@dnd-kit/sortable';
 import {
     Box,
     BoxProps,
@@ -41,21 +41,21 @@ import {
     Theme,
     Typography,
     useTheme,
-} from "@mui/material";
+} from '@mui/material';
 
 import {
     Action,
     ACTIONS,
     DEFAULT_INBOX_FOLDER_FRONTEND_CONFIG,
     InboxFolderFrontendConfig,
-} from "@/api/config";
-import { Dialog } from "@/components/common/dialogs";
+} from '@/api/config';
+import { Dialog } from '@/components/common/dialogs';
 
-import { ActionIcon } from "../actions/buttons";
+import { ActionIcon } from '../actions/buttons';
 import {
     getActionDescription,
     getActionOptionDescription,
-} from "../actions/descriptions";
+} from '../actions/descriptions';
 
 /** A list to add new action and arrange actions.
  *
@@ -64,24 +64,24 @@ export function ActionButtonSettings({
     actionButtons,
     setActionButtons,
 }: {
-    actionButtons: InboxFolderFrontendConfig["actionButtons"];
+    actionButtons: InboxFolderFrontendConfig['actionButtons'];
     setActionButtons: (
-        actionButtons: InboxFolderFrontendConfig["actionButtons"]
+        actionButtons: InboxFolderFrontendConfig['actionButtons']
     ) => void;
 }) {
     return (
         <Box
             sx={{
-                width: "100%",
-                display: "flex",
-                flexDirection: "column",
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
             }}
         >
             <Typography
                 variant="h6"
                 sx={{
-                    display: "flex",
-                    alignItems: "center",
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: 1,
                 }}
                 gutterBottom
@@ -99,9 +99,9 @@ export function ActionButtonSettings({
                 </IconButton>
             </Typography>
             <Typography variant="body2" color="text.secondary">
-                Arrange the action buttons for your inbox folder. You can drag and drop
-                them to reorder or move them between primary, secondary, and extra
-                sections.
+                Arrange the action buttons for your inbox folder. You can drag
+                and drop them to reorder or move them between primary,
+                secondary, and extra sections.
             </Typography>
             <Wrapper
                 actionButtons={actionButtons}
@@ -115,24 +115,26 @@ function Wrapper({
     actionButtons,
     setActionButtons,
 }: {
-    actionButtons: InboxFolderFrontendConfig["actionButtons"];
+    actionButtons: InboxFolderFrontendConfig['actionButtons'];
     setActionButtons: (
-        actionButtons: InboxFolderFrontendConfig["actionButtons"]
+        actionButtons: InboxFolderFrontendConfig['actionButtons']
     ) => void;
 }) {
     // State to keep track of currently active (being dragged) item
     const [activeAction, setActiveAction] = useState<Action | null>(null);
     // Keep track of items after move to a new container
-    const actionsBeforeDrag = useRef<null | InboxFolderFrontendConfig["actionButtons"]>(
-        null
-    );
+    const actionsBeforeDrag = useRef<
+        null | InboxFolderFrontendConfig['actionButtons']
+    >(null);
 
     // Convert buttons to ids to use in SortableContext
     // containerId to UniqueIdentifier[]
     const items: Record<string, UniqueIdentifier[]> = useMemo(() => {
         const ids: Record<string, UniqueIdentifier[]> = {};
         for (const [containerId, config] of Object.entries(actionButtons)) {
-            ids[containerId] = config.actions.map((action) => JSON.stringify(action));
+            ids[containerId] = config.actions.map((action) =>
+                JSON.stringify(action)
+            );
         }
         return ids;
     }, [actionButtons]);
@@ -151,14 +153,17 @@ function Wrapper({
 
     // Function to find which container an item belongs to
     const findContainer = useCallback(
-        (id: UniqueIdentifier): "primary" | "secondary" | "extra" | undefined => {
+        (
+            id: UniqueIdentifier
+        ): 'primary' | 'secondary' | 'extra' | undefined => {
             // if the id is a container id itself
-            if (id in items) return id as "primary" | "secondary" | "extra" | undefined;
+            if (id in items)
+                return id as 'primary' | 'secondary' | 'extra' | undefined;
 
             // find the container by looking into each of them
             return Object.keys(items).find((containerId) =>
                 items[containerId].includes(id)
-            ) as "primary" | "secondary" | "extra" | undefined;
+            ) as 'primary' | 'secondary' | 'extra' | undefined;
         },
         [items]
     );
@@ -196,7 +201,8 @@ function Wrapper({
             const isBelowOverItem =
                 over &&
                 active.rect.current.translated &&
-                active.rect.current.translated.top > over.rect.top + over.rect.height;
+                active.rect.current.translated.top >
+                    over.rect.top + over.rect.height;
 
             const modifier = isBelowOverItem ? 1 : 0;
 
@@ -300,24 +306,24 @@ function Wrapper({
         >
             <Box
                 sx={(theme) => ({
-                    display: "flex",
-                    flexDirection: "row-reverse",
+                    display: 'flex',
+                    flexDirection: 'row-reverse',
                     gap: 1,
-                    width: "100%",
+                    width: '100%',
                     marginBottom: 1,
                     marginTop: 1,
-                    [theme.breakpoints.down("tablet")]: {
-                        flexDirection: "column",
+                    [theme.breakpoints.down('tablet')]: {
+                        flexDirection: 'column',
                     },
                 })}
             >
                 <DroppableContainer
                     id="primary"
                     sx={{
-                        minHeight: "300px",
-                        height: "100%",
-                        alignItems: "flex-start",
-                        display: "flex",
+                        minHeight: '300px',
+                        height: '100%',
+                        alignItems: 'flex-start',
+                        display: 'flex',
                         gap: 0.5,
                     }}
                 >
@@ -325,17 +331,17 @@ function Wrapper({
                         Primary actions
                     </Typography>
                     <SortableContext
-                        items={items["primary"]}
+                        items={items['primary']}
                         strategy={verticalListSortingStrategy}
                     >
                         {actionButtons.primary.actions.map((action, index) => (
                             <SortableAction
                                 key={index}
-                                id={items["primary"][index]}
+                                id={items['primary'][index]}
                                 sx={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    width: "100%",
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    width: '100%',
                                 }}
                             >
                                 <ActionIcon action={action} />
@@ -343,11 +349,14 @@ function Wrapper({
                                 <IconButton
                                     color="default"
                                     size="small"
-                                    sx={{ ml: "auto" }}
+                                    sx={{ ml: 'auto' }}
                                     onClick={() => {
                                         const newConfig =
                                             structuredClone(actionButtons);
-                                        newConfig.primary.actions.splice(index, 1);
+                                        newConfig.primary.actions.splice(
+                                            index,
+                                            1
+                                        );
                                         setActionButtons(newConfig);
                                     }}
                                 >
@@ -360,24 +369,26 @@ function Wrapper({
                                 variant="body2"
                                 color="text.secondary"
                                 sx={{
-                                    width: "100%",
-                                    height: "100%",
-                                    textAlign: "center",
+                                    width: '100%',
+                                    height: '100%',
+                                    textAlign: 'center',
                                     flexGrow: 1,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
                                     padding: 1,
                                 }}
                             >
-                                No primary actions configured. Drag and drop actions
-                                here or click "Add" to create new actions.
+                                No primary actions configured. Drag and drop
+                                actions here or click "Add" to create new
+                                actions.
                             </Typography>
                         )}
                         <AddActionButton
-                            sx={{ mt: "auto", ml: "auto" }}
+                            sx={{ mt: 'auto', ml: 'auto' }}
                             onAdd={(action) => {
-                                const newConfig = structuredClone(actionButtons);
+                                const newConfig =
+                                    structuredClone(actionButtons);
                                 newConfig.primary.actions.push(action);
                                 setActionButtons(newConfig);
                             }}
@@ -387,10 +398,10 @@ function Wrapper({
                 <DroppableContainer
                     id="secondary"
                     sx={{
-                        minHeight: "300px",
-                        height: "100%",
-                        alignItems: "flex-start",
-                        display: "flex",
+                        minHeight: '300px',
+                        height: '100%',
+                        alignItems: 'flex-start',
+                        display: 'flex',
                         gap: 0.5,
                     }}
                 >
@@ -398,61 +409,68 @@ function Wrapper({
                         Secondary actions
                     </Typography>
                     <SortableContext
-                        items={items["secondary"]}
+                        items={items['secondary']}
                         strategy={verticalListSortingStrategy}
                     >
-                        {actionButtons.secondary.actions.map((action, index) => (
-                            <SortableAction
-                                key={index}
-                                id={items["secondary"][index]}
-                                sx={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    gap: 1,
-                                    width: "100%",
-                                }}
-                                variant="outlined"
-                            >
-                                <ActionIcon action={action} />
-                                <ActionLabel action={action} />
-                                <IconButton
-                                    color="default"
-                                    size="small"
-                                    sx={{ ml: "auto" }}
-                                    onClick={() => {
-                                        const newConfig =
-                                            structuredClone(actionButtons);
-                                        newConfig.secondary.actions.splice(index, 1);
-                                        setActionButtons(newConfig);
+                        {actionButtons.secondary.actions.map(
+                            (action, index) => (
+                                <SortableAction
+                                    key={index}
+                                    id={items['secondary'][index]}
+                                    sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        gap: 1,
+                                        width: '100%',
                                     }}
+                                    variant="outlined"
                                 >
-                                    <XIcon size={20} />
-                                </IconButton>
-                            </SortableAction>
-                        ))}
+                                    <ActionIcon action={action} />
+                                    <ActionLabel action={action} />
+                                    <IconButton
+                                        color="default"
+                                        size="small"
+                                        sx={{ ml: 'auto' }}
+                                        onClick={() => {
+                                            const newConfig =
+                                                structuredClone(actionButtons);
+                                            newConfig.secondary.actions.splice(
+                                                index,
+                                                1
+                                            );
+                                            setActionButtons(newConfig);
+                                        }}
+                                    >
+                                        <XIcon size={20} />
+                                    </IconButton>
+                                </SortableAction>
+                            )
+                        )}
                         {actionButtons.secondary.actions.length === 0 && (
                             <Typography
                                 variant="body2"
                                 color="text.secondary"
                                 sx={{
-                                    width: "100%",
-                                    height: "100%",
-                                    textAlign: "center",
+                                    width: '100%',
+                                    height: '100%',
+                                    textAlign: 'center',
                                     flexGrow: 1,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
                                     padding: 1,
                                 }}
                             >
-                                No secondary actions configured. Drag and drop actions
-                                here or click "Add" to create new actions.
+                                No secondary actions configured. Drag and drop
+                                actions here or click "Add" to create new
+                                actions.
                             </Typography>
                         )}
                         <AddActionButton
-                            sx={{ mt: "auto", ml: "auto" }}
+                            sx={{ mt: 'auto', ml: 'auto' }}
                             onAdd={(action) => {
-                                const newConfig = structuredClone(actionButtons);
+                                const newConfig =
+                                    structuredClone(actionButtons);
                                 newConfig.secondary.actions.push(action);
                                 setActionButtons(newConfig);
                             }}
@@ -463,11 +481,11 @@ function Wrapper({
             <DroppableContainer
                 id="extra"
                 sx={{
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-start",
-                    minHeight: "80px",
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    minHeight: '80px',
                     gap: 0.5,
                     flexGrow: 1,
                 }}
@@ -476,42 +494,44 @@ function Wrapper({
                     Extra actions
                 </Typography>
                 <SortableContext
-                    items={items["extra"]}
+                    items={items['extra']}
                     strategy={horizontalListSortingStrategy}
                 >
                     <Box
                         sx={{
-                            width: "100%",
-                            display: "flex",
-                            flexDirection: "row",
+                            width: '100%',
+                            display: 'flex',
+                            flexDirection: 'row',
                             gap: 2,
-                            height: "100%",
+                            height: '100%',
                             flexGrow: 1,
-                            flexWrap: "wrap",
+                            flexWrap: 'wrap',
                         }}
                     >
                         {actionButtons.extra.actions.map((action, index) => (
                             <SortableActionExtra
                                 key={index}
-                                id={items["extra"][index]}
+                                id={items['extra'][index]}
                                 variant="text"
                             >
                                 <Box
                                     sx={{
-                                        display: "flex",
-                                        alignItems: "center",
+                                        display: 'flex',
+                                        alignItems: 'center',
                                         gap: 1,
                                     }}
                                 >
                                     <ActionIcon action={action} />
                                     <Typography
-                                        sx={{ flexGrow: 1, textAlign: "left" }}
+                                        sx={{ flexGrow: 1, textAlign: 'left' }}
                                         variant="body2"
                                     >
                                         {action.label ||
                                             action.name
-                                                .replace(/_/g, " ")
-                                                .replace(/^\w/, (c) => c.toUpperCase())}
+                                                .replace(/_/g, ' ')
+                                                .replace(/^\w/, (c) =>
+                                                    c.toUpperCase()
+                                                )}
                                     </Typography>
                                     <IconButton
                                         color="secondary"
@@ -519,7 +539,10 @@ function Wrapper({
                                         onClick={() => {
                                             const newConfig =
                                                 structuredClone(actionButtons);
-                                            newConfig.extra.actions.splice(index, 1);
+                                            newConfig.extra.actions.splice(
+                                                index,
+                                                1
+                                            );
                                             setActionButtons(newConfig);
                                         }}
                                     >
@@ -533,24 +556,26 @@ function Wrapper({
                                 variant="body2"
                                 color="text.secondary"
                                 sx={{
-                                    width: "100%",
-                                    height: "100%",
-                                    textAlign: "center",
+                                    width: '100%',
+                                    height: '100%',
+                                    textAlign: 'center',
                                     flexGrow: 1,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
                                     padding: 1,
                                 }}
                             >
-                                No extra actions configured. Drag and drop actions here
-                                or click "Add" to create new actions.
+                                No extra actions configured. Drag and drop
+                                actions here or click "Add" to create new
+                                actions.
                             </Typography>
                         )}
                         <AddActionButton
-                            sx={{ ml: "auto" }}
+                            sx={{ ml: 'auto' }}
                             onAdd={(action) => {
-                                const newConfig = structuredClone(actionButtons);
+                                const newConfig =
+                                    structuredClone(actionButtons);
                                 newConfig.extra.actions.push(action);
                                 setActionButtons(newConfig);
                             }}
@@ -561,12 +586,12 @@ function Wrapper({
             <DragOverlay>
                 {activeAction ? (
                     <SortableAction
-                        id={"dragging"}
+                        id={'dragging'}
                         sx={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            width: "100%",
-                            backgroundColor: "transparent !important",
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            width: '100%',
+                            backgroundColor: 'transparent !important',
                         }}
                     >
                         <ActionIcon action={activeAction} />
@@ -582,7 +607,7 @@ function DroppableContainer({
     id,
     children,
     sx,
-}: Omit<BoxProps, "id"> & { id: UniqueIdentifier }) {
+}: Omit<BoxProps, 'id'> & { id: UniqueIdentifier }) {
     const { setNodeRef } = useDroppable({
         id,
     });
@@ -592,12 +617,12 @@ function DroppableContainer({
             ref={setNodeRef}
             sx={[
                 {
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
                     padding: 1,
-                    width: "100%",
-                    height: "100%",
+                    width: '100%',
+                    height: '100%',
                     boxShadow: 4,
                 },
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -611,9 +636,11 @@ function DroppableContainer({
 
 function ActionLabel({ action }: { action: Action }) {
     return (
-        <Typography variant="body1" sx={{ flexGrow: 1, textAlign: "left" }}>
+        <Typography variant="body1" sx={{ flexGrow: 1, textAlign: 'left' }}>
             {action.label ||
-                action.name.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase())}
+                action.name
+                    .replace(/_/g, ' ')
+                    .replace(/^\w/, (c) => c.toUpperCase())}
         </Typography>
     );
 }
@@ -622,16 +649,22 @@ function SortableActionExtra({
     id,
     children,
     sx,
-    variant = "outlined",
+    variant = 'outlined',
     ...props
-}: { id: UniqueIdentifier; variant?: "contained" | "outlined" | "text" } & Omit<
+}: { id: UniqueIdentifier; variant?: 'contained' | 'outlined' | 'text' } & Omit<
     BoxProps,
-    "id"
+    'id'
 >) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-        useSortable({
-            id,
-        });
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({
+        id,
+    });
 
     const style = transform
         ? {
@@ -664,11 +697,11 @@ function SortableAction({
     id,
     children,
     sx,
-    variant = "contained",
+    variant = 'contained',
     ...props
-}: { id: UniqueIdentifier; variant?: "contained" | "outlined" | "text" } & Omit<
+}: { id: UniqueIdentifier; variant?: 'contained' | 'outlined' | 'text' } & Omit<
     BoxProps,
-    "id"
+    'id'
 >) {
     const {
         attributes,
@@ -693,14 +726,15 @@ function SortableAction({
     let extraSx: SxProps<Theme> = {};
     if (newIndex != 0) {
         extraSx = {
-            width: "calc(100% - 8px)", // Adjust width to fit within the container
-            backgroundColor: (theme) => lighten(theme.palette.background.paper, 0.05),
+            width: 'calc(100% - 8px)', // Adjust width to fit within the container
+            backgroundColor: (theme) =>
+                lighten(theme.palette.background.paper, 0.05),
             padding: 1,
-            marginLeft: "4px",
-            display: "flex",
-            justifyContent: "space-between",
+            marginLeft: '4px',
+            display: 'flex',
+            justifyContent: 'space-between',
             gap: 1,
-            alignItems: "center",
+            alignItems: 'center',
         };
     }
 
@@ -717,8 +751,12 @@ function SortableAction({
             {...props}
         >
             {newIndex == 0 ? (
-                <ButtonGroup sx={{ width: "100%" }} color="secondary" variant={variant}>
-                    <Button sx={{ width: "100%", gap: 1 }}>{children}</Button>
+                <ButtonGroup
+                    sx={{ width: '100%' }}
+                    color="secondary"
+                    variant={variant}
+                >
+                    <Button sx={{ width: '100%', gap: 1 }}>{children}</Button>
                     <Button size="small">
                         <ChevronDownIcon />
                     </Button>
@@ -739,7 +777,9 @@ function AddActionButton({
     const theme = useTheme();
     const [open, setOpen] = useState(false);
 
-    const defaultActions: Array<Action> = Object.entries(ACTIONS).map(([_, a]) => a);
+    const defaultActions: Array<Action> = Object.entries(ACTIONS).map(
+        ([_, a]) => a
+    );
     const [action, setAction] = useState<Action>(defaultActions[0]);
 
     return (
@@ -764,7 +804,7 @@ function AddActionButton({
                 color="secondary"
             >
                 <DialogContent>
-                    <FormControl sx={{ width: "100%" }} color="secondary">
+                    <FormControl sx={{ width: '100%' }} color="secondary">
                         <InputLabel id="action-type-label">Type</InputLabel>
                         <Select
                             label="Type"
@@ -789,8 +829,8 @@ function AddActionButton({
                                 >
                                     <Box
                                         sx={{
-                                            display: "flex",
-                                            alignItems: "center",
+                                            display: 'flex',
+                                            alignItems: 'center',
                                             gap: 1,
                                         }}
                                     >
@@ -798,7 +838,7 @@ function AddActionButton({
                                         <Typography>
                                             {actionOption.label ||
                                                 actionOption.name
-                                                    .replace(/_/g, " ")
+                                                    .replace(/_/g, ' ')
                                                     .replace(/^\w/, (c) =>
                                                         c.toUpperCase()
                                                     )}
@@ -807,12 +847,14 @@ function AddActionButton({
                                 </MenuItem>
                             ))}
                         </Select>
-                        <FormHelperText>{getActionDescription(action)}</FormHelperText>
+                        <FormHelperText>
+                            {getActionDescription(action)}
+                        </FormHelperText>
                     </FormControl>
-                    <FormControl sx={{ width: "100%" }}>
+                    <FormControl sx={{ width: '100%' }}>
                         <TextField
                             label="Label"
-                            value={action.label || ""}
+                            value={action.label || ''}
                             onChange={(e) => {
                                 setAction((prev) => ({
                                     ...prev,
@@ -826,56 +868,68 @@ function AddActionButton({
                         />
                     </FormControl>
                     {/* Options (if any) for the selected action */}
-                    <FormControl sx={{ width: "100%" }}>
-                        {action.options && Object.keys(action.options).length > 0 && (
-                            <Box sx={{ marginTop: 2 }}>
-                                <Typography variant="body2" color="text.secondary">
-                                    Options:
-                                </Typography>
-                                {Object.entries(action.options).map(([key, value]) => (
-                                    <Box>
-                                        <Box
-                                            sx={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: 1,
-                                            }}
-                                            key={key}
-                                        >
-                                            <Checkbox
-                                                key={key}
-                                                size="small"
-                                                checked={value}
-                                                onChange={(e) => {
-                                                    setAction(
-                                                        (prev) =>
-                                                            ({
-                                                                ...prev,
-                                                                options: {
-                                                                    ...prev.options,
-                                                                    [key]: e.target
-                                                                        .checked,
-                                                                },
-                                                            }) as Action
-                                                    );
-                                                }}
-                                                color="secondary"
-                                            />
-                                            <Typography variant="body2">
-                                                {key
-                                                    .replace(/_/g, " ")
-                                                    .replace(/^\w/, (c) =>
-                                                        c.toUpperCase()
+                    <FormControl sx={{ width: '100%' }}>
+                        {action.options &&
+                            Object.keys(action.options).length > 0 && (
+                                <Box sx={{ marginTop: 2 }}>
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                    >
+                                        Options:
+                                    </Typography>
+                                    {Object.entries(action.options).map(
+                                        ([key, value]) => (
+                                            <Box>
+                                                <Box
+                                                    sx={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 1,
+                                                    }}
+                                                    key={key}
+                                                >
+                                                    <Checkbox
+                                                        key={key}
+                                                        size="small"
+                                                        checked={value}
+                                                        onChange={(e) => {
+                                                            setAction(
+                                                                (prev) =>
+                                                                    ({
+                                                                        ...prev,
+                                                                        options:
+                                                                            {
+                                                                                ...prev.options,
+                                                                                [key]: e
+                                                                                    .target
+                                                                                    .checked,
+                                                                            },
+                                                                    }) as Action
+                                                            );
+                                                        }}
+                                                        color="secondary"
+                                                    />
+                                                    <Typography variant="body2">
+                                                        {key
+                                                            .replace(/_/g, ' ')
+                                                            .replace(
+                                                                /^\w/,
+                                                                (c) =>
+                                                                    c.toUpperCase()
+                                                            )}
+                                                    </Typography>
+                                                </Box>
+                                                <FormHelperText>
+                                                    {getActionOptionDescription(
+                                                        key
                                                     )}
-                                            </Typography>
-                                        </Box>
-                                        <FormHelperText>
-                                            {getActionOptionDescription(key)}
-                                        </FormHelperText>
-                                    </Box>
-                                ))}
-                            </Box>
-                        )}
+                                                </FormHelperText>
+                                            </Box>
+                                        )
+                                    )}
+                                </Box>
+                            )}
                     </FormControl>
                 </DialogContent>
                 <DialogActions>
@@ -883,7 +937,7 @@ function AddActionButton({
                         variant="text"
                         color="secondary"
                         sx={{
-                            mr: "auto",
+                            mr: 'auto',
                         }}
                         onClick={() => setOpen(false)}
                     >

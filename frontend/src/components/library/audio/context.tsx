@@ -6,19 +6,19 @@ import {
     useMemo,
     useRef,
     useState,
-} from "react";
-import { useQuery } from "@tanstack/react-query";
+} from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 import {
     artUrl,
     itemAudioDataQueryOptions,
     prefetchItemAudioData,
     prefetchWaveform,
-} from "@/api/library";
-import { useLocalStorage } from "@/components/common/hooks/useLocalStorage";
-import { useMediaSession } from "@/components/common/hooks/useMediaSession";
-import { useNavigableList } from "@/components/common/hooks/useNavigableList";
-import { ItemResponse } from "@/pythonTypes";
+} from '@/api/library';
+import { useLocalStorage } from '@/components/common/hooks/useLocalStorage';
+import { useMediaSession } from '@/components/common/hooks/useMediaSession';
+import { useNavigableList } from '@/components/common/hooks/useNavigableList';
+import { ItemResponse } from '@/pythonTypes';
 
 interface AudioContextI {
     // Play state
@@ -61,12 +61,16 @@ const AudioContext = createContext<AudioContextI | null>(null);
 export const useAudioContext = () => {
     const context = useContext(AudioContext);
     if (!context) {
-        throw new Error("useAudioContext must be used within an AudioProvider");
+        throw new Error('useAudioContext must be used within an AudioProvider');
     }
     return context;
 };
 
-export function AudioContextProvider({ children }: { children: React.ReactNode }) {
+export function AudioContextProvider({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
     const [autoplay, setAutoplay] = useState(false);
 
     const {
@@ -91,12 +95,16 @@ export function AudioContextProvider({ children }: { children: React.ReactNode }
         canPlay,
     } = useAudioData(currentItem);
 
-    function addToQueue(item: ItemResponse, setAsCurrent = false, autoplay = false) {
+    function addToQueue(
+        item: ItemResponse,
+        setAsCurrent = false,
+        autoplay = false
+    ) {
         // Prefetch the audio data for the item
         // FIXME: this can be quite some data if there are many items
         // maybe a smarter way to do this?
         if (currentItem) {
-            console.log("Prefetching audio for item", item.id);
+            console.log('Prefetching audio for item', item.id);
             prefetchItemAudioData(item.id).catch(console.error);
             prefetchWaveform(item.id).catch(console.error);
         }
@@ -179,46 +187,50 @@ function useAudioData(item: ItemResponse | null) {
     const [playing, _setPlaying] = useState(false);
     const [buffered, setBuffered] = useState<TimeRanges | null>(null); // In seconds < total duration
 
-    const [volume, setVolume] = useLocalStorage<number>("volume", 1);
+    const [volume, setVolume] = useLocalStorage<number>('volume', 1);
     const beforeMuted = useRef<number | null>(null); // needed to store pre-muted volume
     const [currentTime, setCurrentTime] = useState(0);
 
-    const { data: currentAudio } = useQuery(itemAudioDataQueryOptions(item?.id));
+    const { data: currentAudio } = useQuery(
+        itemAudioDataQueryOptions(item?.id)
+    );
     useEffect(() => {
         if (!currentAudio) return;
 
         // Forward audio events to react
-        const updatePlaying = () => _setPlaying(currentAudio.paused ? false : true);
-        const updateCurrentTime = () => setCurrentTime(currentAudio.currentTime);
+        const updatePlaying = () =>
+            _setPlaying(currentAudio.paused ? false : true);
+        const updateCurrentTime = () =>
+            setCurrentTime(currentAudio.currentTime);
         const updateVolume = () => setVolume(currentAudio.volume);
         const updateCanPlay = () => setCanPlay(currentAudio.readyState >= 2);
         const updateBuffered = () => setBuffered(currentAudio.buffered);
 
-        currentAudio.addEventListener("play", updatePlaying);
-        currentAudio.addEventListener("pause", updatePlaying);
-        currentAudio.addEventListener("timeupdate", updateCurrentTime);
-        currentAudio.addEventListener("seeking", updateCurrentTime);
-        currentAudio.addEventListener("progress", updateBuffered);
-        currentAudio.addEventListener("volumechange", updateVolume);
-        currentAudio.addEventListener("canplay", updateCanPlay);
+        currentAudio.addEventListener('play', updatePlaying);
+        currentAudio.addEventListener('pause', updatePlaying);
+        currentAudio.addEventListener('timeupdate', updateCurrentTime);
+        currentAudio.addEventListener('seeking', updateCurrentTime);
+        currentAudio.addEventListener('progress', updateBuffered);
+        currentAudio.addEventListener('volumechange', updateVolume);
+        currentAudio.addEventListener('canplay', updateCanPlay);
 
         // Force load only new audio sources
         if (currentAudio.readyState < 2) {
             currentAudio.load();
         }
-        console.log("Loading audio", currentAudio);
+        console.log('Loading audio', currentAudio);
         updateCurrentTime();
         updateCanPlay();
         updateBuffered();
 
         return () => {
-            currentAudio.removeEventListener("play", updatePlaying);
-            currentAudio.removeEventListener("pause", updatePlaying);
-            currentAudio.removeEventListener("timeupdate", updateCurrentTime);
-            currentAudio.removeEventListener("seeking", updateCurrentTime);
-            currentAudio.removeEventListener("progress", updateBuffered);
-            currentAudio.removeEventListener("volumechange", updateVolume);
-            currentAudio.removeEventListener("canplay", updateCanPlay);
+            currentAudio.removeEventListener('play', updatePlaying);
+            currentAudio.removeEventListener('pause', updatePlaying);
+            currentAudio.removeEventListener('timeupdate', updateCurrentTime);
+            currentAudio.removeEventListener('seeking', updateCurrentTime);
+            currentAudio.removeEventListener('progress', updateBuffered);
+            currentAudio.removeEventListener('volumechange', updateVolume);
+            currentAudio.removeEventListener('canplay', updateCanPlay);
 
             currentAudio.pause();
         };
@@ -263,7 +275,13 @@ function useAudioData(item: ItemResponse | null) {
     }, [playing, currentAudio]);
 
     // MediaSession handles
-    useMediaSessionHandlers(currentAudio || null, item, setPlaying, seek, currentTime);
+    useMediaSessionHandlers(
+        currentAudio || null,
+        item,
+        setPlaying,
+        seek,
+        currentTime
+    );
 
     return {
         currentAudio,
@@ -309,19 +327,19 @@ function useMediaSessionHandlers(
         if (!item) return undefined;
         return [
             {
-                src: "/api_v1" + artUrl("item", item.id, "small"),
-                sizes: "256x256",
-                type: "image/png",
+                src: '/api_v1' + artUrl('item', item.id, 'small'),
+                sizes: '256x256',
+                type: 'image/png',
             },
             {
-                src: "/api_v1" + artUrl("item", item.id, "medium"),
-                sizes: "512x512",
-                type: "image/png",
+                src: '/api_v1' + artUrl('item', item.id, 'medium'),
+                sizes: '512x512',
+                type: 'image/png',
             },
             {
-                src: "/api_v1" + artUrl("item", item.id, "large"),
-                sizes: "1024x1024",
-                type: "image/png",
+                src: '/api_v1' + artUrl('item', item.id, 'large'),
+                sizes: '1024x1024',
+                type: 'image/png',
             },
         ];
     }, [item]);
@@ -351,7 +369,7 @@ function useMediaSessionHandlers(
 
     // Forward time updates to media session
     useEffect(() => {
-        if (!("mediaSession" in navigator)) return;
+        if (!('mediaSession' in navigator)) return;
         if (!currentAudio || !item) return;
         // Might sometimes error if there is an audio desync
         // we prevent propagating the error here
@@ -362,7 +380,7 @@ function useMediaSessionHandlers(
                 position: currentTime,
             });
         } catch (error) {
-            console.warn("Error setting position state", error);
+            console.warn('Error setting position state', error);
         }
     }, [currentTime, currentAudio, item]);
 

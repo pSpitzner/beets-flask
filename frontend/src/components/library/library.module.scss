@@ -51,7 +51,7 @@ $column_gap: 0.5rem;
     }
     &::after {
         // divider line with full opactiy
-        content: "";
+        content: '';
         width: 100%;
         display: block;
         height: 0.5rem; // this is effectively padding bottom
@@ -92,14 +92,14 @@ $column_gap: 0.5rem;
     cursor: pointer;
     padding: 0rem 0.5rem;
     width: 100%;
-    &[data-selected="true"] {
+    &[data-selected='true'] {
         background-color: var(--selected-bg);
     }
     &:hover {
         background-color: var(--hover-bg);
     }
     &::after {
-        content: "";
+        content: '';
         position: absolute;
         top: 0;
         right: 0;
@@ -111,13 +111,13 @@ $column_gap: 0.5rem;
 }
 // Dynamically set the --current-bg variable based on state
 .listItem {
-    &[data-selected="true"]::after {
+    &[data-selected='true']::after {
         --current-bg: var(--selected-bg);
     }
     &:hover::after {
         --current-bg: var(--hover-bg);
     }
-    &:not(:hover):not([data-selected="true"])::after {
+    &:not(:hover):not([data-selected='true'])::after {
         --current-bg: var(--default-bg);
     }
 }
@@ -136,7 +136,7 @@ $column_gap: 0.5rem;
         background-color: #212529;
         padding: 2px 4px;
         border-radius: 4px;
-        font-family: "Courier New", Courier, monospace;
+        font-family: 'Courier New', Courier, monospace;
         font-size: 0.9em;
         white-space: nowrap;
     }

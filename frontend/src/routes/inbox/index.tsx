@@ -1,5 +1,5 @@
-import { FolderClockIcon, InfoIcon, SettingsIcon, TagIcon } from "lucide-react";
-import { useState } from "react";
+import { FolderClockIcon, InfoIcon, SettingsIcon, TagIcon } from 'lucide-react';
+import { useState } from 'react';
 import {
     Box,
     BoxProps,
@@ -7,33 +7,33 @@ import {
     IconButton,
     Typography,
     useTheme,
-} from "@mui/material";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+} from '@mui/material';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
 
-import { Action } from "@/api/config";
-import { inboxQueryOptions } from "@/api/inbox";
-import { MatchChip, StyledChip } from "@/components/common/chips";
-import { Dialog } from "@/components/common/dialogs";
+import { Action } from '@/api/config';
+import { inboxQueryOptions } from '@/api/inbox';
+import { MatchChip, StyledChip } from '@/components/common/chips';
+import { Dialog } from '@/components/common/dialogs';
 import {
     FileTypeIcon,
     FolderStatusIcon,
     FolderTypeIcon,
     PenaltyTypeIcon,
-} from "@/components/common/icons";
-import { PageWrapper } from "@/components/common/page";
+} from '@/components/common/icons';
+import { PageWrapper } from '@/components/common/page';
 import {
     ActionIcon,
     RefreshAllFoldersButton,
-} from "@/components/inbox/actions/buttons";
-import { getActionDescription } from "@/components/inbox/actions/descriptions";
-import { InboxCard } from "@/components/inbox/cards/inboxCard";
-import { FolderSelectionProvider } from "@/components/inbox/folderSelectionContext";
-import { Folder } from "@/pythonTypes";
+} from '@/components/inbox/actions/buttons';
+import { getActionDescription } from '@/components/inbox/actions/descriptions';
+import { InboxCard } from '@/components/inbox/cards/inboxCard';
+import { FolderSelectionProvider } from '@/components/inbox/folderSelectionContext';
+import { Folder } from '@/pythonTypes';
 
 /* ---------------------------------- Route --------------------------------- */
 
-export const Route = createFileRoute("/inbox/")({
+export const Route = createFileRoute('/inbox/')({
     component: RouteComponent,
     loader: async ({ context }) => {
         return await context.queryClient.ensureQueryData(inboxQueryOptions());
@@ -47,14 +47,14 @@ function RouteComponent() {
         <>
             <PageWrapper
                 sx={(theme) => ({
-                    display: "flex",
-                    flexDirection: "column",
-                    minHeight: "100%",
-                    alignItems: "center",
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minHeight: '100%',
+                    alignItems: 'center',
                     paddingTop: theme.spacing(1),
                     paddingInline: theme.spacing(0.5),
-                    [theme.breakpoints.up("laptop")]: {
-                        height: "auto",
+                    [theme.breakpoints.up('laptop')]: {
+                        height: 'auto',
                         paddingTop: theme.spacing(2),
                         paddingInline: theme.spacing(1),
                     },
@@ -63,10 +63,10 @@ function RouteComponent() {
                 <PageHeader inboxes={inboxes} />
                 <Box
                     sx={{
-                        width: "100%",
-                        display: "flex",
+                        width: '100%',
+                        display: 'flex',
                         gap: 2,
-                        flexDirection: "column",
+                        flexDirection: 'column',
                     }}
                 >
                     {inboxes.map((folder) => (
@@ -88,16 +88,16 @@ function PageHeader({ inboxes, ...props }: { inboxes: Folder[] } & BoxProps) {
     return (
         <Box
             sx={(theme) => ({
-                display: "grid",
-                alignItems: "center",
-                justifyContent: "center",
+                display: 'grid',
+                alignItems: 'center',
+                justifyContent: 'center',
                 marginBottom: 2,
-                width: "100%",
-                gridTemplateColumns: "1fr",
-                gridTemplateRows: "1fr",
+                width: '100%',
+                gridTemplateColumns: '1fr',
+                gridTemplateRows: '1fr',
                 paddingInline: 2,
 
-                [theme.breakpoints.down("laptop")]: {
+                [theme.breakpoints.down('laptop')]: {
                     paddingTop: 1,
                     paddingInline: 1,
                 },
@@ -109,39 +109,39 @@ function PageHeader({ inboxes, ...props }: { inboxes: Folder[] } & BoxProps) {
                 component="div"
                 fontWeight="bold"
                 sx={{
-                    gridColumn: "1",
-                    gridRow: "1",
-                    textAlign: "center",
+                    gridColumn: '1',
+                    gridRow: '1',
+                    textAlign: 'center',
                 }}
             >
-                Your inbox{inboxes.length > 1 ? "es" : ""}
+                Your inbox{inboxes.length > 1 ? 'es' : ''}
             </Typography>
             <Box
                 sx={{
-                    alignSelf: "center",
-                    display: "flex",
+                    alignSelf: 'center',
+                    display: 'flex',
                     gap: 1,
                     zIndex: 1,
                     borderRadius: 1,
-                    color: "secondary.muted",
-                    gridColumn: "1",
-                    gridRow: "1",
-                    justifySelf: "flex-end",
+                    color: 'secondary.muted',
+                    gridColumn: '1',
+                    gridRow: '1',
+                    justifySelf: 'flex-end',
                 }}
             >
                 <InfoDescription />
             </Box>
             <Box
                 sx={{
-                    alignSelf: "center",
-                    display: "flex",
+                    alignSelf: 'center',
+                    display: 'flex',
                     gap: 1,
                     zIndex: 1,
                     borderRadius: 1,
-                    color: "secondary.muted",
-                    gridColumn: "1",
-                    gridRow: "1",
-                    justifySelf: "flex-start",
+                    color: 'secondary.muted',
+                    gridColumn: '1',
+                    gridRow: '1',
+                    justifySelf: 'flex-start',
                 }}
             >
                 <RefreshAllFoldersButton />
@@ -166,7 +166,7 @@ function InfoDescription() {
                 sx={{
                     m: 0,
                     p: 0,
-                    color: "inherit",
+                    color: 'inherit',
                 }}
                 size="small"
                 onClick={() => {
@@ -188,59 +188,62 @@ function InfoDescription() {
                             paddingInline: 0.5,
                             paddingBlock: 0.25,
                             borderRadius: 1,
-                            fontFamily: "monospace",
+                            fontFamily: 'monospace',
                         },
-                        "> p": {
-                            marginTop: "0 !important",
+                        '> p': {
+                            marginTop: '0 !important',
                         },
                     }}
                 >
                     <Box component="p">
-                        The <b>Inbox</b> is your temporary holding area for new music
-                        files before they're imported into your library. Drop an album
-                        folder into{" "}
+                        The <b>Inbox</b> is your temporary holding area for new
+                        music files before they're imported into your library.
+                        Drop an album folder into{' '}
                         <Box component="code" whiteSpace="nowrap">
                             {data[0].full_path}
                         </Box>
                         to begin with the tagging and importing process.
                     </Box>
                     <Box component="p">
-                        By default new inbox items are automatically tagged after a
-                        short delay (configurable in the settings yaml). You can also
-                        trigger the tagging manually by using the{" "}
-                        <TagIcon size={theme.iconSize.sm - 2} strokeWidth={3.5} />{" "}
+                        By default new inbox items are automatically tagged
+                        after a short delay (configurable in the settings yaml).
+                        You can also trigger the tagging manually by using the{' '}
+                        <TagIcon
+                            size={theme.iconSize.sm - 2}
+                            strokeWidth={3.5}
+                        />{' '}
                         <b
                             style={{
-                                whiteSpace: "nowrap",
-                                display: "inline-flex",
+                                whiteSpace: 'nowrap',
+                                display: 'inline-flex',
                                 gap: 0.5,
                             }}
                         >
                             Retag
-                        </b>{" "}
+                        </b>{' '}
                         action.
                     </Box>
                     {/* Actions */}
-                    <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                    <Typography sx={{ fontWeight: 'bold', marginBottom: 0.5 }}>
                         Actions
                     </Typography>
                     <Box component="p">
                         You may trigger an action on one or multiple folders by
-                        selecting them and then clicking on one of the action buttons
-                        that appear at the bottom of the inbox.
+                        selecting them and then clicking on one of the action
+                        buttons that appear at the bottom of the inbox.
                     </Box>
                     <Box component="p">
-                        You may configure the available actions and their order for each
-                        inbox using the settings button{" "}
-                        <SettingsIcon size={theme.iconSize.sm} /> in the top right
-                        corner of each inbox card.
+                        You may configure the available actions and their order
+                        for each inbox using the settings button{' '}
+                        <SettingsIcon size={theme.iconSize.sm} /> in the top
+                        right corner of each inbox card.
                     </Box>
                     <Box
                         sx={{
-                            display: "grid",
+                            display: 'grid',
                             columnGap: 1,
-                            gridTemplateColumns: "auto auto",
-                            gridAutoRows: "min-content min-content",
+                            gridTemplateColumns: 'auto auto',
+                            gridAutoRows: 'min-content min-content',
                             pl: 1,
                             rowGap: 1,
                         }}
@@ -255,20 +258,21 @@ function InfoDescription() {
                         <ActionInfo action="undo" />
                     </Box>
                     {/* Tree view */}
-                    <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                    <Typography sx={{ fontWeight: 'bold', marginBottom: 0.5 }}>
                         Tree view
                     </Typography>
                     <Box component="p">
-                        The tree view shows the folder structure of your inbox. This is
-                        very similar to a typical file explorer. You max expand and
-                        collapse folders by clicking on the chevron icon.
+                        The tree view shows the folder structure of your inbox.
+                        This is very similar to a typical file explorer. You max
+                        expand and collapse folders by clicking on the chevron
+                        icon.
                     </Box>
                     <Box sx={{ pl: 1 }} component="p">
                         <Box
                             sx={{
-                                display: "flex",
+                                display: 'flex',
                                 gap: 1,
-                                alignItems: "center",
+                                alignItems: 'center',
                             }}
                         >
                             <FolderTypeIcon
@@ -285,9 +289,9 @@ function InfoDescription() {
                         </Box>
                         <Box
                             sx={{
-                                display: "flex",
+                                display: 'flex',
                                 gap: 1,
-                                alignItems: "center",
+                                alignItems: 'center',
                             }}
                         >
                             <FolderTypeIcon
@@ -306,42 +310,51 @@ function InfoDescription() {
                         </Box>
                         <Box
                             sx={{
-                                display: "flex",
+                                display: 'flex',
                                 gap: 1,
-                                alignItems: "center",
+                                alignItems: 'center',
                             }}
                         >
-                            <FileTypeIcon type={"mp3"} size={theme.iconSize.lg} />
-                            <FileTypeIcon type={"txt"} size={theme.iconSize.lg} />
+                            <FileTypeIcon
+                                type={'mp3'}
+                                size={theme.iconSize.lg}
+                            />
+                            <FileTypeIcon
+                                type={'txt'}
+                                size={theme.iconSize.lg}
+                            />
                             <Typography>
                                 Any file (icons varies by file extension)
                             </Typography>
                         </Box>
                     </Box>
                     {/* Chips */}
-                    <Typography sx={{ fontWeight: "bold", marginBottom: 0.5 }}>
+                    <Typography sx={{ fontWeight: 'bold', marginBottom: 0.5 }}>
                         Chips
                     </Typography>
                     <Box component="p">
-                        Once a folder is tagged or imported{" "}
+                        Once a folder is tagged or imported{' '}
                         <StyledChip
                             label="chips"
                             size="small"
-                            sx={{ width: "min-content", display: "inline-flex" }}
+                            sx={{
+                                width: 'min-content',
+                                display: 'inline-flex',
+                            }}
                             variant="outlined"
-                        />{" "}
-                        will be shown in the row of the folder. These chips indicate the
-                        status of the folder and gives additional information about the
-                        best tag candidate.
+                        />{' '}
+                        will be shown in the row of the folder. These chips
+                        indicate the status of the folder and gives additional
+                        information about the best tag candidate.
                     </Box>
                     <Box
                         component="p"
                         sx={{
-                            display: "grid",
+                            display: 'grid',
                             columnGap: 1,
                             rowGap: 0.5,
-                            gridTemplateColumns: "min-content auto",
-                            alignItems: "center",
+                            gridTemplateColumns: 'min-content auto',
+                            alignItems: 'center',
                             pl: 1,
                         }}
                     >
@@ -358,12 +371,15 @@ function InfoDescription() {
                             variant="outlined"
                         />
                         <Typography variant="caption">
-                            This album is already in your beets library! Click on the
-                            chip to jump to the item in your library.
+                            This album is already in your beets library! Click
+                            on the chip to jump to the item in your library.
                         </Typography>
                         <StyledChip
                             icon={
-                                <FolderStatusIcon status={1} size={theme.iconSize.sm} />
+                                <FolderStatusIcon
+                                    status={1}
+                                    size={theme.iconSize.sm}
+                                />
                             }
                             label="status"
                             size="small"
@@ -371,15 +387,15 @@ function InfoDescription() {
                             color="info"
                         />
                         <Typography variant="caption">
-                            The current status of a the most recent action on this
-                            folder. This may indicate the live status if an action is
-                            currently running.
+                            The current status of a the most recent action on
+                            this folder. This may indicate the live status if an
+                            action is currently running.
                         </Typography>
                         <MatchChip source="mb" distance={0.01} />
                         <Typography variant="caption">
-                            Shows the quality and metadata source of the best matching
-                            tag candidate. For beets veterans, you may think of this as
-                            the data source and penalty.
+                            Shows the quality and metadata source of the best
+                            matching tag candidate. For beets veterans, you may
+                            think of this as the data source and penalty.
                         </Typography>
                         <StyledChip
                             icon={<FolderClockIcon size={theme.iconSize.sm} />}
@@ -389,8 +405,9 @@ function InfoDescription() {
                             color="warning"
                         />
                         <Typography variant="caption">
-                            The integrity check of the folder failed. This may be due to
-                            changes to a folder after it was tagged or imported.
+                            The integrity check of the folder failed. This may
+                            be due to changes to a folder after it was tagged or
+                            imported.
                         </Typography>
                     </Box>
                 </DialogContent>
@@ -399,21 +416,23 @@ function InfoDescription() {
     );
 }
 
-function ActionInfo({ action }: { action: Action["name"] }) {
+function ActionInfo({ action }: { action: Action['name'] }) {
     return (
         <Box>
             <Box
                 sx={{
-                    display: "grid",
+                    display: 'grid',
                     gap: 1,
-                    alignItems: "center",
-                    gridTemplateColumns: "min-content max-content",
+                    alignItems: 'center',
+                    gridTemplateColumns: 'min-content max-content',
                     flexShrink: 0,
                 }}
             >
                 <ActionIcon action={action} />
                 <Typography>
-                    {action.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                    {action
+                        .replace(/_/g, ' ')
+                        .replace(/\b\w/g, (c) => c.toUpperCase())}
                 </Typography>
             </Box>
             <Typography variant="caption" component="div">

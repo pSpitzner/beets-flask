@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState } from 'react';
 import {
     closestCenter,
     DndContext,
@@ -9,25 +9,25 @@ import {
     UniqueIdentifier,
     useSensor,
     useSensors,
-} from "@dnd-kit/core";
+} from '@dnd-kit/core';
 import {
     arrayMove,
     horizontalListSortingStrategy,
     SortableContext,
     sortableKeyboardCoordinates,
     useSortable,
-} from "@dnd-kit/sortable";
-import { Box, Typography } from "@mui/material";
-import { createFileRoute } from "@tanstack/react-router";
+} from '@dnd-kit/sortable';
+import { Box, Typography } from '@mui/material';
+import { createFileRoute } from '@tanstack/react-router';
 
-import { PageWrapper } from "@/components/common/page";
+import { PageWrapper } from '@/components/common/page';
 
-export const Route = createFileRoute("/debug/sortable")({
+export const Route = createFileRoute('/debug/sortable')({
     component: RouteComponent,
 });
 
 function RouteComponent() {
-    const [items, setItems] = useState(["A", "B", "C", "D", "E"]);
+    const [items, setItems] = useState(['A', 'B', 'C', 'D', 'E']);
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, {
@@ -42,12 +42,12 @@ function RouteComponent() {
             </Typography>
             <Box
                 sx={{
-                    display: "flex",
+                    display: 'flex',
                     gap: 2,
-                    border: "1px solid green",
-                    "> *": {
+                    border: '1px solid green',
+                    '> *': {
                         padding: 2,
-                        border: "1px solid red",
+                        border: '1px solid red',
                     },
                 }}
             >
@@ -89,10 +89,16 @@ function RouteComponent() {
 }
 
 function SortableItem({ id }: { id: UniqueIdentifier }) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-        useSortable({
-            id,
-        });
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({
+        id,
+    });
 
     const style = transform
         ? {

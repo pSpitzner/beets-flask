@@ -1,22 +1,24 @@
-import { Box, Typography } from "@mui/material";
-import { createFileRoute } from "@tanstack/react-router";
+import { Box, Typography } from '@mui/material';
+import { createFileRoute } from '@tanstack/react-router';
 
-import { Link } from "@/components/common/link";
-import { PageWrapper } from "@/components/common/page";
+import { Link } from '@/components/common/link';
+import { PageWrapper } from '@/components/common/page';
 
-export const Route = createFileRoute("/debug/")({
+export const Route = createFileRoute('/debug/')({
     component: RouteComponent,
 });
 
 function RouteComponent() {
     return (
-        <PageWrapper sx={{ gap: "1rem", display: "flex", flexDirection: "column" }}>
+        <PageWrapper
+            sx={{ gap: '1rem', display: 'flex', flexDirection: 'column' }}
+        >
             <Typography variant="h4" component="h1">
                 Debug Pages
             </Typography>
             <Typography variant="body1">
-                This page is for debugging the application. It contains links to various
-                debug pages with various information.
+                This page is for debugging the application. It contains links to
+                various debug pages with various information.
             </Typography>
             <Box>
                 <Typography variant="h5" component="h2">

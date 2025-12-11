@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef } from 'react';
 
 /**
  * A custom hook to handle context menu events in a mobile-friendly way.
@@ -31,11 +31,11 @@ export const useMobileSafeContextMenu = (
     const pressTimer = useRef<number | null>(null);
 
     const start = (event: React.PointerEvent) => {
-        if (event.pointerType === "touch" || event.pointerType === "pen") {
+        if (event.pointerType === 'touch' || event.pointerType === 'pen') {
             pressTimer.current = window.setTimeout(() => {
                 onContextMenu(event); // Trigger the context menu callback
             }, duration);
-        } else if (event.pointerType === "mouse" && event.button === 2) {
+        } else if (event.pointerType === 'mouse' && event.button === 2) {
             // Right-click on desktop
             onContextMenu(event);
         }

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect } from 'react';
 
 interface MediaSessionProps {
     title?: string;
@@ -36,9 +36,9 @@ export function useMediaSession({
 }: MediaSessionProps) {
     // Set metadata on changes
     useEffect(() => {
-        if (!("mediaSession" in navigator)) return;
+        if (!('mediaSession' in navigator)) return;
 
-        const art = typeof artwork === "string" ? [{ src: artwork }] : artwork;
+        const art = typeof artwork === 'string' ? [{ src: artwork }] : artwork;
         navigator.mediaSession.metadata = new MediaMetadata({
             title,
             artist,
@@ -53,23 +53,30 @@ export function useMediaSession({
 
     // Set action handlers
     useEffect(() => {
-        if (!("mediaSession" in navigator)) return;
+        if (!('mediaSession' in navigator)) return;
 
-        if (onPlay) navigator.mediaSession.setActionHandler("play", onPlay);
-        if (onPause) navigator.mediaSession.setActionHandler("pause", onPause);
-        if (onStop) navigator.mediaSession.setActionHandler("stop", onStop);
+        if (onPlay) navigator.mediaSession.setActionHandler('play', onPlay);
+        if (onPause) navigator.mediaSession.setActionHandler('pause', onPause);
+        if (onStop) navigator.mediaSession.setActionHandler('stop', onStop);
         if (onSeekBackward)
-            navigator.mediaSession.setActionHandler("seekbackward", onSeekBackward);
+            navigator.mediaSession.setActionHandler(
+                'seekbackward',
+                onSeekBackward
+            );
         if (onSeekForward)
-            navigator.mediaSession.setActionHandler("seekforward", onSeekForward);
-        if (onSeekTo) navigator.mediaSession.setActionHandler("seekto", onSeekTo);
+            navigator.mediaSession.setActionHandler(
+                'seekforward',
+                onSeekForward
+            );
+        if (onSeekTo)
+            navigator.mediaSession.setActionHandler('seekto', onSeekTo);
 
         return () => {
-            navigator.mediaSession.setActionHandler("play", null);
-            navigator.mediaSession.setActionHandler("pause", null);
-            navigator.mediaSession.setActionHandler("stop", null);
-            navigator.mediaSession.setActionHandler("seekbackward", null);
-            navigator.mediaSession.setActionHandler("seekforward", null);
+            navigator.mediaSession.setActionHandler('play', null);
+            navigator.mediaSession.setActionHandler('pause', null);
+            navigator.mediaSession.setActionHandler('stop', null);
+            navigator.mediaSession.setActionHandler('seekbackward', null);
+            navigator.mediaSession.setActionHandler('seekforward', null);
         };
     }, [onPlay, onPause, onStop, onSeekBackward, onSeekForward, onSeekTo]);
 }

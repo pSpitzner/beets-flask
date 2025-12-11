@@ -10,8 +10,8 @@ import {
     TerminalIcon,
     Trash2Icon,
     UngroupIcon,
-} from "lucide-react";
-import { useState } from "react";
+} from 'lucide-react';
+import { useState } from 'react';
 import {
     Box,
     BoxProps,
@@ -21,22 +21,26 @@ import {
     IconButton,
     Tooltip,
     useTheme,
-} from "@mui/material";
-import { useMutation } from "@tanstack/react-query";
+} from '@mui/material';
+import { useMutation } from '@tanstack/react-query';
 
-import { Action, ActionButtonConfig, InboxFolderFrontendConfig } from "@/api/config";
-import { enqueueMutationOptions } from "@/api/session";
-import { assertUnreachable } from "@/components/common/debugging/typing";
-import { BootlegIcon } from "@/components/common/icons";
+import {
+    Action,
+    ActionButtonConfig,
+    InboxFolderFrontendConfig,
+} from '@/api/config';
+import { enqueueMutationOptions } from '@/api/session';
+import { assertUnreachable } from '@/components/common/debugging/typing';
+import { BootlegIcon } from '@/components/common/icons';
 import {
     SplitButtonOptionProps,
     SplitButtonOptions,
-} from "@/components/common/inputs/splitButton";
-import { useStatusSocket } from "@/components/common/websocket/status";
-import { EnqueueKind, JobStatusUpdate } from "@/pythonTypes";
+} from '@/components/common/inputs/splitButton';
+import { useStatusSocket } from '@/components/common/websocket/status';
+import { EnqueueKind, JobStatusUpdate } from '@/pythonTypes';
 
-import { ActionDialog } from "./dialogs";
-import { useActionMutation } from "./mutations";
+import { ActionDialog } from './dialogs';
+import { useActionMutation } from './mutations';
 
 /* ----------------------------- Generic buttons ---------------------------- */
 
@@ -46,7 +50,7 @@ import { useActionMutation } from "./mutations";
 export function InboxActions({
     actionButtons,
 }: {
-    actionButtons: InboxFolderFrontendConfig["actionButtons"];
+    actionButtons: InboxFolderFrontendConfig['actionButtons'];
 }) {
     const hasPrimaryOrSecondaryActions =
         actionButtons.primary.actions.length > 0 ||
@@ -57,12 +61,12 @@ export function InboxActions({
         <>
             <Box
                 sx={{
-                    display: hasPrimaryOrSecondaryActions ? "flex" : "none",
+                    display: hasPrimaryOrSecondaryActions ? 'flex' : 'none',
                     gap: 1,
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    flexDirection: "row-reverse",
-                    width: "100%",
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexDirection: 'row-reverse',
+                    width: '100%',
                 }}
             >
                 <ActionButton
@@ -76,10 +80,11 @@ export function InboxActions({
             </Box>
             <Box
                 sx={{
-                    width: "100%",
-                    marginTop: hasPrimaryOrSecondaryActions && hasExtraActions ? 1 : 0,
-                    marginLeft: "0 !important",
-                    display: "flex",
+                    width: '100%',
+                    marginTop:
+                        hasPrimaryOrSecondaryActions && hasExtraActions ? 1 : 0,
+                    marginLeft: '0 !important',
+                    display: 'flex',
                     gap: 2,
                 }}
             >
@@ -116,7 +121,7 @@ function ActionButtonSingle({
     action,
     onMutate,
     ...props
-}: Omit<ButtonProps, "action"> & {
+}: Omit<ButtonProps, 'action'> & {
     action: Action;
     onMutate?: (ret: unknown) => void;
 }) {
@@ -127,7 +132,9 @@ function ActionButtonSingle({
     // note: we need to call this without jsx to check if it returns a dialog or not
     const Dialog = ActionDialog({ action, open, setOpen });
 
-    const handleClick = async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    const handleClick = async (
+        e: React.MouseEvent<HTMLButtonElement, MouseEvent>
+    ) => {
         if (Dialog !== null && !e.shiftKey) {
             e.preventDefault();
             setOpen(true);
@@ -147,7 +154,7 @@ function ActionButtonSingle({
                 color="secondary"
                 {...props}
             >
-                {action.label || action.name.replace(/_/g, " ")}
+                {action.label || action.name.replace(/_/g, ' ')}
             </Button>
             {Dialog}
         </>
@@ -159,7 +166,7 @@ function ActionButtonMultiple({
     ...props
 }: {
     actions: Action[];
-} & Omit<SplitButtonOptionProps, "options">) {
+} & Omit<SplitButtonOptionProps, 'options'>) {
     const [open, setOpen] = useState(false);
     const [selectedActionIdx, setSelectedActionIdx] = useState(0);
     const selectedAction = actions[selectedActionIdx];
@@ -169,7 +176,9 @@ function ActionButtonMultiple({
     // Some actions might have a confirmation dialog, so we need to handle that
     // note: we need to call this without jsx to check if it returns a dialog or not
     const Dialog = ActionDialog({ action: selectedAction, open, setOpen });
-    const handleClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    const handleClick = (
+        e: React.MouseEvent<HTMLButtonElement, MouseEvent>
+    ) => {
         if (Dialog !== null && !e.shiftKey) {
             e.preventDefault();
             setOpen(true);
@@ -183,7 +192,9 @@ function ActionButtonMultiple({
     const options = actions.map((action) => ({
         label:
             action.label ||
-            action.name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+            action.name
+                .replace(/_/g, ' ')
+                .replace(/\b\w/g, (c) => c.toUpperCase()),
         key: action.name,
         buttonProps: {
             startIcon: <ActionIcon action={action} />,
@@ -208,29 +219,29 @@ function ActionButtonMultiple({
 }
 
 // TODO move into icons
-export function ActionIcon({ action }: { action: Action | Action["name"] }) {
+export function ActionIcon({ action }: { action: Action | Action['name'] }) {
     const theme = useTheme();
 
     const size = theme.iconSize.md; // Adjust size as needed
 
-    const name = typeof action === "string" ? action : action.name;
+    const name = typeof action === 'string' ? action : action.name;
 
     switch (name) {
-        case "retag":
+        case 'retag':
             return <TagIcon size={size} />;
-        case "undo":
+        case 'undo':
             return <HistoryIcon size={size} />;
-        case "import_bootleg":
+        case 'import_bootleg':
             return <BootlegIcon size={size} />;
-        case "import_best":
+        case 'import_best':
             return <ImportIcon size={size} />;
-        case "delete":
+        case 'delete':
             return <Trash2Icon size={size} />;
-        case "delete_imported_folders":
+        case 'delete_imported_folders':
             return <Trash2Icon size={size} />;
-        case "copy_path":
+        case 'copy_path':
             return <ClipboardIcon size={size} />;
-        case "import_terminal":
+        case 'import_terminal':
             return <TerminalIcon size={size} />;
         default:
             return assertUnreachable(name);
@@ -242,7 +253,7 @@ export function ActionIcon({ action }: { action: Action | Action["name"] }) {
 export function RefreshAllFoldersButton() {
     // See inbox2 route
     const { mutate, isPending } = useMutation({
-        mutationKey: ["refreshInboxTree"],
+        mutationKey: ['refreshInboxTree'],
     });
     const theme = useTheme();
 
@@ -251,10 +262,10 @@ export function RefreshAllFoldersButton() {
             <IconButton
                 onClick={() => mutate()}
                 sx={{
-                    animation: isPending ? "spin 1s linear infinite" : "none",
-                    "@keyframes spin": {
-                        from: { transform: "rotate(0deg)" },
-                        to: { transform: "rotate(360deg)" },
+                    animation: isPending ? 'spin 1s linear infinite' : 'none',
+                    '@keyframes spin': {
+                        from: { transform: 'rotate(0deg)' },
+                        to: { transform: 'rotate(360deg)' },
                     },
                 }}
                 disabled={isPending}
@@ -295,9 +306,9 @@ export function RetagButtonGroup({
         <Box
             sx={[
                 {
-                    display: "flex",
+                    display: 'flex',
                     gap: 1,
-                    alignItems: "center",
+                    alignItems: 'center',
                 },
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                 ...(Array.isArray(sx) ? sx : [sx]),
@@ -310,12 +321,12 @@ export function RetagButtonGroup({
                     icon={<GroupIcon size={theme.iconSize.lg} />}
                     checkedIcon={<UngroupIcon size={theme.iconSize.lg} />}
                     sx={{
-                        margin: "0px",
-                        borderRadius: "0px",
-                        width: "30px",
-                        height: "30px",
-                        minHeight: "30px",
-                        minWidth: "30px",
+                        margin: '0px',
+                        borderRadius: '0px',
+                        width: '30px',
+                        height: '30px',
+                        minHeight: '30px',
+                        minWidth: '30px',
                         padding: 0.5,
                     }}
                     checked={!options.group_albums}
@@ -333,12 +344,12 @@ export function RetagButtonGroup({
                     icon={<EyeOffIcon size={theme.iconSize.md} />}
                     checkedIcon={<EyeIcon size={theme.iconSize.md} />}
                     sx={{
-                        margin: "0px",
-                        borderRadius: "0px",
-                        width: "30px",
-                        height: "30px",
-                        minHeight: "30px",
-                        minWidth: "30px",
+                        margin: '0px',
+                        borderRadius: '0px',
+                        width: '30px',
+                        height: '30px',
+                        minHeight: '30px',
+                        minWidth: '30px',
                         padding: 0.5,
                     }}
                     checked={options.autotag}
@@ -351,14 +362,14 @@ export function RetagButtonGroup({
                 />
             </Tooltip>
             <Tooltip
-                title={`(Re)tag the folder (${options.autotag ? "with lookup" : "skipping lookup"}, ${options.group_albums ? "group by metadata" : "group by folder"})`}
+                title={`(Re)tag the folder (${options.autotag ? 'with lookup' : 'skipping lookup'}, ${options.group_albums ? 'group by metadata' : 'group by folder'})`}
             >
                 <Button
                     variant="contained"
                     color="secondary"
                     onClick={async () => {
                         if (!socket) {
-                            console.error("No socket connection");
+                            console.error('No socket connection');
                             return;
                         }
                         const r = await mutateAsync({

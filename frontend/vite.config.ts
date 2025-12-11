@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import reactProd from "@vitejs/plugin-react";
 import reactDev from "@vitejs/plugin-react-swc";
-import { TanStackRouterVite } from "@tanstack/router-vite-plugin";
+import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import tsconfigPaths from "vite-tsconfig-paths";
 import svgr from "vite-plugin-svgr";
 
@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => {
     return {
         plugins: [
             tsconfigPaths(),
-            TanStackRouterVite({ autoCodeSplitting: true }),
+            tanstackRouter({ autoCodeSplitting: true }),
             // React compiler plugin for production builds
             isProd
                 ? reactProd({
@@ -33,13 +33,6 @@ export default defineConfig(({ mode }) => {
         // we can enable this again when the code base is a bit more mature.
         build: {
             minify: isProd,
-        },
-        css: {
-            preprocessorOptions: {
-                scss: {
-                    api: "modern-compiler",
-                },
-            },
         },
         server: {
             /** Allow the api calls to be

@@ -1,22 +1,22 @@
-import { LucideProps } from "lucide-react";
-import { Box } from "@mui/material";
-import Tooltip from "@mui/material/Tooltip";
+import { LucideProps } from 'lucide-react';
+import { Box } from '@mui/material';
+import Tooltip from '@mui/material/Tooltip';
 
-import { SerializedCandidateState } from "@/pythonTypes";
+import { SerializedCandidateState } from '@/pythonTypes';
 
-import { PenaltyTypeIcon } from "../common/icons";
+import { PenaltyTypeIcon } from '../common/icons';
 
 const penaltyOrder = [
-    "artist",
-    "album",
-    "tracks",
-    "extra_tracks",
-    "extra_items",
-    "year",
-    "label",
-    "media",
-    "mediums",
-    "country",
+    'artist',
+    'album',
+    'tracks',
+    'extra_tracks',
+    'extra_items',
+    'year',
+    'label',
+    'media',
+    'mediums',
+    'country',
 ];
 
 /** Helper function to show all penalties.
@@ -39,10 +39,10 @@ export function PenaltyIconRow({
                         color: candidate.penalties.includes(p)
                             ? theme.palette.diffs.changed
                             : theme.palette.diffs.changedLight,
-                        [theme.breakpoints.down("tablet")]: {
-                            display: "none",
+                        [theme.breakpoints.down('tablet')]: {
+                            display: 'none',
                         },
-                        display: "flex",
+                        display: 'flex',
                     })}
                     key={p}
                 >
@@ -60,15 +60,18 @@ export function PenaltyIconRow({
 function PenaltyIconWithTooltip({
     type,
     ...props
-}: { type: string; className?: string } & Omit<LucideProps, "ref">): React.JSX.Element {
+}: { type: string; className?: string } & Omit<
+    LucideProps,
+    'ref'
+>): React.JSX.Element {
     const tooltip = type
-        .replace("album_", "")
-        .replace("track_", "")
-        .replaceAll(" ", ", ")
-        .replaceAll("_", " ")
+        .replace('album_', '')
+        .replace('track_', '')
+        .replaceAll(' ', ', ')
+        .replaceAll('_', ' ')
         // rename for more verbose hover
-        .replace(/^tracks\b/, "track changes")
-        .replace(/^mediums\b/, "number of discs");
+        .replace(/^tracks\b/, 'track changes')
+        .replace(/^mediums\b/, 'number of discs');
 
     return (
         <Tooltip title={tooltip}>

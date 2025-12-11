@@ -5,8 +5,8 @@ import {
     Disc3Icon,
     LibraryIcon,
     User2Icon,
-} from "lucide-react";
-import { useMemo } from "react";
+} from 'lucide-react';
+import { useMemo } from 'react';
 import {
     Box,
     BoxProps,
@@ -15,22 +15,30 @@ import {
     CardContent,
     Typography,
     useTheme,
-} from "@mui/material";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+} from '@mui/material';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute, Link } from '@tanstack/react-router';
 
-import { Artist, artistsQueryOptions, recentAlbumsQueryOptions } from "@/api/library";
-import { PageWrapper } from "@/components/common/page";
-import { relativeTime } from "@/components/common/units/time";
-import { CardHeader } from "@/components/frontpage/statsCard";
-import { CoverArt } from "@/components/library/coverArt";
-import { AlbumResponseMinimal } from "@/pythonTypes";
+import {
+    Artist,
+    artistsQueryOptions,
+    recentAlbumsQueryOptions,
+} from '@/api/library';
+import { PageWrapper } from '@/components/common/page';
+import { relativeTime } from '@/components/common/units/time';
+import { CardHeader } from '@/components/frontpage/statsCard';
+import { CoverArt } from '@/components/library/coverArt';
+import { AlbumResponseMinimal } from '@/pythonTypes';
 
-export const Route = createFileRoute("/library/browse/")({
+export const Route = createFileRoute('/library/browse/')({
     component: RouteComponent,
     loader: async (opts) => {
-        const p1 = opts.context.queryClient.ensureQueryData(artistsQueryOptions());
-        const p2 = opts.context.queryClient.ensureQueryData(recentAlbumsQueryOptions);
+        const p1 = opts.context.queryClient.ensureQueryData(
+            artistsQueryOptions()
+        );
+        const p2 = opts.context.queryClient.ensureQueryData(
+            recentAlbumsQueryOptions
+        );
         await Promise.all([p1, p2]);
     },
 });
@@ -39,20 +47,20 @@ function RouteComponent() {
     return (
         <PageWrapper
             sx={(theme) => ({
-                display: "flex",
-                flexDirection: "column",
-                height: "100%",
-                width: "100%",
-                alignItems: "center",
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                width: '100%',
+                alignItems: 'center',
                 paddingTop: theme.spacing(1),
                 paddingInline: theme.spacing(0.5),
-                [theme.breakpoints.up("laptop")]: {
-                    height: "auto",
+                [theme.breakpoints.up('laptop')]: {
+                    height: 'auto',
                     paddingTop: theme.spacing(2),
                     paddingInline: theme.spacing(1),
                 },
                 gap: 6,
-                overflow: "auto",
+                overflow: 'auto',
             })}
         >
             <PageHeader />
@@ -66,27 +74,27 @@ function PageHeader(props: BoxProps) {
     return (
         <Box
             sx={{
-                display: "grid",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "100%",
-                gridTemplateColumns: "1fr",
-                gridTemplateRows: "1fr",
+                display: 'grid',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%',
+                gridTemplateColumns: '1fr',
+                gridTemplateRows: '1fr',
                 paddingInline: 2,
             }}
             {...props}
         >
             <Box
                 sx={{
-                    alignSelf: "center",
-                    display: "flex",
+                    alignSelf: 'center',
+                    display: 'flex',
                     gap: 1,
                     zIndex: 1,
                     borderRadius: 1,
-                    color: "primary.muted",
-                    gridColumn: "1",
-                    gridRow: "1",
-                    justifySelf: "flex-start",
+                    color: 'primary.muted',
+                    gridColumn: '1',
+                    gridRow: '1',
+                    justifySelf: 'flex-start',
                 }}
             >
                 <LibraryIcon size={40} />
@@ -96,9 +104,9 @@ function PageHeader(props: BoxProps) {
                 component="div"
                 fontWeight="bold"
                 sx={{
-                    gridColumn: "1",
-                    gridRow: "1",
-                    textAlign: "center",
+                    gridColumn: '1',
+                    gridRow: '1',
+                    textAlign: 'center',
                 }}
             >
                 Browse your Library
@@ -113,7 +121,7 @@ function Albums() {
     const { data: albums } = useSuspenseQuery(recentAlbumsQueryOptions);
 
     return (
-        <Card sx={{ padding: 2, width: "100%", overflow: "unset" }}>
+        <Card sx={{ padding: 2, width: '100%', overflow: 'unset' }}>
             <CardHeader icon={<Disc3Icon size={36} />} size="large">
                 <Typography variant="body1" color="text.secondary">
                     Albums
@@ -124,19 +132,23 @@ function Albums() {
                     paddingInline: 1,
                     paddingTop: 2,
                     m: 0,
-                    paddingBottom: "0 !important",
+                    paddingBottom: '0 !important',
                 }}
             >
                 <Box>
-                    <Typography variant="h5" fontWeight={800} letterSpacing={0.5}>
+                    <Typography
+                        variant="h5"
+                        fontWeight={800}
+                        letterSpacing={0.5}
+                    >
                         Recently added
                     </Typography>
                     <Box
                         sx={{
-                            display: "grid",
+                            display: 'grid',
                             gridTemplateColumns:
-                                "repeat(auto-fill, minmax(300px, 1fr))",
-                            gridAutoRows: "auto",
+                                'repeat(auto-fill, minmax(300px, 1fr))',
+                            gridAutoRows: 'auto',
                             gap: 1,
                             paddingTop: 2.5,
                         }}
@@ -150,13 +162,13 @@ function Albums() {
                 <Box
                     sx={(theme) => ({
                         paddingTop: 3,
-                        display: "flex",
+                        display: 'flex',
                         gap: 2,
                         fontWeight: 600,
-                        justifyContent: "flex-end",
-                        [theme.breakpoints.down("tablet")]: {
-                            ">*": {
-                                width: "100%",
+                        justifyContent: 'flex-end',
+                        [theme.breakpoints.down('tablet')]: {
+                            '>*': {
+                                width: '100%',
                             },
                         },
                     })}
@@ -186,26 +198,26 @@ function AlbumRecentCard(album: AlbumResponseMinimal) {
             <Box
                 sx={{
                     padding: 0.5,
-                    border: "2px solid",
-                    borderColor: "primary.muted",
-                    width: "100%",
-                    color: "primary.muted",
-                    display: "flex",
-                    flexDirection: "column",
+                    border: '2px solid',
+                    borderColor: 'primary.muted',
+                    width: '100%',
+                    color: 'primary.muted',
+                    display: 'flex',
+                    flexDirection: 'column',
                     borderRadius: 1,
-                    alignItems: "space-between",
-                    justifyContent: "space-between",
+                    alignItems: 'space-between',
+                    justifyContent: 'space-between',
                     gap: 1,
                 }}
             >
-                <Box sx={{ display: "flex", gap: 1 }}>
+                <Box sx={{ display: 'flex', gap: 1 }}>
                     <CoverArt
                         size="small"
                         type="album"
                         beetsId={album.id}
                         sx={{
-                            height: "70px",
-                            width: "70px",
+                            height: '70px',
+                            width: '70px',
                             flexShrink: 0,
                         }}
                     />
@@ -213,39 +225,47 @@ function AlbumRecentCard(album: AlbumResponseMinimal) {
                         variant="h6"
                         sx={{
                             fontWeight: 600,
-                            overflowWrap: "anywhere",
-                            width: "100%",
+                            overflowWrap: 'anywhere',
+                            width: '100%',
                             lineHeight: 1.2,
                         }}
                     >
-                        {album.name || "[Unknown Album]"}
+                        {album.name || '[Unknown Album]'}
                     </Typography>
                 </Box>
                 <Box
                     sx={{
-                        width: "100%",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "space-between",
-                        justifyContent: "space-between",
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'space-between',
+                        justifyContent: 'space-between',
                     }}
                 >
                     <Box
                         sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
                             gap: 1,
-                            color: "grey.600",
-                            letterSpacing: "1px",
-                            width: "100%",
+                            color: 'grey.600',
+                            letterSpacing: '1px',
+                            width: '100%',
                         }}
                     >
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.5,
+                            }}
+                        >
                             <ClockIcon size={theme.iconSize.md} />
                             <Typography variant="body2">
-                                Added{" "}
-                                {album.added ? relativeTime(album.added) : "Unknown"}
+                                Added{' '}
+                                {album.added
+                                    ? relativeTime(album.added)
+                                    : 'Unknown'}
                             </Typography>
                         </Box>
                     </Box>
@@ -281,7 +301,7 @@ function Artists() {
     }, [artists]);
 
     return (
-        <Card sx={{ padding: 2, width: "100%", overflow: "unset" }}>
+        <Card sx={{ padding: 2, width: '100%', overflow: 'unset' }}>
             <CardHeader icon={<User2Icon size={36} />} size="large">
                 <Typography variant="body1" color="text.secondary">
                     Artists
@@ -292,60 +312,78 @@ function Artists() {
                     paddingInline: 1,
                     paddingTop: 2,
                     m: 0,
-                    paddingBottom: "0 !important",
-                    display: "flex",
-                    flexDirection: "column",
+                    paddingBottom: '0 !important',
+                    display: 'flex',
+                    flexDirection: 'column',
                     gap: 3,
                 }}
             >
                 <Box>
-                    <Typography variant="h5" fontWeight={800} letterSpacing={0.5}>
+                    <Typography
+                        variant="h5"
+                        fontWeight={800}
+                        letterSpacing={0.5}
+                    >
                         Top occurring Artists
                     </Typography>
                     <Box
                         sx={{
-                            display: "grid",
+                            display: 'grid',
                             gridTemplateColumns:
-                                "repeat(auto-fill, minmax(200px, 1fr))",
-                            gridAutoRows: "1fr",
+                                'repeat(auto-fill, minmax(200px, 1fr))',
+                            gridAutoRows: '1fr',
                             gap: 1,
                             paddingTop: 2.5,
                         }}
                     >
                         {topArtistsByItems.slice(0, 10).map((artist) => {
-                            return <ArtistCardCounts key={artist.artist} {...artist} />;
+                            return (
+                                <ArtistCardCounts
+                                    key={artist.artist}
+                                    {...artist}
+                                />
+                            );
                         })}
                     </Box>
                 </Box>
                 <Box>
-                    <Typography variant="h5" fontWeight={800} letterSpacing={0.5}>
+                    <Typography
+                        variant="h5"
+                        fontWeight={800}
+                        letterSpacing={0.5}
+                    >
                         New additions
                     </Typography>
                     <Box
                         sx={{
-                            display: "grid",
+                            display: 'grid',
                             gridTemplateColumns:
-                                "repeat(auto-fill, minmax(220px, 1fr))",
-                            gridAutoRows: "1fr",
+                                'repeat(auto-fill, minmax(220px, 1fr))',
+                            gridAutoRows: '1fr',
                             gap: 1,
                             paddingTop: 2.5,
                         }}
                     >
                         {newAdditions.slice(0, 10).map((artist) => {
-                            return <ArtistCardAdded key={artist.artist} {...artist} />;
+                            return (
+                                <ArtistCardAdded
+                                    key={artist.artist}
+                                    {...artist}
+                                />
+                            );
                         })}
                     </Box>
                 </Box>
                 <Box
                     sx={(theme) => ({
                         paddingTop: 3,
-                        display: "flex",
+                        display: 'flex',
                         gap: 2,
                         fontWeight: 600,
-                        justifyContent: "flex-end",
-                        [theme.breakpoints.down("tablet")]: {
-                            ">*": {
-                                width: "100%",
+                        justifyContent: 'flex-end',
+                        [theme.breakpoints.down('tablet')]: {
+                            '>*': {
+                                width: '100%',
                             },
                         },
                     })}
@@ -379,41 +417,48 @@ function ArtistCardCounts({
         <Box
             sx={{
                 padding: 0.5,
-                border: "2px solid",
-                borderColor: "primary.muted",
-                width: "100%",
-                color: "primary.muted",
-                display: "flex",
-                alignItems: "center",
-                flexDirection: "column",
+                border: '2px solid',
+                borderColor: 'primary.muted',
+                width: '100%',
+                color: 'primary.muted',
+                display: 'flex',
+                alignItems: 'center',
+                flexDirection: 'column',
                 borderRadius: 1,
                 a: {
-                    width: "100%",
+                    width: '100%',
                 },
             }}
         >
-            <Link to="/library/browse/artists/$artist" params={{ artist: name }}>
+            <Link
+                to="/library/browse/artists/$artist"
+                params={{ artist: name }}
+            >
                 <Box
                     sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
                         gap: 1,
-                        color: "grey.600",
-                        letterSpacing: "1px",
-                        width: "100%",
+                        color: 'grey.600',
+                        letterSpacing: '1px',
+                        width: '100%',
                     }}
                 >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                    >
                         <Disc3Icon size={theme.iconSize.md} />
                         <Typography variant="body2">
-                            {nAlbums} Album{nAlbums !== 1 ? "s" : ""}
+                            {nAlbums} Album{nAlbums !== 1 ? 's' : ''}
                         </Typography>
                     </Box>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                    >
                         <AudioLinesIcon size={theme.iconSize.md} />
                         <Typography variant="body2">
-                            {nTracks} Track{nTracks !== 1 ? "s" : ""}
+                            {nTracks} Track{nTracks !== 1 ? 's' : ''}
                         </Typography>
                     </Box>
                 </Box>
@@ -422,11 +467,11 @@ function ArtistCardCounts({
                     sx={{
                         fontWeight: 600,
                         lineHeight: 1.1,
-                        overflowWrap: "anywhere",
+                        overflowWrap: 'anywhere',
                         paddingLeft: 1,
                         paddingBlock: 0.5,
-                        textAlign: "right",
-                        width: "100%",
+                        textAlign: 'right',
+                        width: '100%',
                     }}
                 >
                     {name}
@@ -446,35 +491,40 @@ function ArtistCardAdded(artist: Artist) {
         <Box
             sx={{
                 padding: 0.5,
-                border: "2px solid",
-                borderColor: "primary.muted",
-                width: "100%",
-                color: "primary.muted",
-                display: "flex",
-                alignItems: "center",
-                flexDirection: "column",
+                border: '2px solid',
+                borderColor: 'primary.muted',
+                width: '100%',
+                color: 'primary.muted',
+                display: 'flex',
+                alignItems: 'center',
+                flexDirection: 'column',
                 borderRadius: 1,
                 a: {
-                    width: "100%",
+                    width: '100%',
                 },
             }}
         >
-            <Link to="/library/browse/artists/$artist" params={{ artist: name }}>
+            <Link
+                to="/library/browse/artists/$artist"
+                params={{ artist: name }}
+            >
                 <Box
                     sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
                         gap: 1,
-                        color: "grey.600",
-                        letterSpacing: "1px",
-                        width: "100%",
+                        color: 'grey.600',
+                        letterSpacing: '1px',
+                        width: '100%',
                     }}
                 >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                    >
                         <ClockIcon size={theme.iconSize.md} />
                         <Typography variant="body2">
-                            Added {added ? relativeTime(added) : "Unknown"}
+                            Added {added ? relativeTime(added) : 'Unknown'}
                         </Typography>
                     </Box>
                 </Box>
@@ -483,11 +533,11 @@ function ArtistCardAdded(artist: Artist) {
                     sx={{
                         fontWeight: 600,
                         lineHeight: 1.1,
-                        overflowWrap: "anywhere",
+                        overflowWrap: 'anywhere',
                         paddingLeft: 1,
                         paddingBlock: 0.5,
-                        textAlign: "right",
-                        width: "100%",
+                        textAlign: 'right',
+                        width: '100%',
                     }}
                 >
                     {name}

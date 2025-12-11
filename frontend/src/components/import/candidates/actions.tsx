@@ -4,8 +4,8 @@ import {
     MergeIcon,
     SearchIcon,
     Trash2Icon,
-} from "lucide-react";
-import { useState } from "react";
+} from 'lucide-react';
+import { useState } from 'react';
 import {
     Box,
     Button,
@@ -22,47 +22,55 @@ import {
     Typography,
     TypographyProps,
     useTheme,
-} from "@mui/material";
-import { useMutation } from "@tanstack/react-query";
+} from '@mui/material';
+import { useMutation } from '@tanstack/react-query';
 
-import { addCandidateMutationOptions } from "@/api/session";
-import { Dialog } from "@/components/common/dialogs";
-import { useStatusSocket } from "@/components/common/websocket/status";
-import { Search, SerializedCandidateState, SerializedTaskState } from "@/pythonTypes";
+import { addCandidateMutationOptions } from '@/api/session';
+import { Dialog } from '@/components/common/dialogs';
+import { useStatusSocket } from '@/components/common/websocket/status';
+import {
+    Search,
+    SerializedCandidateState,
+    SerializedTaskState,
+} from '@/pythonTypes';
 
 /** Text that is show as an indicator
  * how good a match is.
  *
  *
  */
-function candidateMatchText({ candidate }: { candidate: SerializedCandidateState }) {
-    let text = "";
+function candidateMatchText({
+    candidate,
+}: {
+    candidate: SerializedCandidateState;
+}) {
+    let text = '';
     const match = 1 - candidate.distance;
     if (match > 0.95) {
-        text = "This is a perfect match!";
+        text = 'This is a perfect match!';
     } else if (match > 0.9) {
-        text = "Great choice!";
+        text = 'Great choice!';
     } else if (match > 0.8) {
-        text = "Not too shabby, this could work.";
+        text = 'Not too shabby, this could work.';
     } else if (match > 0.7) {
         text = "It's fine, I guess...";
     } else if (match > 0.6) {
         text = "Sure, if you're okay with 'average'.";
     } else if (match > 0.5) {
-        text = "I mean, you could do better, but okay.";
+        text = 'I mean, you could do better, but okay.';
     } else if (match > 0.3) {
         text = "Really? This is what you're going with?";
     } else if (match > 0.2) {
         text = "I don't even know why you're considering this.";
     } else if (match > 0.1) {
-        text = "You might want to rethink your choices.";
+        text = 'You might want to rethink your choices.';
     } else {
-        text = "This... is a disaster.";
+        text = 'This... is a disaster.';
     }
 
     // Special case for asis
-    if (candidate.info.data_source === "asis") {
-        text = "Fear of the unknown?";
+    if (candidate.info.data_source === 'asis') {
+        text = 'Fear of the unknown?';
     }
 
     return text;
@@ -86,26 +94,26 @@ export function ImportCandidateLabel({
 // override default styling so that the selected button in the buttongroup
 // does not look highlighted when the whole group is disabled.
 const DuplicateActionButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
-    "& .MuiToggleButtonGroup-grouped": {
-        "&.Mui-selected": {
+    '& .MuiToggleButtonGroup-grouped': {
+        '&.Mui-selected': {
             backgroundColor: theme.palette.action.selected,
-            "&:hover": {
+            '&:hover': {
                 backgroundColor: theme.palette.action.selected,
             },
         },
-        "&.Mui-disabled": {
-            "&.Mui-selected": {
-                backgroundColor: "inherit",
+        '&.Mui-disabled': {
+            '&.Mui-selected': {
+                backgroundColor: 'inherit',
                 color: theme.palette.text.disabled,
-                "&:hover": {
-                    backgroundColor: "inherit",
+                '&:hover': {
+                    backgroundColor: 'inherit',
                 },
             },
         },
     },
 }));
 
-export type DuplicateAction = "skip" | "merge" | "keep" | "remove";
+export type DuplicateAction = 'skip' | 'merge' | 'keep' | 'remove';
 
 /** Actions which are shown if a candidate is already
  * existing in the database. I.e. duplicate
@@ -115,12 +123,12 @@ export function DuplicateActions({
     duplicateAction,
     selectedCandidate,
     ...props
-}: Omit<ToggleButtonGroupProps, "color"> & {
+}: Omit<ToggleButtonGroupProps, 'color'> & {
     duplicateAction: DuplicateAction | null;
     setDuplicateAction: (action: DuplicateAction | null) => void;
     selectedCandidate: SerializedCandidateState;
 }) {
-    const actions = ["skip", "merge", "keep", "remove"] as const;
+    const actions = ['skip', 'merge', 'keep', 'remove'] as const;
 
     return (
         <DuplicateActionButtonGroup
@@ -130,8 +138,8 @@ export function DuplicateActions({
             aria-label="duplicate actions"
             title={
                 selectedCandidate.duplicate_ids.length > 0
-                    ? "This candidate is a duplicate of an existing item"
-                    : "No duplicates found"
+                    ? 'This candidate is a duplicate of an existing item'
+                    : 'No duplicates found'
             }
             {...props}
         >
@@ -159,27 +167,27 @@ function DuplicateActionButton({
     ...props
 }: {
     value: DuplicateAction;
-} & Omit<ToggleButtonProps, "value" | "type">) {
+} & Omit<ToggleButtonProps, 'value' | 'type'>) {
     const theme = useTheme();
 
     let Icon = CopyMinusIcon;
-    let title = "";
+    let title = '';
     switch (value) {
-        case "skip":
+        case 'skip':
             Icon = CopyMinusIcon;
             title = "Skip new (don't import)";
             break;
-        case "merge":
+        case 'merge':
             Icon = MergeIcon;
-            title = "Merge new and old into one album";
+            title = 'Merge new and old into one album';
             break;
-        case "keep":
+        case 'keep':
             Icon = CopyPlusIcon;
-            title = "Keep both, old and new";
+            title = 'Keep both, old and new';
             break;
-        case "remove":
+        case 'remove':
             Icon = Trash2Icon;
-            title = "Remove old items";
+            title = 'Remove old items';
             break;
         default:
             break;
@@ -265,8 +273,8 @@ export function CandidateSearch({ task }: { task: SerializedTaskState }) {
                             setOpen(false);
                             setSearch({
                                 search_ids: [],
-                                search_artist: "",
-                                search_album: "",
+                                search_artist: '',
+                                search_album: '',
                             });
                         } catch (e) {
                             // dont close the dialog
@@ -276,13 +284,13 @@ export function CandidateSearch({ task }: { task: SerializedTaskState }) {
                 >
                     <DialogContent
                         sx={{
-                            display: "flex",
-                            flexDirection: "column",
+                            display: 'flex',
+                            flexDirection: 'column',
                             gap: 1.5,
                         }}
                     >
                         <SearchField
-                            sx={{ width: "100%" }}
+                            sx={{ width: '100%' }}
                             id="input-search-id"
                             label="Seach by Id"
                             placeholder=""
@@ -292,7 +300,7 @@ export function CandidateSearch({ task }: { task: SerializedTaskState }) {
                                 setSearch({
                                     ...search,
                                     search_ids: e.target.value
-                                        .split(",")
+                                        .split(',')
                                         .map((id) => id.trim()),
                                 });
                             }}
@@ -300,18 +308,18 @@ export function CandidateSearch({ task }: { task: SerializedTaskState }) {
                         <Box>
                             <Box
                                 sx={{
-                                    width: "100%",
-                                    display: "flex",
-                                    flexDirection: "row",
-                                    gap: "1rem",
+                                    width: '100%',
+                                    display: 'flex',
+                                    flexDirection: 'row',
+                                    gap: '1rem',
                                 }}
                             >
                                 <SearchField
-                                    sx={{ width: "100%" }}
+                                    sx={{ width: '100%' }}
                                     id="input-search-artist"
                                     label="Seach by artist"
                                     placeholder="Artist"
-                                    value={search.search_artist || ""}
+                                    value={search.search_artist || ''}
                                     onChange={(e) => {
                                         setSearch({
                                             ...search,
@@ -320,11 +328,11 @@ export function CandidateSearch({ task }: { task: SerializedTaskState }) {
                                     }}
                                 />
                                 <SearchField
-                                    sx={{ width: "100%" }}
+                                    sx={{ width: '100%' }}
                                     id="input-search-artist"
                                     label="and album"
                                     placeholder="Album"
-                                    value={search.search_album || ""}
+                                    value={search.search_album || ''}
                                     onChange={(e) => {
                                         setSearch({
                                             ...search,
@@ -335,30 +343,30 @@ export function CandidateSearch({ task }: { task: SerializedTaskState }) {
                             </Box>
                             <FormHelperText
                                 sx={(theme) => ({
-                                    marginInline: "1rem",
+                                    marginInline: '1rem',
                                     color: theme.palette.text.disabled,
                                     fontSize: theme.typography.caption.fontSize,
                                 })}
                             >
-                                Search by artist and album name to find more candidates.
-                                Might take a while.
+                                Search by artist and album name to find more
+                                candidates. Might take a while.
                             </FormHelperText>
                         </Box>
                         <Box
                             sx={{
-                                width: "100%",
-                                display: "flex",
-                                justifyContent: "flex-end",
+                                width: '100%',
+                                display: 'flex',
+                                justifyContent: 'flex-end',
                                 gap: 1,
-                                marginTop: "auto",
+                                marginTop: 'auto',
                             }}
                         >
                             {isError && (
                                 <FormHelperText
                                     error={isError}
                                     sx={{
-                                        marginInline: "1rem",
-                                        alignSelf: "flex-end",
+                                        marginInline: '1rem',
+                                        alignSelf: 'flex-end',
                                     }}
                                 >
                                     {error.message}
@@ -394,24 +402,24 @@ const SearchField = styled(TextField)(({ theme }) => ({
     // backgroundColor: theme.palette.background.default,
     borderColor: theme.palette.divider,
     borderRadius: theme.shape.borderRadius,
-    "& .MuiOutlinedInput-root": {
-        "& fieldset": {
+    '& .MuiOutlinedInput-root': {
+        '& fieldset': {
             borderColor: theme.palette.divider,
         },
-        "&:hover fieldset": {
+        '&:hover fieldset': {
             borderColor: theme.palette.secondary.main,
         },
-        "&.Mui-focused fieldset": {
+        '&.Mui-focused fieldset': {
             borderColor: theme.palette.secondary.main,
         },
     },
-    "& .MuiInputLabel-root": {
-        "&.Mui-focused": {
+    '& .MuiInputLabel-root': {
+        '&.Mui-focused': {
             color: theme.palette.secondary.main,
         },
     },
-    ".MuiFormHelperText-root": {
-        marginInline: "1rem",
+    '.MuiFormHelperText-root': {
+        marginInline: '1rem',
         color: theme.palette.text.disabled,
         fontSize: theme.typography.caption.fontSize,
     },

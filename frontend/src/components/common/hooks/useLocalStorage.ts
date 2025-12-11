@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from 'react';
 
 type InitialValue<T> = T | (() => T);
 
 function getInitialValue<T>(initialValue: InitialValue<T>): T {
-    if (typeof initialValue === "function") {
+    if (typeof initialValue === 'function') {
         return (initialValue as () => T)();
     }
     return initialValue;
@@ -17,7 +17,9 @@ export const useLocalStorage = <T>(
     initialValue: InitialValue<T>
 ): [T, (value: T) => void, () => void] => {
     // Check if there is a value in `localStorage` for the given `key`
-    const [value, setValue] = useState<T>(getStorageValue<T>(key, initialValue));
+    const [value, setValue] = useState<T>(
+        getStorageValue<T>(key, initialValue)
+    );
 
     // Function to set value in `localStorage`,
     // `useCallback` is used to memoize the function to prevent
@@ -31,13 +33,13 @@ export const useLocalStorage = <T>(
                 // Dispatch a `storage` event to notify other tabs
 
                 window.dispatchEvent(
-                    new StorageEvent("storage", {
+                    new StorageEvent('storage', {
                         key,
                         newValue: JSON.stringify(newValue),
                     })
                 );
             } catch (error) {
-                console.error("Error saving value to `localStorage`:", error);
+                console.error('Error saving value to `localStorage`:', error);
             }
         },
         [key]
@@ -63,23 +65,26 @@ export const useLocalStorage = <T>(
         };
 
         // Add event listener for `storage` events
-        window.addEventListener("storage", updateAllTabs);
+        window.addEventListener('storage', updateAllTabs);
         // Cleanup function to remove event listener when component unmounts
         return () => {
-            window.removeEventListener("storage", updateAllTabs);
+            window.removeEventListener('storage', updateAllTabs);
         };
     }, [key]); // `useEffect` depends on the `key` to subscribe to changes relevant to this `key`
 
     return [value, setLocalStorageValue, removeLocalStorageValue]; // Re-run `useEffect` only when any of these values change
 };
 
-export function getStorageValue<T>(key: string, initialValue: InitialValue<T>): T {
+export function getStorageValue<T>(
+    key: string,
+    initialValue: InitialValue<T>
+): T {
     try {
         const storedValue = localStorage.getItem(key);
         if (storedValue) return JSON.parse(storedValue) as T;
         return getInitialValue(initialValue);
     } catch (error) {
-        console.error("Error retrieving value from `localStorage`:", error);
+        console.error('Error retrieving value from `localStorage`:', error);
         return getInitialValue(initialValue);
     }
 }

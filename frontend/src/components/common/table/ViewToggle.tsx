@@ -1,14 +1,14 @@
-import { GridIcon, ListIcon } from "lucide-react";
+import { GridIcon, ListIcon } from 'lucide-react';
 import {
     ToggleButton,
     ToggleButtonGroup,
     ToggleButtonGroupProps,
     useTheme,
-} from "@mui/material";
+} from '@mui/material';
 
 export interface ViewToggleProps extends ToggleButtonGroupProps {
-    view: "list" | "grid";
-    setView: (view: "list" | "grid") => void;
+    view: 'list' | 'grid';
+    setView: (view: 'list' | 'grid') => void;
 }
 
 /**
@@ -21,7 +21,7 @@ export function ViewToggle({ view, setView, ...props }: ViewToggleProps) {
             value={view}
             onChange={(
                 _e: React.MouseEvent<HTMLElement>,
-                v: "list" | "grid" | null
+                v: 'list' | 'grid' | null
             ) => {
                 if (v) {
                     setView(v);

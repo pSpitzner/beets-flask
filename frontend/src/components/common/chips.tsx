@@ -5,25 +5,29 @@
  * is show instead.
  */
 
-import { FolderClockIcon } from "lucide-react";
-import { useMemo } from "react";
-import { Box, darken, styled, Tooltip, useTheme } from "@mui/material";
-import Chip, { ChipProps } from "@mui/material/Chip";
-import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { FolderClockIcon } from 'lucide-react';
+import { useMemo } from 'react';
+import { Box, darken, styled, Tooltip, useTheme } from '@mui/material';
+import Chip, { ChipProps } from '@mui/material/Chip';
+import { useQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 
-import { useConfig } from "@/api/config";
-import { sessionQueryOptions, statusQueryOptions } from "@/api/session";
-import { Archive, Folder, FolderStatus, Progress } from "@/pythonTypes";
+import { useConfig } from '@/api/config';
+import { sessionQueryOptions, statusQueryOptions } from '@/api/session';
+import { Archive, Folder, FolderStatus, Progress } from '@/pythonTypes';
 
-import { FolderStatusIcon, PenaltyTypeIcon, SourceTypeIconWithTooltip } from "./icons";
+import {
+    FolderStatusIcon,
+    PenaltyTypeIcon,
+    SourceTypeIconWithTooltip,
+} from './icons';
 
 export const StyledChip = styled(Chip, {
-    shouldForwardProp: (prop) => prop !== "color",
+    shouldForwardProp: (prop) => prop !== 'color',
 })(({ theme, color }) => {
     let frontColor = theme.palette.grey[400];
     let backColor = darken(theme.palette.grey[500], 0.7);
-    if (color != "default") {
+    if (color != 'default') {
         frontColor =
             color && theme.palette[color]
                 ? theme.palette[color].light
@@ -36,28 +40,28 @@ export const StyledChip = styled(Chip, {
 
     return {
         paddingLeft: theme.spacing(0.5),
-        display: "flex",
-        justifyContent: "space-between",
-        border: "none",
+        display: 'flex',
+        justifyContent: 'space-between',
+        border: 'none',
         backgroundColor: backColor,
         borderColor: frontColor,
         color: frontColor,
         borderRadius: theme.spacing(1.0),
-        "& .MuiChip-label": {
+        '& .MuiChip-label': {
             paddingLeft: theme.spacing(1.0),
         },
-        "& .MuiChip-icon": {
+        '& .MuiChip-icon': {
             color: frontColor,
         },
-        [theme.breakpoints.down("tablet")]: {
+        [theme.breakpoints.down('tablet')]: {
             paddingLeft: 0,
             //Remove border on small screens
-            border: "none",
-            backgroundColor: "transparent",
+            border: 'none',
+            backgroundColor: 'transparent',
 
             //Remove label on small screens
-            "& .MuiChip-label": {
-                display: "none",
+            '& .MuiChip-label': {
+                display: 'none',
             },
         },
     };
@@ -75,22 +79,22 @@ export function MatchChip({
     const config = useConfig();
     const theme = useTheme();
 
-    let color: "success" | "warning" | "error" | "info" = "success";
+    let color: 'success' | 'warning' | 'error' | 'info' = 'success';
     if (distance > config.match.strong_rec_thresh) {
-        color = "warning";
+        color = 'warning';
     }
     if (distance > config.match.medium_rec_thresh) {
-        color = "error";
+        color = 'error';
     }
-    let label = (Math.abs(distance - 1) * 100).toFixed(0) + "%";
+    let label = (Math.abs(distance - 1) * 100).toFixed(0) + '%';
 
-    if (source == "asis") {
-        color = "info";
-        label = "asis";
+    if (source == 'asis') {
+        color = 'info';
+        label = 'asis';
     }
 
     return (
-        <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <StyledChip
                 label={label}
                 size="small"
@@ -102,43 +106,46 @@ export function MatchChip({
                     paddingRight: theme.spacing(0.7),
                     zIndex: 0,
                     height: theme.spacing(2.5),
-                    "& .MuiChip-label": {
-                        fontWeight: "500",
-                        fontFamily: "monospace",
+                    '& .MuiChip-label': {
+                        fontWeight: '500',
+                        fontFamily: 'monospace',
                     },
-                    [theme.breakpoints.down("tablet")]: {
-                        "& .MuiChip-label": {
-                            display: "block !important",
+                    [theme.breakpoints.down('tablet')]: {
+                        '& .MuiChip-label': {
+                            display: 'block !important',
                         },
                     },
                 }}
             />
             <StyledChip
                 icon={
-                    <SourceTypeIconWithTooltip type={source} size={theme.iconSize.sm} />
+                    <SourceTypeIconWithTooltip
+                        type={source}
+                        size={theme.iconSize.sm}
+                    />
                 }
                 label=""
                 size="small"
-                color={"default"}
+                color={'default'}
                 {...props}
                 sx={{
                     ...props.sx,
                     marginLeft: theme.spacing(-1.0),
-                    position: "relative",
+                    position: 'relative',
                     paddingInline: theme.spacing(0.7),
                     zIndex: 1,
-                    display: "flex",
-                    alignItems: "center",
-                    "& .MuiChip-label": {
-                        display: "none",
+                    display: 'flex',
+                    alignItems: 'center',
+                    '& .MuiChip-label': {
+                        display: 'none',
                     },
-                    "& .MuiChip-icon": {
-                        position: "relative",
-                        display: "block",
+                    '& .MuiChip-icon': {
+                        position: 'relative',
+                        display: 'block',
                         margin: 0,
-                        padding: "0 !important",
+                        padding: '0 !important',
                     },
-                    [theme.breakpoints.down("tablet")]: {
+                    [theme.breakpoints.down('tablet')]: {
                         paddingRight: 0,
                     },
                 }}
@@ -165,7 +172,7 @@ export function DuplicateChip({
     //Fixme: Generalize best candidate
     const bestCandidate = session?.tasks
         .flatMap((t) => t.candidates.map((c) => c))
-        .filter((c) => c.info.data_source !== "asis")
+        .filter((c) => c.info.data_source !== 'asis')
         .sort((a, b) => a.distance - b.distance)[0];
 
     if (!bestCandidate) {
@@ -182,7 +189,12 @@ export function DuplicateChip({
     return (
         <Tooltip title="This album is already in your beets library!">
             <StyledChip
-                icon={<PenaltyTypeIcon type="duplicate" size={theme.iconSize.sm - 2} />}
+                icon={
+                    <PenaltyTypeIcon
+                        type="duplicate"
+                        size={theme.iconSize.sm - 2}
+                    />
+                }
                 label="Duplicate"
                 size="small"
                 color="error"
@@ -215,23 +227,23 @@ export function FolderStatusChip({
     let status_name: string;
     switch (folderStatus.status) {
         case FolderStatus.PREVIEWING:
-            status_name = "Tagging";
+            status_name = 'Tagging';
             break;
         case FolderStatus.PREVIEWED:
-            status_name = "Tagged";
+            status_name = 'Tagged';
             break;
         case FolderStatus.DELETING:
-            status_name = "Undoing";
+            status_name = 'Undoing';
             break;
         case FolderStatus.DELETED:
-            status_name = "Undone";
+            status_name = 'Undone';
             break;
         case FolderStatus.FAILED:
-            status_name = "Failed";
-            if (folderStatus.exc?.type === "NoCandidatesFoundException") {
-                status_name = "No Match";
-            } else if (folderStatus.exc?.type === "NotImportedException") {
-                status_name = "Threshold";
+            status_name = 'Failed';
+            if (folderStatus.exc?.type === 'NoCandidatesFoundException') {
+                status_name = 'No Match';
+            } else if (folderStatus.exc?.type === 'NotImportedException') {
+                status_name = 'Threshold';
             }
             break;
         default:
@@ -241,11 +253,14 @@ export function FolderStatusChip({
     return (
         <Tooltip title={folderStatus.exc?.message || undefined}>
             <Link
-                to={"/inbox/folder/$path/$hash"}
+                to={'/inbox/folder/$path/$hash'}
                 params={{ path: folder.full_path, hash: folder.hash }}
-                mask={{ to: "/inbox/folder/$path", params: { path: folder.full_path } }}
+                mask={{
+                    to: '/inbox/folder/$path',
+                    params: { path: folder.full_path },
+                }}
                 preload="intent"
-                style={{ gridColumn: "chip" }}
+                style={{ gridColumn: 'chip' }}
             >
                 <StyledChip
                     icon={
@@ -255,7 +270,10 @@ export function FolderStatusChip({
                             size={theme.iconSize.sm}
                         />
                     }
-                    label={status_name.charAt(0) + status_name.slice(1).toLowerCase()}
+                    label={
+                        status_name.charAt(0) +
+                        status_name.slice(1).toLowerCase()
+                    }
                     size="small"
                     variant="outlined"
                     color="info"
@@ -283,7 +301,7 @@ export function BestCandidateChip({
 
     const bestCandidate = session?.tasks
         .flatMap((t) => t.candidates.map((c) => c))
-        .filter((c) => c.info.data_source !== "asis")
+        .filter((c) => c.info.data_source !== 'asis')
         .sort((a, b) => a.distance - b.distance)[0];
 
     if (!bestCandidate || !bestCandidate.info.data_source) {

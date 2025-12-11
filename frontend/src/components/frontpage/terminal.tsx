@@ -7,30 +7,30 @@ import React, {
     useEffect,
     useRef,
     useState,
-} from "react";
-import { FitAddon as xTermFitAddon } from "@xterm/addon-fit";
-import { Terminal as xTerminal } from "@xterm/xterm";
+} from 'react';
+import { FitAddon as xTermFitAddon } from '@xterm/addon-fit';
+import { Terminal as xTerminal } from '@xterm/xterm';
 
-import useSocket from "@/components/common/websocket/useSocket";
+import useSocket from '@/components/common/websocket/useSocket';
 
-import "node_modules/@xterm/xterm/css/xterm.css";
-import { Socket } from "socket.io-client";
+import 'node_modules/@xterm/xterm/css/xterm.css';
+import { Socket } from 'socket.io-client';
 
 // match our style - this is somewhat redundant with main.css
 const xTermTheme = {
-    red: "#C0626B",
-    green: "#A4BF8C",
-    yellow: "#EBCB8C",
-    blue: "#7EA2BF",
-    magenta: "#B48EAD",
-    cyan: "#8FBCBB",
-    brightBlack: "#818689",
-    brightRed: "#D0737F",
-    brightGreen: "#B5D0A0",
-    brightYellow: "#F0D9A6",
-    brightBlue: "#8FB8D1",
-    brightMagenta: "#C79EC4",
-    brightCyan: "#A3CDCD",
+    red: '#C0626B',
+    green: '#A4BF8C',
+    yellow: '#EBCB8C',
+    blue: '#7EA2BF',
+    magenta: '#B48EAD',
+    cyan: '#8FBCBB',
+    brightBlack: '#818689',
+    brightRed: '#D0737F',
+    brightGreen: '#B5D0A0',
+    brightYellow: '#F0D9A6',
+    brightBlue: '#8FB8D1',
+    brightMagenta: '#C79EC4',
+    brightCyan: '#A3CDCD',
 };
 
 export function Terminal(props: HtmlHTMLAttributes<HTMLDivElement>) {
@@ -69,11 +69,11 @@ export function Terminal(props: HtmlHTMLAttributes<HTMLDivElement>) {
         function copyPasteHandler(e: KeyboardEvent) {
             if (!term) return false;
 
-            if (e.type !== "keydown") return true;
+            if (e.type !== 'keydown') return true;
 
             if (e.ctrlKey && e.shiftKey) {
                 const key = e.key.toLowerCase();
-                if (key === "v") {
+                if (key === 'v') {
                     // ctrl+shift+v: paste whatever is in the clipboard
                     navigator.clipboard
                         .readText()
@@ -82,7 +82,7 @@ export function Terminal(props: HtmlHTMLAttributes<HTMLDivElement>) {
                         })
                         .catch(console.error);
                     return false;
-                } else if (key === "c" || key === "x") {
+                } else if (key === 'c' || key === 'x') {
                     // ctrl+shift+x: copy whatever is highlighted to clipboard
 
                     // 'x' is used as an alternate to 'c' because ctrl+c is taken
@@ -134,8 +134,12 @@ export interface TerminalContextI {
 
 const TerminalContext = createContext<TerminalContextI | null>(null);
 
-export function TerminalContextProvider({ children }: { children: React.ReactNode }) {
-    const { socket, isConnected } = useSocket("terminal");
+export function TerminalContextProvider({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
+    const { socket, isConnected } = useSocket('terminal');
 
     const [open, setOpen] = useState(false);
     const [term, setTerm] = useState<xTerminal>();
@@ -152,7 +156,7 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
                 allowTransparency: true,
                 scrollback: 500,
             });
-            t2.write("Connecting...");
+            t2.write('Connecting...');
             return t2;
         });
     }, []);
@@ -170,27 +174,32 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
     );
 
     const onOutput = useCallback(
-        (data: { output: string[]; x: number; y: number; history: string[] }) => {
+        (data: {
+            output: string[];
+            x: number;
+            y: number;
+            history: string[];
+        }) => {
             if (!term) return;
             // neither clear nor reset seem to do the full job.
             // term.clear();
             // term.reset();
-            term.write("\x1Bc"); // ANSI escape sequence to clear the screen
+            term.write('\x1Bc'); // ANSI escape sequence to clear the screen
 
             if (data.history.length > 0) {
-                term.write(data.history.join("\r\n") + "\r\n");
+                term.write(data.history.join('\r\n') + '\r\n');
             }
 
             // Note: tmux does not remove trailing whitespaces when backspacing.
             // Therefore we also send the tmux cursor position along with the output
             // to move the frontend cursor using escape sequences
             // Write current output
-            term.write(data.output.join("\r\n"));
+            term.write(data.output.join('\r\n'));
 
             // if we want history to stay offscreen
             const remainingRows = Math.max(0, term.rows - data.output.length);
             if (remainingRows > 0) {
-                term.write("\r\n".repeat(remainingRows));
+                term.write('\r\n'.repeat(remainingRows));
             }
 
             // Position cursor
@@ -204,34 +213,36 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
         if (!term || !isConnected || !socket) return;
 
         // spaces are needed to clear out the longer "Connecting..."
-        term.writeln("\rConnected!   ");
+        term.writeln('\rConnected!   ');
 
         const onInput = term.onData((data) => {
-            if (data === "\x01" || data === "\x04") {
+            if (data === '\x01' || data === '\x04') {
                 // prevent ctrl+a because it can detach tmux, and ctrl+d because it can close the terminal
                 return;
             }
-            socket.emit("ptyInput", { input: data });
+            socket.emit('ptyInput', { input: data });
         });
 
         const onResize = term.onResize(({ cols, rows }) => {
-            console.log(`Terminal was resized to ${cols} cols and ${rows} rows.`);
-            socket.emit("ptyResize", { cols, rows: rows });
+            console.log(
+                `Terminal was resized to ${cols} cols and ${rows} rows.`
+            );
+            socket.emit('ptyResize', { cols, rows: rows });
         });
 
-        socket.on("ptyOutput", onOutput);
-        socket.on("ptyCursorPosition", onCursorUpdate);
+        socket.on('ptyOutput', onOutput);
+        socket.on('ptyCursorPosition', onCursorUpdate);
 
         // resize once on connect (after we fitted size on mount)
-        socket.emit("ptyResize", { cols: term.cols, rows: term.rows });
+        socket.emit('ptyResize', { cols: term.cols, rows: term.rows });
         // request server update, so show whats actually on the pty when connecting
-        socket.emit("ptyResendOutput");
+        socket.emit('ptyResendOutput');
 
         return () => {
             onResize.dispose();
             onInput.dispose();
-            socket.off("ptyOutput", onOutput);
-            socket.off("ptyCursorPosition", onCursorUpdate);
+            socket.off('ptyOutput', onOutput);
+            socket.off('ptyCursorPosition', onCursorUpdate);
         };
     }, [isConnected, term, socket, onOutput, onCursorUpdate]);
 
@@ -244,18 +255,18 @@ export function TerminalContextProvider({ children }: { children: React.ReactNod
 
     function inputText(t: string) {
         if (!socket) {
-            console.error("No socket available");
+            console.error('No socket available');
             return;
         }
-        socket.emit("ptyInput", { input: t });
+        socket.emit('ptyInput', { input: t });
     }
 
     function clearInput() {
         if (!socket) {
-            console.error("No socket available");
+            console.error('No socket available');
             return;
         }
-        socket.emit("ptyInput", { input: "\x15" });
+        socket.emit('ptyInput', { input: '\x15' });
     }
 
     const terminalState: TerminalContextI = {
@@ -281,7 +292,7 @@ export function useTerminalContext() {
 
     if (!context) {
         throw new Error(
-            "useTerminalContext must be used within a TerminalContextProvider"
+            'useTerminalContext must be used within a TerminalContextProvider'
         );
     }
     return context;

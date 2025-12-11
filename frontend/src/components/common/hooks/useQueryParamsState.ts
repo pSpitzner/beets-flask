@@ -1,5 +1,5 @@
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { useLocation, useNavigate } from "@tanstack/react-router";
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { useLocation, useNavigate } from '@tanstack/react-router';
 
 type UseQueryParamsStateReturnType<T> = [T, Dispatch<SetStateAction<T>>];
 
@@ -25,10 +25,12 @@ export default function useQueryParamsState(
     // initialize on mount to current url, or passed init state
     const [value, setValue] = useState<string | null>(() => {
         // Parse query parameter value from the URL
-        const searchParams = new URLSearchParams(location.search);
+        const searchParams = new URLSearchParams(location.search as string);
         const paramValue = searchParams.get(param);
 
-        return paramValue !== null ? decodeURIComponent(paramValue) : initialState;
+        return paramValue !== null
+            ? decodeURIComponent(paramValue)
+            : initialState;
     });
 
     // write to navbar, using navigate when the value changes
@@ -36,7 +38,7 @@ export default function useQueryParamsState(
         const currentSearchParams = new URLSearchParams(window.location.search);
 
         // Update the query parameter with the current state value
-        if (value !== null && value !== "") {
+        if (value !== null && value !== '') {
             currentSearchParams.set(param, encodeURIComponent(value));
         } else {
             // Remove the query parameter if the value is null or empty
