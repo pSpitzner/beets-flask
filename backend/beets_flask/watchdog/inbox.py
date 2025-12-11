@@ -2,7 +2,7 @@ import asyncio
 import os
 import signal
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from watchdog.events import FileMovedEvent, FileSystemEvent
 from watchdog.observers.polling import PollingObserver
@@ -168,7 +168,7 @@ async def auto_tag(
 
     # Infer enqueue kind from inbox kind
     enq_kind: invoker.EnqueueKind
-    enq_kwargs = {}
+    enq_kwargs: dict[str, Any] = {}
     match inbox_kind:
         case "preview":
             enq_kind = invoker.EnqueueKind.PREVIEW
