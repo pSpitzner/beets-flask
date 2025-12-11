@@ -79,14 +79,18 @@ export interface FileSystemUpdate {
 export interface MatchSectionSchema {
     strong_rec_thresh: number;
     medium_rec_thresh: number;
-    album_disambig_fields: Array<string>;
-    singleton_disambig_fields: Array<string>;
+}
+
+export interface ImportDuplicateKeys {
+    album: Array<string> | string;
+    item: Array<string> | string;
 }
 
 export interface ImportSection {
     duplicate_action: "ask" | "keep" | "merge" | "remove" | "skip";
     move: "False";
     copy: "True";
+    duplicate_keys: ImportDuplicateKeys;
 }
 
 export interface BeetsSchema {
@@ -225,10 +229,10 @@ export interface SerializedException {
 }
 
 export interface InboxFolderSchema {
-    name: string;
     path: string;
+    name: "_use_heading" | string;
     auto_threshold: null | number;
-    autotag: "False" | "auto" | "bootleg" | "off" | "preview";
+    autotag: "auto" | "bootleg" | "off" | "preview";
 }
 
 export interface Metadata {
