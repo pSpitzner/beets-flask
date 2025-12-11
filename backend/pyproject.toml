@@ -48,6 +48,7 @@ dependencies = [
 # Can be install with e.g. `pip install -e .[dev]`
 test = [
     "pytest>=8.2.2",
+    "pytest-benchmark>=5.2.3",
     "pytest-asyncio>=0.23.8",
     "pytest-cov>=5.0.0",
     "fakeredis",

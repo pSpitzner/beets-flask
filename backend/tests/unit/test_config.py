@@ -110,7 +110,8 @@ class TestConfig:
         """Test that committing to beets config works as expected."""
         import beets
 
-        config = get_config()
+        # pass commit_to_beets, to makkee sure both configs are in sync
+        config = get_config(force_reload=True, commit_to_beets=True)
 
         # Modify a field in beets-flask config
         old_directory = config.data.directory
