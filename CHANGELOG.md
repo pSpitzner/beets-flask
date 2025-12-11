@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Another state-related bug around Searching for Candidates [#225](https://github.com/pSpitzner/beets-flask/issues/225). We now no longer require a certaint type of state before allowing to add candidates.
 - Asis candidates have been restyled to be more consistent with other candidate types. They now also include a cover art preview if available.
 - Fixed a typo in our opiniated beets config [#235](https://github.com/pSpitzner/beets-flask/issues/235)
+- Fixed an styling issue in the artists list view which caused an overflow
 
 ### Added
 
