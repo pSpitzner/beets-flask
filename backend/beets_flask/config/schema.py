@@ -102,7 +102,7 @@ class InboxSectionSchema:
 @dataclass
 class InboxFolderSchema:
     path: str
-    name: str | Literal["_use_heading"] = "_use_heading"
+    name: str = "_use_heading"
     auto_threshold: float | None = None
     autotag: Literal["auto", "preview", "bootleg", "off"] = "off"
 
