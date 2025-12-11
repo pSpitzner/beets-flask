@@ -1,7 +1,7 @@
 {
     "name": "frontend",
     "private": true,
-    "version": "1.2.0-rc5",
+    "version": "1.2.0-rc6",
     "type": "module",
     "scripts": {
         "dev": "vite --host --cors",
