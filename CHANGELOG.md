@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - Upcoming
+
+### ⚠️ Breaking Changes ⚠️
+- While at it, if you have inboxes with `autotag=no` please also replace with `autotag='off'` (we changed the type and this will raise an error from version 2.0.0 onwards).
+
+### Added
+
+- Config validation. When loading config files we now check that specified options will work. If not, the frontend will show an error message with details on what's wrong. This applies to `gui` settings (i.e. our own ones, `beets-flask/config.yaml`) and very select ones from native beets (only those which we use directly). Hopefully, this will eventually cover all config options of beets native, but this is more of an upsream task. [#224](https://github.com/pSpitzner/beets-flask/pull/224).
+
+
 ## [1.2.0] - Upcoming
 
 ### ⚠️ Important ⚠️
@@ -37,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The default beets config now includes a `musicbrainz` section that enables fetching of external ids (like tidal).
 - Fixed typing issues in `./tests` folder and enabled mypy check for it.
 - Ruff now has the F401 (imported but unused) check enabled.
-- Ruff now had the UP checks enabled to enforce modern python syntax.
+- Ruff now has the UP checks enabled to enforce modern python syntax.
 - Unified coverart components in the frontend, we now use common styling for external and internal coverart.
 - Moved inbox metadata fetching into the library api routes.
 
