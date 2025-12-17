@@ -10,7 +10,7 @@ type Entries<T> = {
  *
  */
 export function useDragAndDrop(
-    elementRef: React.RefObject<HTMLDivElement> | null,
+    elementRef: React.RefObject<HTMLDivElement | null> | null,
     options?: {
         onDrop?: (event: DragEvent) => void;
         onDragOver?: (event: DragEvent) => void;
