@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 type Entries<T> = {
     [K in keyof T]: [K, T[K]];

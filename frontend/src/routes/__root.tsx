@@ -71,8 +71,8 @@ function RootComponent() {
                     <Box
                         id="main-content"
                         sx={(theme) => ({
-                            [theme.breakpoints.down("laptop")]: {
-                                height: "100dvh",
+                            [theme.breakpoints.down('laptop')]: {
+                                height: '100dvh',
                             },
                             width: '100%',
                             height: '100%',

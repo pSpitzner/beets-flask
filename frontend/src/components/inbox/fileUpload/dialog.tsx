@@ -4,8 +4,8 @@
  * ...
  */
 
-import { CheckIcon, FileMusicIcon, Upload, XIcon } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CheckIcon, FileMusicIcon, Upload, XIcon } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     alpha,
     Box,
@@ -16,16 +16,19 @@ import {
     TextField,
     Typography,
     useTheme,
-} from "@mui/material";
+} from '@mui/material';
 
-import { useConfig } from "@/api/config";
-import { Dialog } from "@/components/common/dialogs";
-import { useDragAndDrop } from "@/components/common/hooks/useDrag";
-import { CancelButton, CancelButtonRef } from "@/components/common/inputs/cancle";
-import { humanizeBytes } from "@/components/common/units/bytes";
-import { humanizeDuration } from "@/components/common/units/time";
+import { useConfig } from '@/api/config';
+import { Dialog } from '@/components/common/dialogs';
+import { useDragAndDrop } from '@/components/common/hooks/useDrag';
+import {
+    CancelButton,
+    CancelButtonRef,
+} from '@/components/common/inputs/cancle';
+import { humanizeBytes } from '@/components/common/units/bytes';
+import { humanizeDuration } from '@/components/common/units/time';
 
-import { useFileUploadContext } from "./context";
+import { useFileUploadContext } from './context';
 
 export function UploadDialog() {
     const cancelButtonRef = useRef<CancelButtonRef>(null);
@@ -42,9 +45,9 @@ export function UploadDialog() {
 
     // SM@PS: Try to not use 'useEffect' for derived state. Kinda an antipattern
     // React does a good job at this stuff byitself.
-    let title = "Upload files";
+    let title = 'Upload files';
     if (fileList.length > 0) {
-        title = `Upload ${fileList.length} file${fileList.length !== 1 ? "s" : ""}`;
+        title = `Upload ${fileList.length} file${fileList.length !== 1 ? 's' : ''}`;
     }
 
     // Open dialog when files are added
@@ -59,16 +62,16 @@ export function UploadDialog() {
             open={open}
             title={title}
             onClose={(_event, reason) => {
-                if (reason !== "backdropClick") resetDialog();
+                if (reason !== 'backdropClick') resetDialog();
             }}
             title_icon={null}
         >
             <DialogContent>
                 <Box
                     sx={{
-                        width: "100%",
-                        display: "flex",
-                        flexDirection: "column",
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
                         gap: 2,
                     }}
                 >
@@ -79,9 +82,9 @@ export function UploadDialog() {
                     <ErrorMessage />
                     <Box
                         sx={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "flex-end",
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-end',
                         }}
                     >
                         <CancelButton
@@ -115,10 +118,11 @@ function ErrorMessage() {
     return (
         <Box>
             <Typography variant="body2" color="error">
-                {error?.name || "Error"}
+                {error?.name || 'Error'}
             </Typography>
             <Typography variant="body2" color="error">
-                {error?.message || "An unknown error occurred during file upload."}
+                {error?.message ||
+                    'An unknown error occurred during file upload.'}
             </Typography>
         </Box>
     );
@@ -138,20 +142,28 @@ function SelectedFilesListAndProgress() {
     };
 
     if (fileList.length === 0) {
-        return <Typography variant="body2">No files selected for upload.</Typography>;
+        return (
+            <Typography variant="body2">
+                No files selected for upload.
+            </Typography>
+        );
     }
 
     return (
         <>
-            <Typography variant="caption" fontWeight="bold" color="text.secondary">
+            <Typography
+                variant="caption"
+                fontWeight="bold"
+                color="text.secondary"
+            >
                 Files:
             </Typography>
             <Box
                 sx={{
-                    width: "100%",
-                    overflowY: "auto",
-                    display: "flex",
-                    flexDirection: "column",
+                    width: '100%',
+                    overflowY: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
                     gap: 0.5,
                     pl: 0.5,
                 }}
@@ -197,18 +209,18 @@ function FileProgressBar({
     return (
         <Box
             sx={{
-                position: "relative",
-                width: "100%",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                position: 'relative',
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
             }}
         >
             <Box
                 sx={{
-                    position: "absolute",
-                    width: "100%",
-                    height: "100%",
+                    position: 'absolute',
+                    width: '100%',
+                    height: '100%',
                     top: 0,
                     left: 0,
                     zIndex: 0,
@@ -220,10 +232,10 @@ function FileProgressBar({
                     sx={{
                         height: `100%`,
                         borderRadius: 1,
-                        backgroundColor: "rgba(255, 255, 255, 0.05)",
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
 
-                        "& .MuiLinearProgress-bar": {
-                            backgroundColor: "primary.muted",
+                        '& .MuiLinearProgress-bar': {
+                            backgroundColor: 'primary.muted',
                         },
                     }}
                 />
@@ -231,18 +243,29 @@ function FileProgressBar({
 
             <Typography
                 variant="body1"
-                sx={{ zIndex: 1, paddingLeft: 1, flex: 1, wordBreak: "break-word" }}
+                sx={{
+                    zIndex: 1,
+                    paddingLeft: 1,
+                    flex: 1,
+                    wordBreak: 'break-word',
+                }}
             >
                 {file}
             </Typography>
             <Box sx={{ flexShrink: 0 }}>
-                <IconButton size="small" disabled={!isIdle} onClick={removeFile}>
+                <IconButton
+                    size="small"
+                    disabled={!isIdle}
+                    onClick={removeFile}
+                >
                     {fileProgress && isPending && (
                         <Typography variant="body2" fontSize="small">
                             {percent.toFixed(0)}%
                         </Typography>
                     )}
-                    {fileProgress?.finished && <CheckIcon size={theme.iconSize.sm} />}
+                    {fileProgress?.finished && (
+                        <CheckIcon size={theme.iconSize.sm} />
+                    )}
                     {isIdle && !fileProgress?.finished && (
                         <XIcon size={theme.iconSize.sm} />
                     )}
@@ -257,7 +280,8 @@ function FileProgressBar({
  * where the files will be uploaded.
  */
 function FolderSelector() {
-    const { uploadTargetDir, setUploadTargetDir, isIdle } = useFileUploadContext();
+    const { uploadTargetDir, setUploadTargetDir, isIdle } =
+        useFileUploadContext();
     const config = useConfig();
 
     const is_valid = useMemo(() => {
@@ -273,16 +297,16 @@ function FolderSelector() {
             fullWidth
             error={!is_valid}
             label="Target Folder"
-            helperText={is_valid ? null : "Folder must be inside an inbox"}
+            helperText={is_valid ? null : 'Folder must be inside an inbox'}
             disabled={!isIdle}
-            value={uploadTargetDir || ""}
+            value={uploadTargetDir || ''}
             onChange={(e) => setUploadTargetDir(e.target.value)}
             placeholder="Enter folder name"
             size="small"
             sx={{
                 input: {
-                    fontFamily: "monospace",
-                    letterSpacing: "0.00938em",
+                    fontFamily: 'monospace',
+                    letterSpacing: '0.00938em',
                 },
             }}
         />
@@ -313,7 +337,7 @@ function UploadButton({ onUpload }: { onUpload: () => void }) {
             disabled={fileList.length === 0}
             loading={isPending}
         >
-            {isSuccess ? "Upload more files" : "Upload"}
+            {isSuccess ? 'Upload more files' : 'Upload'}
         </Button>
     );
 }
@@ -322,7 +346,8 @@ function UploadButton({ onUpload }: { onUpload: () => void }) {
 
 function FileDropZone() {
     const theme = useTheme();
-    const { fileList, setFileList, isSuccess, isError } = useFileUploadContext();
+    const { fileList, setFileList, isSuccess, isError } =
+        useFileUploadContext();
     const ref = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -344,29 +369,30 @@ function FileDropZone() {
         <Box
             ref={ref}
             sx={(theme) => ({
-                border: "2px dashed",
+                border: '2px dashed',
                 paddingInline: 4,
                 paddingBlock: 2,
-                textAlign: "center",
+                textAlign: 'center',
                 borderRadius: 1,
                 gap: 2,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
                 // On drag over animate the border and slight lift the box
                 borderColor: isDragOver
                     ? theme.palette.primary.contrastText
                     : theme.palette.primary.muted,
                 boxShadow: isDragOver
                     ? `0px 4px 10px ${theme.palette.primary.main}33`
-                    : "none",
+                    : 'none',
                 backgroundColor: isDragOver
                     ? theme.palette.primary.muted
                     : theme.palette.background.paper,
-                transition: "border-color 0.2s, box-shadow 0.2s, background-color 0.2s",
+                transition:
+                    'border-color 0.2s, box-shadow 0.2s, background-color 0.2s',
 
-                "&:hover": {
-                    cursor: "pointer",
+                '&:hover': {
+                    cursor: 'pointer',
                     backgroundColor: alpha(theme.palette.primary.main, 0.05),
                 },
             })}
@@ -452,23 +478,23 @@ function UploadFinished() {
     return (
         <Box
             sx={(theme) => ({
-                border: "2px solid",
+                border: '2px solid',
                 borderColor: theme.palette.secondary.main,
                 color: theme.palette.secondary.main,
                 paddingInline: 4,
                 paddingBlock: 2,
-                textAlign: "center",
+                textAlign: 'center',
                 borderRadius: 1,
                 gap: 2,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
             })}
         >
             <Typography variant="body2">
                 Uploaded {uploadProgress.files.length} file
-                {uploadProgress.files.length > 1 ? "s" : ""} (
-                {humanizeBytes(uploadProgress.total)}) in{" "}
+                {uploadProgress.files.length > 1 ? 's' : ''} (
+                {humanizeBytes(uploadProgress.total)}) in{' '}
                 {humanizeDuration(
                     (uploadProgress.finished - uploadProgress.started) / 1000
                 )}
