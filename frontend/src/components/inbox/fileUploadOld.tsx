@@ -1,4 +1,4 @@
-import { FileMusicIcon, FolderUpIcon, Upload } from "lucide-react";
+import { FileMusicIcon, FolderUpIcon, Upload } from 'lucide-react';
 import {
     createContext,
     useCallback,
@@ -7,7 +7,7 @@ import {
     useMemo,
     useRef,
     useState,
-} from "react";
+} from 'react';
 import {
     Box,
     Button,
@@ -21,11 +21,11 @@ import {
     TextField,
     Typography,
     useTheme,
-} from "@mui/material";
+} from '@mui/material';
 
-import { MinimalConfig, useConfig } from "@/api/config";
+import { MinimalConfig, useConfig } from '@/api/config';
 
-import { Dialog } from "../common/dialogs";
+import { Dialog } from '../common/dialogs';
 
 interface DropzoneProps {
     children: React.ReactNode;
@@ -38,9 +38,9 @@ export default function InboxDropzone({ children }: DropzoneProps) {
         const handleDragEnter = (e: DragEvent) => {
             if (e.dataTransfer && e.dataTransfer.files) setOpen(true);
         };
-        window.addEventListener("dragenter", handleDragEnter);
+        window.addEventListener('dragenter', handleDragEnter);
         return () => {
-            window.removeEventListener("dragenter", handleDragEnter);
+            window.removeEventListener('dragenter', handleDragEnter);
         };
     }, []);
 
@@ -73,17 +73,17 @@ function FileUploadForm() {
     return (
         <Box
             sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
                 gap: 4,
             }}
         >
             <Box
                 sx={{
-                    display: "flex",
-                    flexDirection: "column",
+                    display: 'flex',
+                    flexDirection: 'column',
                     gap: 2,
                 }}
             >
@@ -98,9 +98,9 @@ function FileUploadForm() {
                     <SelectedFilesList />
                     <Box
                         sx={{
-                            width: "100%",
-                            display: "flex",
-                            flexDirection: "column",
+                            width: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
                             gap: 2,
                         }}
                     >
@@ -122,8 +122,8 @@ interface FileUploadContextProps {
     setSelectedFiles: React.Dispatch<React.SetStateAction<File[]>>;
 
     // Select inbox folder for upload (by idx)
-    inboxFolders: MinimalConfig["gui"]["inbox"]["folders"][string][];
-    selectedInbox: MinimalConfig["gui"]["inbox"]["folders"][string] | undefined;
+    inboxFolders: MinimalConfig['gui']['inbox']['folders'][string][];
+    selectedInbox: MinimalConfig['gui']['inbox']['folders'][string] | undefined;
     selectedInboxIdx: number;
     setSelectedInboxIdx: React.Dispatch<React.SetStateAction<number>>;
 
@@ -133,37 +133,47 @@ interface FileUploadContextProps {
 
 const FileUploadContext = createContext<FileUploadContextProps | null>(null);
 
-function FileUploadContextProvider({ children }: { children: React.ReactNode }) {
+function FileUploadContextProvider({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
     const config = useConfig();
 
     // Selected inbox for upload
     const [selectedInboxIdx, setSelectedInboxIdx] = useState(0);
     const inboxFolders = useMemo(() => {
-        return Object.entries(config.gui.inbox.folders).map(([_key, value]) => value);
+        return Object.entries(config.gui.inbox.folders).map(
+            ([_key, value]) => value
+        );
     }, [config.gui.inbox.folders]);
     const selectedInbox = useMemo(() => {
         return inboxFolders.at(selectedInboxIdx);
     }, [inboxFolders, selectedInboxIdx]);
 
     // Selected path for upload (relative to inbox folder)
-    const [uploadPath, setUploadPath] = useState<string>("");
+    const [uploadPath, setUploadPath] = useState<string>('');
 
     // Files selected for upload
     const [selectedFiles, _setSelectedFiles] = useState<File[]>([]);
     const setSelectedFiles = useCallback(
         (files: File[] | ((prevFiles: File[]) => File[])) => {
             _setSelectedFiles((prevFiles) => {
-                const newFiles = typeof files === "function" ? files(prevFiles) : files;
+                const newFiles =
+                    typeof files === 'function' ? files(prevFiles) : files;
                 // Set upload path to the first file name if not set
                 if (newFiles.length > 0 && !uploadPath) {
                     let newUploadPath = newFiles[0].name;
-                    newUploadPath = newUploadPath.split(".").slice(0, -1).join(".");
+                    newUploadPath = newUploadPath
+                        .split('.')
+                        .slice(0, -1)
+                        .join('.');
 
-                    if (!newFiles[0].name.startsWith("/")) {
+                    if (!newFiles[0].name.startsWith('/')) {
                         newUploadPath = `/${newUploadPath}`;
                     }
-                    if (!newUploadPath.endsWith("/")) {
-                        newUploadPath += "/";
+                    if (!newUploadPath.endsWith('/')) {
+                        newUploadPath += '/';
                     }
                     setUploadPath(newUploadPath);
                 }
@@ -201,7 +211,7 @@ function useFileUploadContext() {
     const context = useContext(FileUploadContext);
     if (!context) {
         throw new Error(
-            "useFileUpload must be used within a FileUploadContextProvider"
+            'useFileUpload must be used within a FileUploadContextProvider'
         );
     }
     return context;
@@ -245,47 +255,48 @@ function FileUpload() {
             }
         };
 
-        window.addEventListener("dragover", handleDragOver);
-        window.addEventListener("dragleave", handleDragLeave);
-        window.addEventListener("dragenter", handleDragOver);
-        window.addEventListener("dragend", handleDragLeave);
-        window.addEventListener("drop", handleDrop);
+        window.addEventListener('dragover', handleDragOver);
+        window.addEventListener('dragleave', handleDragLeave);
+        window.addEventListener('dragenter', handleDragOver);
+        window.addEventListener('dragend', handleDragLeave);
+        window.addEventListener('drop', handleDrop);
 
         return () => {
-            window.removeEventListener("dragover", handleDragOver);
-            window.removeEventListener("dragleave", handleDragLeave);
-            window.removeEventListener("dragenter", handleDragOver);
-            window.removeEventListener("dragend", handleDragLeave);
-            window.removeEventListener("drop", handleDrop);
+            window.removeEventListener('dragover', handleDragOver);
+            window.removeEventListener('dragleave', handleDragLeave);
+            window.removeEventListener('dragenter', handleDragOver);
+            window.removeEventListener('dragend', handleDragLeave);
+            window.removeEventListener('drop', handleDrop);
         };
     }, [setSelectedFiles]);
 
     return (
         <Box
             sx={{
-                border: "2px dashed",
+                border: '2px dashed',
                 paddingInline: 4,
                 paddingBlock: 2,
-                textAlign: "center",
+                textAlign: 'center',
                 borderRadius: 1,
                 gap: 2,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
                 // On drag over animate the border and slight lift the box
                 borderColor: isDragOver
                     ? theme.palette.primary.contrastText
                     : theme.palette.primary.muted,
                 boxShadow: isDragOver
                     ? `0px 4px 10px ${theme.palette.primary.main}33`
-                    : "none",
+                    : 'none',
                 backgroundColor: isDragOver
                     ? theme.palette.primary.muted
                     : theme.palette.background.paper,
-                transition: "border-color 0.2s, box-shadow 0.2s, background-color 0.2s",
+                transition:
+                    'border-color 0.2s, box-shadow 0.2s, background-color 0.2s',
 
-                "&:hover": {
-                    cursor: "pointer",
+                '&:hover': {
+                    cursor: 'pointer',
                 },
             }}
             onClick={() => fileInputRef.current?.click()}
@@ -299,7 +310,10 @@ function FileUpload() {
                     // Add files to the context
                     const files = Array.from(e.target.files || []);
                     if (files.length > 0) {
-                        setSelectedFiles((prevFiles) => [...prevFiles, ...files]);
+                        setSelectedFiles((prevFiles) => [
+                            ...prevFiles,
+                            ...files,
+                        ]);
                     }
                 }}
             />
@@ -348,7 +362,9 @@ function SelectedFilesList() {
 
     const handleRemoveFile = (index: number) => {
         // Remove file from the selected files
-        setSelectedFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
+        setSelectedFiles((prevFiles) =>
+            prevFiles.filter((_, i) => i !== index)
+        );
     };
 
     if (selectedFiles.length === 0) {
@@ -362,12 +378,12 @@ function SelectedFilesList() {
     return (
         <Box
             sx={{
-                width: "100%",
+                width: '100%',
                 maxHeight: 300,
-                overflowY: "auto",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
+                overflowY: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
             }}
         >
             <Typography variant="subtitle2" gutterBottom>
@@ -375,8 +391,8 @@ function SelectedFilesList() {
             </Typography>
             <Box
                 sx={(theme) => ({
-                    display: "flex",
-                    flexWrap: "wrap",
+                    display: 'flex',
+                    flexWrap: 'wrap',
                     gap: 1,
                     maxWidth: theme.breakpoints.values.tablet,
                 })}
@@ -425,16 +441,19 @@ function InboxSelector() {
                     <MenuItem key={folder.name} value={i}>
                         <Box
                             sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                alignItems: "center",
+                                display: 'flex',
+                                flexDirection: 'row',
+                                alignItems: 'center',
                                 gap: 1,
                             }}
                         >
                             <Typography variant="body1" fontFamily="monospace">
                                 {folder.path}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                            >
                                 ({folder.name})
                             </Typography>
                         </Box>
@@ -462,8 +481,8 @@ function FolderSelector() {
             size="small"
             sx={{
                 input: {
-                    fontFamily: "monospace",
-                    letterSpacing: "0.00938em",
+                    fontFamily: 'monospace',
+                    letterSpacing: '0.00938em',
                 },
             }}
         />
@@ -479,15 +498,21 @@ function UploadButton() {
 
     const parts = useMemo(() => {
         const parts = [];
-        parts.push(...(selectedInbox?.path.split("/") || []));
-        parts.push(...uploadPath.split("/"));
+        parts.push(...(selectedInbox?.path.split('/') || []));
+        parts.push(...uploadPath.split('/'));
         return parts.filter(Boolean);
     }, [selectedInbox, uploadPath]);
 
-    uploadPath.split("/").filter(Boolean);
+    uploadPath.split('/').filter(Boolean);
 
     return (
-        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <Box
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+            }}
+        >
             <Button
                 variant="contained"
                 color="primary"
@@ -496,17 +521,17 @@ function UploadButton() {
                     // Handle upload logic here
                     alert(
                         `Uploading ${selectedFiles.length} file${
-                            selectedFiles.length !== 1 ? "s" : ""
-                        } to ${parts.join("/")}`
+                            selectedFiles.length !== 1 ? 's' : ''
+                        } to ${parts.join('/')}`
                     );
                 }}
             >
                 Start upload
             </Button>
-            <FormHelperText sx={{ mt: 1, textAlign: "center" }}>
+            <FormHelperText sx={{ mt: 1, textAlign: 'center' }}>
                 Uploading {selectedFiles.length} file
-                {selectedFiles.length !== 1 ? "s" : ""} into{" "}
-                <Typography variant="caption">{parts.join("/")}</Typography>
+                {selectedFiles.length !== 1 ? 's' : ''} into{' '}
+                <Typography variant="caption">{parts.join('/')}</Typography>
             </FormHelperText>
         </Box>
     );

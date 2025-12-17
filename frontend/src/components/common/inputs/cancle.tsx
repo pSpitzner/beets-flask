@@ -1,6 +1,6 @@
-import { XIcon } from "lucide-react";
-import { useImperativeHandle, useRef, useState } from "react";
-import { Button, ButtonProps } from "@mui/material";
+import { XIcon } from 'lucide-react';
+import { useImperativeHandle, useRef, useState } from 'react';
+import { Button, ButtonProps } from '@mui/material';
 
 export interface CancelButtonRef {
     cancel: () => void;
@@ -30,7 +30,7 @@ export function CancelButton({
 }: {
     ref?: React.Ref<CancelButtonRef>;
     onCancel: () => void;
-} & Omit<ButtonProps, "onClick" | "ref">) {
+} & Omit<ButtonProps, 'onClick' | 'ref'>) {
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
@@ -87,7 +87,7 @@ export function CancelButton({
             // TODO: a class for animations would be useful
             {...props}
         >
-            {isCancelling ? `Cancelling in ${remainingTime}s...` : "Cancel"}
+            {isCancelling ? `Cancelling in ${remainingTime}s...` : 'Cancel'}
         </Button>
     );
 }

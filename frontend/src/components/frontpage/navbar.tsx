@@ -105,9 +105,9 @@ const StyledTab = styled(createLink(Tab))<StyledTabProps>(({ theme }) => ({
     [theme.breakpoints.down('laptop')]: {
         marginTop: 0,
         height: NAVBAR_HEIGHT.mobile,
-        display: "flex",
+        display: 'flex',
         zIndex: 1,
-        flexDirection: "column",
+        flexDirection: 'column',
 
         '& svg': {
             fontSize: 16,
@@ -198,7 +198,7 @@ export default function NavBar(props: BoxProps) {
                 position: 'fixed',
                 bottom: 0,
                 zIndex: 2,
-                width: "100dvw",
+                width: '100dvw',
                 height: NAVBAR_HEIGHT.mobile,
                 display: 'flex',
                 justifyContent: 'center',

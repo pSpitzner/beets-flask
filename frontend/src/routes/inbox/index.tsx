@@ -25,13 +25,13 @@ import { PageWrapper } from '@/components/common/page';
 import {
     ActionIcon,
     RefreshAllFoldersButton,
-} from "@/components/inbox/actions/buttons";
-import { getActionDescription } from "@/components/inbox/actions/descriptions";
-import { InboxCard } from "@/components/inbox/cards/inboxCard";
-import { FileUploadProvider } from "@/components/inbox/fileUpload/context";
-import { DropZone } from "@/components/inbox/fileUpload/dropzone";
-import { FolderSelectionProvider } from "@/components/inbox/folderSelectionContext";
-import { Folder } from "@/pythonTypes";
+} from '@/components/inbox/actions/buttons';
+import { getActionDescription } from '@/components/inbox/actions/descriptions';
+import { InboxCard } from '@/components/inbox/cards/inboxCard';
+import { FileUploadProvider } from '@/components/inbox/fileUpload/context';
+import { DropZone } from '@/components/inbox/fileUpload/dropzone';
+import { FolderSelectionProvider } from '@/components/inbox/folderSelectionContext';
+import { Folder } from '@/pythonTypes';
 
 /* ---------------------------------- Route --------------------------------- */
 
@@ -48,14 +48,14 @@ function RouteComponent() {
     return (
         <PageWrapper
             sx={(theme) => ({
-                display: "flex",
-                flexDirection: "column",
-                minHeight: "100%",
-                alignItems: "center",
+                display: 'flex',
+                flexDirection: 'column',
+                minHeight: '100%',
+                alignItems: 'center',
                 paddingTop: theme.spacing(1),
                 paddingInline: theme.spacing(0.5),
-                [theme.breakpoints.up("laptop")]: {
-                    height: "auto",
+                [theme.breakpoints.up('laptop')]: {
+                    height: 'auto',
                     paddingTop: theme.spacing(2),
                     paddingInline: theme.spacing(1),
                 },
@@ -64,17 +64,20 @@ function RouteComponent() {
             <PageHeader inboxes={inboxes} />
             <Box
                 sx={{
-                    width: "100%",
-                    display: "flex",
+                    width: '100%',
+                    display: 'flex',
                     gap: 2,
-                    flexDirection: "column",
+                    flexDirection: 'column',
                 }}
             >
                 <FileUploadProvider>
                     {inboxes.map((folder) => (
                         <FolderSelectionProvider key={folder.full_path}>
                             <DropZone inboxDir={folder.full_path}>
-                                <InboxCard key={folder.full_path} folder={folder} />
+                                <InboxCard
+                                    key={folder.full_path}
+                                    folder={folder}
+                                />
                             </DropZone>
                         </FolderSelectionProvider>
                     ))}

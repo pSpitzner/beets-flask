@@ -1,9 +1,9 @@
-import { Dispatch, SetStateAction, useState } from "react";
-import { useMutation, UseMutationOptions } from "@tanstack/react-query";
+import { Dispatch, SetStateAction, useState } from 'react';
+import { useMutation, UseMutationOptions } from '@tanstack/react-query';
 
-import { SerializedException } from "@/pythonTypes";
+import { SerializedException } from '@/pythonTypes';
 
-import { APIError } from "./common";
+import { APIError } from './common';
 
 export interface FileUploadProgress {
     name: string;
@@ -34,8 +34,13 @@ export const fileUploadMutationOptions: UseMutationOptions<
 > = {
     mutationFn: async ({ files, targetDir, setProgress }) => {
         let uploadedBytesTotal = 0;
-        const totalBytes = Array.from(files).reduce((acc, file) => acc + file.size, 0);
-        console.log(`Uploading ${files.length} files, total size ${totalBytes} bytes`);
+        const totalBytes = Array.from(files).reduce(
+            (acc, file) => acc + file.size,
+            0
+        );
+        console.log(
+            `Uploading ${files.length} files, total size ${totalBytes} bytes`
+        );
 
         // init progress bars for each file
         // Note that you cannot use an object for the batch progress, because
@@ -98,7 +103,9 @@ export const fileUploadMutationOptions: UseMutationOptions<
                     loaded: uploadedBytesTotal,
                 };
             });
-            console.debug(`Uploaded file ${i + 1}/${files.length}: ${file.name}`);
+            console.debug(
+                `Uploaded file ${i + 1}/${files.length}: ${file.name}`
+            );
         }
 
         const finished = performance.now();
@@ -115,7 +122,7 @@ export const fileUploadMutationOptions: UseMutationOptions<
                 (finished - started) / 1000
             } seconds`
         );
-        return { status: "ok" };
+        return { status: 'ok' };
     },
 };
 
@@ -131,20 +138,23 @@ async function uploadFile(
 ): Promise<{ status: string }> {
     // Validate headers (filename and target dir) before uploading
     // Raises if invalid
-    await fetch("/file_upload/validate", {
-        method: "POST",
+    await fetch('/file_upload/validate', {
+        method: 'POST',
         headers: {
-            "X-Filename": encodeURIComponent(file.name),
-            "X-File-Target-Dir": targetDir,
+            'X-Filename': encodeURIComponent(file.name),
+            'X-File-Target-Dir': targetDir,
         },
     });
 
     return new Promise<{ status: string }>((resolve, reject) => {
         const req = new XMLHttpRequest();
-        req.responseType = "json";
-        req.open("POST", "/api_v1/file_upload", true);
-        req.setRequestHeader("X-Filename", encodeURIComponent(file.name));
-        req.setRequestHeader("X-File-Target-Dir", encodeURIComponent(targetDir));
+        req.responseType = 'json';
+        req.open('POST', '/api_v1/file_upload', true);
+        req.setRequestHeader('X-Filename', encodeURIComponent(file.name));
+        req.setRequestHeader(
+            'X-File-Target-Dir',
+            encodeURIComponent(targetDir)
+        );
         // req.setRequestHeader("Content-Length", String(file.size));
 
         req.upload.onprogress = (event) => {
@@ -157,18 +167,18 @@ async function uploadFile(
             if (req.status >= 200 && req.status < 300) {
                 // onprogress is not called automatically when finally done
                 // onProgress?.({ total: file.size, loaded: file.size });
-                console.log("File upload resolve");
-                resolve({ status: "ok" });
+                console.log('File upload resolve');
+                resolve({ status: 'ok' });
             } else {
                 const json_error = req.response as SerializedException;
-                console.error("File upload error:", json_error);
+                console.error('File upload error:', json_error);
                 reject(new APIError(json_error, req.status));
             }
         };
 
         req.onerror = () => {
             const json_error = req.response as SerializedException;
-            console.error("File upload error:", req);
+            console.error('File upload error:', req);
             reject(new APIError(json_error, req.status));
         };
         req.send(file);
