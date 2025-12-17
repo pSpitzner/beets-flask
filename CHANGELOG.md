@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - Upcoming
+## [1.2.0] - 25-12-17
 
 ### ⚠️ Important ⚠️
 
@@ -23,7 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Another state-related bug around Searching for Candidates [#225](https://github.com/pSpitzner/beets-flask/issues/225). We now no longer require a certaint type of state before allowing to add candidates.
 - Asis candidates have been restyled to be more consistent with other candidate types. They now also include a cover art preview if available.
 - Fixed a typo in our opiniated beets config [#235](https://github.com/pSpitzner/beets-flask/issues/235)
-- Fixed an styling issue in the artists list view which caused an overflow
+- Fixed a styling issue in the artists list view which caused an overflow
+- Fixed a styling issue where an extra cancel-button (cross) was shown on webkit browsers
 
 ### Added
 
@@ -252,7 +253,8 @@ Small version bump with fixes before jumping to 1.0.0.
 -   initial commit
 
 
-[Unreleased]: https://github.com/pSpitzner/beets-flask/compare/v1.1.3...HEAD
+[Unreleased]: https://github.com/pSpitzner/beets-flask/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/pSpitzner/beets-flask/compare/v1.1.3...v1.2.0
 [1.1.3]: https://github.com/pSpitzner/beets-flask/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/pSpitzner/beets-flask/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/pSpitzner/beets-flask/compare/v1.1.0...v1.1.1

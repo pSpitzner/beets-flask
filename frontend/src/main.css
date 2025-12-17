@@ -47,3 +47,9 @@ a {
     text-decoration: none;
     color: inherit;
 }
+
+/* avoid this non-standard feature, we have our own closing button in search fields,
+without this flag, we get two cancel buttons */
+*::-webkit-search-cancel-button {
+    display: none;
+}
