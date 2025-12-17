@@ -8,12 +8,17 @@ import { useDragAndDrop } from '@/components/common/hooks/useDrag';
 
 import { UploadDialog } from './dialog';
 
-type FileUploadContextType = Omit<FileUploadState, 'mutate' | 'mutateAsync'> & {
+export type FileUploadContextType = Omit<
+    FileUploadState,
+    'mutate' | 'mutateAsync'
+> & {
     fileList: Array<File>;
     setFileList: React.Dispatch<React.SetStateAction<Array<File>>>;
     uploadFiles: () => Promise<{ status: string }>;
     uploadTargetDir: string | null;
     setUploadTargetDir: React.Dispatch<React.SetStateAction<string | null>>;
+    openDialog: boolean;
+    setOpenDialog: React.Dispatch<React.SetStateAction<boolean>>;
     reset: () => void;
 
     // drag drop
@@ -31,6 +36,7 @@ export function FileUploadProvider({
 }) {
     const [fileList, setFileList] = useState<Array<File>>([]);
     const [uploadTargetDir, setUploadTargetDir] = useState<string | null>(null);
+    const [openDialog, setOpenDialog] = useState(false);
 
     const isOverWindow = useDragAndDrop(null, {
         preventDefault: true,
@@ -56,6 +62,8 @@ export function FileUploadProvider({
                 },
                 uploadTargetDir,
                 setUploadTargetDir,
+                openDialog,
+                setOpenDialog,
                 isOverWindow,
             }}
         >

@@ -4,8 +4,8 @@
  * ...
  */
 
-import { CheckIcon, FileMusicIcon, Upload, XIcon } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CheckIcon, FileMusicIcon, UploadIcon, XIcon } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
     alpha,
     Box,
@@ -32,15 +32,15 @@ import { useFileUploadContext } from './context';
 
 export function UploadDialog() {
     const cancelButtonRef = useRef<CancelButtonRef>(null);
-    const [open, setOpen] = useState(false);
-    const { fileList, reset } = useFileUploadContext();
+    const { fileList, reset, openDialog, setOpenDialog } =
+        useFileUploadContext();
 
     const resetDialog = useCallback(
         (close: boolean = true) => {
-            if (close) setOpen(false);
+            if (close) setOpenDialog(false);
             reset();
         },
-        [reset]
+        [reset, setOpenDialog]
     );
 
     // SM@PS: Try to not use 'useEffect' for derived state. Kinda an antipattern
@@ -53,13 +53,13 @@ export function UploadDialog() {
     // Open dialog when files are added
     useEffect(() => {
         if (fileList.length > 0) {
-            setOpen(true);
+            setOpenDialog(true);
         }
-    }, [fileList.length]);
+    }, [fileList.length, setOpenDialog]);
 
     return (
         <Dialog
-            open={open}
+            open={openDialog}
             title={title}
             onClose={(_event, reason) => {
                 if (reason !== 'backdropClick') resetDialog();
@@ -326,7 +326,7 @@ function UploadButton({ onUpload }: { onUpload: () => void }) {
     return (
         <Button
             variant="contained"
-            startIcon={<Upload />}
+            startIcon={<UploadIcon />}
             onClick={() => {
                 if (isSuccess) {
                     reset();
@@ -479,8 +479,8 @@ function UploadFinished() {
         <Box
             sx={(theme) => ({
                 border: '2px solid',
-                borderColor: theme.palette.secondary.main,
-                color: theme.palette.secondary.main,
+                borderColor: theme.palette.primary.main,
+                color: theme.palette.primary.main,
                 paddingInline: 4,
                 paddingBlock: 2,
                 textAlign: 'center',
