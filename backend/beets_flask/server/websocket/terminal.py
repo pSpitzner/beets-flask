@@ -185,7 +185,7 @@ def _get_cursor_position():
 async def pty_input(sid, data):
     """Write to the child pty."""
     # log.debug(f"{sid} input {data}")
-    pane.send_keys(data["input"], enter=False)
+    pane.send_keys(data["input"].replace(";", "\\;"), enter=False, literal=True)
     # re-emitting continuously at high rate causes quite high cpu load, therefore we
     # only re-emit at low intervals, and everytime we _know_ something changed.
     await asyncio.gather(
