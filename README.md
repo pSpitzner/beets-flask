@@ -109,3 +109,13 @@ Check our [**documentation**](https://beets-flask.readthedocs.io/en/latest/) for
 ## Limitations
 
 There are a few known issues, see the corresponding [docs section](https://beets-flask.readthedocs.io/latest/limitations.html) for details.
+
+## Support the Project
+
+If you enjoy this project, there are a few ways you can support us:
+
+- **Contribute code:** Pull requests, bug reports, and feature suggestions are always welcome!  
+- **Spread the word:** Share the project with friends or on social media.  
+- **Donate:** Every contribution helps fuel more coffee-powered coding sessions!  
+    - **Donate ETH:** [0x81927e76f2f0fAA9e7fD92176a473955DB20Ce55](ethereum:0x81927e76f2f0fAA9e7fD92176a473955DB20Ce55)
+    - **Donate BTC:** [bc1qw5e0deust6uq94e5s58au82wrakcjmlemw3cy4](bitcoin:bc1qw5e0deust6uq94e5s58au82wrakcjmlemw3cy4)
