@@ -1,7 +1,7 @@
 import pytest
 
 
-class TestFileUploadErrors:
+class TestFileUploadRoute:
     @pytest.mark.parametrize(
         "filename, target_dir, expected_filename, expected_dir",
         [
@@ -130,3 +130,77 @@ class TestFileUploadErrors:
         assert str(response.status_code).startswith("4")
         assert data["type"] == "InvalidUsageException"
         assert "Invalid filename" in data["message"]
+
+
+class TestFileUploadValidationRoute:
+    async def test_validate_endpoint_success(self, client, monkeypatch):
+        """Test that the validate endpoint returns 200 for valid headers."""
+        monkeypatch.setattr(
+            "beets_flask.server.routes.file_upload.get_inbox_folders",
+            lambda: ["/valid/inbox"],
+        )
+        response = await client.post(
+            "/api_v1/file_upload/validate",
+            headers={
+                "X-Filename": "test.txt",
+                "X-File-Target-Dir": "/valid/inbox/test_dir",
+            },
+            data=b"",
+        )
+        assert response.status_code == 200
+        data = await response.get_json()
+        assert data["status"] == "ok"
+
+    async def test_validate_endpoint_missing_headers(self, client):
+        """Test that the validate endpoint raises InvalidUsageException for missing headers."""
+        response = await client.post(
+            "/api_v1/file_upload/validate",
+            headers={
+                "X-Filename": "test.txt",
+            },
+            data=b"",
+        )
+        assert str(response.status_code).startswith("4")
+        data = await response.get_json()
+        assert data["type"] == "InvalidUsageException"
+        assert "Missing header" in data["message"]
+
+    async def test_validate_endpoint_invalid_filename(self, client, monkeypatch):
+        """Test that the validate endpoint raises InvalidUsageException for invalid filenames."""
+        # Patch get_inbox_folders to return a known inbox path
+        monkeypatch.setattr(
+            "beets_flask.server.routes.file_upload.get_inbox_folders",
+            lambda: ["/valid/inbox"],
+        )
+        response = await client.post(
+            "/api_v1/file_upload/validate",
+            headers={
+                "X-Filename": "invalid/../file.txt",
+                "X-File-Target-Dir": "/valid/inbox",
+            },
+            data=b"",
+        )
+        assert str(response.status_code).startswith("4")
+        data = await response.get_json()
+        assert data["type"] == "InvalidUsageException"
+        assert "Invalid filename" in data["message"]
+
+    async def test_validate_endpoint_invalid_target_path(self, client, monkeypatch):
+        """Test that the validate endpoint raises InvalidUsageException for invalid target paths."""
+        # Patch get_inbox_folders to return a known inbox path
+        monkeypatch.setattr(
+            "beets_flask.server.routes.file_upload.get_inbox_folders",
+            lambda: ["/valid/inbox"],
+        )
+        response = await client.post(
+            "/api_v1/file_upload/validate",
+            headers={
+                "X-Filename": "file.txt",
+                "X-File-Target-Dir": "/invalid/path",
+            },
+            data=b"",
+        )
+        assert str(response.status_code).startswith("4")
+        data = await response.get_json()
+        assert data["type"] == "InvalidUsageException"
+        assert "Invalid target path" in data["message"]
