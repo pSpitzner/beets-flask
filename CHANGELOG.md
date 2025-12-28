@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 25-12-28
+
+### Fixed
+
+- Workaround for semicolon character not appearing in web terminal [#243](https://github.com/pSpitzner/beets-flask/issues/243)
+
 ## [1.2.0] - 25-12-17
 
 ### ⚠️ Important ⚠️
@@ -42,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ruff now had the UP checks enabled to enforce modern python syntax.
 - Unified coverart components in the frontend, we now use common styling for external and internal coverart.
 - Moved inbox metadata fetching into the library api routes.
-- Frontend formatter prettier is now enforced via a CI/CD workflow step 
+- Frontend formatter prettier is now enforced via a CI/CD workflow step
 
 ### Dependencies
 
