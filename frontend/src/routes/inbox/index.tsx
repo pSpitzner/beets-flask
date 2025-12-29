@@ -261,6 +261,7 @@ function InfoDescription() {
                         <ActionInfo action="copy_path" />
                         <ActionInfo action="delete" />
                         <ActionInfo action="undo" />
+                        <ActionInfo action="upload" />
                     </Box>
                     {/* Tree view */}
                     <Typography sx={{ fontWeight: 'bold', marginBottom: 0.5 }}>
@@ -311,6 +312,29 @@ function InfoDescription() {
                             />
                             <Typography>
                                 Music album (identified as such by beets)
+                            </Typography>
+                        </Box>
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                gap: 1,
+                                alignItems: 'center',
+                            }}
+                        >
+                            <FolderTypeIcon
+                                isAlbum={true}
+                                isOpen={false}
+                                isArchive={true}
+                                size={theme.iconSize.lg}
+                            />
+                            <FolderTypeIcon
+                                isAlbum={true}
+                                isOpen={true}
+                                isArchive={true}
+                                size={theme.iconSize.lg}
+                            />
+                            <Typography>
+                                Archive file (identified as such by beets)
                             </Typography>
                         </Box>
                         <Box

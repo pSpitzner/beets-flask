@@ -43,7 +43,7 @@ async def upload():
     filename, filedir = _get_filename_and_dir()
     log.info(f"Uploading file '{filename}' to '{filedir}' ...")
 
-    temp_path: Path = get_config()["gui"]["inbox"]["temp_dir"].as_path()  # type: ignore
+    temp_path: Path = Path(get_config().data.gui.inbox.temp_dir)
     temp_path.mkdir(parents=True, exist_ok=True)
 
     # upload to temp location with 1 hour timeout
