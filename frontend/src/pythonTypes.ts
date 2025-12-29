@@ -87,9 +87,9 @@ export interface ImportDuplicateKeys {
 }
 
 export interface ImportSection {
-    duplicate_action: "ask" | "keep" | "merge" | "remove" | "skip";
-    move: "False";
-    copy: "True";
+    duplicate_action: 'ask' | 'keep' | 'merge' | 'remove' | 'skip';
+    move: 'False';
+    copy: 'True';
     duplicate_keys: ImportDuplicateKeys;
 }
 
@@ -112,7 +112,7 @@ export interface LibrarySectionSchema {
 }
 
 export interface InboxSectionSchema {
-    ignore: "_use_beets_ignore" | Array<string>;
+    ignore: '_use_beets_ignore' | Array<string>;
     debounce_before_autotag: number;
     folders: Record<string, InboxFolderSchema>;
 }
@@ -232,7 +232,7 @@ export interface InboxFolderSchema {
     path: string;
     name: string;
     auto_threshold: null | number;
-    autotag: "auto" | "bootleg" | "off" | "preview";
+    autotag: 'auto' | 'bootleg' | 'off' | 'preview';
 }
 
 export interface Metadata {

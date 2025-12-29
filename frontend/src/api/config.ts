@@ -1,10 +1,10 @@
-import { useMemo } from "react";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { useMemo } from 'react';
+import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
 
-import { useLocalStorage } from "@/components/common/hooks/useLocalStorage";
-import { BeetsSchema } from "@/pythonTypes";
+import { useLocalStorage } from '@/components/common/hooks/useLocalStorage';
+import { BeetsSchema } from '@/pythonTypes';
 
-import { APIError } from "./common";
+import { APIError } from './common';
 
 export interface MinimalConfig extends BeetsSchema {
     // extra fields that are not in the schema:
@@ -14,7 +14,7 @@ export interface MinimalConfig extends BeetsSchema {
 
 export const configQueryOptions = () =>
     queryOptions({
-        queryKey: ["config"],
+        queryKey: ['config'],
         queryFn: async () => {
             const response = await fetch(`/config`);
             return (await response.json()) as MinimalConfig;
@@ -28,11 +28,12 @@ export const useConfig = () => {
 
 /* ---------------------------- Raw config files ---------------------------- */
 
-export const configYamlQueryOptions = (type: "beets" | "beetsflask") =>
+export const configYamlQueryOptions = (type: 'beets' | 'beetsflask') =>
     queryOptions<{ path: string; content: string }, APIError>({
-        queryKey: ["config_yaml", type],
+        queryKey: ['config_yaml', type],
         queryFn: async () => {
-            const url = type === "beets" ? `/config/yaml/beets` : `/config/yaml`;
+            const url =
+                type === 'beets' ? `/config/yaml/beets` : `/config/yaml`;
             const response = await fetch(url);
             return (await response.json()) as { path: string; content: string };
         },
@@ -42,8 +43,8 @@ export const configYamlQueryOptions = (type: "beets" | "beetsflask") =>
 // mainly a frontend configuration. Maybe we should move this to a different file?
 
 export type GridColumn = {
-    name: "selector" | "tree" | "chip" | "actions";
-    size: "1fr" | "auto";
+    name: 'selector' | 'tree' | 'chip' | 'actions';
+    size: '1fr' | 'auto';
     hidden?: boolean;
 };
 
@@ -75,7 +76,7 @@ export type Action = {
 }[keyof ActionOptionMap];
 
 export type ActionButtonConfig = {
-    variant: "outlined" | "contained" | "text";
+    variant: 'outlined' | 'contained' | 'text';
     // List of actions that this button can perform, e.g. a mapping to our enqueue actions
     actions: Array<Action>;
 };
@@ -91,36 +92,36 @@ export interface InboxFolderFrontendConfig {
 
 export const ACTIONS: Record<string, Action> = {
     retag: {
-        name: "retag",
-        label: "Retag",
+        name: 'retag',
+        label: 'Retag',
         options: {
             group_albums: false,
             autotag: true,
         },
     },
     undo: {
-        name: "undo",
+        name: 'undo',
         options: {
             delete_files: true,
         },
     },
     import_best: {
-        name: "import_best",
+        name: 'import_best',
     },
     import_bootleg: {
-        name: "import_bootleg",
+        name: 'import_bootleg',
     },
     import_terminal: {
-        name: "import_terminal",
+        name: 'import_terminal',
     },
     delete: {
-        name: "delete",
+        name: 'delete',
     },
     delete_imported_folders: {
-        name: "delete_imported_folders",
+        name: 'delete_imported_folders',
     },
     copy_path: {
-        name: "copy_path",
+        name: 'copy_path',
         options: {
             escape: true, // Whether to escape the path for shell usage
         },
@@ -129,22 +130,22 @@ export const ACTIONS: Record<string, Action> = {
 
 export const DEFAULT_INBOX_FOLDER_FRONTEND_CONFIG: InboxFolderFrontendConfig = {
     gridTemplateColumns: [
-        { name: "selector", size: "auto" },
-        { name: "tree", size: "1fr" },
-        { name: "chip", size: "auto" },
-        { name: "actions", size: "auto" },
+        { name: 'selector', size: 'auto' },
+        { name: 'tree', size: '1fr' },
+        { name: 'chip', size: 'auto' },
+        { name: 'actions', size: 'auto' },
     ],
     actionButtons: {
         primary: {
-            variant: "contained",
+            variant: 'contained',
             actions: [ACTIONS.import_best, ACTIONS.import_bootleg],
         },
         secondary: {
-            variant: "outlined",
+            variant: 'outlined',
             actions: [ACTIONS.retag, ACTIONS.undo, ACTIONS.delete],
         },
         extra: {
-            variant: "text",
+            variant: 'text',
             actions: [ACTIONS.delete_imported_folders],
         },
     },
@@ -152,7 +153,7 @@ export const DEFAULT_INBOX_FOLDER_FRONTEND_CONFIG: InboxFolderFrontendConfig = {
 
 export const useInboxFolderFrontendConfig = (fullpath: string) => {
     const [config, setConfig] = useLocalStorage<InboxFolderFrontendConfig>(
-        "inbox_folder_grid_config_" + fullpath,
+        'inbox_folder_grid_config_' + fullpath,
         DEFAULT_INBOX_FOLDER_FRONTEND_CONFIG
     );
 
@@ -200,12 +201,15 @@ export const useInboxFolderConfig = (full_path: string) => {
             ([_k, v]) => v.path === full_path
         );
         if (!fc) {
-            throw new Error(`No configuration found for inbox folder: ${full_path}`);
+            throw new Error(
+                `No configuration found for inbox folder: ${full_path}`
+            );
         }
 
         return {
             ...fc[1],
-            auto_threshold: fc[1].auto_threshold ?? config.match.strong_rec_thresh,
+            auto_threshold:
+                fc[1].auto_threshold ?? config.match.strong_rec_thresh,
         };
     }, [config, full_path]);
 };
