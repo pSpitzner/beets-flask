@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Base image changed**: The container base image is now `python:3.12-slim` (previously `python:3.11-alpine`). If you use a custom `startup.sh`, please verify compatibility, as Alpine-specific tooling and shell behavior may differ [#212](https://github.com/pSpitzner/beets-flask/issues/212)
 
 ### Added
+
 - Config validation. When loading config files we now check that specified options will work. If not, the frontend will show an error message with details on what's wrong. This applies to `gui` settings (i.e. our own ones, `beets-flask/config.yaml`) and very select ones from native beets (only those which we use directly). Hopefully, this will eventually cover all config options of beets native, but this is more of an upsream task. [#224](https://github.com/pSpitzner/beets-flask/pull/224).
 
 
@@ -58,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ruff now has the UP checks enabled to enforce modern python syntax.
 - Unified coverart components in the frontend, we now use common styling for external and internal coverart.
 - Moved inbox metadata fetching into the library api routes.
-- Frontend formatter prettier is now enforced via a CI/CD workflow step 
+- Frontend formatter prettier is now enforced via a CI/CD workflow step
 
 ### Dependencies
 
