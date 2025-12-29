@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - Upcoming
+
+### ⚠️ Breaking Changes ⚠️
+
+- **Base image changed**: The container base image is now `python:3.12-slim` (previously `python:3.11-alpine`). If you use a custom `startup.sh`, please verify compatibility, as Alpine-specific tooling and shell behavior may differ [#212](https://github.com/pSpitzner/beets-flask/issues/212)
+
+### Other (dev)
+
+- We now use `uv` (Universal Virtualenv) to manage python dependencies and run scripts in CI/CD. This should improve dependency resolution and installation times.
+- We now ship a static ffmpeg binary instead of installing ffmpeg via apt. This should reduce image size and improve compatibility across different host systems.
+
+
 ## [1.2.0] - 25-12-17
 
 ### ⚠️ Important ⚠️

@@ -1,9 +1,14 @@
-#!/bin/sh
-source ./docker/entrypoints/common.sh
+#!/bin/bash
+. ./docker/entrypoints/common.sh
 
 log_current_user
 log_version_info
 log "Starting development environment..."
+
+# We rely on live mounting the /repo folder
+# and expect the developer to have the dependencies installed
+# locally
+
 
 cd /repo/frontend
 
@@ -12,7 +17,7 @@ pnpm run dev & # normal dev, port 5173
 vite_pid=$!
 sleep 3  # Give Vite a moment to start
 if ! kill -0 $vite_pid 2>/dev/null; then
-    echo "starting vite failed, will try to fix this by installing dependencies ..."
+    log_warning "starting vite failed, will try to fix this by installing dependencies ..."
     pnpm install
     pnpm run dev &
 fi
@@ -36,6 +41,9 @@ export FLASK_DEBUG=1
 
 # running the server from inside the backend dir makes imports and redis easier
 cd /repo/backend
+
+uv sync --locked
+source .venv/bin/activate
 
 redis-server --daemonize yes
 
