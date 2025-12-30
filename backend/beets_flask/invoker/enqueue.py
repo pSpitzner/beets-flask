@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable, Callable
+from contextlib import contextmanager
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
@@ -433,39 +434,39 @@ async def run_preview(
 
     log.info(f"Preview task on {hash=} {path=}")
 
-    with db_session_factory() as db_session:
-        f_on_disk = FolderInDb.get_current_on_disk(hash, path)
-        if hash != f_on_disk.hash:
-            log.warning(
-                f"Folder content has changed since the job was scheduled for {path}. "
-                + f"Using new content ({f_on_disk.hash}) instead of {hash}"
+    with inbox_config_override(path):
+        with db_session_factory() as db_session:
+            f_on_disk = FolderInDb.get_current_on_disk(hash, path)
+            if hash != f_on_disk.hash:
+                log.warning(
+                    f"Folder content has changed since the job was scheduled for {path}. "
+                    + f"Using new content ({f_on_disk.hash}) instead of {hash}"
+                )
+
+            # here, in preview, we always want to start from a fresh state
+            # an existing state would skip the candidate lookup.
+            # otherwise, the retag action would not work, as preview starting from
+            s_state_live = SessionState(f_on_disk)
+            p_session = PreviewSession(
+                s_state_live, group_albums=group_albums, autotag=autotag
             )
 
-        # here, in preview, we always want to start from a fresh state
-        # an existing state would skip the candidate lookup.
-        # otherwise, the retag action would not work, as preview starting from
-        s_state_live = SessionState(f_on_disk)
-        p_session = PreviewSession(
-            s_state_live, group_albums=group_albums, autotag=autotag
-        )
+            try:
+                await p_session.run_async()
+            finally:
+                # Get max revision for this folder hash
+                stmt = select(func.max(SessionStateInDb.folder_revision)).where(
+                    SessionStateInDb.folder_hash == hash,
+                )
+                max_rev = db_session.execute(stmt).scalar_one_or_none()
+                new_rev = 0 if max_rev is None else max_rev + 1
+                s_state_indb = SessionStateInDb.from_live_state(p_session.state)
+                s_state_indb.folder_revision = new_rev
 
-        try:
-            await p_session.run_async()
-        finally:
-            # Get max revision for this folder hash
-            stmt = select(func.max(SessionStateInDb.folder_revision)).where(
-                SessionStateInDb.folder_hash == hash,
-            )
-            max_rev = db_session.execute(stmt).scalar_one_or_none()
-            new_rev = 0 if max_rev is None else max_rev + 1
-            s_state_indb = SessionStateInDb.from_live_state(p_session.state)
-            s_state_indb.folder_revision = new_rev
-
-            db_session.merge(s_state_indb)
-            db_session.commit()
+                db_session.merge(s_state_indb)
+                db_session.commit()
 
     log.info(f"Preview done. {hash=} {path=}")
-    return
 
 
 # redis preview queue
@@ -486,19 +487,20 @@ async def run_preview_add_candidates(
     """
     log.info(f"Add preview candidates task on {hash=}")
 
-    with db_session_factory() as db_session:
-        s_state_live = _get_live_state_by_folder(hash, path, db_session)
+    with inbox_config_override(path):
+        with db_session_factory() as db_session:
+            s_state_live = _get_live_state_by_folder(hash, path, db_session)
 
-        a_session = AddCandidatesSession(
-            s_state_live,
-            search=search,
-        )
-        try:
-            await a_session.run_async()
-        finally:
-            s_state_indb = SessionStateInDb.from_live_state(a_session.state)
-            db_session.merge(instance=s_state_indb)
-            db_session.commit()
+            a_session = AddCandidatesSession(
+                s_state_live,
+                search=search,
+            )
+            try:
+                await a_session.run_async()
+            finally:
+                s_state_indb = SessionStateInDb.from_live_state(a_session.state)
+                db_session.merge(instance=s_state_indb)
+                db_session.commit()
 
     log.info(f"Add candidates done. {hash=} {path=}")
 
@@ -523,21 +525,22 @@ async def run_import_candidate(
     """
     log.info(f"Import task on {hash=} {path=}")
 
-    with db_session_factory() as db_session:
-        s_state_live = _get_live_state_by_folder(hash, path, db_session)
+    with inbox_config_override(path):
+        with db_session_factory() as db_session:
+            s_state_live = _get_live_state_by_folder(hash, path, db_session)
 
-        i_session = ImportSession(
-            s_state_live,
-            candidate_ids=candidate_ids,
-            duplicate_actions=duplicate_actions,
-        )
+            i_session = ImportSession(
+                s_state_live,
+                candidate_ids=candidate_ids,
+                duplicate_actions=duplicate_actions,
+            )
 
-        try:
-            await i_session.run_async()
-        finally:
-            s_state_indb = SessionStateInDb.from_live_state(i_session.state)
-            db_session.merge(instance=s_state_indb)
-            db_session.commit()
+            try:
+                await i_session.run_async()
+            finally:
+                s_state_indb = SessionStateInDb.from_live_state(i_session.state)
+                db_session.merge(instance=s_state_indb)
+                db_session.commit()
 
     log.info(f"Import candidate done. {hash=} {path=}")
 
@@ -553,20 +556,21 @@ async def run_import_auto(
 ):
     log.info(f"Auto Import task on {hash=} {path=}")
 
-    with db_session_factory() as db_session:
-        s_state_live = _get_live_state_by_folder(hash, path, db_session)
-        i_session = AutoImportSession(
-            s_state_live,
-            import_threshold=import_threshold,
-            duplicate_actions=duplicate_actions,
-        )
+    with inbox_config_override(path):
+        with db_session_factory() as db_session:
+            s_state_live = _get_live_state_by_folder(hash, path, db_session)
+            i_session = AutoImportSession(
+                s_state_live,
+                import_threshold=import_threshold,
+                duplicate_actions=duplicate_actions,
+            )
 
-        try:
-            await i_session.run_async()
-        finally:
-            s_state_indb = SessionStateInDb.from_live_state(i_session.state)
-            db_session.merge(instance=s_state_indb)
-            db_session.commit()
+            try:
+                await i_session.run_async()
+            finally:
+                s_state_indb = SessionStateInDb.from_live_state(i_session.state)
+                db_session.merge(instance=s_state_indb)
+                db_session.commit()
 
     log.info(f"Auto Import done. {hash=} {path=}")
 
@@ -577,20 +581,21 @@ async def run_import_auto(
 async def run_import_bootleg(hash: str, path: str):
     log.info(f"Bootleg Import task on {hash=} {path=}")
 
-    with db_session_factory() as db_session:
-        # TODO: add duplicate action
-        # TODO: sort out how to generate previews for asis candidates
-        s_state_live = _get_live_state_by_folder(
-            hash, path, create_if_not_exists=True, db_session=db_session
-        )
-        i_session = BootlegImportSession(s_state_live)
+    with inbox_config_override(path):
+        with db_session_factory() as db_session:
+            # TODO: add duplicate action
+            # TODO: sort out how to generate previews for asis candidates
+            s_state_live = _get_live_state_by_folder(
+                hash, path, create_if_not_exists=True, db_session=db_session
+            )
+            i_session = BootlegImportSession(s_state_live)
 
-        try:
-            await i_session.run_async()
-        finally:
-            s_state_indb = SessionStateInDb.from_live_state(i_session.state)
-            db_session.merge(instance=s_state_indb)
-            db_session.commit()
+            try:
+                await i_session.run_async()
+            finally:
+                s_state_indb = SessionStateInDb.from_live_state(i_session.state)
+                db_session.merge(instance=s_state_indb)
+                db_session.commit()
 
     log.info(f"Bootleg Import done. {hash=} {path=}")
 
@@ -600,18 +605,22 @@ async def run_import_bootleg(hash: str, path: str):
 async def run_import_undo(hash: str, path: str, delete_files: bool):
     log.info(f"Import Undo task on {hash=} {path=}")
 
-    with db_session_factory() as db_session:
-        s_state_live = _get_live_state_by_folder(hash, path, db_session)
-        i_session = UndoSession(s_state_live, delete_files=delete_files)
+    with inbox_config_override(path):
+        with db_session_factory() as db_session:
+            s_state_live = _get_live_state_by_folder(hash, path, db_session)
+            i_session = UndoSession(s_state_live, delete_files=delete_files)
 
-        try:
-            await i_session.run_async()
-        finally:
-            s_state_indb = SessionStateInDb.from_live_state(i_session.state)
-            db_session.merge(instance=s_state_indb)
-            db_session.commit()
+            try:
+                await i_session.run_async()
+            finally:
+                s_state_indb = SessionStateInDb.from_live_state(i_session.state)
+                db_session.merge(instance=s_state_indb)
+                db_session.commit()
 
     log.info(f"Import Undo done. {hash=} {path=}")
+
+
+# ---------------------------------- Helper ---------------------------------- #
 
 
 def _get_live_state_by_folder(
@@ -658,3 +667,25 @@ def delete_items(task_ids: list[str], delete_files: bool = True):
     lib = _open_library(get_config().beets_config)
     for task_id in task_ids:
         delete_from_beets(task_id, delete_files=delete_files, lib=lib)
+
+
+@contextmanager
+def inbox_config_override(path):
+    """
+    Context manager for applying inbox-specific overrides.
+
+    Ensures that overrides are reset even if inner code raises exceptions.
+    """
+    from beets_flask.watchdog.inbox import get_inbox_for_path
+
+    config = get_config()
+    inbox = get_inbox_for_path(path)
+    if inbox is None:
+        raise ValueError(f"no inbox found for {path}")
+
+    config.apply_inbox_specific_overrides(inbox.path)
+
+    try:
+        yield config
+    finally:
+        config.reset_inbox_specific_overrides()
