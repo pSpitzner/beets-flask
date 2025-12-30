@@ -105,9 +105,17 @@ class InboxSectionSchema:
 @dataclass
 class InboxFolderSchema:
     path: str
-    name: str = "_use_heading"
+    name: str = "_use_heading"  # names should be unique
     auto_threshold: float | None = None
     autotag: Literal["auto", "preview", "bootleg", "off"] = "off"
+    overrides: InboxSpecificOverridesSchema = field(
+        default_factory=lambda: InboxSpecificOverridesSchema()
+    )
+
+
+@dataclass
+class InboxSpecificOverridesSchema:
+    plugins: list[str] | Literal["_use_all"] = "_use_all"
 
 
 # ---------------------------------- Library --------------------------------- #
