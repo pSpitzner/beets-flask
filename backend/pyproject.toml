@@ -30,6 +30,7 @@ dependencies = [
     # Used for hosting the web-interface & api
     "uvicorn>=0.36.0",
     # beets plugin dependencies
+    "beets-aisauce>=0.2.1",
     "pylast>=5.2.0",
     "python2ts>=0.6.1",
     "eyconf>=0.5.0",
@@ -41,7 +42,7 @@ dependencies = [
     "aiofiles",
     "numpy",
     "typing_extensions",
-    "polars>=1.36.1"
+    "polars>=1.36.1",
 ]
 
 [project.optional-dependencies]
