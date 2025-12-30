@@ -681,9 +681,9 @@ def inbox_config_override(path):
     config = get_config()
     inbox = get_inbox_for_path(path)
     if inbox is None:
-        raise ValueError(f"no inbox found for {path}")
-
-    config.apply_inbox_specific_overrides(inbox.path)
+        log.warning(f"{path} is not in an inbox, this should only happen in tests")
+    else:
+        config.apply_inbox_specific_overrides(inbox.path)
 
     try:
         yield config

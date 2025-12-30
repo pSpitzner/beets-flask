@@ -26,7 +26,7 @@ _BF_EXAMPLE_PATH = Path(os.path.dirname(__file__)) / "config_bf_example.yaml"
 class BeetsFlaskConfig(ConfigExtra[BeetsSchema]):
     """Base config class with extra fields support."""
 
-    inspecific_settings: InboxSpecificOverridesSchema
+    inspecific_data: InboxSpecificOverridesSchema
 
     def __init__(self):
         """Initialize the config object with the default values."""
@@ -114,6 +114,9 @@ class BeetsFlaskConfig(ConfigExtra[BeetsSchema]):
         beets.config.read()
 
         # Put our defaults that come from schema at lowest priority
+        # TODO: add support for optional schema fields (None)
+        # They should simply become beets defaults, but currently raise confuse errors.
+        # Likely because the None we add now takes precedence over whats there from beets.
         beets.config.add(asdict_with_aliases(BeetsSchema()))
 
         # Inserts user config into confuse
@@ -123,8 +126,8 @@ class BeetsFlaskConfig(ConfigExtra[BeetsSchema]):
         # is normally done by beets. Clear the list to force
         # actual reload.
         plugin_instances.clear()
-        load_plugins()
         log.debug(f"Loading plugins: {get_plugin_names()}")
+        load_plugins()
 
         # Beets config "Singleton" is not a real singleton, there might be copies
         # in different submodules - we need to update all of them.
@@ -239,8 +242,9 @@ class BeetsFlaskConfig(ConfigExtra[BeetsSchema]):
 
     def store_inspecific_settings(self):
         """Keep the non-inbox-specific global settings around, for easier restore."""
-        self.inspecific_settings = InboxSpecificOverridesSchema()
-        self.inspecific_settings.plugins = self.data.plugins
+        self.inspecific_data = InboxSpecificOverridesSchema()
+        self.inspecific_data.plugins = self.data.plugins
+        self.inspecific_data.aisauce = self.data.aisauce
 
     def apply_inbox_specific_overrides(self, inbox_path: Path | str) -> None:
         """
@@ -275,8 +279,13 @@ class BeetsFlaskConfig(ConfigExtra[BeetsSchema]):
         if overrides.plugins != "_use_all":
             if self.data.plugins != overrides.plugins:
                 commit_to_beets = True
-            self.data.plugins = overrides.plugins
+                self.data.plugins = overrides.plugins
 
+        if self.data.aisauce != overrides.aisauce:
+            commit_to_beets = True
+            self.data.aisauce = overrides.aisauce
+
+        log.error(self)
         if commit_to_beets:
             self.commit_to_beets()
             log.debug("Applied inbox-specific overrides to beets config")
@@ -294,9 +303,13 @@ class BeetsFlaskConfig(ConfigExtra[BeetsSchema]):
         """
         commit_to_beets = False
 
-        if self.data.plugins != self.inspecific_settings.plugins:
+        if self.data.plugins != self.inspecific_data.plugins:
             commit_to_beets = True
-        self.data.plugins = cast(list[str], self.inspecific_settings.plugins)
+        self.data.plugins = cast(list[str], self.inspecific_data.plugins)
+
+        if self.data.aisauce != self.inspecific_data.aisauce:
+            commit_to_beets = True
+        self.data.aisauce = self.inspecific_data.aisauce
 
         if commit_to_beets:
             self.commit_to_beets()

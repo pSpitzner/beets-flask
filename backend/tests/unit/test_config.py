@@ -4,6 +4,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
+from beets_flask.invoker.enqueue import run_preview
 import pytest
 import yaml
 from eyconf.validation import ConfigurationError, MultiConfigurationError
@@ -245,11 +246,11 @@ class TestInboxSpecific:
             config = config.reload(extra_yaml_path=temp_path)
 
         config.store_inspecific_settings()
-        assert config.inspecific_settings.plugins == ["musicbrainz"]
+        assert config.inspecific_data.plugins == ["musicbrainz"]
 
         config.data.plugins = ["lorem"]
         config.reset_inbox_specific_overrides()
-        assert config.inspecific_settings.plugins == ["musicbrainz"]
+        assert config.inspecific_data.plugins == ["musicbrainz"]
 
     def test_override(self):
         config = get_config()
@@ -275,7 +276,7 @@ class TestInboxSpecific:
             config = config.reload(extra_yaml_path=temp_path)
 
         config.store_inspecific_settings()
-        assert config.inspecific_settings.plugins == ["musicbrainz"]
+        assert config.inspecific_data.plugins == ["musicbrainz"]
 
         config.apply_inbox_specific_overrides(inbox_path=temp_dir)
         assert config.data.plugins == ["foobar"]
