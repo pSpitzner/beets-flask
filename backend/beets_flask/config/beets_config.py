@@ -285,7 +285,6 @@ class BeetsFlaskConfig(ConfigExtra[BeetsSchema]):
             commit_to_beets = True
             self.data.aisauce = overrides.aisauce
 
-        log.error(self)
         if commit_to_beets:
             self.commit_to_beets()
             log.debug("Applied inbox-specific overrides to beets config")

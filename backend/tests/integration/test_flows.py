@@ -103,6 +103,35 @@ class TestPreview(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixi
         use_mock_tag_album(str(path))
         return path
 
+    # TODO: remove me
+    async def test_temp_ps(self, db_session):
+        self.statuses = []
+        self.reset_database()
+
+        stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
+        assert db_session.execute(stmt).scalar() is None, (
+            "Database should be empty before the test"
+        )
+
+        config = get_config()
+        config = config.reload(
+            extra_yaml_path="/Users/paul/para/2_Projects/beets_flask_24.nosync/local_data/config/beets-flask/config.yaml"
+        )
+
+        path = "/Users/paul/para/2_Projects/_shared_data.nosync/music/ai_source/Annix2 copy.zip"
+
+        result = await run_preview(
+            "obsolete_hash_preview",
+            str(path),
+            group_albums=False,
+            autotag=True,
+        )
+
+        stmt = select(SessionStateInDb)
+        s_state_indb = db_session.execute(stmt).scalar()
+
+        breakpoint()
+
     async def test_preview(
         self,
         db_session: Session,
