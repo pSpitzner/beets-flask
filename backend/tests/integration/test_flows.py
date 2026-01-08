@@ -115,22 +115,25 @@ class TestPreview(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixi
 
         config = get_config()
         config = config.reload(
-            extra_yaml_path="/Users/paul/para/2_Projects/beets_flask_24.nosync/local_data/config/beets-flask/config.yaml"
+            extra_yaml_path="/Users/paul/para/2_Projects/beets_flask_24.nosync/local_data/config/beets-flask/ps_test_config.yaml"
         )
 
-        path = "/Users/paul/para/2_Projects/_shared_data.nosync/music/ai_source/Annix2 copy.zip"
+        path = "/Users/paul/para/2_Projects/_shared_data.nosync/music/ai_cleanup/Annix2 copy.zip"
+        use_mock_tag_album(str(path))
 
-        result = await run_preview(
+        exc = await run_preview(
             "obsolete_hash_preview",
             str(path),
             group_albums=False,
             autotag=True,
         )
+        assert exc is None, "Should not return an error"
 
         stmt = select(SessionStateInDb)
-        s_state_indb = db_session.execute(stmt).scalar()
+        s_state_indb: SessionStateInDb = db_session.execute(stmt).scalar()
+        s_state_live = s_state_indb.to_live_state()
 
-        breakpoint()
+        assert len(s_state_live.tasks[0].candidates) != 0
 
     async def test_preview(
         self,

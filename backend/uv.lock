@@ -377,7 +377,7 @@ requires-dist = [
     { name = "cachetools", specifier = ">=5.3.3" },
     { name = "confuse", specifier = ">=2.0.1" },
     { name = "deprecated", specifier = ">=1.2.18" },
-    { name = "eyconf", specifier = ">=0.5.0" },
+    { name = "eyconf", specifier = ">=0.5.1" },
     { name = "fakeredis", marker = "extra == 'test'" },
     { name = "furo", marker = "extra == 'docs'", specifier = ">=2024.8.6" },
     { name = "libtmux", specifier = ">=0.37.0" },
@@ -858,16 +858,16 @@ wheels = [
 
 [[package]]
 name = "eyconf"
-version = "0.5.0"
+version = "0.5.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jsonschema" },
     { name = "pyyaml" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/77/d5/cf9a2db87c00de703a67eae63567e3e2b3867134adb3a8bae561a08fd1f3/eyconf-0.5.0.tar.gz", hash = "sha256:004e874e57f30f81e6b458314187ae917b7bbebc4056689d32b9b8d4e4ed1deb", size = 73267, upload-time = "2025-12-11T18:57:16.608Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6d/70/52a0fd13c02eca28297d58acd91a7d258a9c9dfc2c51b000e93191ded75d/eyconf-0.5.1.tar.gz", hash = "sha256:e62e1ebe2614fdfb8187616ea36830f6df7e3872284d9ebd776d6ec989505a48", size = 73904, upload-time = "2026-01-08T19:09:26.483Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/da/a2/08d71feaf488b36710d0a3340cadfbdec40ebd515cfafa5522d2482c514d/eyconf-0.5.0-py3-none-any.whl", hash = "sha256:62feb822e7c565e19bde330c86c2c5ad96e69038b610bc8fd4502f4eb31e8c28", size = 38336, upload-time = "2025-12-11T18:57:15.311Z" },
+    { url = "https://files.pythonhosted.org/packages/be/b7/88ac5c114ee79ec59393f420ab0cdc25fb10865d3c618e55b51138e1c478/eyconf-0.5.1-py3-none-any.whl", hash = "sha256:d277a1e0411c32171102be2920c1c569350449126109258b70196ce63ea3118d", size = 38678, upload-time = "2026-01-08T19:09:25.211Z" },
 ]
 
 [[package]]
