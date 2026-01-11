@@ -11,7 +11,7 @@ import {
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 
-import { Action } from '@/api/config';
+import { Action, useConfig } from '@/api/config';
 import { inboxQueryOptions } from '@/api/inbox';
 import { MatchChip, StyledChip } from '@/components/common/chips';
 import { Dialog } from '@/components/common/dialogs';
@@ -158,6 +158,8 @@ function PageHeader({ inboxes, ...props }: { inboxes: Folder[] } & BoxProps) {
 /** Description of the inbox page, shown as modal on click */
 function InfoDescription() {
     const theme = useTheme();
+    const config = useConfig();
+
     const [open, setOpen] = useState(false);
     const { data } = useSuspenseQuery(inboxQueryOptions());
 
@@ -257,7 +259,9 @@ function InfoDescription() {
                         <ActionInfo action="retag" />
                         <ActionInfo action="import_best" />
                         <ActionInfo action="import_bootleg" />
-                        <ActionInfo action="import_terminal" />
+                        {config.gui.terminal.enable ?? (
+                            <ActionInfo action="import_terminal" />
+                        )}
                         <ActionInfo action="copy_path" />
                         <ActionInfo action="delete" />
                         <ActionInfo action="undo" />

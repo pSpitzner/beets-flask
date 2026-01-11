@@ -6,6 +6,8 @@ import Tab, { tabClasses, TabProps } from '@mui/material/Tab';
 import Tabs, { tabsClasses } from '@mui/material/Tabs';
 import { createLink, LinkProps, useRouterState } from '@tanstack/react-router';
 
+import { useConfig } from '@/api/config.ts';
+
 export const NAVBAR_HEIGHT = {
     desktop: '48px',
     mobile: '74px',
@@ -142,6 +144,8 @@ function NavItem({ label, ...props }: StyledTabProps) {
 
 function NavTabs() {
     const theme = useTheme();
+    const config = useConfig();
+
     const location = useRouterState({ select: (s) => s.location });
     let basePath = location.pathname.split('/')[1];
 
@@ -150,18 +154,21 @@ function NavTabs() {
         basePath += '/' + location.pathname.split('/')[2];
     }
 
-    const navItems = [
-        { label: 'Home', icon: <Home />, to: '/' as const },
-        { label: 'Inbox', icon: <Inbox />, to: '/inbox' as const },
-        //{ label: "Session", icon: <Inbox />, to: "/sessiondraft" as const },
-        { label: 'Library', icon: <Library />, to: '/library/browse' as const },
-        { label: 'Search', icon: <Search />, to: '/library/search' as const },
-        {
+    const navItems: StyledTabProps[] = [
+        { label: 'Home', icon: <Home />, to: '/' },
+        { label: 'Inbox', icon: <Inbox />, to: '/inbox' },
+        //{ label: "Session", icon: <Inbox />, to: '/sessiondraft'},
+        { label: 'Library', icon: <Library />, to: '/library/browse' },
+        { label: 'Search', icon: <Search />, to: '/library/search' },
+    ];
+
+    if (config.gui.terminal.enable) {
+        navItems.push({
             label: '',
             icon: <Terminal stroke={theme.palette.primary.main} />,
-            to: '/terminal' as const,
-        },
-    ];
+            to: '/terminal',
+        });
+    }
 
     const currentIdx = navItems.findIndex((item) => item.to === '/' + basePath);
     const ref = useRef<HTMLDivElement>(null);

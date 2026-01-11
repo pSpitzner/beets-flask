@@ -3,6 +3,9 @@ from collections.abc import Callable
 from typing import cast
 
 import socketio
+from eyconf.validation import ConfigurationError, MultiConfigurationError
+
+from beets_flask.config import get_config
 
 old_on = socketio.AsyncServer.on
 
@@ -33,8 +36,21 @@ def register_socketio(app):
     app.asgi_app = socketio.ASGIApp(sio, app.asgi_app, socketio_path="/socket.io")
 
     # Register all socketio namespaces
+    # fmt: off
     from .status import register_status
-    from .terminal import register_tmux
-
-    register_tmux()
     register_status()
+    # fmt: on
+
+    terminal_enabled = True
+    try:
+        terminal_enabled = get_config().data.gui.terminal.enable
+    except (MultiConfigurationError, ConfigurationError):
+        # We don't want to let the exception propagate here as it won't reach the frontend.
+        # It will get triggered again on the next call to get_config().
+        pass
+
+    if terminal_enabled:
+        # fmt: off
+        from .terminal import register_tmux
+        register_tmux()
+        # fmt: on
