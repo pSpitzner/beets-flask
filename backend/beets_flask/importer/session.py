@@ -764,21 +764,26 @@ class ImportSession(BaseSession):
 
     def finalize(self, task: importer.ImportTask):
         """
-        Reset previous match threshold exceptions.
+        Reset exceptions left over from a previous, unsuccessful attempt.
 
         Needed because we might run a normal ImportSession manually after
         the AutoImportSession. The AutoImportSession needs to keep an Exception in its
         status to inform the frontend, which we need to clear here.
         (No need to override `finalize` in AutoImportSession, despite it inherriting
         from here, because it raises when below threshold).
+
+        Reaching this point means the import succeeded, so any exception still attached
+        to the session state is stale by definition. Leaving one behind makes
+        `_get_folder_status_from_db` report the folder FAILED forever -- it overrides
+        IMPORT_COMPLETED -> IMPORTED whenever an exception is present -- which also means
+        cleanup keyed on IMPORTED never runs and the source folder is never removed.
+        This previously only cleared NotImportedException, so a session retried after a
+        DuplicateException stayed FAILED even though the album imported correctly.
         """
-        if (
-            self.state.exc is not None
-            and self.state.exc["type"] == "NotImportedException"
-            and self.state.exc["message"].startswith("Match below threshold")
-        ):
+        if self.state.exc is not None:
             log.debug(
-                "Clearing previous MatchThresholdException after successful import."
+                "Clearing previous %s after successful import.",
+                self.state.exc["type"],
             )
             self.state.exc = None
         super().finalize(task)
