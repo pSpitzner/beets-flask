@@ -1,0 +1,18 @@
+services:
+  beets-flask:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: prod
+    image: beets-flask:local
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      TZ: America/Mexico_City
+      PUID: 1000
+      PGID: 1000
+    volumes:
+      - /srv/music-stack/beets-flask-test:/config
+      - /home/jp_srv/music-library:/library
+      - /mnt/storage/music-data/music/sources:/music/sources
