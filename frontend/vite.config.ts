@@ -48,7 +48,7 @@ export default defineConfig(({ mode }) => {
                     ws: true,
                 },
             },
-            allowedHosts: ['belar', 'kahless', 'localhost', '127.0.0.1'],
+            allowedHosts: ['belar', 'kahless', 'localhost', 'pyro-srv' ,'127.0.0.1'],
         },
         resolve: { tsconfigPaths: true },
         define: {

@@ -15,4 +15,5 @@ services:
     volumes:
       - /srv/music-stack/beets-flask-test:/config
       - /home/jp_srv/music-library:/library
-      - /mnt/storage/music-data/music/sources:/music/sources
+      - /mnt/storage/music-data/music/sources:/sources
+      

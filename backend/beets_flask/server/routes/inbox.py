@@ -12,6 +12,7 @@ from beets_flask.database import db_session_factory
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
 from beets_flask.disk import (
     Archive,
+    FileSystemItem,
     Folder,
     dir_files,
     dir_size,
@@ -21,6 +22,7 @@ from beets_flask.disk import (
 from beets_flask.importer.progress import Progress
 from beets_flask.logger import log
 from beets_flask.server.exceptions import InvalidUsageException, NotFoundException
+from beets_flask.server.routes.db_models.session import SessionAPIBlueprint
 from beets_flask.server.utility import (
     pop_folder_params,
 )
@@ -31,6 +33,7 @@ from beets_flask.watchdog.inbox import (
     get_inbox_folders,
     get_inbox_for_path,
 )
+from beets_flask.logger import log
 
 inbox_bp = Blueprint("inbox", __name__, url_prefix="/inbox")
 
@@ -44,7 +47,36 @@ async def get_tree():
     # Create dict representation of inbox folders
     folders: list[Folder] = []
     for folder in inbox_folders:
+        log.info(f"Processing inbox folder: {folder}")
         folders.append(path_to_folder(folder, subdirs=False))
+
+    folder_hashes: list[str] = []
+    folder_paths: list[str] = []
+
+    # Log the hierarchy of the inbox folders
+    def log_folder_hierarchy(folder: FileSystemItem, indent: int = 0):
+        if isinstance(folder, Folder):
+            # log.info(f"{'  ' * indent}Folder: {folder.type}, {folder.full_path}, {folder.hash}")
+            folder_hashes.append(folder.hash)
+            folder_paths.append(folder.full_path)
+            for child in folder.children:
+                log_folder_hierarchy(child, indent + 1)
+
+    for folder in folders:
+        log_folder_hierarchy(folder)
+
+    log.info(f"Folder hashes: {len(folder_hashes)}")
+    log.info(f"Folder paths: {len(folder_paths)}")
+
+    status = await SessionAPIBlueprint().get_status_helper(
+        folder_hashes=folder_hashes, folder_paths=folder_paths
+    )
+    log.info(f"Status: {status}")
+    
+
+
+    for folder in folders:
+        log.info(f"Folder: {folder.type}, {folder.full_path}, {folder.hash}, {len(folder.children)} children")
 
     return jsonify(folders)
 

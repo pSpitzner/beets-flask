@@ -371,6 +371,11 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         folder_hashes = request.args.getlist("folder_hash")
         folder_paths = request.args.getlist("folder_path")
 
+        stats = await self.get_status_helper(folder_hashes, folder_paths)
+
+        return jsonify(stats)
+
+    async def get_status_helper(self, folder_hashes: list[str], folder_paths: list[str]):
         if len(folder_hashes) != len(folder_paths):
             raise InvalidUsageException(
                 "Provide the same number of folder hashes and paths", status_code=400
@@ -422,8 +427,8 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
             stats.append(
                 FolderStatusUpdate(path=str(path), hash=hash, status=status, exc=exc)
             )
-
-        return jsonify(stats)
+            return stats
+        
 
 
 def _get_folder_status_from_db(
