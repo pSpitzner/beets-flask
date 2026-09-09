@@ -5,7 +5,6 @@
  */
 export type File = FileSystemItem;
 
-
 export interface SerializedSessionState {
     id: string;
     created_at: Date;
@@ -47,11 +46,11 @@ export interface JobStatusUpdate {
     num_jobs: number;
     job_metas: Array<JobMeta>;
     exc: SerializedException | null;
-    event: "job_status_update";
+    event: 'job_status_update';
 }
 
 export interface InboxTreeFolder {
-    type: "directory";
+    type: 'directory';
     full_path: string;
     hash: string;
     is_album: boolean;
@@ -76,7 +75,7 @@ export interface FolderStatusUpdate {
     hash: string;
     status: FolderStatus;
     exc: SerializedException | null;
-    event: "folder_status_update";
+    event: 'folder_status_update';
 }
 
 export interface Folder extends FileSystemItem {
@@ -85,7 +84,7 @@ export interface Folder extends FileSystemItem {
 
 export interface FileSystemUpdate {
     exc: SerializedException | null;
-    event: "file_system_update";
+    event: 'file_system_update';
 }
 
 export interface MatchSectionSchema {
@@ -99,9 +98,9 @@ export interface ImportDuplicateKeys {
 }
 
 export interface ImportSection {
-    duplicate_action: "ask" | "keep" | "merge" | "remove" | "skip";
-    move: "False";
-    copy: "True";
+    duplicate_action: 'ask' | 'keep' | 'merge' | 'remove' | 'skip';
+    move: 'False';
+    copy: 'True';
     duplicate_keys: ImportDuplicateKeys;
 }
 
@@ -125,7 +124,7 @@ export interface LibrarySectionSchema {
 }
 
 export interface InboxSectionSchema {
-    ignore: "_use_beets_ignore" | Array<string>;
+    ignore: '_use_beets_ignore' | Array<string>;
     debounce_before_autotag: number;
     temp_dir: string;
     folders: Record<string, InboxFolderSchema>;
@@ -246,7 +245,7 @@ export interface InboxFolderSchema {
     path: string;
     name: string;
     auto_threshold: null | number;
-    autotag: "auto" | "bootleg" | "off" | "preview";
+    autotag: 'auto' | 'bootleg' | 'off' | 'preview';
 }
 
 export interface MinimalBestCandidateInfo {
@@ -364,7 +363,7 @@ export interface ItemResponse {
 }
 
 export interface MusicInfo {
-    type: "album" | "item" | "track";
+    type: 'album' | 'item' | 'track';
     artist: null | string;
     album: null | string;
     data_url: null | string;
@@ -385,14 +384,14 @@ export interface ItemInfo extends MusicInfo {
 }
 
 export interface InboxTreeLeaf {
-    type: "archive" | "file";
+    type: 'archive' | 'file';
     full_path: string;
     hash: string;
     is_album: boolean;
 }
 
 export interface FileSystemItem {
-    type: "archive" | "directory" | "file";
+    type: 'archive' | 'directory' | 'file';
     full_path: string;
     hash: string;
     is_album: boolean;
@@ -421,4 +420,3 @@ export interface AlbumInfo extends MusicInfo {
     catalognum: null | string;
     albumdisambig: null | string;
 }
-

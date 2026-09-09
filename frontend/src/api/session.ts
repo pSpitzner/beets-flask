@@ -476,7 +476,6 @@ export function hydrateStatuses(
                 ? (folder.status ?? FolderStatus.UNKNOWN)
                 : FolderStatus.UNKNOWN;
         const exc = folder.type === 'directory' ? (folder.exc ?? null) : null;
-        
 
         queryClient.setQueryData<FolderStatusUpdate>(
             statusQueryOptions(folder.hash, folder.full_path).queryKey,
@@ -606,18 +605,18 @@ export async function ensureMinimalSessions(
         return;
     }
 
-    // const params = new URLSearchParams();
-    // missing.forEach((folder) => {
-    //     params.append('folder_hash', folder.hash);
-    //     params.append('folder_path', folder.path);
-    // });
-    // const response = await fetch(`/session/minimal?${params.toString()}`);
-    // const res = (await response.json()) as Record<string, MinimalSession>;
+    const params = new URLSearchParams();
+    missing.forEach((folder) => {
+        params.append('folder_hash', folder.hash);
+        params.append('folder_path', folder.path);
+    });
+    const response = await fetch(`/session/minimal?${params.toString()}`);
+    const res = (await response.json()) as Record<string, MinimalSession>;
 
-    // missing.forEach((folder) => {
-    //     queryClient.setQueryData<MinimalSession | null>(
-    //         minimalSessionQueryOptions(folder.hash, folder.path).queryKey,
-    //         res[folder.hash] ?? null
-    //     );
-    // });
+    missing.forEach((folder) => {
+        queryClient.setQueryData<MinimalSession | null>(
+            minimalSessionQueryOptions(folder.hash, folder.path).queryKey,
+            res[folder.hash] ?? null
+        );
+    });
 }

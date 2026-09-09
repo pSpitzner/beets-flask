@@ -10,7 +10,6 @@ import type {
     FileSystemItem,
     Folder,
     InboxStats,
-    InboxTreeArchive,
     InboxTreeLeaf,
     InboxTreeFolder,
 } from '@/pythonTypes';
@@ -185,7 +184,7 @@ function deleteFromFolder(
 export function walkFolder(
     folder: InboxTreeFolder,
     depth?: number
-): Generator<InboxTreeFolder | InboxTreeFile | InboxTreeArchive>;
+): Generator<InboxTreeFolder | InboxTreeLeaf>;
 export function walkFolder(
     folder: Folder,
     depth?: number
@@ -193,7 +192,9 @@ export function walkFolder(
 export function* walkFolder(
     folder: Folder | InboxTreeFolder,
     depth: number = Infinity
-): Generator<FileSystemItem | InboxTreeFolder | InboxTreeFile | InboxTreeArchive> {
+): Generator<
+    FileSystemItem | InboxTreeFolder | InboxTreeLeaf
+> {
     yield folder;
     if (depth <= 0) {
         return;

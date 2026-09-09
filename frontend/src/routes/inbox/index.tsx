@@ -13,10 +13,7 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { Action, useConfig } from '@/api/config';
 import { inboxQueryOptions, walkFolder } from '@/api/inbox';
-import {
-    hydrateMinimalSessionData,
-    hydrateStatuses,
-} from '@/api/session';
+import { hydrateMinimalSessionData, hydrateStatuses } from '@/api/session';
 import { MatchChip, StyledChip } from '@/components/common/chips';
 import { Dialog } from '@/components/common/dialogs';
 import {
@@ -35,12 +32,7 @@ import { InboxCard } from '@/components/inbox/cards/inboxCard';
 import { FileUploadProvider } from '@/components/inbox/fileUpload/context';
 import { DropZone } from '@/components/inbox/fileUpload/dropzone';
 import { FolderSelectionProvider } from '@/components/inbox/folderSelectionContext';
-import {
-    Archive,
-    Folder,
-    InboxTreeLeaf,
-    InboxTreeFolder,
-} from '@/pythonTypes';
+import { Folder, InboxTreeLeaf, InboxTreeFolder } from '@/pythonTypes';
 
 /* ---------------------------------- Route --------------------------------- */
 
@@ -48,7 +40,7 @@ export const Route = createFileRoute('/inbox/')({
     component: RouteComponent,
     loader: async ({ context }) => {
         // Load inboxes
-        const inboxes = 
+        const inboxes =
             await context.queryClient.fetchQuery(inboxQueryOptions());
 
         // Collect all folders and archives so every status query can be hydrated
@@ -67,7 +59,6 @@ export const Route = createFileRoute('/inbox/')({
         // Hydrate minimal session queries from the same tree response. This also
         // caches null for folders without a session, preventing fallback fetches.
         hydrateMinimalSessionData(prefetch_folders);
-
     },
 });
 
