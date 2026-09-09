@@ -264,8 +264,12 @@ class TestGetItems(IsolatedBeetsLibraryMixin):
         return "/api_v1/beets/items/" + (f"?{query}" if query else "")
 
     @staticmethod
-    def _titles(document: MultiItemDocument) -> list[str | None]:
-        return [resource.attributes.title for resource in document.data]
+    def _titles(document: MultiItemDocument) -> list[str]:
+        return [
+            title
+            for resource in document.data
+            if (title := resource.attributes.title) is not None
+        ]
 
     @staticmethod
     def _next_url(document: MultiItemDocument) -> str | None:

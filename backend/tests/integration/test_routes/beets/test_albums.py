@@ -327,7 +327,11 @@ class TestGetAlbums(IsolatedBeetsLibraryMixin):
 
     @staticmethod
     def _names(document: MultiAlbumDocument) -> list[str]:
-        return [resource.attributes.album for resource in document.data]
+        return [
+            name
+            for resource in document.data
+            if (name := resource.attributes.album) is not None
+        ]
 
     @pytest.fixture(scope="class", autouse=True)
     def albums(self, setup_beetslib) -> dict[str, BeetsAlbum]:
@@ -449,7 +453,9 @@ class TestGetAlbums(IsolatedBeetsLibraryMixin):
             document = MultiAlbumDocument.model_validate(await response.get_json())
             names.extend(self._names(document))
             included.extend(
-                resource.attributes.title for resource in (document.included or [])
+                title
+                for resource in (document.included or [])
+                if (title := resource.attributes.title) is not None
             )
             if document.links is not None and document.links.next is not None:
                 assert "include=items" in document.links.next
