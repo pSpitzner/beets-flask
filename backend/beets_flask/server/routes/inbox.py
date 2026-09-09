@@ -1,26 +1,38 @@
+from __future__ import annotations
+
 import os
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import TypedDict
+from typing import Literal, NotRequired, TypedDict, cast
 
 from cachetools import Cache
-from quart import Blueprint, jsonify, request
+from quart import Blueprint, jsonify, request, Response
 from sqlalchemy import func, select
 
 from beets_flask.database import db_session_factory
 from beets_flask.database.models.states import FolderInDb, SessionStateInDb
 from beets_flask.disk import (
     Archive,
+    FileSystemItem,
     Folder,
     dir_files,
     dir_size,
     fs_item_from_path,
     path_to_folder,
 )
-from beets_flask.importer.progress import Progress
+from beets_flask.importer.progress import FolderStatus, Progress
 from beets_flask.logger import log
-from beets_flask.server.exceptions import InvalidUsageException, NotFoundException
+from beets_flask.server.exceptions import (
+    InvalidUsageException,
+    NotFoundException,
+    SerializedException,
+)
+from beets_flask.server.routes.db_models.session import (
+    MinimalSession,
+    retrieve_folder_minimal,
+    retrieve_folder_status,
+)
 from beets_flask.server.utility import (
     pop_folder_params,
 )
@@ -35,18 +47,109 @@ from beets_flask.watchdog.inbox import (
 inbox_bp = Blueprint("inbox", __name__, url_prefix="/inbox")
 
 
+class InboxTreeLeaf(TypedDict):
+    """Serialized file/archive entry returned by the inbox tree endpoint."""
+
+    type: Literal["file", "archive"]
+    full_path: str
+    hash: str
+    is_album: bool
+
+
+class InboxTreeFolder(TypedDict):
+    """Serialized directory entry returned by the inbox tree endpoint.
+
+    Status and minimal session data are included only for album directories.
+    Non-album directories remain structural nodes and contain only children.
+    """
+
+    type: Literal["directory"]
+    full_path: str
+    hash: str
+    is_album: bool
+
+    # These fields are omitted for non-album directories.
+    status: NotRequired[int]
+    exc: NotRequired[SerializedException | None]
+    minimal: NotRequired[MinimalSession | None]
+    children: list[InboxTreeLeaf | InboxTreeFolder]
+    
+
+
+InboxTreeItem = InboxTreeLeaf | InboxTreeFolder
+
+
 @inbox_bp.route("/tree", methods=["GET"])
-async def get_tree():
-    """Get all paths inside the inbox folder(s)."""
+async def get_tree() -> Response[list[InboxTreeFolder]]:
+    """Get all paths inside the inbox folder(s) with status 
+    and minimal session data appended.
+    """
 
     inbox_folders = get_inbox_folders()
 
     # Create dict representation of inbox folders
     folders: list[Folder] = []
     for folder in inbox_folders:
+        log.info(f"Processing inbox folder: {folder}")
         folders.append(path_to_folder(folder, subdirs=False))
 
-    return jsonify(folders)
+    folder_hashes: list[str] = []
+    folder_paths: list[str] = []
+
+    # Collect album folder hashes and paths for lookups
+    def record_folder_tree(folder: FileSystemItem):
+        if isinstance(folder, Folder):
+            if folder.is_album:
+                folder_hashes.append(folder.hash)
+                folder_paths.append(folder.full_path)
+            for child in folder.children:
+                record_folder_tree(child)
+
+    for folder in folders:
+        # Keep the configured inbox root in the response, but only album
+        # directories participate in status/session lookup.
+        record_folder_tree(folder)
+
+    status = await retrieve_folder_status(
+        folder_hashes=folder_hashes, folder_paths=folder_paths
+    )
+
+    status_by_hash = {status_update.hash: status_update for status_update in status}
+
+    minimal = await retrieve_folder_minimal(folder_hashes, folder_paths, None)
+
+
+    def serialize_tree_item(item: FileSystemItem) -> InboxTreeFolder:
+        result: dict[str, object] = {
+            "type": item.type,
+            "full_path": item.full_path,
+            "hash": item.hash,
+            "is_album": item.is_album,
+        }
+
+        if isinstance(item, Folder):
+            # Only append status and minimal if the folder is an album
+            if item.is_album:
+                minimal_item = minimal.get(item.hash)
+                status_update = status_by_hash.get(item.hash)
+                result["minimal"] = (
+                    dict(minimal_item) if minimal_item is not None else None
+                )
+                result["status"] = (
+                    status_update.status
+                    if status_update is not None
+                    else FolderStatus.UNKNOWN
+                )
+                result["exc"] = (
+                    status_update.exc if status_update is not None else None
+                )
+            result["children"] = [
+                serialize_tree_item(child) for child in item.children
+            ]
+
+        return cast(InboxTreeFolder, result)
+
+    return jsonify([serialize_tree_item(folder) for folder in folders])
 
 
 @inbox_bp.route("/folder", methods=["POST"])

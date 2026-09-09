@@ -4,10 +4,14 @@ import { useStatusSocket } from '@/components/common/websocket/status';
 import { DuplicateAction } from '@/components/import/candidates/actions';
 import { FolderSelectionContext } from '@/components/inbox/folderSelectionContext';
 import {
+    Archive,
     CandidateChoiceFallback,
     EnqueueKind,
+    Folder,
     FolderStatus,
     FolderStatusUpdate,
+    InboxTreeArchive,
+    InboxTreeFolder,
     JobStatusUpdate,
     MinimalSession,
     Search,
@@ -461,6 +465,44 @@ export const statusQueryOptions = (folderHash: string, folderPath: string) => ({
         );
     },
 });
+
+/** Populate the canonical status cache from the inbox tree response. */
+export function hydrateStatuses(
+    folders: Array<InboxTreeFolder | InboxTreeArchive>
+): void {
+    for (const folder of folders) {
+        const status =
+            folder.type === 'directory'
+                ? (folder.status ?? FolderStatus.UNKNOWN)
+                : FolderStatus.UNKNOWN;
+        const exc = folder.type === 'directory' ? (folder.exc ?? null) : null;
+
+        queryClient.setQueryData<FolderStatusUpdate>(
+            statusQueryOptions(folder.hash, folder.full_path).queryKey,
+            {
+                path: folder.full_path,
+                hash: folder.hash,
+                status,
+                exc,
+                event: 'folder_status_update',
+            }
+        );
+    }
+}
+
+/** Populate the canonical minimal session data cache from the inbox tree response. */
+export function hydrateMinimalSessionData(
+    folders: Array<InboxTreeFolder | InboxTreeArchive>
+): void {
+    for (const folder of folders) {
+        const minimal = folder.minimal ?? null;
+
+        queryClient.setQueryData<MinimalSession | null>(
+            minimalSessionQueryOptions(folder.hash, folder.full_path).queryKey,
+            minimal ?? null
+        );
+    }
+}
 
 /**
  * Fetch statuses for many folders in a single request and populate each

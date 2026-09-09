@@ -12,7 +12,7 @@ from beets_flask.invoker.enqueue import (
     Search,
 )
 from beets_flask.server.routes.db_models.session import MinimalSession
-from beets_flask.server.routes.inbox import InboxStats
+from beets_flask.server.routes.inbox import InboxStats, InboxTreeFolder
 from beets_flask.server.routes.library.resources import (
     AlbumResponse,
     AlbumResponseExpanded,
@@ -55,6 +55,7 @@ builder.add(File)
 builder.add(Archive)
 builder.add(Folder)
 builder.add(InboxStats)
+builder.add(InboxTreeFolder)
 
 
 # Invoker / enqueue

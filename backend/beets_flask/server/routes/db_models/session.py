@@ -154,111 +154,9 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         folder_hashes = request.args.getlist("folder_hash")
         folder_paths = request.args.getlist("folder_path")
 
-        if len(folder_hashes) == 0:
-            raise InvalidUsageException(
-                "Provide at least one folder hash", status_code=400
-            )
+        data = await retrieve_folder_minimal(folder_hashes, folder_paths, self)
 
-        if len(folder_hashes) != len(folder_paths):
-            raise InvalidUsageException(
-                "Provide the same number of folder hashes and paths", status_code=400
-            )
-
-        with db_session_factory() as db_session:
-            data: dict[str, MinimalSession] = {}
-            session_ids = self.model.get_ids_by_hash_and_path(
-                list(zip(folder_hashes, folder_paths)),
-                db_session,
-            )
-            resolved_ids = [sid for sid in session_ids if sid is not None]
-            if resolved_ids:
-                # Rank candidates within each session by their normalized
-                # distance (CandidateStateInDb.normalized_distance) so only the
-                # best candidate per session is loaded. Select just the scalar
-                # fields we need - no ORM entities, so no tasks or matches are
-                # loaded.
-                #
-                # AlbumMatch/TrackMatch are joined-table subclasses of Match:
-                # aliased(..., flat=True) prevents SQLAlchemy from
-                # auto-generating overlapping-table aliases.
-                album_match = aliased(AlbumMatch, flat=True)
-                track_match = aliased(TrackMatch, flat=True)
-
-                # build the CTE/subquery for ranking
-                best_candidate = (
-                    select(
-                        SessionStateInDb.folder_hash,
-                        SessionStateInDb.id.label("session_id"),
-                        CandidateStateInDb.duplicate_ids,
-                        CandidateStateInDb.normalized_distance.label("distance"),
-                        func.coalesce(
-                            AlbumInfo.data["data_source"].as_string(),
-                            TrackInfo.data["data_source"].as_string(),
-                        ).label("data_source"),
-                        func.row_number()
-                        .over(
-                            partition_by=SessionStateInDb.id,
-                            order_by=CandidateStateInDb.normalized_distance,
-                        )
-                        .label("rn"),
-                    )
-                    .select_from(CandidateStateInDb)
-                    .join(
-                        TaskStateInDb,
-                        TaskStateInDb.id == CandidateStateInDb.task_id,
-                    )
-                    .join(
-                        SessionStateInDb,
-                        SessionStateInDb.id == TaskStateInDb.session_id,
-                    )
-                    .join(Match, Match.id == CandidateStateInDb.match_id)
-                    .join(Distance, Distance.id == Match.distance_id)
-                    # we need outer joins because of the polymorphism of match
-                    .outerjoin(album_match, album_match.id == Match.id)
-                    .outerjoin(AlbumInfo, AlbumInfo.id == album_match.info_id)
-                    .outerjoin(track_match, track_match.id == Match.id)
-                    .outerjoin(TrackInfo, TrackInfo.id == track_match.info_id)
-                    .where(SessionStateInDb.id.in_(resolved_ids))
-                    .subquery()
-                )
-
-                stmt = select(
-                    best_candidate.c.session_id,
-                    best_candidate.c.folder_hash,
-                    best_candidate.c.duplicate_ids,
-                    best_candidate.c.distance,
-                    best_candidate.c.data_source,
-                ).where(best_candidate.c.rn == 1)
-                rows = db_session.execute(stmt).all()
-
-                rows_by_session = {
-                    session_id: (folder_hash, duplicate_ids, distance, data_source)
-                    for session_id, folder_hash, duplicate_ids, distance, data_source in rows
-                }
-
-                for session_id, folder_hash_org in zip(session_ids, folder_hashes):
-                    if session_id is None:
-                        continue
-                    row = rows_by_session.get(session_id)
-                    if row is None:
-                        continue
-                    folder_hash_sess, duplicate_ids, distance, data_source = row
-                    dup_ids = (
-                        [int(dup_id) for dup_id in duplicate_ids.split(";")]
-                        if duplicate_ids
-                        else []
-                    )
-                    data[folder_hash_org] = MinimalSession(
-                        session_id=session_id,
-                        folder_hash=folder_hash_sess,
-                        best_candidate=MinimalBestCandidateInfo(
-                            duplicates=dup_ids,
-                            distance=distance,
-                            data_source=data_source,
-                        ),
-                    )
-
-            return jsonify(data)
+        return jsonify(data)
 
     async def enqueue(self):
         """Start a new session for a given folder hash or enqueue a new job for an existing session.
@@ -371,59 +269,174 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         folder_hashes = request.args.getlist("folder_hash")
         folder_paths = request.args.getlist("folder_path")
 
-        if len(folder_hashes) != len(folder_paths):
-            raise InvalidUsageException(
-                "Provide the same number of folder hashes and paths", status_code=400
-            )
-
-        stats: list[FolderStatusUpdate] = []
-
-        if len(folder_hashes) == 0:
-            stmt = select(FolderInDb).order_by(FolderInDb.created_at.desc())
-            with db_session_factory() as session:
-                folders = session.execute(stmt).scalars().all()
-                folder_hashes = [f.hash for f in folders]
-                folder_paths = [f.full_path for f in folders]
-
-        log.debug(f"Checking status for {len(folder_hashes)} folders")
-
-        for hash, path in zip(folder_hashes, folder_paths):
-            log.debug(f"Checking folder status via session from db: {path} ({hash})")
-            db_status, db_date, db_exc = _get_folder_status_from_db(hash)
-            log.debug(f"Found {db_status=} {db_date=} {db_exc=}")
-
-            log.debug(f"Checking folder status via job queues: {path} ({hash})")
-            job_status, job_date, job_exc = _get_folder_status_from_queues(hash)
-            log.debug(f"Found {job_status=} {job_date=} {job_exc=}")
-
-            # just for None casting, timezones prevent comparing
-            if db_date is not None:
-                db_date = db_date.replace(tzinfo=None)
-            if job_date is not None:
-                job_date = job_date.replace(tzinfo=None)
-
-            status = FolderStatus.UNKNOWN
-            exc = None
-            if db_date is None and job_date is None:
-                pass
-            elif (db_date or datetime.min) + timedelta(seconds=1) >= (
-                job_date or datetime.min
-            ):
-                # Sometimes, the job_date might be some .7secs after db_date and would
-                # get favoured, so we added a second of leeway.
-                log.debug(f"Using status from DB: {db_date} >= {job_date}")
-                status = db_status
-                exc = db_exc
-            else:
-                log.debug(f"Using status from job queue : {db_date} < {job_date}")
-                status = job_status
-                exc = job_exc
-
-            stats.append(
-                FolderStatusUpdate(path=str(path), hash=hash, status=status, exc=exc)
-            )
+        stats = await retrieve_folder_status(folder_hashes, folder_paths)
 
         return jsonify(stats)
+
+async def retrieve_folder_status(folder_hashes: list[str], folder_paths: list[str]) -> list[FolderStatusUpdate]:
+    if len(folder_hashes) != len(folder_paths):
+        raise InvalidUsageException(
+            "Provide the same number of folder hashes and paths", status_code=400
+        )
+
+    stats: list[FolderStatusUpdate] = []
+
+    if len(folder_hashes) == 0:
+        stmt = select(FolderInDb).order_by(FolderInDb.created_at.desc())
+        with db_session_factory() as session:
+            folders = session.execute(stmt).scalars().all()
+            folder_hashes = [f.hash for f in folders]
+            folder_paths = [f.full_path for f in folders]
+
+    log.debug(f"Checking status for {len(folder_hashes)} folders")
+
+    for hash, path in zip(folder_hashes, folder_paths):
+        log.debug(f"Checking folder status via session from db: {path} ({hash})")
+        db_status, db_date, db_exc = _get_folder_status_from_db(hash)
+        log.debug(f"Found {db_status=} {db_date=} {db_exc=}")
+
+        log.debug(f"Checking folder status via job queues: {path} ({hash})")
+        job_status, job_date, job_exc = _get_folder_status_from_queues(hash)
+        log.debug(f"Found {job_status=} {job_date=} {job_exc=}")
+
+        # just for None casting, timezones prevent comparing
+        if db_date is not None:
+            db_date = db_date.replace(tzinfo=None)
+        if job_date is not None:
+            job_date = job_date.replace(tzinfo=None)
+
+        status = FolderStatus.UNKNOWN
+        exc = None
+        if db_date is None and job_date is None:
+            pass
+        elif (db_date or datetime.min) + timedelta(seconds=1) >= (
+            job_date or datetime.min
+        ):
+            # Sometimes, the job_date might be some .7secs after db_date and would
+            # get favoured, so we added a second of leeway.
+            log.debug(f"Using status from DB: {db_date} >= {job_date}")
+            status = db_status
+            exc = db_exc
+        else:
+            log.debug(f"Using status from job queue : {db_date} < {job_date}")
+            status = job_status
+            exc = job_exc
+
+        stats.append(
+            FolderStatusUpdate(path=str(path), hash=hash, status=status, exc=exc),
+        )
+    return stats
+
+async def retrieve_folder_minimal(folder_hashes: list[str], folder_paths: list[str], self: SessionAPIBlueprint | None = None) -> dict[str, MinimalSession]:
+    if len(folder_hashes) == 0:
+        raise InvalidUsageException(
+            "Provide at least one folder hash", status_code=400
+        )
+
+    if len(folder_hashes) != len(folder_paths):
+        raise InvalidUsageException(
+            "Provide the same number of folder hashes and paths", status_code=400
+        )
+
+    with db_session_factory() as db_session:
+        data: dict[str, MinimalSession] = {}
+        session_ids = self.model.get_ids_by_hash_and_path(
+            list(zip(folder_hashes, folder_paths)),
+            db_session,
+        ) if isinstance(self, SessionAPIBlueprint) else SessionStateInDb.get_ids_by_hash_and_path(
+                    list(zip(folder_hashes, folder_paths)),
+                    db_session,
+                )
+        
+        resolved_ids = [sid for sid in session_ids if sid is not None]
+        if resolved_ids:
+            # Rank candidates within each session by their normalized
+            # distance (CandidateStateInDb.normalized_distance) so only the
+            # best candidate per session is loaded. Select just the scalar
+            # fields we need - no ORM entities, so no tasks or matches are
+            # loaded.
+            #
+            # AlbumMatch/TrackMatch are joined-table subclasses of Match:
+            # aliased(..., flat=True) prevents SQLAlchemy from
+            # auto-generating overlapping-table aliases.
+            album_match = aliased(AlbumMatch, flat=True)
+            track_match = aliased(TrackMatch, flat=True)
+
+            # build the CTE/subquery for ranking
+            best_candidate = (
+                select(
+                    SessionStateInDb.folder_hash,
+                    SessionStateInDb.id.label("session_id"),
+                    CandidateStateInDb.duplicate_ids,
+                    CandidateStateInDb.normalized_distance.label("distance"),
+                    func.coalesce(
+                        AlbumInfo.data["data_source"].as_string(),
+                        TrackInfo.data["data_source"].as_string(),
+                    ).label("data_source"),
+                    func.row_number()
+                    .over(
+                        partition_by=SessionStateInDb.id,
+                        order_by=CandidateStateInDb.normalized_distance,
+                    )
+                    .label("rn"),
+                )
+                .select_from(CandidateStateInDb)
+                .join(
+                    TaskStateInDb,
+                    TaskStateInDb.id == CandidateStateInDb.task_id,
+                )
+                .join(
+                    SessionStateInDb,
+                    SessionStateInDb.id == TaskStateInDb.session_id,
+                )
+                .join(Match, Match.id == CandidateStateInDb.match_id)
+                .join(Distance, Distance.id == Match.distance_id)
+                # we need outer joins because of the polymorphism of match
+                .outerjoin(album_match, album_match.id == Match.id)
+                .outerjoin(AlbumInfo, AlbumInfo.id == album_match.info_id)
+                .outerjoin(track_match, track_match.id == Match.id)
+                .outerjoin(TrackInfo, TrackInfo.id == track_match.info_id)
+                .where(SessionStateInDb.id.in_(resolved_ids))
+                .subquery()
+            )
+
+            stmt = select(
+                best_candidate.c.session_id,
+                best_candidate.c.folder_hash,
+                best_candidate.c.duplicate_ids,
+                best_candidate.c.distance,
+                best_candidate.c.data_source,
+            ).where(best_candidate.c.rn == 1)
+            rows = db_session.execute(stmt).all()
+
+            rows_by_session = {
+                session_id: (folder_hash, duplicate_ids, distance, data_source)
+                for session_id, folder_hash, duplicate_ids, distance, data_source in rows
+            }
+
+            for session_id, folder_hash_org in zip(session_ids, folder_hashes):
+                if session_id is None:
+                    continue
+                row = rows_by_session.get(session_id)
+                if row is None:
+                    continue
+                folder_hash_sess, duplicate_ids, distance, data_source = row
+                dup_ids = (
+                    [int(dup_id) for dup_id in duplicate_ids.split(";")]
+                    if duplicate_ids
+                    else []
+                )
+                data[folder_hash_org] = MinimalSession(
+                    session_id=session_id,
+                    folder_hash=folder_hash_sess,
+                    best_candidate=MinimalBestCandidateInfo(
+                        duplicates=dup_ids,
+                        distance=distance,
+                        data_source=data_source,
+                    ),
+                )
+    return data
+
 
 
 def _get_folder_status_from_db(

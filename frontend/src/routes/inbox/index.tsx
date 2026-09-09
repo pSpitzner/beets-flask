@@ -13,7 +13,7 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { Action, useConfig } from '@/api/config';
 import { inboxQueryOptions, walkFolder } from '@/api/inbox';
-import { ensureMinimalSessions, ensureStatuses } from '@/api/session';
+import { hydrateMinimalSessionData, hydrateStatuses } from '@/api/session';
 import { MatchChip, StyledChip } from '@/components/common/chips';
 import { Dialog } from '@/components/common/dialogs';
 import {
@@ -32,7 +32,7 @@ import { InboxCard } from '@/components/inbox/cards/inboxCard';
 import { FileUploadProvider } from '@/components/inbox/fileUpload/context';
 import { DropZone } from '@/components/inbox/fileUpload/dropzone';
 import { FolderSelectionProvider } from '@/components/inbox/folderSelectionContext';
-import { Archive, Folder } from '@/pythonTypes';
+import { Folder, InboxTreeLeaf, InboxTreeFolder } from '@/pythonTypes';
 
 /* ---------------------------------- Route --------------------------------- */
 
@@ -41,33 +41,24 @@ export const Route = createFileRoute('/inbox/')({
     loader: async ({ context }) => {
         // Load inboxes
         const inboxes =
-            await context.queryClient.ensureQueryData(inboxQueryOptions());
+            await context.queryClient.fetchQuery(inboxQueryOptions());
 
-        // Filter: all top level folders/archives in inboxes
-        const prefetch_folders: Array<Folder | Archive> = [];
+        // Collect all folders and archives so every status query can be hydrated
+        // from the tree response.
+        const prefetch_folders: Array<InboxTreeFolder | InboxTreeLeaf> = [];
         for (const inbox of inboxes) {
-            for (const child of walkFolder(inbox, 1)) {
+            for (const child of walkFolder(inbox)) {
                 if (child.type === 'directory' || child.type === 'archive') {
                     prefetch_folders.push(child);
                 }
             }
         }
-        // Prefetch minimal information for all sessions within the top level inbox
-        // folders. This prevents waterfall loading states
-        await Promise.all([
-            ensureStatuses(
-                prefetch_folders.map((f) => ({
-                    hash: f.hash,
-                    path: f.full_path,
-                }))
-            ),
-            ensureMinimalSessions(
-                prefetch_folders.map((f) => ({
-                    hash: f.hash,
-                    path: f.full_path,
-                }))
-            ),
-        ]);
+        // Hydrate status queries from the tree response. This avoids a second status request.
+        hydrateStatuses(prefetch_folders);
+
+        // Hydrate minimal session queries from the same tree response. This also
+        // caches null for folders without a session, preventing fallback fetches.
+        hydrateMinimalSessionData(prefetch_folders);
     },
 });
 

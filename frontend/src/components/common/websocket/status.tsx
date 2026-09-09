@@ -8,7 +8,7 @@
  *
  */
 
-import { createContext, useContext, useEffect } from 'react';
+import { createContext, useContext, useEffect, useRef } from 'react';
 import { type QueryClient } from '@tanstack/react-query';
 
 import { queryClient } from '@/api/common';
@@ -32,6 +32,9 @@ export function StatusContextProvider({
     client: QueryClient;
 }) {
     const { socket, isConnected } = useSocket('status');
+    const inboxRefreshTimeout = useRef<ReturnType<typeof setTimeout> | null>(
+        null
+    );
 
     useEffect(() => {
         if (!socket) return;
@@ -48,11 +51,17 @@ export function StatusContextProvider({
             invalidateSession(updateData.hash).catch(console.error);
         }
 
-        async function handleFileSystemUpdate(updateData: FileSystemUpdate) {
+        function handleFileSystemUpdate(updateData: FileSystemUpdate) {
             console.log('FileSystemUpdate', updateData);
-            await queryClient.invalidateQueries({
-                queryKey: ['inbox'],
-            });
+            if (inboxRefreshTimeout.current !== null) {
+                clearTimeout(inboxRefreshTimeout.current);
+            }
+            inboxRefreshTimeout.current = setTimeout(() => {
+                void queryClient.invalidateQueries({
+                    queryKey: ['inbox'],
+                });
+                inboxRefreshTimeout.current = null;
+            }, 250);
         }
 
         socket.on('folder_status_update', handleFolderStatusUpdate);
@@ -61,6 +70,10 @@ export function StatusContextProvider({
         return () => {
             socket.off('folder_status_update', handleFolderStatusUpdate);
             socket.off('file_system_update', handleFileSystemUpdate);
+            if (inboxRefreshTimeout.current !== null) {
+                clearTimeout(inboxRefreshTimeout.current);
+                inboxRefreshTimeout.current = null;
+            }
         };
     }, [socket, client]);
 
