@@ -274,7 +274,6 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         return jsonify(stats)
 
 async def retrieve_folder_status(folder_hashes: list[str], folder_paths: list[str]) -> list[FolderStatusUpdate]:
-    log.info(f"Getting status for folder_hashes: {len(folder_hashes)} and folder_paths: {len(folder_paths)}")
     if len(folder_hashes) != len(folder_paths):
         raise InvalidUsageException(
             "Provide the same number of folder hashes and paths", status_code=400
