@@ -6,7 +6,14 @@
 
 import { UseMutationOptions } from '@tanstack/react-query';
 
-import type { FileSystemItem, Folder, InboxStats } from '@/pythonTypes';
+import type {
+    FileSystemItem,
+    Folder,
+    InboxStats,
+    InboxTreeArchive,
+    InboxTreeLeaf,
+    InboxTreeFolder,
+} from '@/pythonTypes';
 
 import { APIError, queryClient } from './common';
 
@@ -18,7 +25,7 @@ export const inboxQueryOptions = () => ({
     staleTime: Infinity,
     queryFn: async () => {
         const response = await fetch(`/inbox/tree`);
-        return (await response.json()) as Folder[];
+        return (await response.json()) as InboxTreeFolder[];
     },
 });
 
@@ -96,7 +103,7 @@ export const deleteFoldersMutationOptions: UseMutationOptions<
         folderHashes: string[];
     },
     {
-        previousInbox: Folder[] | undefined;
+        previousInbox: InboxTreeFolder[] | undefined;
     }
 > = {
     mutationFn: async ({ folderPaths, folderHashes }) => {
@@ -117,9 +124,11 @@ export const deleteFoldersMutationOptions: UseMutationOptions<
         // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
         await queryClient.cancelQueries({ queryKey: ['inbox'] });
         // Snapshot the previous value
-        const previousInbox = queryClient.getQueryData<Folder[]>(['inbox']);
+        const previousInbox = queryClient.getQueryData<InboxTreeFolder[]>([
+            'inbox',
+        ]);
         // Optimistically update to the new value
-        queryClient.setQueryData<Folder[]>(['inbox'], (old) => {
+        queryClient.setQueryData<InboxTreeFolder[]>(['inbox'], (old) => {
             if (!old) return old;
             // needs structured clone to trigger the rerender and avoid setstate issues
             const new_folders = structuredClone(old);
@@ -173,17 +182,25 @@ function deleteFromFolder(
  *              the root folder, `1` yields the root and its immediate
  *              children, etc. Defaults to `Infinity` (full walk).
  */
-export function* walkFolder(
+export function walkFolder(
+    folder: InboxTreeFolder,
+    depth?: number
+): Generator<InboxTreeFolder | InboxTreeFile | InboxTreeArchive>;
+export function walkFolder(
     folder: Folder,
+    depth?: number
+): Generator<FileSystemItem>;
+export function* walkFolder(
+    folder: Folder | InboxTreeFolder,
     depth: number = Infinity
-): Generator<FileSystemItem> {
+): Generator<FileSystemItem | InboxTreeFolder | InboxTreeFile | InboxTreeArchive> {
     yield folder;
     if (depth <= 0) {
         return;
     }
     for (const child of folder.children) {
         if (child.type === 'directory') {
-            yield* walkFolder(child as Folder, depth - 1);
+            yield* walkFolder(child as Folder | InboxTreeFolder, depth - 1);
         } else {
             yield child;
         }

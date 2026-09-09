@@ -5,6 +5,7 @@
  */
 export type File = FileSystemItem;
 
+
 export interface SerializedSessionState {
     id: string;
     created_at: Date;
@@ -28,18 +29,6 @@ export interface Search {
     search_name: null | string;
 }
 
-export interface MinimalSession {
-    session_id: string;
-    folder_hash: string;
-    best_candidate: MinimalBestCandidateInfo;
-}
-
-export interface MinimalBestCandidateInfo {
-    data_source: string;
-    distance: number;
-    duplicates: Array<number>;
-}
-
 export interface LibraryStats {
     libraryPath: string;
     items: number;
@@ -59,6 +48,17 @@ export interface JobStatusUpdate {
     job_metas: Array<JobMeta>;
     exc: SerializedException | null;
     event: "job_status_update";
+}
+
+export interface InboxTreeFolder {
+    type: "directory";
+    full_path: string;
+    hash: string;
+    is_album: boolean;
+    status?: number;
+    exc?: SerializedException | null;
+    minimal?: MinimalSession | null;
+    children: Array<InboxTreeFolder | InboxTreeLeaf>;
 }
 
 export interface InboxStats {
@@ -249,6 +249,18 @@ export interface InboxFolderSchema {
     autotag: "auto" | "bootleg" | "off" | "preview";
 }
 
+export interface MinimalBestCandidateInfo {
+    data_source: string;
+    distance: number;
+    duplicates: Array<number>;
+}
+
+export interface MinimalSession {
+    session_id: string;
+    folder_hash: string;
+    best_candidate: MinimalBestCandidateInfo;
+}
+
 export interface Metadata {
     artist: null | string;
     album: null | string;
@@ -370,6 +382,13 @@ export interface ItemInfo extends MusicInfo {
     path: null | string;
     bitrate: null | number;
     format: null | string;
+}
+
+export interface InboxTreeLeaf {
+    type: "archive" | "file";
+    full_path: string;
+    hash: string;
+    is_album: boolean;
 }
 
 export interface FileSystemItem {
