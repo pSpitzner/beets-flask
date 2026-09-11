@@ -8,7 +8,6 @@ from __future__ import annotations
 import base64
 import datetime
 import os
-from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from functools import wraps
 from typing import (
@@ -26,17 +25,19 @@ from beets import util as beets_util
 from beets.dbcore import Model, Query, Results
 from beets.dbcore.sort import Sort
 from beets.library import Album, Item, Library, parse_query_string
-from quart import Blueprint, Response, abort, g, json, jsonify, request
+from quart import Blueprint, Response, abort, json, jsonify, request
 
 from beets_flask.config import get_config
 from beets_flask.logger import log
-from beets_flask.server.exceptions import NotFoundException
-from beets_flask.server.routes.exception import InvalidUsageException
+from beets_flask.server.exceptions import NotFoundError
+from beets_flask.server.routes.exception import InvalidUsageError
 from beets_flask.server.utility import pop_query_param
+
+from . import g
 
 if TYPE_CHECKING:
     # For type hinting the global g object
-    from . import g
+    from collections.abc import Awaitable, Callable, Sequence
 
 
 resource_bp = Blueprint("resource", __name__)
@@ -66,7 +67,7 @@ def minimal_response():
     return request.args.get("minimal") is not None
 
 
-def resource_query(
+def resource_query[T: Item | Album](
     type: type[T], patchable: bool = False
 ) -> Callable[..., Callable[[str], Awaitable[Response]]]:
     """Decorate a function to handle RESTful HTTP queries for resources."""
@@ -118,7 +119,7 @@ def resource_query(
 P = ParamSpec("P")
 
 
-def resource(
+def resource[T: Item | Album](
     type: type[T], patchable: bool = False
 ) -> Callable[..., Callable[P, Awaitable[Response]]]:
     """Decorate a function to handle RESTful HTTP requests for resources."""
@@ -164,7 +165,7 @@ def resource(
 async def album(id: int):
     item = g.lib.get_album(id)
     if not item:
-        raise NotFoundException(f"Album with beets_id:'{id}' not found in beets db.")
+        raise NotFoundError(f"Album with beets_id:'{id}' not found in beets db.")
     return item
 
 
@@ -177,7 +178,7 @@ async def album_by_bf_id(bf_id: str):
     """
     albums = g.lib.albums(f"gui_import_id:{bf_id}")
     if len(albums) == 0:
-        raise NotFoundException(
+        raise NotFoundError(
             f"Album with gui_import_id:'{bf_id}' not found in beets db."
         )
 
@@ -220,7 +221,7 @@ async def all_albums(query: str = ""):
     )
 
     if len(params) > 0:
-        raise InvalidUsageException(
+        raise InvalidUsageError(
             "Unexpected query parameters: , ".join(params.keys())
         )
 
@@ -264,7 +265,7 @@ async def albums_by_artist(artist_name: str):
 
     with g.lib.transaction() as tx:
         rows = tx.query(
-            f"SELECT id FROM albums WHERE instr(albumartist, ?) > 0",
+            "SELECT id FROM albums WHERE instr(albumartist, ?) > 0",
             (artist_name,),
         )
 
@@ -287,7 +288,7 @@ async def albums_by_artist(artist_name: str):
 async def item(id: int):
     item = g.lib.get_item(id)
     if not item:
-        raise NotFoundException(f"Item with beets_id:'{id}' not found in beets db.")
+        raise NotFoundError(f"Item with beets_id:'{id}' not found in beets db.")
 
     return item
 
@@ -320,7 +321,7 @@ async def all_items(query: str = ""):
     )
 
     if len(params) > 0:
-        raise InvalidUsageException(
+        raise InvalidUsageError(
             "Unexpected query parameters: , ".join(params.keys())
         )
 
@@ -356,8 +357,8 @@ async def all_items(query: str = ""):
     )
 
 
-# Items by artist are handled slightly differently, as they are not a beets model but can be
-# derived from the items.
+# Items by artist are handled slightly differently, as they are not a beets
+# model but can be derived from the items.
 @resource_bp.route("/artist/<path:artist_name>/items", methods=["GET"])
 async def items_by_artist(artist_name: str):
     """Get all items for a specific artist."""
@@ -365,7 +366,7 @@ async def items_by_artist(artist_name: str):
 
     with g.lib.transaction() as tx:
         rows = tx.query(
-            f"SELECT id FROM items WHERE instr(artist, ?) > 0",
+            "SELECT id FROM items WHERE instr(artist, ?) > 0",
             (artist_name,),
         )
 
@@ -389,7 +390,7 @@ def delete_entities(entities: Sequence[Item | Album], delete_files=False) -> Non
     [entity.remove(delete=delete_files) for entity in entities]
 
 
-def update_entities(entities: Sequence[T], data: dict) -> Sequence[T]:
+def update_entities[T: Item | Album](entities: Sequence[T], data: dict) -> Sequence[T]:
     """Helper function to update entities."""
     if get_config().data.gui.library.readonly:
         raise ValueError("Library is read-only")
@@ -439,7 +440,7 @@ class Cursor:
             d = json.loads(bytes.fromhex(s).decode("utf-8"))
             # TODO: Validate the structure of d
             return Cursor(d["c"], d["d"], d.get("v", None), d.get("i", None))
-        except Exception as e:
+        except Exception:
             raise ValueError(f"Invalid cursor string: {s}")
 
     def causes(self) -> tuple[str, Sequence[Any]]:
@@ -459,7 +460,8 @@ class Cursor:
             eq_sign = ">"
 
         return (
-            f"({self.order_by_column} {eq_sign} ?) OR ({self.order_by_column} = ? AND id {eq_sign} ?)",
+            f"({self.order_by_column} {eq_sign} ?) OR "
+            f"({self.order_by_column} = ? AND id {eq_sign} ?)",
             (
                 self.last_order_by_value,
                 self.last_order_by_value,
@@ -470,7 +472,10 @@ class Cursor:
     def order_by_clause(self) -> str:
         """Return the order by clause for the query."""
 
-        return f"{self.order_by_column} {self.order_by_direction}, id {self.order_by_direction}"
+        return (
+            f"{self.order_by_column} {self.order_by_direction}, "
+            f"id {self.order_by_direction}"
+        )
 
 
 class PaginatedQuery(Query, Sort):
@@ -616,9 +621,9 @@ class ItemSource(TypedDict):
 source_prefixes = ["mb", "spotify", "tidal", "discogs"]
 
 
-def _repr_Item(item: Item | None, minimal=False) -> ItemResponse | ItemResponseMinimal:
+def _repr_item(item: Item | None, minimal=False) -> ItemResponse | ItemResponseMinimal:
     if not item:
-        raise NotFoundException("Item not found")
+        raise NotFoundError("Item not found")
 
     out: dict[str, Any] = dict()
 
@@ -788,7 +793,7 @@ class AlbumSource(TypedDict):
     extra: NotRequired[dict[str, str]]
 
 
-def _rep_Album(
+def _rep_album(
     album: Album, expand=False, minimal=False
 ) -> AlbumResponse | AlbumResponseMinimal:
     """Get a flat -- i.e., JSON-ish -- representation of a beets Item/Album object.
@@ -803,7 +808,7 @@ def _rep_Album(
         keys = ["id", "name", "albumartist", "year", "added"]
     else:
         # Use all keys
-        keys = list(album.keys()) + ["name"]
+        keys = [*list(album.keys()), "name"]
 
         # Parse sources
         out["sources"] = list()
@@ -869,7 +874,7 @@ def _rep_Album(
             out[key] = datetime.datetime.fromtimestamp(out[key])
 
     if expand:
-        out["items"] = [_repr_Item(item, minimal) for item in album.items()]
+        out["items"] = [_repr_item(item, minimal) for item in album.items()]
 
     return cast(AlbumResponse | AlbumResponseMinimal, out)
 
@@ -882,12 +887,12 @@ def _rep(entity: Item | Album | None, expand=False, minimal=False):
     """
 
     if not entity:
-        raise NotFoundException("Entity not found")
+        raise NotFoundError("Entity not found")
 
     if isinstance(entity, Item):
-        return _repr_Item(entity, minimal)
+        return _repr_item(entity, minimal)
     elif isinstance(entity, Album):
-        return _rep_Album(entity, expand, minimal)
+        return _rep_album(entity, expand, minimal)
     else:
         raise ValueError(f"Unknown entity type: {type(entity)}")
 

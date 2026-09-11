@@ -49,7 +49,8 @@ class Base(DeclarativeBase):
         close_after = False
         if session is None:
             log.debug(
-                "No session provided, you will not be able to make changes to the database."
+                "No session provided, you will not be able to make changes "
+                "to the database."
             )
             close_after = True
             from beets_flask.database.setup import session_factory
@@ -71,7 +72,8 @@ class Base(DeclarativeBase):
         close_after = False
         if session is None:
             log.debug(
-                "No session provided, you will not be able to make changes to the database."
+                "No session provided, you will not be able to make changes "
+                "to the database."
             )
             close_after = True
             from beets_flask.database.setup import session_factory

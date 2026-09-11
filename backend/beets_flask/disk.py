@@ -5,12 +5,12 @@ import os
 import re
 import subprocess
 from abc import ABC, abstractmethod
-from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from fnmatch import fnmatch
 from functools import cache
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Literal,
 )
 
@@ -23,6 +23,9 @@ from beets_flask.config import get_config
 from beets_flask.dirhash_custom import archive_hash, dirhash_c
 from beets_flask.logger import log
 from beets_flask.utility import AUDIO_EXTENSIONS
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator, Sequence
 
 # Regex pattern to exclude hidden files (files starting with ".")
 audio_regex = re.compile(
@@ -235,7 +238,8 @@ def is_archive_file(path: Path | str) -> bool:
 
     It seems like there is a memory issue with `tarfile.is_tarfile`
     (see https://github.com/metasauce/beets-flask/issues/258). We try
-    to avoid this by only checking the file extension here, and not trying to open the file.
+    to avoid this by only checking the file extension here, and not trying
+    to open the file.
     """
     allowed_extensions = allowed_archive_extensions()
     return Path(path).suffix.lower() in allowed_extensions
@@ -278,11 +282,14 @@ def path_to_folder(root_dir: Path | str, subdirs=True) -> Folder:
     root_dir : str
         The root directory to start from.
     subdirs : bool, optional
-        Whether to mark qualifying subfolders of an album as album folders themselves. If true, e.g. for `/album/CD1/track.mp3` both `/album/` and `/album/CD1/` are flagged. Defaults to True.
+        Whether to mark qualifying subfolders of an album as album folders
+        themselves. If true, e.g. for `/album/CD1/track.mp3` both `/album/`
+        and `/album/CD1/` are flagged. Defaults to True.
 
     Returns
     -------
         dict: The nested dict structure.
+
     """
 
     return Folder.from_path(root_dir, subdirs=subdirs)
@@ -298,12 +305,14 @@ def album_folders_from_track_paths(
     track_paths : list[Path]
         list of track paths, e.g. mp3 files.
     use_parent_for_multidisc : bool, optional
-        When files are in an album folder that might be a multi-disc folder (e.g. `/album/cd1`),
-        return the parent (`/album`) instead of the lowest-level-folder (`/cd1`). Defaults to True.
+        When files are in an album folder that might be a multi-disc folder
+        (e.g. `/album/cd1`), return the parent (`/album`) instead of the
+        lowest-level-folder (`/cd1`). Defaults to True.
 
     Returns
     -------
         list[str]: album folders
+
     """
 
     folders_to_check: set[Path] = set()
@@ -343,15 +352,17 @@ def album_folders_from_track_paths(
 def is_album_folder(path: Path | str):
     """Check if a path is an album folder.
 
-    Returns true if the path is detected as an album by beets, or if it is an archive file.
+    Returns true if the path is detected as an album by beets, or if it is an
+    archive file.
     -------
     path : Path | str
         The path to check, can be a folder, file or archive.
 
-    Note
+    Note:
     ----
     Except in tests, we dont use this function yet.
     Its logic is duplicated in `all_album_folders`. (We should consolidate.)
+
     """
     if isinstance(path, str):
         path = Path(path).absolute()
@@ -370,8 +381,7 @@ def is_album_folder(path: Path | str):
 
 
 def all_album_folders(root_dir: Path | str, subdirs: bool = False) -> list[Path]:
-    """
-    Get all album folders from a given root dir.
+    """Get all album folders from a given root dir.
 
     Parameters
     ----------
@@ -384,6 +394,7 @@ def all_album_folders(root_dir: Path | str, subdirs: bool = False) -> list[Path]
     Returns
     -------
         list[Path]
+
     """
 
     if isinstance(root_dir, str):
@@ -399,7 +410,8 @@ def all_album_folders(root_dir: Path | str, subdirs: bool = False) -> list[Path]
         # - if a folder contains only archives, it will never be considered an
         #   album folder
         # - if a folder contains a mix of archives and music files, it will be
-        #   considered an album folder (as we think archives might be metadata or additional files e.g. cover art)
+        #   considered an album folder (as we think archives might be metadata
+        #   or additional files e.g. cover art)
         if all(is_archive_file(i) for i in items_str):
             folders.extend(items)
             continue
@@ -414,13 +426,16 @@ def all_album_folders(root_dir: Path | str, subdirs: bool = False) -> list[Path]
             folders.extend(p for p in paths)
         else:
             # the top-level path is always the first in the list
-            # however, there is an edgecase, if we have a rogue element in a multi-disc folder:
+            # however, there is an edgecase, if we have a rogue element in a
+            # multi-disc folder:
             # - artist/album/should_not_be_here.mp3
             # - artist/album/CD1/track.mp3
             # - artist/album/CD2/track.mp3
-            # -> then albums_in_dir returns [album], [CD1, CD2] so that picking the first element is wrong.
-            # we would want all 3: album, CD1 and CD2. but in this case, the parent `album` should already
-            # be in our set when we check [CD1, CD2]
+            # -> then albums_in_dir returns [album], [CD1, CD2] so that
+            #    picking the first element is wrong.
+            # we would want all 3: album, CD1 and CD2. but in this case, the
+            # parent `album` should already be in our set when we check
+            # [CD1, CD2]
             if os.path.dirname(paths[0]) in folders:
                 folders.extend(p for p in paths)
             else:
@@ -430,8 +445,7 @@ def all_album_folders(root_dir: Path | str, subdirs: bool = False) -> list[Path]
 
 
 def _is_within_multi_dir(path: Path | str) -> bool:
-    """
-    Minimal version of beets heuristic to check if a string matches a multi-disc pattern.
+    """Minimal version of beets' multi-disc pattern heuristic.
 
     E.g. "My Album CD1" or "Disc 2" will return True
     """
@@ -471,7 +485,7 @@ def dir_files(path: Path) -> int:
     """Count the number of files in a directory."""
     try:
         result = subprocess.run(
-            [f"find {str(path.resolve())} | wc -l"],
+            [f"find {path.resolve()!s} | wc -l"],
             capture_output=True,
             text=True,
             check=True,

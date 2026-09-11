@@ -29,8 +29,8 @@ from beets_flask.database.models.states import (
 from beets_flask.importer.progress import FolderStatus, Progress
 from beets_flask.logger import log
 from beets_flask.server.exceptions import (
-    InvalidUsageException,
-    NotFoundException,
+    InvalidUsageError,
+    NotFoundError,
     SerializedException,
 )
 from beets_flask.server.utility import (
@@ -42,15 +42,15 @@ from beets_flask.server.websocket.status import FolderStatusUpdate, JobStatusUpd
 
 from .base import ModelAPIBlueprint
 
-__all__ = ["SessionAPIBlueprint", "MinimalChipInfo"]
+__all__ = ["MinimalSession", "SessionAPIBlueprint"]
 
 
 class MinimalBestCandidateInfo(TypedDict):
     """Minimal best match info.
 
-    Data conciouse representation of the best match for a session, used for chips and minimal session
-    info. This is a subset of the full match state, containing only the most
-    relevant information for quick access.
+    Data conciouse representation of the best match for a session, used for
+    chips and minimal session info. This is a subset of the full match state,
+    containing only the most relevant information for quick access.
     """
 
     data_source: str
@@ -99,13 +99,14 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         folder_path : str (optional)
             Path of the folder to check. Used as a fallback to find sessions for folders
             whose content changed.
+
         """
 
         folder_hash = request.args.get("folder_hash")
         folder_path = request.args.get("folder_path")
 
         if not folder_hash and not folder_path:
-            raise InvalidUsageException(
+            raise InvalidUsageError(
                 "Provide one folder hash OR one folder path", status_code=400
             )
 
@@ -121,7 +122,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
                 # raise, but we do not want to spam the
                 # frontend console with errors.
                 # we manually handle this in sessionQueryOptions.
-                raise NotFoundException(
+                raise NotFoundError(
                     f"Item with {folder_hash=} {folder_path=} not found",
                     status_code=200,
                 )
@@ -150,17 +151,18 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
             best match, or null), `distance` (normalized match distance of
             the best match) and `data_source`. Folders without a session are
             omitted.
+
         """
         folder_hashes = request.args.getlist("folder_hash")
         folder_paths = request.args.getlist("folder_path")
 
         if len(folder_hashes) == 0:
-            raise InvalidUsageException(
+            raise InvalidUsageError(
                 "Provide at least one folder hash", status_code=400
             )
 
         if len(folder_hashes) != len(folder_paths):
-            raise InvalidUsageException(
+            raise InvalidUsageError(
                 "Provide the same number of folder hashes and paths", status_code=400
             )
 
@@ -231,10 +233,20 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
                 ).where(best_candidate.c.rn == 1)
                 rows = db_session.execute(stmt).all()
 
-                rows_by_session = {
-                    session_id: (folder_hash, duplicate_ids, distance, data_source)
-                    for session_id, folder_hash, duplicate_ids, distance, data_source in rows
-                }
+                rows_by_session = {}
+                for (
+                    session_id,
+                    folder_hash,
+                    duplicate_ids,
+                    distance,
+                    data_source,
+                ) in rows:
+                    rows_by_session[session_id] = (
+                        folder_hash,
+                        duplicate_ids,
+                        distance,
+                        data_source,
+                    )
 
                 for session_id, folder_hash_org in zip(session_ids, folder_hashes):
                     if session_id is None:
@@ -261,7 +273,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
             return jsonify(data)
 
     async def enqueue(self):
-        """Start a new session for a given folder hash or enqueue a new job for an existing session.
+        """Start a new session or enqueue a job for an existing session.
 
         You need to specify the folder of the album,
         and it has to be a valid album folder.
@@ -274,7 +286,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         folder_hashes, folder_paths = pop_folder_params(params)
         kind = pop_query_param(params, "kind", str)
         if not isinstance(kind, str):
-            raise InvalidUsageException(
+            raise InvalidUsageError(
                 "kind must be one of " + str(invoker.EnqueueKind.__members__)
             )
 
@@ -321,7 +333,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
                 )
                 session_indb = db_session.execute(stmt_session).scalar_one_or_none()
                 if session_indb is None:
-                    raise InvalidUsageException(
+                    raise InvalidUsageError(
                         f"Session with session_id {session_id} not found",
                     )
 
@@ -332,7 +344,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
                 stmt_task = select(TaskStateInDb).where(TaskStateInDb.id == task_id)
                 task_indb = db_session.execute(stmt_task).scalar_one_or_none()
                 if task_indb is None:
-                    raise InvalidUsageException(
+                    raise InvalidUsageError(
                         f"Task with task_id {task_id} not found",
                     )
 
@@ -340,7 +352,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
                 folder_hash = task_indb.session.folder.hash
 
         if folder_hash is None or folder_path is None:
-            raise InvalidUsageException(
+            raise InvalidUsageError(
                 "task_id or session_id must be provided",
             )
 
@@ -372,7 +384,7 @@ class SessionAPIBlueprint(ModelAPIBlueprint[SessionStateInDb]):
         folder_paths = request.args.getlist("folder_path")
 
         if len(folder_hashes) != len(folder_paths):
-            raise InvalidUsageException(
+            raise InvalidUsageError(
                 "Provide the same number of folder hashes and paths", status_code=400
             )
 

@@ -1,4 +1,5 @@
 from abc import ABC
+from typing import ClassVar
 from unittest import mock
 
 import pytest
@@ -20,7 +21,7 @@ class PluginEventsMixin(ABC):
 
     """
 
-    events: list[str] = []
+    events: ClassVar[list[str]] = []
 
     def send_event(self, event: EventType, **kwargs):
         self.events.append(event)
@@ -36,4 +37,5 @@ class PluginEventsMixin(ABC):
         ):
             yield
 
-        self.events = []
+        # Clear the shared capture list so events do not leak into the next test.
+        self.events.clear()

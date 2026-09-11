@@ -1,18 +1,20 @@
 """Import/Preview flow tests for the backend.
 
-These tests are designed to ensure that the import and preview flows work as expected. These
-flows may be triggered from the frontend by the users and we want to ensure that everything
-has a well defined path to follow.
+These tests are designed to ensure that the import and preview flows work
+as expected. These flows may be triggered from the frontend by the users and
+we want to ensure that everything has a well defined path to follow.
 """
+
+from __future__ import annotations
 
 import pickle
 from abc import ABC
 from pathlib import Path
+from typing import TYPE_CHECKING, ClassVar
 from unittest import mock
 
 import pytest
 from sqlalchemy import delete, func, select
-from sqlalchemy.orm import Session
 
 from beets_flask.config.beets_config import get_config
 from beets_flask.database.models.states import (
@@ -21,10 +23,6 @@ from beets_flask.database.models.states import (
 )
 from beets_flask.disk import Folder
 from beets_flask.importer.progress import FolderStatus, Progress
-from beets_flask.importer.session import (
-    CandidateChoice,
-    TaskIdMappingArg,
-)
 from beets_flask.importer.types import BeetsDuplicateAction
 from beets_flask.invoker.enqueue import (
     run_import_auto,
@@ -34,13 +32,21 @@ from beets_flask.invoker.enqueue import (
     run_preview,
     run_preview_add_candidates,
 )
-from beets_flask.server.websocket.status import FolderStatusUpdate
 from tests.mixins.database import IsolatedBeetsLibraryMixin, IsolatedDBMixin
 from tests.mixins.plugins import PluginEventsMixin
 from tests.unit.test_importer.conftest import (
     VALID_PATHS,
     album_path_absolute,
 )
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
+
+    from beets_flask.importer.session import (
+        CandidateChoice,
+        TaskIdMappingArg,
+    )
+    from beets_flask.server.websocket.status import FolderStatusUpdate
 
 
 class SendStatusMockMixin(ABC):
@@ -58,7 +64,7 @@ class SendStatusMockMixin(ABC):
     """
 
     # list[{path: str, hash: str, status: FolderStatus}]
-    statuses: list[FolderStatusUpdate] = []
+    statuses: ClassVar[list[FolderStatusUpdate]] = []
 
     async def send_status_update(self, status):
         """Mock the emit_status decorator"""
@@ -77,9 +83,9 @@ class SendStatusMockMixin(ABC):
         ):
             yield
 
-        # Unexpectetly, this does not reset the statuses after each test.
-        # -> do it manually in the tests as needed.
-        self.statuses = []
+        # Clear the shared status list after each test so statuses do not
+        # leak into the next test. Some tests also reset mid-test as needed.
+        self.statuses.clear()
 
 
 class TestPreview(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin):
@@ -105,7 +111,7 @@ class TestPreview(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixi
         db_session: Session,
         path,
     ):
-        self.statuses = []
+        self.statuses.clear()
         self.reset_database()
 
         stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
@@ -122,7 +128,8 @@ class TestPreview(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixi
 
         assert exc is None, "Should not return an error"
 
-        # Check that status was emitted correctly, we emit once before and once after run
+        # Check that status was emitted correctly, we emit once before and
+        # once after run
         assert len(self.statuses) == 2
         assert self.statuses[0].status == FolderStatus.PREVIEWING
         assert self.statuses[1].status == FolderStatus.PREVIEWED
@@ -178,7 +185,7 @@ class TestPreviewMultipleTasks(
         expected_tasks: int,
         autotag: bool,
     ):
-        self.statuses = []
+        self.statuses.clear()
         self.reset_database()
 
         stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
@@ -327,7 +334,7 @@ class TestImportBest(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
         assert self.check_mapping_consistency(db_session)
 
     async def test_add_candidates_fails(self, db_session: Session, path: Path):
-        """Test that an exception is raised if candidate lookup fails (returns no results)."""
+        """Test that an exception is raised if candidate lookup fails."""
 
         stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
         s_state_indb = db_session.execute(stmt).scalar()
@@ -352,7 +359,7 @@ class TestImportBest(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
             },
         )
         assert exc is not None, "Should return an error"
-        assert exc["type"] == "NoCandidatesFoundException"
+        assert exc["type"] == "NoCandidatesFoundError"
 
         # Refetch state from db
         stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
@@ -365,7 +372,7 @@ class TestImportBest(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
         assert self.check_mapping_consistency(db_session)
 
     async def test_add_candidates_cleared(self, db_session: Session, path: Path):
-        """Tests that candidates can be added after a NoCandidatesFoundException
+        """Tests that candidates can be added after a NoCandidatesFoundError
         and the exception is cleared"""
 
         stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
@@ -373,7 +380,7 @@ class TestImportBest(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
 
         assert s_state_indb is not None
         assert len(s_state_indb.tasks) == 1
-        s_state_indb.exc = pickle.dumps({"type": "NoCandidatesFoundException"})
+        s_state_indb.exc = pickle.dumps({"type": "NoCandidatesFoundError"})
         # commit
         db_session.commit()
 
@@ -444,13 +451,14 @@ class TestImportBest(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
 
         stmt = select(func.count()).select_from(SessionStateInDb)
         assert db_session.execute(stmt).scalar() == 1, (
-            "Database should contain the one preview session state from the previous test"
+            "Database should contain the one preview session state from the previous "
+            "test"
         )
 
         # Check if mapping is set correctly
         assert self.check_mapping_consistency(db_session)
 
-        self.statuses = []
+        self.statuses.clear()
         exc = await run_import_candidate(
             "obsolete_hash_import",
             str(path),
@@ -462,7 +470,8 @@ class TestImportBest(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
         # Check if mapping is still correctly after import
         assert self.check_mapping_consistency(db_session)
 
-        # Check that status was emitted correctly, we emit once before and once after run
+        # Check that status was emitted correctly, we emit once before and
+        # once after run
         assert len(self.statuses) == 2
         assert self.statuses[0].status == FolderStatus.IMPORTING
         assert self.statuses[1].status == FolderStatus.IMPORTED
@@ -508,10 +517,11 @@ class TestImportBest(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
         """
         stmt = select(func.count()).select_from(SessionStateInDb)
         assert db_session.execute(stmt).scalar() == 1, (
-            "Database should contain the one preview session state from the previous test"
+            "Database should contain the one preview session state from the previous "
+            "test"
         )
 
-        self.statuses = []
+        self.statuses.clear()
 
         exc = await run_import_candidate(
             "obsolete_hash_import",
@@ -558,7 +568,7 @@ class TestImportBest(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
 
         # FIXME: We might want to raise our own exception here
         assert exc is not None
-        assert exc["type"] == "DuplicateException"
+        assert exc["type"] == "DuplicateError"
 
     async def test_undo(self, db_session: Session, path: Path):
         """Test the undo of the import process.
@@ -575,7 +585,7 @@ class TestImportBest(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
         assert item is not None, "Should have imported at least one item for this test."
         imported_path = Path(item.path.decode("utf-8"))
 
-        self.statuses = []
+        self.statuses.clear()
         exc = await run_import_undo(
             f.hash,
             str(path),
@@ -660,7 +670,7 @@ class TestImportBest(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
             task.progress = Progress.PREVIEW_COMPLETED
         db_session.commit()
 
-        self.statuses = []
+        self.statuses.clear()
         exc = await run_import_candidate(
             "obsolete_hash_import",
             p,
@@ -695,7 +705,7 @@ class TestImportBest(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
         f = Folder.from_path(path)
         items = self.beets_lib.items()
 
-        with self.beets_lib.transaction() as tx:
+        with self.beets_lib.transaction():
             for item in items:
                 item.remove()
 
@@ -706,7 +716,7 @@ class TestImportBest(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
         )
 
         assert exc is not None
-        assert exc["type"] == "IntegrityException"
+        assert exc["type"] == "IntegrityError"
 
 
 class TestImportAuto(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryMixin):
@@ -732,7 +742,7 @@ class TestImportAuto(SendStatusMockMixin, IsolatedDBMixin, IsolatedBeetsLibraryM
             "Database should be empty before the test"
         )
 
-        self.statuses = []
+        self.statuses.clear()
 
         await run_preview(
             "obsolete_hash_preview",
@@ -780,7 +790,7 @@ class TestImportAutoFails(
             "Database should be empty before the test"
         )
 
-        self.statuses = []
+        self.statuses.clear()
 
         await run_preview(
             "obsolete_hash_preview",
@@ -838,7 +848,7 @@ class TestChooseCandidatesSingleTask(
         db_session: Session,
         path_single_task: Path,
     ):
-        """Test the import of the tagged folder using a candidate id (single task in session)"""
+        """Test the import of the tagged folder using a candidate id."""
 
         exc = await run_preview(
             "obsolete_hash_preview",
@@ -1028,7 +1038,7 @@ class TestPluginEvents(
         return path
 
     async def test_preview_events(self, db_session: Session, path: Path):
-        self.events = []
+        self.events.clear()
 
         await run_preview(
             "obsolete_hash_preview",
@@ -1043,7 +1053,7 @@ class TestPluginEvents(
         assert len(self.events) == 3
 
     async def test_import_auto_events(self, db_session: Session, path: Path):
-        self.events = []
+        self.events.clear()
 
         exc = await run_import_auto(
             "obsolete_hash_import_auto",
@@ -1062,7 +1072,7 @@ class TestPluginEvents(
         assert "cli_exit" in self.events[-1]
 
     async def test_undo_events(self, db_session: Session, path: Path):
-        self.events = []
+        self.events.clear()
 
         exc = await run_import_undo(
             "obsolete_hash_import",
@@ -1131,7 +1141,7 @@ class TestImportBootleg(
         """
         Check that the import goes through, no matter what.
         """
-        self.statuses = []
+        self.statuses.clear()
         self.reset_database()
 
         stmt = select(SessionStateInDb).order_by(SessionStateInDb.created_at.desc())
@@ -1139,7 +1149,7 @@ class TestImportBootleg(
             "Database should be empty before the test"
         )
 
-        self.statuses = []
+        self.statuses.clear()
 
         exc = await run_import_bootleg(
             "obsolete_hash_import_auto",

@@ -1,12 +1,10 @@
 """Integration tests for the custom `/api_v1/session/minimal` endpoint."""
 
-from pathlib import Path
-from typing import TypedDict
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, TypedDict
 
 import pytest
-from quart import Response
-from quart.typing import TestClientProtocol as Client
-from sqlalchemy.orm import Session
 
 from beets_flask.database.models.match import AlbumInfo, AlbumMatch, Distance
 from beets_flask.database.models.states import (
@@ -16,6 +14,13 @@ from beets_flask.database.models.states import (
     TaskStateInDb,
 )
 from tests.mixins.database import IsolatedDBMixin
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from quart import Response
+    from quart.typing import TestClientProtocol as Client
+    from sqlalchemy.orm import Session
 
 
 class Candidate(TypedDict):

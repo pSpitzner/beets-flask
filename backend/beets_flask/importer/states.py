@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 from abc import ABC
-from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Literal, NotRequired, TypedDict, cast
+from typing import TYPE_CHECKING, Literal, NotRequired, TypedDict, cast
 from uuid import uuid4 as uuid
 
 from beets import importer
@@ -23,8 +22,6 @@ from beets_flask.importer.progress import (
     ProgressState,
     SerializedProgressState,
 )
-from beets_flask.importer.types import BeetsDuplicateAction
-from beets_flask.server.exceptions import SerializedException
 from beets_flask.utility import capture_stdout_stderr
 
 from .types import (
@@ -42,6 +39,12 @@ from .types import (
     ItemInfo,
     TrackInfo,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from beets_flask.importer.types import BeetsDuplicateAction
+    from beets_flask.server.exceptions import SerializedException
 
 
 class BaseState(ABC):
@@ -108,12 +111,12 @@ class SessionState(BaseState):
 
     def __repr__(self) -> str:
         return (
-            f"SessionState:\n"
-            + f" * id={self.id}\n"
-            + f" * folder_path={self.folder_path}\n"
-            + f" * folder_hash={self.folder_hash}\n"
-            + f" * task_states={[ts.id for ts in self.task_states]}\n"
-            + f" * progress={self.progress}"
+            "SessionState:\n"
+            f" * id={self.id}\n"
+            f" * folder_path={self.folder_path}\n"
+            f" * folder_hash={self.folder_hash}\n"
+            f" * task_states={[ts.id for ts in self.task_states]}\n"
+            f" * progress={self.progress}"
         )
 
     @property
@@ -233,9 +236,10 @@ class SessionState(BaseState):
 class TaskState(BaseState):
     """State representation of a beets ImportTask.
 
-    In the frontend, a selection of the available candidates in the task may be needed
-    from the user. Exposes some (typed) attributes of the task (e.g. toppath, paths, items)
-    Has a list of associated CandidateStates, that represent `matches` in beets.
+    In the frontend, a selection of the available candidates in the task
+    may be needed from the user. Exposes some (typed) attributes of the task
+    (e.g. toppath, paths, items). Has a list of associated CandidateStates,
+    that represent `matches` in beets.
     """
 
     progress: ProgressState
@@ -267,13 +271,13 @@ class TaskState(BaseState):
 
     def __repr__(self) -> str:
         return (
-            f"TaskState:\n"
-            + f" * id={self.id}\n"
-            + f" * candidate_states={[ts.id for ts in self.candidate_states]}\n"
-            + f" * chosen_candidate_state_id={self.chosen_candidate_state_id}\n"
-            + f" * progress={self.progress}\n"
-            + f" * completed={self.completed}\n"
-            + f" * toppath={self.toppath}\n"
+            "TaskState:\n"
+            f" * id={self.id}\n"
+            f" * candidate_states={[ts.id for ts in self.candidate_states]}\n"
+            f" * chosen_candidate_state_id={self.chosen_candidate_state_id}\n"
+            f" * progress={self.progress}\n"
+            f" * completed={self.completed}\n"
+            f" * toppath={self.toppath}\n"
         )
 
     @property
@@ -313,7 +317,7 @@ class TaskState(BaseState):
 
     def get_candidate_state_by_id(self, id: str) -> CandidateState | None:
         """Get candidate state by id."""
-        for c in self.candidate_states + [self.asis_candidate]:
+        for c in [*self.candidate_states, self.asis_candidate]:
             if c.id == id:
                 return c
         return None
@@ -426,8 +430,7 @@ class TaskState(BaseState):
 
 @dataclass(init=False)
 class CandidateState(BaseState):
-    """
-    State representation of a single candidate (match) for an import task.
+    """State representation of a single candidate (match) for an import task.
 
     Can represent an album (self.type == "album") or a track (self.type == "track").
     Keeps a reference to the associated SelectionState, so we can access the beets task.
@@ -454,14 +457,14 @@ class CandidateState(BaseState):
 
     def __repr__(self) -> str:
         return (
-            f"CandidateState:\n"
-            + f" * id={self.id}\n"
-            + f" * match={self.match.info.album}\n"
-            + f" * task_state_id={self.task_state.id}\n"
-            + f" * distance={self.distance}\n"
-            + f" * penalties={self.penalties}\n"
-            + f" * {len(self.items)=}\n"
-            + f" * {len(self.tracks)=}\n"
+            "CandidateState:\n"
+            f" * id={self.id}\n"
+            f" * match={self.match.info.album}\n"
+            f" * task_state_id={self.task_state.id}\n"
+            f" * distance={self.distance}\n"
+            f" * penalties={self.penalties}\n"
+            f" * {len(self.items)=}\n"
+            f" * {len(self.tracks)=}\n"
         )
 
     @property
@@ -489,8 +492,7 @@ class CandidateState(BaseState):
 
     @classmethod
     def asis_candidate(cls, task_state: TaskState) -> CandidateState:
-        """
-        Alternate constructor for an asis import option.
+        """Alternate constructor for an asis import option.
 
         We mock the album match to display
         current meta data in the frontend.
@@ -514,7 +516,8 @@ class CandidateState(BaseState):
                 val = getattr(item, key)
                 if val is not None and val != "":
                     kwargs[key] = val
-            # tracks use index, items use track, and beets diff preview crashes without index
+            # tracks use index, items use track, and beets diff preview
+            # crashes without index
             kwargs["index"] = item.track or 0
             return kwargs
 
@@ -653,7 +656,8 @@ class CandidateState(BaseState):
 
         Copy of beets' `task.find_duplicates` but works on any candidates' match.
 
-        # FIXME: Tracks are not checked for duplicates. Tbh noone cares about tracks anyways
+        # FIXME: Tracks are not checked for duplicates. Tbh noone cares
+        # about tracks anyways
         """
         if lib is None:
             lib = _open_library(get_config().beets_config)
@@ -861,10 +865,10 @@ class SerializedCandidateState(SerializedBaseState):
 
 
 __all__ = [
-    "SessionState",
-    "TaskState",
     "CandidateState",
+    "SerializedCandidateState",
     "SerializedSessionState",
     "SerializedTaskState",
-    "SerializedCandidateState",
+    "SessionState",
+    "TaskState",
 ]

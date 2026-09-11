@@ -1,14 +1,15 @@
+from __future__ import annotations
+
 import asyncio
 import os
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from watchdog.events import FileMovedEvent, FileSystemEvent
 from watchdog.observers.polling import PollingObserver
 
 from beets_flask import invoker
 from beets_flask.config import get_config
-from beets_flask.config.schema import InboxFolderSchema
 from beets_flask.database.models.states import SessionStateInDb
 from beets_flask.disk import (
     album_folders_from_track_paths,
@@ -20,19 +21,22 @@ from beets_flask.logger import log
 from beets_flask.server.websocket.status import FileSystemUpdate, send_status_update
 from beets_flask.watchdog.eventhandler import AIOEventHandler, AIOWatchdog
 
+if TYPE_CHECKING:
+    from beets_flask.config.schema import InboxFolderSchema
+
 # ------------------------------------------------------------------------------------ #
 #                                   init and watchdog                                  #
 # ------------------------------------------------------------------------------------ #
 
 
 def register_inboxes(timeout: float = 2.5, debounce: float = 30) -> AIOWatchdog | None:
-    """
-    Register file system watcher to monitor configured inboxes.
+    """Register file system watcher to monitor configured inboxes.
 
     Parameters
     ----------
     timeout: float
-        Timeout for the polling observer in seconds (heartbeat, to recheck file system changes)
+        Timeout for the polling observer in seconds (heartbeat, to recheck
+        file system changes)
     debounce: float
         Debounce window in seconds, to wait before starting tagging operations.
         This is to avoid multiple triggers for changes in the same folder.
@@ -44,6 +48,7 @@ def register_inboxes(timeout: float = 2.5, debounce: float = 30) -> AIOWatchdog 
     -----
     - This should not be called from uvicorn workers to avoid concurrency issues.
       You only want one watchdog (use separate init script).
+
     """
     _inboxes = get_inboxes()
 
@@ -58,7 +63,7 @@ def register_inboxes(timeout: float = 2.5, debounce: float = 30) -> AIOWatchdog 
         return None
     log.info(
         f"Registering watchdog with debounce of {debounce} seconds for "
-        + f"inboxes: {[i.path for i in _inboxes]}"
+        f"inboxes: {[i.path for i in _inboxes]}"
     )
 
     # One observer for all inboxes.
@@ -74,18 +79,25 @@ def register_inboxes(timeout: float = 2.5, debounce: float = 30) -> AIOWatchdog 
 
     watchdog.start()
 
-    # user would expect autotagging inboxes to automatically scan on first launch
+    # user would expect autotagging inboxes to automatically scan on first
+    # launch
     async def auto_tag_wait_for_workers(f: Path):
-        # HACK: checking if redis is ready was not trivial enough, so we just wait a bit.
+        # HACK: checking if redis is ready was not trivial enough, so we just
+        # wait a bit.
         await asyncio.sleep(10)
         await auto_tag(f)
 
     auto_inboxes = [i for i in _inboxes if i.autotag not in (False, "off")]
 
+    # Keep references to the tasks so they are not garbage collected.
+    background_tasks: set[asyncio.Task] = set()
+
     for inbox in auto_inboxes:
         album_folders = all_album_folders(inbox.path)
         for f in album_folders:
-            asyncio.create_task(auto_tag_wait_for_workers(f))
+            task = asyncio.create_task(auto_tag_wait_for_workers(f))
+            background_tasks.add(task)
+            task.add_done_callback(background_tasks.discard)
 
     return watchdog
 
@@ -146,10 +158,12 @@ async def auto_tag(
 
     Parameters
     ----------
-    path: str
+    folder_path : Path
         Full path to the folder or archive file to retag.
-    kind: str, optional
-        If None, the configured autotag kind from the inbox this folder is in will be used.
+    inbox_kind : str, optional
+        If None, the configured autotag kind from the inbox this folder is in
+        will be used.
+
     """
     inbox = get_inbox_for_path(folder_path)
     if inbox is None:

@@ -1,6 +1,8 @@
-from contextlib import contextmanager
+from __future__ import annotations
 
-from quart import Quart
+from contextlib import contextmanager
+from typing import TYPE_CHECKING
+
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
 from sqlalchemy.pool import QueuePool
@@ -9,6 +11,9 @@ from beets_flask.config import get_flask_config
 from beets_flask.logger import log
 
 from .models import Base
+
+if TYPE_CHECKING:
+    from quart import Quart
 
 engine: Engine | None = None
 session_factory: scoped_session[Session]
@@ -25,9 +30,10 @@ def setup_database(app: Quart | None = None) -> None:
     Args:
         app (Quart): The Quart application instance.
 
-    Returns
+    Returns:
     -------
         None
+
     """
     _setup_factory()
     if get_flask_config()["RESET_DB_ON_START"]:
@@ -64,7 +70,8 @@ def db_session_factory(session: Session | None = None):
 
     Makes sure sessions are closed at the end.
     If an existing session is provided, it will not be closed at the end.
-    This allows to wrap multiple `with db_session()` blocks around each other without closing the outer session.
+    This allows to wrap multiple `with db_session()` blocks around each
+    other without closing the outer session.
 
     Example:
     ```
@@ -79,6 +86,7 @@ def db_session_factory(session: Session | None = None):
         s.merge(tag)
         return tag.to_dict()
     ```
+
     """
     is_outermost = session is None
     if is_outermost:

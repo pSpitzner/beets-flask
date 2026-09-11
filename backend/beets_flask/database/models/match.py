@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -119,8 +119,7 @@ class AlbumInfo(Base):
 
 
 class Match(Base):
-    """
-    Matches are polymorphic — can be album or track matches.
+    """Matches are polymorphic — can be album or track matches.
 
     This requires us to keep two extra tables.
     """
@@ -134,7 +133,7 @@ class Match(Base):
     distance_id: Mapped[str] = mapped_column(ForeignKey("distances.id"))
     distance: Mapped[Distance] = relationship()
 
-    __mapper_args__ = {
+    __mapper_args__: ClassVar[dict[str, str]] = {  # type: ignore[misc]
         "polymorphic_on": "type",
         "polymorphic_identity": "matches",
     }
@@ -153,7 +152,7 @@ class AlbumMatch(Match):
         cascade="all, delete-orphan",
     )
 
-    __mapper_args__ = {
+    __mapper_args__: ClassVar[dict[str, str]] = {  # type: ignore[misc]
         "polymorphic_identity": "album",
     }
 
@@ -179,7 +178,7 @@ class TrackMatch(Match):
     info: Mapped[TrackInfo] = relationship()
     item: Mapped[Item] = relationship()
 
-    __mapper_args__ = {
+    __mapper_args__: ClassVar[dict[str, str]] = {  # type: ignore[misc]
         "polymorphic_identity": "track",
     }
 

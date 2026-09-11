@@ -9,11 +9,16 @@ from cachetools import Cache
 from confuse import AttrDict
 
 from beets_flask.dirhash_custom import dirhash_c
-from beets_flask.disk import Folder, _matches_patterns, audio_regex
+from beets_flask.disk import (
+    Folder,
+    _matches_patterns,
+    audio_regex,
+    is_album_folder,
+)
 
 
 def touch(path):
-    with open(path, "w") as f:
+    with open(path, "w"):
         pass
 
 
@@ -102,7 +107,8 @@ def s_base(tmpdir_factory):
     touch(os.path.join(base, "artist/album_good/track_1.mp3"))
     touch(os.path.join(base, "artist/album_good/track_2.mp3"))
 
-    # Archive, needs to be an actual zip file, just touching is not enough for the beets' internal archive detection
+    # Archive, needs to be an actual zip file, just touching is not enough
+    # for the beets' internal archive detection
     os.makedirs(os.path.join(base, "artist/archive"))
     with zipfile.ZipFile(os.path.join(base, "artist/archive/foo.zip"), "w") as _zipf:
         pass
@@ -118,9 +124,6 @@ def s_base(tmpdir_factory):
     yield base
 
     shutil.rmtree(base)
-
-
-from beets_flask.disk import is_album_folder
 
 
 class TestIsAlbumFolder:
@@ -155,7 +158,7 @@ class TestIsAlbumFolder:
         assert is_album_folder(s_base + "/artist/album_rogue/CD2")
 
     def test_archive(self, s_base):
-        assert is_album_folder(s_base + "/artist/archive") == False
+        assert not is_album_folder(s_base + "/artist/archive")
         assert is_album_folder(s_base + "/artist/archive/foo.zip")
 
     @pytest.mark.skip("is_album_folder tricky logic for archive and music")
@@ -163,7 +166,7 @@ class TestIsAlbumFolder:
     # `is_album_folder` and `all_album_folders`
     def test_archive_and_music(self, s_base):
         assert is_album_folder(s_base + "/artist/archive_and_music")
-        assert is_album_folder(s_base + "/artist/archive_and_music/foo.zip") == False
+        assert not is_album_folder(s_base + "/artist/archive_and_music/foo.zip")
 
 
 class TestAllAlbumFolders:

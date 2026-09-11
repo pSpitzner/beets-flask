@@ -1,13 +1,12 @@
 import os
 from io import BytesIO
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 from beets import util as beets_util
 from mediafile import Image, MediaFile  # comes with the beets install
 from PIL import Image as PILImage
 from quart import (
     Blueprint,
-    g,
     jsonify,
     make_response,
     redirect,
@@ -18,14 +17,12 @@ from quart import (
 
 from beets_flask.logger import log
 from beets_flask.server.exceptions import (
-    IntegrityException,
-    InvalidUsageException,
-    NotFoundException,
+    IntegrityError,
+    InvalidUsageError,
+    NotFoundError,
 )
 
-if TYPE_CHECKING:
-    # For type hinting the global g object
-    from . import g
+from . import g
 
 __all__ = ["artwork_pb"]
 
@@ -60,8 +57,9 @@ def parse_art_params() -> tuple[int, tuple[int, int] | None]:
     try:
         size = parse_size(size_key)
     except KeyError:
-        raise InvalidUsageException(
-            f"Invalid size key '{size_key}' provided. Supported keys: {', '.join(SIZE_PRESETS.keys())}"
+        raise InvalidUsageError(
+            "Invalid size key "
+            f"'{size_key}' provided. Supported keys: {', '.join(SIZE_PRESETS.keys())}"
         )
     return idx, size
 
@@ -69,12 +67,12 @@ def parse_art_params() -> tuple[int, tuple[int, int] | None]:
 def get_image_data_from_file(filepath: str, index: int = 0) -> BytesIO:
     """Get image data from a file path."""
     if not os.path.exists(filepath):
-        raise IntegrityException(f"File '{filepath}' does not exist.")
+        raise IntegrityError(f"File '{filepath}' does not exist.")
 
     mediafile = MediaFile(filepath)
     images = mediafile.images
     if not images or len(images) <= index:
-        raise NotFoundException(
+        raise NotFoundError(
             f"File has no cover art at index {index}: '{filepath}'."
         )
 
@@ -108,7 +106,7 @@ async def item_art_idx(item_id: int):
 
     item = g.lib.get_item(item_id)
     if not item:
-        raise NotFoundException(
+        raise NotFoundError(
             f"Item with beets_id:'{item_id}' not found in beets db."
         )
 
@@ -125,7 +123,7 @@ async def item_art(item_id: int):
 
     item = g.lib.get_item(item_id)
     if not item:
-        raise NotFoundException(
+        raise NotFoundError(
             f"Item with beets_id:'{item_id}' not found in beets db."
         )
 
@@ -145,7 +143,7 @@ async def album_art(album_id: int):
 
     album = g.lib.get_album(album_id)
     if not album:
-        raise NotFoundException(
+        raise NotFoundError(
             f"Album with beets_id:'{album_id}' not found in beets db."
         )
 
@@ -153,15 +151,16 @@ async def album_art(album_id: int):
     if album.artpath and idx == 0:
         art_path = beets_util.syspath(album.artpath)
         if not os.path.exists(art_path):
-            raise IntegrityException(
-                f"Album art file '{art_path}' does not exist for album beets_id:'{album_id}'."
+            raise IntegrityError(
+                "Album art file "
+                f"'{art_path}' does not exist for album beets_id:'{album_id}'."
             )
         return await send_image(BytesIO(open(art_path, "rb").read()), size)
 
     # Otherwise use embedded from track
     items = album.items()
     if not items or len(items) < 1:
-        raise IntegrityException(f"Album has no items: '{album_id}'.")
+        raise IntegrityError(f"Album has no items: '{album_id}'.")
 
     return redirect(
         url_for(

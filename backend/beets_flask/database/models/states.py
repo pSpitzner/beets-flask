@@ -61,8 +61,7 @@ class FolderInDb(Base):
     is_album: Mapped[bool | None]
 
     def __init__(self, path: Path | str, hash: str, is_album: bool | None = None):
-        """
-        Create a FolderInDb object from a path.
+        """Create a FolderInDb object from a path.
 
         Convention:
         /home/user/foo/
@@ -72,6 +71,11 @@ class FolderInDb(Base):
         ----------
         path : Path
             The path to create the object from.
+        hash : str
+            The hash of the folder.
+        is_album : bool | None, optional
+            Whether the folder is an album; None if not checked yet.
+
         """
         if isinstance(path, str):
             path = Path(path)
@@ -108,10 +112,11 @@ class FolderInDb(Base):
 
     @property
     def hash(self) -> str:
-        """
-        Convenience property to get the id.
+        """Convenience property to get the id.
 
-        Note: Although the id is just the hash, when querying the db, you **must** use `FolderInDb.id == hash`. Sqlalchemy does not resolve properties.
+        Note: Although the id is just the hash, when querying the db, you
+        **must** use `FolderInDb.id == hash`. Sqlalchemy does not resolve
+        properties.
         """
         return self.id
 
@@ -125,14 +130,16 @@ class FolderInDb(Base):
 
     @classmethod
     def get_current_on_disk(cls, hash: str, path: Path | str) -> Folder | Archive:
-        """
-        Check that a folders hash is still the same, as you have previously determined.
+        """Check that a folder's hash is still the same as previously determined.
 
-        If changed, a new instance of FolderInDb is created and stored in the DB.
+        If changed, a new instance of FolderInDb is created and stored in
+        the DB.
 
         Returns
         -------
-        Folder: The live folder object on disk, with the potentially new (current) hash.
+        Folder: The live folder object on disk, with the potentially new
+        (current) hash.
+
         """
         from beets_flask.database.setup import db_session_factory
 
@@ -155,7 +162,7 @@ class FolderInDb(Base):
             if f_in_db.hash != f_on_disk.hash:
                 log.debug(
                     f"Hash mismatch {path=} {f_in_db.hash=} {f_on_disk.hash=}"
-                    + "This indicatest that the folder has changed."
+                    "This indicatest that the folder has changed."
                 )
             return f_on_disk
 
@@ -183,6 +190,7 @@ class SessionStateInDb(Base):
     select(SessionStateInDb).where(TaskStateInDb.id == "some path").first()
     s_db_state = SessionStateInDb.get_by(
     ```
+
     """
 
     __tablename__ = "session"
@@ -204,11 +212,12 @@ class SessionStateInDb(Base):
             "folder_hash", "folder_revision", name="uq_folder_hash_revision"
         ),
     )
-    # We have folder revisions to allow multiple sessions for the same folder hash,
-    # the purpose being that we want to keep old sessions around. E.g. to not loose
-    # old data when regenerating previews.
-    # but at the same time, we want a soft 1:1 mapping between folder hash and session.
-    # Thus, revisions are needed: the session-hash link always uses the highest revision.
+    # We have folder revisions to allow multiple sessions for the same folder
+    # hash, the purpose being that we want to keep old sessions around. E.g.
+    # to not loose old data when regenerating previews. But at the same time,
+    # we want a soft 1:1 mapping between folder hash and session.
+    # Thus, revisions are needed: the session-hash link always uses the
+    # highest revision.
 
     # FIXME: This should be a getter for the which queries the tasks
     progress: Mapped[Progress]
@@ -241,8 +250,7 @@ class SessionStateInDb(Base):
         path: Path | str | None,
         db_session: Session | None = None,
     ) -> SessionStateInDb | None:
-        """
-        Get a session by its hash and if this fails, try its path.
+        """Get a session by its hash and if this fails, try its path.
 
         If multiple matches, returns the most recent one.
         """
@@ -485,7 +493,7 @@ class CandidateStateInDb(Base):
         return distance.raw_distance / distance.max_distance
 
     @normalized_distance.inplace.expression
-    def _normalized_distance_expression(cls) -> ColumnElement[float]:
+    def _normalized_distance_expression(self) -> ColumnElement[float]:
         """SQL counterpart of `normalized_distance`.
 
         Requires joins to `Match` and `Distance` in the query.
@@ -496,4 +504,4 @@ class CandidateStateInDb(Base):
         )
 
 
-__all__ = ["SessionStateInDb", "TaskStateInDb", "CandidateStateInDb"]
+__all__ = ["CandidateStateInDb", "SessionStateInDb", "TaskStateInDb"]

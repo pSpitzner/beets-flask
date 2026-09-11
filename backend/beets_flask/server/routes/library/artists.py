@@ -4,23 +4,21 @@ Split artists by separators, and do some basic aggregation.
 """
 
 import re
-from typing import TYPE_CHECKING
 
 import polars as pl
-from quart import Blueprint, Response, g
+from quart import Blueprint, Response
 
 from beets_flask.config import get_config
-from beets_flask.server.exceptions import NotFoundException
+from beets_flask.server.exceptions import NotFoundError
+
+from . import g
 
 artists_bp = Blueprint("artists", __name__)
 
-if TYPE_CHECKING:
-    # For type hinting the global g object
-    from . import g
 
 # TODOs:
-# Currently artist_sort is completely ignored. Im not even sure what it is supposed to do.
-# Also artistids are not used, but they are in the database.
+# Currently artist_sort is completely ignored. Im not even sure what it is
+# supposed to do. Also artistids are not used, but they are in the database.
 
 
 def artist_separators() -> list[str]:
@@ -37,6 +35,7 @@ def get_artists_polars(table: str, artist: str | None = None) -> pl.LazyFrame:
     Returns
     -------
         DataFrame with columns ['artist', 'count', 'last_added']
+
     """
     if table == "items":
         query = """
@@ -73,9 +72,9 @@ def get_artists_polars(table: str, artist: str | None = None) -> pl.LazyFrame:
         # If an artist is specified, filter the query
         for i, a in enumerate(artists):
             if i == 0:
-                query += f" WHERE instr(artist, ?) > 0"
+                query += " WHERE instr(artist, ?) > 0"
             else:
-                query += f" AND instr(artist, ?) > 0"
+                query += " AND instr(artist, ?) > 0"
 
     with g.lib.transaction() as tx:
         rows = tx.query(query, artists) if artists else tx.query(query)
@@ -180,8 +179,9 @@ async def all_artists(artist_name: str | None = None):
 
     if artist_name is not None:
         if artists.is_empty():
-            raise NotFoundException(f"Artist '{artist_name}' not found.")
+            raise NotFoundError(f"Artist '{artist_name}' not found.")
         else:
             return artists.row(0, named=True), 200
-    # TODO: We serialize as records here it might be better to have a different structure as we send quite a bit of data
+    # TODO: We serialize as records here it might be better to have a
+    # different structure as we send quite a bit of data
     return Response(artists.write_json(), mimetype="application/json")

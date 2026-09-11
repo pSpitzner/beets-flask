@@ -1,12 +1,16 @@
+from __future__ import annotations
+
 import os
-from collections.abc import Callable
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import socketio
 from eyconf.validation import ConfigurationError, MultiConfigurationError
 
 from beets_flask.config import get_config
 from beets_flask.logger import log
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 old_on = socketio.AsyncServer.on
 
@@ -48,9 +52,10 @@ def register_socketio(app):
     try:
         terminal_enabled = get_config().data.gui.terminal.enabled
     except (MultiConfigurationError, ConfigurationError):
-        # We don't want to let the exception propagate here as it won't reach the frontend.
-        # We call the get_config function later in a route which wi ll propagate errors to
-        # the frontend
+        # We don't want to let the exception propagate here as it won't
+        # reach the frontend.
+        # We call the get_config function later in a route, which will
+        # propagate errors to the frontend.
         log.debug("Encountered config error. Will raise on next call to get_config()")
 
     if terminal_enabled:

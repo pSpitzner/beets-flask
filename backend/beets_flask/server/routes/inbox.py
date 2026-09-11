@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import os
 import shutil
-from datetime import datetime
 from pathlib import Path
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 from cachetools import Cache
 from quart import Blueprint, jsonify, request
@@ -20,7 +21,7 @@ from beets_flask.disk import (
 )
 from beets_flask.importer.progress import Progress
 from beets_flask.logger import log
-from beets_flask.server.exceptions import InvalidUsageException, NotFoundException
+from beets_flask.server.exceptions import InvalidUsageError, NotFoundError
 from beets_flask.server.utility import (
     pop_folder_params,
 )
@@ -31,6 +32,9 @@ from beets_flask.watchdog.inbox import (
     get_inbox_folders,
     get_inbox_for_path,
 )
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 inbox_bp = Blueprint("inbox", __name__, url_prefix="/inbox")
 
@@ -57,14 +61,16 @@ async def get_folder():
     ----------
     folder_path : str
         The path to the folder to get the structure for.
+
     """
     params = await request.get_json()
 
     folder_hashes, folder_paths = pop_folder_params(params, allow_mismatch=True)
 
     if len(folder_paths) != 1 and len(folder_hashes) != 1:
-        raise InvalidUsageException(
-            f"Only one folder path or hash must be provided. Got: {folder_hashes=}, {folder_paths=}"
+        raise InvalidUsageError(
+            "Only one folder path or hash must be provided. "
+            f"Got: {folder_hashes=}, {folder_paths=}"
         )
 
     folder_path = folder_paths[0] if len(folder_paths) == 1 else None
@@ -72,7 +78,7 @@ async def get_folder():
 
     # Only absolute paths are allowed
     if folder_path is not None and not Path(folder_path).is_absolute():
-        raise InvalidUsageException(
+        raise InvalidUsageError(
             f"Only absolute paths are allowed. Got: {folder_path=}"
         )
 
@@ -124,7 +130,7 @@ async def get_folder():
 
     # If we still don't have a folder, raise an error
     if folder is None:
-        raise InvalidUsageException(
+        raise InvalidUsageError(
             f"Could not find folder with {folder_hash=} or path {folder_path=}.",
             status_code=404,
         )
@@ -149,6 +155,7 @@ async def delete():
         The paths to the folders to remove.
     folder_hashes : list[str]
         The hashes of the folders to remove.
+
     """
     params = await request.get_json()
     folder_hashes, folder_paths = pop_folder_params(params, allow_empty=False)
@@ -162,7 +169,8 @@ async def delete():
             seen.add((path, hash))
             folder_paths_and_hashes.append((path, hash))
 
-    # Sort by length of the path (longest first, to delete the most nested folders first)
+    # Sort by length of the path (longest first, to delete the most nested
+    # folders first)
     folder_paths_and_hashes = sorted(
         folder_paths_and_hashes, key=lambda x: len(x[0].parts), reverse=True
     )
@@ -177,8 +185,9 @@ async def delete():
             continue
         folders.append(f)
         if f.hash != folder_hash:
-            raise InvalidUsageException(
-                "Folder hash does not match the current folder hash! Please refresh your hashes before deleting!",
+            raise InvalidUsageError(
+                "Folder hash does not match the current folder hash! "
+                "Please refresh your hashes before deleting!",
             )
 
     # Delete the folders
@@ -188,7 +197,7 @@ async def delete():
         elif isinstance(f, Folder):
             shutil.rmtree(f.full_path)
         else:
-            raise InvalidUsageException(
+            raise InvalidUsageError(
                 f"Cannot delete object of type {type(f)} at {f.full_path}"
             )
 
@@ -232,6 +241,7 @@ async def stats_for_all():
     ----------
     folder : str (optional)
         The folder to compute stats for. If not provided, all inbox folders are used.
+
     """
     folders = get_inbox_folders()
     stats = [compute_stats(f) for f in folders]
@@ -247,7 +257,7 @@ def compute_stats(folder: str):
     """
     inbox = get_inbox_for_path(folder)
     if inbox is None:
-        raise NotFoundException(f"Inbox folder `{folder} not found.")
+        raise NotFoundError(f"Inbox folder `{folder} not found.")
 
     p = Path(folder)
 
